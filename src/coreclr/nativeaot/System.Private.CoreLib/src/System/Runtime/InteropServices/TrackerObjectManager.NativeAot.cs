@@ -235,16 +235,6 @@ namespace System.Runtime.InteropServices
             return HResults.S_OK;
         }
 
-        private static unsafe IntPtr CreateDefaultIFindReferenceTargetsCallbackVftbl()
-        {
-            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(FindReferenceTargetsCallback), 4 * sizeof(IntPtr));
-            vftbl[0] = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&IFindReferenceTargetsCallback_QueryInterface;
-            vftbl[1] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_AddRef;
-            vftbl[2] = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.Untracked_Release;
-            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&IFindReferenceTargetsCallback_FoundTrackerTarget;
-            return (IntPtr)vftbl;
-        }
-
         internal struct ReferenceTargetsVftbl
         {
             public delegate* unmanaged<IntPtr, Guid*, IntPtr*, int> QueryInterface;
@@ -261,8 +251,7 @@ namespace System.Runtime.InteropServices
         static FindReferenceTargetsCallback()
 #pragma warning restore CA1810 // Initialize reference type static fields inline
         {
-            Vftbl.AddRef = &Untracked_AddRef;
-            Vftbl.Release = &Untracked_Release;
+            ComWrappers.GetUntrackedIUnknownImpl(out Vftbl.AddRef, out Vftbl.Release);
             Vftbl.QueryInterface = &IFindReferenceTargetsCallback_QueryInterface;
             Vftbl.FoundTrackerTarget = &IFindReferenceTargetsCallback_FoundTrackerTarget;
         }

@@ -510,6 +510,16 @@ namespace System.Runtime
         )]
         internal static extern uint RhIUnknown_AddRef(nint pThis);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary,
+#if TARGET_WINDOWS && TARGET_X86
+            "_RhUntracked_Release@4"
+#else
+            "RhUntracked_Release"
+#endif
+        )]
+        internal static extern uint RhUntracked_Release(nint pThis);
+
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhRegisterObjectiveCMarshalBeginEndCallback")]

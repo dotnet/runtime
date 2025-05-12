@@ -167,8 +167,7 @@ namespace System.Runtime.InteropServices
             static unsafe HostServices()
             {
                 Vftbl.QueryInterface = &IReferenceTrackerHost_QueryInterface;
-                Vftbl.AddRef = &ComWrappers.Untracked_AddRef;
-                Vftbl.Release = &ComWrappers.Untracked_Release;
+                ComWrappers.GetUntrackedIUnknownImpl(out Vftbl.AddRef, out Vftbl.Release);
                 Vftbl.DisconnectUnusedReferenceSources = &IReferenceTrackerHost_DisconnectUnusedReferenceSources;
                 Vftbl.ReleaseDisconnectedReferenceSources = &IReferenceTrackerHost_ReleaseDisconnectedReferenceSources;
                 Vftbl.NotifyEndOfReferenceTrackingOnThread = &IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread;

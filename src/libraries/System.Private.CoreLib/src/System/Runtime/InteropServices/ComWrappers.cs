@@ -1445,19 +1445,6 @@ namespace System.Runtime.InteropServices
             return s_globalInstanceForTrackerSupport.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.TrackerSupport);
         }
 
-        // Lifetime maintained by stack - we don't care about ref counts
-        [UnmanagedCallersOnly]
-        internal static unsafe uint Untracked_AddRef(IntPtr _)
-        {
-            return 1;
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint Untracked_Release(IntPtr _)
-        {
-            return 1;
-        }
-
         // Wrapper for IWeakReference
         private static unsafe class IWeakReference
         {
