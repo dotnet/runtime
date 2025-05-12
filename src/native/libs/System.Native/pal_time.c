@@ -134,7 +134,7 @@ double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
             ((uint64_t)(resUsage.ru_utime.tv_usec) * MicroSecondsToNanoSeconds);
     }
 
-    uint64_t currentTime = SystemNative_GetTimestamp();
+    uint64_t currentTime = (uint64_t)minipal_hires_ticks();
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;
