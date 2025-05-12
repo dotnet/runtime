@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -47,7 +48,7 @@ namespace Internal.IL
             result = TrySetTargetMethodSignature(ref context);
             if (result is not SetTargetResult.Success)
             {
-                return GenerateAccessorSpecificFailure(ref context, name, result, isSignatureLoad: true);
+                return GenerateAccessorSpecificFailure(ref context, name, result);
             }
 
             TypeDesc retType = context.DeclarationSignature.ReturnType;
@@ -218,6 +219,7 @@ namespace Internal.IL
             public UnsafeAccessorKind Kind;
             public EcmaMethod Declaration;
             public MethodSignature DeclarationSignature;
+            public BitArray ReplacedSignatureElements;
             public TypeDesc TargetType;
             public bool IsTargetStatic;
             public MethodDesc TargetMethod;
@@ -412,6 +414,7 @@ namespace Internal.IL
         {
             Success,
             Missing,
+            MissingType,
             Ambiguous,
             Invalid,
             NotSupported
@@ -589,6 +592,9 @@ namespace Internal.IL
                     return SetTargetResult.Invalid;
                 }
 
+                context.ReplacedSignatureElements ??= new BitArray(originalSignature.Length + 1, false);
+                context.ReplacedSignatureElements[parameter.SequenceNumber] = true;
+
                 if (isReturnValue)
                 {
                     updatedSignature.ReturnType = replacementType;
@@ -650,7 +656,7 @@ namespace Internal.IL
                 });
 
             return replacementType is null
-                ? SetTargetResult.Missing
+                ? SetTargetResult.MissingType
                 : SetTargetResult.Success;
         }
 
@@ -717,7 +723,7 @@ namespace Internal.IL
             for (int i = beginIndex; i < stubArgCount; ++i)
             {
                 codeStream.EmitLdArg(i);
-                if (context.Declaration.Signature[i] != context.DeclarationSignature[i])
+                if (context.ReplacedSignatureElements[i + 1])
                 {
                     if (context.DeclarationSignature[i] is { Category: TypeFlags.Class } classType)
                     {
@@ -738,16 +744,9 @@ namespace Internal.IL
                         // if the parameter is not marked as "in".
                         // The "sequence number" for parameters is 1-based, whereas the parameter index is 0-based.
                         ParameterHandle paramHandle = FindParameterForSequenceNumber(reader, ref parameterEnumerator, i + 1);
-                        if (!paramHandle.IsNil)
+                        if (paramHandle.IsNil
+                            || !reader.GetParameter(paramHandle).Attributes.HasFlag(ParameterAttributes.In))
                         {
-                            if (!reader.GetParameter(paramHandle).Attributes.HasFlag(ParameterAttributes.In))
-                            {
-                                localsToRestore[i] = local;
-                            }
-                        }
-                        else
-                        {
-                            // If there's no metadata for the parameter, it definitely doesn't have the [In] attribute.
                             localsToRestore[i] = local;
                         }
                     }
@@ -800,7 +799,7 @@ namespace Internal.IL
             return emit.Link(context.Declaration);
         }
 
-        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, SetTargetResult result, bool isSignatureLoad = false)
+        private static MethodIL GenerateAccessorSpecificFailure(ref GenerationContext context, string name, SetTargetResult result)
         {
             ILEmitter emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
@@ -824,9 +823,8 @@ namespace Internal.IL
             {
                 thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowNotSupportedException");
             }
-            else if (isSignatureLoad)
+            else if (result is SetTargetResult.MissingType)
             {
-                Debug.Assert(result is SetTargetResult.Missing);
                 thrower = typeSysContext.GetHelperEntryPoint("ThrowHelpers", "ThrowUnavailableType");
             }
             else
