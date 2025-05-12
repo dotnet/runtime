@@ -62,9 +62,9 @@ inline static void YieldProcessor(void)
 }
 
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
-#define tccSecondsToMillieSeconds 1000          // 10^3
-#define tccMillieSecondsToNanoSeconds 1000000   // 10^6
-#define tccMillieSecondsToMicroSeconds 1000     // 10^3
+#define tccSecondsToMilliSeconds 1000           // 10^3
+#define tccMilliSecondsToNanoSeconds 1000000    // 10^6
+#define tccMilliSecondsToMicroSeconds 1000      // 10^3
 int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
@@ -89,7 +89,7 @@ int64_t minipal_hires_ticks(void)
 int64_t minipal_lowres_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
-    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMillieSecondsToNanoSeconds);
+    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
 
@@ -113,9 +113,9 @@ int64_t minipal_lowres_ticks(void)
 #endif
     }
 
-    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMillieSecondsToNanoSeconds));
+    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMilliSecondsToNanoSeconds));
 #elif HAVE_GETHRTIME
-    return (int64_t)(gethrtime () / tccMillieSecondsToNanoSeconds);
+    return (int64_t)(gethrtime () / tccMilliSecondsToNanoSeconds);
 #elif HAVE_READ_REAL_TIME
     timebasestruct_t tb;
     read_real_time (&tb, TIMEBASE_SZ);
@@ -123,14 +123,14 @@ int64_t minipal_lowres_ticks(void)
     {
         assert(!"time_base_to_time() failed");
     }
-    return (tb.tb_high * tccSecondsToMillieSeconds) + (tb.tb_low / tccMillieSecondsToNanoSeconds);
+    return (tb.tb_high * tccSecondsToMilliSeconds) + (tb.tb_low / tccMilliSecondsToNanoSeconds);
 #else
     struct timeval tv;
     if (gettimeofday(&tv, NULL) != 0)
     {
         assert(!"gettimeofday() failed\n");
     }
-    return ((int64_t)(tv.tv_sec) * (int64_t)(tccSecondsToMillieSeconds)) + ((int64_t)(tv.tv_usec) / (int64_t)(tccMillieSecondsToMicroSeconds));
+    return ((int64_t)(tv.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(tv.tv_usec) / (int64_t)(tccMilliSecondsToMicroSeconds));
 #endif
 }
 

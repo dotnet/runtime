@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetTickCount64")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetLowResolutionTimestamp")]
         [SuppressGCTransition]
-        internal static partial uint GetTickCount64();
+        internal static partial uint GetLowResolutionTimestamp();
     }
 }

@@ -84,7 +84,7 @@ uint64_t SystemNative_GetTimestamp(void)
     return (uint64_t)minipal_hires_ticks();
 }
 
-int64_t SystemNative_GetTickCount64(void)
+int64_t SystemNative_GetLowResolutionTimestamp(void)
 {
     return minipal_lowres_ticks();
 }
