@@ -36,16 +36,16 @@
           Inputs="$(MSBuildThisFileFullPath);$(TransportPropsFileInputPath)"
           Outputs="$(TransportPropsFileOutputPath)">
     <ItemGroup>
-      <PackageLibrary Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Extension', '.dll')->WithMetadataValue('Pack', 'true')->WithMetadataValue('IsPackable', 'true'))" />
+      <RuntimeWindowsDesktopPackageLibrary Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->WithMetadataValue('Extension', '.dll')->WithMetadataValue('Pack', 'true')->WithMetadataValue('IsPackable', 'true'))" />
     </ItemGroup>
 
     <PropertyGroup>
-      <PackageLibrariesContent>@(PackageLibrary->'&lt;PackageLibrary Include=&quot;%(Filename)%(Extension)&quot; PackageId=&quot;%(PackageId)&quot; PackageVersion=&quot;%(PackageVersion)&quot; /&gt;', '
-    ')</PackageLibrariesContent>
+      <RuntimeWindowsDesktopPackageLibraryContent>@(RuntimeWindowsDesktopPackageLibrary->'&lt;RuntimeWindowsDesktopPackageLibrary Include=&quot;%(Filename)%(Extension)&quot; PackageId=&quot;%(PackageId)&quot; PackageVersion=&quot;%(PackageVersion)&quot; /&gt;', '
+    ')</RuntimeWindowsDesktopPackageLibraryContent>
     </PropertyGroup>
 
     <ItemGroup>
-      <TransportPropsTemplateProperty Include="PackageLibraries=$(PackageLibrariesContent)" />
+      <TransportPropsTemplateProperty Include="RuntimeWindowsDesktopPackageLibrary=$(RuntimeWindowsDesktopPackageLibraryContent)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
