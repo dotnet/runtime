@@ -456,6 +456,8 @@ int minipal_getcpufeatures(void)
     if (hwCap2 & HWCAP2_SVE2)
         result |= ARM64IntrinsicConstants_Sve2;
 
+    if (hwCap & HWCAP_PACA)
+        result |= ARM64IntrinsicConstants_Pac;
 #else // !HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
@@ -488,6 +490,9 @@ int minipal_getcpufeatures(void)
 
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc2;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_PAuth", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
+        result |= ARM64IntrinsicConstants_Pac;
 #endif // HAVE_SYSCTLBYNAME
 
     // Every ARM64 CPU should support SIMD and FP
@@ -549,6 +554,14 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Sve2;
+    }
+
+    // TODO-PAC: Use PAC specific PF_* flag.
+    if (IsProcessorFeaturePresent(PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE))
+    {
+        // Similar to FEAT_LRCPC, Pointer Authentication (FEAT_PAuth) is a mandetory feature in Armv8.3.
+        // Thus, we can imply availability of FEAT_PAuth when FEAT_LRCPC is present.
+        result |= ARM64IntrinsicConstants_Pac;
     }
 
 #endif // HOST_WINDOWS

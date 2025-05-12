@@ -858,6 +858,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Rcpc2
     { FIRST_NI_Sve, LAST_NI_Sve },
     { NI_Illegal, NI_Illegal },                         // Sve2
+    { NI_Illegal, NI_Illegal },                         // Pac
     { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },
     { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },
     { NI_Illegal, NI_Illegal },                         // Aes_Arm64

@@ -1547,6 +1547,11 @@ void EEJitManager::SetCpuInfo()
     {
         g_arm64_atomics_present = true;
     }
+
+    if (((cpuFeatures & ARM64IntrinsicConstants_Pac) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Pac))
+    {
+        CPUCompileFlags.Set(InstructionSet_Pac);
+    }
 #elif defined(TARGET_RISCV64)
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {

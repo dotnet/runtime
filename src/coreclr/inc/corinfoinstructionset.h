@@ -33,16 +33,17 @@ enum CORINFO_InstructionSet
     InstructionSet_Rcpc2=15,
     InstructionSet_Sve=16,
     InstructionSet_Sve2=17,
-    InstructionSet_ArmBase_Arm64=18,
-    InstructionSet_AdvSimd_Arm64=19,
-    InstructionSet_Aes_Arm64=20,
-    InstructionSet_Crc32_Arm64=21,
-    InstructionSet_Dp_Arm64=22,
-    InstructionSet_Rdm_Arm64=23,
-    InstructionSet_Sha1_Arm64=24,
-    InstructionSet_Sha256_Arm64=25,
-    InstructionSet_Sve_Arm64=26,
-    InstructionSet_Sve2_Arm64=27,
+    InstructionSet_Pac=18,
+    InstructionSet_ArmBase_Arm64=19,
+    InstructionSet_AdvSimd_Arm64=20,
+    InstructionSet_Aes_Arm64=21,
+    InstructionSet_Crc32_Arm64=22,
+    InstructionSet_Dp_Arm64=23,
+    InstructionSet_Rdm_Arm64=24,
+    InstructionSet_Sha1_Arm64=25,
+    InstructionSet_Sha256_Arm64=26,
+    InstructionSet_Sve_Arm64=27,
+    InstructionSet_Sve2_Arm64=28,
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
     InstructionSet_RiscV64Base=1,
@@ -903,6 +904,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Sve2";
         case InstructionSet_Sve2_Arm64 :
             return "Sve2_Arm64";
+        case InstructionSet_Pac :
+            return "Pac";
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
         case InstructionSet_RiscV64Base :
@@ -1189,6 +1192,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Rcpc2: return InstructionSet_Rcpc2;
         case READYTORUN_INSTRUCTION_Sve: return InstructionSet_Sve;
         case READYTORUN_INSTRUCTION_Sve2: return InstructionSet_Sve2;
+        case READYTORUN_INSTRUCTION_Pac: return InstructionSet_Pac;
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
         case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;

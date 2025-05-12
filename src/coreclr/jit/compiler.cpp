@@ -6092,6 +6092,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
         }
+
+        if (JitConfig.EnableArm64Pac() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Pac);
+        }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
         {

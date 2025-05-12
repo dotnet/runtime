@@ -33,6 +33,7 @@ namespace Internal.JitInterface
         ARM64_Rcpc2 = InstructionSet_ARM64.Rcpc2,
         ARM64_Sve = InstructionSet_ARM64.Sve,
         ARM64_Sve2 = InstructionSet_ARM64.Sve2,
+        ARM64_Pac = InstructionSet_ARM64.Pac,
         ARM64_ArmBase_Arm64 = InstructionSet_ARM64.ArmBase_Arm64,
         ARM64_AdvSimd_Arm64 = InstructionSet_ARM64.AdvSimd_Arm64,
         ARM64_Aes_Arm64 = InstructionSet_ARM64.Aes_Arm64,
@@ -216,16 +217,17 @@ namespace Internal.JitInterface
         Rcpc2 = 15,
         Sve = 16,
         Sve2 = 17,
-        ArmBase_Arm64 = 18,
-        AdvSimd_Arm64 = 19,
-        Aes_Arm64 = 20,
-        Crc32_Arm64 = 21,
-        Dp_Arm64 = 22,
-        Rdm_Arm64 = 23,
-        Sha1_Arm64 = 24,
-        Sha256_Arm64 = 25,
-        Sve_Arm64 = 26,
-        Sve2_Arm64 = 27,
+        Pac = 18,
+        ArmBase_Arm64 = 19,
+        AdvSimd_Arm64 = 20,
+        Aes_Arm64 = 21,
+        Crc32_Arm64 = 22,
+        Dp_Arm64 = 23,
+        Rdm_Arm64 = 24,
+        Sha1_Arm64 = 25,
+        Sha256_Arm64 = 26,
+        Sve_Arm64 = 27,
+        Sve2_Arm64 = 28,
     }
 
     public enum InstructionSet_RiscV64
@@ -1458,6 +1460,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("rcpc2", "", InstructionSet.ARM64_Rcpc2, true);
                     yield return new InstructionSetInfo("sve", "Sve", InstructionSet.ARM64_Sve, true);
                     yield return new InstructionSetInfo("sve2", "Sve2", InstructionSet.ARM64_Sve2, true);
+                    yield return new InstructionSetInfo("pac", "", InstructionSet.ARM64_Pac, true);
                     break;
 
                 case TargetArchitecture.RiscV64:

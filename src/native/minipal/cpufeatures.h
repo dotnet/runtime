@@ -53,6 +53,7 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Rcpc2 = 0x0200,
     ARM64IntrinsicConstants_Sve = 0x0400,
     ARM64IntrinsicConstants_Sve2 = 0x0800,
+    ARM64IntrinsicConstants_Pac = 0x1000,
 };
 
 #include <assert.h>
