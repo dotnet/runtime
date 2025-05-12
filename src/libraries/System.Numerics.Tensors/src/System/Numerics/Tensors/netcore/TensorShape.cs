@@ -292,37 +292,9 @@ namespace System.Numerics.Tensors
                 {
                     _flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
                 }
-                else
+                else if (CalculateHasAnyDenseDimensions(lengths, strides))
                 {
-                    // We aren't dense, but we might still have some dense dimension if
-                    // the least significant non 0 stride is 1 and all least significant
-                    // 0 strides have length 1. We cannot have a dense dimension for a
-                    // non-zero stride with more than 1 element since we cannot get a
-                    // single span for all elements in that index of the dimension.
-
-                    for (int i = 0; i < strides.Length; i++)
-                    {
-                        int index = strides.Length - (i + 1);
-                        nint stride = strides[index];
-
-                        if (stride == 1)
-                        {
-                            _flags |= TensorFlags.HasAnyDenseDimensions;
-                            break;
-                        }
-
-                        if (stride != 0)
-                        {
-                            break;
-                        }
-
-                        nint length = lengths[index];
-
-                        if (length != 1)
-                        {
-                            break;
-                        }
-                    }
+                    _flags |= TensorFlags.HasAnyDenseDimensions;
                 }
             }
 
@@ -1112,34 +1084,7 @@ namespace System.Numerics.Tensors
             else
             {
                 Debug.Assert((FlattenedLength != LinearLength) || IsEmpty);
-
-                bool hasAnyDenseDimensions = false;
-
-                for (int i = 0; i < Strides.Length; i++)
-                {
-                    int index = Strides.Length - (i + 1);
-                    nint stride = Strides[index];
-
-                    if (stride == 1)
-                    {
-                        hasAnyDenseDimensions = true;
-                        break;
-                    }
-
-                    if (stride != 0)
-                    {
-                        break;
-                    }
-
-                    nint length = Lengths[index];
-
-                    if (length != 1)
-                    {
-                        break;
-                    }
-                }
-
-                Debug.Assert(HasAnyDenseDimensions == hasAnyDenseDimensions);
+                Debug.Assert(HasAnyDenseDimensions == CalculateHasAnyDenseDimensions(Lengths, Strides));
             }
             Debug.Assert(IsBroadcast == Strides.Contains(0));
         }
@@ -1283,6 +1228,10 @@ namespace System.Numerics.Tensors
             {
                 flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
             }
+            else if (CalculateHasAnyDenseDimensions(intermediateLengths, intermediateStrides))
+            {
+                flags |= TensorFlags.HasAnyDenseDimensions;
+            }
 
             TensorShape result = new TensorShape(
                 flattenedLength,
@@ -1308,6 +1257,43 @@ namespace System.Numerics.Tensors
             linearOffset = computedOffset;
 
             return result;
+        }
+
+        private static bool CalculateHasAnyDenseDimensions(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
+        {
+            // We aren't dense, but we might still have some dense dimension if
+            // the least significant non 0 stride is 1 and all least significant
+            // 0 strides have length 1. We cannot have a dense dimension for a
+            // non-zero stride with more than 1 element since we cannot get a
+            // single span for all elements in that index of the dimension.
+
+            bool hasAnyDenseDimensions = false;
+
+            for (int i = 0; i < strides.Length; i++)
+            {
+                int index = strides.Length - (i + 1);
+                nint stride = strides[index];
+
+                if (stride == 1)
+                {
+                    hasAnyDenseDimensions = true;
+                    break;
+                }
+
+                if (stride != 0)
+                {
+                    break;
+                }
+
+                nint length = lengths[index];
+
+                if (length != 1)
+                {
+                    break;
+                }
+            }
+
+            return hasAnyDenseDimensions;
         }
 
         public interface IGetOffsetAndLength<T>
