@@ -4119,12 +4119,6 @@ PAL_ThrowExceptionFromContext(
 PALIMPORT
 VOID
 PALAPI
-PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
-
-PALIMPORT
-VOID
-PALAPI
 PAL_CatchHardwareExceptionHolderEnter();
 
 PALIMPORT

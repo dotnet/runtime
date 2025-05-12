@@ -162,24 +162,6 @@ static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRe
     ETW::ExceptionLog::ExceptionThrown(pcfThisFrame, bIsRethrownException, bIsNewException);
 }
 
-#ifdef TARGET_UNIX
-static LONG volatile g_termination_triggered = 0;
-
-void HandleTerminationRequest(int terminationExitCode)
-{
-    // We set a non-zero exit code to indicate the process didn't terminate cleanly.
-    // This value can be changed by the user by setting Environment.ExitCode in the
-    // ProcessExit event. We only start termination on the first SIGTERM signal
-    // to ensure we don't overwrite an exit code already set in ProcessExit.
-    if (InterlockedCompareExchange(&g_termination_triggered, 1, 0) == 0)
-    {
-        SetLatchedExitCode(terminationExitCode);
-
-        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
-    }
-}
-#endif
-
 void InitializeExceptionHandling()
 {
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExInfo size: 0x%x bytes\n", sizeof(ExInfo)));
@@ -192,9 +174,6 @@ void InitializeExceptionHandling()
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
-
-    // Register handler for termination requests (e.g. SIGTERM)
-    PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
 }
 
