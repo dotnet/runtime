@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- The list of redistributed assemblies that via out-of-band packages.
+       Includes the assembly name, PackageId and the PacakgeVersion.
+       <PackageLibrary Include="" PackageId="" PackageVersion="" /> -->
+  <ItemGroup>
+    ${PackageLibraries}
+  </ItemGroup>
+
+</Project>
