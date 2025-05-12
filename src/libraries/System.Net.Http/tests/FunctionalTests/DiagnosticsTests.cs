@@ -1252,9 +1252,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("fAlSe")]
         [InlineData("helloworld")]
         [InlineData("")]
-        public void SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
+        public async Task SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
             {
                 Environment.SetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName, envVarValue);
 
@@ -1283,7 +1283,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(isInstrumentationEnabled, anyEventLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
