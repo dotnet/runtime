@@ -40,12 +40,12 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <RuntimeWindowsDesktopPackageLibraryContent>@(RuntimeWindowsDesktopPackageLibrary->'&lt;RuntimeWindowsDesktopPackageLibrary Include=&quot;%(Filename)%(Extension)&quot; PackageId=&quot;%(PackageId)&quot; PackageVersion=&quot;%(PackageVersion)&quot; /&gt;', '
-    ')</RuntimeWindowsDesktopPackageLibraryContent>
+      <RuntimeWindowsDesktopPackageLibraries>@(RuntimeWindowsDesktopPackageLibrary->'&lt;RuntimeWindowsDesktopPackageLibrary Include=&quot;%(Filename)%(Extension)&quot; PackageId=&quot;%(PackageId)&quot; PackageVersion=&quot;%(PackageVersion)&quot; /&gt;', '
+    ')</RuntimeWindowsDesktopPackageLibraries>
     </PropertyGroup>
 
     <ItemGroup>
-      <TransportPropsTemplateProperty Include="RuntimeWindowsDesktopPackageLibraries=$(RuntimeWindowsDesktopPackageLibraryContent)" />
+      <TransportPropsTemplateProperty Include="RuntimeWindowsDesktopPackageLibraries=$(RuntimeWindowsDesktopPackageLibraries)" />
     </ItemGroup>
 
     <GenerateFileFromTemplate
