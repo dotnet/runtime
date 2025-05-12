@@ -1218,7 +1218,7 @@ namespace ComWrappersTests
         [Fact]
         public void UserStateOverloadNotCalledWhenNoUserStatePassed()
         {
-            Console.WriteLine($"Running {nameof(ValidateComInterfaceCreationRoundTrip)}...");
+            Console.WriteLine($"Running {nameof(UserStateOverloadNotCalledWhenNoUserStatePassed)}...");
 
             var testObj = new Test();
 

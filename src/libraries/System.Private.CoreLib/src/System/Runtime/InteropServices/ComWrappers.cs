@@ -1062,7 +1062,7 @@ namespace System.Runtime.InteropServices
         /// <param name="innerMaybe">The inner instance if aggregation is involved</param>
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <param name="wrapperMaybe">The <see cref="object"/> to be used as the wrapper for the external object.</param>
-        /// <param name="userState"></param>
+        /// <param name="userState">A state object provided by the user for creating the object, otherwise <see cref="NoUserState.Instance" />.</param>
         /// <returns>Returns <c>true</c> if a managed object could be retrieved/created, <c>false</c> otherwise</returns>
         /// <param name="retValue">The managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</param>
         private unsafe bool TryGetOrCreateObjectForComInstanceInternal(
@@ -1440,6 +1440,18 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
+        /// <summary>
+        /// Create a managed object for the object pointed at by <paramref name="externalComObject"/> respecting the values of <paramref name="flags"/>.
+        /// </summary>
+        /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
+        /// <param name="flags">Flags used to describe the external object.</param>
+        /// <param name="userState">User state provided by the call to <see cref="GetOrCreateObjectForComInstance(nint, CreateObjectFlags, object)" />.</param>
+        /// <param name="wrapperFlags">Flags used to describe the created wrapper object.</param>
+        /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
+        /// <remarks>
+        /// The default implementation throws <see cref="NotImplementedException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="GetOrCreateObjectForComInstance(nint, CreateObjectFlags, object)"/> will throw a <see cref="ArgumentNullException"/>.
+        /// </remarks>
         protected virtual object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags, object? userState, out CreatedWrapperFlags wrapperFlags)
         {
             throw new NotImplementedException(SR.NotImplemented_CreateObjectWithUserState);
