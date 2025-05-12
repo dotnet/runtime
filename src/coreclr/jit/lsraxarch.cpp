@@ -2064,6 +2064,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             case NI_System_Math_Abs:
             {
                 op1RegCandidates = canUseApxRegs ? op1RegCandidates : BuildApxIncompatibleGPRMask(op1);
+                break;
             }
             default:
             {
