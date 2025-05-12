@@ -1101,7 +1101,11 @@ namespace System.Numerics.Tensors
         {
             if (IsDense)
             {
-                Debug.Assert(!IsEmpty);
+                // We don't assert !IsEmpty as a zero lengthed slice that
+                // tracks a byref to physical memory will still be marked
+                // as dense. This is in contrast to the default empty span
+                // which is not.
+
                 Debug.Assert(FlattenedLength == LinearLength);
                 Debug.Assert(HasAnyDenseDimensions);
             }
