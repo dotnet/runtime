@@ -1083,7 +1083,6 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                Debug.Assert((FlattenedLength != LinearLength) || IsEmpty);
                 Debug.Assert(HasAnyDenseDimensions == CalculateHasAnyDenseDimensions(Lengths, Strides));
             }
             Debug.Assert(IsBroadcast == Strides.Contains(0));
