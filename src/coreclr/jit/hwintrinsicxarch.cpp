@@ -1556,8 +1556,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     GenTree* cns = gtNewAllBitsSetConNode(retType);
 
                     GenTree* clonedOp1 = nullptr;
-                    op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                                      nullptr DEBUGARG("Clone op1 for AddSaturate"));
+                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for AddSaturate"));
 
                     GenTree* tmp = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
                     GenTree* msk = gtNewSimdCmpOpNode(GT_LT, retType, tmp, clonedOp1, simdBaseJitType, simdSize);
@@ -1629,8 +1628,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
-                        GenTree* msk2 = gtNewSimdBinOpNode(GT_XOR, retType, tmpDup1, op1Dup1, simdBaseJitType, simdSize);
-                        GenTree* msk3 = gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk2 =
+                            gtNewSimdBinOpNode(GT_XOR, retType, tmpDup1, op1Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk3 =
+                            gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
 
                         msk = gtNewSimdBinOpNode(GT_AND_NOT, retType, msk2, msk3, simdBaseJitType, simdSize);
                     }
@@ -3503,8 +3504,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         {
                             intrinsic = NI_Vector256_ToVector512Unsafe;
 
-                            op1      = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, intrinsic, simdBaseJitType, simdSize);
-                            op1      = gtNewSimdWithUpperNode(TYP_SIMD64, op1, op2, simdBaseJitType, simdSize * 2);
+                            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, intrinsic, simdBaseJitType, simdSize);
+                            op1 = gtNewSimdWithUpperNode(TYP_SIMD64, op1, op2, simdBaseJitType, simdSize * 2);
                         }
 
                         switch (simdBaseType)
@@ -3556,8 +3557,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         assert(simdSize == 16);
                         intrinsic = NI_Vector128_ToVector256Unsafe;
 
-                        op1      = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, intrinsic, simdBaseJitType, simdSize);
-                        op1      = gtNewSimdWithUpperNode(TYP_SIMD32, op1, op2, simdBaseJitType, simdSize * 2);
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, intrinsic, simdBaseJitType, simdSize);
+                        op1 = gtNewSimdWithUpperNode(TYP_SIMD32, op1, op2, simdBaseJitType, simdSize * 2);
 
                         switch (simdBaseType)
                         {
@@ -4168,8 +4169,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
-                        GenTree* msk2 = gtNewSimdBinOpNode(GT_XOR, retType, tmpDup1, op1Dup1, simdBaseJitType, simdSize);
-                        GenTree* msk3 = gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk2 =
+                            gtNewSimdBinOpNode(GT_XOR, retType, tmpDup1, op1Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk3 =
+                            gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
 
                         msk = gtNewSimdBinOpNode(GT_AND, retType, msk2, msk3, simdBaseJitType, simdSize);
                     }
