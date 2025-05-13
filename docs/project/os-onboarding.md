@@ -41,7 +41,7 @@ There are special considerations when `main` is the next .NET LTS (odd years):
 - New Debian releases tends to ship in the middle of odd years (our LTS year). It is best to [add coverage as early as possible](https://github.com/dotnet/runtime/pull/111768), in part because [Preview 1 ships pre-release Debian version](https://github.com/dotnet/dotnet-docker/discussions/6272) in container images.
 - Ubuntu LTS ship 6 months after .NET LTS. It is important that this combination has excellent support. It is recommended that we move forward with Ubuntu interim builds (examples: [24.10](https://github.com/dotnet/runtime/pull/111504), [25.04](https://github.com/dotnet/runtime/pull/113405)) requiring us to update to the next LTS during servicing (and then not update again).
 
-We update `release` branches primarily to accomodate EOL OS references.  Alpine, Azure Linux, and Fedora are examples of OSes with shorter release cycles than .NET that require regular remediation.
+We update `release` branches primarily to accommodate EOL OS references.  Alpine, Azure Linux, and Fedora are examples of OSes with shorter release cycles than .NET that require regular remediation.
 
 We avoid maintaining multiple versions of an OS in a single branch. We will often have multiple versions of an OS across branches, with older branches having references to older OSes. We believe that this approach provides sufficient coverage and is most likely to align with user behavior. It also aligns with the container images that we publish.
 
