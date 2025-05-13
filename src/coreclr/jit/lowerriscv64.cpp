@@ -343,14 +343,9 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 BlockRange().Remove(shift->gtGetOp1());
                 BlockRange().Remove(shift);
                 if (opp1->OperIs(GT_LSH))
-                {
-                    op1 = shift->gtGetOp2();
                     std::swap(op1, op2);
-                }
-                else
-                {
-                    op2 = shift->gtGetOp2();
-                }
+
+                op2 = shift->gtGetOp2();
             }
         }
     }
