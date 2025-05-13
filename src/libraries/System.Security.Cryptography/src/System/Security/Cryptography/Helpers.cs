@@ -468,5 +468,119 @@ namespace Internal.Cryptography
 
         internal static bool IsSlhDsaOid(string? oid) =>
             SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
+
+        public delegate void SlhDsaPrehashActionCallback<T, TState>(Span<T> span, TState arg)
+            where TState : allows ref struct;
+
+        public delegate TResult SlhDsaPrehashFuncCallback<T, TState, TResult>(Span<T> span, TState arg)
+            where TState : allows ref struct;
+
+        internal static void SlhDsaPrehash<TState>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            HashAlgorithmName preHashAlgorithm,
+            TState state,
+            SlhDsaPrehashActionCallback<byte, TState> callback)
+            where TState : allows ref struct
+        {
+            SlhDsaPrehash(
+                hash,
+                context,
+                preHashAlgorithm,
+                StackTuple.Create(state, callback),
+                static (message, myState) =>
+                {
+                    myState.Item2(message, myState.Item1);
+                    return true;
+                });
+        }
+
+        internal static TResult SlhDsaPrehash<TState, TResult>(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            HashAlgorithmName preHashAlgorithm,
+            TState state,
+            SlhDsaPrehashFuncCallback<byte, TState, TResult> callback)
+            where TState : allows ref struct
+        {
+            string? oid = Helpers.GetOidFromHashAlgorithm(preHashAlgorithm);
+
+            // TODO should we throw instead?
+            Debug.Assert(oid != null, $"Hash algorithm {preHashAlgorithm} must have already been validated.");
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            writer.WriteObjectIdentifier(oid);
+            int encodedOidLength = writer.GetEncodedLength();
+            int messageLength =
+                1 +                 // Pre-hash encoding flag
+                1 +                 // Context length
+                context.Length +    // Context
+                encodedOidLength +  // OID
+                hash.Length;        // Hash
+
+            // The maximum hash output size we know is 512 bits, but we'll be defensive here.
+            const int MessageLengthUpperBound = 1 + 1 + 255 + 11 + (512 / 8);
+            Debug.Assert(
+                messageLength <= MessageLengthUpperBound,
+                $"Message length {messageLength} exceeds the upper bound of {MessageLengthUpperBound}.");
+
+            byte[]? rented = null;
+            Span<byte> message =
+                messageLength > MessageLengthUpperBound
+                    ? (rented = CryptoPool.Rent(messageLength))
+                    : stackalloc byte[MessageLengthUpperBound];
+
+            // Pre-hash encoding flag
+            message[0] = 0x01;
+
+            // Context length
+            message[1] = checked((byte)context.Length);
+
+            // Context
+            context.CopyTo(message.Slice(2));
+
+            // OID
+            writer.Encode(
+                new StackTuple<Span<byte>, int>(message, context.Length),
+                (state, encoded) => encoded.CopyTo(state.Item1.Slice(2 + state.Item2)));
+
+            // Hash
+            hash.CopyTo(message.Slice(2 + context.Length + encodedOidLength));
+
+            try
+            {
+                return callback(message.Slice(0, messageLength), state);
+            }
+            finally
+            {
+                if (rented != null)
+                {
+                    CryptoPool.Return(rented);
+                }
+            }
+        }
+
+        internal static class StackTuple
+        {
+            internal static StackTuple<T1, T2> Create<T1, T2>(T1 item1, T2 item2)
+                where T1 : allows ref struct
+                where T2 : allows ref struct
+            {
+                return new StackTuple<T1, T2>(item1, item2);
+            }
+        }
+
+        internal ref struct StackTuple<T1, T2>
+            where T1 : allows ref struct
+            where T2 : allows ref struct
+        {
+            public T1 Item1;
+            public T2 Item2;
+            public StackTuple(T1 item1, T2 item2)
+            {
+                Item1 = item1;
+                Item2 = item2;
+            }
+        }
     }
 }

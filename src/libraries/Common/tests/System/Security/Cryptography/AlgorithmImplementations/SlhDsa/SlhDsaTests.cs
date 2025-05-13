@@ -13,13 +13,14 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         protected abstract SlhDsa ImportSlhDsaPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
         protected abstract SlhDsa ImportSlhDsaSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source);
 
-        public static IEnumerable<object[]> NistSigVerTestVectorsData =>
+        public static IEnumerable<object[]> NistPureSigVerTestVectorsData =>
             from vector in SlhDsaTestData.NistSigVerTestVectors
+            where vector.HashAlgorithm is null
             select new object[] { vector };
 
         [Theory]
-        [MemberData(nameof(NistSigVerTestVectorsData))]
-        public void NistSignatureVerificationTest(SlhDsaTestData.SlhDsaSigVerTestVector vector)
+        [MemberData(nameof(NistPureSigVerTestVectorsData))]
+        public void NistPureSignatureVerificationTest(SlhDsaTestData.SlhDsaSigVerTestVector vector)
         {
             byte[] msg = vector.Message;
             byte[] ctx = vector.Context;
@@ -32,6 +33,55 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // Test signature verification with secret key
             using SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey);
             Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyData(msg, sig, ctx));
+        }
+
+        public static IEnumerable<object[]> NistPreHashSigVerTestVectorsData =>
+            from vector in SlhDsaTestData.NistSigVerTestVectors
+            where vector.HashAlgorithm is not null
+            select new object[] { vector };
+
+        [Theory]
+        [MemberData(nameof(NistPreHashSigVerTestVectorsData))]
+        public void NistPreHashSignatureVerificationTest(SlhDsaTestData.SlhDsaSigVerTestVector vector)
+        {
+            byte[] msg = vector.Message;
+            HashAlgorithmName preHashAlgorithm = vector.HashAlgorithm.Value;
+            byte[] ctx = vector.Context;
+            byte[] sig = vector.Signature;
+
+            byte[] hash;
+            if (preHashAlgorithm.Name == "SHAKE128")
+            {
+                using (Shake128 hasher = new Shake128())
+                {
+                    hasher.AppendData(msg);
+                    hash = hasher.GetHashAndReset(256 / 8);
+                }
+            }
+            else if (preHashAlgorithm.Name == "SHAKE256")
+            {
+                using (Shake256 hasher = new Shake256())
+                {
+                    hasher.AppendData(msg);
+                    hash = hasher.GetHashAndReset(512 / 8);
+                }
+            }
+            else
+            {
+                using (IncrementalHash hasher = IncrementalHash.CreateHash(preHashAlgorithm))
+                {
+                    hasher.AppendData(msg);
+                    hash = hasher.GetHashAndReset();
+                }
+            }
+
+            // Test signature verification with public key
+            using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
+            Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyPreHash(hash, sig, preHashAlgorithm, ctx));
+
+            // Test signature verification with secret key
+            using SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey);
+            Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyPreHash(hash, sig, preHashAlgorithm, ctx));
         }
 
         // Signing takes a relatively long time so we'll just run it on a representative sample of algorithms.

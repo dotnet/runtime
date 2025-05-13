@@ -74,6 +74,8 @@ namespace System.Security.Cryptography
         internal const string Sha3_256 = "2.16.840.1.101.3.4.2.8";
         internal const string Sha3_384 = "2.16.840.1.101.3.4.2.9";
         internal const string Sha3_512 = "2.16.840.1.101.3.4.2.10";
+        internal const string Shake128 = "2.16.840.1.101.3.4.2.11";
+        internal const string Shake256 = "2.16.840.1.101.3.4.2.12";
 
         // DSA CMS uses the combined signature+digest OID
         internal const string DsaWithSha1 = "1.2.840.10040.4.3";

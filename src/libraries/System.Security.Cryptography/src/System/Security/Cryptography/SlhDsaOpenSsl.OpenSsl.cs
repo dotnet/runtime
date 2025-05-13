@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
+using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
@@ -84,6 +85,22 @@ namespace System.Security.Cryptography
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.SlhDsaVerifyPure(_key, data, context, signature);
+
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination) =>
+            Helpers.SlhDsaPrehash(
+                hash,
+                context,
+                preHashAlgorithm,
+                new Helpers.StackTuple<SafeEvpPKeyHandle, Span<byte>>(_key, destination),
+                static (message, state) => Interop.Crypto.SlhDsaSignPreHash(state.Item1, message, state.Item2));
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature) =>
+            Helpers.SlhDsaPrehash(
+                hash,
+                context,
+                preHashAlgorithm,
+                new Helpers.StackTuple<SafeEvpPKeyHandle, ReadOnlySpan<byte>>(_key, signature),
+                static (message, state) => Interop.Crypto.SlhDsaVerifyPreHash(state.Item1, message, state.Item2));
 
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);

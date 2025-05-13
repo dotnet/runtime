@@ -36,6 +36,19 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException();
         }
 
+        // TODO normalize names (to PreHash)
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
+
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination)
         {
             Debug.Fail("Caller should have checked platform availability.");

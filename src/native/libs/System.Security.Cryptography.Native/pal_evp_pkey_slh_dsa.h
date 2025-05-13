@@ -50,6 +50,28 @@ PALEXPORT int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
                                                 uint8_t* context, int32_t contextLen,
                                                 uint8_t* sig, int32_t sigLen);
 
+ /*
+Sign an encoded pre-hashed message using the provided SLH-DSA key. The encoding is
+described in FIPS 205, Algorithm 23.
+
+Returns 1 on success, 0 on a mismatched signature, -1 on error.
+*/
+PALEXPORT int32_t CryptoNative_SlhDsaSignPreHash(EVP_PKEY *pkey,
+                                                 void* extraHandle,
+                                                 uint8_t* msg, int32_t msgLen,
+                                                 uint8_t* destination, int32_t destinationLen);
+
+/*
+Verify a message using the provided SLH-DSA key. The encoding is
+described in FIPS 205, Algorithm 23.
+
+Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
+*/                                             
+PALEXPORT int32_t CryptoNative_SlhDsaVerifyPreHash(EVP_PKEY *pkey,
+                                                   void* extraHandle,
+                                                   uint8_t* msg, int32_t msgLen,
+                                                   uint8_t* sig, int32_t sigLen);
+
 /*
 Export the secret key from the given SLH-DSA key.
 */

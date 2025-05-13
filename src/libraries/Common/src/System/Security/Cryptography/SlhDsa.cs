@@ -271,6 +271,93 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="destination"></param>
+        /// <param name="preHashAlgorithm"></param>
+        /// <param name="context"></param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> context = default)
+        {
+            ValidateHashAlgorithm(hash, preHashAlgorithm);
+
+            if (destination.Length != Algorithm.SignatureSizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Algorithm.SignatureSizeInBytes),
+                    nameof(destination));
+            }
+
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            SignPreHashCore(hash, context, preHashAlgorithm, destination);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="context"></param>
+        /// <param name="preHashAlgorithm"></param>
+        /// <param name="destination"></param>
+        protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="signature"></param>
+        /// <param name="preHashAlgorithm"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        public bool VerifyPreHash(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName preHashAlgorithm,
+            ReadOnlySpan<byte> context = default)
+        {
+            ValidateHashAlgorithm(hash, preHashAlgorithm);
+
+            if (context.Length > MaxContextLength)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(context),
+                    context.Length,
+                    SR.Argument_SignatureContextTooLong255);
+            }
+
+            if (signature.Length != Algorithm.SignatureSizeInBytes)
+            {
+                return false;
+            }
+
+            return VerifyPreHashCore(hash, context, preHashAlgorithm, signature);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <param name="context"></param>
+        /// <param name="preHashAlgorithm"></param>
+        /// <param name="signature"></param>
+        /// <returns></returns>
+        protected abstract bool VerifyPreHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> context,
+            HashAlgorithmName preHashAlgorithm,
+            ReadOnlySpan<byte> signature);
+
+        /// <summary>
         ///   Exports the public-key portion of the current key in the X.509 SubjectPublicKeyInfo format.
         /// </summary>
         /// <returns>
@@ -1731,6 +1818,24 @@ namespace System.Security.Cryptography
             }
 
             return algorithm;
+        }
+
+        private static void ValidateHashAlgorithm(ReadOnlySpan<byte> hash, HashAlgorithmName hashAlgorithm)
+        {
+            if (Helpers.TryGetHashOutputSize(hashAlgorithm, out int hashSizeInBytes))
+            {
+                if (hash.Length != hashSizeInBytes)
+                {
+                    throw new ArgumentException(
+                        SR.Format(SR.Argument_HashImprecise, hashSizeInBytes),
+                        nameof(hash));
+                }
+            }
+            else
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
         }
 
         private static void ThrowIfNotSupported()

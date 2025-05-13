@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
@@ -141,6 +142,61 @@ namespace Internal.Cryptography
                 _ => false,
             };
         }
+
+        internal static string? GetOidFromHashAlgorithm(HashAlgorithmName algName)
+        {
+            if (algName == HashAlgorithmName.MD5)
+                return Oids.Md5;
+            if (algName == HashAlgorithmName.SHA1)
+                return Oids.Sha1;
+            if (algName == HashAlgorithmName.SHA256)
+                return Oids.Sha256;
+            if (algName == HashAlgorithmName.SHA384)
+                return Oids.Sha384;
+            if (algName == HashAlgorithmName.SHA512)
+                return Oids.Sha512;
+#if NET8_0_OR_GREATER
+            if (algName == HashAlgorithmName.SHA3_256)
+                return Oids.Sha3_256;
+            if (algName == HashAlgorithmName.SHA3_384)
+                return Oids.Sha3_384;
+            if (algName == HashAlgorithmName.SHA3_512)
+                return Oids.Sha3_512;
+
+            // SHAKE is parametrized by the output length, but only the 256-bit (shake-128) and
+            // 512-bit (shake-256) variants have an assigned OID.
+            // TODO add HashAlgorithmName.SHAKE256 and SHAKE512
+            if (algName.Name == "SHAKE128")
+                return Oids.Shake128;
+            if (algName.Name == "SHAKE256")
+                return Oids.Shake256;
+#endif
+
+            return null;
+        }
+
+        private static Dictionary<HashAlgorithmName, int> s_hashOutputSize = new Dictionary<HashAlgorithmName, int>
+        {
+            { HashAlgorithmName.SHA256, 256 / 8 },
+            { HashAlgorithmName.SHA384, 384 / 8 },
+            { HashAlgorithmName.SHA512, 512 / 8 },
+
+#if NET8_0_OR_GREATER
+            { HashAlgorithmName.SHA3_256, SHA3_256.HashSizeInBytes },
+            { HashAlgorithmName.SHA3_384, SHA3_384.HashSizeInBytes },
+            { HashAlgorithmName.SHA3_512, SHA3_512.HashSizeInBytes },
+
+            // Technically, SHAKE128 and SHAKE256 are not fixed-size hashes,
+            // but when are used as algorithm identifiers, they have the following
+            // fixed lengths.
+            // TODO add HashAlgorithmName.SHAKE256 and SHAKE512
+            { new HashAlgorithmName("SHAKE128"), 256 / 8 },
+            { new HashAlgorithmName("SHAKE256"), 512 / 8 },
+#endif
+        };
+
+        internal static bool TryGetHashOutputSize(HashAlgorithmName algName, out int hashSizeInBytes) =>
+            s_hashOutputSize.TryGetValue(algName, out hashSizeInBytes);
 
         internal static CryptographicException CreateAlgorithmUnknownException(AsnWriter encodedId)
         {
