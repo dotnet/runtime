@@ -3868,7 +3868,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
-        if (op1->isContainedIndir() && candidates == RBM_NONE && !canUseApxRegs)
+        if (op1->isContainedIndir() && (candidates == RBM_NONE) && !canUseApxRegs)
         {
             srcCount += BuildOperandUses(op1, lowGprRegs);
         }
@@ -3882,7 +3882,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 
 #ifdef TARGET_XARCH
-        if (op2->isContainedIndir() && candidates == RBM_NONE && !canUseApxRegs)
+        if (op2->isContainedIndir() && (candidates == RBM_NONE) && !canUseApxRegs)
         {
             candidates = lowGprRegs;
         }
