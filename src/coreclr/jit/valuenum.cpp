@@ -3678,7 +3678,9 @@ TailCall:
                     // If we ran out of budget we could have already cached the
                     // result in the leaf. In that case it is ok to overwrite
                     // it here.
-                    GetMapSelectWorkCache()->Set(fstruct, entry, MapSelectWorkCache::Overwrite);
+                    MapSelectWorkCache* cache = GetMapSelectWorkCache();
+                    assert(!cache->Lookup(fstruct) || ((*cache)[fstruct].Result == sameSelResult));
+                    cache->Set(fstruct, entry, MapSelectWorkCache::Overwrite);
                 }
 
                 recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
