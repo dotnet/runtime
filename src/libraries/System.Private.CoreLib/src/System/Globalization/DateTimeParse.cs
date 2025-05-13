@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -4028,6 +4028,8 @@ namespace System
             DateTimeFormatInfo dtfi,
             scoped ref DateTimeResult result)
         {
+            const int maxYearTokenLength = 4;
+
             int tokenLen;
             int tempYear = 0, tempMonth = 0, tempDay = 0, tempDayOfWeek = 0, tempHour = 0, tempMinute = 0, tempSecond = 0;
             double tempFraction = 0;
@@ -4055,7 +4057,7 @@ namespace System
                         {
                             parseInfo.fUseTwoDigitYear = true;
                         }
-                        parseResult = ParseDigits(ref str, tokenLen, out tempYear);
+                        parseResult = ParseDigits(ref str, tokenLen, maxYearTokenLength, out tempYear);
                     }
                     if (!parseResult && parseInfo.fUseHebrewNumberParser)
                     {
