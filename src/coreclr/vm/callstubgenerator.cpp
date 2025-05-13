@@ -981,7 +981,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
                     break;
             }
             routines[m_routineIndex++] = m_s1;
-            m_s1 = NO_RANGE;
+            m_s1 = NoRange;
         }
 #endif // TARGET_APPLE && TARGET_ARM64
 
@@ -993,7 +993,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             _ASSERTE(argLocDesc.m_cGenReg == 1);
             routines[m_routineIndex++] = GetGPRegRefLoadRoutine(argLocDesc.m_idxGenReg);
             routines[m_routineIndex++] = argIt.GetArgSize();
-            m_r1 = NO_RANGE;
+            m_r1 = NoRange;
         }
     }
 }
