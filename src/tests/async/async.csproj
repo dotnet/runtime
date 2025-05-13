@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*.??proj" />
-    <MergedWrapperProjectReference Include="*.??proj" />
-    <MergedWrapperProjectReference Remove="$(MSBuildProjectName).csproj" />
 
     <!-- Remove manual benchmarks from the test wrapper -->
     <MergedWrapperProjectReference Remove="eh-microbench.csproj" />
