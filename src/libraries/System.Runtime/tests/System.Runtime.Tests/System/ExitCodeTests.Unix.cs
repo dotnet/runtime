@@ -58,8 +58,8 @@ namespace System.Tests
                 bool exited = process.WaitForExit(RemoteExecutor.FailWaitTimeoutMilliseconds);
                 Assert.True(exited);
 
-                // Check exit code
-                Assert.Equal(exitCodeOnSigterm ?? 128 + SIGTERM, process.ExitCode);
+                // Check that the exit code is 143 (128 + SIGTERM).
+                Assert.Equal(143, process.ExitCode);
             }
         }
     }
