@@ -26,7 +26,7 @@ namespace HostActivation.Tests
         [Theory]
         [InlineData("a/b/SymlinkToFrameworkDependentApp")]
         [InlineData("a/SymlinkToFrameworkDependentApp")]
-        public void Symlink_all_files(string symlinkRelativePath)
+        public void Symlink_all_files_fx(string symlinkRelativePath)
         {
             using var testDir = TestArtifact.Create("symlink");
             Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
@@ -52,6 +52,48 @@ namespace HostActivation.Tests
                 // This should succeed on all platforms, but for different reasons:
                 // * Windows: The apphost will look next to the symlink for the app dll and find the symlinked dll
                 // * Unix: The apphost will look next to the resolved apphost for the app dll and find the real thing
+                result
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World");
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_all_files_self_contained(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+            Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
+
+            // Symlink every file in the app directory
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(sharedTestState.SelfContainedApp.Location))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(testDir.Location, symlinkRelativePath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
+                }
+
+                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                // This should succeed on all platforms, but for different reasons:
+                // * Windows: The apphost will look next to the symlink for the files and find the symlinks
+                // * Unix: The apphost will look next to the resolved apphost for the files and find the real thing
                 result
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World");
