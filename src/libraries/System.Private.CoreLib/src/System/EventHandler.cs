@@ -7,4 +7,8 @@ namespace System
 
     public delegate void EventHandler<TEventArgs>(object? sender, TEventArgs e) // Removed TEventArgs constraint post-.NET 4
         where TEventArgs : allows ref struct;
+
+    public delegate void EventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e)
+        where TSender : allows ref struct
+        where TEventArgs : allows ref struct;
 }

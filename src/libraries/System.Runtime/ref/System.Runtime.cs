@@ -2790,6 +2790,7 @@ namespace System
     }
     public delegate void EventHandler(object? sender, System.EventArgs e);
     public delegate void EventHandler<TEventArgs>(object? sender, TEventArgs e) where TEventArgs : allows ref struct;
+    public delegate void EventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e) where TSender : allows ref struct where TEventArgs : allows ref struct;
     public partial class Exception : System.Runtime.Serialization.ISerializable
     {
         public Exception() { }
