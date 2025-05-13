@@ -7,6 +7,12 @@
 
 extern "C" void Load_Stack();
 
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+extern "C" void Load_Stack_1B();
+extern "C" void Load_Stack_2B();
+extern "C" void Load_Stack_4B();
+#endif // TARGET_APPLE && TARGET_ARM64
+
 #ifdef TARGET_AMD64
 
 #ifdef TARGET_WINDOWS
@@ -886,43 +892,24 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
 
     if (argLocDesc.m_cGenReg != 0)
     {                       
-#ifndef UNIX_AMD64_ABI
-        if (argIt.IsArgPassedByRef())
+        if (m_r1 == NoRange) // No active range yet
         {
-            if (m_r1 != NoRange)
-            {
-                // The args passed by reference use a separate routine, so we need to flush the existing range
-                // of general purpose registers if we have one.
-                routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
-                m_r1 = NoRange;
-            }
+            // Start a new range
+            m_r1 = argLocDesc.m_idxGenReg;
+            m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
+        }
+        else if (argLocDesc.m_idxGenReg == m_r2 + 1 && !argIt.IsArgPassedByRef())
+        {
+            // Extend an existing range, but only if the argument is not passed by reference.
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
-            // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
-            // we always process single argument passed by reference using single routine.
-            routines[m_routineIndex++] = GetGPRegRefLoadRoutine(argLocDesc.m_idxGenReg);
-            routines[m_routineIndex++] = argIt.GetArgSize();
+            m_r2 += argLocDesc.m_cGenReg;
         }
         else
-#endif // UNIX_AMD64_ABI
         {
-            if (m_r1 == NoRange) // No active range yet
-            {
-                // Start a new range
-                m_r1 = argLocDesc.m_idxGenReg;
-                m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
-            } 
-            else if (argLocDesc.m_idxGenReg == m_r2 + 1)
-            {
-                // Extend an existing range
-                m_r2 += argLocDesc.m_cGenReg;
-            }
-            else
-            {
-                // Discontinuous range - store a routine for the current and start a new one
-                routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
-                m_r1 = argLocDesc.m_idxGenReg;
-                m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
-            }
+            // Discontinuous range - store a routine for the current and start a new one
+            routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
+            m_r1 = argLocDesc.m_idxGenReg;
+            m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
     }
 
@@ -956,17 +943,12 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         } 
-        else if (argLocDesc.m_byteStackIndex == m_s2 + 1
-#ifdef TARGET_APPLE
-                 && ((m_s2 - m_s1 + 1) >= sizeof(void*))
-#endif // TARGET_APPLE
-                )
+        else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8))
         {
-            // Extend an existing range, but only if the previous range was at least pointer size large.
-            // The only case when this is not true is on arm64 Apple OSes where types smaller than 8 bytes
-            // are passed on the stack in a packed manner. We process such arguments one by one to avoid
-            // explosion of the number of routines. The interpreter stack has pointer size alignment for
-            // all types of arguments.
+            // Extend an existing range, but only if the argument is at least pointer size large.
+            // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
+            // than 8 bytes are passed on the stack in a packed manner. We process such arguments one by
+            // one to avoid explosion of the number of routines.
             m_s2 += argLocDesc.m_byteStackSize;
         }
         else
@@ -977,6 +959,41 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             routines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
+        }
+
+#if defined(TARGET_APPLE) && defined(TARGET_ARM64)
+        // Process primitive types smaller than 8 bytes separately on Apple ARM64
+        if (argLocDesc.m_byteStackSize < 8)
+        {
+            switch (argLocDesc.m_byteStackSize)
+            {
+                case 1:
+                    routines[m_routineIndex++] = (PCODE)Load_Stack_1B;
+                    break;
+                case 2:
+                    routines[m_routineIndex++] = (PCODE)Load_Stack_2B;
+                    break;
+                case 4:
+                    routines[m_routineIndex++] = (PCODE)Load_Stack_4B;
+                    break;
+                default:
+                    _ASSERTE(!"Unexpected stack argument size");
+                    break;
+            }
+            routines[m_routineIndex++] = m_s1;
+            m_s1 = NO_RANGE;
+        }
+#endif // TARGET_APPLE && TARGET_ARM64
+
+        // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
+        // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
+        // we always process single argument passed by reference using single routine.
+        if (argIt.IsArgPassedByRef())
+        {
+            _ASSERTE(argLocDesc.m_cGenReg == 1);
+            routines[m_routineIndex++] = GetGPRegRefLoadRoutine(argLocDesc.m_idxGenReg);
+            routines[m_routineIndex++] = argIt.GetArgSize();
+            m_r1 = NO_RANGE;
         }
     }
 }

@@ -871,43 +871,53 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
 // Copy arguments from the interpreter stack to the processor stack
-// Except for Apple target, the CPU stack slots are aligned to
-// pointer size.
+// The CPU stack slots are aligned to pointer size.
 LEAF_ENTRY Load_Stack
     ldr w14, [x10], #4 // SP offset
     ldr w12, [x10], #4 // number of stack slots
     add x14, sp, x14
-#ifdef TARGET_APPLE
-    cmp x12, #8
-    blt LOCAL_LABEL(LessThan8Bytes)
-#endif // TARGET_APPLE
 LOCAL_LABEL(CopyLoop):
     ldr x13, [x9], #8
     str x13, [x14], #8
     subs x12, x12, #8
     bne LOCAL_LABEL(CopyLoop)
-#ifdef TARGET_APPLE
-    b LOCAL_LABEL(DoneLoop)
-LOCAL_LABEL(LessThan8Bytes):
-    cmp x12, #4
-    blt LOCAL_LABEL(LessThan4Bytes)
-    ldr w13, [x9], #8
-    str w13, [x14], #4
-    b LOCAL_LABEL(DoneLoop)
-LOCAL_LABEL(LessThan4Bytes):
-    cmp x12, #2
-    blt LOCAL_LABEL(LessThan2Bytes)
-    ldrh w13, [x9], #8
-    strh w13, [x14], #2
-    b LOCAL_LABEL(DoneLoop)
-LOCAL_LABEL(LessThan2Bytes):
-    ldrb w13, [x9], #8
-    strb w13, [x14], #1
-LOCAL_LABEL(DoneLoop):
-#endif // TARGET_APPLE
     ldr x11, [x10], #8
     EPILOG_BRANCH_REG x11
 LEAF_END Load_Stack
+
+#ifdef TARGET_APPLE
+
+// Copy single byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Load_Stack_1B
+    ldr x14, [x10], #8 // SP offset
+    add x14, sp, x14
+    ldrb w13, [x9], #8
+    strb w13, [x14]
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_1B
+
+// Copy two byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Load_Stack_2B
+    ldr x14, [x10], #8 // SP offset
+    add x14, sp, x14
+    ldrh w13, [x9], #8
+    strh w13, [x14]
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_2B
+
+// Copy four byte argument from the interpreter stack to the processor stack
+LEAF_ENTRY Load_Stack_4B
+    ldr x14, [x10], #8 // SP offset
+    add x14, sp, x14
+    ldr w13, [x9], #8
+    str w13, [x14]
+    ldr x11, [x10], #8
+    EPILOG_BRANCH_REG x11
+LEAF_END Load_Stack_4B
+
+#endif // TARGET_APPLE
 
 // Routines for passing value type arguments by reference in general purpose registers X0..X7
 

@@ -75,6 +75,8 @@ public struct StructWithRefs
         o1 = new MyObj(val1);
         o2 = new MyObj(val2);
     }
+}
+
 public struct TestStruct
 {
     public int a;
