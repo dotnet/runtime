@@ -985,6 +985,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
         }
 #endif // TARGET_APPLE && TARGET_ARM64
 
+#ifndef UNIX_AMD64_ABI
         // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
         // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
         // we always process single argument passed by reference using single routine.
@@ -995,6 +996,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             routines[m_routineIndex++] = argIt.GetArgSize();
             m_r1 = NoRange;
         }
+#endif // UNIX_AMD64_ABI        
     }
 }
 
