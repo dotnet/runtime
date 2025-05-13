@@ -32,6 +32,8 @@ namespace System.Runtime.CompilerServices
         ///   <li>Arrays should be typed as <lang>object</lang>.</li>
         ///   <li>Byref arguments should be typed with <lang>in</lang>, <lang>ref</lang>, or <lang>out</lang> to <lang>object</lang>.</li>
         ///   <li>Pointers should be typed as <lang>void*</lang>.</li>
+        ///   <li>Byref arguments to reference types or arrays should be typed with <lang>in</lang>, <lang>ref</lang>, or <lang>out</lang> to <lang>object</lang>.</li>
+        ///   <li>Byref arguments to pointer types should be typed with <lang>in</lang>, <lang>ref</lang>, or <lang>out</lang> to <lang>void*</lang>.</li>
         /// </ul>
         ///
         /// Value types are not supported.
