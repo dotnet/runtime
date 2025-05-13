@@ -146,10 +146,8 @@
 #define FEATURE_HFA
 #endif
 
-// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
-// Additionally the platform ABI requires these types and composite type containing them to be similarly
-// aligned when passed as arguments.
-#ifdef TARGET_ARM
+// Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
+#if defined(TARGET_ARM) || defined(TARGET_WASM)
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 

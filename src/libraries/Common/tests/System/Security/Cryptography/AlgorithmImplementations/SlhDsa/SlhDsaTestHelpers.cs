@@ -23,8 +23,10 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             byte[] tempBuffer = new byte[slhDsa.Algorithm.SignatureSizeInBytes];
             PbeParameters pbeParameters = new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 32);
 
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.SignData([], tempBuffer, []));
-            Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyData([], tempBuffer, []));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.SignData(ReadOnlySpan<byte>.Empty, tempBuffer.AsSpan(), ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.SignData(Array.Empty<byte>(), Array.Empty<byte>()));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyData(ReadOnlySpan<byte>.Empty, tempBuffer.AsSpan(), ReadOnlySpan<byte>.Empty));
+            Assert.Throws<ObjectDisposedException>(() => slhDsa.VerifyData(Array.Empty<byte>(), tempBuffer, Array.Empty<byte>()));
 
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte>.Empty, pbeParameters));
             Assert.Throws<ObjectDisposedException>(() => slhDsa.ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char>.Empty, pbeParameters));
@@ -200,7 +202,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             callback(slhDsa =>
             {
                 byte[] buffer = new byte[slhDsa.Algorithm.PublicKeySizeInBytes];
-                Assert.Equal(slhDsa.Algorithm.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(buffer.AsSpan()));
+                slhDsa.ExportSlhDsaPublicKey(buffer.AsSpan());
                 return buffer;
             });
 
@@ -215,7 +217,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             callback(slhDsa =>
             {
                 byte[] buffer = new byte[slhDsa.Algorithm.SecretKeySizeInBytes];
-                Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(buffer.AsSpan()));
+                slhDsa.ExportSlhDsaSecretKey(buffer.AsSpan());
                 return buffer;
             });
 

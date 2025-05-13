@@ -153,7 +153,11 @@ internal partial class MockDescriptors
         DataType = DataType.Assembly,
         Fields =
         [
+            new(nameof(Data.Assembly.Module), DataType.pointer),
             new(nameof(Data.Assembly.IsCollectible), DataType.uint8),
+            new(nameof(Data.Assembly.Error), DataType.pointer),
+            new(nameof(Data.Assembly.NotifyFlags), DataType.uint32),
+            new(nameof(Data.Assembly.Level), DataType.uint32),
         ]
     };
 

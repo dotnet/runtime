@@ -3245,7 +3245,7 @@ BOOL NDirect::MarshalingRequired(
 
     if (sigPointer.IsNull())
     {
-        PREFIX_ASSUME(pMD != NULL);
+        _ASSERTE(pMD != NULL);
 
         sigPointer = pMD->GetSigPointer();
         pModule = pMD->GetModule();

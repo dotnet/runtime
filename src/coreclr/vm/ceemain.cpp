@@ -767,7 +767,7 @@ void EEStartupHelper()
         }
 
 #ifdef ENABLE_STARTUP_DELAY
-        PREFIX_ASSUME(NULL != g_pConfig);
+        _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
             ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);

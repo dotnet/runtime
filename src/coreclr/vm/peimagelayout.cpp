@@ -283,7 +283,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             USHORT fixup = VAL16(fixups[0]);
 
             IMAGE_SECTION_HEADER *pSection = RvaToSection(rva + (fixup & 0xfff));
-            PREFIX_ASSUME(pSection != NULL);
+            _ASSERTE(pSection != NULL);
 
             pWriteableRegion = (BYTE*)GetRvaData(VAL32(pSection->VirtualAddress));
             cbWriteableRegion = VAL32(pSection->SizeOfRawData);

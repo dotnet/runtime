@@ -1040,7 +1040,9 @@ typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 class SoftwareExceptionFrame : public Frame
 {
     TADDR                           m_ReturnAddress;
+#if !defined(TARGET_X86) || defined(FEATURE_EH_FUNCLETS)
     T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
+#endif
     // This T_CONTEXT field needs to be the last field in the class because it is a
     // different size between Linux (pal.h) and the Windows cross-DAC (winnt.h).
     T_CONTEXT                       m_Context;
@@ -3011,11 +3013,6 @@ private:
 //------------------------------------------------------------------------
 
 #ifndef DACCESS_COMPILE
-
-#ifdef _PREFAST_
-// Suppress prefast warning #6384: Dividing sizeof a pointer by another value
-#pragma warning(disable:6384)
-#endif /*_PREFAST_ */
 
 #define GCPROTECT_BEGIN(ObjRefStruct)                           do {    \
                 GCFrame __gcframe(                                      \

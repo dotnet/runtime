@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class MLKem : IDisposable
     {
         private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography
         ///   The specific ML-KEM algorithm for this key.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         protected MLKem(MLKemAlgorithm algorithm)
         {
@@ -74,10 +74,10 @@ namespace System.Security.Cryptography
         ///   The generated key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the ML-KEM key.
+        ///   An error occurred generating the ML-KEM key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
@@ -326,7 +326,7 @@ namespace System.Security.Cryptography
         ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -357,9 +357,9 @@ namespace System.Security.Cryptography
         ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -415,9 +415,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -472,9 +472,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -707,7 +707,7 @@ namespace System.Security.Cryptography
         ///   Export the current key in the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
-        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -923,7 +923,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -963,7 +963,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -1003,7 +1003,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters" /> or <paramref name="password" /> is <see langword="null" />.
