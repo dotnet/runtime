@@ -59,6 +59,7 @@
 #endif
 
 #include "tailcallhelp.h"
+#include "patchpointinfo.h"
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -1085,6 +1086,16 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 COMPlusThrow(kInvalidProgramException);
 
             th = ClassLoader::LoadArrayTypeThrowing(th);
+            break;
+
+        case CORINFO_TOKENKIND_Await:
+            // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
+            // we cannot resolve to an Async variant in such case.
+            // return NULL, so that caller would re-resolve as a regular method call
+            pMD = pMD->IsTaskReturningMethod() ?
+                pMD->GetAsyncOtherVariant(/*allowInstParam*/FALSE):
+                NULL;
+
             break;
 
         default:
@@ -3214,6 +3225,10 @@ NoSpecialCase:
 
                 methodFlags |= ENCODE_METHOD_SIG_SlotInsteadOfToken;
             }
+            if (pTemplateMD->IsAsyncVariantMethod())
+            {
+                methodFlags |= ENCODE_METHOD_SIG_AsyncVariant;
+            }
 
             sigBuilder.AppendData(methodFlags);
 
@@ -4870,6 +4885,9 @@ static void getMethodSigInternal(
             sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
     }
 
+    if (ftn->IsAsyncMethod())
+        sigRet->callConv = (CorInfoCallConv)(sigRet->callConv | CORINFO_CALLCONV_ASYNCCALL);
+
     // We want the calling convention bit to be consistant with the method attribute bit
     _ASSERTE( (IsMdStatic(ftn->GetAttrs()) == 0) == ((sigRet->callConv & CORINFO_CALLCONV_HASTHIS) != 0) );
 }
@@ -6072,53 +6090,6 @@ CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
         VMClsHnd = VMClsHnd.AsMethodTable()->GetInstantiation()[0];
     }
     return static_cast<CORINFO_CLASS_HANDLE>(VMClsHnd.AsPtr());
-}
-
-/***********************************************************************/
-// Get a representation for a stack-allocated boxed value type
-//
-CORINFO_CLASS_HANDLE  CEEInfo::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_CLASS_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle VMClsHnd(cls);
-    if (Nullable::IsNullableType(VMClsHnd))
-    {
-        VMClsHnd = VMClsHnd.AsMethodTable()->GetInstantiation()[0];
-    }
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (VMClsHnd.RequiresAlign8())
-    {
-        // TODO: Maybe handle 32 bit platforms with 8 byte alignments
-        result = NULL;
-    }
-    else
-#endif
-    {
-        Instantiation boxedFieldsInst(&VMClsHnd, 1);
-        TypeHandle stackAllocatedBox = CoreLibBinder::GetClass(CLASS__STACKALLOCATEDBOX);
-        TypeHandle stackAllocatedBoxInst = stackAllocatedBox.Instantiate(boxedFieldsInst);
-        result = static_cast<CORINFO_CLASS_HANDLE>(stackAllocatedBoxInst.AsPtr());
-
-#ifdef _DEBUG
-        FieldDesc* pValueFD = CoreLibBinder::GetField(FIELD__STACKALLOCATEDBOX__VALUE);
-        DWORD index = pValueFD->GetApproxEnclosingMethodTable()->GetIndexForFieldDesc(pValueFD);
-        _ASSERTE(stackAllocatedBoxInst.GetMethodTable()->GetFieldDescByIndex(index)->GetOffset() == TARGET_POINTER_SIZE);
-#endif
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 /***********************************************************************/
@@ -7555,6 +7526,13 @@ static void getMethodInfoHelper(
             {
                 fILIntrinsic = getILIntrinsicImplementationForActivator(ftn, methInfo, &localSig);
             }
+            else if (CoreLibBinder::IsClass(pMT, CLASS__INSTANCE_CALLI_HELPER))
+            {
+                // We can ignore the existing header, since we are going to generate a new one.
+                cxt.Header = NULL;
+
+                ftn->GenerateFunctionPointerCall(&cxt.TransientResolver, &cxt.Header);
+            }
         }
 
         scopeHnd = cxt.HasTransientMethodDetails()
@@ -7580,7 +7558,7 @@ static void getMethodInfoHelper(
         methInfo->EHcount = (unsigned short)EHCount;
         localSig = pResolver->GetLocalSig();
     }
-    else if (ftn->TryGenerateUnsafeAccessor(&cxt.TransientResolver, &cxt.Header))
+    else if (ftn->TryGenerateTransientILImplementation(&cxt.TransientResolver, &cxt.Header))
     {
         scopeHnd = cxt.CreateScopeHandle();
 
@@ -7653,6 +7631,9 @@ static void getMethodInfoHelper(
     // take an extra argument representing their instantiation
     if (ftn->RequiresInstArg())
         methInfo->args.callConv = (CorInfoCallConv)(methInfo->args.callConv | CORINFO_CALLCONV_PARAMTYPE);
+
+    if (ftn->IsAsyncMethod())
+        methInfo->args.callConv = (CorInfoCallConv)(methInfo->args.callConv | CORINFO_CALLCONV_ASYNCCALL);
 
     _ASSERTE((IsMdStatic(ftn->GetAttrs()) == 0) == ((methInfo->args.callConv & CORINFO_CALLCONV_HASTHIS) != 0));
 
@@ -10242,6 +10223,28 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     EE_TO_JIT_TRANSITION();
 }
 
+void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    pAsyncInfoOut->continuationClsHnd = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__CONTINUATION));
+    pAsyncInfoOut->continuationNextFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__NEXT));
+    pAsyncInfoOut->continuationResumeFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__RESUME));
+    pAsyncInfoOut->continuationStateFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__STATE));
+    pAsyncInfoOut->continuationFlagsFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__FLAGS));
+    pAsyncInfoOut->continuationDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__DATA));
+    pAsyncInfoOut->continuationGCDataFldHnd = CORINFO_FIELD_HANDLE(CoreLibBinder::GetField(FIELD__CONTINUATION__GCDATA));
+    pAsyncInfoOut->continuationsNeedMethodHandle = m_pMethodBeingCompiled->GetLoaderAllocator()->CanUnload();
+
+    EE_TO_JIT_TRANSITION();
+}
+
 // Return details about EE internal data structures
 uint32_t CEEInfo::getThreadTLSIndex(void **ppIndirection)
 {
@@ -10744,11 +10747,6 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
     size_t dynamicFtnNum = ((size_t)pfnHelper - 1);
     if (dynamicFtnNum < DYNAMIC_CORINFO_HELP_COUNT)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26001) // "Bounds checked above using the underflow trick"
-#endif /*_PREFAST_ */
-
 #if defined(TARGET_AMD64)
         // To avoid using a jump stub we always call certain helpers using an indirect call.
         // Because when using a direct call and the target is father away than 2^31 bytes,
@@ -10832,10 +10830,6 @@ void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
         }
 
         pfnHelper = LoadDynamicJitHelper((DynamicCorInfoHelpFunc)dynamicFtnNum).pfnHelper;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif /*_PREFAST_*/
     }
 
     _ASSERTE(pfnHelper != NULL);
@@ -10957,6 +10951,16 @@ void CEEJitInfo::WriteCodeBytes()
     {
         ExecutableWriterHolder<void> codeWriterHolder((void *)m_CodeHeader, m_codeWriteBufferSize);
         memcpy(codeWriterHolder.GetRW(), m_CodeHeaderRW, m_codeWriteBufferSize);
+    }
+}
+
+void CEEJitInfo::PublishFinalCodeAddress(PCODE addr)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (m_finalCodeAddressSlot != NULL)
+    {
+        *m_finalCodeAddressSlot = addr;
     }
 }
 
@@ -11315,7 +11319,7 @@ void CInterpreterJitInfo::SetDebugInfo(PTR_BYTE pDebugInfo)
 }
 #endif // FEATURE_INTERPRETER
 
-void CEECodeGenInfo::CompressDebugInfo()
+void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
 {
     CONTRACTL {
         THROWS;
@@ -11334,6 +11338,9 @@ void CEECodeGenInfo::CompressDebugInfo()
 
     if ((m_iOffsetMapping == 0) && (m_iNativeVarInfo == 0) && (patchpointInfo == NULL) && (m_numInlineTreeNodes == 0) && (m_numRichOffsetMappings == 0))
         return;
+
+    if (patchpointInfo != NULL)
+        patchpointInfo->SetTier0EntryPoint(nativeEntry);
 
     JIT_TO_EE_TRANSITION();
 
@@ -11368,43 +11375,24 @@ void CEECodeGenInfo::CompressDebugInfo()
 
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
-#if defined(TARGET_X86)
-    // Do nothing
-#elif defined(TARGET_AMD64)
-    // Add space for personality routine, it must be 4-byte aligned.
-    // Everything in the UNWIND_INFO up to the variable-sized UnwindCodes
-    // array has already had its size included in unwindSize by the caller.
-    unwindSize += sizeof(ULONG);
-
+#if defined(TARGET_AMD64)
     // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
     // So the largest size could be 510 bytes, plus the header and language
     // specific stuff.  This can't overflow.
-
     _ASSERTE(FitsInU4(unwindSize + sizeof(ULONG)));
     unwindSize = (ULONG)(ALIGN_UP(unwindSize, sizeof(ULONG)));
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#else // TARGET_AMD64
     // The JIT passes in a 4-byte aligned block of unwind data.
+    // On Arm64, non-zero low bits would mean a compact encoding.
     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+#endif // TARGET_AMD64
 
-    // Add space for personality routine, it must be 4-byte aligned.
+#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
+    // Add space for personality routine
     unwindSize += sizeof(ULONG);
-#elif defined(TARGET_LOONGARCH64)
-    // The JIT passes in a 4-byte aligned block of unwind data.
-    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
-
-    // Add space for personality routine, it must be 4-byte aligned.
-    unwindSize += sizeof(ULONG);
-#elif defined(TARGET_RISCV64)
-    // The JIT passes in a 4-byte aligned block of unwind data.
-    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
-
-    // Add space for personality routine, it must be 4-byte aligned.
-    unwindSize += sizeof(ULONG);
-#else
-    PORTABILITY_ASSERT("reservePersonalityRoutineSpace");
-#endif // !defined(TARGET_AMD64)
-
+#endif //  !TARGET_X86 && TARGET_WINDOWS
 }
+
 // Reserve memory for the method/funclet's unwind information.
 // Note that this must be called before allocMem. It should be
 // called once for the main method, once for every funclet, and
@@ -11592,45 +11580,19 @@ void CEEJitInfo::allocUnwindInfo (
 
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
-#if defined(TARGET_X86)
-
-    // Do NOTHING
-
-#elif defined(TARGET_AMD64)
-
+#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#ifdef TARGET_AMD64
     pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
     ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#elif defined(TARGET_ARM64)
-
+#else // TARGET_AMD64
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#elif defined(TARGET_ARM)
-
-    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
-
-#elif defined(TARGET_LOONGARCH64)
-
-    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#elif defined(TARGET_RISCV64)
-    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
-
-    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
-    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-
-#endif
+#endif // TARGET_AMD64
+#endif // !TARGET_X86 && TARGET_WINDOWS
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS
@@ -12727,19 +12689,33 @@ void CEECodeGenInfo::getEHinfo(
 
     JIT_TO_EE_TRANSITION();
 
+    MethodDesc* pMD = GetMethod(ftn);
     if (IsDynamicMethodHandle(ftn))
     {
-        GetMethod(ftn)->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
+        pMD->AsDynamicMethodDesc()->GetResolver()->GetEHInfo(EHnumber, clause);
     }
-    else if (ftn == CORINFO_METHOD_HANDLE(m_pMethodBeingCompiled))
+    else if (pMD == m_pMethodBeingCompiled)
     {
         getEHinfoHelper(ftn, EHnumber, clause, m_ILHeader);
     }
+    else if (pMD->HasILHeader())
+    {
+        COR_ILMETHOD_DECODER header(pMD->GetILHeader(), pMD->GetMDImport(), NULL);
+        getEHinfoHelper(ftn, EHnumber, clause, &header);
+    }
+    else if (pMD->IsIL() && pMD->GetRVA() == 0)
+    {
+        TransientMethodDetails* details;
+        if (!FindTransientMethodDetails(pMD, &details))
+        {
+            _ASSERTE(!"Expected to be able to find transient method details in getEHinfo");
+        }
+
+        getEHinfoHelper(ftn, EHnumber, clause, details->Header);
+    }
     else
     {
-        MethodDesc* method = GetMethod(ftn);
-        COR_ILMETHOD_DECODER header(method->GetILHeader(), method->GetMDImport(), NULL);
-        getEHinfoHelper(ftn, EHnumber, clause, &header);
+        _ASSERTE(!"No IL header; cannot get EH info for function");
     }
 
     EE_TO_JIT_TRANSITION();
@@ -12809,7 +12785,7 @@ CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
     //
     if (SUCCEEDED(ret) && !comp->JitAgain())
     {
-        comp->CompressDebugInfo();
+        comp->CompressDebugInfo((PCODE)*nativeEntry);
         comp->MethodCompileComplete(info->ftn);
     }
 
@@ -12958,6 +12934,9 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
     // Get the compile flags that are shared between JIT and NGen
     //
     flags.Add(CEEInfo::GetBaseCompileFlags(ftn));
+
+    if (ftn->IsAsyncMethod())
+        flags.Add(CORJIT_FLAGS::CORJIT_FLAG_ASYNC);
 
     //
     // Get CPU specific flags
@@ -13341,6 +13320,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     CORINFO_METHOD_INFO methodInfo;
     getMethodInfoHelper(cxt, &methodInfo);
 
+    if (ILHeader == nullptr)
+        ILHeader = cxt.Header;
+
     // If it's generic then we can only enter through an instantiated MethodDesc
     _ASSERTE(!ftn->IsGenericMethodDefinition());
 
@@ -13438,6 +13420,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef TARGET_ARM
             ret |= THUMB_CODE;
 #endif
+
+            jitInfo.PublishFinalCodeAddress(ret);
 
             // We are done
             break;
@@ -14517,6 +14501,360 @@ bool CEEInfo::getTailCallHelpers(CORINFO_RESOLVED_TOKEN* callToken,
     return success;
 }
 
+static Signature AllocateSignature(LoaderAllocator* alloc, SigBuilder& sigBuilder, AllocMemTracker* pamTracker)
+{
+    DWORD sigLen;
+    PCCOR_SIGNATURE builderSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&sigLen);
+    PVOID newBlob = pamTracker->Track(alloc->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sigLen)));
+    memcpy(newBlob, builderSig, sigLen);
+
+    return Signature((PCCOR_SIGNATURE)newBlob, sigLen);
+}
+
+static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTracker* pamTracker)
+{
+    SigBuilder sigBuilder;
+    sigBuilder.AppendByte(IMAGE_CEE_CS_CALLCONV_DEFAULT);
+    sigBuilder.AppendData(1); // 1 argument
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+
+    return AllocateSignature(alloc, sigBuilder, pamTracker);
+}
+
+static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* mt, LoaderAllocator* alloc, AllocMemTracker* pamTracker)
+{
+    unsigned numArgs = 0;
+    if (msig.HasGenericContextArg())
+    {
+        numArgs++;
+    }
+
+    numArgs++; // Continuation
+
+    numArgs += msig.NumFixedArgs();
+
+    SigBuilder sigBuilder;
+    BYTE callConv = IMAGE_CEE_CS_CALLCONV_DEFAULT;
+    if (msig.HasThis())
+    {
+        callConv |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
+    }
+    sigBuilder.AppendByte(callConv);
+    sigBuilder.AppendData(numArgs);
+
+    auto appendTypeHandle = [&](TypeHandle th) {
+        _ASSERTE(!th.IsByRef());
+        CorElementType ty = th.GetSignatureCorElementType();
+        if (CorTypeInfo::IsObjRef(ty))
+        {
+            // Especially to normalize System.__Canon.
+            sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT);
+        }
+        else if (CorTypeInfo::IsPrimitiveType(ty))
+        {
+            sigBuilder.AppendElementType(ty);
+        }
+        else
+        {
+            sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
+            sigBuilder.AppendPointer(th.AsPtr());
+        }
+        };
+
+    appendTypeHandle(msig.GetRetTypeHandleThrowing()); // return type
+#ifndef TARGET_X86
+    if (msig.HasGenericContextArg())
+    {
+        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+#endif
+
+    msig.Reset();
+    CorElementType ty;
+    while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
+    {
+        TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
+        appendTypeHandle(tyHnd);
+    }
+
+#ifdef TARGET_X86
+    if (msig.HasGenericContextArg())
+    {
+        sigBuilder.AppendElementType(ELEMENT_TYPE_I);
+    }
+
+    sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
+#endif
+
+    return AllocateSignature(alloc, sigBuilder, pamTracker);
+}
+
+CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    MethodDesc* md = m_pMethodBeingCompiled;
+
+    LoaderAllocator* loaderAlloc = md->GetLoaderAllocator();
+    AllocMemTracker amTracker;
+
+    Signature stubSig = BuildResumptionStubSignature(md->GetLoaderAllocator(), &amTracker);
+
+    MetaSig msig(md);
+    Signature calliSig = BuildResumptionStubCalliSignature(msig, md->GetMethodTable(), md->GetLoaderAllocator(), &amTracker);
+
+    SigTypeContext emptyCtx;
+    ILStubLinker sl(md->GetModule(), stubSig, &emptyCtx, NULL, ILSTUB_LINKER_FLAG_NONE);
+
+    ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+    int numArgs = 0;
+
+    if (msig.HasThis())
+    {
+        if (md->GetMethodTable()->IsValueType())
+        {
+            pCode->EmitLDC(0);
+            pCode->EmitCONV_U();
+        }
+        else
+        {
+            pCode->EmitLDNULL();
+        }
+
+        numArgs++;
+    }
+
+#ifndef TARGET_X86
+    if (msig.HasGenericContextArg())
+    {
+        pCode->EmitLDC(0);
+        numArgs++;
+    }
+
+    // Continuation
+    pCode->EmitLDARG(0);
+    numArgs++;
+#endif
+
+    msig.Reset();
+    CorElementType ty;
+    while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
+    {
+        TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
+        DWORD loc = pCode->NewLocal(LocalDesc(tyHnd));
+        pCode->EmitLDLOCA(loc);
+        pCode->EmitINITOBJ(pCode->GetToken(tyHnd));
+        pCode->EmitLDLOC(loc);
+        numArgs++;
+    }
+
+#ifdef TARGET_X86
+    if (msig.HasGenericContextArg())
+    {
+        pCode->EmitLDC(0);
+        numArgs++;
+    }
+
+    // Continuation
+    pCode->EmitLDARG(0);
+    numArgs++;
+#endif
+
+    // Resumption stubs are uniquely coupled to the code version (since the
+    // continuation is), so we need to make sure we always keep calling the
+    // same version here.
+    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    NativeCodeVersion ncv = config->GetCodeVersion();
+    if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
+    {
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+        // The OSR version needs to resume in the tier0 version. The tier0
+        // version will handle setting up the frame that the OSR version
+        // expects and then delegating back into the OSR version (knowing to do
+        // so through information stored in the continuation).
+        _ASSERTE(m_pPatchpointInfoFromRuntime != NULL);
+        pCode->EmitLDC((DWORD_PTR)m_pPatchpointInfoFromRuntime->GetTier0EntryPoint());
+#else
+        _ASSERTE(!"Unexpected optimization tier with OSR disabled");
+#endif
+    }
+    else
+    {
+        {
+            m_finalCodeAddressSlot = (PCODE*)amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(PCODE))));
+        }
+
+        pCode->EmitLDC((DWORD_PTR)m_finalCodeAddressSlot);
+        pCode->EmitLDIND_I();
+    }
+
+    pCode->EmitCALLI(pCode->GetSigToken(calliSig.GetRawSig(), calliSig.GetRawSigLen()), numArgs, msig.IsReturnTypeVoid() ? 0 : 1);
+
+    DWORD resultLoc = UINT_MAX;
+    TypeHandle resultTypeHnd;
+    if (!msig.IsReturnTypeVoid())
+    {
+        resultTypeHnd = msig.GetRetTypeHandleThrowing();
+        resultLoc = pCode->NewLocal(LocalDesc(resultTypeHnd));
+        pCode->EmitSTLOC(resultLoc);
+    }
+
+    TypeHandle continuationTypeHnd = CoreLibBinder::GetClass(CLASS__CONTINUATION);
+    DWORD newContinuationLoc = pCode->NewLocal(LocalDesc(continuationTypeHnd));
+    pCode->EmitCALL(METHOD__STUBHELPERS__ASYNC_CALL_CONTINUATION, 0, 1);
+    pCode->EmitSTLOC(newContinuationLoc);
+
+    if (!msig.IsReturnTypeVoid())
+    {
+        ILCodeLabel* doneResult = pCode->NewCodeLabel();
+        pCode->EmitLDLOC(newContinuationLoc);
+        pCode->EmitBRTRUE(doneResult);
+
+        // Load 'next' of current continuation
+        pCode->EmitLDARG(0);
+        pCode->EmitLDFLD(FIELD__CONTINUATION__NEXT);
+
+        // Result is placed in GCData[0] if it has GC references (potentially boxing it).
+        bool isOrContainsGCPointers = false;
+        if (CorTypeInfo::IsObjRef(resultTypeHnd.GetInternalCorElementType()) || (resultTypeHnd.IsValueType() && resultTypeHnd.AsMethodTable()->ContainsGCPointers()))
+        {
+            // Load 'gcdata' of next continuation
+            pCode->EmitLDFLD(FIELD__CONTINUATION__GCDATA);
+
+            // Now we have the GC array. At the first index is the result.
+            pCode->EmitLDC(0);
+
+            // NOTE: that we are not using regular boxing (in EmitBOX sense) and allocate our own box instances via a helper.
+            // There are two reasons:
+            // - resultTypeHnd may be a nullable type and have different layout in boxed/unboxed forms.
+            //   We do not want to deal with that.
+            // - resultTypeHnd may contain __Canon fields. Regular boxing would not allow that, but this box is used for a very
+            //   specific internal purpose where we only require that the GC layout of the box matches the data
+            //   that we store in it, thus we want to allow __Canon.
+            if (resultTypeHnd.IsValueType())
+            {
+                // make a box and dup the ref
+                MethodDesc* md = CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__ALLOC_CONTINUATION_RESULT_BOX);
+                pCode->EmitLDC((DWORD_PTR)resultTypeHnd.AsMethodTable());
+                pCode->EmitCALL(pCode->GetToken(md), 1, 1);
+                pCode->EmitDUP();
+                // dst is the offset of the first field in the box
+                pCode->EmitLDFLDA(FIELD__RAW_DATA__DATA);
+                // load the result
+                pCode->EmitLDLOC(resultLoc);
+                // store into the box
+                pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
+            }
+            else
+            {
+                // load the result
+                pCode->EmitLDLOC(resultLoc);
+            }
+
+            // Store the result.
+            pCode->EmitSTELEM_REF();
+        }
+        else
+        {
+            // Otherwise it goes into Data, either at offset 0 or 4 depending
+            // on CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA.
+            ILCodeLabel* hasOsrILOffset = pCode->NewCodeLabel();
+
+            unsigned nextContinuationLcl = pCode->NewLocal(LocalDesc(continuationTypeHnd));
+            pCode->EmitSTLOC(nextContinuationLcl);
+
+            // Load 'flags' of next continuation
+            pCode->EmitLDLOC(nextContinuationLcl);
+            pCode->EmitLDFLD(FIELD__CONTINUATION__FLAGS);
+            pCode->EmitLDC(CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA);
+            pCode->EmitAND();
+            pCode->EmitBRTRUE(hasOsrILOffset);
+
+            // Load 'data' of next continuation
+            pCode->EmitLDLOC(nextContinuationLcl);
+            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
+            // Load address of array at index 0
+            pCode->EmitLDC(0);
+            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
+
+            // Store at index 0.
+            pCode->EmitLDLOC(resultLoc);
+            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
+
+            pCode->EmitBR(doneResult);
+
+            pCode->EmitLabel(hasOsrILOffset);
+
+            // Load 'data' of next continuation
+            pCode->EmitLDLOC(nextContinuationLcl);
+            pCode->EmitLDFLD(FIELD__CONTINUATION__DATA);
+            // Load address of array at index 4
+            pCode->EmitLDC(4);
+            pCode->EmitLDELEMA(pCode->GetToken(CoreLibBinder::GetClass(CLASS__BYTE)));
+
+            // Store at index 4.
+            pCode->EmitLDLOC(resultLoc);
+            pCode->EmitUNALIGNED(1);
+            pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
+        }
+
+        pCode->EmitLabel(doneResult);
+    }
+
+    pCode->EmitLDLOC(newContinuationLoc);
+    pCode->EmitRET();
+
+    MethodDesc* result =
+        ILStubCache::CreateAndLinkNewILStubMethodDesc(
+            md->GetLoaderAllocator(),
+            md->GetLoaderModule()->GetILStubCache()->GetOrCreateStubMethodTable(md->GetLoaderModule()),
+            ILSTUB_ASYNC_RESUME,
+            md->GetModule(),
+            stubSig.GetRawSig(), stubSig.GetRawSigLen(),
+            &emptyCtx,
+            &sl);
+
+    amTracker.SuppressRelease();
+
+    const char* optimizationTierName = nullptr;
+    switch (ncv.GetOptimizationTier())
+    {
+    case NativeCodeVersion::OptimizationTier0: optimizationTierName = "Tier0"; break;
+    case NativeCodeVersion::OptimizationTier1: optimizationTierName = "Tier1"; break;
+    case NativeCodeVersion::OptimizationTier1OSR: optimizationTierName = "Tier1OSR"; break;
+    case NativeCodeVersion::OptimizationTierOptimized: optimizationTierName = "Optimized"; break;
+    case NativeCodeVersion::OptimizationTier0Instrumented: optimizationTierName = "Tier0Instrumented"; break;
+    case NativeCodeVersion::OptimizationTier1Instrumented: optimizationTierName = "Tier1Instrumented"; break;
+    default: optimizationTierName = "UnknownTier"; break;
+    }
+
+    char name[256];
+    int numWritten = sprintf_s(name, ARRAY_SIZE(name), "IL_STUB_AsyncResume_%s_%s", m_pMethodBeingCompiled->GetName(), optimizationTierName);
+    if (numWritten != -1)
+    {
+        AllocMemTracker amTracker;
+        void* allocedMem = amTracker.Track(m_pMethodBeingCompiled->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numWritten + 1)));
+        memcpy(allocedMem, name, (size_t)(numWritten + 1));
+        result->AsDynamicMethodDesc()->SetMethodName((LPCUTF8)allocedMem);
+        amTracker.SuppressRelease();
+    }
+
+#ifdef _DEBUG
+    LOG((LF_STUBS, LL_INFO1000, "ASYNC: Resumption stub %s created\n", name));
+    sl.LogILStub(CORJIT_FLAGS());
+#endif
+
+    return CORINFO_METHOD_HANDLE(result);
+}
+
 bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fMustConvert)
 {
     return false;
@@ -14710,6 +15048,12 @@ PatchpointInfo* CEEInfo::getOSRInfo(unsigned* ilOffset)
     UNREACHABLE();      // only called on derived class.
 }
 
+CORINFO_METHOD_HANDLE CEEInfo::getAsyncResumptionStub()
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
+}
+
 void* CEEInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                             void **            ppIndirection)  /* OUT */
 {
@@ -14748,6 +15092,7 @@ EECodeInfo::EECodeInfo()
 
 #ifdef FEATURE_EH_FUNCLETS
     m_pFunctionEntry = NULL;
+    m_isFuncletCache = IsFuncletCache::NotSet;
 #endif
 
 #ifdef TARGET_X86
@@ -14773,6 +15118,9 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     } CONTRACTL_END;
 
     m_codeAddress = codeAddress;
+#ifdef FEATURE_EH_FUNCLETS
+    m_isFuncletCache = IsFuncletCache::NotSet;
+#endif
 
 #ifdef TARGET_X86
     m_hdrInfoTable = NULL;
@@ -14885,6 +15233,9 @@ EECodeInfo EECodeInfo::GetMainFunctionInfo()
     result.m_relOffset = 0;
     result.m_codeAddress = this->GetStartAddress();
     result.m_pFunctionEntry = NULL;
+#ifdef FEATURE_EH_FUNCLETS
+    result.m_isFuncletCache = IsFuncletCache::IsNotFunclet;
+#endif
 
     return result;
 }
@@ -14897,6 +15248,20 @@ PTR_RUNTIME_FUNCTION EECodeInfo::GetFunctionEntry()
     if (m_pFunctionEntry == NULL)
         m_pFunctionEntry = m_pJM->LazyGetFunctionEntry(this);
     return m_pFunctionEntry;
+}
+
+BOOL EECodeInfo::IsFunclet()
+{
+    WRAPPER_NO_CONTRACT;
+    if (m_isFuncletCache == IsFuncletCache::NotSet)
+    {
+        m_isFuncletCache = GetJitManager()->LazyIsFunclet(this) ? IsFuncletCache::IsFunclet : IsFuncletCache::IsNotFunclet;
+    }
+
+    // At this point we know that m_isFuncletCache is either IsFunclet or IsNotFunclet, which is either 1 or 0. Just cast it to BOOL.
+    BOOL result = (BOOL)m_isFuncletCache;
+    _ASSERTE(!!GetJitManager()->LazyIsFunclet(this) == !!result);
+    return result;
 }
 
 #if defined(TARGET_AMD64)
@@ -14924,18 +15289,25 @@ BOOL EECodeInfo::HasFrameRegister()
 
 #if defined(TARGET_X86)
 
-PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo ** infoPtr)
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfoHelper(hdrInfo ** infoPtr)
 {
-    if (m_hdrInfoTable == NULL)
-    {
-        GCInfoToken gcInfoToken = GetGCInfoToken();
-        DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
-        _ASSERTE(hdrInfoSize != 0);
-        m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
-    }
+    GCInfoToken gcInfoToken = GetGCInfoToken();
+    _ASSERTE(m_hdrInfoTable == NULL);
+    DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, m_relOffset, &m_hdrInfoBody);
+    _ASSERTE(hdrInfoSize != 0);
+    m_hdrInfoTable = (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
 
     *infoPtr = &m_hdrInfoBody;
     return m_hdrInfoTable;
+}
+
+PTR_CBYTE EECodeInfo::DecodeGCHdrInfo(hdrInfo * infoPtr, DWORD relOffset)
+{
+    _ASSERTE(infoPtr != NULL);
+    GCInfoToken gcInfoToken = GetGCInfoToken();
+    DWORD hdrInfoSize = (DWORD)::DecodeGCHdrInfo(gcInfoToken, relOffset, infoPtr);
+    _ASSERTE(hdrInfoSize != 0);
+    return (PTR_CBYTE)gcInfoToken.Info + hdrInfoSize;
 }
 
 #endif // TARGET_X86
@@ -15105,41 +15477,4 @@ void EECodeInfo::GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset)
     *pRBPOffset = StackOffset;
 }
 #undef kRBP
-
-ULONG EECodeInfo::GetFrameOffsetFromUnwindInfo()
-{
-    WRAPPER_NO_CONTRACT;
-
-    SUPPORTS_DAC;
-
-    // moduleBase is a target address.
-    TADDR moduleBase = GetModuleBase();
-
-    DWORD unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(GetFunctionEntry());
-
-    if ((unwindInfo & RUNTIME_FUNCTION_INDIRECT) != 0)
-    {
-        unwindInfo = RUNTIME_FUNCTION__GetUnwindInfoAddress(PTR_RUNTIME_FUNCTION(moduleBase + (unwindInfo & ~RUNTIME_FUNCTION_INDIRECT)));
-    }
-
-    UNWIND_INFO * pInfo = GetUnwindInfoHelper(unwindInfo);
-    _ASSERTE((pInfo->Flags & UNW_FLAG_CHAININFO) == 0);
-
-    // Either we are not using a frame pointer, or we are using rbp as the frame pointer.
-    if ( (pInfo->FrameRegister != 0) && (pInfo->FrameRegister != kRBP) )
-    {
-        _ASSERTE(!"GetRbpOffset() - non-RBP frame pointer used, violating assumptions of the security stackwalk cache");
-        DebugBreak();
-    }
-
-    ULONG frameOffset = pInfo->FrameOffset;
-#ifdef UNIX_AMD64_ABI
-    if ((frameOffset == 15) && (pInfo->UnwindCode[0].UnwindOp == UWOP_SET_FPREG_LARGE))
-    {
-        frameOffset = *(ULONG*)&pInfo->UnwindCode[1];
-    }
-#endif
-
-    return frameOffset;
-}
 #endif // defined(TARGET_AMD64)

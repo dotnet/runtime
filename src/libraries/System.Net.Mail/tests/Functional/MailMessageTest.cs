@@ -192,7 +192,26 @@ blah blah
 
             string sent = DecodeSentMailMessage(messageWithSubjectAndBody).Raw;
             sent = Regex.Replace(sent, "Date:.*?\r\n", "Date: DATE\r\n");
-            sent = Regex.Replace(sent, @"_.{8}-.{4}-.{4}-.{4}-.{12}", "_GUID");
+
+            // Find outer boundary (in the main Content-Type)
+            var outerBoundaryMatch = Regex.Match(sent, @"Content-Type: multipart/mixed;\s+boundary=(--boundary_\d+_[a-f0-9-]+)");
+            // Find inner boundary (in the nested Content-Type)
+            var innerBoundaryMatch = Regex.Match(sent, @"Content-Type: multipart/alternative;\s+boundary=(--boundary_\d+_[a-f0-9-]+)");
+
+            if (outerBoundaryMatch.Success && innerBoundaryMatch.Success)
+            {
+                string outerBoundary = outerBoundaryMatch.Groups[1].Value;
+                string innerBoundary = innerBoundaryMatch.Groups[1].Value;
+
+                // Replace all occurrences of these boundaries
+                sent = sent.Replace(outerBoundary, "--boundary_1_GUID");
+                sent = sent.Replace(innerBoundary, "--boundary_0_GUID");
+            }
+            else
+            {
+                // unify boundary GUIDs
+                sent = Regex.Replace(sent, @"--boundary_\d+_[a-f0-9-]+", "--boundary_?_GUID");
+            }
 
             // name and charset can appear in different order
             Assert.Contains("; name=AttachmentName", sent);

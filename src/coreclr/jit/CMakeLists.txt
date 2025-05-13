@@ -89,6 +89,7 @@ set( JIT_SOURCES
   abi.cpp
   alloc.cpp
   assertionprop.cpp
+  async.cpp
   bitset.cpp
   block.cpp
   buildstring.cpp
@@ -287,6 +288,7 @@ set( JIT_HEADERS
   abi.h
   alloc.h
   arraystack.h
+  async.h
   bitset.h
   layout.h
   bitsetasshortlong.h

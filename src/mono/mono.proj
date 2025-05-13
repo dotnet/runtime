@@ -97,21 +97,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
-    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Cache.$(_portableHostOS)-$(BuildArchitecture)"
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Cache.$(NETCoreSdkPortableRuntimeIdentifier)"
                       PrivateAssets="all"
                       Version="$(EmsdkPackageVersion)"
                       PackageArch="$(BuildArchitecture)" />
-    <PackageReference Include="runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
+    <PackageReference Include="runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
                       Version="$(NodePackageVersion)"
                       PackageArch="$(BuildArchitecture)" />
-    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Sdk.$(_portableHostOS)-$(BuildArchitecture)"
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Sdk.$(NETCoreSdkPortableRuntimeIdentifier)"
                       PrivateAssets="all"
                       Version="$(EmsdkPackageVersion)"
                       PackageArch="$(BuildArchitecture)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
-    <PackageReference Include="runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Libclang"
+    <PackageReference Include="runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Mono.LLVM.Libclang"
                       PrivateAssets="all"
                       Version="$(MonoLLVMLibclangVersion)"
                       PackageArch="$(BuildArchitecture)"
@@ -277,10 +277,10 @@ JS_ENGINES = [NODE_JS]
     <RemoveDir Directories="$(EMSDK_PATH)" />
 
     <ItemGroup>
-      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
+      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
-      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
-                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(_portableHostOS)-$(BuildArchitecture)\**" />
+      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(NETCoreSdkPortableRuntimeIdentifier)\**" />
       <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
     </ItemGroup>
@@ -916,7 +916,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <ItemGroup Condition="'$(MonoUseCrossTool)' == 'true'">
-      <_LibclangPackageReferencePathPropertyName Include="Pkgruntime_$(_portableHostOS)-$(BuildArchitecture)_Microsoft_NETCore_Runtime_Mono_LLVM_Libclang" />
+      <_LibclangPackageReferencePathPropertyName Include="Pkgruntime_$(NETCoreSdkPortableRuntimeIdentifier)_Microsoft_NETCore_Runtime_Mono_LLVM_Libclang" />
     </ItemGroup>
     <PropertyGroup Condition="'$(MonoUseCrossTool)' == 'true'">
       <_LibclangPackageReferencePath>$(%(_LibclangPackageReferencePathPropertyName.Identity))</_LibclangPackageReferencePath>

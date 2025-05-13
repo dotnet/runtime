@@ -973,23 +973,5 @@ namespace System.Threading
         }
 
         private string DisplayString => _timer._timer.DisplayString;
-
-        /// <summary>Gets a list of all timers for debugging purposes.</summary>
-        private static IEnumerable<TimerQueueTimer> AllTimers // intended to be used by devs from debugger
-        {
-            get
-            {
-                var timers = new List<TimerQueueTimer>();
-
-                foreach (TimerQueue queue in TimerQueue.Instances)
-                {
-                    timers.AddRange(queue.GetTimersForDebugger());
-                }
-
-                timers.Sort((t1, t2) => t1._dueTime.CompareTo(t2._dueTime));
-
-                return timers;
-            }
-        }
     }
 }

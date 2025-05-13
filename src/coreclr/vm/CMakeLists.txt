@@ -162,6 +162,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     codeman.h
     codeman.inl
     codeversion.h
+    conditionalweaktable.h
     contractimpl.h
     crst.h
     debugdebugger.h
@@ -275,6 +276,7 @@ endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
+    conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
     threaddebugblockinginfo.cpp
 )
 
@@ -340,9 +342,11 @@ set(VM_SOURCES_WKS
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp
+    instancecalli.cpp
     interopconverter.cpp
     interoputil.cpp
     interpexec.cpp
+    interpframeallocator.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -379,6 +383,7 @@ set(VM_SOURCES_WKS
     threadsuspend.cpp
     typeparse.cpp
     unsafeaccessors.cpp
+    asyncthunks.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
@@ -443,6 +448,7 @@ set(VM_HEADERS_WKS
     interoputil.h
     interoputil.inl
     interpexec.h
+    interpframeallocator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h

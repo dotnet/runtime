@@ -172,8 +172,11 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
+	SN_Store,
+	SN_StoreUnsafe,
 	SN_Subtract,
 	SN_Sqrt,
+	SN_SquareRoot,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
@@ -363,6 +366,7 @@ emit_common_simd_operations (TransformData *td, int id, int atype, int vector_si
 			else if (atype == MONO_TYPE_U1) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U2) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U4) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U8) *simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_URIGHT_SHIFT;
 			break;
 		case SN_op_Subtraction:
 			*simd_opcode = MINT_SIMD_INTRINS_P_PP;
@@ -508,6 +512,9 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
+	if (csignature->hasthis)
+		return FALSE;
+
 #ifdef HOST_BROWSER
 	if (emit_sri_packedsimd (td, cmethod, csignature))
 		return TRUE;
@@ -686,6 +693,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I1_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U2) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I2_URIGHT_SHIFT;
 			else if (atype == MONO_TYPE_U4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_URIGHT_SHIFT;
+			else if (atype == MONO_TYPE_U8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_URIGHT_SHIFT;
 			break;
 		case SN_Shuffle:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
@@ -1078,6 +1086,9 @@ lookup_packedsimd_intrinsic (const char *name, MonoType *arg1)
 static gboolean
 emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
+	if (csignature->hasthis)
+		return FALSE;
+
 	const char *cmethod_name = cmethod->name;
 	int id = lookup_intrins (sri_packedsimd_methods, sizeof (sri_packedsimd_methods), cmethod_name);
 	MonoClass *vector_klass;
@@ -1124,9 +1135,7 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 	if (!is_packedsimd) {
 		// transform the method name from the Vector(128|) name to the packed simd name
 		// FIXME: This is a hack, but it works for now.
-		if (csignature->hasthis) {
-			return FALSE;
-		}
+
 		int scalar_arg = -1;
 		for (int i = 0; i < csignature->param_count; i++) {
 			if (csignature->params [i]->type != MONO_TYPE_GENERICINST)
@@ -1157,6 +1166,9 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Equals:
 				cmethod_name = "CompareEqual";
 				break;
+			case SN_ExtractMostSignificantBits:
+				cmethod_name = "Bitmask";
+				break;
 			case SN_BitwiseAnd:
 			case SN_op_BitwiseAnd:
 				cmethod_name = "And";
@@ -1171,6 +1183,8 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_Load:
 			case SN_LoadUnsafe:
+				if (csignature->param_count != 1)
+					return FALSE;
 				cmethod_name = "LoadVector128";
 				break;
 			case SN_Round:
@@ -1223,12 +1237,23 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 				break;
 			case SN_ConvertToInt32:
 				cmethod_name = "ConvertToInt32Saturate";
+				break;
 			case SN_ShiftLeft:
 			case SN_ShiftRightLogical:
 			case SN_ShiftRightArithmetic:
 				if (scalar_arg != 1)
 					return FALSE;
 				cmethod_name = cmethod->name;
+				break;
+			case SN_Sqrt:
+			case SN_SquareRoot:
+				cmethod_name = "Sqrt";
+				break;
+			case SN_Store:
+			case SN_StoreUnsafe:
+				if (csignature->param_count != 2)
+					return FALSE;
+				cmethod_name = "Store";
 				break;
 			case SN_Add:
 			case SN_AndNot:
@@ -1240,7 +1265,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Negate:
 			case SN_Min:
 			case SN_Max:
-			case SN_Sqrt:
 			case SN_Xor:
 			case SN_Truncate:
 				cmethod_name = cmethod->name;

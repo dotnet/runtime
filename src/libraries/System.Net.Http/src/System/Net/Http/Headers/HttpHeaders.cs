@@ -1435,7 +1435,7 @@ namespace System.Net.Http.Headers
             }
             else if (store is not null)
             {
-                valueRef = ref CollectionsMarshal.GetValueRefOrNullRef(Unsafe.As<Dictionary<HeaderDescriptor, object>>(store), key);
+                valueRef = ref CollectionsMarshal.GetValueRefOrNullRef((Dictionary<HeaderDescriptor, object>)store, key);
             }
 
             return ref valueRef;
@@ -1580,7 +1580,7 @@ namespace System.Net.Http.Headers
             }
             else if (store is not null)
             {
-                removed = Unsafe.As<Dictionary<HeaderDescriptor, object>>(store).Remove(key);
+                removed = ((Dictionary<HeaderDescriptor, object>)store).Remove(key);
             }
 
             if (removed)
