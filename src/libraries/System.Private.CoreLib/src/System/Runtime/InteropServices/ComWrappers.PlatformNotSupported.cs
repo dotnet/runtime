@@ -25,6 +25,11 @@ namespace System.Runtime.InteropServices
 
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
+        protected virtual object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags, object? userState, out CreatedWrapperFlags wrapperFlags)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         protected internal abstract void ReleaseObjects(IEnumerable objects);
 
         public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
@@ -54,6 +59,11 @@ namespace System.Runtime.InteropServices
         }
 
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object? userState)
         {
             throw new PlatformNotSupportedException();
         }
