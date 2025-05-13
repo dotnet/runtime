@@ -424,6 +424,7 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionSerialization_GetCreateUninitializedObjectInfo)
 #if defined(FEATURE_COMWRAPPERS)
     DllImportEntry(ComWrappers_GetIUnknownImpl)
+    DllImportEntry(ComWrappers_GetUntrackedAddRefRelease)
     DllImportEntry(ComWrappers_AllocateRefCountedHandle)
     DllImportEntry(ComWrappers_GetIReferenceTrackerTargetVftbl)
     DllImportEntry(ComWrappers_GetTaggedImpl)

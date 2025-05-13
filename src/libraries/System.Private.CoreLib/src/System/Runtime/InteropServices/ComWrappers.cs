@@ -965,7 +965,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 IntPtr currentVersion = GetTaggedImplCurrentVersion();
-                int hr = ((delegate* unmanaged<IntPtr, IntPtr, int>)(*(*(void***)implMaybe + 3 /* ITaggedImpl.IsCurrentVersion slot */)))(implMaybe, currentVersion);
+                int hr = ((delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, int>)(*(*(void***)implMaybe + 3 /* ITaggedImpl.IsCurrentVersion slot */)))(implMaybe, currentVersion);
                 Marshal.Release(implMaybe);
                 if (hr != 0)
                 {
@@ -1445,26 +1445,13 @@ namespace System.Runtime.InteropServices
             return s_globalInstanceForTrackerSupport.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.TrackerSupport);
         }
 
-        // Lifetime maintained by stack - we don't care about ref counts
-        [UnmanagedCallersOnly]
-        internal static unsafe uint Untracked_AddRef(IntPtr _)
-        {
-            return 1;
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint Untracked_Release(IntPtr _)
-        {
-            return 1;
-        }
-
         // Wrapper for IWeakReference
         private static unsafe class IWeakReference
         {
             public static int Resolve(IntPtr pThis, Guid guid, out IntPtr inspectable)
             {
                 fixed (IntPtr* inspectablePtr = &inspectable)
-                    return (*(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>**)pThis)[3](pThis, &guid, inspectablePtr);
+                    return (*(delegate* unmanaged[MemberFunction]<IntPtr, Guid*, IntPtr*, int>**)pThis)[3](pThis, &guid, inspectablePtr);
             }
         }
 
@@ -1474,7 +1461,7 @@ namespace System.Runtime.InteropServices
             public static int GetWeakReference(IntPtr pThis, out IntPtr weakReference)
             {
                 fixed (IntPtr* weakReferencePtr = &weakReference)
-                    return (*(delegate* unmanaged<IntPtr, IntPtr*, int>**)pThis)[3](pThis, weakReferencePtr);
+                    return (*(delegate* unmanaged[MemberFunction]<IntPtr, IntPtr*, int>**)pThis)[3](pThis, weakReferencePtr);
             }
         }
 
