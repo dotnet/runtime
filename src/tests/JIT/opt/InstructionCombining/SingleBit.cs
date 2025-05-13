@@ -24,9 +24,6 @@ public static class SingleBit
     static int Clear(int a, int b) => a & ~(1 << b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int ClearNeg(int a, int b) => a & (~1 << b);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
     static int ClearSwap(int a, int b) => ~(1 << b) & a;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -106,8 +103,6 @@ public static class SingleBit
 
         Assert.Equal(0x12345078, Clear(0x12345478, 10));
         Assert.Equal(0x12345078, Clear(0x12345878, 11));
-        Assert.Equal(0x12345078, ClearNeg(0x12345478, 10));
-        Assert.Equal(0x12345078, ClearNeg(0x12345878, 11));
         Assert.Equal(0x12345078, ClearSwap(0x12345478, 10));
         Assert.Equal(0x12345078, ClearSwap(0x12345878, 11));
         Assert.Equal(0x12345078, Clear10(0x12345478));

@@ -291,15 +291,13 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             GenTree* opp1 = isOp1Negated ? op1->gtGetOp1() : op1;
             GenTree* opp2 = isOp2Negated ? op2->gtGetOp1() : op2;
-            if ((opp1->OperIs(GT_LSH) &&
-                 (opp1->gtGetOp1()->IsIntegralConst(1) || opp1->gtGetOp1()->IsIntegralConst(~1))) ||
-                (opp2->OperIs(GT_LSH) &&
-                 (opp2->gtGetOp1()->IsIntegralConst(1) || opp2->gtGetOp1()->IsIntegralConst(~1))))
+            if ((opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1)) ||
+                (opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1)))
             {
                 GenTree* shift          = opp1->OperIs(GT_LSH) ? opp1 : opp2;
                 bool     isShiftNegated = opp1->OperIs(GT_LSH) ? isOp1Negated : isOp2Negated;
 
-                if (binOp->OperIs(GT_AND) && (isShiftNegated == shift->gtGetOp1()->IsIntegralConst(~1))) // a & (1 << b)
+                if (binOp->OperIs(GT_AND) && !isShiftNegated) // a & (1 << b)
                 {
                     LIR::Use use;
                     if (BlockRange().TryGetUse(binOp, &use))
