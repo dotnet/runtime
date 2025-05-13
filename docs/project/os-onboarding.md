@@ -26,7 +26,8 @@ Nearly all the APIs that touch native code (networking, cryptography) and deal w
 
 ## Approach
 
-We aim to offer "day of" support for the OSes we support. We only require validation in dotnet/runtime `main` (for all [supported .NET releases](https://github.com/dotnet/core/blob/main/releases.md)), often relying on [non-final OS builds](https://github.com/dotnet/runtime/pull/111768#issuecomment-2617229139).
+For all OSes we aim to support, we aim to provide support on OS release day. We only require validation in dotnet/runtime `main` (for all [supported .NET releases](https://github.com/dotnet/core/blob/main/releases.md)), often relying on [non-final OS builds](https://github.com/dotnet/runtime/pull/111768#issuecomment-2617229139).
+
 
 Our testing philosophy is based on perceived risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to **skip testing most of the matrix** while retaining much of the **practical coverage**. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
 
@@ -43,7 +44,8 @@ There are special considerations when `main` is the next .NET LTS (odd years):
 
 We update `release` branches primarily to accommodate EOL OS references.  Alpine, Azure Linux, and Fedora are examples of OSes with shorter release cycles than .NET that require regular remediation.
 
-We avoid maintaining multiple versions of an OS in a single branch. We will often have multiple versions of an OS across branches, with older branches having references to older OSes. We believe that this approach provides sufficient coverage and is most likely to align with user behavior. It also aligns with the container images that we publish.
+We avoid testing multiple versions of an OS in a single branch. We will often have multiple versions of an OS across branches, with older branches having references to older OSes. We believe that this approach provides sufficient coverage and is most likely to align with user behavior. It also aligns with the container images that we publish.
+
 
 ## Testing
 
