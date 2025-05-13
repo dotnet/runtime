@@ -14,8 +14,9 @@ Continuing with the idea of pragmatism, if you only read this far, you've got th
 
 References:
 
-- [New Operating System Version Onboarding Guide](https://github.com/dotnet/dnceng/blob/main/Documentation/ProjectDocs/OS%20Onboarding/Guidance.md)
+- [Supported OSes](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md)
 - [.NET OS Support Tracking](https://github.com/dotnet/core/issues/9638)
+- [New Operating System Version Onboarding Guide](https://github.com/dotnet/dnceng/blob/main/Documentation/ProjectDocs/OS%20Onboarding/Guidance.md)
 
 ## Context
 
@@ -25,13 +26,24 @@ Nearly all the APIs that touch native code (networking, cryptography) and deal w
 
 ## Approach
 
-Our rule is that we declare support (for all [supported .NET releases](https://github.com/dotnet/core/blob/main/releases.md)) for a new OS version after it is validated in dotnet/runtime `main`. We will only hold support on additional testing in special cases (which are uncommon).
-
-We aim to have "day of" support for about half the OSes we support, including Azure Linux, Ubuntu LTS, and Windows. This means we need to perform ahead-of-time signoff on [non-final builds](https://github.com/dotnet/runtime/pull/111768#issuecomment-2617229139).
+We aim to offer "day of" support for the OSes we support. We only require validation in dotnet/runtime `main` (for all [supported .NET releases](https://github.com/dotnet/core/blob/main/releases.md)), often relying on [non-final OS builds](https://github.com/dotnet/runtime/pull/111768#issuecomment-2617229139).
 
 Our testing philosophy is based on perceived risk and past experience. The effective test matrix is huge, the product of OSes \* supported versions \* architectures.  We try to make smart choices to **skip testing most of the matrix** while retaining much of the **practical coverage**. We also know where we tend to get bitten most when we don't pay sufficient attention. For example, our bug risk across Linux, macOS, and Windows is not uniform.
 
-We  use pragmatism and efficiency to drive our decision making. All things being equal, we'll choose the lowest cost approach.
+We use pragmatism and efficiency to drive our decision making. All things being equal, we'll choose the lowest cost approach.
+
+## OS Lifecycle
+
+We update `main` to bleeding edge OS versions, even pre-release versions. This approach provides us with confidence for new OS releases and reduces remediation cost in release branches. We also find that new OS releases require product and test updates to support significant changes in foundational components.
+
+There are special considerations when `main` is the next .NET LTS (odd years):
+
+- New Debian releases tends to ship in the middle of odd years (our LTS year). It is best to [add coverage as early as possible](https://github.com/dotnet/runtime/pull/111768), in part because [Preview 1 ships pre-release Debian version](https://github.com/dotnet/dotnet-docker/discussions/6272) in container images.
+- Ubuntu LTS ship 6 months after .NET LTS. It is important that this combination has excellent support. It is recommended that we move forward with Ubuntu interim builds (examples: [24.10](https://github.com/dotnet/runtime/pull/111504), [25.04](https://github.com/dotnet/runtime/pull/113405)) requiring us to update to the next LTS during servicing (and then not update again).
+
+We update `release` branches primarily to accomodate EOL OS references.  Alpine, Azure Linux, and Fedora are examples of OSes with shorter release cycles than .NET that require regular remediation.
+
+We avoid maintaining multiple versions of an OS in a single branch. We will often have multiple versions of an OS across branches, with older branches having references to older OSes. We believe that this approach provides sufficient coverage and is most likely to align with user behavior. It also aligns with the container images that we publish.
 
 ## Testing
 
@@ -41,28 +53,6 @@ Linux, Wasm, and some Windows testing is done in container images. This approach
 
 We use VMs (Linux and Windows) and raw metal hardware (Android and Apple) in cases where containers are not practical or where direct testing is desired. This is the primary model for Apple and Windows OSes. The VMs and mobile/Apple hardware are relatively slow to change and require support from dnceng (discussed later).
 
-### Adding coverage
-
-New OS coverage should be added/tested first in `main`. If changes are required, we should prove them out first in `main` before committing to shipping them in a servicing release, if necessary.
-
-There are multiple reasons to add a new OS reference in a release branch:
-
-- Known product (as opposed to test) breaks that require validation and regression testing.
-- Past experience suggests that coverage is required to protect against risk.
-- OS version is or [will soon go EOL](https://github.com/dotnet/runtime/issues/111818#issuecomment-2613642202) and should be replaced by a newer version.
-
-For example, we frequently need to backport Alpine updates to release branches to avoid EOL references but less commonly for Ubuntu, given the vast difference in support length.
-
-A good strategy is to keep `main` at the bleeding edge of new OS versions. That way those references have a decent chance of never needing remediation once they end up in release branches.
-
-### Updating or removing coverage
-
-We will often replace an older OS version with a new one, when it comes available. This approach is an effective strategy of maintaining the same level of coverage and of remediating EOL OSes ahead of time. For the most part, we don't need to care about a specific version. We just want coverage for the OS, like Alpine.
-
-We should remediate any EOL OS references in our codebase. They don't serve any benefit and come with some risk. They are also likely to result in compliance tickets (that come with a deadline) that we want to avoid.
-
-In the case that a .NET version will be EOL in <6 (and certainly <3) months, new coverage can typically be skipped. We may even be able to skip remediating EOL OS references. We often opt to stop updating [supported OSes](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md) late in support period for related reasons. A lazy approach is often the best approach late in the game. Don't upset what's working.
-
 ## Building
 
 Our [build methodology](https://github.com/dotnet/runtime/blob/main/docs/project/linux-build-methodology.md) is oriented around cross-compiling, enabling us to target an old OS version and run on newer ones. It is uncommon for us to need to make changes to the build to address new OS versions, however, there are [rare cases where we need to make adjustments](https://github.com/dotnet/runtime/issues/101944).
@@ -71,7 +61,7 @@ We use both containers and VMs for building, depending on the OS. If we test in 
 
 Our primary concern is ensuring that we are using [supported operating systems and tools for our build](https://github.com/dotnet/runtime/tree/main/docs/workflow/requirements).
 
-Our Linux build containers are based on Azure Linux. We [typically need to update them](https://github.com/dotnet/runtime/issues/112191) with a new version of Azure Linux once per release. We do not update the toolset, however. That's fixed, per release.
+Our Linux build containers are based on Azure Linux. We [typically need to update them](https://github.com/dotnet/runtime/issues/112191) with a new version of Azure Linux once per release. Toolset updates are [limited to patch versions](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/pull/1422).
 
 For Apple, we likely need to make an adjustment at each macOS or iOS release to account for an Xcode version no longer being supported.
 
