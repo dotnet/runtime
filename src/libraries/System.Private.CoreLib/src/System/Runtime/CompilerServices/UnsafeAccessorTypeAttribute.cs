@@ -15,16 +15,29 @@ namespace System.Runtime.CompilerServices
         /// <param name="typeName">A fully qualified or partially qualified type name.</param>
         /// <remarks>
         /// <paramref name="typeName"/> is expected to follow the same rules as if it were being
-        /// passed to <see name="Type.GetType(String)"/>.
+        /// passed to <see name="Type.GetType(String)"/>. When unbound generics are involved they
+        /// should follow the IL syntax of referencing an ELEMENT_TYPE_VAR or ELEMENT_TYPE_MVAR using
+        /// the syntax of <c>!N</c> or <c>!!N</c> respectively, where N is the zero-based index of the
+        /// generic parameters. The generic rules defined for <see cref="UnsafeAccessorAttribute"/>
+        /// apply to this attribute as well, meaning the arity and type of generic parameter must match
+        /// the target type.
         ///
         /// This attribute only has behavior on parameters or return values of methods marked with <see cref="UnsafeAccessorAttribute"/>.
         ///
         /// This attribute should only be applied to parameters or return types of methods that are
-        /// typed as <see langword="object"/>. Modifiers such as <see langword="ref"/>, <see langword="in"/>,
-        /// <see langword="out"/>, and <see langword="readonly"/> are supported.
+        /// typed as follows:
         ///
-        /// Only reference types are supported to be looked up by this attribute.
+        /// <ul>
+        ///   <li>References should be typed as <lang>object</lang>.</li>
+        ///   <li>Arrays should be typed as <lang>object</lang>.</li>
+        ///   <li>Byref arguments should be typed with <lang>in</lang>, <lang>ref</lang>, or <lang>out</lang> to <lang>object</lang>.</li>
+        ///   <li>Pointers should be typed as <lang>void*</lang>.</li>
+        /// </ul>
+        ///
         /// Value types are not supported.
+        ///
+        /// Due to lack of variance for byrefs, returns involving byrefs are not supported. This
+        /// specifically means that accessors for fields of inaccessible types are not supported.
         /// </remarks>
         public UnsafeAccessorTypeAttribute(string typeName)
         {
