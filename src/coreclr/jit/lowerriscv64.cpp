@@ -340,12 +340,22 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     BlockRange().Remove(shiftOp);
                 }
 
-                BlockRange().Remove(shift->gtGetOp1());
-                BlockRange().Remove(shift);
                 if (opp1->OperIs(GT_LSH))
                     std::swap(op1, op2);
 
                 op2 = shift->gtGetOp2();
+
+                if (op2->TypeIs(TYP_INT, TYP_UINT))
+                {
+                    // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
+                    GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
+                    mask->SetContained();
+                    BlockRange().InsertAfter(op2, mask);
+                    op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+                    BlockRange().InsertAfter(mask, op2);
+                }
+                BlockRange().Remove(shift->gtGetOp1());
+                BlockRange().Remove(shift);
             }
         }
     }
