@@ -1888,7 +1888,7 @@ namespace System.Runtime.Intrinsics
 
                 if (result > actualLeft)
                 {
-                    result = nuint.MaxValue;
+                    result = nuint.MinValue;
                 }
 
                 return (T)(object)result;
@@ -1920,7 +1920,7 @@ namespace System.Runtime.Intrinsics
 
                 if (result > actualLeft)
                 {
-                    result = ushort.MaxValue;
+                    result = ushort.MinValue;
                 }
 
                 return (T)(object)result;
@@ -1934,7 +1934,7 @@ namespace System.Runtime.Intrinsics
 
                 if (result > actualLeft)
                 {
-                    result = uint.MaxValue;
+                    result = uint.MinValue;
                 }
 
                 return (T)(object)result;
@@ -1948,7 +1948,7 @@ namespace System.Runtime.Intrinsics
 
                 if (result > actualLeft)
                 {
-                    result = ulong.MaxValue;
+                    result = ulong.MinValue;
                 }
 
                 return (T)(object)result;
