@@ -13,9 +13,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
     CONTRACTL
     {
         THROWS;
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
+        MODE_ANY;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(CheckPointer(pArgs));
         PRECONDITION(CheckPointer(pRet));
