@@ -14,7 +14,7 @@ Continuing with the idea of pragmatism, if you only read this far, you've got th
 
 References:
 
-- [Supported OSes](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md)
+- [OS Support Matrix](./os-support.md)
 - [.NET OS Support Tracking](https://github.com/dotnet/core/issues/9638)
 - [New Operating System Version Onboarding Guide](https://github.com/dotnet/dnceng/blob/main/Documentation/ProjectDocs/OS%20Onboarding/Guidance.md)
 

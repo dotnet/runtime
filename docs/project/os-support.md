@@ -1,6 +1,6 @@
 # OS Support Matrix
 
-.NET is a cross-platform product, requiring good coverage across [operating system and distro families](https://github.com/dotnet/core/edit/main/os-lifecycle-policy.md).
+.NET is a cross-platform product, requiring good coverage across [supported OSes](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md).
 
 This document describes our coverage intent. It is a higher-level description than our pipelines.
 
