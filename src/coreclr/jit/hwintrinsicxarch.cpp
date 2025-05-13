@@ -1553,15 +1553,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // For unsigned we simply have to detect `(x + y) < x`
                     // and in that scenario return MaxValue (AllBitsSet)
 
-                    GenTree* cns = gtNewAllBitsSetConNode(retType);
+                    GenTree* cns     = gtNewAllBitsSetConNode(retType);
+                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
 
-                    GenTree* clonedOp1 = nullptr;
-                    op1 = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone op1 for AddSaturate"));
+                    GenTree* tmp     = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+                    GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
+                    GenTree* msk     = gtNewSimdCmpOpNode(GT_LT, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
 
-                    GenTree* tmp = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
-                    GenTree* msk = gtNewSimdCmpOpNode(GT_LT, retType, tmp, clonedOp1, simdBaseJitType, simdSize);
-
-                    retNode = gtNewSimdCndSelNode(retType, msk, cns, retNode, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdCndSelNode(retType, msk, cns, tmpDup1, simdBaseJitType, simdSize);
                 }
                 else
                 {
@@ -4093,16 +4092,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // For unsigned we simply have to detect `(x - y) > x`
                     // and in that scenario return MinValue (Zero)
 
-                    GenTree* cns = gtNewZeroConNode(retType);
+                    GenTree* cns     = gtNewZeroConNode(retType);
+                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
 
-                    GenTree* clonedOp1 = nullptr;
-                    op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                                      nullptr DEBUGARG("Clone op1 for SubtractSaturate"));
+                    GenTree* tmp     = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
+                    GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
+                    GenTree* msk     = gtNewSimdCmpOpNode(GT_GT, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
 
-                    GenTree* tmp = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
-                    GenTree* msk = gtNewSimdCmpOpNode(GT_GT, retType, tmp, clonedOp1, simdBaseJitType, simdSize);
-
-                    retNode = gtNewSimdCndSelNode(retType, msk, cns, retNode, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdCndSelNode(retType, msk, cns, tmpDup1, simdBaseJitType, simdSize);
                 }
                 else
                 {

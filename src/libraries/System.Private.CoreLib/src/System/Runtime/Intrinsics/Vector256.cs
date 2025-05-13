@@ -3042,7 +3042,7 @@ namespace System.Runtime.Intrinsics
         {
             return Create(
                 Vector128.ShiftLeft(vector._lower, shiftCount._lower),
-                Vector128.ShiftLeft(vector._lower, shiftCount._upper)
+                Vector128.ShiftLeft(vector._upper, shiftCount._upper)
             );
         }
 
@@ -3059,7 +3059,7 @@ namespace System.Runtime.Intrinsics
         {
             return Create(
                 Vector128.ShiftLeft(vector._lower, shiftCount._lower),
-                Vector128.ShiftLeft(vector._lower, shiftCount._upper)
+                Vector128.ShiftLeft(vector._upper, shiftCount._upper)
             );
         }
 

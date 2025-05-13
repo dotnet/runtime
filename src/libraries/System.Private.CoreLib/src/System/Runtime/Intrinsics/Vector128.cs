@@ -2998,7 +2998,7 @@ namespace System.Runtime.Intrinsics
         {
             return Create(
                 Vector64.ShiftLeft(vector._lower, shiftCount._lower),
-                Vector64.ShiftLeft(vector._lower, shiftCount._upper)
+                Vector64.ShiftLeft(vector._upper, shiftCount._upper)
             );
         }
 
@@ -3015,7 +3015,7 @@ namespace System.Runtime.Intrinsics
         {
             return Create(
                 Vector64.ShiftLeft(vector._lower, shiftCount._lower),
-                Vector64.ShiftLeft(vector._lower, shiftCount._upper)
+                Vector64.ShiftLeft(vector._upper, shiftCount._upper)
             );
         }
 
