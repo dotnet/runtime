@@ -238,23 +238,17 @@ LEAF_END RhpByRefAssignRefArm64, _TEXT
 
 LOCAL_LABEL(NotInHeap):
 #ifdef TARGET_APPLE
-        b       C_FUNC(RhpCheckedAssignRefArm64_NotInHeap)
-#else
-    ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
-        str     x15, [x14], 8
-        ret
-#endif
-LEAF_END RhpCheckedAssignRefArm64, _TEXT
-
-#ifdef TARGET_APPLE
 // Apple's linker has issues which break unwind info if
-// an ALTERNATE_ENTRY is present in the middle of a function
-LEAF_ENTRY RhpCheckedAssignRefArm64_NotInHeap, _TEXT
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
     ALTERNATE_ENTRY RhpCheckedAssignRefAVLocation
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
         str     x15, [x14], 8
         ret
-LEAF_END RhpCheckedAssignRefArm64_NotInHeap, _TEXT
-#endif
+LEAF_END RhpCheckedAssignRefArm64, _TEXT
 
 // JIT_WriteBarrier(Object** dst, Object* src)
 //

@@ -35,12 +35,20 @@
 
     NESTED_ENTRY "RhpInterfaceDispatch\entries", _TEXT, NoHandler
 
-        // Load the MethodTable from the object instance in x0.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-        ldr     x10, [x0]
-
         // x11 holds the indirection cell address. Load the cache pointer.
         ldr     x9, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        // Load the MethodTable from the object instance in x0.
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
+        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
+        ldr     x10, [x0]
 
     .global CurrentEntry
     .set CurrentEntry, 0

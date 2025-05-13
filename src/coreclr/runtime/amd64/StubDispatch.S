@@ -24,13 +24,21 @@
 
 LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
 
-        // Load the MethodTable from the object instance in rdi.
-        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
-        mov     rax, [rdi]
-
         // r11 currently contains the indirection cell address.
         // load r10 to point to the cache block.
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
+
+        // Load the MethodTable from the object instance in rdi.
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
+        ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
+        mov     rax, [rdi]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries
 

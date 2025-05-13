@@ -10,10 +10,6 @@
 // Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
-#ifdef TARGET_APPLE // place all ALTERNATE_ENTRY for arm64 at the beginning of a method to make unwinding work
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        cmp qword ptr [rdi], 0
-#endif
         // r11 currently contains the indirection cell address.
         // load r11 to point to the vtable offset (which is stored in the m_pCache field).
         mov     r11, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
@@ -25,8 +21,14 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
         // Load the MethodTable from the object instance in rdi, and add it to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
-#ifndef TARGET_APPLE
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
     ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+#ifdef TARGET_APPLE
+.cfi_startproc
 #endif
         add     rax, [rdi]
 
