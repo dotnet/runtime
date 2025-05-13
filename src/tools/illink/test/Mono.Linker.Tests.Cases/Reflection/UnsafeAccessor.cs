@@ -944,13 +944,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 // Polyfill for UnsafeAccessorTypeAttribute until we use an LKG runtime that has it.
 namespace System.Runtime.CompilerServices
 {
-	[Kept]
-	[KeptBaseType(typeof(Attribute))]
-	[KeptAttributeAttribute(typeof(AttributeUsageAttribute))]
+	[Kept(By = Tool.Trimmer)]
+	[KeptBaseType(typeof(Attribute), By = Tool.Trimmer)]
+	[KeptAttributeAttribute(typeof(AttributeUsageAttribute), By = Tool.Trimmer)]
 	[AttributeUsage (AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = false)]
 	public sealed class UnsafeAccessorTypeAttribute : Attribute
 	{
-		[Kept]
+		[Kept(By = Tool.Trimmer)]
 		public UnsafeAccessorTypeAttribute (string typeName)
 		{
 		}
