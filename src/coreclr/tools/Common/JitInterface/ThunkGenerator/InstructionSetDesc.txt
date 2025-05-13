@@ -217,7 +217,7 @@ instructionset     ,ARM64 ,VectorT128            ,        ,39 ,VectorT128       
 instructionset     ,ARM64 ,                      ,Rcpc2   ,42 ,Rcpc2                 ,rcpc2
 instructionset     ,ARM64 ,Sve                   ,        ,43 ,Sve                   ,sve
 instructionset     ,ARM64 ,Sve2                   ,       ,59 ,Sve2                  ,sve2
-instructionset     ,ARM64 ,                      ,Pac     ,60 ,Pac                   ,pac
+instructionset     ,ARM64 ,                      ,        ,   ,Pac                   ,pac
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd

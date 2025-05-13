@@ -70,7 +70,6 @@ namespace Internal.ReadyToRunConstants
         Zba=57,
         Zbb=58,
         Sve2=59,
-        Pac=60,
 
     }
 }

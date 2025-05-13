@@ -51,6 +51,9 @@
 #ifndef HWCAP2_SVE2
 #define HWCAP2_SVE2   (1 << 1)
 #endif
+#ifndef HWCAP_PACA
+#define HWCAP_PACA   (1 << 30)
+#endif
 
 #endif
 

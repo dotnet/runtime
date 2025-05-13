@@ -1192,7 +1192,6 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Rcpc2: return InstructionSet_Rcpc2;
         case READYTORUN_INSTRUCTION_Sve: return InstructionSet_Sve;
         case READYTORUN_INSTRUCTION_Sve2: return InstructionSet_Sve2;
-        case READYTORUN_INSTRUCTION_Pac: return InstructionSet_Pac;
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
         case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;
