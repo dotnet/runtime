@@ -5853,7 +5853,7 @@ namespace System.Numerics.Tests
 
             for (int i = 0; i < Vector<T>.Count - 1; i++)
             {
-                T expectedResult = left[i] - right[i];
+                T expectedResult = left[i] + right[i];
                 Assert.Equal(expectedResult, result[i]);
             }
 

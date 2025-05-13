@@ -6709,7 +6709,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int i = 0; i < Vector128<T>.Count - 1; i++)
             {
-                T expectedResult = left[i] - right[i];
+                T expectedResult = left[i] + right[i];
                 Assert.Equal(expectedResult, result[i]);
             }
 
