@@ -47,6 +47,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/115521", TestPlatforms.Browser)]
         [InlineData(100, 10)]
         [InlineData(100, 20)]
         [InlineData(1000, 100)]

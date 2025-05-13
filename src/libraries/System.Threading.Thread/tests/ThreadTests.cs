@@ -1026,7 +1026,7 @@ namespace System.Threading.Threads.Tests
             Assert.True(t.Join(TimeSpan.Zero));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // no blocking Wait on browser
         public static void SleepTest()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => Thread.Sleep(-2));
