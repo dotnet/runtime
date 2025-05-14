@@ -845,6 +845,16 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         br x9
 LEAF_END  JIT_PollGC, _TEXT
 
+//x0 -This pointer
+//x1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
+    mov  x11, x0     // Move first arg pointer to temp register
+    mov  x0,  x1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+    mov  x1, x11     // Move temp register to first arg register for static method with return buffer
+    EPILOG_BRANCH_REG x12
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
 #ifdef FEATURE_INTERPRETER
 NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
 
@@ -858,17 +868,6 @@ NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
     EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
-#endif // FEATURE_INTERPRETER
-
-//x0 -This pointer
-//x1 -ReturnBuffer
-LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
-    mov  x11, x0     // Move first arg pointer to temp register
-    mov  x0,  x1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
-    mov  x1, x11     // Move temp register to first arg register for static method with return buffer
-    EPILOG_BRANCH_REG x12
-LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
 // Copy arguments from the interpreter stack to the processor stack
 // The CPU stack slots are aligned to pointer size.
@@ -1463,3 +1462,5 @@ NESTED_ENTRY CallJittedMethodRet4Float, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 32
     EPILOG_RETURN
 NESTED_END CallJittedMethodRet4Float, _TEXT
+
+#endif // FEATURE_INTERPRETER

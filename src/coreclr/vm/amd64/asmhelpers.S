@@ -334,25 +334,6 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         jmp     rax
 LEAF_END  JIT_PollGC, _TEXT
 
-#ifdef FEATURE_INTERPRETER
-NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
-        mov             [rsp], rax // Return buffer in Swift calling convention
-
-        #
-        # call ExecuteInterpretedMethod
-        #
-        lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
-        mov             rsi, METHODDESC_REGISTER
-        call            C_FUNC(ExecuteInterpretedMethod)
-
-        mov             rax, [rsp]
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-NESTED_END InterpreterStub, _TEXT
-#endif // FEATURE_INTERPRETER
-
 //rdi -This pointer
 //rsi -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -452,6 +433,25 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
+
+#ifdef FEATURE_INTERPRETER
+
+NESTED_ENTRY InterpreterStub, _TEXT, NoHandler
+
+        PROLOG_WITH_TRANSITION_BLOCK 8, 0, 0, 0, 0
+        mov             [rsp], rax // Return buffer in Swift calling convention
+
+        #
+        # call ExecuteInterpretedMethod
+        #
+        lea             rdi, [rsp + __PWTB_TransitionBlock]     // pTransitionBlock*
+        mov             rsi, METHODDESC_REGISTER
+        call            C_FUNC(ExecuteInterpretedMethod)
+
+        mov             rax, [rsp]
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
 
 // Copy arguments from the interpreter stack to the processor stack.
 // The CPU stack slots are aligned to pointer size.
@@ -1153,3 +1153,5 @@ END_PROLOGUE
         pop rbp
         ret
 NESTED_END CallJittedMethodRetDoubleDouble, _TEXT
+
+#endif // FEATURE_INTERPRETER

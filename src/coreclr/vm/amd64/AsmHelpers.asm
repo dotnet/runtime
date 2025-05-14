@@ -482,23 +482,6 @@ JIT_PollGCRarePath:
     TAILJMP_RAX
 LEAF_END JIT_PollGC, _TEXT
 
-ifdef FEATURE_INTERPRETER
-NESTED_ENTRY InterpreterStub, _TEXT
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        ;
-        ; call ExecuteInterpretedMethod
-        ;
-        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
-        mov             rdx, METHODDESC_REGISTER
-        call            ExecuteInterpretedMethod
-
-        EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-NESTED_END InterpreterStub, _TEXT
-endif ; FEATURE_INTERPRETER
-
 ; rcx -This pointer
 ; rdx -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
@@ -628,6 +611,23 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
+
+ifdef FEATURE_INTERPRETER
+
+NESTED_ENTRY InterpreterStub, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        ;
+        ; call ExecuteInterpretedMethod
+        ;
+        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
+        mov             rdx, METHODDESC_REGISTER
+        call            ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
 
 ; Copy arguments from the interpreter stack to the processor stack.
 ; The CPU stack slots are aligned to pointer size.
@@ -910,5 +910,7 @@ END_PROLOGUE
         pop rbp
         ret
 NESTED_END CallJittedMethodRetI8, _TEXT
+
+endif ; FEATURE_INTERPRETER
 
         end
