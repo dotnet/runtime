@@ -1173,8 +1173,7 @@ CALL_TARGET_IP:
                     break;
                 }
                 case INTOP_GC_COLLECT:
-
-            {
+                {
                     // HACK: blocking gc of all generations to enable early stackwalk testing
                     // Interpreter-TODO: Remove this
                     {
