@@ -105,8 +105,8 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr)
 void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind)
 {
     pResolvedToken->tokenContext = impTokenLookupContextHandle;
-    pResolvedToken->tokenScope   = info.compScopeHnd;
     pResolvedToken->token        = getU4LittleEndian(addr);
+    pResolvedToken->tokenScope   = info.compScopeHnd;
     pResolvedToken->tokenType    = kind;
 
     info.compCompHnd->resolveToken(pResolvedToken);
