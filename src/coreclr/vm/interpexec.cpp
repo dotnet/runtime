@@ -292,6 +292,12 @@ MAIN_LOOP:
                     break;
                 }
 
+                case INTOP_SAFEPOINT:
+                    if (g_TrapReturningThreads)
+                        JIT_PollGC();
+                    ip++;
+                    break;
+
                 case INTOP_BR:
                     ip += ip[1];
                     break;
