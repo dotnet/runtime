@@ -25,6 +25,7 @@
 
     <WasmGenerateAppBundleDependsOn>
       $(WasmGenerateAppBundleDependsOn);
+      GenerateBuildRuntimeConfigurationFiles;
       _GetWasmGenerateAppBundleDependencies;
       _WasmGenerateAppBundle;
       _WasmGenerateRunV8Script;
