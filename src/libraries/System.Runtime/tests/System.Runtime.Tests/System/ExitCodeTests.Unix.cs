@@ -19,7 +19,7 @@ namespace System.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] // SIGTERM signal.
         public void SigTermExitCode()
         {
-            Action<string> action = () =>
+            Action action = () =>
             {
                 AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
                 {
