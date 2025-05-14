@@ -1530,8 +1530,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else if (varTypeIsSmall(simdBaseType))
                 {
-                    assert(varTypeIsSmall(simdBaseType));
-
                     if (simdSize == 64)
                     {
                         intrinsic = NI_AVX512BW_AddSaturate;
