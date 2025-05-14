@@ -3136,11 +3136,6 @@ public:
             CORINFO_MODULE_HANDLE   handle
             ) = 0;
 
-    virtual CORINFO_MODULE_HANDLE embedModuleHandle(
-            CORINFO_MODULE_HANDLE   handle,
-            void                  **ppIndirection = NULL
-            ) = 0;
-
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
             CORINFO_CLASS_HANDLE    handle,
             void                  **ppIndirection = NULL
@@ -3148,11 +3143,6 @@ public:
 
     virtual CORINFO_METHOD_HANDLE embedMethodHandle(
             CORINFO_METHOD_HANDLE   handle,
-            void                  **ppIndirection = NULL
-            ) = 0;
-
-    virtual CORINFO_FIELD_HANDLE embedFieldHandle(
-            CORINFO_FIELD_HANDLE    handle,
             void                  **ppIndirection = NULL
             ) = 0;
 
