@@ -21,7 +21,6 @@ static const StackType g_stackTypeFromInterpType[] =
     StackTypeI4, // I2
     StackTypeI4, // U2
     StackTypeI4, // I4
-    StackTypeI4, // U4
     StackTypeI8, // I8
     StackTypeR4, // R4
     StackTypeR8, // R8
@@ -1914,24 +1913,6 @@ static int32_t GetStindForType(InterpType interpType)
     return -1;
 }
 
-static int32_t GetLdelemForType(InterpType interpType)
-{
-    switch (interpType) {
-        case InterpTypeI1: return INTOP_LDELEM_I1;
-        case InterpTypeU1: return INTOP_LDELEM_U1;
-        case InterpTypeI2: return INTOP_LDELEM_I2;
-        case InterpTypeU2: return INTOP_LDELEM_U2;
-        case InterpTypeI4: return INTOP_LDELEM_I4;
-        case InterpTypeU4: return INTOP_LDELEM_U4;
-        case InterpTypeI8: return INTOP_LDELEM_I8;
-        case InterpTypeR4: return INTOP_LDELEM_R4;
-        case InterpTypeR8: return INTOP_LDELEM_R8;
-        default:
-            assert(0);
-    }
-    return -1;
-}
-
 static int32_t GetStelemForType(InterpType interpType)
 {
     switch (interpType) {
@@ -2002,10 +1983,9 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 }
 
-void InterpCompiler::EmitLdelem(InterpType interpType)
+void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
 {
     m_pStackPointer -= 2;
-    int32_t opcode = GetLdelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
     PushInterpType(interpType, NULL);
@@ -3541,70 +3521,70 @@ retry_emit:
             case CEE_LDELEM_I1:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeI1);
+                EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_U1:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeU1);
+                EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I2:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeI2);
+                EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_U2:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeU2);
+                EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_U4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeU4);
+                EmitLdelem(INTOP_LDELEM_U4, InterpTypeI4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I8:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeI8);
+                EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeI);
+                EmitLdelem(INTOP_LDELEM_I, InterpTypeI);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_R4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeR4);
+                EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4);
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_R8:
             {
                 CHECK_STACK(2);
-                EmitLdelem(InterpTypeR8);
+                EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8);
                 m_ip++;
                 break;
             }
