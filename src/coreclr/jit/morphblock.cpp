@@ -242,8 +242,6 @@ void MorphInitBlockHelper::PropagateBlockAssertions()
 //
 void MorphInitBlockHelper::PropagateExpansionAssertions()
 {
-    // Consider doing this for FieldByField as well
-    //
     if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneStoreBlock))
     {
         m_comp->fgAssertionGen(m_store);
@@ -397,7 +395,7 @@ void MorphInitBlockHelper::TryInitFieldByField()
     {
         unsigned fieldLclNum = destLclVar->lvFieldLclStart + i;
 
-        if (m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
+        if (!m_store->GeneratesAssertion() && m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
         {
             JITDUMP("Field-by-field init skipping write to dead field V%02u\n", fieldLclNum);
             continue;
@@ -1238,7 +1236,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     // So, beyond this point we cannot rely on the old values of 'm_srcVarDsc' and 'm_dstVarDsc'.
     for (unsigned i = 0; i < fieldCnt; ++i)
     {
-        if (m_dstDoFldStore && m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
+        if (!m_store->GeneratesAssertion() && m_dstDoFldStore && m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
         {
             INDEBUG(unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i);
             JITDUMP("Field-by-field copy skipping write to dead field V%02u\n", dstFieldLclNum);
