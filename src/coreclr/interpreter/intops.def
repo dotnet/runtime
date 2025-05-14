@@ -22,7 +22,7 @@ OPDEF(INTOP_LDC_R4, "ldc.r4", 3, 1, 0, InterpOpFloat)
 OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
 OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpInt)
-OPDEF(INTOP_NEWARR, "newarr", 4, 1, 1, InterpOpInt)
+OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpInt)
 
 OPDEF(INTOP_LDELEM_I1, "ldelem.i1", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_LDELEM_U1, "ldelem.u1", 4, 1, 2, InterpOpNoArgs)

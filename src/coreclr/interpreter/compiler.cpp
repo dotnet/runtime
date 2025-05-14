@@ -3489,14 +3489,13 @@ retry_emit:
                 CHECK_STACK(1);
 
                 uint32_t token = getU4LittleEndian(m_ip + 1);
-                CORINFO_CLASS_HANDLE elemClsHnd = ResolveClassToken(token);
 
-                if (!m_compHnd->isValueClass(elemClsHnd))
-                {
-                    // Interpreter-TODO: Add support for ref types
-                    m_hasInvalidCode = true;
-                    goto exit_bad_code;
-                }
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Newarr, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE arrayClsHnd = resolvedToken.hClass;
+                CorInfoHelpFunc helperFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
+                void* pHelper = m_compHnd->getHelperFtn(helperFunc);
 
                 m_pStackPointer--;
 
@@ -3506,7 +3505,8 @@ retry_emit:
                 PushInterpType(InterpTypeO, NULL);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
-                m_pLastNewIns->data[0] = GetDataItemIndex(elemClsHnd);
+                m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndex(pHelper);
 
                 m_ip += 5;
                 break;

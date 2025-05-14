@@ -8,6 +8,7 @@
 #include "interpexec.h"
 
 typedef void* (*HELPER_FTN_PP)(void*);
+typedef Object* (*HELPER_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -1206,15 +1207,15 @@ CALL_TARGET_IP:
                     if (length < 0)
                         assert(0); // Interpreter-TODO: Invalid array length
 
-                    MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
-                    TypeHandle elemTH = TypeHandle(pMT);
-                    TypeHandle arrTH = elemTH.MakeSZArray();
+                    CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
+                    void* pHelper = pMethod->pDataItems[ip[4]];
 
-                    OBJECTREF arr = AllocateSzArray(arrTH, length, GC_ALLOC_NO_FLAGS);
+                    HELPER_NEWARR helperFn = reinterpret_cast<HELPER_NEWARR>(pHelper);
 
-                    LOCAL_VAR(ip[1], OBJECTREF) = arr;
+                    Object* arr = helperFn(arrayClsHnd, (intptr_t)length);
+                    SetObjectReferenceUnchecked(LOCAL_VAR_ADDR(ip[1], OBJECTREF), ObjectToOBJECTREF(arr));
 
-                    ip += 4;
+                    ip += 5;
                     break;
                 }
 #define LDELEM(dtype,etype)                                                    \
