@@ -1821,7 +1821,7 @@ public:
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
 #ifdef FEATURE_INTERPRETER
-    HRESULT SetCallStub(CallStubHeader *pHeader);
+    bool SetCallStub(CallStubHeader *pHeader);
     CallStubHeader *GetCallStub();
 #endif // FEATURE_INTERPRETER
 
