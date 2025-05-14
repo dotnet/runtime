@@ -1180,8 +1180,11 @@ public:
     void            BaseWinRTUninitialize();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+private:
+    void        UnregisterWaitEventLinks();
     void        CooperativeCleanup();
 
+public:
     void        OnThreadTerminate(BOOL holdingLock);
 
     static void CleanupDetachedThreads();
