@@ -61,7 +61,7 @@ namespace System.Runtime.CompilerServices
                 UnmanagedSignatureCallingConvention or
                 DefaultImplementationsOfInterfaces or
                 VirtualStaticsInInterfaces or
-                NumericIntPtr or
+                NumericIntPtr => true,
 
                 nameof(IsDynamicCodeSupported) => IsDynamicCodeSupported,
                 nameof(IsDynamicCodeCompiled) => IsDynamicCodeCompiled,
