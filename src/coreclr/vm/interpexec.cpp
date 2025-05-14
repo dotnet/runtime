@@ -1201,22 +1201,22 @@ CALL_TARGET_IP:
                     break;
                 }
                 case INTOP_NEWARR:
-            {
-                int32_t length = LOCAL_VAR(ip[2], int32_t);
-                if (length < 0)
-                    assert(0); // Interpreter-TODO: Invalid array length
+                {
+                    int32_t length = LOCAL_VAR(ip[2], int32_t);
+                    if (length < 0)
+                        assert(0); // Interpreter-TODO: Invalid array length
 
-                MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
-                TypeHandle elemTH = TypeHandle(pMT);
-                TypeHandle arrTH = elemTH.MakeSZArray();
+                    MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
+                    TypeHandle elemTH = TypeHandle(pMT);
+                    TypeHandle arrTH = elemTH.MakeSZArray();
 
-                OBJECTREF arr = AllocateSzArray(arrTH, length, GC_ALLOC_NO_FLAGS);
+                    OBJECTREF arr = AllocateSzArray(arrTH, length, GC_ALLOC_NO_FLAGS);
 
-                LOCAL_VAR(ip[1], OBJECTREF) = arr;
+                    LOCAL_VAR(ip[1], OBJECTREF) = arr;
 
-                ip += 4;
-                break;
-            }
+                    ip += 4;
+                    break;
+                }
 #define LDELEM(dtype,etype)                                                    \
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
@@ -1236,51 +1236,51 @@ do {                                                                           \
     LOCAL_VAR(ip[1], dtype) = *pElem;                                          \
     ip += 4;                                                                   \
 } while (0)
-            case INTOP_LDELEM_I1:
-            {
-                LDELEM(int32_t, int8_t);
-                break;
-            }
-            case INTOP_LDELEM_U1:
-            {
-                LDELEM(int32_t, uint8_t);
-                break;
-            }
-            case INTOP_LDELEM_I2:
-            {
-                LDELEM(int32_t, int16_t);
-                break;
-            }
-            case INTOP_LDELEM_U2:
-            {
-                LDELEM(int32_t, uint16_t);
-                break;
-            }
-            case INTOP_LDELEM_I4:
-            {
-                LDELEM(int32_t, int32_t);
-                break;
-            }
-            case INTOP_LDELEM_U4:
-            {
-                LDELEM(int32_t, uint32_t);
-                break;
-            }
-            case INTOP_LDELEM_I8:
-            {
-                LDELEM(int64_t, int64_t);
-                break;
-            }
-            case INTOP_LDELEM_R4:
-            {
-                LDELEM(float, float);
-                break;
-            }
-            case INTOP_LDELEM_R8:
-            {
-                LDELEM(double, double);
-                break;
-            }
+                case INTOP_LDELEM_I1:
+                {
+                    LDELEM(int32_t, int8_t);
+                    break;
+                }
+                case INTOP_LDELEM_U1:
+                {
+                    LDELEM(int32_t, uint8_t);
+                    break;
+                }
+                case INTOP_LDELEM_I2:
+                {
+                    LDELEM(int32_t, int16_t);
+                    break;
+                }
+                case INTOP_LDELEM_U2:
+                {
+                    LDELEM(int32_t, uint16_t);
+                    break;
+                }
+                case INTOP_LDELEM_I4:
+                {
+                    LDELEM(int32_t, int32_t);
+                    break;
+                }
+                case INTOP_LDELEM_U4:
+                {
+                    LDELEM(int32_t, uint32_t);
+                    break;
+                }
+                case INTOP_LDELEM_I8:
+                {
+                    LDELEM(int64_t, int64_t);
+                    break;
+                }
+                case INTOP_LDELEM_R4:
+                {
+                    LDELEM(float, float);
+                    break;
+                }
+                case INTOP_LDELEM_R8:
+                {
+                    LDELEM(double, double);
+                    break;
+                }
 #define STELEM(dtype,etype)                                                    \
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
@@ -1300,37 +1300,37 @@ do {                                                                           \
     *pElem = LOCAL_VAR(ip[3], dtype);                                          \
     ip += 4;                                                                   \
 } while (0)
-            case INTOP_STELEM_I1:
-            {
-                STELEM(int32_t, int8_t);
-                break;
-            }
-            case INTOP_STELEM_I2:
-            {
-                STELEM(int32_t, int16_t);
-                break;
-            }
-            case INTOP_STELEM_I4:
-            {
-                STELEM(int32_t, int32_t);
-                break;
-            }
-            case INTOP_STELEM_I8:
-            {
-                STELEM(int64_t, int64_t);
-                break;
-            }
-            case INTOP_STELEM_R4:
-            {
-                STELEM(float, float);
-                break;
-            }
-            case INTOP_STELEM_R8:
-            {
-                STELEM(double, double);
-                break;
-            }
-            case INTOP_FAILFAST:
+                case INTOP_STELEM_I1:
+                {
+                    STELEM(int32_t, int8_t);
+                    break;
+                }
+                case INTOP_STELEM_I2:
+                {
+                    STELEM(int32_t, int16_t);
+                    break;
+                }
+                case INTOP_STELEM_I4:
+                {
+                    STELEM(int32_t, int32_t);
+                    break;
+                }
+                case INTOP_STELEM_I8:
+                {
+                    STELEM(int64_t, int64_t);
+                    break;
+                }
+                case INTOP_STELEM_R4:
+                {
+                    STELEM(float, float);
+                    break;
+                }
+                case INTOP_STELEM_R8:
+                {
+                    STELEM(double, double);
+                    break;
+                }
+                case INTOP_FAILFAST:
                     assert(0);
                     break;
                 default:
