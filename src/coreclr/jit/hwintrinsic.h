@@ -546,6 +546,7 @@ struct HWIntrinsicInfo
     static bool isScalarIsa(CORINFO_InstructionSet isa);
 
 #ifdef TARGET_XARCH
+    static bool                isBaselineIsa(CORINFO_InstructionSet isa);
     static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
     static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
