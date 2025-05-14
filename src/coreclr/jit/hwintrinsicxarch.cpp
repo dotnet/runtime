@@ -1607,7 +1607,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
                     GenTree* tmpDup2 = gtCloneExpr(tmpDup1);
 
-                    GenTree* msk = gtNewSimdIsNegativeNode(retType, tmp, simdBaseJitType, simdSize);
+                    GenTree* msk = gtNewSimdIsNegativeNode(retType, tmpDup1, simdBaseJitType, simdSize);
                     GenTree* ovf = gtNewSimdCndSelNode(retType, msk, maxCns, minCns, simdBaseJitType, simdSize);
 
                     // The mask we need is ((a ^ b) & ~(b ^ c)) < 0
@@ -1620,15 +1620,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         //
                         // 0x18    = A ? norBC : andBC
                         //           a ? ~(b | c) : (b & c)
-                        msk = gtNewSimdTernaryLogicNode(retType, tmpDup1, op1Dup1, op2Dup1, gtNewIconNode(0x18),
+                        msk = gtNewSimdTernaryLogicNode(retType, tmp, op1Dup1, op2Dup1, gtNewIconNode(0x18),
                                                         simdBaseJitType, simdSize);
                     }
                     else
                     {
                         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
-                        GenTree* msk2 =
-                            gtNewSimdBinOpNode(GT_XOR, retType, tmpDup1, op1Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk2 = gtNewSimdBinOpNode(GT_XOR, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
                         GenTree* msk3 =
                             gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
 
@@ -4141,12 +4140,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     GenTree* op1Dup1 = fgMakeMultiUse(&op1);
                     GenTree* op2Dup1 = fgMakeMultiUse(&op2);
 
-                    GenTree* tmp = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+                    GenTree* tmp = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
 
                     GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
                     GenTree* tmpDup2 = gtCloneExpr(tmpDup1);
 
-                    GenTree* msk = gtNewSimdIsNegativeNode(retType, tmp, simdBaseJitType, simdSize);
+                    GenTree* msk = gtNewSimdIsNegativeNode(retType, tmpDup1, simdBaseJitType, simdSize);
                     GenTree* ovf = gtNewSimdCndSelNode(retType, msk, maxCns, minCns, simdBaseJitType, simdSize);
 
                     // The mask we need is ((a ^ b) & (b ^ c)) < 0
@@ -4159,15 +4158,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         //
                         // 0x18    = B ? norAC : andAC
                         //           b ? ~(a | c) : (a & c)
-                        msk = gtNewSimdTernaryLogicNode(retType, tmpDup1, op1Dup1, op2Dup1, gtNewIconNode(0x24),
+                        msk = gtNewSimdTernaryLogicNode(retType, tmp, op1Dup1, op2Dup1, gtNewIconNode(0x24),
                                                         simdBaseJitType, simdSize);
                     }
                     else
                     {
                         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
 
-                        GenTree* msk2 =
-                            gtNewSimdBinOpNode(GT_XOR, retType, tmpDup1, op1Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk2 = gtNewSimdBinOpNode(GT_XOR, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
                         GenTree* msk3 =
                             gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
 
