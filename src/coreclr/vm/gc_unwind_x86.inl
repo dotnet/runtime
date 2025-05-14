@@ -197,6 +197,17 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
         header.revPInvokeOffset = fastDecodeUnsigned(table);
     }
 
+    if (header.noGCRegionCnt == HAS_NOGCREGIONS)
+    {
+        hasArgTabOffset = TRUE;
+        header.noGCRegionCnt = fastDecodeUnsigned(table);
+    }
+    else if (header.noGCRegionCnt > 0)
+    {
+        hasArgTabOffset = TRUE;
+    }
+
+
     /* Some sanity checks on header */
 
     _ASSERTE( header.prologSize +
@@ -231,6 +242,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->syncStartOffset = header.syncStartOffset;
     infoPtr->syncEndOffset   = header.syncEndOffset;
     infoPtr->revPInvokeOffset = header.revPInvokeOffset;
+    infoPtr->noGCRegionCnt   = header.noGCRegionCnt;
 
     infoPtr->doubleAlign     = header.doubleAlign;
     infoPtr->handlers        = header.handlers;
@@ -668,6 +680,37 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 #endif // FEATURE_NATIVEAOT
 
 /*****************************************************************************/
+bool IsInNoGCRegion(hdrInfo   * infoPtr,
+                    PTR_CBYTE   table,
+                    unsigned    curOffset)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    if (infoPtr->noGCRegionCnt == 0)
+        return false;
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
+#endif
+
+    unsigned count = infoPtr->noGCRegionCnt;
+    while (count-- > 0) {
+        unsigned regionOffset = fastDecodeUnsigned(table);
+        if (curOffset < regionOffset)
+            return false;
+        unsigned regionSize = fastDecodeUnsigned(table);
+        if (curOffset - regionOffset < regionSize)
+            return true;
+    }
+
+    return false;
+}
+
+/*****************************************************************************/
 static
 PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 {
@@ -691,6 +734,13 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 #if VERIFY_GC_TABLES
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
+
+    /* Skip over the no GC regions table */
+
+    count = info.noGCRegionCnt;
+    while (count-- > 0) {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
 
     /* Skip over the untracked frame variable table */
 
@@ -3583,6 +3633,12 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     unsigned ptrAddr;
     unsigned lowBits;
 
+    /* Skip over no-GC region table */
+    count = info.noGCRegionCnt;
+    while (count-- > 0)
+    {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
 
     /* Process the untracked frame variable table */
 
