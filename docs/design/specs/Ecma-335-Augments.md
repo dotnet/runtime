@@ -1085,7 +1085,9 @@ Section "I.10.3.1 Unary operators" is reworded to include the support for instan
 > | *op_IncrementAssignment*        | Similar to `--`<sup>4</sup>             | instance    |
 > | *op_CheckedDecrementAssignment* | Similar to `++`<sup>3, 4</sup>          | instance    |
 > | *op_CheckedIncrementAssignment* | Similar to `--`<sup>3, 4</sup>          | instance    |
+>
 > <sup>3</sup> A checked operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is `System.OverflowException`.
+>
 > <sup>4</sup> Unlike <sup>1</sup>, these methods increment or decrement their operand directly and so better match the pure C++ point of view.
 
 Section "I.10.3.2 Binary operators" is reworded to include the support for instance form operators:
@@ -1111,6 +1113,7 @@ Section "I.10.3.2 Binary operators" is reworded to include the support for insta
 > | *op_CheckedSubtractionAssignment*    | -=<sup>1</sup>                          | static or instance |
 > | *op_CheckedMultiplicationAssignment* | \*=<sup>1</sup>                         | static or instance |
 > | *op_CheckedDivisionAssignment*       | /=<sup>1</sup>                          | static or instance |
+>
 > <sup>1</sup> A checked operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is `System.OverflowException`.
 
 Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method implementing checked explicit conversion operator.
