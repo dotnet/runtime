@@ -19,4 +19,9 @@ if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
     set(BIGENDIAN 1)
 endif()
 
+if(CLR_CMAKE_TARGET_WASI OR CLR_CMAKE_TARGET_BROWSER)
+	# emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
+    unset(HAVE_CLOCK_MONOTONIC_COARSE)
+endif()
+
 configure_file(${CMAKE_CURRENT_LIST_DIR}/minipalconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/minipalconfig.h)
