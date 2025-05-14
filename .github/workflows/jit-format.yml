@@ -1,4 +1,7 @@
 name: Format jit codebase
+permissions:
+  contents: read
+  actions: read
 
 on:
   pull_request:
