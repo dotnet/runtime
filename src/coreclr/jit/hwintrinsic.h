@@ -1139,12 +1139,30 @@ struct HWIntrinsicInfo
     }
 
 #ifdef FEATURE_MASKED_HW_INTRINSICS
+    // HasAllMaskVariant: Does the intrinsic have an intrinsic variant that operates on mask types?
+    //
+    // Arguments:
+    //    id       -- the intrinsic to check for a mask-type variant.
+    //
+    // Return Value:
+    //    true when the intrinsic has a mask-type variant, else false
+    //
     static bool HasAllMaskVariant(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_HasAllMaskVariant) != 0;
     }
 
+    // GetMaskVariant: Given an intrinsic that has a variant that operates on mask types, return the ID of
+    //                 this variant intrinsic. Call HasAllMaskVariant before using this function, as it will
+    //                 assert if no match is found.
+    //
+    // Arguments:
+    //    id       -- the intrinsic with a mask-type variant.
+    //
+    // Return Value:
+    //    The ID of the mask-type variant for the given intrinsic
+    //
     static NamedIntrinsic GetMaskVariant(NamedIntrinsic id)
     {
         switch (id)
