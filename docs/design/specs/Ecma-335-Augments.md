@@ -1063,13 +1063,11 @@ In order to maintain alignment, if the field needs alignment to be preserved, th
 
 ## Checked user-defined operators
 
-Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators.
+Section "I.10.3.1 Unary operators" of ECMA-335 adds *op_CheckedIncrement*, *op_CheckedDecrement*, *op_CheckedUnaryNegation* as the names for methods implementing checked `++`, `--` and `-` unary operators. It additionally adds *op_DecrementAssignment*, *op_IncrementAssignment*, *op_CheckedDecrementAssignment*, and *op_CheckedIncrementAssignment* as the names for methods implementing `++` and `--` unary operators. These additional names can be used to define, for disambiguation purposes, the instance versions of these unary operators in languages that allow defining both static and instance forms.
 
-Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*,
-*op_CheckedMultiply*, *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators.
+Section "I.10.3.2 Binary operators" of ECMA-335 adds *op_CheckedAddition*, *op_CheckedSubtraction*, *op_CheckedMultiply*, and *op_CheckedDivision* as the names for methods implementing checked `+`, `-`, `*`, and `/` binary operators. It additionally adds *op_CheckedAdditionAssignment*, *op_CheckedSubtractionAssignment*, *op_CheckedMultiplicationAssignment*, and *op_CheckedDivisionAssignment* as the names for methods implementing checked `+=`, `-=`, `*=`, and `/=` binary compound assignment operators
 
-Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method
-implementing checked explicit conversion operator.
+Section "I.10.3.3 Conversion operators" of ECMA-335 adds *op_CheckedExplicit* as the name for a method implementing checked explicit conversion operator.
 
 A checked user-defined operator is expected to throw an exception when the result of an operation is too large to represent in the destination type. What does it mean to be too large actually depends on the nature of the destination type. Typically the exception thrown is a System.OverflowException.
 
