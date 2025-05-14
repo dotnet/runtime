@@ -418,9 +418,9 @@ namespace System.Numerics.Tensors.Tests
             Assert.Throws<ArgumentException>(() =>
             {
                 var ab = new TensorSpan<double>(array: [0d, 1, 2, 3, 0d, 1, 2, 3]);  // [0, 1, 2, 3]
-                var b = ab.Reshape(lengths: new IntPtr[] { 2, 2, 2 });  // [[0, 1], [2, 3]]
+                var b = Tensor.Reshape(ab, lengths: new IntPtr[] { 2, 2, 2 });  // [[0, 1], [2, 3]]
                 var c = b.Slice(new NRange[] { 1.., 1..2, ..1 });  // [[0], [2]]
-                c.Reshape(lengths: new IntPtr[] { 1, 2, 1 });
+                Tensor.Reshape(c, lengths: new IntPtr[] { 1, 2, 1 });
             });
 
             // Make sure even if the Lengths are the same that the underlying memory has to be the same.
