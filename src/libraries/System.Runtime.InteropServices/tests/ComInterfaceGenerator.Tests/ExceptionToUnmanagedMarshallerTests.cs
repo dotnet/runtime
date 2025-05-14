@@ -40,15 +40,13 @@ namespace ComInterfaceGenerator.Tests
             CustomExceptionMarshallerComClass comObject = new();
             StrategyBasedComWrappers wrappers = new();
             nint nativeUnknown = wrappers.GetOrCreateComInterfaceForObject(comObject, CreateComInterfaceFlags.None);
-            Marshal.QueryInterface(nativeUnknown, typeof(ICustomExceptionMarshallerComInterface).GUID, out nint nativeInterface);
+
+            ICustomExceptionMarshallerComInterface rcw = (ICustomExceptionMarshallerComInterface)wrappers.GetOrCreateObjectForComInstance(nativeUnknown, CreateObjectFlags.None);
+            Marshal.Release(nativeUnknown);
 
             const int E_NOTIMPL = unchecked((int)0x80004001);
-            int resultCode = ((delegate* unmanaged[MemberFunction]<nint, int>)(*(void***)nativeInterface)[3])(nativeUnknown);
-            Assert.Equal(E_NOTIMPL, resultCode);
+            Assert.Throws<NotImplementedException>(rcw.ThrowException);
             Assert.Equal(E_NOTIMPL, CustomExceptionAsHResultMarshaller.LastException);
-
-            Marshal.Release(nativeInterface);
-            Marshal.Release(nativeUnknown);
         }
     }
 }
