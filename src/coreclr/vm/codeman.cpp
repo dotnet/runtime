@@ -4148,11 +4148,13 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
 
     this->pRealCodeHeader.EnumMem();
 
+#ifdef FEATURE_EH_FUNCLETS
     // UnwindInfos are stored in an array immediately following the RealCodeHeader structure in memory.
     if (this->pRealCodeHeader->nUnwindInfos)
     {
         DacEnumMemoryRegion(PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos), this->pRealCodeHeader->nUnwindInfos * sizeof(T_RUNTIME_FUNCTION));
     }
+#endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     BOOL hasFlagByte = TRUE;

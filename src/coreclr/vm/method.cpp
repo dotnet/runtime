@@ -3687,7 +3687,7 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 #else
     PCODE entryPoint = GetNativeCode();
     EECodeInfo codeInfo(entryPoint);
-    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &entryPoint);
+    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
 #endif // FEATURE_CODE_VERSIONING
 
     if (!IsNoMetadata() ||IsILStub())
