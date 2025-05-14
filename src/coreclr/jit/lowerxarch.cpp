@@ -4052,6 +4052,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                             replacementNode = comp->gtNewAllBitsSetConNode(simdType);
                         }
 
+                        BlockRange().Remove(op4);
                         BlockRange().InsertBefore(node, replacementNode);
                         break;
                     }
@@ -4125,6 +4126,9 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     {
                         replacementNode->SetUnusedValue();
                     }
+
+                    BlockRange().Remove(node);
+                    return node->gtNext;
                 }
                 break;
             }
