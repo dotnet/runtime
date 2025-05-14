@@ -108,9 +108,9 @@ int64_t minipal_lowres_ticks(void)
     if (result != 0)
     {
 #if HAVE_CLOCK_MONOTONIC_COARSE && !defined(TARGET_WASM)
-        assert("clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
+        assert(!"clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
 #else
-        assert("clock_gettime(CLOCK_MONOTONIC) failed");
+        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
 #endif
     }
 
