@@ -915,9 +915,6 @@ void Lowering::LowerCast(GenTree* tree)
         }
         else
         {
-            assert(comp->IsBaselineSimdIsaSupportedDebugOnly());
-            assert(!TargetArchitecture::Is64Bit || comp->compIsaSupportedDebugOnly(InstructionSet_X86Base_X64));
-
             // We need to fix up NaN as well as handle possible overflow. Signed conversions
             // return int/long.MinValue for any overflow, which is correct for saturation of
             // negative, but the result must be replaced with MaxValue for positive overflow.
@@ -953,14 +950,14 @@ void Lowering::LowerCast(GenTree* tree)
                     if (srcType == TYP_FLOAT)
                     {
                         maxFloatSimdVal->f32[0] = 4294967296.0f;
-                        convertIntrinsic        = comp->compOpportunisticallyDependsOn(InstructionSet_X86Base_X64)
+                        convertIntrinsic        = TargetArchitecture::Is64Bit
                                                       ? NI_X86Base_X64_ConvertToInt64WithTruncation
                                                       : NI_X86Base_ConvertToVector128Int32WithTruncation;
                     }
                     else
                     {
                         maxFloatSimdVal->f64[0] = 4294967296.0;
-                        convertIntrinsic        = comp->compOpportunisticallyDependsOn(InstructionSet_X86Base_X64)
+                        convertIntrinsic        = TargetArchitecture::Is64Bit
                                                       ? NI_X86Base_X64_ConvertToInt64WithTruncation
                                                       : NI_X86Base_ConvertToVector128Int32WithTruncation;
                     }
@@ -1531,22 +1528,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                             op2 = userIntrin->Op(1);
                         }
 
-                        NamedIntrinsic intrinsic = NI_Illegal;
-
-                        if (comp->IsBaselineSimdIsaSupported())
-                        {
-                            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2,
-                                                                                     simdBaseType, simdSize, false);
-                        }
-                        else
-                        {
-                            // We need to ensure we optimize even if SSE2 is disabled
-
-                            assert(simdBaseType == TYP_FLOAT);
-                            assert(simdSize <= 16);
-
-                            intrinsic = NI_X86Base_AndNot;
-                        }
+                        NamedIntrinsic intrinsic =
+                            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2, simdBaseType,
+                                                                         simdSize, false);
 
                         userIntrin->ResetHWIntrinsicId(intrinsic, comp, op1, op2);
 
@@ -4289,8 +4273,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
                 // We will be constructing the following parts:
                 //   ...
                 //          /--*  tmp1 simd16
@@ -4344,8 +4326,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   tmp1 = Sse2.UnpackLow(tmp1, tmp2);
                 //   ...
 
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
                 ReplaceWithLclVar(tmp1Use);
@@ -4375,8 +4355,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 // This is roughly the following managed code:
                 //   ...
                 //   return Sse2.Shuffle(tmp1, 0x00);
-
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
 
                 idx = comp->gtNewIconNode(0x00, TYP_INT);
                 BlockRange().InsertAfter(tmp1, idx);
@@ -4425,8 +4403,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   var tmp2 = tmp1;
                 //   return Sse.Shuffle(tmp1, tmp2, 0x00);
 
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
                 ReplaceWithLclVar(tmp1Use);
@@ -4462,8 +4438,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     node->SetSimdBaseJitType(CORINFO_TYPE_DOUBLE);
                     break;
                 }
-
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
 
                 // We will be constructing the following parts:
                 //   ...
@@ -4594,7 +4568,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             if ((simdBaseType == TYP_SHORT) || (simdBaseType == TYP_USHORT))
             {
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
                 insIntrinsic = NI_X86Base_Insert;
             }
             else if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -4654,7 +4627,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
 
             assert((simdBaseType != TYP_SHORT) && (simdBaseType != TYP_USHORT));
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
 
             GenTree* op[16];
             op[0] = tmp1;
@@ -4881,8 +4853,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   tmp2 = Sse.UnpackLow(opP, opQ);
             //   return Sse.MoveLowToHigh(tmp1, tmp2);
 
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
             GenTree* op[4];
             op[0] = tmp1;
 
@@ -4947,8 +4917,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   ...
             //   var tmp2 = Vector128.CreateScalarUnsafe(op2);
             //   return Sse.UnpackLow(tmp1, tmp2);
-
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
 
             tmp2 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, simdBaseJitType, 16);
             LowerNode(tmp2);
@@ -5241,37 +5209,6 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         }
     }
 
-    switch (simdBaseType)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        case TYP_INT:
-        case TYP_UINT:
-#if defined(TARGET_AMD64)
-        case TYP_LONG:
-        case TYP_ULONG:
-#endif // TARGET_AMD64
-        {
-            // Using software fallback if simdBaseType is not supported by hardware
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
-            break;
-        }
-
-        case TYP_DOUBLE:
-        case TYP_FLOAT:
-        case TYP_SHORT:
-        case TYP_USHORT:
-        {
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
     // Remove the index node up front to simplify downstream logic
     BlockRange().Remove(op2);
 
@@ -5394,6 +5331,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             case TYP_LONG:
             case TYP_ULONG:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
                 resIntrinsic = NI_SSE41_X64_Extract;
                 break;
             }
@@ -5411,6 +5349,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             case TYP_INT:
             case TYP_UINT:
             {
+                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
                 resIntrinsic = NI_SSE41_Extract;
                 break;
             }
@@ -5509,32 +5448,6 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     uint32_t simd16Idx = imm8 / simd16Cnt;
 
     assert((0 <= imm8) && (imm8 < count));
-
-    switch (simdBaseType)
-    {
-        // Using software fallback if simdBaseType is not supported by hardware
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        case TYP_INT:
-        case TYP_UINT:
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
-            break;
-
-        case TYP_LONG:
-        case TYP_ULONG:
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
-            break;
-
-        case TYP_DOUBLE:
-        case TYP_FLOAT:
-        case TYP_SHORT:
-        case TYP_USHORT:
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-            break;
-
-        default:
-            unreached();
-    }
 
     // Remove the index node up front to simplify downstream logic
     BlockRange().Remove(op2);
@@ -5715,6 +5628,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         case TYP_LONG:
         case TYP_ULONG:
         {
+            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41_X64));
+
             idx = comp->gtNewIconNode(imm8);
             BlockRange().InsertBefore(result, idx);
             result->ChangeHWIntrinsicId(NI_SSE41_X64_Insert, op1, op3, idx);
@@ -5861,6 +5776,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         case TYP_INT:
         case TYP_UINT:
         {
+            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE41));
+
             idx = comp->gtNewIconNode(imm8);
             BlockRange().InsertBefore(result, idx);
             result->ChangeHWIntrinsicId(NI_SSE41_Insert, op1, op3, idx);
@@ -6065,8 +5982,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     }
     else
     {
-        assert(comp->compIsaSupportedDebugOnly(InstructionSet_X86Base));
-
         switch (simdBaseType)
         {
             case TYP_SHORT:

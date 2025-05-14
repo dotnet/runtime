@@ -1980,11 +1980,15 @@ void Compiler::compSetProcessor()
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
-// The VM will set the ISA flags depending on actual hardware support
-// and any specified config switches specified by the user. The exception
-// here is for certain "artificial ISAs" such as Vector64/128/256 where they
-// don't actually exist. The JIT is in charge of adding those and ensuring
-// the total sum of flags is still valid.
+// The VM will set the ISA flags depending on actual hardware support and any
+// config values specified by the user. Config may have caused the VM to exclude
+// baseline ISAs from the supported set. We force their inclusion here so that
+// JIT code can use them unconditionally, but we will honor the config when
+// resolving managed HWIntrinsic methods.
+//
+// We also take care of adding the virtual vector ISAs (i.e. Vector64/128/256/512)
+// here, based on a combination of hardware ISA support and config values.
+
 #if defined(TARGET_XARCH)
     // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
     // No check is done for the validity of the value, since it will be clamped to max supported by
@@ -2015,10 +2019,11 @@ void Compiler::compSetProcessor()
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_X86Base))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+#ifdef TARGET_AMD64
+    instructionSetFlags.AddInstructionSet(InstructionSet_X86Base_X64);
+#endif // TARGET_AMD64
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
@@ -2030,11 +2035,12 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
     }
 #elif defined(TARGET_ARM64)
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
-    {
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
-        instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
-    }
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+    instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+    instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -6011,11 +6017,8 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
 
         if (JitConfig.EnableArm64Aes() != 0)
         {
@@ -6084,10 +6087,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
 
         if (JitConfig.EnableSSE3() != 0)
         {
@@ -6197,10 +6197,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
 #elif defined(TARGET_RISCV64)
-        if (JitConfig.EnableHWIntrinsic() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
 
         if (JitConfig.EnableRiscV64Zba() != 0)
         {

@@ -3503,7 +3503,7 @@ bool Lowering::TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next)
     if (!comp->opts.OptimizationEnabled())
         return false;
 
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
+    if (!comp->IsBaselineSimdIsaSupported())
         return false;
 
     if (op->isContained())
@@ -3609,7 +3609,7 @@ bool Lowering::TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next)
     if (!comp->opts.OptimizationEnabled())
         return false;
 
-    if (!comp->compOpportunisticallyDependsOn(InstructionSet_ArmBase_Arm64))
+    if (!comp->IsBaselineSimdIsaSupported())
         return false;
 
     if (op->isContained())
