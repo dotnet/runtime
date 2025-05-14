@@ -479,7 +479,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         bool         canUseSimd           = !doCpObj || isNotHeap;
         unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, canUseSimd);
 
-#ifndef JIT32_GCENCODER
         if (doCpObj && (size <= copyBlockUnrollLimit))
         {
             // No write barriers are needed if the destination is known to be outside of the GC heap.
@@ -492,7 +491,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->gtBlkOpGcUnsafe = true;
             }
         }
-#endif
 
         if (doCpObj)
         {
