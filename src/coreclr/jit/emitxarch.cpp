@@ -4348,6 +4348,10 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
         if (IsExtendedGPReg(reg))
         {
             // Seperate the encoding for REX2.B3/B4, REX2.B3 will be handled in `AddRexBPrefix`.
+            if (!(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id)))
+            {
+                printf("OOps\n");
+            }
             assert(TakesRex2Prefix(id) || TakesApxExtendedEvexPrefix(id) || TakesEvexPrefix(id));
             if (hasRex2Prefix(*code))
             {

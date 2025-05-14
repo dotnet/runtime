@@ -1962,7 +1962,7 @@ void LinearScan::buildPhysRegRecords()
     // callee trash and should appear at the end up the existing callee
     // trash set
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         regOrderFlt     = &lsraRegOrderFltEvex[0];
         regOrderFltSize = lsraRegOrderFltEvexSize;
@@ -1987,7 +1987,7 @@ void LinearScan::buildPhysRegRecords()
 #if defined(TARGET_XARCH)
     // xarch has mask registers available when EVEX is supported
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         for (unsigned int i = 0; i < lsraRegOrderMskSize; i++)
         {
@@ -3841,17 +3841,16 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2IfPresent();
 #ifdef TARGET_XARCH
-    const bool canUseApxRegs = compiler->canUseApxEncoding() && compiler->canUseEvexEncoding();
     if (node->OperIsBinary() && isRMWRegOper(node))
     {
         assert(op2 != nullptr);
         if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
         {
-            if (op1->isContainedIndir() && !canUseApxRegs)
+            if (op1->isContainedIndir() && !getCanUseApxRegs())
             {
                 return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
             }
-            else if (op2->isContainedIndir() && !canUseApxRegs)
+            else if (op2->isContainedIndir() && !getCanUseApxRegs())
             {
                 return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
             }
@@ -3868,7 +3867,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
-        if (op1->isContainedIndir() && (candidates == RBM_NONE) && !canUseApxRegs)
+        if (op1->isContainedIndir() && (candidates == RBM_NONE) && !getCanUseApxRegs())
         {
             srcCount += BuildOperandUses(op1, lowGprRegs);
         }
@@ -3882,7 +3881,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 
 #ifdef TARGET_XARCH
-        if (op2->isContainedIndir() && (candidates == RBM_NONE) && !canUseApxRegs)
+        if (op2->isContainedIndir() && (candidates == RBM_NONE) && !getCanUseApxRegs())
         {
             candidates = lowGprRegs;
         }

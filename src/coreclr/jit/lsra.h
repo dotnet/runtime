@@ -1977,8 +1977,8 @@ private:
                                                         SingleTypeRegSet candidates = RBM_NONE,
                                                         bool             isGPR      = false);
     inline SingleTypeRegSet BuildApxIncompatibleGPRMaskIfNeeded(GenTree*         tree,
-                                                                SingleTypeRegSet candidates    = RBM_NONE,
-                                                                bool             canUseApxRegs = false);
+                                                                SingleTypeRegSet candidates = RBM_NONE,
+                                                                bool             UseApxRegs = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -2132,6 +2132,8 @@ private:
     regMaskTP        rbmAllMask;
     regMaskTP        rbmMskCalleeTrash;
     SingleTypeRegSet lowGprRegs;
+    bool             canUseApxRegs;
+    bool             evexIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
@@ -2140,6 +2142,14 @@ private:
     FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
+    }
+    FORCEINLINE bool getCanUseApxRegs() const
+    {
+        return this->canUseApxRegs;
+    }
+    FORCEINLINE bool getEvexIsSupported() const
+    {
+        return this->evexIsSupported;
     }
 #endif // TARGET_XARCH
 
