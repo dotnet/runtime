@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
-    <_TargetFrameworkForXHarness>$(AspNetCoreAppCurrent)</_TargetFrameworkForXHarness>
+    <_TargetFrameworkForXHarness>$(NetCoreAppPrevious)</_TargetFrameworkForXHarness>
     <HelixTargetsFile>$(MSBuildThisFileDirectory)LocalEchoServer.helix.targets</HelixTargetsFile>
 
     <!-- handle different path to middleware in Helix -->
