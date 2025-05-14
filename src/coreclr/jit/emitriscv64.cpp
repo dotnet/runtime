@@ -5378,6 +5378,10 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             ins = INS_addiw;
             imm = -imm;
         }
+        else if (ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi)
+        {
+            assert(imm < EA_SIZE(attr) * 8);
+        }
 
         assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori ||
                ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi);

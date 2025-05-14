@@ -53,6 +53,19 @@ public static class SingleBit
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool Extract31Pow2Shift(int a) => ((a >> 29) & 0b100) == 0b100;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool Extract32Pow2Shift(int a) => ((a >> 30) & 0b100) == 0b100;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool Extract31Pow2ShiftUnsigned(uint a) => ((a >> 29) & 0b100u) == 0b100u;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool Extract32Pow2ShiftUnsigned(uint a) => ((a >> 30) & 0b100u) == 0b100u;
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static bool ExtractNotEqual(int a, int b) => (a & (1 << b)) != 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -116,6 +129,11 @@ public static class SingleBit
         Assert.True (Extract11Shift(0x12345878));
         Assert.False(Extract10Pow2Shift(0x12345878));
         Assert.True (Extract11Pow2Shift(0x12345878));
+
+        Assert.True (Extract31Pow2Shift(int.MinValue));
+        Assert.True (Extract32Pow2Shift(int.MinValue));
+        Assert.True (Extract31Pow2ShiftUnsigned(0x80000000));
+        Assert.False(Extract32Pow2ShiftUnsigned(0x80000000));
 
         Assert.False(ExtractNotEqual(0x12345878, 10));
         Assert.True (ExtractNotEqual(0x12345878, 11));

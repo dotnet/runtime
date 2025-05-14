@@ -216,37 +216,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                             (user->OperIs(GT_EQ) && user->gtGetOp2()->IsIntegralConst(bit)) || // (a >> N) & bit == bit
                             (op1->OperIs(GT_RSZ, GT_RSH) && bit == 1))                         // (a >> N) & 1
                         {
-                            binOp->ChangeOper(GT_BIT_EXTRACT);
-                            binOp->gtType = TYP_INT;
-
-                            uint32_t log2 = BitOperations::Log2(bit);
-                            constant->SetIntegralValue(log2);
-                            constant->SetContained();
-
-                            if (op1->OperIs(GT_RSZ, GT_RSH)) // (a >> N) & bit  =>  BIT_EXTRACT(a, N + log2(bit))
-                            {
-                                GenTree* shiftAmount = op1->gtGetOp2();
-                                if (shiftAmount->IsIntegralConst())
-                                {
-                                    constant->SetIntegralValue(log2 + shiftAmount->AsIntConCommon()->IntegralValue());
-                                    BlockRange().Remove(shiftAmount);
-                                }
-                                else
-                                {
-                                    if (log2 != 0)
-                                    {
-                                        op2 = comp->gtNewOperNode(GT_ADD, binOp->gtType, shiftAmount, constant);
-                                        BlockRange().InsertAfter(constant, op2);
-                                    }
-                                    else
-                                    {
-                                        op2 = shiftAmount;
-                                        BlockRange().Remove(constant);
-                                    }
-                                }
-                                BlockRange().Remove(op1);
-                                op1 = op1->gtGetOp1();
-                            }
 
                             if (user->OperIs(GT_EQ, GT_NE))
                             {
@@ -261,6 +230,70 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                 }
                                 BlockRange().Remove(user->gtGetOp2());
                                 BlockRange().Remove(user);
+                            }
+
+                            binOp->ChangeOper(GT_BIT_EXTRACT);
+                            binOp->gtType = TYP_INT;
+
+                            uint32_t log2 = BitOperations::Log2(bit);
+                            constant->SetIntegralValue(log2);
+                            constant->SetContained();
+
+                            if (op1->OperIs(GT_RSZ, GT_RSH)) // (a >> N) & bit  =>  BIT_EXTRACT(a, N + log2(bit))
+                            {
+                                GenTree* shiftAmount = op1->gtGetOp2();
+                                if (shiftAmount->IsIntegralConst())
+                                {
+                                    int size = emitActualTypeSize(op1) * 8;
+                                    assert(shiftAmount->AsIntConCommon()->IntegralValue() < size);
+                                    int bitIndex = log2 + shiftAmount->AsIntConCommon()->IntegralValue();
+                                    if (bitIndex < (size - 1))
+                                    {
+                                        constant->SetIntegralValue(bitIndex);
+                                        BlockRange().Remove(shiftAmount);
+                                    }
+                                    else
+                                    {
+                                        if (bitIndex >= size && op1->OperIs(GT_RSZ))
+                                        {
+                                            use.ReplaceWith(constant);
+                                            constant->SetIntegralValue(0);
+                                            if (!IsContainableImmed(use.User(), constant))
+                                            {
+                                                assert(constant->isContained());
+                                                constant->ClearContained();
+                                            }
+                                            BlockRange().Remove(op1, true);
+                                            BlockRange().Remove(binOp);
+                                        }
+                                        else
+                                        {
+                                            // Replace with a shift right calculating the last/sign bit
+                                            use.ReplaceWith(op1);
+                                            BlockRange().Remove(op2);
+                                            BlockRange().Remove(binOp);
+                                            shiftAmount->AsIntConCommon()->SetIntegralValue(size - 1);
+                                        }
+                                        return use.Def()->gtNext;
+                                    }
+                                }
+                                else
+                                {
+                                    if (log2 != 0)
+                                    {
+                                        op2 =
+                                            comp->gtNewOperNode(GT_ADD, shiftAmount->TypeGet(), shiftAmount, constant);
+                                        BlockRange().InsertAfter(constant, op2);
+                                    }
+                                    else
+                                    {
+                                        op2 = shiftAmount;
+                                        BlockRange().Remove(constant);
+                                    }
+                                }
+
+                                BlockRange().Remove(op1);
+                                op1 = op1->gtGetOp1();
                             }
                         }
                     }
