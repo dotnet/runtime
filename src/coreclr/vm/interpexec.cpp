@@ -1229,7 +1229,7 @@ do {                                                                           \
     if (idx >= len)                                                            \
         assert(0);                                                             \
                                                                                \
-    BYTE* pData = arr->GetDataPtr();                                           \
+    uint8_t* pData = arr->GetDataPtr();                                           \
     size_t size = arr->GetComponentSize();                                     \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
                                                                                \
@@ -1293,7 +1293,7 @@ do {                                                                           \
     if (idx >= len)                                                            \
         assert(0);                                                             \
                                                                                \
-    BYTE* pData = arr->GetDataPtr();                                           \
+    uint8_t* pData = arr->GetDataPtr();                                           \
     size_t size = arr->GetComponentSize();                                     \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
                                                                                \
@@ -1302,12 +1302,12 @@ do {                                                                           \
 } while (0)
                 case INTOP_STELEM_I1:
                 {
-                    STELEM(int32_t, int8_t);
+                    STELEM(int8_t, int8_t);
                     break;
                 }
                 case INTOP_STELEM_I2:
                 {
-                    STELEM(int32_t, int16_t);
+                    STELEM(int16_t, int16_t);
                     break;
                 }
                 case INTOP_STELEM_I4:
