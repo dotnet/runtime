@@ -258,7 +258,7 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
 // Returns true if the current call set the stub, false if it was already set
 bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
 {
-    LIMITED_METHOD_CONTRACT;
+    STANDARD_VM_CONTRACT;
 
     IfFailThrow(EnsureCodeDataExists(NULL));
 

@@ -24,11 +24,10 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
     CallStubHeader *pHeader = pMD->GetCallStub();
     if (pHeader == NULL)
     {
+        GCX_PREEMP();
+
         AllocMemTracker amTracker;
-        {
-            GCX_PREEMP();
-            pHeader = callStubGenerator.GenerateCallStub(pMD, &amTracker);
-        }
+        pHeader = callStubGenerator.GenerateCallStub(pMD, &amTracker);
 
         if (pMD->SetCallStub(pHeader))
         {
