@@ -3459,12 +3459,15 @@ retry_emit:
 
             case CEE_BOX: {
                 CHECK_STACK(1);
-                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1)),
+                    boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
+                CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
                 AddIns(INTOP_BOX);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
-                PushStackType(StackTypeO, clsHnd);
+                PushStackType(StackTypeO, boxedClsHnd);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndex(m_compHnd->getHelperFtn(helpFunc));
                 m_ip += 5;
                 break;
             }
@@ -3472,11 +3475,13 @@ retry_emit:
             case CEE_UNBOX: {
                 CHECK_STACK(1);
                 CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper(clsHnd);
                 AddIns(INTOP_UNBOX);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 PushStackType(StackTypeI, NULL);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndex(m_compHnd->getHelperFtn(helpFunc));
                 m_ip += 5;
                 break;
             }
@@ -3484,11 +3489,13 @@ retry_emit:
             case CEE_UNBOX_ANY: {
                 CHECK_STACK(1);
                 CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper(clsHnd);
                 AddIns(INTOP_UNBOX_ANY);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 PushStackType(StackTypeVT, clsHnd);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndex(m_compHnd->getHelperFtn(helpFunc));
                 m_ip += 5;
                 break;
             }

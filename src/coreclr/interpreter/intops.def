@@ -139,9 +139,9 @@ OPDEF(INTOP_CONV_R8_R4, "conv.r8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
 
-OPDEF(INTOP_BOX, "box", 4, 1, 1, InterpOpClassHandle)
-OPDEF(INTOP_UNBOX, "unbox", 4, 1, 1, InterpOpClassHandle)
-OPDEF(INTOP_UNBOX_ANY, "unbox.any", 4, 1, 1, InterpOpClassHandle)
+OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 // Unary operations end
 
 OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)

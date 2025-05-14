@@ -1200,6 +1200,15 @@ CALL_TARGET_IP:
                     UNREACHABLE();
                     break;
                 }
+                case INTOP_BOX:
+                {
+                    int dreg = ip[1];
+                    int sreg = ip[2];
+                    CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
+                    void *helper = pMethod->pDataItems[ip[4]];
+                    assert(0);
+                    ip += 5;
+                }
                 case INTOP_FAILFAST:
                     assert(0);
                     break;
