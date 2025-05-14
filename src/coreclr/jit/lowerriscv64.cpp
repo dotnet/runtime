@@ -241,6 +241,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
                             if (op1->OperIs(GT_RSZ, GT_RSH)) // (a >> N) & bit  =>  BIT_EXTRACT(a, N + log2(bit))
                             {
+                                bool removeShift = true;
                                 GenTree* shiftAmount = op1->gtGetOp2();
                                 if (shiftAmount->IsIntegralConst())
                                 {
@@ -279,21 +280,18 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                 }
                                 else
                                 {
-                                    if (log2 != 0)
-                                    {
-                                        op2 =
-                                            comp->gtNewOperNode(GT_ADD, shiftAmount->TypeGet(), shiftAmount, constant);
-                                        BlockRange().InsertAfter(constant, op2);
-                                    }
-                                    else
+                                    removeShift = (log2 == 0);
+                                    if (removeShift)
                                     {
                                         op2 = shiftAmount;
                                         BlockRange().Remove(constant);
                                     }
                                 }
-
-                                BlockRange().Remove(op1);
-                                op1 = op1->gtGetOp1();
+                                if (removeShift)
+                                {
+                                    BlockRange().Remove(op1);
+                                    op1 = op1->gtGetOp1();
+                                }
                             }
                         }
                     }
