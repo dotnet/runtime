@@ -820,7 +820,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             // DSA PKIX signature format is a DER SEQUENCE.
             Assert.Equal(0x30, signature[0]);
 
-            // CDSA Oids are all under 1.2.840.10045.4.
+            // ECDSA Oids are all under 1.2.840.10045.4.
             Assert.StartsWith("1.2.840.10045.4.", counterSigner.SignatureAlgorithm.Value);
 #endif
 

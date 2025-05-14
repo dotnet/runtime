@@ -227,7 +227,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
-        public static void SignCmsUsingECDSaCertAndSlhDsaKeyThrows()
+        public static void SignCmsUsingECDsaCertAndSlhDsaKeyThrows()
         {
             byte[] content = { 9, 8, 7, 6, 5 };
 
