@@ -1213,7 +1213,7 @@ CALL_TARGET_IP:
                     HELPER_NEWARR helperFn = reinterpret_cast<HELPER_NEWARR>(pHelper);
 
                     Object* arr = helperFn(arrayClsHnd, (intptr_t)length);
-                    SetObjectReferenceUnchecked(LOCAL_VAR_ADDR(ip[1], OBJECTREF), ObjectToOBJECTREF(arr));
+                    LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
                     break;
