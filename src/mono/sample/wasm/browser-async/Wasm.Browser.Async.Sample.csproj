@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <EmccFlags>$(EmccFlags) -sWASM_ASYNC_COMPILATION=0</EmccFlags>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
+</Project>
