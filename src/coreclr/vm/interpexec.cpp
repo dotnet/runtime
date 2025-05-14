@@ -1105,7 +1105,8 @@ CALL_TARGET_IP:
                 memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);
                 ip += 3;
                 break;
-            case INTOP_GC_COLLECT: {
+            case INTOP_GC_COLLECT:
+            {
                 // HACK: blocking gc of all generations to enable early stackwalk testing
                 // Interpreter-TODO: Remove this
                 {
@@ -1114,6 +1115,136 @@ CALL_TARGET_IP:
                     GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
                 }
                 ip++;
+                break;
+            }
+            case INTOP_NEWARR:
+            {
+                int32_t length = LOCAL_VAR(ip[2], int32_t);
+                if (length < 0)
+                    assert(0); // Interpreter-TODO: Invalid array length
+
+                MethodTable* pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
+                TypeHandle elemTH = TypeHandle(pMT);
+                TypeHandle arrTH = elemTH.MakeSZArray();
+
+                OBJECTREF arr = AllocateSzArray(arrTH, length, GC_ALLOC_NO_FLAGS);
+
+                LOCAL_VAR(ip[1], OBJECTREF) = arr;
+
+                ip += 4;
+                break;
+            }
+#define LDELEM(dtype,etype)                                                    \
+do {                                                                           \
+    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
+    if (arrayRef == NULL)                                                      \
+        assert(0);                                                             \
+                                                                               \
+    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    uint32_t len = arr->GetNumComponents();                                    \
+    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
+    if (idx >= len)                                                            \
+        assert(0);                                                             \
+                                                                               \
+    BYTE* pData = arr->GetDataPtr();                                           \
+    size_t size = arr->GetComponentSize();                                     \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
+                                                                               \
+    LOCAL_VAR(ip[1], dtype) = *pElem;                                          \
+    ip += 4;                                                                   \
+} while (0)
+            case INTOP_LDELEM_I1:
+            {
+                LDELEM(int32_t, int8_t);
+                break;
+            }
+            case INTOP_LDELEM_U1:
+            {
+                LDELEM(int32_t, uint8_t);
+                break;
+            }
+            case INTOP_LDELEM_I2:
+            {
+                LDELEM(int32_t, int16_t);
+                break;
+            }
+            case INTOP_LDELEM_U2:
+            {
+                LDELEM(int32_t, uint16_t);
+                break;
+            }
+            case INTOP_LDELEM_I4:
+            {
+                LDELEM(int32_t, int32_t);
+                break;
+            }
+            case INTOP_LDELEM_U4:
+            {
+                LDELEM(int32_t, uint32_t);
+                break;
+            }
+            case INTOP_LDELEM_I8:
+            {
+                LDELEM(int64_t, int64_t);
+                break;
+            }
+            case INTOP_LDELEM_R4:
+            {
+                LDELEM(float, float);
+                break;
+            }
+            case INTOP_LDELEM_R8:
+            {
+                LDELEM(double, double);
+                break;
+            }
+#define STELEM(dtype,etype)                                                    \
+do {                                                                           \
+    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
+    if (arrayRef == NULL)                                                      \
+        assert(0);                                                             \
+                                                                               \
+    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    uint32_t len = arr->GetNumComponents();                                    \
+    uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
+    if (idx >= len)                                                            \
+        assert(0);                                                             \
+                                                                               \
+    BYTE* pData = arr->GetDataPtr();                                           \
+    size_t size = arr->GetComponentSize();                                     \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
+                                                                               \
+    *pElem = LOCAL_VAR(ip[3], dtype);                                          \
+    ip += 4;                                                                   \
+} while (0)
+            case INTOP_STELEM_I1:
+            {
+                STELEM(int32_t, int8_t);
+                break;
+            }
+            case INTOP_STELEM_I2:
+            {
+                STELEM(int32_t, int16_t);
+                break;
+            }
+            case INTOP_STELEM_I4:
+            {
+                STELEM(int32_t, int32_t);
+                break;
+            }
+            case INTOP_STELEM_I8:
+            {
+                STELEM(int64_t, int64_t);
+                break;
+            }
+            case INTOP_STELEM_R4:
+            {
+                STELEM(float, float);
+                break;
+            }
+            case INTOP_STELEM_R8:
+            {
+                STELEM(double, double);
                 break;
             }
             case INTOP_FAILFAST:

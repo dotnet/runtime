@@ -102,6 +102,9 @@ public class InterpreterTest
 //        if (!TestVirtual())
 //          Environment.FailFast(null);
 
+        if (!TestArray())
+            Environment.FailFast(null);
+
         // For stackwalking validation
         System.GC.Collect();
     }
@@ -262,6 +265,255 @@ public class InterpreterTest
             return false;
         if (itest.VirtualMethod() != 0xbebe)
             return false;
+        return true;
+    }
+
+    public static bool TestArray()
+    {
+        // sbyte
+        if (!ArraySByte(0, 0)) return false;
+        if (!ArraySByte(32, 1)) return false;
+        if (!ArraySByte(32, 32)) return false;
+        if (!ArraySByte(32, sbyte.MinValue)) return false;
+        if (!ArraySByte(32, sbyte.MaxValue)) return false;
+
+        // byte
+        if (!ArrayByte(0, 0)) return false;
+        if (!ArrayByte(32, 1)) return false;
+        if (!ArrayByte(32, 32)) return false;
+        if (!ArrayByte(32, byte.MinValue)) return false;
+        if (!ArrayByte(32, byte.MaxValue)) return false;
+
+        // short
+        if (!ArrayInt16(0, 0)) return false;
+        if (!ArrayInt16(32, 1)) return false;
+        if (!ArrayInt16(32, 32)) return false;
+        if (!ArrayInt16(32, short.MinValue)) return false;
+        if (!ArrayInt16(32, short.MaxValue)) return false;
+
+        // ushort
+        if (!ArrayUInt16(0, 0)) return false;
+        if (!ArrayUInt16(32, 1)) return false;
+        if (!ArrayUInt16(32, 32)) return false;
+        if (!ArrayUInt16(32, ushort.MinValue)) return false;
+        if (!ArrayUInt16(32, ushort.MaxValue)) return false;
+
+        // int
+        if (!ArrayInt32(0, 0)) return false;
+        if (!ArrayInt32(32, 1)) return false;
+        if (!ArrayInt32(32, 32)) return false;
+        if (!ArrayInt32(32, int.MinValue)) return false;
+        if (!ArrayInt32(32, int.MaxValue)) return false;
+
+        // uint
+        if (!ArrayUInt32(0, 0)) return false;
+        if (!ArrayUInt32(32, 1)) return false;
+        if (!ArrayUInt32(32, 32)) return false;
+        if (!ArrayUInt32(32, uint.MinValue)) return false;
+        if (!ArrayUInt32(32, uint.MaxValue)) return false;
+
+        // // long
+        if (!ArrayInt64(0, 0)) return false;
+        if (!ArrayInt64(1, 1)) return false;
+        if (!ArrayInt64(32, 32)) return false;
+        if (!ArrayInt64(32, Int64.MinValue)) return false;
+        if (!ArrayInt64(32, Int64.MaxValue)) return false;
+
+        // float
+        if (!ArrayFloat(0, 0)) return false;
+        if (!ArrayFloat(1, 1)) return false;
+        if (!ArrayFloat(32, 32)) return false;
+        if (!ArrayFloat(32, float.MinValue)) return false;
+        if (!ArrayFloat(32, float.MaxValue)) return false;
+
+        // // double
+        if (!ArrayDouble(0, 0)) return false;
+        if (!ArrayDouble(1, 1)) return false;
+        if (!ArrayDouble(32, 32)) return false;
+        // FIXME: ldc.r8 is NaN
+        // if (!ArrayDouble(32, double.MinValue)) return false;
+        // if (!ArrayDouble(32, double.MaxValue)) return false;
+
+        return true;
+    }
+
+    public static bool ArraySByte(int length, sbyte value)
+    {
+        sbyte[] values = new sbyte[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayByte(int length, byte value)
+    {
+        byte[] values = new byte[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayInt16(int length, short value)
+    {
+        short[] values = new short[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayUInt16(int length, ushort value)
+    {
+        ushort[] values = new ushort[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayInt32(int length, int value)
+    {
+        int[] values = new int[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayUInt32(int length, uint value)
+    {
+        uint[] values = new uint[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayInt64(int length, long value)
+    {
+        long[] values = new long[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayFloat(int length, float value)
+    {
+        float[] values = new float[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static bool ArrayDouble(int length, double value)
+    {
+        double[] values = new double[length];
+        if (values.Length != length)
+            return false;
+
+        if (length == 0)
+            return true;
+
+        values[0] = value;
+        values[length - 1] = value;
+
+        if (values[0] != value)
+            return false;
+        if (values[length - 1] != value)
+            return false;
+
         return true;
     }
 }

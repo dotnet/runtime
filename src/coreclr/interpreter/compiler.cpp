@@ -20,6 +20,7 @@ static const StackType g_stackTypeFromInterpType[] =
     StackTypeI4, // I2
     StackTypeI4, // U2
     StackTypeI4, // I4
+    StackTypeI4, // U4
     StackTypeI8, // I8
     StackTypeR4, // R4
     StackTypeR8, // R8
@@ -1735,9 +1736,41 @@ static int32_t GetStindForType(InterpType interpType)
         case InterpTypeI8: return INTOP_STIND_I8;
         case InterpTypeR4: return INTOP_STIND_R4;
         case InterpTypeR8: return INTOP_STIND_R8;
-        case InterpTypeO: return INTOP_STIND_O;
-        case InterpTypeVT: return INTOP_STIND_VT;
-        case InterpTypeByRef: return INTOP_STIND_I;
+        default:
+            assert(0);
+    }
+    return -1;
+}
+
+static int32_t GetLdelemForType(InterpType interpType)
+{
+    switch (interpType) {
+        case InterpTypeI1: return INTOP_LDELEM_I1;
+        case InterpTypeU1: return INTOP_LDELEM_U1;
+        case InterpTypeI2: return INTOP_LDELEM_I2;
+        case InterpTypeU2: return INTOP_LDELEM_U2;
+        case InterpTypeI4: return INTOP_LDELEM_I4;
+        case InterpTypeU4: return INTOP_LDELEM_U4;
+        case InterpTypeI8: return INTOP_LDELEM_I8;
+        case InterpTypeR4: return INTOP_LDELEM_R4;
+        case InterpTypeR8: return INTOP_LDELEM_R8;
+        default:
+            assert(0);
+    }
+    return -1;
+}
+
+static int32_t GetStelemForType(InterpType interpType)
+{
+    switch (interpType) {
+        case InterpTypeI1: return INTOP_STELEM_I1;
+        case InterpTypeU1: return INTOP_STELEM_U1;
+        case InterpTypeI2: return INTOP_STELEM_I2;
+        case InterpTypeU2: return INTOP_STELEM_U2;
+        case InterpTypeI4: return INTOP_STELEM_I4;
+        case InterpTypeI8: return INTOP_STELEM_I8;
+        case InterpTypeR4: return INTOP_STELEM_R4;
+        case InterpTypeR8: return INTOP_STELEM_R8;
         default:
             assert(0);
     }
@@ -1795,6 +1828,24 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     else
         m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
 
+}
+
+void InterpCompiler::EmitLdelem(InterpType interpType)
+{
+    m_pStackPointer -= 2;
+    int32_t opcode = GetLdelemForType(interpType);
+    AddIns(opcode);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    PushInterpType(interpType, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitStelem(InterpType interpType)
+{
+    m_pStackPointer -= 3;
+    int32_t opcode = GetStelemForType(interpType);
+    AddIns(opcode);
+    m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
 }
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
@@ -3229,7 +3280,159 @@ retry_emit:
                         break;
                 }
                 break;
+            case CEE_NEWARR:
+            {
+                CHECK_STACK(1);
 
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+                CORINFO_CLASS_HANDLE elemClsHnd = ResolveClassToken(token);
+
+                if (!m_compHnd->isValueClass(elemClsHnd))
+                {
+                    // Interpreter-TODO: Add support for ref types
+                    m_hasInvalidCode = true;
+                    goto exit_bad_code;
+                }
+
+                m_pStackPointer--;
+
+                AddIns(INTOP_NEWARR);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+
+                PushInterpType(InterpTypeO, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                m_pLastNewIns->data[0] = GetDataItemIndex(elemClsHnd);
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDLEN:
+            {
+                CHECK_STACK(1);
+                EmitLdind(InterpTypeI4, NULL, OFFSETOF__CORINFO_Array__length);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I1:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeI1);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U1:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeU1);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I2:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeI2);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U2:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeU2);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeU4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I8:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeI8);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeI);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_R4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeR4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_R8:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(InterpTypeR8);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I1:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI1);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I2:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI2);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I4:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I8:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI8);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_R4:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeR4);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_R8:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeR8);
+                m_ip++;
+                break;
+            }
             default:
                 assert(0);
                 break;
