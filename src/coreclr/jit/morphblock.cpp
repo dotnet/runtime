@@ -177,7 +177,7 @@ void MorphInitBlockHelper::PrepareDst()
         m_dstVarDsc    = m_comp->lvaGetDesc(m_dstLclNum);
 
         // Kill everything about m_dstLclNum (and its field locals)
-        if (m_comp->optLocalAssertionProp)
+        if (m_comp->optLocalAssertionProp && (m_comp->optAssertionCount > 0))
         {
             m_comp->fgKillDependentAssertions(m_dstLclNum DEBUGARG(m_store));
         }
@@ -222,17 +222,14 @@ void MorphInitBlockHelper::PrepareDst()
 //    Once the init or copy tree is morphed, assertion gen can no
 //    longer recognize what it means.
 //
-//    So we generate assertions based on the original tree, provided that we
-//    will store all fields.
+//    So we generate assertions based on the original tree.
 //
 void MorphInitBlockHelper::PropagateBlockAssertions()
 {
-    if (!m_comp->optLocalAssertionProp)
+    if (m_comp->optLocalAssertionProp)
     {
-        return;
+        m_comp->fgAssertionGen(m_store);
     }
-
-    m_comp->fgAssertionGen(m_store);
 }
 
 //------------------------------------------------------------------------
