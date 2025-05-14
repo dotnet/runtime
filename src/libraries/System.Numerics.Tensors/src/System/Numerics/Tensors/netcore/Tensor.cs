@@ -67,7 +67,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
+        /// <exception cref="ArgumentException">The shapes are not broadcast compatible.</exception>
         public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped ReadOnlySpan<nint> lengths)
         {
             TensorOperation.ValidateCompatibility<T>(source, lengths);
