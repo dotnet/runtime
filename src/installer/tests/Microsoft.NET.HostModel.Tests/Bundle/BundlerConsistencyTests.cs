@@ -309,7 +309,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             Bundler bundler = CreateBundlerInstance();
             bundler.GenerateBundle(fileSpecs);
 
-            var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : 16;
+            var alignment = OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.Arm64 ? 4096 : (OperatingSystem.IsLinux() && RuntimeInformation.OSArchitecture == Architecture.LoongArch64 ? 16384 : 16);
             bundler.BundleManifest.Files.ForEach(file =>
                 Assert.True((file.Type != FileType.Assembly) || (file.Offset % alignment == 0)));
         }

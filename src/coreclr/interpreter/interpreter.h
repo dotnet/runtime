@@ -15,7 +15,6 @@
 #ifdef HOST_WINDOWS
 #include <malloc.h>
 #endif
-#include <algorithm>
 
 #include "corhdr.h"
 #include "corjit.h"

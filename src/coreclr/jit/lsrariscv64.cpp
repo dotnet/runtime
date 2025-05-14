@@ -261,7 +261,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROR:
         case GT_ROL:
-            if (tree->OperIs(GT_ROR, GT_ROL))
+        case GT_SH1ADD:
+        case GT_SH1ADD_UW:
+        case GT_SH2ADD:
+        case GT_SH2ADD_UW:
+        case GT_SH3ADD:
+        case GT_SH3ADD_UW:
+        case GT_ADD_UW:
+        case GT_SLLI_UW:
+            if (tree->OperIs(GT_ROR, GT_ROL) && !compiler->compOpportunisticallyDependsOn(InstructionSet_Zbb))
                 buildInternalIntRegisterDefForNode(tree);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalRegisterUses();
@@ -437,17 +445,8 @@ int LinearScan::BuildNode(GenTree* tree)
             if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-                if (tree->gtGetOp2()->isContainedIntOrIImmed())
-                {
-                    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
-                    if (cmpSize == EA_4BYTE && isUnsigned)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (cmpSize == EA_4BYTE)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
+                if (cmpSize == EA_4BYTE)
+                    buildInternalIntRegisterDefForNode(tree);
             }
             buildInternalRegisterUses();
         }
@@ -768,6 +767,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -866,6 +870,10 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                 buildInternalIntRegisterDefForNode(indirTree);
             }
         }
+        else if (addr->OperGet() == GT_CNS_INT)
+        {
+            buildInternalIntRegisterDefForNode(indirTree);
+        }
     }
 
 #ifdef FEATURE_SIMD
@@ -953,6 +961,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
             }
             assert(ctrlExprCandidates != RBM_NONE);
         }
+
+        // In case ctrlExpr is a contained constant, we need a register to store the value.
+        if (ctrlExpr->isContainedIntOrIImmed())
+        {
+            buildInternalIntRegisterDefForNode(call);
+        }
     }
     else if (call->IsR2ROrVirtualStubRelativeIndir())
     {
@@ -990,7 +1004,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     srcCount += BuildCallArgUses(call);
 
-    if (ctrlExpr != nullptr)
+    if (ctrlExpr != nullptr && !ctrlExpr->isContainedIntOrIImmed())
     {
         BuildUse(ctrlExpr, ctrlExprCandidates);
         srcCount++;
@@ -999,6 +1013,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {

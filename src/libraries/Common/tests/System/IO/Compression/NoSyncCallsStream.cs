@@ -24,11 +24,7 @@ internal sealed class NoSyncCallsStream : Stream
     public override long Position { get => _s.Position; set => _s.Position = value; }
     public override int ReadTimeout { get => _s.ReadTimeout; set => _s.ReadTimeout = value; }
     public override int WriteTimeout { get => _s.WriteTimeout; set => _s.WriteTimeout = value; }
-    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => _s.BeginRead(buffer, offset, count, callback, state);
-    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) => _s.BeginWrite(buffer, offset, count, callback, state);
     public override void Close() => _s.Close();
-    public override int EndRead(IAsyncResult asyncResult) => _s.EndRead(asyncResult);
-    public override void EndWrite(IAsyncResult asyncResult) => _s.EndWrite(asyncResult);
     public override bool Equals(object? obj) => _s.Equals(obj);
     public override int GetHashCode() => _s.GetHashCode();
     public override int ReadByte() => _s.ReadByte();
@@ -37,6 +33,10 @@ internal sealed class NoSyncCallsStream : Stream
     public override string? ToString() => _s.ToString();
 
     // Sync
+    public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.BeginRead(buffer, offset, count, callback, state);
+    public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
+        IsRestrictionEnabled ? throw new InvalidOperationException() : _s.BeginRead(buffer, offset, count, callback, state);
     public override void CopyTo(Stream destination, int bufferSize)
     {
         if (IsRestrictionEnabled)
@@ -58,6 +58,18 @@ internal sealed class NoSyncCallsStream : Stream
         else
         {
             _s.Dispose();
+        }
+    }
+    public override int EndRead(IAsyncResult asyncResult) => IsRestrictionEnabled ? throw new InvalidOperationException() : _s.EndRead(asyncResult);
+    public override void EndWrite(IAsyncResult asyncResult)
+    {
+        if (IsRestrictionEnabled)
+        {
+            throw new InvalidOperationException();
+        }
+        else
+        {
+            _s.EndWrite(asyncResult);
         }
     }
     public override void Flush()

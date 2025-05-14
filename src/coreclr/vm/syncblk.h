@@ -608,22 +608,13 @@ class ComClassFactory;
 struct RCW;
 class RCWHolder;
 typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
-
-#include "shash.h"
 #endif // FEATURE_COMINTEROP
-
-using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
     friend class ClrDataAccess;
 
 public:
-#ifndef TARGET_UNIX
-    // List of InteropSyncBlockInfo instances that have been freed since the last syncblock cleanup.
-    static SLIST_HEADER s_InteropInfoStandbyList;
-#endif // !TARGET_UNIX
-
     InteropSyncBlockInfo()
         : m_pUMEntryThunk{}
 #ifdef FEATURE_COMINTEROP
@@ -633,31 +624,16 @@ public:
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         , m_pRCW{}
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_COMWRAPPERS
-        , m_externalComObjectContext{}
-        , m_managedObjectComWrapperLock{}
-        , m_managedObjectComWrapperMap{}
-#endif // FEATURE_COMWRAPPERS
 #ifdef FEATURE_OBJCMARSHAL
         , m_taggedMemory{}
         , m_taggedAlloc{}
 #endif // FEATURE_OBJCMARSHAL
     {
         LIMITED_METHOD_CONTRACT;
-
-#if defined(FEATURE_COMWRAPPERS)
-        // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
-        m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
-#endif // FEATURE_COMWRAPPERS
     }
 #ifndef DACCESS_COMPILE
     ~InteropSyncBlockInfo();
 #endif
-
-#ifndef TARGET_UNIX
-    // Deletes all items in code:s_InteropInfoStandbyList.
-    static void FlushStandbyList();
-#endif // !TARGET_UNIX
 
 #ifdef FEATURE_COMINTEROP
 
@@ -801,122 +777,6 @@ public:
 #endif
 
 #endif // FEATURE_COMINTEROP
-
-#if defined(FEATURE_COMWRAPPERS)
-public:
-    bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        *mocw = NULL;
-        if (m_managedObjectComWrapperMap == NULL)
-            return false;
-
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-        return m_managedObjectComWrapperMap->Lookup(wrapperId, mocw);
-    }
-
-#ifndef DACCESS_COMPILE
-    bool TrySetManagedObjectComWrapper(_In_ INT64 wrapperId, _In_ void* mocw, _In_ void* curr = NULL)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_managedObjectComWrapperMap == NULL)
-        {
-            NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (InterlockedCompareExchangeT(&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
-            {
-                map.SuppressRelease();
-            }
-
-            _ASSERTE(m_managedObjectComWrapperMap != NULL);
-        }
-
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        if (m_managedObjectComWrapperMap->LookupPtr(wrapperId) != curr)
-            return false;
-
-        m_managedObjectComWrapperMap->Add(wrapperId, mocw);
-        return true;
-    }
-
-    using ClearWrappersCallback = void(void* mocw);
-    void ClearManagedObjectComWrappers(ClearWrappersCallback* callback)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (m_managedObjectComWrapperMap == NULL)
-            return;
-
-        CQuickArrayList<void*> localList;
-        {
-            CrstHolder lock(&m_managedObjectComWrapperLock);
-            if (callback != NULL)
-            {
-                ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-                while (iter != m_managedObjectComWrapperMap->End())
-                {
-                    localList.Push(iter->Value());
-                    ++iter;
-                }
-            }
-
-            m_managedObjectComWrapperMap->RemoveAll();
-        }
-
-        for (SIZE_T i = 0; i < localList.Size(); i++)
-            callback(localList[i]);
-    }
-
-    using EnumWrappersCallback = bool(void* mocw, void* cxt);
-    void EnumManagedObjectComWrappers(EnumWrappersCallback* callback, void* cxt)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(callback != NULL);
-
-        if (m_managedObjectComWrapperMap == NULL)
-            return;
-
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-        while (iter != m_managedObjectComWrapperMap->End())
-        {
-            if (!callback(iter->Value(), cxt))
-                break;
-            ++iter;
-        }
-    }
-#endif // !DACCESS_COMPILE
-
-    bool TryGetExternalComObjectContext(_Out_ void** eoc)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        *eoc = m_externalComObjectContext;
-        return (*eoc != NULL);
-    }
-
-#ifndef DACCESS_COMPILE
-    bool TrySetExternalComObjectContext(_In_ void* eoc, _In_ void* curr = NULL)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (InterlockedCompareExchangeT(
-                        &m_externalComObjectContext,
-                        eoc,
-                        curr) == curr);
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    // See InteropLib API for usage.
-    void* m_externalComObjectContext;
-
-    CrstExplicitInit m_managedObjectComWrapperLock;
-    ManagedObjectComWrapperByIdMap* m_managedObjectComWrapperMap;
-#endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL
 public:
@@ -1093,20 +953,7 @@ class SyncBlock
 
         if (!m_pInteropInfo)
         {
-            NewHolder<InteropSyncBlockInfo> pInteropInfo;
-#ifndef TARGET_UNIX
-            pInteropInfo = (InteropSyncBlockInfo *)InterlockedPopEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-
-            if (pInteropInfo != NULL)
-            {
-                // cache hit - reinitialize the data structure
-                new (pInteropInfo) InteropSyncBlockInfo();
-            }
-            else
-#endif // !TARGET_UNIX
-            {
-                pInteropInfo = new InteropSyncBlockInfo();
-            }
+            NewHolder<InteropSyncBlockInfo> pInteropInfo = new InteropSyncBlockInfo();
 
             if (SetInteropInfo(pInteropInfo))
                 pInteropInfo.SuppressRelease();

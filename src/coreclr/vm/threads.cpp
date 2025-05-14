@@ -56,6 +56,10 @@
 #include "exinfo.h"
 #endif
 
+#ifdef FEATURE_INTERPRETER
+#include "interpexec.h"
+#endif // FEATURE_INTERPRETER
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -110,7 +114,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
     return m_argBuffer;
 }
 
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+#if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
@@ -352,8 +356,8 @@ bool Thread::DetectHandleILStubsForDebugger()
 }
 
 #ifndef _MSC_VER
-__thread ThreadLocalInfo gCurrentThreadInfo;
-#endif
+thread_local ThreadLocalInfo t_CurrentThreadInfo;
+#endif // _MSC_VER
 
 #ifndef DACCESS_COMPILE
 
@@ -361,8 +365,8 @@ void SetThread(Thread* t)
 {
     LIMITED_METHOD_CONTRACT
 
-    Thread* origThread = gCurrentThreadInfo.m_pThread;
-    gCurrentThreadInfo.m_pThread = t;
+    Thread* origThread = t_CurrentThreadInfo.m_pThread;
+    t_CurrentThreadInfo.m_pThread = t;
     if (t != NULL)
     {
         _ASSERTE(origThread == NULL);
@@ -380,7 +384,7 @@ void SetThread(Thread* t)
 #endif
 
     // Clear or set the app domain to the one domain based on if the thread is being nulled out or set
-    gCurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
+    t_CurrentThreadInfo.m_pAppDomain = t == NULL ? NULL : AppDomain::GetCurrentDomain();
 }
 
 BOOL Thread::Alert ()
@@ -1159,12 +1163,12 @@ void InitThreadManager()
 #ifndef TARGET_UNIX
     _ASSERTE(GetThreadNULLOk() == NULL);
 
-    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo);
+    size_t offsetOfCurrentThreadInfo = Thread::GetOffsetOfThreadStatic(&t_CurrentThreadInfo);
 
     _ASSERTE(offsetOfCurrentThreadInfo < 0x8000);
     _ASSERTE(_tls_index < 0x10000);
 
-    // Save gCurrentThreadInfo location for debugger
+    // Save t_CurrentThreadInfo location for debugger
     SetIlsIndex((DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000));
 
     _ASSERTE(g_TrapReturningThreads == 0);
@@ -1326,7 +1330,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = NULL;
+    m_pGCFrame              = GCFRAME_TOP;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -1538,6 +1542,7 @@ Thread::Thread()
 
 #ifdef TARGET_X86
     m_HijackReturnKind = RT_Illegal;
+    m_HijackHasAsyncRet = false;
 #endif
 
     m_currentPrepareCodeConfig = nullptr;
@@ -1549,6 +1554,10 @@ Thread::Thread()
 #ifdef _DEBUG
     memset(dangerousObjRefs, 0, sizeof(dangerousObjRefs));
 #endif // _DEBUG
+
+#ifdef FEATURE_INTERPRETER
+    m_pInterpThreadContext = nullptr;
+#endif // FEATURE_INTERPRETER
 }
 
 //--------------------------------------------------------------------
@@ -2802,6 +2811,13 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
     DWORD CurrentThreadID = pCurrentThread?pCurrentThread->GetThreadId():0;
     DWORD ThisThreadID = GetThreadId();
 
+#ifdef FEATURE_INTERPRETER
+    if (m_pInterpThreadContext != nullptr)
+    {
+        delete m_pInterpThreadContext;
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // If the currently running thread is the thread that died and it is an STA thread, then we
     // need to release all the RCW's in the current context. However, we cannot do this if we
@@ -2894,6 +2910,12 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
             LOG((LF_SYNC, INFO3, "OnThreadTerminate obtain lock\n"));
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_OTHER);
 
+        }
+
+        if (m_State & TS_DebugWillSync)
+        {
+            ResetThreadState(TS_DebugWillSync);
+            InterlockedDecrement(&m_DebugWillSyncCount);
         }
 
         SetThreadState(TS_Dead);
@@ -6845,14 +6867,6 @@ void Thread::DoExtraWorkForFinalizer()
 
     if (RequireSyncBlockCleanup())
     {
-#ifndef TARGET_UNIX
-        InteropSyncBlockInfo::FlushStandbyList();
-#endif // !TARGET_UNIX
-
-#ifdef FEATURE_COMINTEROP
-        RCW::FlushStandbyList();
-#endif // FEATURE_COMINTEROP
-
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
     }
     if (SystemDomain::System()->RequireAppDomainCleanup())
@@ -7706,7 +7720,11 @@ void Thread::StaticInitialize()
     InitializeSpecialUserModeApc();
 
     // When shadow stacks are enabled, support for special user-mode APCs with the necessary functionality is required
-    _ASSERTE_ALL_BUILDS(!AreShadowStacksEnabled() || UseSpecialUserModeApc());
+    if (AreShadowStacksEnabled() && !UseSpecialUserModeApc())
+    {
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE,
+            W("Your Windows doesn't fully support CET. Please install all available Windows updates."));
+    }
 #endif
 }
 
@@ -7783,6 +7801,20 @@ void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord, size_t targetSSP)
     RtlRestoreContext(ContextRecord, NULL);
 #endif
 }
+
+#ifdef FEATURE_INTERPRETER
+InterpThreadContext* Thread::GetInterpThreadContext()
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_pInterpThreadContext == nullptr)
+    {
+        m_pInterpThreadContext = new (nothrow) InterpThreadContext();
+    }
+
+    return m_pInterpThreadContext;
+}
+#endif // FEATURE_INTERPRETER
 
 #endif // #ifndef DACCESS_COMPILE
 

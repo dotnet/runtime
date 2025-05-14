@@ -89,6 +89,7 @@ public:
 #ifdef DEBUGGING_SUPPORTED
     // DebuggerExState stores information necessary for intercepting an exception
     DebuggerExState*    GetDebuggerState();
+    void SetDebuggerIndicatedFramePointer(LPVOID indicatedFramePointer);
 
     // check to see if the current exception is interceptable
     BOOL                IsDebuggerInterceptable();
