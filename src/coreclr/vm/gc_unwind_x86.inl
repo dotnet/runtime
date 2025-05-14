@@ -653,6 +653,15 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
+    _ASSERTE(info->ebpFrame);
+    unsigned position = info->savedRegsCountExclFP +
+                        info->localloc +
+                        info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) // Is this method synchronized
+                        + 1; // for ebpFrame
+    return position * sizeof(TADDR);
+#else
     // See comment above Compiler::lvaAssignFrameOffsets() in src\jit\il\lclVars.cpp
     // for frame layout
 
@@ -664,6 +673,7 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     // to get the total size of the header.
     return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
+#endif // FEATURE_EH_FUNCLETS
 }
 #endif // FEATURE_NATIVEAOT
 
