@@ -1229,7 +1229,7 @@ do {                                                                           \
     if (idx >= len)                                                            \
         assert(0);                                                             \
                                                                                \
-    uint8_t* pData = arr->GetDataPtr();                                           \
+    uint8_t* pData = arr->GetDataPtr();                                        \
     size_t size = arr->GetComponentSize();                                     \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
                                                                                \
@@ -1293,21 +1293,21 @@ do {                                                                           \
     if (idx >= len)                                                            \
         assert(0);                                                             \
                                                                                \
-    uint8_t* pData = arr->GetDataPtr();                                           \
+    uint8_t* pData = arr->GetDataPtr();                                        \
     size_t size = arr->GetComponentSize();                                     \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
                                                                                \
-    *pElem = LOCAL_VAR(ip[3], dtype);                                          \
+    *pElem = (etype)LOCAL_VAR(ip[3], dtype);                                   \
     ip += 4;                                                                   \
 } while (0)
                 case INTOP_STELEM_I1:
                 {
-                    STELEM(int8_t, int8_t);
+                    STELEM(int32_t, int8_t);
                     break;
                 }
                 case INTOP_STELEM_I2:
                 {
-                    STELEM(int16_t, int16_t);
+                    STELEM(int32_t, int16_t);
                     break;
                 }
                 case INTOP_STELEM_I4:
