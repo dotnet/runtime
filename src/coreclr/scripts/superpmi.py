@@ -3951,7 +3951,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
                     else:
                         with tarfile.open(download_path, "r") as tar:
                             tar.extractall(target_dir)
-                            archive_names = zip.namelist()
+                            archive_names = tar.getnames()
 
                     for archive_name in archive_names:
                         if archive_name.endswith("/"):
