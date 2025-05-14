@@ -1,8 +1,8 @@
 ---
-name: Performance issue
+name: Issue|Performancei_update
 about: Report a performance problem or regression
 title: ''
-labels: 'tenet-performance'
+labels: ''
 assignees: ''
 
 ---
