@@ -207,7 +207,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != NULL)
+    while (pGCFrame != GCFRAME_TOP)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();
@@ -388,8 +388,10 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 #ifdef FEATURE_COMWRAPPERS
     bool isRooted = false;
-    if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+    if (ComWrappersNative::IsManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+    {
         return isRooted;
+    }
 #endif
 #ifdef FEATURE_OBJCMARSHAL
     bool isReferenced = false;

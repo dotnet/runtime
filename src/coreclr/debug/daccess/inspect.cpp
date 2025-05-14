@@ -2694,7 +2694,7 @@ ClrDataTypeDefinition::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(typeDef || pubTypeDef);
+    _ASSERTE(typeDef || pubTypeDef);
 
     if (typeDef)
     {
@@ -3808,7 +3808,7 @@ ClrDataTypeInstance::NewFromModule(ClrDataAccess* dac,
         return E_OUTOFMEMORY;
     }
 
-    PREFIX_ASSUME(typeInst || pubTypeInst);
+    _ASSERTE(typeInst || pubTypeInst);
 
     if (typeInst)
     {

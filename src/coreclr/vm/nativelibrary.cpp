@@ -824,7 +824,7 @@ namespace
         if ( !name || !*name )
             return NULL;
 
-        PREFIX_ASSUME( name != NULL );
+        _ASSERTE( name != NULL );
         MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
         NativeLibraryHandleHolder hmod = LoadNativeLibraryViaDllImportResolver(pMD, wszLibName);

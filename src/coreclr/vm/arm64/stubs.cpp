@@ -768,9 +768,11 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
      pRD->pCurrentContext->X0 = m_Args->X0;
      pRD->pCurrentContext->X1 = m_Args->X1;
+     pRD->pCurrentContext->X2 = m_Args->X2;
 
      pRD->volatileCurrContextPointers.X0 = &m_Args->X0;
      pRD->volatileCurrContextPointers.X1 = &m_Args->X1;
+     pRD->volatileCurrContextPointers.X2 = &m_Args->X2;
 
      pRD->pCurrentContext->X19 = m_Args->X19;
      pRD->pCurrentContext->X20 = m_Args->X20;
@@ -876,7 +878,6 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }

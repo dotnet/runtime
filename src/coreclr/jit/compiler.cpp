@@ -488,8 +488,9 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compILCodeSize   = methodInfo->ILCodeSize;
     info.compILImportSize = 0;
 
-    info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs          = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compIsVarArgs             = false;
+    info.compUsesAsyncContinuation = false;
 }
 
 //------------------------------------------------------------------------
@@ -3159,6 +3160,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: Jit invoked for AOT\n");
         }
+
+        if (compIsAsync())
+        {
+            printf("OPTIONS: compilation is an async state machine\n");
+        }
     }
 #endif
 
@@ -3200,7 +3206,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
-        regIntLast = REG_R23;
+        regIntLast = REG_R31;
     }
 #endif // TARGET_AMD64
 
@@ -5006,6 +5012,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
+    if (compIsAsync())
+    {
+        DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
+    }
+
     // Assign registers to variables, etc.
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
@@ -6075,6 +6086,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Sve() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
+        }
+
+        if (JitConfig.EnableArm64Sve2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
         }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
@@ -7825,12 +7841,7 @@ START:
             pParam->pPrevComp = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
-#if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
-#else
             assert(pParam->pComp != nullptr);
-#endif
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
