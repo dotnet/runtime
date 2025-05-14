@@ -4454,7 +4454,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Min
-        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T Min<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
@@ -4643,7 +4643,7 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region MinNumber
-        /// <summary>Searches for the largest number in the specified tensor.</summary>
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
         /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MinNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
