@@ -303,7 +303,7 @@ namespace System.Security.Cryptography
 
             // A private key export with no attributes has at least 12 bytes overhead so a buffer smaller than that cannot hold a
             // PKCS#8 encoded key. If we happen to get a buffer smaller than that, it won't export.
-            int MinimumPossiblePkcs8MLDsaKey =
+            int minimumPossiblePkcs8MLDsaKey =
                 2 + // PrivateKeyInfo Sequence
                 3 + // Version Integer
                 2 + // AlgorithmIdentifier Sequence
@@ -311,7 +311,7 @@ namespace System.Security.Cryptography
                 2 + // Secret key Octet String prefix, undervalued to be safe
                 Algorithm.PrivateSeedSizeInBytes;
 
-            if (destination.Length < MinimumPossiblePkcs8MLDsaKey)
+            if (destination.Length < minimumPossiblePkcs8MLDsaKey)
             {
                 bytesWritten = 0;
                 return false;
@@ -1499,6 +1499,7 @@ namespace System.Security.Cryptography
             AsnWriter tmp = ExportPkcs8PrivateKeyCallback(static pkcs8 =>
             {
                 AsnWriter writer = new(AsnEncodingRules.BER, initialCapacity: pkcs8.Length);
+
                 try
                 {
                     writer.WriteEncodedValueForCrypto(pkcs8);
