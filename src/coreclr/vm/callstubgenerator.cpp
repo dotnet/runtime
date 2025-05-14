@@ -543,7 +543,12 @@ extern "C" void CallJittedMethodRet4Float(PCODE *routines, int8_t*pArgs, int8_t*
 // The returned call stub header must be freed by the caller using FreeCallStub.
 CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
 
     _ASSERTE(pMD != NULL);
 
@@ -582,14 +587,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
 
     // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
-
-    m_pHeader = (CallStubHeader*)malloc(sizeof(CallStubHeader) + (2 * numArgs + 1) * sizeof(PCODE));
-    if (m_pHeader == NULL)
-    {
-        return NULL;
-    }
-
-    PCODE *routines = m_pHeader->Routines;
+    PCODE *pRoutines = (PCODE*)alloca(sizeof(CallStubHeader) + (numArgs * 2 + 1) * sizeof(PCODE));
 
     int ofs;
     while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -639,13 +637,13 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                         argLocDesc.m_byteStackIndex += 8;
                     }
                 }
-                ProcessArgument(argIt, argLocDescEightByte);
+                ProcessArgument(argIt, argLocDescEightByte, pRoutines);
             }
         }
         else
 #endif // UNIX_AMD64_ABI
         {
-            ProcessArgument(argIt, argLocDesc);
+            ProcessArgument(argIt, argLocDesc, pRoutines);
         }
     }
 
@@ -653,24 +651,24 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
     // Process such a range if any.
     if (m_r1 != NoRange)
     {
-        routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
+        pRoutines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
     }
     else if (m_x1 != NoRange)
     {
-        routines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
+        pRoutines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
     }
     else if (m_s1 != NoRange)
     {
         m_totalStackSize += m_s2 - m_s1 + 1;
-        routines[m_routineIndex++] = (PCODE)Load_Stack;
-        routines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+        pRoutines[m_routineIndex++] = (PCODE)Load_Stack;
+        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
     }
 
-    m_totalStackSize = ALIGN_UP(m_totalStackSize, 16); // Align the stack to 16 bytes
+    CallStubHeader::InvokeFunctionPtr pInvokeFunction = NULL;
 
     if (argIt.HasRetBuffArg())
     {
-        m_pHeader->Invoke = CallJittedMethodRetBuff;
+        pInvokeFunction = CallJittedMethodRetBuff;
     }
     else
     {
@@ -700,14 +698,14 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
-                m_pHeader->Invoke = CallJittedMethodRetI8;
+                pInvokeFunction = CallJittedMethodRetI8;
                 break;
             case ELEMENT_TYPE_R4:
             case ELEMENT_TYPE_R8:
-                m_pHeader->Invoke = CallJittedMethodRetDouble;
+                pInvokeFunction = CallJittedMethodRetDouble;
                 break;
             case ELEMENT_TYPE_VOID:
-                m_pHeader->Invoke = CallJittedMethodRetVoid;
+                pInvokeFunction = CallJittedMethodRetVoid;
                 break;
             case ELEMENT_TYPE_VALUETYPE:
 #ifdef TARGET_AMD64
@@ -715,12 +713,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                 if (thReturnValueType.AsMethodTable()->IsIntrinsicType())
                 {
                     // E.g. Vector2
-                    m_pHeader->Invoke = CallJittedMethodRetDouble;
+                    pInvokeFunction = CallJittedMethodRetDouble;
                 }
                 else
                 {
                     // POD structs smaller than 64 bits are returned in rax
-                    m_pHeader->Invoke = CallJittedMethodRetI8;
+                    pInvokeFunction = CallJittedMethodRetI8;
                 }
 #else // TARGET_WINDOWS
                 if (thReturnValueType.AsMethodTable()->IsRegPassedStruct())
@@ -728,11 +726,11 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                     UINT fpReturnSize = argIt.GetFPReturnSize();
                     if (fpReturnSize == 0)
                     {
-                        m_pHeader->Invoke = CallJittedMethodRetI8;
+                        pInvokeFunction = CallJittedMethodRetI8;
                     }
                     else if (fpReturnSize == 8)
                     {
-                        m_pHeader->Invoke = CallJittedMethodRetDouble;
+                        pInvokeFunction = CallJittedMethodRetDouble;
                     }
                     else
                     {
@@ -743,16 +741,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                         switch (fpReturnSize & 0x3)
                         {
                             case 0:
-                                m_pHeader->Invoke = CallJittedMethodRetI8I8;
+                                pInvokeFunction = CallJittedMethodRetI8I8;
                                 break;
                             case 1:
-                                m_pHeader->Invoke = CallJittedMethodRetDoubleI8;
+                                pInvokeFunction = CallJittedMethodRetDoubleI8;
                                 break;
                             case 2:
-                                m_pHeader->Invoke = CallJittedMethodRetI8Double;
+                                pInvokeFunction = CallJittedMethodRetI8Double;
                                 break;
                             case 3:
-                                m_pHeader->Invoke = CallJittedMethodRetDoubleDouble;
+                                pInvokeFunction = CallJittedMethodRetDoubleDouble;
                                 break;
                         }
                     }
@@ -772,16 +770,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                             switch (thReturnValueType.GetSize())
                             {
                                 case 4:
-                                    m_pHeader->Invoke = CallJittedMethodRetFloat;
+                                    pInvokeFunction = CallJittedMethodRetFloat;
                                     break;
                                 case 8:
-                                    m_pHeader->Invoke = CallJittedMethodRet2Float;
+                                    pInvokeFunction = CallJittedMethodRet2Float;
                                     break;
                                 case 12:
-                                    m_pHeader->Invoke = CallJittedMethodRet3Float;
+                                    pInvokeFunction = CallJittedMethodRet3Float;
                                     break;
                                 case 16:
-                                    m_pHeader->Invoke = CallJittedMethodRet4Float;
+                                    pInvokeFunction = CallJittedMethodRet4Float;
                                     break;
                                 default:
                                     _ASSERTE(!"Should not get here");
@@ -792,16 +790,16 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                             switch (thReturnValueType.GetSize())
                             {
                                 case 8:
-                                    m_pHeader->Invoke = CallJittedMethodRetDouble;
+                                    pInvokeFunction = CallJittedMethodRetDouble;
                                     break;
                                 case 16:
-                                    m_pHeader->Invoke = CallJittedMethodRet2Double;
+                                    pInvokeFunction = CallJittedMethodRet2Double;
                                     break;
                                 case 24:
-                                    m_pHeader->Invoke = CallJittedMethodRet3Double;
+                                    pInvokeFunction = CallJittedMethodRet3Double;
                                     break;
                                 case 32:
-                                    m_pHeader->Invoke = CallJittedMethodRet4Double;
+                                    pInvokeFunction = CallJittedMethodRet4Double;
                                     break;
                                 default:
                                     _ASSERTE(!"Should not get here");
@@ -821,10 +819,10 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
                         case 2:
                         case 4:
                         case 8:
-                            m_pHeader->Invoke = CallJittedMethodRetI8;
+                            pInvokeFunction = CallJittedMethodRetI8;
                             break;
                         case 16:
-                            m_pHeader->Invoke = CallJittedMethodRet2I8;
+                            pInvokeFunction = CallJittedMethodRet2I8;
                             break;
                         default:
                             _ASSERTE(!"The return types that are not HFA should be <= 16 bytes in size");
@@ -841,22 +839,22 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD)
         }
     }
 
-    m_pHeader->NumRoutines = m_routineIndex + 1; // Reserve one extra slot for the target method pointer
-    m_pHeader->TotalStackSize = m_totalStackSize;
+    m_routineIndex++; // Reserve one extra slot for the target method pointer
 
-    // resize the structure to its actually utilized size
-    m_pHeader = (CallStubHeader*)realloc(m_pHeader, sizeof(CallStubHeader) + m_pHeader->NumRoutines * sizeof(PCODE));
-    // In case the reallocation failed, this function return NULL
-    return m_pHeader;
+    LoaderAllocator *pLoaderAllocator = pMD->GetLoaderAllocator();
+    S_SIZE_T finalStubSize(sizeof(CallStubHeader) + m_routineIndex * sizeof(PCODE));
+    void *pHeaderStorage = pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(finalStubSize);
+
+    CallStubHeader *pHeader = new (pHeaderStorage) CallStubHeader(m_routineIndex, pRoutines, ALIGN_UP(m_totalStackSize, STACK_ALIGN_SIZE), pInvokeFunction);
+
+    return pHeader;
 }
 
 // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
 // It updates the ranges of registers and emits entries into the routines array at discontinuities.
-void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc)
+void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc, PCODE *pRoutines)
 {
     LIMITED_METHOD_CONTRACT;
-
-    PCODE *routines = m_pHeader->Routines;
 
     // Check if we have a range of registers or stack arguments that we need to store because the current argument
     // terminates it.
@@ -864,14 +862,14 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
     {
         // No GP register is used to pass the current argument, but we already have a range of GP registers,
         // store the routine for the range
-        routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
+        pRoutines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
         m_r1 = NoRange;
     }
     else if (((argLocDesc.m_cFloatReg == 0)) && (m_x1 != NoRange))
     {
         // No floating point register is used to pass the current argument, but we already have a range of FP registers,
         // store the routine for the range
-        routines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
+        pRoutines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
         m_x1 = NoRange;
     }
     else if ((argLocDesc.m_byteStackSize == 0) && (m_s1 != NoRange))
@@ -879,8 +877,8 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
         // No stack argument is used to pass the current argument, but we already have a range of stack arguments,
         // store the routine for the range
         m_totalStackSize += m_s2 - m_s1 + 1;
-        routines[m_routineIndex++] = (PCODE)Load_Stack;
-        routines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+        pRoutines[m_routineIndex++] = (PCODE)Load_Stack;
+        pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
         m_s1 = NoRange;
     }
 
@@ -901,7 +899,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
-            routines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
+            pRoutines[m_routineIndex++] = GetGPRegRangeLoadRoutine(m_r1, m_r2);
             m_r1 = argLocDesc.m_idxGenReg;
             m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
@@ -923,7 +921,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
-            routines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
+            pRoutines[m_routineIndex++] = GetFPRegRangeLoadRoutine(m_x1, m_x2);
             m_x1 = argLocDesc.m_idxFloatReg;
             m_x2 = m_x1 + argLocDesc.m_cFloatReg - 1;
         }
@@ -942,15 +940,15 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             // Extend an existing range, but only if the argument is at least pointer size large.
             // The only case when this is not true is on Apple ARM64 OSes where primitive type smaller
             // than 8 bytes are passed on the stack in a packed manner. We process such arguments one by
-            // one to avoid explosion of the number of routines.
+            // one to avoid explosion of the number of pRoutines.
             m_s2 += argLocDesc.m_byteStackSize;
         }
         else
         {
             // Discontinuous range - store a routine for the current and start a new one
             m_totalStackSize += m_s2 - m_s1 + 1;
-            routines[m_routineIndex++] = (PCODE)Load_Stack;
-            routines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
+            pRoutines[m_routineIndex++] = (PCODE)Load_Stack;
+            pRoutines[m_routineIndex++] = ((int64_t)(m_s2 - m_s1 + 1) << 32) | m_s1;
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
         }
@@ -962,19 +960,19 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             switch (argLocDesc.m_byteStackSize)
             {
                 case 1:
-                    routines[m_routineIndex++] = (PCODE)Load_Stack_1B;
+                    pRoutines[m_routineIndex++] = (PCODE)Load_Stack_1B;
                     break;
                 case 2:
-                    routines[m_routineIndex++] = (PCODE)Load_Stack_2B;
+                    pRoutines[m_routineIndex++] = (PCODE)Load_Stack_2B;
                     break;
                 case 4:
-                    routines[m_routineIndex++] = (PCODE)Load_Stack_4B;
+                    pRoutines[m_routineIndex++] = (PCODE)Load_Stack_4B;
                     break;
                 default:
                     _ASSERTE(!"Unexpected stack argument size");
                     break;
             }
-            routines[m_routineIndex++] = m_s1;
+            pRoutines[m_routineIndex++] = m_s1;
             m_s1 = NoRange;
         }
 #endif // TARGET_APPLE && TARGET_ARM64
@@ -987,8 +985,8 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
     if (argIt.IsArgPassedByRef())
     {
         _ASSERTE(argLocDesc.m_cGenReg == 1);
-        routines[m_routineIndex++] = GetGPRegRefLoadRoutine(argLocDesc.m_idxGenReg);
-        routines[m_routineIndex++] = argIt.GetArgSize();
+        pRoutines[m_routineIndex++] = GetGPRegRefLoadRoutine(argLocDesc.m_idxGenReg);
+        pRoutines[m_routineIndex++] = argIt.GetArgSize();
         m_r1 = NoRange;
     }
 #endif // UNIX_AMD64_ABI

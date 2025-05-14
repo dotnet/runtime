@@ -12,15 +12,28 @@ class MethodDesc;
 // stack, invokes the target method, and translates the return value back to the interpreter stack.
 struct CallStubHeader
 {
+    typedef void (*InvokeFunctionPtr)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+
     // Number of routines in the Routines array. The last one is the target method to call.
     int NumRoutines;
     // Total stack size used for the arguments.
     int TotalStackSize;
     // This is a pointer to a helper function that invokes the target method. There are several
     // versions of this function, depending on the return type of the target method.
-    void (*Invoke)(PCODE *routines, int8_t*pArgs, int8_t*pRet, int totalStackSize);
+    InvokeFunctionPtr Invoke;
     // This is an array of routines that translate the arguments from the interpreter stack to the CPU registers and native stack.
     PCODE Routines[0];
+
+    CallStubHeader(int numRoutines, PCODE *pRoutines, int totalStackSize, InvokeFunctionPtr pInvokeFunction)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        NumRoutines = numRoutines;
+        TotalStackSize = totalStackSize;
+        Invoke = pInvokeFunction;
+
+        memcpy(Routines, pRoutines, NumRoutines * sizeof(PCODE));
+    }
 
     // Set the address of the target method to call.
     void SetTarget(PCODE target)
@@ -52,11 +65,9 @@ class CallStubGenerator
     int m_routineIndex;
     // The total stack size used for the arguments.
     int m_totalStackSize;
-    // The header of the call stub that is being generated.
-    CallStubHeader *m_pHeader;
 
     // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
-    void ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc);
+    void ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc, PCODE *pRoutines);
 public:
     // Generate the call stub for the given method.
     // The returned call stub header must be freed by the caller using FreeCallStub.
