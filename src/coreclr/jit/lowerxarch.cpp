@@ -7875,7 +7875,8 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     // However, we want to prefer containing the store over allowing the
                     // input to be regOptional, so track and clear containment if required.
 
-                    clearContainedNode = hwintrinsic->Op(1);
+                    GenTree* op1       = hwintrinsic->Op(1);
+                    clearContainedNode = op1;
                     isContainable      = !clearContainedNode->isContained();
 
                     if (isContainable && varTypeIsIntegral(simdBaseType))
@@ -7887,13 +7888,29 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                         if (isContainable && varTypeIsSmall(simdBaseType))
                         {
                             CorInfoType baseJitType = varTypeIsByte(node) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_USHORT;
-                            intrinsicId             = varTypeIsByte(node) ? NI_SSE41_Extract : NI_SSE2_Extract;
+
+                            if (intrinsicId == NI_Vector512_ToScalar)
+                            {
+                                op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128,
+                                                                     baseJitType, 64);
+                                BlockRange().InsertBefore(hwintrinsic, op1);
+                                LowerNode(op1);
+                            }
+                            else if (intrinsicId == NI_Vector256_ToScalar)
+                            {
+                                op1 = comp->gtNewSimdGetLowerNode(TYP_SIMD16, op1, baseJitType, 32);
+                                BlockRange().InsertBefore(hwintrinsic, op1);
+                                LowerNode(op1);
+                            }
+
+                            intrinsicId = varTypeIsByte(node) ? NI_SSE41_Extract : NI_SSE2_Extract;
 
                             GenTree* zero = comp->gtNewZeroConNode(TYP_INT);
                             BlockRange().InsertBefore(hwintrinsic, zero);
 
                             hwintrinsic->SetSimdBaseJitType(baseJitType);
-                            hwintrinsic->ResetHWIntrinsicId(intrinsicId, hwintrinsic->Op(1), zero);
+                            hwintrinsic->SetSimdSize(16);
+                            hwintrinsic->ResetHWIntrinsicId(intrinsicId, op1, zero);
                             zero->SetContained();
                         }
                     }
