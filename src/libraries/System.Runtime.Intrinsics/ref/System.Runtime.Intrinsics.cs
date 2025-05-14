@@ -5975,6 +5975,28 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> ZipLow(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
     }
 
+    [System.CLSCompliantAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public abstract partial class Sve2 : System.Runtime.Intrinsics.Arm.Sve
+    {
+        internal Sve2() { }
+        public static new bool IsSupported { get { throw null; } }
+        public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.Sve.Arm64
+        {
+            internal Arm64() { }
+            public static new bool IsSupported { get { throw null; } }
+        }
+
+        public static System.Numerics.Vector<byte> BitwiseClearXor(System.Numerics.Vector<byte> xor, System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> mask) { throw null; }
+        public static System.Numerics.Vector<short> BitwiseClearXor(System.Numerics.Vector<short> xor, System.Numerics.Vector<short> value, System.Numerics.Vector<short> mask) { throw null; }
+        public static System.Numerics.Vector<int> BitwiseClearXor(System.Numerics.Vector<int> xor, System.Numerics.Vector<int> value, System.Numerics.Vector<int> mask) { throw null; }
+        public static System.Numerics.Vector<long> BitwiseClearXor(System.Numerics.Vector<long> xor, System.Numerics.Vector<long> value, System.Numerics.Vector<long> mask) { throw null; }
+        public static System.Numerics.Vector<sbyte> BitwiseClearXor(System.Numerics.Vector<sbyte> xor, System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> mask) { throw null; }
+        public static System.Numerics.Vector<ushort> BitwiseClearXor(System.Numerics.Vector<ushort> xor, System.Numerics.Vector<ushort> value, System.Numerics.Vector<ushort> mask) { throw null; }
+        public static System.Numerics.Vector<uint> BitwiseClearXor(System.Numerics.Vector<uint> xor, System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> mask) { throw null; }
+        public static System.Numerics.Vector<ulong> BitwiseClearXor(System.Numerics.Vector<ulong> xor, System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> mask) { throw null; }
+    }
+
     public enum SveMaskPattern : byte
     {
         LargestPowerOf2 = 0,      // The largest power of 2.

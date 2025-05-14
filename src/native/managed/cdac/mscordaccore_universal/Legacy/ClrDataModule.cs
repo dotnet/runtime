@@ -183,14 +183,13 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             Contracts.ModuleHandle handle = contract.GetModuleHandle(_address);
 
             ModuleFlags moduleFlags = contract.GetFlags(handle);
-            if ((moduleFlags & ModuleFlags.EditAndContinue) != 0)
+            if ((moduleFlags & ModuleFlags.ReflectionEmit) != 0)
             {
                 *flags |= 0x1; // CLRDATA_MODULE_IS_DYNAMIC
             }
 
             if (contract.GetAssembly(handle) == contract.GetRootAssembly())
             {
-
                 *flags |= 0x4; // CLRDATA_MODULE_FLAGS_ROOT_ASSEMBLY
             }
         }
