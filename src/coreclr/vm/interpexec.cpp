@@ -1202,6 +1202,8 @@ CALL_TARGET_IP:
                     break;
                 }
                 case INTOP_BOX:
+                case INTOP_UNBOX:
+                case INTOP_UNBOX_ANY:
                 {
                     int dreg = ip[1];
                     int sreg = ip[2];
@@ -1213,9 +1215,20 @@ CALL_TARGET_IP:
                     else
                         helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
 
-                    LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, LOCAL_VAR_ADDR(sreg, void));
-                    assert(0);
+                    switch (*ip) {
+                        case INTOP_BOX:
+                            LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, LOCAL_VAR_ADDR(sreg, void));
+                            break;
+                        case INTOP_UNBOX:
+                            LOCAL_VAR(dreg, void*) = helper(pMT, LOCAL_VAR(sreg, Object*));
+                            break;
+                        case INTOP_UNBOX_ANY:
+                            void *unboxedData = helper(pMT, LOCAL_VAR(sreg, Object*));
+                            CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMT);
+                            break;
+                    }
                     ip += 5;
+                    break;
                 }
                 case INTOP_FAILFAST:
                     assert(0);
