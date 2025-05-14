@@ -12,6 +12,7 @@
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
 #define INTERP_METHOD_DESC_TAG 4 // Tag of a MethodDesc in the interp method dataItems
+#define INTERP_INDIRECT_HELPER_TAG 1 // When a helper ftn's address is indirect we tag it with this tag bit
 
 struct InterpMethod
 {

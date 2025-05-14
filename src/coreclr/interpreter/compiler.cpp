@@ -1725,6 +1725,16 @@ int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
     return GetDataItemIndex((void*)data);
 }
 
+int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
+{
+    void *indirect;
+    void *direct = m_compHnd->getHelperFtn(ftn, &indirect);
+    size_t data = !direct
+        ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
+        : (size_t)direct;
+    return GetDataItemIndex((void*)data);
+}
+
 bool InterpCompiler::EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig)
 {
     const char *className = NULL;
@@ -3467,7 +3477,7 @@ retry_emit:
                 PushStackType(StackTypeO, boxedClsHnd);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndex(m_compHnd->getHelperFtn(helpFunc));
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
                 m_ip += 5;
                 break;
             }
@@ -3481,7 +3491,7 @@ retry_emit:
                 PushStackType(StackTypeI, NULL);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndex(m_compHnd->getHelperFtn(helpFunc));
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
                 m_ip += 5;
                 break;
             }
@@ -3495,7 +3505,7 @@ retry_emit:
                 PushStackType(StackTypeVT, clsHnd);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndex(m_compHnd->getHelperFtn(helpFunc));
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
                 m_ip += 5;
                 break;
             }
