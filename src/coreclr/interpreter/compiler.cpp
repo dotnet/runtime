@@ -3457,6 +3457,42 @@ retry_emit:
                 m_ip += 1;
                 break;
 
+            case CEE_BOX: {
+                CHECK_STACK(1);
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                AddIns(INTOP_BOX);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                PushStackType(StackTypeO, clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_UNBOX: {
+                CHECK_STACK(1);
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                AddIns(INTOP_UNBOX);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                PushStackType(StackTypeI, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_UNBOX_ANY: {
+                CHECK_STACK(1);
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                AddIns(INTOP_UNBOX_ANY);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                PushStackType(StackTypeVT, clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_ip += 5;
+                break;
+            }
+
             default:
                 assert(0);
                 break;
@@ -3649,6 +3685,13 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_DESC_TAG);
             printf(" ");
             PrintMethodName(mh);
+            break;
+        }
+        case InterpOpClassHandle:
+        {
+            CORINFO_CLASS_HANDLE ch = (CORINFO_CLASS_HANDLE)((size_t)m_dataItems.Get(*pData));
+            printf(" ");
+            PrintClassName(ch);
             break;
         }
         default:

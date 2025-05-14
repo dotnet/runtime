@@ -21,6 +21,7 @@ typedef enum
     InterpOpBranch,
     InterpOpSwitch,
     InterpOpMethodToken,
+    InterpOpClassHandle,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];

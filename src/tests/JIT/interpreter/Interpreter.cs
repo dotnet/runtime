@@ -117,6 +117,9 @@ public class InterpreterTest
         if (!TestVirtual())
             Environment.FailFast(null);
 
+        if (!TestBoxing())
+            Environment.FailFast(null);
+
         System.GC.Collect();
     }
 
@@ -383,6 +386,16 @@ public class InterpreterTest
         if (bc.VirtualMethod() != 0xbebe)
             return false;
         if (itest.VirtualMethod() != 0xbebe)
+            return false;
+        return true;
+    }
+
+    public static bool TestBoxing()
+    {
+        int i = 4;
+        object oI = i;
+        int j = (int)oI;
+        if (j != i)
             return false;
         return true;
     }
