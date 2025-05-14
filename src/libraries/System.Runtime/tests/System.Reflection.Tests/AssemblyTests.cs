@@ -845,6 +845,7 @@ namespace System.Reflection.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Symbols are in a different location on iOS/tvOS/MacCatalyst")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", PlatformDetection.IsAndroid)]
         public void AssemblyLoadFromBytesWithSymbols()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;

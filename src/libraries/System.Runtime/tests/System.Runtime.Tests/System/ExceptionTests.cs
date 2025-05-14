@@ -109,6 +109,7 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15140", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/114951", PlatformDetection.IsAndroid)]
         public static void ThrowStatementDoesNotResetExceptionStackLineSameMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
