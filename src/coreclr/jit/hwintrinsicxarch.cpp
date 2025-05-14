@@ -1574,22 +1574,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         case TYP_SHORT:
                         {
-                            minCns->EvaluateBroadcastInPlace<int16_t>(0x80);
-                            maxCns->EvaluateBroadcastInPlace<int16_t>(0x7F);
+                            minCns->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT16_MAX);
                             break;
                         }
 
                         case TYP_INT:
                         {
-                            minCns->EvaluateBroadcastInPlace<int32_t>(0x8000);
-                            maxCns->EvaluateBroadcastInPlace<int32_t>(0x7FFF);
+                            minCns->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT32_MAX);
                             break;
                         }
 
                         case TYP_LONG:
                         {
-                            minCns->EvaluateBroadcastInPlace<int64_t>(0x80000000);
-                            maxCns->EvaluateBroadcastInPlace<int64_t>(0x7FFFFFFF);
+                            minCns->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT64_MAX);
                             break;
                         }
 
@@ -1636,7 +1636,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
 
                     msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseJitType, simdSize);
-                    retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup1, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseJitType, simdSize);
                 }
             }
             break;
@@ -3616,8 +3616,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         case TYP_SHORT:
                         {
-                            minCns->EvaluateBroadcastInPlace<int16_t>(0x80);
-                            maxCns->EvaluateBroadcastInPlace<int16_t>(0x7F);
+                            minCns->EvaluateBroadcastInPlace<int16_t>(INT8_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT8_MAX);
 
                             narrowSimdBaseJitType = CORINFO_TYPE_BYTE;
                             break;
@@ -3625,15 +3625,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         case TYP_USHORT:
                         {
-                            maxCns->EvaluateBroadcastInPlace<uint16_t>(0xFF);
+                            maxCns->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
                             narrowSimdBaseJitType = CORINFO_TYPE_UBYTE;
                             break;
                         }
 
                         case TYP_INT:
                         {
-                            minCns->EvaluateBroadcastInPlace<int32_t>(0x8000);
-                            maxCns->EvaluateBroadcastInPlace<int32_t>(0x7FFF);
+                            minCns->EvaluateBroadcastInPlace<int32_t>(INT16_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT16_MAX);
 
                             narrowSimdBaseJitType = CORINFO_TYPE_SHORT;
                             break;
@@ -3641,15 +3641,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         case TYP_UINT:
                         {
-                            maxCns->EvaluateBroadcastInPlace<uint32_t>(0xFFFF);
+                            maxCns->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
                             narrowSimdBaseJitType = CORINFO_TYPE_USHORT;
                             break;
                         }
 
                         case TYP_LONG:
                         {
-                            minCns->EvaluateBroadcastInPlace<int64_t>(0x80000000);
-                            maxCns->EvaluateBroadcastInPlace<int64_t>(0x7FFFFFFF);
+                            minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
 
                             narrowSimdBaseJitType = CORINFO_TYPE_INT;
                             break;
@@ -3657,7 +3657,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                         case TYP_ULONG:
                         {
-                            maxCns->EvaluateBroadcastInPlace<uint64_t>(0xFFFFFFFF);
+                            maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
                             narrowSimdBaseJitType = CORINFO_TYPE_UINT;
                             break;
                         }
@@ -4113,22 +4113,22 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         case TYP_SHORT:
                         {
-                            minCns->EvaluateBroadcastInPlace<int16_t>(0x80);
-                            maxCns->EvaluateBroadcastInPlace<int16_t>(0x7F);
+                            minCns->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT16_MAX);
                             break;
                         }
 
                         case TYP_INT:
                         {
-                            minCns->EvaluateBroadcastInPlace<int32_t>(0x8000);
-                            maxCns->EvaluateBroadcastInPlace<int32_t>(0x7FFF);
+                            minCns->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT32_MAX);
                             break;
                         }
 
                         case TYP_LONG:
                         {
-                            minCns->EvaluateBroadcastInPlace<int64_t>(0x80000000);
-                            maxCns->EvaluateBroadcastInPlace<int64_t>(0x7FFFFFFF);
+                            minCns->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT64_MAX);
                             break;
                         }
 
@@ -4175,7 +4175,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
 
                     msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseJitType, simdSize);
-                    retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup1, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseJitType, simdSize);
                 }
             }
             break;
