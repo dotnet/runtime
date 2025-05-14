@@ -8,7 +8,7 @@
 #include "interpexec.h"
 
 typedef void* (*HELPER_FTN_PP)(void*);
-typedef void (*HELPER_FTN_VPP)(void*, void*);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -1205,14 +1205,15 @@ CALL_TARGET_IP:
                 {
                     int dreg = ip[1];
                     int sreg = ip[2];
-                    CORINFO_CLASS_HANDLE clsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
+                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
                     size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
-                    HELPER_FTN_VPP helper = nullptr;
+                    HELPER_FTN_BOX_UNBOX helper = nullptr;
                     if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
-                        helper = *(HELPER_FTN_VPP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                        helper = *(HELPER_FTN_BOX_UNBOX *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
                     else
-                        helper = (HELPER_FTN_VPP)helperDirectOrIndirect;
-                    helper(LOCAL_VAR_ADDR(dreg, OBJECTREF), LOCAL_VAR_ADDR(sreg, void));
+                        helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
+
+                    LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, LOCAL_VAR_ADDR(sreg, void));
                     assert(0);
                     ip += 5;
                 }
