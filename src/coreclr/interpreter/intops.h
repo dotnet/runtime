@@ -20,7 +20,7 @@ typedef enum
     InterpOpThreeInts,
     InterpOpBranch,
     InterpOpSwitch,
-    InterpOpMethodToken,
+    InterpOpMethodHandle,
     InterpOpClassHandle,
 } InterpOpArgType;
 

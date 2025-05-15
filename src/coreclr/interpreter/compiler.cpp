@@ -3690,7 +3690,7 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             printf(")");
             break;
         }
-        case InterpOpMethodToken:
+        case InterpOpMethodHandle:
         {
             CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_DESC_TAG);
             printf(" ");
