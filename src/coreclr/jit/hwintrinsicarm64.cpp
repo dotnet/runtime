@@ -552,6 +552,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 7;
                 break;
 
+            case NI_Sve2_ShiftLeftAndInsert:
+                immLowerBound = 0;
+                immUpperBound = genTypeSize(baseType) * BITS_PER_BYTE - 1;
+                break;
+
             default:
                 unreached();
         }

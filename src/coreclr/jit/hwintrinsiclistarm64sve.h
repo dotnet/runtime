@@ -310,7 +310,8 @@ HARDWARE_INTRINSIC(Sve,           ZipLow,                                       
 // SVE2 Intrinsics
 #define FIRST_NI_Sve2             NI_Sve2_BitwiseClearXor
 HARDWARE_INTRINSIC(Sve2,          BitwiseClearXor,                                                  -1,      3,     {INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_SpecialCodeGen|HW_Flag_HasRMWSemantics)
-#define LAST_NI_Sve2              NI_Sve2_BitwiseClearXor
+HARDWARE_INTRINSIC(Sve2,          ShiftLeftAndInsert,                                               -1,      3,     {INS_sve_sli,        INS_sve_sli,        INS_sve_sli,        INS_sve_sli,        INS_sve_sli,        INS_sve_sli,        INS_sve_sli,        INS_sve_sli,        INS_invalid,        INS_invalid},     HW_Category_ShiftLeftByImmediate,  HW_Flag_Scalable|HW_Flag_HasImmediateOperand|HW_Flag_HasRMWSemantics)
+#define LAST_NI_Sve2              NI_Sve2_ShiftLeftAndInsert
 
 // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
 //                 ISA            Function name                                              SIMD size  NumArg                                                                                                                 Instructions                                                                                        Category                           Flags
