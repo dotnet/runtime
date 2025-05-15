@@ -3467,11 +3467,12 @@ retry_emit:
                 m_ip += 1;
                 break;
 
-            case CEE_BOX: {
+            case CEE_BOX:
+            {
                 CHECK_STACK(1);
                 m_pStackPointer -= 1;
-                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1)),
-                    boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
                 CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
                 AddIns(INTOP_BOX);
                 m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
@@ -3484,7 +3485,8 @@ retry_emit:
             }
 
             case CEE_UNBOX:
-            case CEE_UNBOX_ANY: {
+            case CEE_UNBOX_ANY:
+            {
                 CHECK_STACK(1);
                 m_pStackPointer -= 1;
                 CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
