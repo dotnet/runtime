@@ -33,8 +33,8 @@ namespace Mono.Linker.Steps
 			}
 
 			static bool IsFSharpCompilationResource (Resource resource)
-				=> resource.Name.StartsWith ("FSharpSignatureData", StringComparison.Ordinal)
-				|| resource.Name.StartsWith ("FSharpOptimizationData", StringComparison.Ordinal);
+				=> resource.Name.StartsWith ("FSharpSignature", StringComparison.Ordinal)
+				|| resource.Name.StartsWith ("FSharpOptimization", StringComparison.Ordinal);
 		}
 	}
 }
