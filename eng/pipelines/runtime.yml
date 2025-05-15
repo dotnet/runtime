@@ -721,8 +721,7 @@ extends:
           runtimeFlavor: mono
           platforms:
           - maccatalyst_x64
-          - ${{ if eq(variables['isRollingBuild'], true) }}:
-            - maccatalyst_arm64
+          - maccatalyst_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
