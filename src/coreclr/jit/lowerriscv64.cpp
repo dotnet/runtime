@@ -241,7 +241,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 
                             if (op1->OperIs(GT_RSZ, GT_RSH)) // (a >> N) & bit  =>  BIT_EXTRACT(a, N + log2(bit))
                             {
-                                bool removeShift = true;
+                                bool     removeShift = true;
                                 GenTree* shiftAmount = op1->gtGetOp2();
                                 if (shiftAmount->IsIntegralConst())
                                 {
@@ -278,12 +278,19 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                         return use.Def()->gtNext;
                                     }
                                 }
-                                else
+                                else // shiftAmount is variable
                                 {
                                     removeShift = (log2 == 0);
                                     if (removeShift)
                                     {
                                         op2 = shiftAmount;
+                                        // Zbs instructions don't have *w variants: wrap the bit index to 0-31 manually
+                                        GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
+                                        mask->SetContained();
+                                        BlockRange().InsertAfter(op2, mask);
+                                        op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+                                        BlockRange().InsertAfter(mask, op2);
+
                                         BlockRange().Remove(constant);
                                     }
                                 }

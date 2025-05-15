@@ -121,10 +121,10 @@ public static class SingleBit
         Assert.Equal(0x12345078, Clear10(0x12345478));
         Assert.Equal(0x12345078, Clear11(0x12345878));
 
-        Assert.False(ExtractShift(0x12345878, 10));
-        Assert.True (ExtractShift(0x12345878, 11));
-        Assert.False(ExtractPow2Shift(0x12345878, 8));
-        Assert.True (ExtractPow2Shift(0x12345878, 9));
+        Assert.False(ExtractShift(0x12345878, 10 + 32));
+        Assert.True (ExtractShift(0x12345878, 11 + 32));
+        Assert.False(ExtractPow2Shift(0x12345878, 8 + 32));
+        Assert.True (ExtractPow2Shift(0x12345878, 9 + 32));
         Assert.False(Extract10Shift(0x12345878));
         Assert.True (Extract11Shift(0x12345878));
         Assert.False(Extract10Pow2Shift(0x12345878));
@@ -135,17 +135,17 @@ public static class SingleBit
         Assert.True (Extract31Pow2ShiftUnsigned(0x80000000));
         Assert.False(Extract32Pow2ShiftUnsigned(0x80000000));
 
-        Assert.False(ExtractNotEqual(0x12345878, 10));
-        Assert.True (ExtractNotEqual(0x12345878, 11));
-        Assert.False(ExtractPow2NotEqual(0x12345878, 8));
-        Assert.True (ExtractPow2NotEqual(0x12345878, 9));
+        Assert.False(ExtractNotEqual(0x12345878, 10 + 32));
+        Assert.True (ExtractNotEqual(0x12345878, 11 + 32));
+        Assert.False(ExtractPow2NotEqual(0x12345878, 8 + 32));
+        Assert.True (ExtractPow2NotEqual(0x12345878, 9 + 32));
         Assert.False(Extract10NotEqual(0x12345878));
         Assert.True (Extract11NotEqual(0x12345878));
 
-        Assert.False(ExtractEqual(0x12345878, 10));
-        Assert.True (ExtractEqual(0x12345878, 11));
-        Assert.False(ExtractPow2Equal(0x12345878, 8));
-        Assert.True (ExtractPow2Equal(0x12345878, 9));
+        Assert.False(ExtractEqual(0x12345878, 10 + 32));
+        Assert.True (ExtractEqual(0x12345878, 11 + 32));
+        Assert.False(ExtractPow2Equal(0x12345878, 8 + 32));
+        Assert.True (ExtractPow2Equal(0x12345878, 9 + 32));
         Assert.False(Extract10Equal(0x12345878));
         Assert.True (Extract11Equal(0x12345878));
 
