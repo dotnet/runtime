@@ -14,11 +14,10 @@ public class TestClass
     Vector512<double> v512_double_113 = Vector512.Create(-1.8461538461538463, 0, -4.942857142857143, 3.0576923076923075, 0.06382978723404255, -1.9444444444444444, 3.1363636363636362, 5.2105263157894735);
     private void Method0()
     {
-        unchecked
+        if (Avx512F.VL.IsSupported)
         {
             byte byte_221 = 0;
             s_v512_double_51 = Avx512F.TernaryLogic(v512_double_113, v512_double_113, v512_double_113, byte_221);
-            return;
         }
     }
 
