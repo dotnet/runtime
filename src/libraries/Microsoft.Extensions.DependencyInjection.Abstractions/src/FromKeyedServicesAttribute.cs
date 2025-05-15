@@ -16,12 +16,20 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Creates a new <see cref="FromKeyedServicesAttribute"/> instance.
         /// </summary>
         /// <param name="key">The key of the keyed service to bind to.</param>
-        public FromKeyedServicesAttribute(object? key) => Key = key;
+        public FromKeyedServicesAttribute(object? key)
+        {
+            Key = key;
+            LookupMode = key == null ? ServiceKeyLookupMode.NullKey : ServiceKeyLookupMode.ExplicitKey;
+        }
 
         /// <summary>
-        /// Creates a new <see cref="FromKeyedServicesAttribute"/> instance with <see cref="Key"/> set to <see cref="FromServiceKey"/>.
+        /// Creates a new <see cref="FromKeyedServicesAttribute"/> instance with <see cref="LookupMode"/> set to <see cref="ServiceKeyLookupMode.InheritKey"/>.
         /// </summary>
-        public FromKeyedServicesAttribute() => Key = FromServiceKey;
+        public FromKeyedServicesAttribute()
+        {
+            Key = null;
+            LookupMode = ServiceKeyLookupMode.InheritKey;
+        }
 
         /// <summary>
         /// The key of the keyed service to bind to.
@@ -32,10 +40,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public object? Key { get; }
 
         /// <summary>
-        /// Indicates that a parameter represents a service should be resolved from the same key that the current service was resolved with.
+        /// The mode used to look up the service key.
         /// </summary>
-        public static object FromServiceKey { get; } = new FromServiceKeyObj();
-
-        private sealed class FromServiceKeyObj { }
+        public ServiceKeyLookupMode LookupMode { get; }
     }
 }

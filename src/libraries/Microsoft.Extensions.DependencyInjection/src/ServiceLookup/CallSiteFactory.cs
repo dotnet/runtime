@@ -631,7 +631,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
                     {
-                        if (fromKeyedServicesAttribute.Key == FromKeyedServicesAttribute.FromServiceKey)
+                        if (fromKeyedServicesAttribute.LookupMode == ServiceKeyLookupMode.InheritKey)
                         {
                             ServiceIdentifier parameterSvcId = new(serviceIdentifier.ServiceKey, parameterType);
                             callSite = GetCallSite(parameterSvcId, callSiteChain);
@@ -639,7 +639,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             break;
                         }
 
-                        if (fromKeyedServicesAttribute.Key is not null)
+                        if (fromKeyedServicesAttribute.LookupMode == ServiceKeyLookupMode.ExplicitKey)
                         {
                             ServiceIdentifier parameterSvcId = new(fromKeyedServicesAttribute.Key, parameterType);
                             callSite = GetCallSite(parameterSvcId, callSiteChain);
