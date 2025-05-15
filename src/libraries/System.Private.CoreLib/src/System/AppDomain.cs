@@ -403,12 +403,12 @@ namespace System
                 switch (_principalPolicy)
                 {
                     case PrincipalPolicy.UnauthenticatedPrincipal:
-                        principal = GetDefaultPrincipal(null);
+                        principal = (IPrincipal?)GetDefaultPrincipal(null);
                         break;
                     case PrincipalPolicy.WindowsPrincipal:
                         try
                         {
-                            principal = GetDefaultWindowsPrincipal(null);
+                            principal = (IPrincipal?)GetDefaultWindowsPrincipal(null);
                             break;
                         }
                         catch (TypeLoadException ex)
@@ -422,12 +422,13 @@ namespace System
             return principal;
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
-            static extern IPrincipal GetDefaultPrincipal(
+            [return: UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")]
+            static extern object GetDefaultPrincipal(
                 [UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")] object? _);
 
-
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
-            static extern IPrincipal GetDefaultWindowsPrincipal(
+            [return: UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Claims")]
+            static extern object GetDefaultWindowsPrincipal(
                 [UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Claims")] object? _);
         }
     }

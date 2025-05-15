@@ -262,6 +262,8 @@ namespace System.Security.Cryptography
                 private const string XDocumentTypeName = "System.Xml.Linq.XDocument" + XmlLinqAssemblyString;
                 private const string XContainerTypeName = "System.Xml.Linq.XContainer" + XmlLinqAssemblyString;
                 private const string XElementTypeName = "System.Xml.Linq.XElement" + XmlLinqAssemblyString;
+                private const string IEnumerableOfXElementTypeName = $"System.Collections.Generic.IEnumerable`1[[{XElementTypeName}]], System.Runtime";
+
                 private const string XNameTypeName = "System.Xml.Linq.XName" + XmlLinqAssemblyString;
 
                 [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "Parse")]
@@ -274,7 +276,8 @@ namespace System.Security.Cryptography
                 private static extern object? XDocument_GetRoot([UnsafeAccessorType(XDocumentTypeName)] object xDocument);
 
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Elements")]
-                private static extern IEnumerable XContainer_Elements([UnsafeAccessorType(XContainerTypeName)] object xElement);
+                [return: UnsafeAccessorType(IEnumerableOfXElementTypeName)]
+                private static extern object XContainer_Elements([UnsafeAccessorType(XContainerTypeName)] object xElement);
 
                 [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Name")]
                 [return: UnsafeAccessorType(XNameTypeName)]
@@ -289,8 +292,8 @@ namespace System.Security.Cryptography
                 internal static object? ParseDocument(string xmlString) =>
                     XDocument_GetRoot(XDocument_Parse(null, xmlString));
 
-                internal static IEnumerable? GetElements(object? element) =>
-                    XContainer_Elements(element!);
+                internal static IEnumerable GetElements(object? element) =>
+                    (IEnumerable)XContainer_Elements(element!);
 
                 internal static string? GetLocalName(object? element) =>
                     XName_GetLocalName(XElement_GetName(element!));
