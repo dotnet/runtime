@@ -863,10 +863,10 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
 #endif // FEATURE_SVR_GC
         case WRITE_BARRIER_WRITE_WATCH_BYTE_REGIONS64:
         case WRITE_BARRIER_WRITE_WATCH_BIT_REGIONS64:
-            if (*(UINT64*)m_pWriteWatchTableImmediate != (size_t)g_sw_ww_table)
+            if (*(UINT64*)m_pWriteWatchTableImmediate != (size_t)g_write_watch_table)
             {
                 ExecutableWriterHolder<UINT64> writeWatchTableImmediateWriterHolder((UINT64*)m_pWriteWatchTableImmediate, sizeof(UINT64));
-                *writeWatchTableImmediateWriterHolder.GetRW() = (size_t)g_sw_ww_table;
+                *writeWatchTableImmediateWriterHolder.GetRW() = (size_t)g_write_watch_table;
                 stompWBCompleteActions |= SWB_ICACHE_FLUSH;
             }
             break;
@@ -1010,7 +1010,10 @@ int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;
 
-    return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
+    if (IsWriteBarrierCopyEnabled())
+        return g_WriteBarrierManager.UpdateEphemeralBounds(isRuntimeSuspended);
+    else
+        return SWB_PASS;
 }
 
 // This function bashes the super fast amd64 versions of the JIT_WriteBarrier
@@ -1020,26 +1023,37 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
     WRAPPER_NO_CONTRACT;
 
-    return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+    if (IsWriteBarrierCopyEnabled())
+        return g_WriteBarrierManager.UpdateWriteWatchAndCardTableLocations(isRuntimeSuspended, bReqUpperBoundsCheck);
+    else
+        return SWB_PASS;
 }
 
 void FlushWriteBarrierInstructionCache()
 {
-    FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
+    if (IsWriteBarrierCopyEnabled())
+        FlushInstructionCache(GetCurrentProcess(), GetWriteBarrierCodeLocation((PVOID)JIT_WriteBarrier), g_WriteBarrierManager.GetCurrentWriteBarrierSize());
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;
 
-    return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
+    if (IsWriteBarrierCopyEnabled())
+        return g_WriteBarrierManager.SwitchToWriteWatchBarrier(isRuntimeSuspended);
+    else
+        return SWB_PASS;
 }
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
     WRAPPER_NO_CONTRACT;
 
-    return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
+    if (IsWriteBarrierCopyEnabled())
+        return g_WriteBarrierManager.SwitchToNonWriteWatchBarrier(isRuntimeSuspended);
+    else
+        return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
