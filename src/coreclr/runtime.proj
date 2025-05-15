@@ -110,7 +110,7 @@
     <PropertyGroup>
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
-      <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))"> </_CoreClrBuildPreSource>
+      <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and $([MSBuild]::IsOsPlatform(Windows))">&quot;$([MSBuild]::NormalizePath('$(RepoRoot)src/mono/browser/emsdk', 'emsdk_env.cmd'))&quot; &amp;&amp; </_CoreClrBuildPreSource>
       <_CoreClrBuildPreSource Condition="'$(TargetsBrowser)' == 'true' and !$([MSBuild]::IsOsPlatform(Windows))">source &quot;$(RepoRoot)src/mono/browser/emsdk/emsdk_env.sh&quot; &amp;&amp; </_CoreClrBuildPreSource>
     </PropertyGroup>
 
