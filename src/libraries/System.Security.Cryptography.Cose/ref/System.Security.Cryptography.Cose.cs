@@ -150,6 +150,8 @@ namespace System.Security.Cryptography.Cose
     public sealed partial class CoseSigner
     {
         public CoseSigner(System.Security.Cryptography.AsymmetricAlgorithm key, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5006")]
+        public CoseSigner(System.Security.Cryptography.MLDsa key, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { throw null; }
         public CoseSigner(System.Security.Cryptography.RSA key, System.Security.Cryptography.RSASignaturePadding signaturePadding, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.Cose.CoseHeaderMap? protectedHeaders = null, System.Security.Cryptography.Cose.CoseHeaderMap? unprotectedHeaders = null) { }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
         public System.Security.Cryptography.AsymmetricAlgorithm Key { get { throw null; } }

@@ -54,6 +54,10 @@ namespace System.Security.Cryptography
             Algorithm = algorithm;
         }
 
+        /// <summary>
+        ///  Throws an <see cref="ObjectDisposedException"/> if this instance has been disposed.
+        /// </summary>
+        /// <exception cref="ObjectDisposedException"></exception>
         protected void ThrowIfDisposed()
         {
             if (_disposed)
@@ -254,7 +258,28 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
-            return writer.Encode(static span => PemEncoding.WriteString(PemLabels.SpkiPublicKey, span));
+            return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
+        }
+
+        private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
+        {
+#if NET10_0_OR_GREATER
+            return writer.Encode(label, static (label, span) => PemEncoding.WriteString(label, span));
+#else
+            int length = writer.GetEncodedLength();
+            byte[] rent = CryptoPool.Rent(length);
+
+            try
+            {
+                int written = writer.Encode(rent);
+                Debug.Assert(written == length);
+                return PemEncoding.WriteString(label, rent.AsSpan(0, written));
+            }
+            finally
+            {
+                CryptoPool.Return(rent, clear ? length : 0);
+            }
+#endif
         }
 
         /// <summary>
@@ -554,7 +579,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
+                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
             }
             finally
             {
@@ -599,7 +624,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                return writer.Encode(static span => PemEncoding.WriteString(PemLabels.EncryptedPkcs8PrivateKey, span));
+                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
             }
             finally
             {

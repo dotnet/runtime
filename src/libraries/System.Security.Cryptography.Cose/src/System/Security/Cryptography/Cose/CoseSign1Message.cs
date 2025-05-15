@@ -316,10 +316,13 @@ namespace System.Security.Cryptography.Cose
 
             CoseHelpers.WriteContent(writer, contentBytes, isDetached);
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(signer._keyType, signer.HashAlgorithm))
             {
-                AppendToBeSigned(buffer, hasher, SigStructureContext.Signature1, buffer.Slice(0, protectedMapBytesWritten), ReadOnlySpan<byte>.Empty, associatedData, contentBytes, contentStream);
-                CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
+                AppendToBeSigned(buffer, toBeSignedBuilder, SigStructureContext.Signature1, buffer.Slice(0, protectedMapBytesWritten), ReadOnlySpan<byte>.Empty, associatedData, contentBytes, contentStream);
+                toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                {
+                    CoseHelpers.WriteSignature(buff, toBeSigned, writer, signer);
+                });
             }
 
             writer.WriteEndArray();
@@ -338,10 +341,13 @@ namespace System.Security.Cryptography.Cose
             CoseHelpers.WriteHeaderMap(buffer.AsSpan(protectedMapBytesWritten), writer, signer._unprotectedHeaders, isProtected: false, null);
             CoseHelpers.WriteContent(writer, default, isDetached: true);
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(signer._keyType, signer.HashAlgorithm))
             {
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, buffer.AsMemory(0, protectedMapBytesWritten), ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
-                CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
+                await AppendToBeSignedAsync(buffer, toBeSignedBuilder, SigStructureContext.Signature1, buffer.AsMemory(0, protectedMapBytesWritten), ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
+                toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                {
+                    CoseHelpers.WriteSignature(buff, toBeSigned, writer, signer);
+                });
             }
 
             writer.WriteEndArray();
@@ -582,7 +588,7 @@ namespace System.Security.Cryptography.Cose
             }
 
             HashAlgorithmName hashAlgorithm = CoseHelpers.GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType, out RSASignaturePadding? padding);
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(keyType, hashAlgorithm))
             {
                 int bufferLength = ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature1,
@@ -594,8 +600,14 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    AppendToBeSigned(buffer, hasher, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty, associatedData, contentBytes, contentStream);
-                    return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
+                    AppendToBeSigned(buffer, toBeSignedBuilder, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlySpan<byte>.Empty, associatedData, contentBytes, contentStream);
+                    bool retVal = false;
+                    toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                    {
+                        retVal = Verify(key, toBeSigned, hashAlgorithm, keyType, padding);
+                    });
+
+                    return retVal;
                 }
                 finally
                 {
@@ -677,7 +689,7 @@ namespace System.Security.Cryptography.Cose
 
             HashAlgorithmName hashAlgorithm = CoseHelpers.GetHashAlgorithmFromCoseAlgorithmAndKeyType(nullableAlg.Value, keyType, out RSASignaturePadding? padding);
 
-            using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
+            using (ToBeSignedBuilder toBeSignedBuilder = ToBeSignedBuilder.Create(keyType, hashAlgorithm))
             {
                 int bufferLength = ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature1,
@@ -687,8 +699,13 @@ namespace System.Security.Cryptography.Cose
                     contentLength: 0);
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
 
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
-                bool retVal = VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
+                await AppendToBeSignedAsync(buffer, toBeSignedBuilder, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
+
+                bool retVal = false;
+                toBeSignedBuilder.WithDataAndResetAfterOperation(buffer, (buff, toBeSigned) =>
+                {
+                    retVal = Verify(key, toBeSigned, hashAlgorithm, keyType, padding);
+                });
 
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
 
@@ -696,26 +713,33 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        private bool VerifyHash(AsymmetricAlgorithm key, IncrementalHash hasher, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
+        private bool Verify(AsymmetricAlgorithm key, ReadOnlySpan<byte> toBeSigned, HashAlgorithmName hashAlgorithm, KeyType keyType, RSASignaturePadding? padding)
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            byte[] hash = hasher.GetHashAndReset();
-#else
-            Debug.Assert(hasher.HashLengthInBytes <= 512 / 8); // largest hash we can get (SHA512).
-            Span<byte> hash = stackalloc byte[hasher.HashLengthInBytes];
-            hasher.GetHashAndReset(hash);
-#endif
-            if (keyType == KeyType.ECDsa)
+            switch (keyType)
             {
-                var ecdsa = (ECDsa)key;
-                return ecdsa.VerifyHash(hash, _signature);
-            }
-            else
-            {
-                Debug.Assert(keyType == KeyType.RSA);
-                Debug.Assert(padding != null);
-                var rsa = (RSA)key;
-                return rsa.VerifyHash(hash, _signature, hashAlgorithm, padding);
+                case KeyType.ECDsa:
+                {
+                    var ecdsa = (ECDsa)key;
+                    return ecdsa.VerifyHash(toBeSigned, _signature);
+                }
+                case KeyType.RSA:
+                {
+                    Debug.Assert(padding != null);
+                    var rsa = (RSA)key;
+                    return rsa.VerifyHash(toBeSigned, _signature, hashAlgorithm, padding);
+                }
+#pragma warning disable SYSLIB5006
+                case KeyType.MLDsa:
+                {
+                    var mlDsa = ((AsymmetricAlgorithmWrapper)key).MLDsa;
+                    return mlDsa.VerifyData(toBeSigned, _signature);
+                }
+#pragma warning restore SYSLIB5006
+                default:
+                {
+                    Debug.Fail($"Unknown keyType: {keyType}");
+                    throw new ArgumentException(SR.Sign1UnsupportedKey, keyType.ToString());
+                }
             }
         }
 

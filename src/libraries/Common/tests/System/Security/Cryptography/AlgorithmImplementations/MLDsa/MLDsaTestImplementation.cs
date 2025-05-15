@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -54,7 +55,7 @@ namespace System.Security.Cryptography.Tests
                 ExportMLDsaPublicKeyHook = d => d.Clear(),
                 ExportMLDsaSecretKeyHook = d => d.Clear(),
                 SignDataHook = (data, context, destination) => destination.Clear(),
-                VerifyDataHook = (data, context, signature) => signature.IndexOfAnyExcept((byte)0) == -1,
+                VerifyDataHook = (data, context, signature) => signature.ToArray().All((x) => x == 0),
             };
         }
 
