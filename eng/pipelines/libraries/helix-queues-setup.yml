@@ -43,7 +43,7 @@ jobs:
         - (Alpine.321.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
 
     # Linux musl arm64
-    - ${{ if and(eq(parameters.platform, 'linux_musl_arm64') }}:
+    - ${{ if eq(parameters.platform, 'linux_musl_arm64') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.321.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
 
