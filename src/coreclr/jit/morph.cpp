@@ -7747,9 +7747,14 @@ DONE_MORPHING_CHILDREN:
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
     }
 
-    // Give assertion prop another shot at this tree
+    // During global morph, give assertion prop another shot at this tree.
     //
-    if (optLocalAssertionProp && (optAssertionCount > 0))
+    // We need to use the "postorder" assertion set here, because apLocal
+    // may reflect results from subtrees that have since been reordered.
+    //
+    // apLocalPostorder only includes live assertions from prior statements.
+    //
+    if (fgGlobalMorph && optLocalAssertionProp && (optAssertionCount > 0))
     {
         GenTree* optimizedTree = tree;
         bool     again         = true;
