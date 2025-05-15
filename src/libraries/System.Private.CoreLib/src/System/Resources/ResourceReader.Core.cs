@@ -80,7 +80,7 @@ namespace System.Resources
                 {
                     throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed, ex);
                 }
-                }
+            }
 
             Type type = FindType(typeIndex);
 

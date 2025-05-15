@@ -92,7 +92,7 @@ namespace System.Net.Http
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(SocketsHttpHandlerTypeName)]
-        private static extern object? CreateHttpHandler();
+        private static extern object CreateHttpHandler();
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_PooledConnectionIdleTimeout")]
         private static extern TimeSpan GetPooledConnectionIdleTimeout([UnsafeAccessorType(SocketsHttpHandlerTypeName)] object handler);
@@ -107,7 +107,7 @@ namespace System.Net.Http
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(HttpClientTypeName)]
-        private static extern object? CreateHttpClient([UnsafeAccessorType(HttpMessageHandlerTypeName)] object handler);
+        private static extern object CreateHttpClient([UnsafeAccessorType(HttpMessageHandlerTypeName)] object handler);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MaxResponseContentBufferSize")]
         private static extern long GetMaxResponseContentBufferSize([UnsafeAccessorType(HttpClientTypeName)] object client);
@@ -121,26 +121,26 @@ namespace System.Net.Http
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(HttpRequestMessageTypeName)]
-        private static extern object? CreateRequestMessage();
+        private static extern object CreateRequestMessage();
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Send")]
         [return: UnsafeAccessorType(HttpResponseMessageTypeName)]
-        private static extern object? Send([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
+        private static extern object Send([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "SendAsync")]
         [return: UnsafeAccessorType(TaskOfHttpResponseMessageTypeName)]
-        private static extern object? SendAsync([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
+        private static extern object SendAsync([UnsafeAccessorType(HttpClientTypeName)] object client, [UnsafeAccessorType(HttpRequestMessageTypeName)] object requestMessage, CancellationToken cancellationToken);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Content")]
         [return: UnsafeAccessorType(HttpContentTypeName)]
-        private static extern object? GetContent([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
+        private static extern object GetContent([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_StatusCode")]
         private static extern int GetStatusCode([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Headers")]
         [return: UnsafeAccessorType(HttpResponseHeadersTypeName)]
-        private static extern object? GetHeaders([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
+        private static extern object GetHeaders([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Location")]
         private static extern Uri? GetLocation([UnsafeAccessorType(HttpResponseHeadersTypeName)] object headers);
@@ -172,12 +172,12 @@ namespace System.Net.Http
                 const int MaxRedirections = 10;
 
                 // Use UnsafeAccessors for construction and property access
-                object? socketsHttpHandler = CreateHttpHandler();
-                SetAllowAutoRedirect(socketsHttpHandler!, false);
-                SetPooledConnectionIdleTimeout(socketsHttpHandler!, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
+                object socketsHttpHandler = CreateHttpHandler();
+                SetAllowAutoRedirect(socketsHttpHandler, false);
+                SetPooledConnectionIdleTimeout(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
 
-                object? httpClient = CreateHttpClient(socketsHttpHandler!);
-                SetMaxResponseContentBufferSize(httpClient!, AiaDownloadLimit);
+                object httpClient = CreateHttpClient(socketsHttpHandler);
+                SetMaxResponseContentBufferSize(httpClient, AiaDownloadLimit);
 
                 return async (string uriString, CancellationToken cancellationToken, bool async) =>
                 {
@@ -188,19 +188,19 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    object requestMessage = CreateRequestMessage()!;
+                    object requestMessage = CreateRequestMessage();
                     SetRequestUri(requestMessage, uri);
                     object responseMessage;
 
                     if (async)
                     {
-                        object sendTask = SendAsync(httpClient!, requestMessage, cancellationToken)!;
+                        object sendTask = SendAsync(httpClient, requestMessage, cancellationToken);
                         await ((Task)sendTask).ConfigureAwait(false);
                         responseMessage = taskResultProperty.GetValue(sendTask)!;
                     }
                     else
                     {
-                        responseMessage = Send(httpClient!, requestMessage, cancellationToken)!;
+                        responseMessage = Send(httpClient, requestMessage, cancellationToken);
                     }
 
                     int redirections = 0;
@@ -209,7 +209,7 @@ namespace System.Net.Http
                     while (true)
                     {
                         int statusCode = GetStatusCode(responseMessage);
-                        object responseHeaders = GetHeaders(responseMessage)!;
+                        object responseHeaders = GetHeaders(responseMessage);
                         Uri? location = GetLocation(responseHeaders);
                         redirectUri = GetUriForRedirect(GetRequestUri(requestMessage)!, statusCode, location, out hasRedirect);
                         if (redirectUri == null)
@@ -228,18 +228,18 @@ namespace System.Net.Http
 
                         ReportRedirected(redirectUri);
 
-                        requestMessage = CreateRequestMessage()!;
+                        requestMessage = CreateRequestMessage();
                         SetRequestUri(requestMessage, redirectUri);
 
                         if (async)
                         {
-                            object sendTask = SendAsync(httpClient!, requestMessage, cancellationToken)!;
+                            object sendTask = SendAsync(httpClient, requestMessage, cancellationToken);
                             await ((Task)sendTask).ConfigureAwait(false);
                             responseMessage = taskResultProperty.GetValue(sendTask)!;
                         }
                         else
                         {
-                            responseMessage = Send(httpClient!, requestMessage, cancellationToken)!;
+                            responseMessage = Send(httpClient, requestMessage, cancellationToken);
                         }
                     }
 
@@ -248,7 +248,7 @@ namespace System.Net.Http
                         return null;
                     }
 
-                    object content = GetContent(responseMessage)!;
+                    object content = GetContent(responseMessage);
                     using Stream responseStream = ReadAsStream(content);
 
                     var result = new MemoryStream();

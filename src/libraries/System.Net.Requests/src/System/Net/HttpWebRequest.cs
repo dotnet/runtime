@@ -1699,7 +1699,7 @@ namespace System.Net
 
                     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_settings")]
                     [return: UnsafeAccessorType(HttpConnectionSettingsTypeName)]
-                    static extern object GetSettings(SocketsHttpHandler handler);
+                    static extern ref object GetSettings(SocketsHttpHandler handler);
 
                     [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_impersonationLevel")]
                     static extern ref TokenImpersonationLevel GetImpersonationLevel([UnsafeAccessorType(HttpConnectionSettingsTypeName)] object settings);
