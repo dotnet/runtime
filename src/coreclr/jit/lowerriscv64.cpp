@@ -270,6 +270,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                         else
                                         {
                                             // Replace with a shift right calculating the last/sign bit
+                                            op1->ChangeOper(GT_RSZ);
                                             use.ReplaceWith(op1);
                                             BlockRange().Remove(op2);
                                             BlockRange().Remove(binOp);

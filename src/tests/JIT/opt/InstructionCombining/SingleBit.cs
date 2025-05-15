@@ -34,61 +34,61 @@ public static class SingleBit
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractShift(int a, int b) => ((a >> b) & 1) == 1;
+    static int ExtractShift(int a, int b) => (a >> b) & 1;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractPow2Shift(int a, int b) => ((a >> b) & 0b100) == 0b100;
+    static int ExtractPow2Shift(int a, int b) => ((a >> b) & 0b100) == 0b100 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract10Shift(int a) => ((a >> 10) & 1) == 1;
+    static int Extract10Shift(int a) => ((a >> 10) & 1) != 0 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract11Shift(int a) => ((a >> 11) & 1) == 1;
+    static int Extract11Shift(int a) => (a >> 11) & 1;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract10Pow2Shift(int a) => ((a >> 8) & 0b100) == 0b100;
+    static int Extract10Pow2Shift(int a) => ((a >> 8) & 0b100) == 0b100 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract11Pow2Shift(int a) => ((a >> 9) & 0b100) == 0b100;
-
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract31Pow2Shift(int a) => ((a >> 29) & 0b100) == 0b100;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract32Pow2Shift(int a) => ((a >> 30) & 0b100) == 0b100;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract31Pow2ShiftUnsigned(uint a) => ((a >> 29) & 0b100u) == 0b100u;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract32Pow2ShiftUnsigned(uint a) => ((a >> 30) & 0b100u) == 0b100u;
+    static int Extract11Pow2Shift(int a) => ((a >> 9) & 0b100) == 0b100 ? 1 : 0;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractNotEqual(int a, int b) => (a & (1 << b)) != 0;
+    static int Extract31Pow2Shift(int a) => ((a >> 29) & 0b100) == 0b100 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractPow2NotEqual(int a, int b) => (a & (0b100 << b)) != 0;
+    static int Extract32Pow2Shift(int a) => ((a >> 30) & 0b100) == 0b100 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract10NotEqual(int a) => (a & (1 << 10)) != 0;
+    static int Extract31Pow2ShiftUnsigned(uint a) => ((a >> 29) & 0b100u) == 0b100u ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract11NotEqual(int a) => (a & (1 << 11)) != 0;
+    static int Extract32Pow2ShiftUnsigned(uint a) => ((a >> 30) & 0b100u) == 0b100u ? 1 : 0;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractEqual(int a, int b) => (a & (1 << b)) == (1 << b);
+    static int ExtractNotEqual(int a, int b) => (a & (1 << b)) != 0 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool ExtractPow2Equal(int a, int b) => (a & (0b100 << b)) == (0b100 << b);
+    static int ExtractPow2NotEqual(int a, int b) => (a & (0b100 << b)) != 0 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract10Equal(int a) => (a & (1 << 10)) == (1 << 10);
+    static int Extract10NotEqual(int a) => (a & (1 << 10)) != 0 ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static bool Extract11Equal(int a) => (a & (1 << 11)) == (1 << 11);
+    static int Extract11NotEqual(int a) => (a & (1 << 11)) != 0 ? 1 : 0;
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ExtractEqual(int a, int b) => (a & (1 << b)) == (1 << b) ? 1 : 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ExtractPow2Equal(int a, int b) => (a & (0b100 << b)) == (0b100 << b) ? 1 : 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Extract10Equal(int a) => (a & (1 << 10)) == (1 << 10) ? 1 : 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Extract11Equal(int a) => (a & (1 << 11)) == (1 << 11) ? 1 : 0;
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -121,33 +121,33 @@ public static class SingleBit
         Assert.Equal(0x12345078, Clear10(0x12345478));
         Assert.Equal(0x12345078, Clear11(0x12345878));
 
-        Assert.False(ExtractShift(0x12345878, 10 + 32));
-        Assert.True (ExtractShift(0x12345878, 11 + 32));
-        Assert.False(ExtractPow2Shift(0x12345878, 8 + 32));
-        Assert.True (ExtractPow2Shift(0x12345878, 9 + 32));
-        Assert.False(Extract10Shift(0x12345878));
-        Assert.True (Extract11Shift(0x12345878));
-        Assert.False(Extract10Pow2Shift(0x12345878));
-        Assert.True (Extract11Pow2Shift(0x12345878));
+        Assert.Equal(0, ExtractShift(0x12345878, 10 + 32));
+        Assert.Equal(1, ExtractShift(0x12345878, 11 + 32));
+        Assert.Equal(0, ExtractPow2Shift(0x12345878, 8 + 32));
+        Assert.Equal(1, ExtractPow2Shift(0x12345878, 9 + 32));
+        Assert.Equal(0, Extract10Shift(0x12345878));
+        Assert.Equal(1, Extract11Shift(0x12345878));
+        Assert.Equal(0, Extract10Pow2Shift(0x12345878));
+        Assert.Equal(1, Extract11Pow2Shift(0x12345878));
 
-        Assert.True (Extract31Pow2Shift(int.MinValue));
-        Assert.True (Extract32Pow2Shift(int.MinValue));
-        Assert.True (Extract31Pow2ShiftUnsigned(0x80000000));
-        Assert.False(Extract32Pow2ShiftUnsigned(0x80000000));
+        Assert.Equal(1, Extract31Pow2Shift(int.MinValue));
+        Assert.Equal(1, Extract32Pow2Shift(int.MinValue));
+        Assert.Equal(1, Extract31Pow2ShiftUnsigned(0x80000000));
+        Assert.Equal(0, Extract32Pow2ShiftUnsigned(0x80000000));
 
-        Assert.False(ExtractNotEqual(0x12345878, 10 + 32));
-        Assert.True (ExtractNotEqual(0x12345878, 11 + 32));
-        Assert.False(ExtractPow2NotEqual(0x12345878, 8 + 32));
-        Assert.True (ExtractPow2NotEqual(0x12345878, 9 + 32));
-        Assert.False(Extract10NotEqual(0x12345878));
-        Assert.True (Extract11NotEqual(0x12345878));
+        Assert.Equal(0, ExtractNotEqual(0x12345878, 10 + 32));
+        Assert.Equal(1, ExtractNotEqual(0x12345878, 11 + 32));
+        Assert.Equal(0, ExtractPow2NotEqual(0x12345878, 8 + 32));
+        Assert.Equal(1, ExtractPow2NotEqual(0x12345878, 9 + 32));
+        Assert.Equal(0, Extract10NotEqual(0x12345878));
+        Assert.Equal(1, Extract11NotEqual(0x12345878));
 
-        Assert.False(ExtractEqual(0x12345878, 10 + 32));
-        Assert.True (ExtractEqual(0x12345878, 11 + 32));
-        Assert.False(ExtractPow2Equal(0x12345878, 8 + 32));
-        Assert.True (ExtractPow2Equal(0x12345878, 9 + 32));
-        Assert.False(Extract10Equal(0x12345878));
-        Assert.True (Extract11Equal(0x12345878));
+        Assert.Equal(0, ExtractEqual(0x12345878, 10 + 32));
+        Assert.Equal(1, ExtractEqual(0x12345878, 11 + 32));
+        Assert.Equal(0, ExtractPow2Equal(0x12345878, 8 + 32));
+        Assert.Equal(1, ExtractPow2Equal(0x12345878, 9 + 32));
+        Assert.Equal(0, Extract10Equal(0x12345878));
+        Assert.Equal(1, Extract11Equal(0x12345878));
 
         Assert.Equal(0x12345478, Invert(0x12345078, 10 + 32));
         Assert.Equal(0x12345078, Invert(0x12345478, 10 + 32));
