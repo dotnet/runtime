@@ -1759,14 +1759,7 @@ namespace System.Security.Cryptography
 
         private protected void ThrowIfDisposed()
         {
-#if NET
             ObjectDisposedException.ThrowIf(_disposed, typeof(MLKem));
-#else
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(MLKem).FullName);
-            }
-#endif
         }
 
         private AsnWriter ExportEncryptedPkcs8PrivateKeyCore<TChar>(
