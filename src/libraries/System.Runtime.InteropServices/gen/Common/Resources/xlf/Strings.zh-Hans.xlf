@@ -432,6 +432,11 @@
         <target state="translated">"StringMarshalling" 和 "StringMarshallingCustomType" 的配置必须与基本 COM 接口匹配。</target>
         <note />
       </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
         <target state="translated">封送处理程序类型必须是封闭泛型或具有与托管类型相同数目的泛型参数，以便发出的代码可以使用特定实例化。</target>

@@ -53,7 +53,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
         [Intrinsic]
-        internal static Plane AsPlane(this Vector128<float> value)
+        public static Plane AsPlane(this Vector128<float> value)
         {
 #if MONO
             return Unsafe.As<Vector128<float>, Plane>(ref value);
@@ -66,7 +66,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
         [Intrinsic]
-        internal static Quaternion AsQuaternion(this Vector128<float> value)
+        public static Quaternion AsQuaternion(this Vector128<float> value)
         {
 #if MONO
             return Unsafe.As<Vector128<float>, Quaternion>(ref value);
@@ -79,7 +79,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The plane to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector128&lt;Single&gt;" />.</returns>
         [Intrinsic]
-        internal static Vector128<float> AsVector128(this Plane value)
+        public static Vector128<float> AsVector128(this Plane value)
         {
 #if MONO
             return Unsafe.As<Plane, Vector128<float>>(ref value);
@@ -92,7 +92,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The quaternion to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see langword="Vector128&lt;Single&gt;" />.</returns>
         [Intrinsic]
-        internal static Vector128<float> AsVector128(this Quaternion value)
+        public static Vector128<float> AsVector128(this Quaternion value)
         {
 #if MONO
             return Unsafe.As<Quaternion, Vector128<float>>(ref value);
