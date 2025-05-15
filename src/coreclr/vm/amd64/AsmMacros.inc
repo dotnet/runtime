@@ -191,17 +191,17 @@ Section ends
 ; Inlined version of GetThread
 ; Trashes rax and r11
 ;
-gCurrentThreadInfo  TEXTEQU <?gCurrentThreadInfo@@3UThreadLocalInfo@@A>
+t_CurrentThreadInfo  TEXTEQU <?t_CurrentThreadInfo@@3UThreadLocalInfo@@A>
 
 INLINE_GETTHREAD macro Reg
 
         EXTERN _tls_index : DWORD
-        EXTERN gCurrentThreadInfo:DWORD
+        EXTERN t_CurrentThreadInfo:DWORD
 
         mov     r11d, [_tls_index]
         mov     rax, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
         mov     rax, [rax + r11 * 8]
-        mov     r11d, SECTIONREL gCurrentThreadInfo
+        mov     r11d, SECTIONREL t_CurrentThreadInfo
         mov     Reg, [rax + r11]
 
         endm

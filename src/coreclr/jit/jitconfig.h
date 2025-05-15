@@ -28,7 +28,7 @@ public:
             bool        m_containsSignature;
         };
 
-        char*       m_list;
+        const char* m_listFromConfig;
         MethodName* m_names;
 
         MethodSet(const MethodSet& other)            = delete;
@@ -39,12 +39,12 @@ public:
         {
         }
 
-        inline const char* list() const
+        const char* list() const
         {
-            return const_cast<const char*>(m_list);
+            return m_listFromConfig;
         }
 
-        void initialize(const WCHAR* list, ICorJitHost* host);
+        void initialize(const char* listFromConfig, ICorJitHost* host);
         void destroy(ICorJitHost* host);
 
         inline bool isEmpty() const
@@ -57,7 +57,7 @@ public:
 private:
 
 #define RELEASE_CONFIG_INTEGER(name, key, defaultValue) int m_##name;
-#define RELEASE_CONFIG_STRING(name, key)                const WCHAR* m_##name;
+#define RELEASE_CONFIG_STRING(name, key)                const char* m_##name;
 #define RELEASE_CONFIG_METHODSET(name, key)             MethodSet m_##name;
 
 #include "jitconfigvalues.h"
@@ -69,7 +69,7 @@ public:
         return m_##name;                                                                                               \
     }
 #define RELEASE_CONFIG_STRING(name, key)                                                                               \
-    inline const WCHAR* name() const                                                                                   \
+    inline const char* name() const                                                                                    \
     {                                                                                                                  \
         return m_##name;                                                                                               \
     }

@@ -814,7 +814,8 @@ class ClrDataAccess
       public ISOSDacInterface12,
       public ISOSDacInterface13,
       public ISOSDacInterface14,
-      public ISOSDacInterface15
+      public ISOSDacInterface15,
+      public ISOSDacInterface16
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1222,6 +1223,9 @@ public:
     // ISOSDacInterface15
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
 
+    // ISOSDacInterface16
+    virtual HRESULT STDMETHODCALLTYPE GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode);
+
     //
     // ClrDataAccess.
     //
@@ -1413,7 +1417,7 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
-    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
 
@@ -1500,6 +1504,7 @@ private:
     BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
+    TADDR GetIdentityForManagedObjectWrapper(TADDR mow);
 #endif
 
 protected:
@@ -3416,12 +3421,7 @@ private:
 //
 //----------------------------------------------------------------------------
 
-#ifdef FEATURE_EH_FUNCLETS
-typedef ExceptionTrackerBase ClrDataExStateType;
-#else // FEATURE_EH_FUNCLETS
 typedef ExInfo ClrDataExStateType;
-#endif // FEATURE_EH_FUNCLETS
-
 
 class ClrDataExceptionState : public IXCLRDataExceptionState
 {

@@ -4,8 +4,8 @@
 /************************************************************************************************
  *                                                                                              *
  *  File:    winmain.cpp                                                                        *
- *                                                         *
- *  Purpose: Main program for graphic COM+ 2.0 disassembler ILDASM.exe                          *
+ *                                                                                              *
+ *  Purpose: Main program for CLR disassembler ILDASM.exe                                       *
  *                                                                                              *
  ************************************************************************************************/
 #include "ildasmpch.h"

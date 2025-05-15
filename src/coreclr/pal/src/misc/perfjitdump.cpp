@@ -29,6 +29,10 @@
 
 #include "../inc/llvm/ELF.h"
 
+#if defined(HOST_AMD64)
+#include <x86intrin.h>
+#endif
+
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
 namespace
@@ -37,6 +41,7 @@ namespace
     {
         JIT_DUMP_MAGIC = 0x4A695444,
         JIT_DUMP_VERSION = 1,
+        JITDUMP_FLAGS_ARCH_TIMESTAMP = 1 << 0,
 
 #if defined(HOST_X86)
         ELF_MACHINE = EM_386,
@@ -61,12 +66,35 @@ namespace
         JIT_CODE_LOAD = 0,
     };
 
+    static bool UseArchTimeStamp()
+    {
+        static bool initialized = false;
+        static bool useArchTimestamp = false;
+
+        if (!initialized)
+        {
+#if defined(HOST_AMD64)
+            const char* archTimestamp = getenv("JITDUMP_USE_ARCH_TIMESTAMP");
+            useArchTimestamp = (archTimestamp != nullptr && strcmp(archTimestamp, "1") == 0);
+#endif
+            initialized = true;
+        }
+
+        return useArchTimestamp;
+    }
+
     static uint64_t GetTimeStampNS()
     {
+#if defined(HOST_AMD64)
+        if (UseArchTimeStamp()) {
+            return static_cast<uint64_t>(__rdtsc());
+        }
+#endif
         LARGE_INTEGER result;
         QueryPerformanceCounter(&result);
         return result.QuadPart;
     }
+
 
     struct FileHeader
     {
@@ -78,7 +106,7 @@ namespace
             pad1(0),
             pid(getpid()),
             timestamp(GetTimeStampNS()),
-            flags(0)
+            flags(UseArchTimeStamp() ? JITDUMP_FLAGS_ARCH_TIMESTAMP : 0)
         {}
 
         uint32_t magic;

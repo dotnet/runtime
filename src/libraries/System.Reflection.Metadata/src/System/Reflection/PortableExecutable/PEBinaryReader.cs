@@ -32,18 +32,17 @@ namespace System.Reflection.PortableExecutable
             _reader = new BinaryReader(stream, Encoding.UTF8, leaveOpen: true);
         }
 
-        public int CurrentOffset
+        public int Offset
         {
             get { return (int)(_reader.BaseStream.Position - _startOffset); }
+            set
+            {
+                CheckBounds(_startOffset, value);
+                _reader.BaseStream.Seek(_startOffset + value, SeekOrigin.Begin);
+            }
         }
 
-        public void Seek(int offset)
-        {
-            CheckBounds(_startOffset, offset);
-            _reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-        }
-
-        public byte[] ReadBytes(int count)
+        private byte[] ReadBytes(int count)
         {
             CheckBounds(_reader.BaseStream.Position, count);
             return _reader.ReadBytes(count);

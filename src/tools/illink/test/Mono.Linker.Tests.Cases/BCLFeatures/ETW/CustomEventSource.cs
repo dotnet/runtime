@@ -17,8 +17,6 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 	[Kept]
 	[KeptBaseType (typeof (EventSource))]
 	[KeptAttributeAttribute (typeof (EventSourceAttribute))]
-	[KeptMember (".ctor()")]
-	[KeptMember (".cctor()")]
 
 	[EventSource (Name = "MyCompany")]
 	class MyCompanyEventSource : EventSource
@@ -45,16 +43,12 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW
 			public int Unused;
 		}
 
-		[KeptMember (".ctor()")]
-		[Kept]
 		class NotMatching
 		{
 		}
 
-		[Kept]
 		public static MyCompanyEventSource Log = new MyCompanyEventSource ();
 
-		[Kept]
 		int private_member;
 
 		[Kept]

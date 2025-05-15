@@ -29,6 +29,10 @@ namespace System
         public static System.BinaryData FromBytes(byte[] data, string? mediaType) { throw null; }
         public static System.BinaryData FromBytes(System.ReadOnlyMemory<byte> data) { throw null; }
         public static System.BinaryData FromBytes(System.ReadOnlyMemory<byte> data, string? mediaType) { throw null; }
+        public static System.BinaryData FromFile(string path) { throw null; }
+        public static System.BinaryData FromFile(string path, string? mediaType) { throw null; }
+        public static System.Threading.Tasks.Task<System.BinaryData> FromFileAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<System.BinaryData> FromFileAsync(string path, string? mediaType, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public static System.BinaryData FromObjectAsJson<T>(T jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }

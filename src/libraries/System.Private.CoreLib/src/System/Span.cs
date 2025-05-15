@@ -293,7 +293,7 @@ namespace System
         /// Fills the contents of this span with the given value.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe void Fill(T value)
+        public void Fill(T value)
         {
             SpanHelpers.Fill(ref _reference, (uint)_length, value);
         }

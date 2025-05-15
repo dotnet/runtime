@@ -719,6 +719,7 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
         {
             GenTreeVecCon* vecCon = tree->AsVecCon();
@@ -741,7 +742,9 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
             break;
         }
+#endif // FEATURE_SIMD
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
         {
             GenTreeMskCon* mskCon = tree->AsMskCon();
@@ -764,6 +767,7 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
             break;
         }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
         case GT_BOX:
         case GT_COMMA:
@@ -855,7 +859,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_AND:
         case GT_AND_NOT:
         case GT_OR:
+        case GT_OR_NOT:
         case GT_XOR:
+        case GT_XOR_NOT:
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
@@ -1314,6 +1320,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -1401,6 +1412,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // Determine whether this is an operation where one of the ops is an embedded mask
     GenTreeHWIntrinsic* embeddedOp = getEmbeddedMaskOperand(intrin);
 
+    // Determine whether this is an operation where one of the ops is a contained conditional select
+    GenTreeHWIntrinsic* containedCselOp = getContainedCselOperand(intrinsicTree);
+
     // If there is an embedded op, then determine if that has an op that must be marked delayFree
     if (embeddedOp != nullptr)
     {
@@ -1466,6 +1480,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     assert(tgtPrefUse2 == nullptr);
                     tgtPrefUse2 = delayUse;
                 }
+            }
+        }
+        else if (containedCselOp == operand)
+        {
+            srcCount += BuildContainedCselUses(containedCselOp, delayFreeOp, candidates);
+        }
+        else if ((intrin.category == HW_Category_SIMDByIndexedElement) && (genTypeSize(intrin.baseType) == 2) &&
+                 !HWIntrinsicInfo::HasImmediateOperand(intrin.id))
+        {
+            // Some "Advanced SIMD scalar x indexed element" and "Advanced SIMD vector x indexed element" instructions
+            // (e.g. "MLA (by element)") have encoding that restricts what registers that can be used for the indexed
+            // element when the element size is H (i.e. 2 bytes).
+            if (((opNum == 2) || (opNum == 3)))
+            {
+                // For those intrinsics, just force the delay-free registers, so they do not conflict with the
+                // definition.
+                srcCount += BuildDelayFreeUses(operand, nullptr, candidates);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(operand, candidates);
             }
         }
         // Only build as delay free use if register types match
@@ -1804,6 +1839,41 @@ int LinearScan::BuildEmbeddedOperandUses(GenTreeHWIntrinsic* embeddedOpNode, Gen
             // It is a hard requirement that these are not allocated to the same register as the destination,
             // so verify no optimizations kicked in to skip setting the delay-free.
             assert((useRefPosition != nullptr && useRefPosition->delayRegFree) || (uses == 0));
+        }
+    }
+
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildContainedCselUses: Build the uses for a contained conditional select operand
+//
+// Arguments:
+//    containedCselOpNode - The contained conditional select node of interest
+//    delayFreeOp         - The delay free operand corresponding to the conditional select node
+//    candidates          - The set of candidates for the uses
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
+                                       GenTree*            delayFreeOp,
+                                       SingleTypeRegSet    candidates)
+{
+    int srcCount = 0;
+
+    assert(containedCselOpNode->isContained());
+
+    for (size_t opNum = 1; opNum <= containedCselOpNode->GetOperandCount(); opNum++)
+    {
+        GenTree* currentOp = containedCselOpNode->Op(opNum);
+        if (currentOp->TypeGet() == TYP_MASK)
+        {
+            srcCount += BuildOperandUses(currentOp, candidates);
+        }
+        else
+        {
+            srcCount += BuildDelayFreeUses(currentOp, delayFreeOp, candidates);
         }
     }
 
@@ -2417,6 +2487,30 @@ GenTreeHWIntrinsic* LinearScan::getEmbeddedMaskOperand(const HWIntrinsic intrin)
     {
         assert(intrin.op2->OperIsHWIntrinsic());
         return intrin.op2->AsHWIntrinsic();
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// getContainedCselOperand: Get the contained conditional select operand of the HWIntrinsic, if any
+//
+// Arguments:
+//    intrin - Tree to check
+//
+// Return Value:
+//    The operand that is a contained conditional select node
+//
+GenTreeHWIntrinsic* LinearScan::getContainedCselOperand(GenTreeHWIntrinsic* intrinsicTree)
+{
+    for (size_t opNum = 1; opNum <= intrinsicTree->GetOperandCount(); opNum++)
+    {
+        GenTree* currentOp = intrinsicTree->Op(opNum);
+
+        if ((currentOp->OperGet() == GT_HWINTRINSIC) &&
+            (currentOp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect) && currentOp->isContained())
+        {
+            return currentOp->AsHWIntrinsic();
+        }
     }
     return nullptr;
 }

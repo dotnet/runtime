@@ -10,24 +10,18 @@ namespace System.Reflection.Tests
 {
     public static class SignatureTypeTests
     {
-        [Fact]
-        public static void IsSignatureType()
+        [Theory]
+        [MemberData(nameof(IsSignatureTypeTestData))]
+        public static void IsSignatureType(Type type, bool expected)
         {
-            // Executing [Theory] logic manually. Signature Types cannot be used in theory data because Xunit preemptively invokes an unguarded
-            // System.Type pretty printer that invokes members that Signature Types don't support.
-            foreach (object[] pair in IsSignatureTypeTestData)
-            {
-                Type type = (Type)(pair[0]);
-                bool expected = (bool)(pair[1]);
-
-                Assert.Equal(expected, type.IsSignatureType);
-            }
+            Assert.Equal(expected, type.IsSignatureType);
         }
 
         public static IEnumerable<object[]> IsSignatureTypeTestData
         {
             get
             {
+                // Standard reflection used as baseline.
                 yield return new object[] { typeof(int), false };
                 yield return new object[] { typeof(int).MakeArrayType(), false };
                 yield return new object[] { typeof(int).MakeArrayType(1), false };
@@ -37,6 +31,7 @@ namespace System.Reflection.Tests
                 yield return new object[] { typeof(List<>).MakeGenericType(typeof(int)), false };
                 yield return new object[] { typeof(List<>).GetGenericArguments()[0], false };
 
+                // SignatureTypes.
                 Type sigType = Type.MakeGenericMethodParameter(2);
 
                 yield return new object[] { sigType, true };
@@ -48,7 +43,9 @@ namespace System.Reflection.Tests
                 yield return new object[] { typeof(List<>).MakeGenericType(sigType), true };
 
                 yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)), true };
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), typeof(int)).GetGenericArguments()[0], false };
                 yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), sigType), true };
+                yield return new object[] { Type.MakeGenericSignatureType(typeof(List<>), sigType).GetGenericArguments()[0], true };
             }
         }
 
@@ -211,6 +208,8 @@ namespace System.Reflection.Tests
             Assert.False(t.IsGenericTypeParameter);
             Assert.True(t.IsGenericMethodParameter);
             Assert.Equal(position, t.GenericParameterPosition);
+            Assert.Throws<NotSupportedException>(() => t.IsValueType);
+            Assert.Throws<NotSupportedException>(() => t.IsEnum);
             TestSignatureTypeInvariants(t);
         }
 
@@ -231,6 +230,8 @@ namespace System.Reflection.Tests
             Assert.True(t.IsArray);
             Assert.True(t.IsSZArray);
             Assert.Equal(1, t.GetArrayRank());
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
@@ -253,6 +254,8 @@ namespace System.Reflection.Tests
             Assert.True(t.IsArray);
             Assert.True(t.IsVariableBoundArray);
             Assert.Equal(rank, t.GetArrayRank());
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             TestSignatureTypeInvariants(t);
         }
@@ -263,6 +266,8 @@ namespace System.Reflection.Tests
             Type t = Type.MakeGenericMethodParameter(5);
             t = t.MakeByRefType();
             Assert.True(t.IsByRef);
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
@@ -280,6 +285,8 @@ namespace System.Reflection.Tests
             Type t = Type.MakeGenericMethodParameter(5);
             t = t.MakePointerType();
             Assert.True(t.IsPointer);
+            Assert.False(t.IsValueType);
+            Assert.False(t.IsEnum);
 
             Type et = t.GetElementType();
             Assert.True(et.IsSignatureType);
@@ -294,6 +301,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(List<>))]
         [InlineData(typeof(Span<>))]
+        [InlineData(typeof(GenericType<>.GenericEnum))]
         public static void MakeSignatureConstructedGenericType(Type genericTypeDefinition)
         {
             Type gmp = Type.MakeGenericMethodParameter(5);
@@ -305,6 +313,8 @@ namespace System.Reflection.Tests
                     Assert.True(t.IsConstructedGenericType);
                     Assert.Equal(genericTypeDefinition, t.GetGenericTypeDefinition());
                     Assert.Equal(1, t.GenericTypeArguments.Length);
+                    Assert.Equal(genericTypeDefinition.IsValueType, t.IsValueType);
+                    Assert.Equal(genericTypeDefinition.IsEnum, t.IsEnum);
 
                     Type et = t.GenericTypeArguments[0];
                     Assert.True(et.IsSignatureType);
@@ -320,9 +330,18 @@ namespace System.Reflection.Tests
         [Fact]
         public static void MakeGenericSignatureTypeValidation()
         {
-            AssertExtensions.Throws<ArgumentNullException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(typeof(IList<>), typeArguments: null));
-            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(typeof(IList<>), new Type[] { null }));
+            // Calls to MakeGenericSignatureType() should have consistent validation with MakeGenericType().
+
+            AssertExtensions.Throws<ArgumentNullException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(genericTypeDefinition: null));
+
+            AssertExtensions.Throws<ArgumentException>("genericTypeDefinition", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(int), typeArguments: new Type[] { typeof(int) }));
+            AssertExtensions.Throws<InvalidOperationException>(() => typeof(int).MakeGenericType(typeArguments: new Type[] { typeof(int) }));
+
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: null));
+            AssertExtensions.Throws<ArgumentNullException>("typeArguments", () => typeof(IList<>).MakeGenericType(typeArguments: null));
+
+            AssertExtensions.Throws<ArgumentNullException>(() => Type.MakeGenericSignatureType(genericTypeDefinition: typeof(IList<>), typeArguments: new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>(() => typeof(IList<>).MakeGenericType(typeArguments: new Type[] { null }));
         }
 
         private static Type ToSignatureType(this Type type)
@@ -407,6 +426,13 @@ namespace System.Reflection.Tests
 
         private class NoOneSubclasses { }
         private class NoOneSubclassesThisEither { }
+
+        private class GenericType<T>
+        {
+            public enum GenericEnum
+            {
+            }
+        }
 
         private static void TestSignatureTypeInvariants(Type type)
         {

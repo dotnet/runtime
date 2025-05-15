@@ -222,7 +222,7 @@ CallCountingManager::CallCountingStubAllocator::~CallCountingStubAllocator()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
-    LoaderHeap *heap = m_heap;
+    InterleavedLoaderHeap *heap = m_heap;
     if (heap != nullptr)
     {
         delete m_heap;
@@ -252,14 +252,13 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     }
     CONTRACTL_END;
 
-    LoaderHeap *heap = m_heap;
+    InterleavedLoaderHeap *heap = m_heap;
     if (heap == nullptr)
     {
         heap = AllocateHeap();
     }
 
-    SIZE_T sizeInBytes = sizeof(CallCountingStub);
-    AllocMemHolder<void> allocationAddressHolder(heap->AllocAlignedMem(sizeInBytes, 1));
+    AllocMemHolder<void> allocationAddressHolder(heap->AllocStub());
     CallCountingStub *stub = (CallCountingStub*)(void*)allocationAddressHolder;
     allocationAddressHolder.SuppressRelease();
     stub->Initialize(targetForMethod, remainingCallCountCell);
@@ -294,6 +293,14 @@ void (*CallCountingStub::CallCountingStubCode)();
 
 #ifndef DACCESS_COMPILE
 
+static InterleavedLoaderHeapConfig s_callCountingHeapConfig;
+
+#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
+extern "C" void CallCountingStubCodeTemplate();
+#else
+#define CallCountingStubCodeTemplate NULL
+#endif
+
 void CallCountingStub::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -311,14 +318,22 @@ void CallCountingStub::StaticInitialize()
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unsupported OS page size"));
     }
     #undef ENUM_PAGE_SIZE
+
+    if (CallCountingStubCodeTemplate != NULL && pageSize != 0x4000)
+    {
+        // This should fail if the template is used on a platform which doesn't support the supported page size for templates
+        ThrowHR(COR_E_EXECUTIONENGINE);
+    }
 #else
     _ASSERTE((SIZE_T)((BYTE*)CallCountingStubCode_End - (BYTE*)CallCountingStubCode) <= CallCountingStub::CodeSize);
 #endif
+
+    InitializeLoaderHeapConfig(&s_callCountingHeapConfig, CallCountingStub::CodeSize, (void*)CallCountingStubCodeTemplate, CallCountingStub::GenerateCodePage);
 }
 
 #endif // DACCESS_COMPILE
 
-void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
+void CallCountingStub::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / CallCountingStub::CodeSize) * CallCountingStub::CodeSize;
@@ -329,13 +344,13 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
 
         // Set absolute addresses of the slots in the stub
         BYTE* pCounterSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, RemainingCallCountCell);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_RemainingCallCountCell_Offset)) = pCounterSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_RemainingCallCountCell_Offset)) = pCounterSlot;
 
         BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, TargetForMethod);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForMethod_Offset)) = pTargetSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForMethod_Offset)) = pTargetSlot;
 
         BYTE* pCountReachedZeroSlot = pageBaseRX + i + pageSize + offsetof(CallCountingStubData, TargetForThresholdReached);
-        *(BYTE**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
+        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(CallCountingStubCode_TargetForThresholdReached_Offset)) = pCountReachedZeroSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)CallCountingStubCode), CallCountingStub::CodeSize, pageSize);
@@ -343,7 +358,7 @@ void CallCountingStub::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T
 }
 
 
-NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHeap()
+NOINLINE InterleavedLoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHeap()
 {
     CONTRACTL
     {
@@ -355,7 +370,7 @@ NOINLINE LoaderHeap *CallCountingManager::CallCountingStubAllocator::AllocateHea
 
     _ASSERTE(m_heap == nullptr);
 
-    LoaderHeap *heap = new LoaderHeap(0, 0, &m_heapRangeList, UnlockedLoaderHeap::HeapKind::Interleaved, true /* fUnlocked */, CallCountingStub::GenerateCodePage, CallCountingStub::CodeSize);
+    InterleavedLoaderHeap *heap = new InterleavedLoaderHeap(&m_heapRangeList, true /* fUnlocked */, &s_callCountingHeapConfig);
     m_heap = heap;
     return heap;
 }
@@ -476,6 +491,7 @@ CallCountingManager::~CallCountingManager()
 }
 
 #ifndef DACCESS_COMPILE
+
 void CallCountingManager::StaticInitialize()
 {
     WRAPPER_NO_CONTRACT;
@@ -760,7 +776,7 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
 
     PCODE codeEntryPoint = 0;
 
-    BEGIN_PRESERVE_LAST_ERROR;
+    PreserveLastErrorHolder preserveLastError;
 
     MAKE_CURRENT_THREAD_AVAILABLE();
 
@@ -774,8 +790,8 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
         CallCountingInfo::From(CallCountingStub::From(stubIdentifyingToken)->GetRemainingCallCountCell())->GetCodeVersion();
 
     MethodDesc *methodDesc = codeVersion.GetMethodDesc();
-    FrameWithCookie<CallCountingHelperFrame> frameWithCookie(transitionBlock, methodDesc);
-    CallCountingHelperFrame *frame = &frameWithCookie;
+    CallCountingHelperFrame callCountingFrame(transitionBlock, methodDesc);
+    CallCountingHelperFrame *frame = &callCountingFrame;
     frame->Push(CURRENT_THREAD);
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
@@ -822,8 +838,6 @@ PCODE CallCountingManager::OnCallCountThresholdReached(TransitionBlock *transiti
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
 
     frame->Pop(CURRENT_THREAD);
-
-    END_PRESERVE_LAST_ERROR;
 
     return codeEntryPoint;
 }

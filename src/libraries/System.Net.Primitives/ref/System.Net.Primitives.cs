@@ -256,6 +256,8 @@ namespace System.Net
         public static int HostToNetworkOrder(int host) { throw null; }
         public static long HostToNetworkOrder(long host) { throw null; }
         public static bool IsLoopback(System.Net.IPAddress address) { throw null; }
+        public static bool IsValidUtf8(System.ReadOnlySpan<byte> utf8Text) { throw null; }
+        public static bool IsValid(System.ReadOnlySpan<char> ipSpan) { throw null; }
         public System.Net.IPAddress MapToIPv4() { throw null; }
         public System.Net.IPAddress MapToIPv6() { throw null; }
         public static short NetworkToHostOrder(short network) { throw null; }
@@ -536,7 +538,7 @@ namespace System.Net.Sockets
 }
 namespace System.Security.Authentication
 {
-    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum CipherAlgorithmType
     {
         None = 0,
@@ -550,7 +552,7 @@ namespace System.Security.Authentication
         Aes = 26129,
         Rc4 = 26625,
     }
-    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum ExchangeAlgorithmType
     {
         None = 0,
@@ -558,7 +560,7 @@ namespace System.Security.Authentication
         RsaKeyX = 41984,
         DiffieHellman = 43522,
     }
-    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherAlgorithmStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [Obsolete("KeyExchangeAlgorithm, KeyExchangeStrength, CipherAlgorithm, CipherStrength, HashAlgorithm and HashStrength properties of SslStream are obsolete. Use NegotiatedCipherSuite instead.", DiagnosticId = "SYSLIB0058", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum HashAlgorithmType
     {
         None = 0,

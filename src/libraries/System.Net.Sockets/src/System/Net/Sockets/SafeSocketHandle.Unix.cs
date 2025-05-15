@@ -14,18 +14,70 @@ namespace System.Net.Sockets
     {
         private int _receiveTimeout = -1;
         private int _sendTimeout = -1;
-        private bool _nonBlocking;
         private SocketAsyncContext? _asyncContext;
 
-        private TrackedSocketOptions _trackedOptions;
-        internal bool LastConnectFailed { get; set; }
-        internal bool DualMode { get; set; }
-        internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
-        internal bool PreferInlineCompletions { get; set; } = SocketAsyncEngine.InlineSocketCompletionsEnabled;
-        internal bool IsSocket { get; set; } = true; // (ab)use Socket class for performing async I/O on non-socket fds.
+        [Flags]
+        private enum Flags : byte
+        {
+            NonBlocking = 1,
+            LastConnectFailed = 2,
+            DualMode = 4,
+            ExposedHandleOrUntrackedConfiguration = 8,
+            PreferInlineCompletions = 16,
+            IsSocket = 32,
+            IsDisconnected = 64,
 #if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
-        internal bool TfoEnabled { get; set; }
+            TfoEnabled = 128
 #endif
+        }
+
+        private Flags _flags = Flags.IsSocket | (SocketAsyncEngine.InlineSocketCompletionsEnabled ? Flags.PreferInlineCompletions : 0);
+
+        private void SetFlag(Flags flag, bool value)
+        {
+            if (value) _flags |= flag;
+            else _flags &= ~flag;
+        }
+
+        internal bool LastConnectFailed
+        {
+            get => (_flags & Flags.LastConnectFailed) != 0;
+            set => SetFlag(Flags.LastConnectFailed, value);
+        }
+
+        internal bool DualMode
+        {
+            get => (_flags & Flags.DualMode) != 0;
+            set => SetFlag(Flags.DualMode, value);
+        }
+
+        internal bool ExposedHandleOrUntrackedConfiguration
+        {
+            get => (_flags & Flags.ExposedHandleOrUntrackedConfiguration) != 0;
+            private set => SetFlag(Flags.ExposedHandleOrUntrackedConfiguration, value);
+        }
+
+        internal bool PreferInlineCompletions
+        {
+            get => (_flags & Flags.PreferInlineCompletions) != 0;
+            set => SetFlag(Flags.PreferInlineCompletions, value);
+        }
+
+        // (ab)use Socket class for performing async I/O on non-socket fds.
+        internal bool IsSocket
+        {
+            get => (_flags & Flags.IsSocket) != 0;
+            set => SetFlag(Flags.IsSocket, value);
+        }
+
+#if SYSTEM_NET_SOCKETS_APPLE_PLATFROM
+        internal bool TfoEnabled
+        {
+            get => (_flags & Flags.TfoEnabled) != 0;
+            set => SetFlag(Flags.TfoEnabled, value);
+        }
+#endif
+
         internal void RegisterConnectResult(SocketError error)
         {
             switch (error)
@@ -53,54 +105,6 @@ namespace System.Net.Sockets
 
         internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
 
-        internal bool IsTrackedOption(TrackedSocketOptions option) => (_trackedOptions & option) != 0;
-
-        internal void TrackOption(SocketOptionLevel level, SocketOptionName name)
-        {
-            // As long as only these options are set, we can support Connect{Async}(IPAddress[], ...).
-            switch (level)
-            {
-                case SocketOptionLevel.Tcp:
-                    switch (name)
-                    {
-                        case SocketOptionName.NoDelay: _trackedOptions |= TrackedSocketOptions.NoDelay; return;
-                    }
-                    break;
-
-                case SocketOptionLevel.IP:
-                    switch (name)
-                    {
-                        case SocketOptionName.DontFragment: _trackedOptions |= TrackedSocketOptions.DontFragment; return;
-                        case SocketOptionName.IpTimeToLive: _trackedOptions |= TrackedSocketOptions.Ttl; return;
-                    }
-                    break;
-
-                case SocketOptionLevel.IPv6:
-                    switch (name)
-                    {
-                        case SocketOptionName.IPv6Only: _trackedOptions |= TrackedSocketOptions.DualMode; return;
-                        case SocketOptionName.IpTimeToLive: _trackedOptions |= TrackedSocketOptions.Ttl; return;
-                    }
-                    break;
-
-                case SocketOptionLevel.Socket:
-                    switch (name)
-                    {
-                        case SocketOptionName.Broadcast: _trackedOptions |= TrackedSocketOptions.EnableBroadcast; return;
-                        case SocketOptionName.Linger: _trackedOptions |= TrackedSocketOptions.LingerState; return;
-                        case SocketOptionName.ReceiveBuffer: _trackedOptions |= TrackedSocketOptions.ReceiveBufferSize; return;
-                        case SocketOptionName.ReceiveTimeout: _trackedOptions |= TrackedSocketOptions.ReceiveTimeout; return;
-                        case SocketOptionName.SendBuffer: _trackedOptions |= TrackedSocketOptions.SendBufferSize; return;
-                        case SocketOptionName.SendTimeout: _trackedOptions |= TrackedSocketOptions.SendTimeout; return;
-                    }
-                    break;
-            }
-
-            // For any other settings, we need to track that they were used so that we can error out
-            // if a Connect{Async}(IPAddress[],...) attempt is made.
-            ExposedHandleOrUntrackedConfiguration = true;
-        }
-
         internal SocketAsyncContext AsyncContext =>
             _asyncContext ??
             Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this), null) ??
@@ -116,11 +120,11 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _nonBlocking;
+                return (_flags & Flags.NonBlocking) != 0;
             }
             set
             {
-                _nonBlocking = value;
+                SetFlag(Flags.NonBlocking, value);
 
                 // If transitioning from blocking to non-blocking, we need to set the native socket to non-blocking mode.
                 // If transitioning from non-blocking to blocking, we keep the native socket in non-blocking mode, and emulate
@@ -161,12 +165,9 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool IsDisconnected { get; private set; }
+        internal bool IsDisconnected => (_flags & Flags.IsDisconnected) != 0;
 
-        internal void SetToDisconnected()
-        {
-            IsDisconnected = true;
-        }
+        internal void SetToDisconnected() => _flags |= Flags.IsDisconnected;
 
         /// <returns>Returns whether operations were canceled.</returns>
         private bool OnHandleClose()
@@ -322,21 +323,5 @@ namespace System.Net.Sockets
 
             return errorCode;
         }
-    }
-
-    /// <summary>Flags that correspond to exposed options on Socket.</summary>
-    [Flags]
-    internal enum TrackedSocketOptions : short
-    {
-        DontFragment = 0x1,
-        DualMode = 0x2,
-        EnableBroadcast = 0x4,
-        LingerState = 0x8,
-        NoDelay = 0x10,
-        ReceiveBufferSize = 0x20,
-        ReceiveTimeout = 0x40,
-        SendBufferSize = 0x80,
-        SendTimeout = 0x100,
-        Ttl = 0x200,
     }
 }

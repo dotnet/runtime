@@ -22,7 +22,7 @@ int Z_INTERNAL is_kernel_version_greater_or_equal_to_6_5() {
         return 0;
     }
 
-    if (major > 6 || major == 6 && minor >= 5)
+    if (major > 6 || (major == 6 && minor >= 5))
         return 1;
     return 0;
 }

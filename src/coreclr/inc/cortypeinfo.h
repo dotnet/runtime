@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This describes information about the COM+ primitive types
+// This describes information about the CLR primitive types
 
 //
 // Note: This file gets parsed by the IL Linker (https://github.com/dotnet/runtime/tree/main/src/tools/illink) which may throw an exception during parsing.

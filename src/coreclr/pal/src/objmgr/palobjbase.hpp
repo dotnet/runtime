@@ -85,8 +85,6 @@ namespace CorUnix
 
     class CPalObjectBase : public IPalObject
     {
-        template <class T> friend void InternalDelete(T *p);
-
     protected:
 
         LONG m_lRefCount;
@@ -114,7 +112,7 @@ namespace CorUnix
             ) = 0;
 
         virtual
-        bool
+        void
         ReleaseObjectDestructionLock(
             CPalThread *pthr,
             bool fDestructionPending

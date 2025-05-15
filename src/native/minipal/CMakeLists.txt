@@ -9,6 +9,8 @@ set(SOURCES
     time.c
     unicodedata.c
     utf8.c
+    xoshiro128pp.c
+    log.c
 )
 
 # Provide an object library for scenarios where we ship static libraries
@@ -34,6 +36,10 @@ endif()
 # for easier usability.
 add_library(minipal STATIC)
 target_link_libraries(minipal PRIVATE minipal_objects)
+
+if(CLR_CMAKE_HOST_ANDROID)
+  target_link_libraries(minipal PRIVATE log)
+endif(CLR_CMAKE_HOST_ANDROID)
 
 add_library(minipal_sanitizer_support OBJECT
     sansupport.c)

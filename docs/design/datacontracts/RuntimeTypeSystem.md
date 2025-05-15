@@ -159,6 +159,8 @@ partial interface IRuntimeTypeSystem : IContract
     // Get an instruction pointer that can be called to cause the MethodDesc to be executed
     public virtual TargetCodePointer GetNativeCode(MethodDescHandle methodDesc);
 
+    // Gets the GCStressCodeCopy pointer if available, otherwise returns TargetPointer.Null
+    public virtual TargetPointer GetGCStressCodeCopy(MethodDescHandle methodDesc);
 }
 ```
 
@@ -621,7 +623,7 @@ The contract additionally depends on these data descriptors
 
 ### MethodDesc
 
-The version 1 `MethodDesc` APIs depend on the `MethodDescAlignment` global and the `MethodDesc` and `MethodDescChunk` data descriptors.
+The version 1 `MethodDesc` APIs depend on the following globals:
 
 | Global name | Meaning |
 | --- | --- |
@@ -638,13 +640,16 @@ We depend on the following data descriptors:
 | `MethodDesc` | `Slot` | The method's slot |
 | `MethodDesc` | `Flags` | The method's flags |
 | `MethodDesc` | `Flags3AndTokenRemainder` | More flags for the method, and the low bits of the method's token's RID |
+| `MethodDesc` | `GCCoverageInfo` | The method's GCCover debug info, if supported |
 | `MethodDescCodeData` | `VersioningState` | The IL versioning state associated with a method descriptor
 | `MethodDescChunk` | `MethodTable` | The method table set of methods belongs to |
 | `MethodDescChunk` | `Next` | The next chunk of methods |
 | `MethodDescChunk` | `Size` | The size of this `MethodDescChunk`  following this `MethodDescChunk` header, minus 1. In multiples of `MethodDescAlignment` |
 | `MethodDescChunk` | `Count` | The number of `MethodDesc` entries in this chunk, minus 1. |
 | `MethodDescChunk` | `FlagsAndTokenRange` | `MethodDescChunk` flags, and the upper bits of the method token's RID |
+| `MethodTable` | `AuxiliaryData` | Auxiliary data associated with the method table. See `MethodTableAuxiliaryData` |
 | `MethodTableAuxiliaryData` | `LoaderModule` | The loader module associated with a method table
+| `MethodTableAuxiliaryData` | `OffsetToNonVirtualSlots` | Offset from the auxiliary data address to the array of non-virtual slots |
 | `InstantiatedMethodDesc` | `PerInstInfo` | The pointer to the method's type arguments |
 | `InstantiatedMethodDesc` | `Flags2` | Flags for the `InstantiatedMethodDesc` |
 | `InstantiatedMethodDesc` | `NumGenericArgs` | How many generic args the method has |
@@ -652,6 +657,7 @@ We depend on the following data descriptors:
 | `StoredSigMethodDesc` | `cSig` | Count of bytes in the metadata signature |
 | `StoredSigMethodDesc` | `ExtendedFlags` | Flags field for the `StoredSigMethodDesc` |
 | `DynamicMethodDesc` | `MethodName` | Pointer to Null-terminated UTF8 string describing the Method desc |
+| `GCCoverageInfo` | `SavedCode` | Pointer to the GCCover saved code copy, if supported |
 
 
 The contract depends on the following other contracts
@@ -1123,7 +1129,10 @@ Getting the native code pointer for methods with a NativeCodeSlot or a stable en
         }
         else
         {
-            // TODO[cdac]: GetNonVirtualSlotsArray from MethodTableAuxiliaryData
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
+            TargetPointer auxDataPtr = _target.ReadPointer(typeHandle.Address + /* MethodTable::AuxiliaryData offset */);
+            TargetPointer nonVirtualSlotsArray = auxDataPtr + _target.Read<short>(/* MethodTableAuxiliaryData::OffsetToNonVirtualSlots offset */);
+            return nonVirtualSlotsArray - (1 + (slotNum - mt.NumVirtuals));
         }
 
     }

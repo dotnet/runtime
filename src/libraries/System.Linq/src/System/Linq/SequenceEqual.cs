@@ -51,21 +51,19 @@ namespace System.Linq
                 }
             }
 
-            using (IEnumerator<TSource> e1 = first.GetEnumerator())
-            using (IEnumerator<TSource> e2 = second.GetEnumerator())
+            using IEnumerator<TSource> e1 = first.GetEnumerator();
+            using IEnumerator<TSource> e2 = second.GetEnumerator();
+            comparer ??= EqualityComparer<TSource>.Default;
+
+            while (e1.MoveNext())
             {
-                comparer ??= EqualityComparer<TSource>.Default;
-
-                while (e1.MoveNext())
+                if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current)))
                 {
-                    if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current)))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-
-                return !e2.MoveNext();
             }
+
+            return !e2.MoveNext();
         }
     }
 }

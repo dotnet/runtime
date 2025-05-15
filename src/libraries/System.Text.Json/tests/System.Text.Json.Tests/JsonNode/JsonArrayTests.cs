@@ -768,5 +768,126 @@ namespace System.Text.Json.Nodes.Tests
 
             Assert.Equal($"[{json}]", array.ToJsonString());
         }
+
+        [Fact]
+        public static void RemoveAll_InvalidValuesAndEmptyArray()
+        {
+            JsonArray testArray = new();
+            Assert.Throws<ArgumentNullException>(() => testArray.RemoveAll(null!));
+            testArray.RemoveAll(whatever => true); // RemoveAll on empty array always succeeds.
+        }
+
+        [Fact]
+        public static void RemoveAll_FreshlyDeserialized()
+        {
+            JsonArray testArray = JsonSerializer.Deserialize<JsonArray>("[1,2,3,4,5]");
+            Assert.Equal(3, testArray.RemoveAll(val => val.GetValue<int>() % 2 == 1));
+            JsonNodeTests.AssertDeepEqual(new JsonArray { 2, 4 }, testArray);
+        }
+
+        [Theory]
+        [InlineData(new int[] { 1, 1, 1, 1, 1 }, new int[] { 1, 1, 1, 1, 1 }, 0)]
+        [InlineData(new int[] { 2, 1, 1, 1, 1 }, new int[] { 1, 1, 1, 1 }, 1)]
+        [InlineData(new int[] { 1, 1, 1, 1, 2 }, new int[] { 1, 1, 1, 1 }, 1)]
+        [InlineData(new int[] { 1, 1, 1, 2, 1 }, new int[] { 1, 1, 1, 1 }, 1)]
+        public static void RemoveAll_SpecialValues(int[] original, int[] expected, int removed)
+        {
+            // This test is to ensure the O(n) scan algorithm of JsonArray.RemoveAll is correct.
+
+            JsonArray testArray = new(ToNodes(original));
+            Assert.Equal(removed, testArray.RemoveAll(Filter));
+            JsonNodeTests.AssertDeepEqual(new JsonArray(ToNodes(expected)), testArray);
+
+            bool Filter(JsonNode? v) => v.GetValue<int>() > 1;
+            JsonNode?[] ToNodes(int[] values) => values.Select(v => JsonValue.Create(v)).ToArray();
+        }
+
+        [Fact]
+        public static void RemoveAll()
+        {
+            JsonArray testArray = [1, 2, 3, 4, 5, 7, 8, 8, 8];
+            JsonNode[] nodes = testArray.ToArray();
+
+            // Correct amount of nodes are removed / remaining
+            Assert.Equal(5, testArray.RemoveAll(Filter));
+            Assert.Equal(4, testArray.Count);
+
+            // The order is preserved
+            JsonNodeTests.AssertDeepEqual(new JsonArray { 1, 3, 5, 7 }, testArray);
+
+            // Node parents are correctly handled
+            foreach (JsonNode node in nodes)
+            {
+                if (Filter(node))
+                {
+                    Assert.Null(node.Parent);
+                }
+                else
+                {
+                    Assert.Same(testArray, node.Parent);
+                }
+            }
+
+            static bool Filter(JsonNode node) => node.GetValue<int>() % 2 == 0;
+        }
+
+        [Fact]
+        public static void RemoveRange_InvalidAndSpecialValues()
+        {
+            JsonArray emptyArray = new();
+            emptyArray.RemoveRange(0, 0);
+            Assert.Throws<ArgumentException>(() => emptyArray.RemoveRange(0, 1));
+            Assert.Throws<ArgumentException>(() => emptyArray.RemoveRange(1, 0));
+
+            JsonArray testArray = [1, 2, 3, 4, 5, 6, 7, 8];
+            Assert.Throws<ArgumentOutOfRangeException>(() => testArray.RemoveRange(-1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => testArray.RemoveRange(1, -1));
+            Assert.Throws<ArgumentException>(() => testArray.RemoveRange(10, 1));
+            Assert.Throws<ArgumentException>(() => testArray.RemoveRange(1, 10));
+        }
+
+        [Fact]
+        public static void RemoveRange()
+        {
+            JsonArray testArray = [1, 2, 3, 4, 5, 6, 7, 8];
+            JsonNode[] nodes = testArray.ToArray();
+
+            const int RemoveStartIndex = 3;
+            const int RemoveLength = 3;
+
+            testArray.RemoveRange(RemoveStartIndex, RemoveLength);
+            Assert.Equal(8 - RemoveLength, testArray.Count);
+            JsonNodeTests.AssertDeepEqual(new JsonArray { 1, 2, 3, 7, 8 }, testArray);
+
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                if (IsIndexRemoved(i))
+                {
+                    Assert.Null(nodes[i].Parent);
+                }
+                else
+                {
+                    Assert.Same(testArray, nodes[i].Parent);
+                }
+            }
+
+            static bool IsIndexRemoved(int originalIndex) => originalIndex >= RemoveStartIndex &&
+                originalIndex < RemoveStartIndex + RemoveLength;
+        }
+
+        [Fact]
+        public static void RemoveRange_FreshlyDeserialized()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => PrepareData().RemoveRange(-1, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => PrepareData().RemoveRange(1, -1));
+            Assert.Throws<ArgumentException>(() => PrepareData().RemoveRange(10, 1));
+            Assert.Throws<ArgumentException>(() => PrepareData().RemoveRange(1, 10));
+
+            JsonArray testArray = PrepareData();
+            testArray.RemoveRange(2, 2);
+            JsonNodeTests.AssertDeepEqual(new JsonArray { 1, 2, 5 }, testArray);
+
+            static JsonArray PrepareData() => JsonSerializer.Deserialize<JsonArray>("[1,2,3,4,5]");
+        }
     }
 }

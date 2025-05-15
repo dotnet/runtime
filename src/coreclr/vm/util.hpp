@@ -18,13 +18,6 @@
 #include "posterror.h"
 #include <type_traits>
 
-// Hot cache lines need to be aligned to cache line size to improve performance
-#if defined(TARGET_ARM64)
-#define MAX_CACHE_LINE_SIZE 128
-#else
-#define MAX_CACHE_LINE_SIZE 64
-#endif
-
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
 // Flag to check if atomics feature is available on
@@ -37,11 +30,6 @@ extern bool g_arm64_atomics_present;
 // Copied from malloc.h: don't want to bring in the whole header file.
 void * __cdecl _alloca(size_t);
 #endif // !TARGET_UNIX
-
-#ifdef _PREFAST_
-// Suppress prefast warning #6255: alloca indicates failure by raising a stack overflow exception
-#pragma warning(disable:6255)
-#endif // _PREFAST_
 
 BOOL inline FitsInI1(int64_t val)
 {
@@ -146,7 +134,7 @@ FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
 // Destroying the heap frees all blocks allocated from the heap.
 // Blocks cannot be freed individually.
 //
-// The heap uses COM+ exceptions to report errors.
+// The heap uses exceptions to report errors.
 //
 // The heap does not use any internal synchronization so it is not
 // multithreadsafe.
@@ -799,17 +787,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2);
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);
 
 int GetRandomInt(int maxVal);
-
-//
-//
-// COMCHARACTER
-//
-//
-class COMCharacter {
-public:
-    //These are here for support from native code.  They are never called from our managed classes.
-    static BOOL nativeIsWhiteSpace(WCHAR c);
-};
 
 // ======================================================================================
 // Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with

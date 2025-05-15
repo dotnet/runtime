@@ -131,7 +131,7 @@ namespace System
             uint length;
             while ((length = Interop.Kernel32.GetModuleFileName(IntPtr.Zero, ref builder.GetPinnableReference(), (uint)builder.Capacity)) >= builder.Capacity)
             {
-                builder.EnsureCapacity((int)length);
+                builder.EnsureCapacity(builder.Capacity * 2);
             }
 
             if (length == 0)

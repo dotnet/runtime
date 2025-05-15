@@ -532,13 +532,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
     return original_ICorJitInfo->getTypeForBox(cls);
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("getTypeForBoxOnStack");
-    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
-}
-
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -969,10 +962,11 @@ void interceptor_ICJI::getEEInfo(
     original_ICorJitInfo->getEEInfo(pEEInfoOut);
 }
 
-const char16_t* interceptor_ICJI::getJitTimeLogFilename()
+void interceptor_ICJI::getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut)
 {
-    mcs->AddCall("getJitTimeLogFilename");
-    return original_ICorJitInfo->getJitTimeLogFilename();
+    mcs->AddCall("getAsyncInfo");
+    original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
@@ -1283,6 +1277,12 @@ bool interceptor_ICJI::getTailCallHelpers(
 {
     mcs->AddCall("getTailCallHelpers");
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    mcs->AddCall("getAsyncResumptionStub");
+    return original_ICorJitInfo->getAsyncResumptionStub();
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(

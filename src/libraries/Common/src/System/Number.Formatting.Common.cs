@@ -52,7 +52,7 @@ namespace System
             "(#)", "-#", "- #", "#-", "# -",
         ];
 
-        internal static unsafe char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
+        internal static char ParseFormatSpecifier(ReadOnlySpan<char> format, out int digits)
         {
             char c = default;
             if (format.Length > 0)

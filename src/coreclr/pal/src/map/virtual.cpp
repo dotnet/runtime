@@ -23,7 +23,6 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 
 #include "pal/thread.hpp"
 #include "pal/cs.hpp"
-#include "pal/malloc.hpp"
 #include "pal/file.hpp"
 #include "pal/seh.hpp"
 #include "pal/virtual.h"
@@ -40,6 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <dlfcn.h>
 
 #if HAVE_VM_ALLOCATE
 #include <mach/vm_map.h>
@@ -54,6 +54,11 @@ CRITICAL_SECTION virtual_critsec;
 static PCMI pVirtualMemory;
 
 static size_t s_virtualPageSize = 0;
+
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
+void (*jit_write_protect_np)(int enabled);
+#define pthread_jit_write_protect_np jit_write_protect_np
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
 
 /* We need MAP_ANON. However on some platforms like HP-UX, it is defined as MAP_ANONYMOUS */
 #if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
@@ -178,6 +183,15 @@ VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
     {
         g_executableMemoryAllocator.Initialize();
     }
+
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
+    jit_write_protect_np = (void (*)(int))dlsym(RTLD_DEFAULT, "pthread_jit_write_protect_np");
+    if (jit_write_protect_np == NULL)
+    {
+        ERROR("pthread_jit_write_protect_np not available.\n");
+        return FALSE;
+    }
+#endif // defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(HOST_OSX)
 
     return TRUE;
 }
@@ -592,6 +606,10 @@ static LPVOID ReserveVirtualMemory(
     {
         mmapFlags |= MAP_JIT;
     }
+#endif
+
+#ifdef __HAIKU__
+        mmapFlags |= MAP_NORESERVE;
 #endif
 
     LPVOID pRetVal = mmap((LPVOID) StartBoundary,
@@ -1038,9 +1056,12 @@ VirtualFree(
             goto VirtualFreeExit;
         }
 
-        TRACE( "Un-committing the following page(s) %d to %d.\n",
-               StartBoundary, MemSize );
+        TRACE( "Un-committing the following page(s) %p to %p.\n",
+               StartBoundary, StartBoundary + MemSize );
 
+        // mmap support on emscripten/wasm is very limited and doesn't support location hints
+        // (when address is not null)
+#ifndef __wasm__
         // Explicitly calling mmap instead of mprotect here makes it
         // that much more clear to the operating system that we no
         // longer need these pages.
@@ -1071,6 +1092,13 @@ VirtualFree(
             pthrCurrent->SetLastError( ERROR_INTERNAL_ERROR );
             goto VirtualFreeExit;
         }
+#else // __wasm__
+        // We can't decommit the mapping (MAP_FIXED doesn't work in emscripten), and we can't
+        //  MADV_DONTNEED it (madvise doesn't work in emscripten), but we can at least zero
+        //  the memory so that if an attempt is made to reuse it later, the memory will be
+        //  empty as PAL tests expect it to be.
+        ZeroMemory((LPVOID) StartBoundary, MemSize);
+#endif // __wasm__
     }
 
     if ( dwFreeType & MEM_RELEASE )
@@ -1231,7 +1259,7 @@ ExitVirtualProtect:
     return bRetVal;
 }
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
 PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
 {
     thread_local int enabledCount = 0;
@@ -1251,7 +1279,7 @@ PALAPI VOID PAL_JitWriteProtect(bool writeEnable)
         _ASSERTE(enabledCount >= 0);
     }
 }
-#endif // HOST_OSX && HOST_ARM64
+#endif // HOST_APPLE && HOST_ARM64
 
 #if HAVE_VM_ALLOCATE
 //---------------------------------------------------------------------------------------

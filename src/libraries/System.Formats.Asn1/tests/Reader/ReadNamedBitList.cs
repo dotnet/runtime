@@ -43,6 +43,61 @@ namespace System.Formats.Asn1.Tests.Reader
             Mid = 1L << 32,
             Max = 1L << 62,
             Min = long.MinValue,
+            AllBits = -1
+        }
+
+        [Flags]
+        public enum IntFlags : int
+        {
+            None = 0,
+            Mid = 1 << 16,
+            Max = int.MaxValue,
+            AllBits = -1,
+        }
+
+        [Flags]
+        public enum UIntFlags : uint
+        {
+            None = 0,
+            Mid = 1 << 16,
+            Max = uint.MaxValue,
+            Min = uint.MinValue,
+        }
+
+        [Flags]
+        public enum ShortFlags : short
+        {
+            None = 0,
+            Mid = 1 << 8,
+            Max = short.MaxValue,
+            AllBits = -1,
+        }
+
+        [Flags]
+        public enum UShortFlags : ushort
+        {
+            None = 0,
+            Mid = 1 << 8,
+            Max = ushort.MaxValue,
+            Min = ushort.MinValue,
+        }
+
+        [Flags]
+        public enum ByteFlags : byte
+        {
+            None = 0,
+            Mid = 1 << 4,
+            Max = byte.MaxValue,
+            Min = byte.MinValue,
+        }
+
+        [Flags]
+        public enum SByteFlags : sbyte
+        {
+            None = 0,
+            Mid = 1 << 4,
+            Max = sbyte.MaxValue,
+            AllBits = -1,
         }
 
         [Theory]
@@ -94,6 +149,18 @@ namespace System.Formats.Asn1.Tests.Reader
             typeof(X509KeyUsageCSharpStyle),
             (long)(X509KeyUsageCSharpStyle.DecipherOnly | X509KeyUsageCSharpStyle.KeyCertSign | X509KeyUsageCSharpStyle.DataEncipherment),
             "0303001480")]
+        [InlineData(AsnEncodingRules.DER, typeof(SByteFlags), (sbyte)SByteFlags.AllBits, "030200FF")]
+        [InlineData(AsnEncodingRules.CER, typeof(SByteFlags), (sbyte)SByteFlags.AllBits, "030200FF")]
+        [InlineData(AsnEncodingRules.BER, typeof(SByteFlags), (sbyte)SByteFlags.AllBits, "030200FF")]
+        [InlineData(AsnEncodingRules.DER, typeof(ShortFlags), (short)ShortFlags.AllBits, "030300FFFF")]
+        [InlineData(AsnEncodingRules.CER, typeof(ShortFlags), (short)ShortFlags.AllBits, "030300FFFF")]
+        [InlineData(AsnEncodingRules.BER, typeof(ShortFlags), (short)ShortFlags.AllBits, "030300FFFF")]
+        [InlineData(AsnEncodingRules.DER, typeof(IntFlags), (int)IntFlags.AllBits, "030500FFFFFFFF")]
+        [InlineData(AsnEncodingRules.CER, typeof(IntFlags), (int)IntFlags.AllBits, "030500FFFFFFFF")]
+        [InlineData(AsnEncodingRules.BER, typeof(IntFlags), (int)IntFlags.AllBits, "030500FFFFFFFF")]
+        [InlineData(AsnEncodingRules.DER, typeof(LongFlags), (long)LongFlags.AllBits, "030900FFFFFFFFFFFFFFFF")]
+        [InlineData(AsnEncodingRules.CER, typeof(LongFlags), (long)LongFlags.AllBits, "030900FFFFFFFFFFFFFFFF")]
+        [InlineData(AsnEncodingRules.BER, typeof(LongFlags), (long)LongFlags.AllBits, "030900FFFFFFFFFFFFFFFF")]
         public static void VerifyReadNamedBitListEncodings(
             AsnEncodingRules ruleSet,
             Type enumType,

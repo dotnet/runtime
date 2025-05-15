@@ -577,15 +577,15 @@ namespace System
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, CultureInfo? culture) => InvokeMember(name, invokeAttr, binder, target, args, null, culture, null);
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public abstract object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -599,7 +599,7 @@ namespace System
 
         public virtual InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
 
-        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o == null ? false : IsAssignableFrom(o.GetType());
+        public virtual bool IsInstanceOfType([NotNullWhen(true)] object? o) => o != null && IsAssignableFrom(o.GetType());
         public virtual bool IsEquivalentTo([NotNullWhen(true)] Type? other) => this == other;
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
@@ -651,7 +651,16 @@ namespace System
 
         public virtual Type MakePointerType() => throw new NotSupportedException();
 
-        public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
+        public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments)
+        {
+            ArgumentNullException.ThrowIfNull(genericTypeDefinition);
+            ArgumentNullException.ThrowIfNull(typeArguments);
+
+            if (!genericTypeDefinition.IsGenericTypeDefinition)
+                throw new ArgumentException(SR.Format(SR.Arg_NotGenericTypeDefinition, genericTypeDefinition), nameof(genericTypeDefinition));
+
+            return new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
+        }
 
         public static Type MakeGenericMethodParameter(int position)
         {
@@ -680,7 +689,7 @@ namespace System
 
         public override string ToString() => "Type: " + Name;  // Why do we add the "Type: " prefix?
 
-        public override bool Equals(object? o) => o == null ? false : Equals(o as Type);
+        public override bool Equals(object? o) => o != null && Equals(o as Type);
         public override int GetHashCode()
         {
             Type systemType = UnderlyingSystemType;
@@ -688,7 +697,7 @@ namespace System
                 return systemType.GetHashCode();
             return base.GetHashCode();
         }
-        public virtual bool Equals(Type? o) => o == null ? false : ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
+        public virtual bool Equals(Type? o) => o != null && ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
         [Intrinsic]
         public static bool operator ==(Type? left, Type? right)
@@ -744,5 +753,10 @@ namespace System
             DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
             DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors |
             DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes;
+
+        internal const DynamicallyAccessedMemberTypes InvokeMemberMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
+            DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |
+            DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties |
+            DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors;
     }
 }

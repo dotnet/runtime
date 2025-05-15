@@ -1,13 +1,13 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('h')]$help,
+  [switch]$pack,
   [switch][Alias('t')]$test,
   [ValidateSet("Debug","Release","Checked")][string[]][Alias('c')]$configuration = @("Debug"),
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
   [ValidateSet("windows","linux","osx","android","browser","wasi")][string]$os,
-  [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
   [switch]$testnobuild,
@@ -77,9 +77,8 @@ function Get-Help() {
   Write-Host ""
 
   Write-Host "Libraries settings:"
-  Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net10.0 or net48."
+  Write-Host "  -framework (-f)         Build framework: net10.0 or net481."
   Write-Host "                          [Default: net10.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
@@ -181,7 +180,7 @@ if ($vs) {
     # launch the generated CMake solution.
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
-      Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen -msbuild"
+      Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/coreclr/runtime.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true /p:ClrFullNativeBuild=true"
       if ($lastExitCode -ne 0) {
         Write-Error "Failed to generate the CoreCLR solution file."
         exit 1
@@ -312,7 +311,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
-    "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
+    "pack"                   { $arguments += " -pack /p:BuildAllConfigurations=true" }
     "properties"             { $arguments += " " + $properties }
     "verbosity"              { $arguments += " -$argument " + $($PSBoundParameters[$argument]) }
     "cmakeargs"              { $arguments += " /p:CMakeArgs=`"$($PSBoundParameters[$argument])`"" }

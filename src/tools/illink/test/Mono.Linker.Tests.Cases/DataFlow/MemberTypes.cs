@@ -17,7 +17,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// This is an easy way to suppress all trim related warnings in the Main method
 		// This test is about marking, not diagnostics and this Main will produce several warnings due to it accssing
 		// some problematic APIs (Delegate.Create for example) via reflection.
+		[UnconditionalSuppressMessage("Reflection", "IL2123", Justification = "The RUC suppresses warnings in an entrypoint, but we don't mind")]
 		[RequiresUnreferencedCode("test")]
+		[KeptAttributeAttribute(typeof(UnconditionalSuppressMessageAttribute))]
 		[KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute))]
 		public static void Main ()
 		{
@@ -27,25 +29,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			RequirePublicConstructors (typeof (PublicConstructorsType));
 			RequirePublicConstructors (typeof (PublicConstructorsBeforeFieldInitType));
 			RequirePublicConstructors (typeof (PublicConstructorsPrivateParameterlessConstructorType));
+			RequirePublicConstructorsWithInherited (typeof (PublicConstructorsWithInheritedType));
 			RequireNonPublicConstructors (typeof (NonPublicConstructorsType));
 			RequireNonPublicConstructors (typeof (NonPublicConstructorsBeforeFieldInitType));
-			RequireAllConstructors (typeof (AllConstructorsType));
-			RequireAllConstructors (typeof (AllConstructorsBeforeFieldInitType));
+			RequireNonPublicConstructorsWithInherited (typeof (NonPublicConstructorsWithInheritedType));
+			RequirePublicAndNonPublicConstructors (typeof (AllConstructorsType));
+			RequirePublicAndNonPublicConstructors (typeof (AllConstructorsBeforeFieldInitType));
 			RequirePublicMethods (typeof (PublicMethodsType));
 			RequireNonPublicMethods (typeof (NonPublicMethodsType));
-			RequireAllMethods (typeof (AllMethodsType));
+			RequireNonPublicMethodsWithInherited (typeof (NonPublicMethodsWithInheritedType));
+			RequirePublicAndNonPublicMethods (typeof (AllMethodsType));
 			RequirePublicFields (typeof (PublicFieldsType));
 			RequireNonPublicFields (typeof (NonPublicFieldsType));
-			RequireAllFields (typeof (AllFieldsType));
+			RequireNonPublicFieldsWithInherited (typeof (NonPublicFieldsWithInheritedType));
+			RequirePublicAndNonPublicFields (typeof (AllFieldsType));
 			RequirePublicNestedTypes (typeof (PublicNestedTypesType));
+			RequirePublicNestedTypesWithInherited (typeof (PublicNestedTypesWithInheritedType));
 			RequireNonPublicNestedTypes (typeof (NonPublicNestedTypesType));
-			RequireAllNestedTypes (typeof (AllNestedTypesType));
+			RequireNonPublicNestedTypesWithInherited (typeof (NonPublicNestedTypesWithInheritedType));
+			RequirePublicAndNonPublicNestedTypes (typeof (AllNestedTypesType));
 			RequirePublicProperties (typeof (PublicPropertiesType));
 			RequireNonPublicProperties (typeof (NonPublicPropertiesType));
-			RequireAllProperties (typeof (AllPropertiesType));
+			RequireNonPublicPropertiesWithInherited (typeof (NonPublicPropertiesWithInheritedType));
+			RequirePublicAndNonPublicProperties (typeof (AllPropertiesType));
 			RequirePublicEvents (typeof (PublicEventsType));
 			RequireNonPublicEvents (typeof (NonPublicEventsType));
-			RequireAllEvents (typeof (AllEventsType));
+			RequireNonPublicEventsWithInherited (typeof (NonPublicEventsWithInheritedType));
+			RequirePublicAndNonPublicEvents (typeof (AllEventsType));
 			RequireInterfaces (typeof (InterfacesType));
 			RequireAll (typeof (AllType));
 			RequireAll (typeof (RequireAllWithRecursiveTypeReferences));
@@ -164,6 +174,45 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		private static void RequirePublicConstructorsWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.PublicConstructorsWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		class PublicConstructorsWithInheritedBaseType
+		{
+			[Kept]
+			public PublicConstructorsWithInheritedBaseType () { }
+
+			[Kept]
+			public PublicConstructorsWithInheritedBaseType (int i) { }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (PublicConstructorsWithInheritedBaseType))]
+		class PublicConstructorsWithInheritedType : PublicConstructorsWithInheritedBaseType
+		{
+			private PublicConstructorsWithInheritedType () { }
+
+			[Kept]
+			public PublicConstructorsWithInheritedType (int i) { }
+
+			private PublicConstructorsWithInheritedType (int i, int j) { }
+
+			// Not implied by the DynamicallyAccessedMemberTypes logic, but
+			// explicit cctors would be kept by ILLink.
+			// [Kept]
+			// static PublicConstructorsType () { }
+
+			public void Method1 () { }
+			public bool Property1 { get; set; }
+			public bool Field1;
+		}
+
+		[Kept]
 		class PublicConstructorsBeforeFieldInitType
 		{
 			static int i = 10;
@@ -218,6 +267,45 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
+		private static void RequireNonPublicConstructorsWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.NonPublicConstructorsWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		class NonPublicConstructorsWithInheritedBaseType
+		{
+			[Kept]
+			protected NonPublicConstructorsWithInheritedBaseType () { }
+
+			[Kept]
+			protected NonPublicConstructorsWithInheritedBaseType (int i) { }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (NonPublicConstructorsWithInheritedBaseType))]
+		class NonPublicConstructorsWithInheritedType : NonPublicConstructorsWithInheritedBaseType
+		{
+			[Kept]
+			private NonPublicConstructorsWithInheritedType () { }
+
+			public NonPublicConstructorsWithInheritedType (int i) { }
+
+			[Kept]
+			private NonPublicConstructorsWithInheritedType (int i, int j) { }
+
+			// Kept by the DynamicallyAccessedMembers logic
+			[Kept]
+			static NonPublicConstructorsWithInheritedType () { }
+
+			public void Method1 () { }
+			public bool Property1 { get; set; }
+			public bool Field1;
+		}
+
+		[Kept]
 		class NonPublicConstructorsBeforeFieldInitType
 		{
 			public int i = 10;
@@ -227,7 +315,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 
 		[Kept]
-		private static void RequireAllConstructors (
+		private static void RequirePublicAndNonPublicConstructors (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -543,9 +631,149 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public bool Field1;
 		}
 
+		[Kept]
+		private static void RequireNonPublicMethodsWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.NonPublicMethodsWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
 
 		[Kept]
-		private static void RequireAllMethods (
+		class NonPublicMethodsWithInheritedBaseType
+		{
+			public void PublicBaseMethod () { }
+			[Kept]
+			private void PrivateBaseMethod () { }
+			[Kept]
+			protected void ProtectedBaseMethod () { }
+			public void HideMethod () { }
+
+			public bool PublicPropertyOnBase { get; set; }
+			[Kept]
+			protected bool ProtectedPropertyOnBase { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			[Kept]
+			private bool PrivatePropertyOnBase { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			public bool HideProperty { get; set; }
+
+			public event EventHandler<EventArgs> PublicEventOnBase;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			protected event EventHandler<EventArgs> ProtectedEventOnBase;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			private event EventHandler<EventArgs> PrivateEventOnBase;
+			public event EventHandler<EventArgs> HideEvent;
+
+			public static void PublicStaticBaseMethod () { }
+			[Kept]
+			private static void PrivateStaticBaseMethod () { }
+			[Kept]
+			protected static void ProtectedStaticBaseMethod () { }
+			public static void HideStaticMethod () { }
+
+			static public bool PublicStaticPropertyOnBase { get; set; }
+			[Kept]
+			[KeptBackingField]
+			static protected bool ProtectedStaticPropertyOnBase { [Kept] get; [Kept] set; }
+			[Kept]
+			[KeptBackingField]
+			static private bool PrivateStaticPropertyOnBase { [Kept] get; [Kept] set; }
+			static public bool HideStaticProperty { get; set; }
+
+			public static event EventHandler<EventArgs> PublicStaticEventOnBase;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			protected static event EventHandler<EventArgs> ProtectedStaticEventOnBase;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			private static event EventHandler<EventArgs> PrivateStaticEventOnBase;
+			public static event EventHandler<EventArgs> HideStaticEvent;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (NonPublicMethodsWithInheritedBaseType))]
+		class NonPublicMethodsWithInheritedType : NonPublicMethodsWithInheritedBaseType
+		{
+			private NonPublicMethodsWithInheritedType () { }
+
+			public void PublicMethod1 () { }
+			public bool PublicMethod2 (int i) { return false; }
+
+			[Kept]
+			internal void InternalMethod () { }
+			[Kept]
+			protected void ProtectedMethod () { }
+			[Kept]
+			private void PrivateMethod () { }
+			public void HideMethod () { }
+
+			public bool PublicProperty { get; set; }
+			[Kept]
+			protected bool ProtectedProperty { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			[Kept]
+			private bool PrivateProperty { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			public bool HideProperty { get; set; }
+
+			public event EventHandler<EventArgs> PublicEvent;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			protected event EventHandler<EventArgs> ProtectedEvent;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			private event EventHandler<EventArgs> PrivateEvent;
+			public event EventHandler<EventArgs> HideEvent;
+
+			public static void PublicStaticMethod () { }
+			[Kept]
+			private static void PrivateStaticMethod () { }
+			[Kept]
+			protected static void ProtectedStaticMethod () { }
+			public static void HideStaticMethod () { }
+
+			static public bool PublicStaticProperty { get; set; }
+			[Kept]
+			[KeptBackingField]
+			static protected bool ProtectedStaticProperty { [Kept] get; [Kept] set; }
+			[Kept]
+			[KeptBackingField]
+			static private bool PrivateStaticProperty { [Kept] get; [Kept] set; }
+			static public bool HideStaticProperty { get; set; }
+
+			public static event EventHandler<EventArgs> PublicStaticEvent;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			protected static event EventHandler<EventArgs> ProtectedStaticEvent;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			private static event EventHandler<EventArgs> PrivateStaticEvent;
+			public static event EventHandler<EventArgs> HideStaticEvent;
+
+			public bool Field1;
+		}
+
+		[Kept]
+		private static void RequirePublicAndNonPublicMethods (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -922,9 +1150,127 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static event EventHandler<EventArgs> HideStaticEvent;
 		}
 
+		[Kept]
+		private static void RequireNonPublicFieldsWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.NonPublicFieldsWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
 
 		[Kept]
-		private static void RequireAllFields (
+		class NonPublicFieldsWithInheritedBaseType
+		{
+			public bool PublicBaseField;
+			[Kept]
+			protected bool ProtectedBaseField;
+			[Kept]
+			private bool PrivateBaseField;
+			public bool HideField;
+
+			// Backing fields are always private, so they will be kept even if the property itself is public
+			[KeptBackingField]
+			public bool PublicPropertyOnBase { get; set; }
+			[KeptBackingField]
+			protected bool ProtectedPropertyOnBase { get; set; }
+			[KeptBackingField]
+			private bool PrivatePropertyOnBase { get; set; }
+
+			[KeptBackingField]
+			public event EventHandler<EventArgs> PublicEventOnBase;
+			[KeptBackingField]
+			protected event EventHandler<EventArgs> ProtectedEventOnBase;
+			[KeptBackingField]
+			private event EventHandler<EventArgs> PrivateEventOnBase;
+
+			static public bool StaticPublicBaseField;
+			[Kept]
+			static protected bool StaticProtectedBaseField;
+			[Kept]
+			static private bool StaticPrivateBaseField;
+			static public bool HideStaticField;
+
+			[KeptBackingField]
+			static public bool PublicStaticPropertyOnBase { get; set; }
+			[KeptBackingField]
+			static protected bool ProtectedStaticPropertyOnBase { get; set; }
+			[KeptBackingField]
+			static private bool PrivateStaticPropertyOnBase { get; set; }
+			[KeptBackingField]
+			static public bool HideStaticProperty { get; set; }
+
+			[KeptBackingField]
+			public static event EventHandler<EventArgs> PublicStaticEventOnBase;
+			[KeptBackingField]
+			protected static event EventHandler<EventArgs> ProtectedStaticEventOnBase;
+			[KeptBackingField]
+			private static event EventHandler<EventArgs> PrivateStaticEventOnBase;
+			[KeptBackingField]
+			public static event EventHandler<EventArgs> HideStaticEvent;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (NonPublicFieldsWithInheritedBaseType))]
+		class NonPublicFieldsWithInheritedType : NonPublicFieldsWithInheritedBaseType
+		{
+			public bool PublicField;
+			public string PublicStringField;
+			[Kept]
+			internal bool InternalField;
+			[Kept]
+			protected bool ProtectedField;
+			[Kept]
+			private bool PrivateField;
+			public bool HideField;
+
+			// Backing fields are always private, so they will be kept even if the property itself is public
+			[KeptBackingField]
+			public bool PublicProperty { get; set; }
+			[KeptBackingField]
+			protected bool ProtectedProperty { get; set; }
+			[KeptBackingField]
+			private bool PrivateProperty { get; set; }
+			[KeptBackingField]
+			public bool HideProperty { get; set; }
+
+			[KeptBackingField]
+			public event EventHandler<EventArgs> PublicEvent;
+			[KeptBackingField]
+			protected event EventHandler<EventArgs> ProtectedEvent;
+			[KeptBackingField]
+			private event EventHandler<EventArgs> PrivateEvent;
+			[KeptBackingField]
+			public event EventHandler<EventArgs> HideEvent;
+
+			static public bool StaticPublicField;
+			static public string StaticPublicStringField;
+			[Kept]
+			static protected bool StaticProtectedField;
+			[Kept]
+			static private bool StaticPrivateField;
+			static public bool HideStaticField;
+
+			[KeptBackingField]
+			static public bool PublicStaticProperty { get; set; }
+			[KeptBackingField]
+			static protected bool ProtectedStaticProperty { get; set; }
+			[KeptBackingField]
+			static private bool PrivateStaticProperty { get; set; }
+			[KeptBackingField]
+			static public bool HideStaticProperty { get; set; }
+
+			[KeptBackingField]
+			public static event EventHandler<EventArgs> PublicStaticEvent;
+			[KeptBackingField]
+			protected static event EventHandler<EventArgs> ProtectedStaticEvent;
+			[KeptBackingField]
+			private static event EventHandler<EventArgs> PrivateStaticEvent;
+			[KeptBackingField]
+			public static event EventHandler<EventArgs> HideStaticEvent;
+		}
+
+		[Kept]
+		private static void RequirePublicAndNonPublicFields (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -1080,6 +1426,58 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private delegate int PrivateDelegate ();
 		}
 
+		[Kept]
+		private static void RequirePublicNestedTypesWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.PublicNestedTypesWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		class PublicNestedTypesWithInheritedBaseType
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			public class PublicBaseNestedType { }
+			protected class ProtectedBaseNestedType { }
+			private class PrivateBaseNestedType { }
+			[Kept]
+			[KeptMember (".ctor()")]
+			public class HideBaseNestedType { }
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			[KeptMember ("Invoke()")]
+			public delegate int PublicDelegate ();
+			private delegate int PrivateDelegate ();
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (PublicNestedTypesWithInheritedBaseType))]
+		class PublicNestedTypesWithInheritedType : PublicNestedTypesWithInheritedBaseType
+		{
+			[Kept]
+			[KeptMember (".ctor()")]
+			public class PublicNestedType { }
+			protected class ProtectedNestedType { }
+			private class PrivateNestedType { }
+			[Kept]
+			[KeptMember (".ctor()")]
+			public class HideNestedType { }
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			[KeptMember ("Invoke()")]
+			public delegate int PublicDelegate ();
+
+			private delegate int PrivateDelegate ();
+		}
 
 		[Kept]
 		private static void RequireNonPublicNestedTypes (
@@ -1125,9 +1523,61 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private delegate int PrivateDelegate ();
 		}
 
+		[Kept]
+		private static void RequireNonPublicNestedTypesWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.NonPublicNestedTypesWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
 
 		[Kept]
-		private static void RequireAllNestedTypes (
+		class NonPublicNestedTypesWithInheritedBaseType
+		{
+			public class PublicBaseNestedType { }
+			[Kept]
+			[KeptMember (".ctor()")]
+			protected class ProtectedBaseNestedType { }
+			[Kept]
+			[KeptMember (".ctor()")]
+			private class PrivateBaseNestedType { }
+			public class HideBaseNestedType { }
+			public delegate int PublicDelegate ();
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			[KeptMember ("Invoke()")]
+			private delegate int PrivateDelegate ();
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (NonPublicNestedTypesWithInheritedBaseType))]
+		class NonPublicNestedTypesWithInheritedType : NonPublicNestedTypesWithInheritedBaseType
+		{
+			public class PublicNestedType { }
+			[Kept]
+			[KeptMember (".ctor()")]
+			protected class ProtectedNestedType { }
+			[Kept]
+			[KeptMember (".ctor()")]
+			private class PrivateNestedType { }
+			public class HideNestedType { }
+
+			public delegate int PublicDelegate ();
+
+			[Kept]
+			[KeptBaseType (typeof (MulticastDelegate))]
+			[KeptMember (".ctor(System.Object,System.IntPtr)")]
+			[KeptMember ("BeginInvoke(System.AsyncCallback,System.Object)")]
+			[KeptMember ("EndInvoke(System.IAsyncResult)")]
+			[KeptMember ("Invoke()")]
+			private delegate int PrivateDelegate ();
+		}
+
+		[Kept]
+		private static void RequirePublicAndNonPublicNestedTypes (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -1302,7 +1752,64 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllProperties (
+		private static void RequireNonPublicPropertiesWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.NonPublicPropertiesWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		class NonPublicPropertiesWithInheritedBaseType
+		{
+			public bool PublicPropertyOnBase { get; set; }
+			public bool PublicPropertyGetterOnBase { get { return false; } private set { } }
+			public bool PublicPropertySetterOnBase { private get { return false; } set { } }
+			public bool PublicPropertyOnlyGetterOnBase { get { return false; } }
+			public bool PublicPropertyOnlySetterOnBase { set { } }
+			[Kept]
+			protected bool ProtectedPropertyOnBase { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			[Kept]
+			private bool PrivatePropertyOnBase { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			public bool HideProperty { get; set; }
+
+			static public bool PublicStaticPropertyOnBase { get; set; }
+			[Kept]
+			[KeptBackingField]
+			static protected bool ProtectedStaticPropertyOnBase { [Kept] get; [Kept] set; }
+			[Kept]
+			[KeptBackingField]
+			static private bool PrivateStaticPropertyOnBase { [Kept] get; [Kept] set; }
+			static public bool HideStaticProperty { get; set; }
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (NonPublicPropertiesWithInheritedBaseType))]
+		class NonPublicPropertiesWithInheritedType : NonPublicPropertiesWithInheritedBaseType
+		{
+			public bool PublicProperty { get; set; }
+			public bool PublicPropertyGetter { get { return false; } private set { } }
+			public bool PublicPropertySetter { private get { return false; } set { } }
+			public bool PublicPropertyOnlyGetter { get { return false; } }
+			public bool PublicPropertyOnlySetter { set { } }
+			[Kept]
+			protected bool ProtectedProperty { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			[Kept]
+			private bool PrivateProperty { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
+			public bool HideProperty { get; set; }
+
+			static public bool PublicStaticProperty { get; set; }
+			[Kept]
+			[KeptBackingField]
+			static protected bool ProtectedStaticProperty { [Kept] get; [Kept] set; }
+			[Kept]
+			[KeptBackingField]
+			static private bool PrivateStaticProperty { [Kept] get; [Kept] set; }
+			static public bool HideStaticProperty { get; set; }
+		}
+
+		[Kept]
+		private static void RequirePublicAndNonPublicProperties (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)
@@ -1515,7 +2022,80 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		}
 
 		[Kept]
-		private static void RequireAllEvents (
+		private static void RequireNonPublicEventsWithInherited (
+			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypesEx.NonPublicEventsWithInherited)]
+			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
+			Type type)
+		{
+		}
+
+		[Kept]
+		class NonPublicEventsWithInheritedBaseType
+		{
+			public event EventHandler<EventArgs> PublicEventOnBase;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			protected event EventHandler<EventArgs> ProtectedEventOnBase;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			private event EventHandler<EventArgs> PrivateEventOnBase;
+			public event EventHandler<EventArgs> HideEvent;
+
+			static public event EventHandler<EventArgs> PublicStaticEventOnBase;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			static protected event EventHandler<EventArgs> ProtectedStaticEventOnBase;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			static private event EventHandler<EventArgs> PrivateStaticEventOnBase;
+			static public event EventHandler<EventArgs> HideStaticEvent;
+		}
+
+		[Kept]
+		[KeptBaseType (typeof (NonPublicEventsWithInheritedBaseType))]
+		class NonPublicEventsWithInheritedType : NonPublicEventsWithInheritedBaseType
+		{
+			public event EventHandler<EventArgs> PublicEvent;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			protected event EventHandler<EventArgs> ProtectedEvent;
+			[Kept]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			[method: ExpectBodyModified]
+			[method: ExpectLocalsModified]
+			private event EventHandler<EventArgs> PrivateEvent;
+			public event EventHandler<EventArgs> HideEvent;
+
+			static public event EventHandler<EventArgs> PublicStaticEvent;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			static protected event EventHandler<EventArgs> ProtectedStaticEvent;
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			static private event EventHandler<EventArgs> PrivateStaticEvent;
+			static public event EventHandler<EventArgs> HideStaticEvent;
+		}
+
+		[Kept]
+		private static void RequirePublicAndNonPublicEvents (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
 			[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 			Type type)

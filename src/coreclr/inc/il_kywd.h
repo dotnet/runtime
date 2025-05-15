@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 //
-// COM+ IL keywords, symbols and values
+// CLR IL keywords, symbols and values
 //
 // This is the master table used in ILASM (asmparse.y)
 // and ILDASM (dis.cpp)
@@ -109,6 +109,7 @@
     KYWD( "noinlining",     NOINLINING_,        NO_VALUE )
     KYWD( "nooptimization", NOOPTIMIZATION_,    NO_VALUE )
     KYWD( "aggressiveoptimization", AGGRESSIVEOPTIMIZATION_, NO_VALUE )
+    KYWD( "async",          ASYNC_,             NO_VALUE )
     KYWD( "nomangle",       NOMANGLE_,          NO_VALUE )
     KYWD( "lasterr",        LASTERR_,           NO_VALUE )
     KYWD( "winapi",         WINAPI_,            NO_VALUE )

@@ -4,6 +4,7 @@
 #nullable enable
 
 using System;
+using System.Linq;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -113,12 +114,14 @@ internal class BrowserRunner : IAsyncDisposable
         bool headless = true,
         int? timeout = null,
         int maxRetries = 3,
-        string language = "en-US"
+        string locale = "en-US"
     ) {
         var url = new Uri(browserUrl);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         // codespaces: ignore certificate error -> Microsoft.Playwright.PlaywrightException : net::ERR_CERT_AUTHORITY_INVALID
-        string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors", $"--lang={language}" };
+        string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}", "--ignore-certificate-errors", $"--lang={locale}" };
+        if (headless)
+            chromeArgs = chromeArgs.Append("--headless").ToArray();
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
 
         int attempt = 0;
@@ -128,7 +131,6 @@ internal class BrowserRunner : IAsyncDisposable
             {
                 Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions {
                     ExecutablePath = s_chromePath.Value,
-                    Headless = headless,
                     Args = chromeArgs,
                     Timeout = timeout
                 });
@@ -155,15 +157,15 @@ internal class BrowserRunner : IAsyncDisposable
         ToolCommand cmd,
         string args,
         bool headless = true,
-        string language = "en-US",
-        Action<IPage, IConsoleMessage>? onConsoleMessage = null,
+        string locale = "en-US",
+        Action<string, string>? onConsoleMessage = null,
         Action<string>? onServerMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null)
     {
         var urlString = await StartServerAndGetUrlAsync(cmd, args, onServerMessage);
-        var browser = await SpawnBrowserAsync(urlString, headless, language: language);
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = language });
+        var browser = await SpawnBrowserAsync(urlString, headless, locale: locale);
+        var context = await browser.NewContextAsync(new BrowserNewContextOptions { Locale = locale });
         return await RunAsync(context, urlString, headless, onConsoleMessage, onError, modifyBrowserUrl);
     }
 
@@ -171,7 +173,7 @@ internal class BrowserRunner : IAsyncDisposable
         IBrowserContext context,
         string browserUrl,
         bool headless = true,
-        Action<IPage, IConsoleMessage>? onConsoleMessage = null,
+        Action<string, string>? onConsoleMessage = null,
         Action<string>? onError = null,
         Func<string, string>? modifyBrowserUrl = null,
         bool resetExitedState = false
@@ -184,7 +186,7 @@ internal class BrowserRunner : IAsyncDisposable
 
         IPage page = await context.NewPageAsync();
 
-        page.Console += (_, msg) => 
+        page.Console += (_, msg) =>
         {
             string message = msg.Text;
             Match payloadMatch = s_payloadRegex.Match(message);
@@ -192,26 +194,15 @@ internal class BrowserRunner : IAsyncDisposable
             {
                 message = payloadMatch.Groups["payload"].Value;
             }
-            if (message.StartsWith("TestOutput -> "))
-            {
-                lock (OutputLines)
-                {
-                    OutputLines.Add(message);
-                }
-            }
             Match exitMatch = s_exitRegex.Match(message);
             if (exitMatch.Success)
             {
-                lock (OutputLines)
-                {
-                    OutputLines.Add(message);
-                }
                 int exitCode = int.Parse(exitMatch.Groups["exitCode"].Value);
                 _exited.TrySetResult(exitCode);
             }
             if (onConsoleMessage is not null)
             {
-                onConsoleMessage(page, msg);
+                onConsoleMessage(msg.Type, message);
             }
         };
 
@@ -227,7 +218,7 @@ internal class BrowserRunner : IAsyncDisposable
         return page;
     }
 
-    public async Task WaitForExitMessageAsync(TimeSpan timeout)
+    public async Task<int> WaitForExitMessageAsync(TimeSpan timeout)
     {
         if (RunTask is null || RunTask.IsCompleted)
             throw new Exception($"No run task, or already completed");
@@ -235,8 +226,9 @@ internal class BrowserRunner : IAsyncDisposable
         await Task.WhenAny(RunTask!, _exited.Task, Task.Delay(timeout));
         if (_exited.Task.IsCompleted)
         {
-            _testOutput.WriteLine ($"Exited with {await _exited.Task}");
-            return;
+            int code = await _exited.Task;
+            _testOutput.WriteLine ($"Exited with {code}");
+            return code;
         }
 
         throw new Exception($"Timed out after {timeout.TotalSeconds}s waiting for 'WASM EXIT' message");

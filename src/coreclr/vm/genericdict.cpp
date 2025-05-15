@@ -889,6 +889,7 @@ Dictionary::PopulateEntry(
 
             uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
+            BOOL isAsyncVariant = 0;
 
             if (isReadyToRunModule)
             {
@@ -900,6 +901,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0) || (kind == MethodEntrySlot);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncVariant = ((methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0);
 
                 if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
                 {
@@ -950,6 +952,10 @@ Dictionary::PopulateEntry(
                         _ASSERTE(pZapSigContext->pInfoModule->IsFullModule());
                         pMethod = MemberLoader::GetMethodDescFromMethodDef(static_cast<Module*>(pZapSigContext->pInfoModule), TokenFromRid(rid, mdtMethodDef), FALSE);
                     }
+                    if (isAsyncVariant)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
                 }
 
                 if (ownerType.IsNull())
@@ -993,6 +999,7 @@ Dictionary::PopulateEntry(
                 isInstantiatingStub = ((methodFlags & ENCODE_METHOD_SIG_InstantiatingStub) != 0);
                 isUnboxingStub = ((methodFlags & ENCODE_METHOD_SIG_UnboxingStub) != 0);
                 fMethodNeedsInstantiation = ((methodFlags & ENCODE_METHOD_SIG_MethodInstantiation) != 0);
+                isAsyncVariant = ((methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0);
 
                 if ((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) != 0)
                 {
@@ -1034,6 +1041,12 @@ Dictionary::PopulateEntry(
 
                     // The RID map should have been filled out if we fully loaded the class
                     pMethod = pMethodDefMT->GetModule()->LookupMethodDef(token);
+
+                    if (isAsyncVariant)
+                    {
+                        pMethod = pMethod->GetAsyncOtherVariant();
+                    }
+
                     _ASSERTE(pMethod != NULL);
                     pMethod->CheckRestore();
                 }
@@ -1041,7 +1054,8 @@ Dictionary::PopulateEntry(
 
             if (fRequiresDispatchStub)
             {
-                // Generate a dispatch stub and store it in the dictionary.
+                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
+                // Generate a dispatch stub and gather a slot.
                 //
                 // We generate an indirection so we don't have to write to the dictionary
                 // when we do updates, and to simplify stub indirect callsites.  Stubs stored in
@@ -1053,18 +1067,16 @@ Dictionary::PopulateEntry(
                 // dictionary entry to the  caller, still using "call [eax]", and then the
                 // stub dispatch mechanism can update the dictitonary itself and we don't
                 // need an indirection.
-                LoaderAllocator * pDictLoaderAllocator = (pMT != NULL) ? pMT->GetLoaderAllocator() : pMD->GetLoaderAllocator();
-
-                VirtualCallStubManager * pMgr = pDictLoaderAllocator->GetVirtualCallStubManager();
-
+                //
                 // We indirect through a cell so that updates can take place atomically.
                 // The call stub and the indirection cell have the same lifetime as the dictionary itself, i.e.
-                // are allocated in the domain of the dicitonary.
-                PCODE addr = pMgr->GetCallStub(ownerType, methodSlot);
+                // are allocated in the domain of the dictionary.
 
-                result = (CORINFO_GENERIC_HANDLE)pMgr->GenerateStubIndirection(addr);
+                result = (CORINFO_GENERIC_HANDLE)GenerateDispatchStubCellEntrySlot(pDictLoaderAllocator, ownerType, methodSlot, NULL);
                 break;
             }
+
+            _ASSERTE((!!isAsyncVariant) == pMethod->IsAsyncVariantMethod());
 
             Instantiation inst;
 
@@ -1109,6 +1121,8 @@ Dictionary::PopulateEntry(
                 isUnboxingStub,
                 inst,
                 (!isInstantiatingStub && !isUnboxingStub));
+
+            _ASSERTE((!!isAsyncVariant) == pMethod->IsAsyncVariantMethod());
 
             if (kind == ConstrainedMethodEntrySlot)
             {

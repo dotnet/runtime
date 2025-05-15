@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    // See typehandle.h for matching unmanaged type.
     internal enum CastResult
     {
         CannotCast = 0,

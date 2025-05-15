@@ -105,6 +105,8 @@ namespace System.Security.Cryptography
             set { _impl.Padding = value; }
         }
 
+        protected override void SetKeyCore(ReadOnlySpan<byte> key) => _impl.SetKey(key);
+
         public bool UseSalt
         {
             get { return false; }

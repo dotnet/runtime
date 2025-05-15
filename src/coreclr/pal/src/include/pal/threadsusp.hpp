@@ -22,14 +22,6 @@ Abstract:
 // Need this ifdef since this header is included by .c files so they can use the diagnostic function.
 #ifdef __cplusplus
 
-// Note: do not include malloc.hpp from this header. The template InternalDelete
-// needs to know the layout of class CPalThread, which includes a member of type
-// CThreadSuspensionInfo, which is defined later in this header, and it is not
-// yet known at this point.
-// If any future change should bring this issue back, the circular dependency can
-// be further broken by making the InternalDelete's CPalThread argument a
-// templatized argument, so that type checking on it takes place only at
-// instantiation time.
 #include "pal/threadinfo.hpp"
 #include "pal/thread.hpp"
 #include "pal/mutex.hpp"

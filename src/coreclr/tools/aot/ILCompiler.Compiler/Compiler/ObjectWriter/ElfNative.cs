@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
@@ -25,6 +26,7 @@ namespace ILCompiler.ObjectWriter
         public const ushort EM_ARM = 40;
         public const ushort EM_X86_64 = 62;
         public const ushort EM_AARCH64 = 183;
+        public const ushort EM_RISCV = 243;
         public const ushort EM_LOONGARCH = 258;
 
         // Section header type
@@ -553,5 +555,65 @@ namespace ILCompiler.ObjectWriter
         public const uint R_LARCH_TLS_LD_PCREL20_S2 = 124;
         public const uint R_LARCH_TLS_GD_PCREL20_S2 = 125;
         public const uint R_LARCH_TLS_DESC_PCREL20_S2 = 126;
+
+        // Relocations (riscv)
+        public const uint R_RISCV_NONE = 0;
+        public const uint R_RISCV_32 = 1;
+        public const uint R_RISCV_64 = 2;
+        public const uint R_RISCV_RELATIVE = 3;
+        public const uint R_RISCV_COPY = 4;
+        public const uint R_RISCV_JUMP_SLOT = 5;
+        public const uint R_RISCV_TLS_DTPMOD32 = 6;
+        public const uint R_RISCV_TLS_DTPMOD64 = 7;
+        public const uint R_RISCV_TLS_DTPREL32 = 8;
+        public const uint R_RISCV_TLS_DTPREL64 = 9;
+        public const uint R_RISCV_TLS_TPREL32 = 10;
+        public const uint R_RISCV_TLS_TPREL64 = 11;
+        public const uint R_RISCV_TLSDESC = 12;
+        public const uint R_RISCV_BRANCH = 16;
+        public const uint R_RISCV_JAL = 17;
+        public const uint R_RISCV_CALL = 18;
+        public const uint R_RISCV_CALL_PLT = 19;
+        public const uint R_RISCV_GOT_HI20 = 20;
+        public const uint R_RISCV_TLS_GOT_HI20 = 21;
+        public const uint R_RISCV_TLS_GD_HI20 = 22;
+        public const uint R_RISCV_PCREL_HI20 = 23;
+        public const uint R_RISCV_PCREL_LO12_I = 24;
+        public const uint R_RISCV_PCREL_LO12_S = 25;
+        public const uint R_RISCV_HI20 = 26;
+        public const uint R_RISCV_LO12_I = 27;
+        public const uint R_RISCV_LO12_S = 28;
+        public const uint R_RISCV_TPREL_HI20 = 29;
+        public const uint R_RISCV_TPREL_LO12_I = 30;
+        public const uint R_RISCV_TPREL_LO12_S = 31;
+        public const uint R_RISCV_TPREL_ADD = 32;
+        public const uint R_RISCV_ADD8 = 33;
+        public const uint R_RISCV_ADD16 = 34;
+        public const uint R_RISCV_ADD32 = 35;
+        public const uint R_RISCV_ADD64 = 36;
+        public const uint R_RISCV_SUB8 = 37;
+        public const uint R_RISCV_SUB16 = 38;
+        public const uint R_RISCV_SUB32 = 39;
+        public const uint R_RISCV_SUB64 = 40;
+        public const uint R_RISCV_GOT32_PCREL = 41;
+        public const uint R_RISCV_ALIGN = 43;
+        public const uint R_RISCV_RVC_BRANCH = 44;
+        public const uint R_RISCV_RVC_JUMP = 45;
+        public const uint R_RISCV_RELAX = 51;
+        public const uint R_RISCV_SUB6 = 52;
+        public const uint R_RISCV_SET6 = 53;
+        public const uint R_RISCV_SET8 = 54;
+        public const uint R_RISCV_SET16 = 55;
+        public const uint R_RISCV_SET32 = 56;
+        public const uint R_RISCV_32_PCREL = 57;
+        public const uint R_RISCV_IRELATIVE = 58;
+        public const uint R_RISCV_PLT32 = 59;
+        public const uint R_RISCV_SET_ULEB128 = 60;
+        public const uint R_RISCV_SUB_ULEB128 = 61;
+        public const uint R_RISCV_TLSDESC_HI20 = 62;
+        public const uint R_RISCV_TLSDESC_LOAD_LO12 = 63;
+        public const uint R_RISCV_TLSDESC_ADD_LO12 = 64;
+        public const uint R_RISCV_TLSDESC_CALL = 65;
+        public const uint R_RISCV_VENDOR = 191;
     }
 }

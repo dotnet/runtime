@@ -48,10 +48,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal sealed override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
 
             Type runtimeType = value.GetType();
             if (runtimeType == Type)
@@ -147,6 +144,6 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.True;
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => JsonSchema.CreateTrueSchema();
     }
 }

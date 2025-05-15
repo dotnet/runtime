@@ -4,7 +4,10 @@
 #ifndef _GCHEAPUTILITIES_H_
 #define _GCHEAPUTILITIES_H_
 
+#include "eventtracebase.h"
 #include "gcinterface.h"
+#include "math.h"
+#include <minipal/xoshiro128pp.h>
 
 // The singular heap instance.
 GPTR_DECL(IGCHeap, g_pGCHeap);
@@ -12,6 +15,8 @@ GPTR_DECL(IGCHeap, g_pGCHeap);
 #ifndef DACCESS_COMPILE
 extern "C" {
 #endif // !DACCESS_COMPILE
+
+const DWORD SamplingDistributionMean = (100 * 1024);
 
 // This struct allows adding some state that is only visible to the EE onto the standard gc_alloc_context
 struct ee_alloc_context
@@ -73,6 +78,62 @@ struct ee_alloc_context
         // activated so m_CombinedLimit is always equal to alloc_limit.
         m_CombinedLimit = m_GCAllocContext.alloc_limit;
     }
+
+    static inline bool IsRandomizedSamplingEnabled()
+    {
+#ifdef FEATURE_EVENT_TRACE
+        return ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                                        TRACE_LEVEL_INFORMATION,
+                                        CLR_ALLOCATIONSAMPLING_KEYWORD);
+#else
+        return false;
+#endif // FEATURE_EVENT_TRACE
+    }
+
+    inline void UpdateCombinedLimit(bool samplingEnabled)
+    {
+        if (!samplingEnabled)
+        {
+            m_CombinedLimit = m_GCAllocContext.alloc_limit;
+        }
+        else
+        {
+            // compute the next sampling budget based on a geometric distribution
+            size_t samplingBudget = ComputeGeometricRandom();
+
+            // if the sampling limit is larger than the allocation context, no sampling will occur in this AC
+            // We do Min() prior to adding to alloc_ptr to ensure alloc_ptr+samplingBudget doesn't cause an overflow.
+            size_t size = m_GCAllocContext.alloc_limit - m_GCAllocContext.alloc_ptr;
+            m_CombinedLimit = m_GCAllocContext.alloc_ptr + Min(samplingBudget, size);
+        }
+    }
+
+    static inline uint32_t ComputeGeometricRandom()
+    {
+        // compute a random sample from the Geometric distribution.
+        double probability = t_random.NextDouble();
+        uint32_t threshold = (uint32_t)(-log(1 - probability) * SamplingDistributionMean);
+        return threshold;
+    }
+
+    struct PerThreadRandom
+    {
+        minipal_xoshiro128pp random_state;
+
+        PerThreadRandom()
+        {
+            minipal_xoshiro128pp_init(&random_state, GetRandomInt(INT_MAX));
+        }
+
+        // Returns a random double in the range [0, 1).
+        double NextDouble()
+        {
+            uint32_t value = minipal_xoshiro128pp_next(&random_state);
+            return value * (1.0/(UINT32_MAX+1.0));
+        }
+    };
+
+    static thread_local PerThreadRandom t_random;
 };
 
 GPTR_DECL(uint8_t,g_lowest_address);
@@ -102,7 +163,7 @@ extern "C" bool     g_region_use_bitwise_write_barrier;
 
 // Table containing the dirty state. This table is translated to exclude the lowest address it represents, see
 // TranslateTableToExcludeHeapStartAddress.
-extern "C" uint8_t *g_sw_ww_table;
+extern "C" uint8_t *g_write_watch_table;
 
 // Write watch may be disabled when it is not needed (between GCs for instance). This indicates whether it is enabled.
 extern "C" bool g_sw_ww_enabled_for_gc_heap;
@@ -189,7 +250,11 @@ public:
 
     static bool UseThreadAllocationContexts()
     {
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
         return s_useThreadAllocationContexts;
+#else
+        return true;
+#endif
     }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -227,7 +292,7 @@ public:
         uint8_t* end_of_write_ptr = reinterpret_cast<uint8_t*>(address) + (write_size - 1);
         assert(table_byte_index == reinterpret_cast<size_t>(end_of_write_ptr) >> SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift);
 #endif
-        uint8_t* table_address = &g_sw_ww_table[table_byte_index];
+        uint8_t* table_address = &g_write_watch_table[table_byte_index];
         if (*table_address == 0)
         {
             *table_address = 0xFF;
@@ -254,7 +319,7 @@ public:
 
         // We'll mark the entire region of memory as dirty by memsetting all entries in
         // the SWW table between the start and end indexes.
-        memset(&g_sw_ww_table[base_index], ~0, end_index - base_index + 1);
+        memset(&g_write_watch_table[base_index], ~0, end_index - base_index + 1);
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 

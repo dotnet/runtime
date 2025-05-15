@@ -662,6 +662,11 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
     // Copy the domain name
     SafeStringCopy((char*)name, namelen, uts.domainname);
     return 0;
+#elif defined(__HAIKU__)
+    // Haiku does not support NIS domains.
+    (void)nameLength;
+    *name = '\0';
+    return 0;
 #else
     // GetDomainName is not supported on this platform.
     errno = ENOTSUP;
@@ -1780,6 +1785,11 @@ int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t so
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+#if defined(__linux__) && !defined(TCP_FASTOPEN_CONNECT)
+// fixup if compiled against old Kernel headers.
+// Can be removed once we have at least 4.11
+#define TCP_FASTOPEN_CONNECT 30
+#endif
 int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* data, int32_t dataLen, int32_t tfo, int* sent)
 {
     if (socketAddress == NULL || socketAddressLen < 0 || sent == NULL)
@@ -2135,10 +2145,13 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
 
                 // case SocketOptionName_SO_TCP_BSDURGENT:
 
+#ifdef TCP_KEEPCNT
                 case SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT:
                     *optName = TCP_KEEPCNT;
                     return true;
+#endif
 
+#if defined(TCP_KEEPALIVE) || defined(TCP_KEEPIDLE)
                 case SocketOptionName_SO_TCP_KEEPALIVE_TIME:
                     *optName =
                     #if HAVE_TCP_H_TCP_KEEPALIVE
@@ -2147,10 +2160,13 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                         TCP_KEEPIDLE;
                     #endif
                     return true;
+#endif
 
+#ifdef TCP_KEEPINTVL
                 case SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL:
                     *optName = TCP_KEEPINTVL;
                     return true;
+#endif
 
 #ifdef TCP_FASTOPEN
                 case SocketOptionName_SO_TCP_FASTOPEN:

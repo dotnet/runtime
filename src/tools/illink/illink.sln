@@ -37,6 +37,8 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ILLink.Shared", "src\ILLink
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.RoslynAnalyzer.Tests.Generator", "test\ILLink.RoslynAnalyzer.Tests.Generator\ILLink.RoslynAnalyzer.Tests.Generator.csproj", "{3DDE7064-4B68-4979-8843-FDF4CE5A5140}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILVerification", "..\..\coreclr\tools\ILVerification\ILVerification.csproj", "{D8D5B259-911F-4A74-B6E0-722A7ACE9361}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -203,6 +205,18 @@ Global
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140}.Release|x64.Build.0 = Release|Any CPU
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140}.Release|x86.ActiveCfg = Release|Any CPU
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140}.Release|x86.Build.0 = Release|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Debug|x64.Build.0 = Debug|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Debug|x86.Build.0 = Debug|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Release|x64.ActiveCfg = Release|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Release|x64.Build.0 = Release|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Release|x86.ActiveCfg = Release|Any CPU
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -218,6 +232,7 @@ Global
 		{8DA71B3B-5809-44E5-A018-5DE5C6FF6C2A} = {03EB085F-3E2E-4A68-A7DF-951ADF59A0CC}
 		{6D20F334-B7E4-4585-854B-8A0E2B29B4AA} = {AA0569FB-73E9-4B42-9A19-714BB1229DAE}
 		{3DDE7064-4B68-4979-8843-FDF4CE5A5140} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
+		{D8D5B259-911F-4A74-B6E0-722A7ACE9361} = {C2969923-7BAA-4FE4-853C-F670B0D3C6C8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}

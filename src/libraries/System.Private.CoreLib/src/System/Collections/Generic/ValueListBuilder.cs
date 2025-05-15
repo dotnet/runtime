@@ -13,11 +13,14 @@ namespace System.Collections.Generic
         private T[]? _arrayFromPool;
         private int _pos;
 
-        public ValueListBuilder(Span<T> initialSpan)
+        public ValueListBuilder(Span<T?> scratchBuffer)
         {
-            _span = initialSpan;
-            _arrayFromPool = null;
-            _pos = 0;
+            _span = scratchBuffer!;
+        }
+
+        public ValueListBuilder(int capacity)
+        {
+            Grow(capacity);
         }
 
         public int Length
@@ -162,7 +165,24 @@ namespace System.Collections.Generic
             if (toReturn != null)
             {
                 _arrayFromPool = null;
+
+#if SYSTEM_PRIVATE_CORELIB
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    ArrayPool<T>.Shared.Return(toReturn, _pos);
+                }
+                else
+                {
+                    ArrayPool<T>.Shared.Return(toReturn);
+                }
+#else
+                if (!typeof(T).IsPrimitive)
+                {
+                    Array.Clear(toReturn, 0, _pos);
+                }
+
                 ArrayPool<T>.Shared.Return(toReturn);
+#endif
             }
         }
 
@@ -197,7 +217,23 @@ namespace System.Collections.Generic
             _span = _arrayFromPool = array;
             if (toReturn != null)
             {
+#if SYSTEM_PRIVATE_CORELIB
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                {
+                    ArrayPool<T>.Shared.Return(toReturn, _pos);
+                }
+                else
+                {
+                    ArrayPool<T>.Shared.Return(toReturn);
+                }
+#else
+                if (!typeof(T).IsPrimitive)
+                {
+                    Array.Clear(toReturn, 0, _pos);
+                }
+
                 ArrayPool<T>.Shared.Return(toReturn);
+#endif
             }
         }
     }

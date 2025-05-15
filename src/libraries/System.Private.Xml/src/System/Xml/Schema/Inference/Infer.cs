@@ -181,7 +181,7 @@ namespace System.Xml.Schema
             schemas.Compile();
             _schemaSet = schemas;
             //schemas = new Hashtable();
-            //while(xtr.Read())
+            //while (xtr.Read())
 
             while (_xtr.NodeType != XmlNodeType.Element && _xtr.Read()) ;
 

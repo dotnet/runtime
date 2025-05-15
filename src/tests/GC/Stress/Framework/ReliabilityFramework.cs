@@ -119,6 +119,8 @@ public class ReliabilityFramework
     private int _reportedFailCnt = 0;
     private RFLogging _logger = new RFLogging();
     private DateTime _lastLogTime = DateTime.Now;
+    private Dictionary<string, uint> _testRunCounter = new();
+    private object _testRunCounterLock = new();
 
     // static members
     private static int s_seed = (int)System.DateTime.Now.Ticks;
@@ -157,9 +159,22 @@ public class ReliabilityFramework
         string configFile = null;
         bool okToContinue = true, doReplay = false;
         string sTests = "tests", sSeed = "seed", exectime = "maximumExecutionTime";
+        StringBuilder sb = new StringBuilder();
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
+
+        Console.CancelKeyPress += (object _, ConsoleCancelEventArgs _) => {
+            rf.RecordTestRunCount();
+        };
+
+        var configVars = GC.GetConfigurationVariables();
+        foreach (var kvp in configVars)
+        {
+            sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+        }
+        rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, $"GC Configuration Variables:\n{sb}");
+
         foreach (string arg in args)
         {
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Argument: {0}", arg));
@@ -297,13 +312,26 @@ public class ReliabilityFramework
         }
 
         NoExitPoll();
-
+        rf.RecordTestRunCount();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Shutdown w/ ret val of  {0}", retVal));
 
 
         GC.Collect(2);
         GC.WaitForPendingFinalizers();
         return (retVal);
+    }
+
+    public void RecordTestRunCount()
+    {
+        StringBuilder sb = new();
+        lock (_testRunCounterLock)
+        {
+            foreach(var item in _testRunCounter)
+            {
+                sb.AppendLine($"{item.Key}: {item.Value}");
+            }  
+        }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests run count:\n{sb}");
     }
 
     public void HandleOom(Exception e, string message)
@@ -613,6 +641,11 @@ public class ReliabilityFramework
         DateTime lastStart = DateTime.Now;	// keeps track of when we last started a test
         TimeSpan minTimeToStartTest = new TimeSpan(0, 5, 0);	// after 5 minutes if we haven't started a test we're having problems...
         int cpuAdjust = 0, memAdjust = 0;	// if we discover that we're not starting new tests quick enough we adjust the CPU/Mem percentages
+        
+        foreach (var test in _curTestSet.Tests)
+        {
+            _testRunCounter[test.RefOrID] = 0;
+        }
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
@@ -798,7 +831,7 @@ public class ReliabilityFramework
                 else
                 {
                     Thread.Sleep(250);	// give the CPU a bit of a rest if we don't need to start a new test.
-                    if (DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
+                    if (_curTestSet.DebugBreakOnMissingTest && DateTime.Now.Subtract(_startTime) > minTimeToStartTest)
                     {
                         MissingTestException e = new MissingTestException("New tests not starting");
                         ExceptionHandler exceptionHandler = GenerateExceptionMessageAndHandler(_curTestSet.DebugBreakOnMissingTest, e);
@@ -1187,6 +1220,12 @@ public class ReliabilityFramework
                         SignalTestFinished(daTest);
                     }
                     break;
+            }
+
+            lock (_testRunCounterLock)
+            {
+                string testRefOrID = daTest.RefOrID;
+                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
             }
         }
         catch (Exception e)

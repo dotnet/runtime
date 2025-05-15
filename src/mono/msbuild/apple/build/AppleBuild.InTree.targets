@@ -12,6 +12,15 @@
   <Import Project="..\..\common\LibraryBuilder.targets" />
   <Import Project="$(MSBuildThisFileDirectory)AppleBuild.targets" />
 
+  <!-- Workaround for SDK not knowing about CoreCLR iOS runtime packs -->
+  <Target Name="UpdateKnownFrameworkReference" BeforeTargets="ProcessFrameworkReferences">
+    <ItemGroup>
+      <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                               RuntimePackRuntimeIdentifiers="%(KnownFrameworkReference.RuntimePackRuntimeIdentifiers);iossimulator-arm64;iossimulator-x64;tvossimulator-arm64;tvossimulator-x64;maccatalyst-arm64;maccatalyst-x64"
+                               Condition="'$(UseMonoRuntime)' == 'false'" />
+    </ItemGroup>
+  </Target>
+
   <!-- Use local runtime pack -->
   <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences" Condition="'$(PublishAotUsingRuntimePack)' != 'true'">
     <PropertyGroup>

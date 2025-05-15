@@ -118,12 +118,6 @@ WCHAR       wzInputFilename[MAX_FILENAME_LENGTH];
 WCHAR       wzOutputFilename[MAX_FILENAME_LENGTH];
 WCHAR       wzPdbFilename[MAX_FILENAME_LENGTH];
 
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
-
 extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 {
     int         i, NumFiles = 0, NumDeltaFiles = 0;
@@ -152,14 +146,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     memset(wzPdbFilename, 0, sizeof(wzPdbFilename));
 
     if(argc < 2) goto ErrorExit;
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:26000) // "Suppress prefast warning about index overflow"
-#endif
+
     if (! u16_strcmp(argv[1], W("/?")) || ! u16_strcmp(argv[1],W("-?")))
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
     {
         printf("\n.NET IL Assembler version " CLR_PRODUCT_VERSION);
         printf("\n%s\n\n", VER_LEGALCOPYRIGHT_LOGO_STR);
@@ -180,6 +168,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
       printf("\n/DEBUG          Disable JIT optimization, create PDB file, use sequence points from PDB");
       printf("\n/DEBUG=IMPL     Disable JIT optimization, create PDB file, use implicit sequence points");
       printf("\n/DEBUG=OPT      Enable JIT optimization, create PDB file, use implicit sequence points");
+      printf("\n/DET            Produce deterministic outputs");
       printf("\n/OPTIMIZE       Optimize long instructions to short");
       printf("\n/FOLD           Fold the identical method bodies into one");
       printf("\n/CLOCK          Measure and report compilation times");
@@ -315,6 +304,10 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     else if (!_stricmp(szOpt, "OPT"))
                     {
                       pAsm->m_fOptimize = TRUE;
+                    }
+                    else if (!_stricmp(szOpt, "DET"))
+                    {
+                      pAsm->m_fDeterministic = TRUE;
                     }
                     else if (!_stricmp(szOpt, "X64"))
                     {
@@ -885,10 +878,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     exit(exitval);
     return exitval;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 #ifdef TARGET_UNIX
 int main(int argc, char* str[])

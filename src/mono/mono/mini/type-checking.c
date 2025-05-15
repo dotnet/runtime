@@ -40,6 +40,7 @@ emit_cached_check_args (MonoCompile *cfg, MonoInst *obj, MonoClass *klass, int c
 	} else {
 		int idx;
 
+		g_assert (klass);
 		EMIT_NEW_CLASSCONST (cfg, args [1], klass); /* klass */
 
 		idx = get_castclass_cache_idx (cfg); /* inline cache*/

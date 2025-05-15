@@ -1,0 +1,12 @@
+<linker>
+  <assembly fullname="System.Security.Cryptography">
+    <type fullname="Interop/Crypto">
+      <!-- Debug only APIs to be reachable only via private reflection -->
+      <method name="GetOpenSslAllocationCount" />
+      <method name="GetOpenSslAllocatedMemory" />
+      <method name="ForEachTrackedAllocation" />
+      <method name="EnableMemoryTracking" />
+      <method name="DisableMemoryTracking" />
+    </type>
+  </assembly>
+</linker>

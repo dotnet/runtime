@@ -1262,6 +1262,8 @@ namespace System.Net.Sockets
         private SocketAsyncEngine? _asyncEngine;
         private bool IsRegistered => _asyncEngine != null;
         private bool _isHandleNonBlocking = OperatingSystem.IsWasi(); // WASI sockets are always non-blocking, because we don't have another thread which could be blocked
+        /// <summary>An index into <see cref="SocketAsyncEngine"/>'s table of all contexts that are currently <see cref="IsRegistered"/>.</summary>
+        internal int GlobalContextIndex = -1;
 
         private readonly object _registerLock = new object();
 
@@ -1330,7 +1332,10 @@ namespace System.Net.Sockets
             // We don't need to synchronize with Register.
             // This method is called when the handle gets released.
             // The Register method will throw ODE when it tries to use the handle at this point.
-            _asyncEngine?.UnregisterSocket(_socket.DangerousGetHandle(), this);
+            if (IsRegistered)
+            {
+                SocketAsyncEngine.UnregisterSocket(this);
+            }
 
             return aborted;
         }

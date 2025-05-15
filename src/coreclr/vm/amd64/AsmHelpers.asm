@@ -11,7 +11,12 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+ifdef FEATURE_INTERPRETER
+extern ExecuteInterpretedMethod:proc
+endif
 
+extern g_pPollGC:QWORD
+extern g_TrapReturningThreads:DWORD
 
 ; EXTERN_C int __fastcall HelperMethodFrameRestoreState(
 ;         INDEBUG_COMMA(HelperMethodFrame *pFrame)
@@ -198,10 +203,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
         push                rax ; make room for the real return address (Rip)
         push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
+        push_vol_reg        rcx
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
+        alloc_stack         30h ; make extra room for xmm0 and argument home slots
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -211,8 +217,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 38h
+        add                 rsp, 30h
         pop                 rax
+        pop                 rcx
         POP_CALLEE_SAVED_REGISTERS
         pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
@@ -445,7 +452,181 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
+extern JIT_PatchpointWorkerWorkerWithPolicy:proc
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rcx, [rsp + __PWTB_TransitionBlock] ; TransitionBlock *
+        call    JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+        TAILJMP_RAX
+NESTED_END JIT_Patchpoint, _TEXT
+
+; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
+        mov rdx, rcx
+        xor rcx, rcx
+        jmp JIT_Patchpoint
+LEAF_END JIT_PatchpointForced, _TEXT
+
 endif ; FEATURE_TIERED_COMPILATION
 
-        end
+LEAF_ENTRY JIT_PollGC, _TEXT
+    cmp [g_TrapReturningThreads], 0
+    jnz             JIT_PollGCRarePath
+    ret
+JIT_PollGCRarePath:
+    mov rax, g_pPollGC
+    TAILJMP_RAX
+LEAF_END JIT_PollGC, _TEXT
 
+ifdef FEATURE_INTERPRETER
+NESTED_ENTRY InterpreterStub, _TEXT
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        ;
+        ; call ExecuteInterpretedMethod
+        ;
+        lea             rcx, [rsp + __PWTB_TransitionBlock]     ; pTransitionBlock*
+        mov             rdx, METHODDESC_REGISTER
+        call            ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+NESTED_END InterpreterStub, _TEXT
+endif ; FEATURE_INTERPRETER
+
+; rcx -This pointer
+; rdx -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + ThisPtrRetBufPrecodeData__Target]
+    mov r11, rcx
+    mov rcx, rdx
+    mov rdx, r11
+    jmp METHODDESC_REGISTER
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+;;
+;; Prologue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
+        PUSH_CALLEE_SAVED_REGISTERS
+
+        arguments_scratch_area_size = 20h
+        xmm_save_area_size = 10 * 10h ;; xmm6..xmm15 save area
+        stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
+        rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
+        rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
+
+        alloc_stack     stack_alloc_size
+
+        ;; Mirror clearing of AVX state done by regular method prologs
+        vzeroupper
+
+        save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
+        save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
+        save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
+        save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
+        save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
+        save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
+        save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
+        save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
+        save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
+        save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
+
+        END_PROLOGUE
+endm
+
+;;
+;; Epilogue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_EPILOGUE macro
+        ;; Mirror clearing of AVX state done by regular method epilogs
+        vzeroupper
+
+        movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
+        movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
+        movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
+        movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
+        movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
+        movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
+        movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
+        movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
+        movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
+        movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
+
+        add     rsp, stack_alloc_size
+
+        POP_CALLEE_SAVED_REGISTERS
+endm
+
+; This helper enables us to call into a funclet after restoring Fp register
+NESTED_ENTRY CallEHFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = PC to invoke
+        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        FUNCLET_CALL_PROLOGUE 0, 1
+
+        ;  Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi - OFFSETOF__CONTEXT__Rbx]
+        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi - OFFSETOF__CONTEXT__Rbx]
+        mov     r12, [r8 + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
+        mov     r13, [r8 + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
+        mov     r14, [r8 + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
+        mov     r15, [r8 + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+
+        ; Restore XMM registers from CONTEXT
+        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15 - OFFSETOF__CONTEXT__Rbx]
+
+         ; Save the SP of this function.
+        mov     [r9], rsp
+        ; Invoke the funclet
+        call    rdx
+
+        FUNCLET_CALL_EPILOGUE
+        ret
+NESTED_END CallEHFunclet, _TEXT
+
+; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+; frame pointer for accessing the locals in the parent method.
+NESTED_ENTRY CallEHFilterFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = RBP of main function
+        ; R8 = PC to invoke
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        FUNCLET_CALL_PROLOGUE 0, 1
+
+        ; Save the SP of this function
+        mov     [r9], rsp
+        ; Restore RBP to match main function RBP
+        mov     rbp, rdx
+        ; Invoke the filter funclet
+        call    r8
+
+        FUNCLET_CALL_EPILOGUE
+        ret
+NESTED_END CallEHFilterFunclet, _TEXT
+
+        end

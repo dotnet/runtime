@@ -110,21 +110,6 @@ ErrExit:
     return hr;
 }
 
-STDMETHODIMP CCeeGen::GetString(ULONG RVA, __inout LPWSTR *lpString)
-{
-    HRESULT hr = E_FAIL;
-
-    if (! lpString)
-        IfFailGo(E_POINTER);
-    *lpString = (LPWSTR)getStringSection().computePointer(RVA);
-
-
-ErrExit:
-    if (*lpString)
-        return S_OK;
-    return hr;
-}
-
 STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, ULONG *RVA)
 {
     HRESULT hr = S_OK;
