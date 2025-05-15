@@ -27,7 +27,7 @@ namespace System.Numerics.Tensors
     // backing storage size that is present. We can also have arbitrary strides, such as
     // lengths: [4], strides: [2]. In this case the flattenedLength = 4, while the
     // linearLength: 8. We can also have a slice of a tensor, such as lengths: [2, 2],
-    // strides: [3, 1] (which could have been taken from a 3x3 contiguous and dense tensor).
+    // strides: [3, 1] (which could have been taken from a 3x3 dense tensor).
     //
     // These invariants allow us to safely and efficiently index into the backing storage
     // as we know that memory functionally wraps around after linearLength elements. It
@@ -39,8 +39,9 @@ namespace System.Numerics.Tensors
     internal enum TensorFlags : uint
     {
         None = 0,
-        IsContiguousAndDense = (1 << 0),
+        IsDense = (1 << 0),
         IsBroadcast = (1 << 1),
+        HasAnyDenseDimensions = (1 << 2),
     }
 
     [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
@@ -188,6 +189,9 @@ namespace System.Numerics.Tensors
 
                     flattenedLength = checked(flattenedLength * length);
                 }
+
+                // When the strides are automatically computed, then we must be dense
+                _flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
             }
             else if (strides.Length != lengths.Length)
             {
@@ -208,17 +212,25 @@ namespace System.Numerics.Tensors
                 // n+1. This makes it convenient to support implicit broadcasting where higher dimensions
                 // aren't actually stored in memory.
 
-                nint minimumNonZeroStride = 0;
+                nint minimumNonZeroStride = 1;
                 var sortedWithIndex = destinationLinearRankOrder.ToArray()
                     .Select((value, index) => new { Value = value, Index = index })
                     .OrderBy(x => x.Value)
                     .ToArray();
 
                 int[] sortedOrder = sortedWithIndex.Select(x => x.Index).ToArray();
+                bool isDense = true;
+
                 for (int i = 0; i < destinationLinearRankOrder.Length; i++)
                 {
                     int rankIndex = destinationLinearRankOrder.Length - (i + 1);
                     int linearRankIndex = sortedOrder[rankIndex];
+
+                    if (linearRankIndex != rankIndex)
+                    {
+                        // We cannot be dense if we aren't following linear order
+                        isDense = false;
+                    }
 
                     nint length = lengths[linearRankIndex];
 
@@ -243,6 +255,10 @@ namespace System.Numerics.Tensors
                             // the linear rank ordering is incorrect
                             ThrowHelper.ThrowArgument_InvalidTensorShape();
                         }
+                        else if (stride != minimumNonZeroStride)
+                        {
+                            isDense = false;
+                        }
 
                         if (length <= 1)
                         {
@@ -258,12 +274,27 @@ namespace System.Numerics.Tensors
                     else
                     {
                         _flags |= TensorFlags.IsBroadcast;
+
+                        if (length != 1)
+                        {
+                            // We only cannot be dense if the broadcast is for more than 1 element
+                            isDense = false;
+                        }
                     }
 
                     destinationLengths[linearRankIndex] = length;
                     destinationStrides[linearRankIndex] = stride;
 
                     flattenedLength = checked(flattenedLength * length);
+                }
+
+                if (isDense)
+                {
+                    _flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
+                }
+                else if (CalculateHasAnyDenseDimensions(lengths, strides))
+                {
+                    _flags |= TensorFlags.HasAnyDenseDimensions;
                 }
             }
 
@@ -279,18 +310,12 @@ namespace System.Numerics.Tensors
                 ArgumentOutOfRangeException.ThrowIfLessThan(linearLength, minimumLinearLength);
             }
 
+            Debug.Assert((flattenedLength == minimumLinearLength) || (strides.Length != 0));
+
             _flattenedLength = flattenedLength;
             _linearLength = minimumLinearLength;
 
             _rank = rank;
-
-            if (flattenedLength == minimumLinearLength)
-            {
-                // When the flattenedLength and minimumLinearLength are the same, then the
-                // underlying buffer is "contiguous and dense" which allows various other
-                // optimizations to be utilized when processing the tensor.
-                _flags |= TensorFlags.IsContiguousAndDense;
-            }
 
             ValidateState();
         }
@@ -338,9 +363,11 @@ namespace System.Numerics.Tensors
             ValidateState();
         }
 
+        public bool HasAnyDenseDimensions => (_flags & TensorFlags.HasAnyDenseDimensions) != 0;
+
         public bool IsBroadcast => (_flags & TensorFlags.IsBroadcast) != 0;
 
-        public bool IsContiguousAndDense => (_flags & TensorFlags.IsContiguousAndDense) != 0;
+        public bool IsDense => (_flags & TensorFlags.IsDense) != 0;
 
         public nint FlattenedLength => _flattenedLength;
 
@@ -892,7 +919,7 @@ namespace System.Numerics.Tensors
                     strides: [1],
                     linearRankOrder: [0],
                     rank: 1,
-                    TensorFlags.IsContiguousAndDense
+                    TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions
                 );
             }
             return default;
@@ -991,7 +1018,7 @@ namespace System.Numerics.Tensors
                     strides: [1],
                     linearRankOrder: [0],
                     rank: 1,
-                    TensorFlags.IsContiguousAndDense
+                    TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions
                 );
             }
             else if (linearLength != 0)
@@ -1044,7 +1071,20 @@ namespace System.Numerics.Tensors
         [Conditional("DEBUG")]
         private void ValidateState()
         {
-            Debug.Assert(IsContiguousAndDense == (FlattenedLength == LinearLength));
+            if (IsDense)
+            {
+                // We don't assert !IsEmpty as a zero lengthed slice that
+                // tracks a byref to physical memory will still be marked
+                // as dense. This is in contrast to the default empty span
+                // which is not.
+
+                Debug.Assert(FlattenedLength == LinearLength);
+                Debug.Assert(HasAnyDenseDimensions);
+            }
+            else
+            {
+                Debug.Assert(HasAnyDenseDimensions == CalculateHasAnyDenseDimensions(Lengths, Strides));
+            }
             Debug.Assert(IsBroadcast == Strides.Contains(0));
         }
 
@@ -1126,13 +1166,21 @@ namespace System.Numerics.Tensors
 
             nint flattenedLength = 1;
             nint maximumLinearIndex = 0;
+            nint minimumNonZeroStride = 1;
 
             nint computedOffset = 0;
+            bool isDense = true;
 
             for (int i = 0; i < linearRankOrder.Length; i++)
             {
                 int rankIndex = linearRankOrder.Length - (i + 1);
                 int linearRankIndex = linearRankOrder[rankIndex];
+
+                if (rankIndex != linearRankIndex)
+                {
+                    // We cannot be dense if we aren't following linear order
+                    isDense = false;
+                }
 
                 nint previousLength = previousLengths[linearRankIndex];
                 nint previousStride = previousStrides[linearRankIndex];
@@ -1143,14 +1191,27 @@ namespace System.Numerics.Tensors
                 if (stride != 0)
                 {
                     maximumLinearIndex += ((length - 1) * stride);
+
+                    if (stride != minimumNonZeroStride)
+                    {
+                        isDense = false;
+                    }
                 }
                 else
                 {
                     flags |= TensorFlags.IsBroadcast;
+
+                    if (length != 1)
+                    {
+                        // We only cannot be dense if the broadcast is for more than 1 element
+                        isDense = false;
+                    }
                 }
 
                 intermediateLengths[linearRankIndex] = length;
                 intermediateStrides[linearRankIndex] = stride;
+
+                minimumNonZeroStride = stride * length;
 
                 computedOffset += (offset * previousStride);
                 flattenedLength *= length;
@@ -1162,9 +1223,13 @@ namespace System.Numerics.Tensors
             nint minimumLinearLength = (flattenedLength != 0) ? (maximumLinearIndex + 1) : flattenedLength;
             Debug.Assert(minimumLinearLength <= _linearLength);
 
-            if (flattenedLength == minimumLinearLength)
+            if (isDense)
             {
-                flags |= TensorFlags.IsContiguousAndDense;
+                flags |= (TensorFlags.IsDense | TensorFlags.HasAnyDenseDimensions);
+            }
+            else if (CalculateHasAnyDenseDimensions(intermediateLengths, intermediateStrides))
+            {
+                flags |= TensorFlags.HasAnyDenseDimensions;
             }
 
             TensorShape result = new TensorShape(
@@ -1191,6 +1256,43 @@ namespace System.Numerics.Tensors
             linearOffset = computedOffset;
 
             return result;
+        }
+
+        private static bool CalculateHasAnyDenseDimensions(ReadOnlySpan<nint> lengths, ReadOnlySpan<nint> strides)
+        {
+            // We aren't dense, but we might still have some dense dimension if
+            // the least significant non 0 stride is 1 and all least significant
+            // 0 strides have length 1. We cannot have a dense dimension for a
+            // non-zero stride with more than 1 element since we cannot get a
+            // single span for all elements in that index of the dimension.
+
+            bool hasAnyDenseDimensions = false;
+
+            for (int i = 0; i < strides.Length; i++)
+            {
+                int index = strides.Length - (i + 1);
+                nint stride = strides[index];
+
+                if (stride == 1)
+                {
+                    hasAnyDenseDimensions = true;
+                    break;
+                }
+
+                if (stride != 0)
+                {
+                    break;
+                }
+
+                nint length = lengths[index];
+
+                if (length != 1)
+                {
+                    break;
+                }
+            }
+
+            return hasAnyDenseDimensions;
         }
 
         public interface IGetOffsetAndLength<T>

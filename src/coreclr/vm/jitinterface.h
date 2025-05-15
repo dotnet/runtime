@@ -171,7 +171,22 @@ extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, Che
 #else
 // Regular checked write barrier.
 extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
-#endif
+
+#ifdef TARGET_ARM64
+#define RhpCheckedAssignRef RhpCheckedAssignRefArm64
+#define RhpByRefAssignRef RhpByRefAssignRefArm64
+#define RhpAssignRef RhpAssignRefArm64
+#elif defined (TARGET_LOONGARCH64)
+#define RhpAssignRef RhpAssignRefLoongArch64
+#elif defined (TARGET_RISCV64)
+#define RhpAssignRef RhpAssignRefRiscV64
+#endif // TARGET_*
+
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
+
+extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
@@ -276,9 +291,10 @@ extern "C"
 
 // JIThelp.asm/JIThelp.s
 #define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_CheckedWriteBarrier##reg(); \
     void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg();
+    void STDCALL JIT_WriteBarrier##reg(); \
+    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
+    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
 
     ENUM_X86_WRITE_BARRIER_REGISTERS()
 #undef X86_WRITE_BARRIER_REGISTER

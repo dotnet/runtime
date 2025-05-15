@@ -45,24 +45,7 @@ FCIMPL1(INT32, ObjectNative::TryGetHashCode, Object* obj)
         return 0;
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    DWORD bits = objRef->GetHeader()->GetBits();
-    if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
-    {
-        if (bits & BIT_SBLK_IS_HASHCODE)
-        {
-            // Common case: the object already has a hash code
-            return bits & MASK_HASHCODE;
-        }
-        else
-        {
-            // We have a sync block index. This means if we already have a hash code,
-            // it is in the sync block, otherwise we will return 0, which means "not set".
-            SyncBlock *psb = objRef->PassiveGetSyncBlock();
-            if (psb != NULL)
-                return psb->GetHashCode();
-        }
-    }
-    return 0;
+    return objRef->TryGetHashCode();
 }
 FCIMPLEND
 
