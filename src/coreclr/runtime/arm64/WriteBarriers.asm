@@ -8,7 +8,7 @@
 ;; collection.
 ;;
 
-#include "AsmMacros.h"
+#include "AsmMacros_Shared.h"
 
     TEXTAREA
 
@@ -57,7 +57,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
         PREPARE_EXTERNAL_VAR_INDIRECT $g_GCShadow, x12
         add     $destReg, $destReg, x12
 
-        PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, x12
+        PREPARE_EXTERNAL_VAR_INDIRECT $g_GCShadowEnd, x12
         cmp     $destReg, x12
         bhs     %ft0
 
@@ -206,7 +206,7 @@ INVALIDGCVALUE  EQU 0xCCCCCCCD
 ;; WARNING: Code in EHHelpers.cpp makes assumptions about write barrier code, in particular:
 ;; - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpByRefAssignRefAVLocation1
 ;; - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
-    LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
+    LEAF_ENTRY RhpByRefAssignRefArm64
 
     ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
         ldr     x15, [x13], 8
@@ -275,6 +275,7 @@ NotInHeap
         b       RhpAssignRefArm64
     LEAF_END RhpAssignRef
 
+#ifdef FEATURE_NATIVEAOT
 
 ;; Interlocked operation helpers where the location is an objectref, thus requiring a GC write barrier upon
 ;; successful updates.
@@ -388,5 +389,6 @@ NoBarrierXchg
         ret
 
     LEAF_END RhpCheckedXchg
+#endif // FEATURE_NATIVEAOT
 
     end
