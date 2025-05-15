@@ -7772,8 +7772,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)pValue);
+            tree = gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)pValue);
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
@@ -8137,14 +8136,7 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
         case TYP_REF:
         {
             READ_VALUE(ssize_t);
-            if (val == 0)
-            {
-                return gtNewNull();
-            }
-            else
-            {
-                return gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            }
+            return val == 0 ? gtNewNull() : gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)val);
         }
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:

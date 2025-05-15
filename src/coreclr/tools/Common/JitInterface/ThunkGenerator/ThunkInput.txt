@@ -301,7 +301,6 @@ FUNCTIONS
     CorInfoHelpFunc getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE   handle);
     CORINFO_CLASS_HANDLE embedClassHandle(CORINFO_CLASS_HANDLE    handle, void                  **ppIndirection);
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE   handle, void                  **ppIndirection);
-    void* getCompileTimeHandleFromEmbedded(void* embeddedHandle);
     void embedGenericHandle(CORINFO_RESOLVED_TOKEN *        pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE   callerHandle, CORINFO_GENERICHANDLE_RESULT *  pResult);
     void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
     void getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE   method, CORINFO_CONST_LOOKUP *pLookup);

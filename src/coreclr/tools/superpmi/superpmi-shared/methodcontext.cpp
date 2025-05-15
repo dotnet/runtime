@@ -3600,9 +3600,6 @@ void MethodContext::dmpGetFieldInfo(const Agnostic_GetFieldInfo& key, const Agno
             case CORINFO_HELPER_ARG_TYPE_Class:
                 printf("{%u: cls-%016" PRIX64 "}", i, value.accessCalloutHelper.args[i].constant);
                 break;
-            case CORINFO_HELPER_ARG_TYPE_Module:
-                printf("{%u: mod-%016" PRIX64 "}", i, value.accessCalloutHelper.args[i].constant);
-                break;
             case CORINFO_HELPER_ARG_TYPE_Const:
                 printf("{%u: const-%016" PRIX64 "}", i, value.accessCalloutHelper.args[i].constant);
                 break;

@@ -1507,6 +1507,13 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
 
 //-----------------------------------------------------------------------------
 
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+{
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+}
+
+//-----------------------------------------------------------------------------
+
 inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 {
     void *embedMethHnd, *pEmbedMethHnd;
