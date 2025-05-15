@@ -13050,10 +13050,12 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     if (optLocalAssertionProp)
     {
-        Metrics.LocalAssertionCount    = optAssertionCount;
-        Metrics.LocalAssertionOverflow = optAssertionOverflow;
-        Metrics.MorphTrackedLocals     = lvaTrackedCount;
-        Metrics.MorphLocals            = lvaCount;
+        Metrics.LocalAssertionCount     = optAssertionCount;
+        Metrics.LocalAssertionOverflow  = optAssertionOverflow;
+        Metrics.MorphTrackedLocals      = lvaTrackedCount;
+        Metrics.MorphLocals             = lvaCount;
+        optLocalAssertionProp           = false;
+        optCrossBlockLocalAssertionProp = false;
     }
 
     // We may have converted a tailcall into a loop, in which case the first BB
