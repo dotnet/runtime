@@ -258,7 +258,7 @@ namespace System.Security.Cryptography
 
             private static class Functions
             {
-                private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+                private const string XmlLinqAssemblyString = ", System.Private.Xml.Linq";
                 private const string XDocumentTypeName = "System.Xml.Linq.XDocument" + XmlLinqAssemblyString;
                 private const string XContainerTypeName = "System.Xml.Linq.XContainer" + XmlLinqAssemblyString;
                 private const string XElementTypeName = "System.Xml.Linq.XElement" + XmlLinqAssemblyString;
