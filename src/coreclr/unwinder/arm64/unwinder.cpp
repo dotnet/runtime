@@ -33,9 +33,9 @@
 #define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
 #endif
 
-#if !defined(DACCESS_COMPILE) && defined(TARGET_ARM64)
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 extern "C" void* PacStripPtr(void* ptr);
-#endif // !defined(DACCESS_COMPILE) && TARGET_ARM64
+#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
 #ifdef HOST_UNIX
 #define RtlZeroMemory ZeroMemory
@@ -270,7 +270,7 @@ do {                                                                            
 #endif // !defined(DEBUGGER_UNWIND)
 
 // Macros for stripping pointer authentication (PAC) bits.
-#if !defined(DACCESS_COMPILE) && defined(TARGET_ARM64)
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
 #define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
 
@@ -333,7 +333,7 @@ Return Value:
     return;
 }
 
-#endif // !defined(DACCESS_COMPILE) && defined(TARGET_ARM64)
+#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
 //
 // Macros to clarify opcode parsing
