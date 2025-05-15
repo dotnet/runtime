@@ -1843,7 +1843,7 @@ namespace System.Text.RegularExpressions.Generator
                                     RegexNode originalFirst = child.Child(0);
                                     child.ReplaceChild(0,
                                         child.Child(0).Kind is RegexNodeKind.Multi ?
-                                            SliceOffMultiFirstChar(child.Child(0)) : // mutli, so slice off the first character
+                                            SliceOffMultiFirstChar(child.Child(0)) : // multi, so slice off the first character
                                             new RegexNode(RegexNodeKind.Empty, child.Options)); // single, so removing it yields empty
                                     try
                                     {
