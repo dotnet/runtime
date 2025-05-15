@@ -94,7 +94,7 @@ int64_t minipal_lowres_ticks(void)
     struct timespec ts;
 
     // emscripten exposes CLOCK_MONOTONIC_COARSE but doesn't implement it
-#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(TARGET_WASM)
+#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
     // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
     // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
     // overall higher throughput. See dotnet/coreclr#2257 for more details.
@@ -107,7 +107,7 @@ int64_t minipal_lowres_ticks(void)
     int result = clock_gettime(clockType, &ts);
     if (result != 0)
     {
-#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(TARGET_WASM)
+#if HAVE_CLOCK_MONOTONIC_COARSE && !defined(__EMSCRIPTEN__)
         assert(!"clock_gettime(CLOCK_MONOTONIC_COARSE) failed");
 #else
         assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
