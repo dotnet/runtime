@@ -528,7 +528,6 @@ implAttr                : /* EMPTY */
                         | implAttr 'aggressiveinlining' 
                         | implAttr 'nooptimization' 
                         | implAttr 'aggressiveoptimization' 
-                        | implAttr 'async' 
                         | implAttr 'flags' '(' int32 ')' 
                         ;
 
