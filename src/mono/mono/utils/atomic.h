@@ -96,6 +96,13 @@ Apple targets have historically being problematic, xcode 4.6 would miscompile th
 #include <stdatomic.h>
 
 #if defined(HOST_ARM64)
+// C11 atomics on ARM64 offers a weaker version of sequential consistent, not expected by mono atomics operations.
+// C11 seq_cst on ARM64 corresponds to acquire/release semantics, but mono expects these functions to emit a full memory
+// barrier preventing any kind of reordering around the atomic operation. GCC atomics on ARM64 had similar limitations,
+// see comments on GCC atomics below and mono injected full memory barriers around GCC atomic functions to mitigate this.
+// Since mono GCC atomics implementation ended up even stronger (full memory barrier before/after), the C11 atomics
+// implementation is still a little weaker, but should correspond to the exact same semantics as implemented by JIT
+// compiler for sequential consistent atomic load/store/add/exchange/cas op codes on ARM64.
 #define C11_MEMORY_ORDER_SEQ_CST() atomic_thread_fence (memory_order_seq_cst)
 #else
 #define C11_MEMORY_ORDER_SEQ_CST()
@@ -278,8 +285,8 @@ static inline gint8
 mono_atomic_load_i8 (volatile gint8 *src)
 {
 	g_static_assert (sizeof (atomic_char) == sizeof (*src) && ATOMIC_CHAR_LOCK_FREE == 2);
-	gint8 val = atomic_load ((volatile atomic_char *)src);
 	C11_MEMORY_ORDER_SEQ_CST ();
+	gint8 val = atomic_load ((volatile atomic_char *)src);
 	return val;
 }
 
@@ -287,16 +294,16 @@ static inline gint16
 mono_atomic_load_i16 (volatile gint16 *src)
 {
 	g_static_assert (sizeof (atomic_short) == sizeof (*src) && ATOMIC_SHORT_LOCK_FREE == 2);
-	gint16 val = atomic_load ((volatile atomic_short *)src);
 	C11_MEMORY_ORDER_SEQ_CST ();
+	gint16 val = atomic_load ((volatile atomic_short *)src);
 	return val;
 }
 
 static inline gint32 mono_atomic_load_i32 (volatile gint32 *src)
 {
 	g_static_assert (sizeof (atomic_int) == sizeof (*src) && ATOMIC_INT_LOCK_FREE == 2);
-	gint32 val = atomic_load ((volatile atomic_int *)src);
 	C11_MEMORY_ORDER_SEQ_CST ();
+	gint32 val = atomic_load ((volatile atomic_int *)src);
 	return val;
 }
 
@@ -305,14 +312,15 @@ mono_atomic_load_i64 (volatile gint64 *src)
 {
 #if SIZEOF_LONG == 8
 	g_static_assert (sizeof (atomic_long) == sizeof (*src) && ATOMIC_LONG_LOCK_FREE == 2);
+	C11_MEMORY_ORDER_SEQ_CST ();
 	gint64 val = atomic_load ((volatile atomic_long *)src);
 #elif SIZEOF_LONG_LONG == 8
 	g_static_assert (sizeof (atomic_llong) == sizeof (*src) && ATOMIC_LLONG_LOCK_FREE == 2);
+	C11_MEMORY_ORDER_SEQ_CST ();
 	gint64 val = atomic_load ((volatile atomic_llong *)src);
 #else
 #error "gint64 not same size atomic_llong or atomic_long, don't define MONO_USE_STDATOMIC"
 #endif
-	C11_MEMORY_ORDER_SEQ_CST ();
 	return val;
 }
 
@@ -320,8 +328,8 @@ static inline gpointer
 mono_atomic_load_ptr (volatile gpointer *src)
 {
 	g_static_assert (ATOMIC_POINTER_LOCK_FREE == 2);
-	gpointer val = atomic_load ((volatile _Atomic(gpointer) *)src);
 	C11_MEMORY_ORDER_SEQ_CST ();
+	gpointer val = atomic_load ((volatile _Atomic(gpointer) *)src);
 	return val;
 }
 
