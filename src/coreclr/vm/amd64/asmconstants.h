@@ -204,9 +204,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab
 #define               OFFSETOF__Array__m_Length     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
 
-#define               OFFSETOF__String__m_Length     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__String__m_Length == offsetof(StringObject, m_StringLength));
-
 #define MethodTable_VtableSlotsPerChunk     8
 ASMCONSTANTS_C_ASSERT(MethodTable_VtableSlotsPerChunk == VTABLE_SLOTS_PER_CHUNK)
 
