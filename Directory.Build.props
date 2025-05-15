@@ -303,6 +303,7 @@
                                 '$(MSBuildProjectExtension)' != '.pkgproj' and
                                 '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
                                 '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
+    <IsInBuildToolProject Condition="$(MSBuildProjectName.EndsWith('_inbuild'))">true</IsInBuildToolProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsReferenceAssemblyProject)' == 'true'">
@@ -365,12 +366,6 @@
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
     <BeforeMicrosoftNETSdkTargets Condition="'$(MSBuildProjectExtension)' == '.ilproj'">$(BeforeMicrosoftNETSdkTargets);$(RepositoryEngineeringDir)ILSdk.BeforeTargets.targets</BeforeMicrosoftNETSdkTargets>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!-- Keep in sync with outputs defined in Microsoft.NETCore.Platforms.csproj. -->
-    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
-    <BundledRuntimeIdentifierGraphFile Condition="!Exists('$(BundledRuntimeIdentifierGraphFile)')">$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
 
 </Project>

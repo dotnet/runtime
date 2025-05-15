@@ -64,3 +64,8 @@ PALEXPORT int32_t CryptoNative_SlhDsaExportPublicKey(const EVP_PKEY* pKey, uint8
 Get the SLH-DSA type ID for the given SLH-DSA key.
 */
 PALEXPORT int32_t CryptoNative_SlhDsaGetPalId(const EVP_PKEY* pKey, int32_t* slhDsaTypeId);
+
+/*
+Determine whether the given key is an SLH-DSA key.
+*/
+int32_t IsSlhDsaFamily(const EVP_PKEY* pKey);

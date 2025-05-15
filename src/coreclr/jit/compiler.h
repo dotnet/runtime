@@ -2125,6 +2125,7 @@ class FlowGraphNaturalLoops
     FlowGraphNaturalLoops(const FlowGraphDfsTree* dfs);
 
     static bool FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, ArrayStack<BasicBlock*>& worklist);
+    static bool IsLoopCanonicalizable(FlowGraphNaturalLoop* loop);
 
 public:
     const FlowGraphDfsTree* GetDfsTree()
@@ -2200,7 +2201,7 @@ public:
     static FlowGraphNaturalLoops* Find(const FlowGraphDfsTree* dfs);
 
     // Number of blocks with DFS backedges that are not natural loop headers
-    // (indicates presence of "irreducible" loops)
+    // (indicates presence of "irreducible" or uncanonicalizable loops)
     unsigned ImproperLoopHeaders() const
     {
         return m_improperLoopHeaders;

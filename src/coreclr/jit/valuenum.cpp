@@ -2177,7 +2177,7 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
     }
 }
 
-ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
+ValueNum ValueNumStore::VNAllBitsForType(var_types typ, unsigned elementCount)
 {
     switch (typ)
     {
@@ -2224,7 +2224,7 @@ ValueNum ValueNumStore::VNAllBitsForType(var_types typ)
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
-            return VNForSimdMaskCon(simdmask_t::AllBitsSet());
+            return VNForSimdMaskCon(simdmask_t::AllBitsSet(elementCount));
         }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
@@ -3706,7 +3706,12 @@ TailCall:
                     entry.Result = sameSelResult;
                     entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
 
-                    GetMapSelectWorkCache()->Set(fstruct, entry);
+                    // If we ran out of budget we could have already cached the
+                    // result in the leaf. In that case it is ok to overwrite
+                    // it here.
+                    MapSelectWorkCache* cache = GetMapSelectWorkCache();
+                    assert(!cache->Lookup(fstruct) || ((*cache)[fstruct].Result == sameSelResult));
+                    cache->Set(fstruct, entry, MapSelectWorkCache::Overwrite);
                 }
 
                 recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
@@ -5350,7 +5355,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
 
                 // Handle `x | AllBitsSet == AllBitsSet` and `AllBitsSet | x == AllBitsSet`
-                if (cnsVN == VNAllBitsForType(typ))
+                if (cnsVN == VNAllBitsForType(typ, 1))
                 {
                     resultVN = cnsVN;
                     break;
@@ -5395,7 +5400,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 }
 
                 // Handle `x & AllBitsSet == x` and `AllBitsSet & x == x`
-                if (cnsVN == VNAllBitsForType(typ))
+                if (cnsVN == VNAllBitsForType(typ, 1))
                 {
                     resultVN = opVN;
                     break;
@@ -8040,12 +8045,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForLongCon(static_cast<int64_t>(result));
             }
 
-            case NI_Vector128_AsVector2:
-            {
-                simd8_t result = GetConstantSimd16(arg0VN).v64[0];
-                return VNForSimd8Con(result);
-            }
-
             case NI_Vector128_ToVector256:
             case NI_Vector128_ToVector256Unsafe:
             {
@@ -8099,6 +8098,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
                 return VNForSimd16Con(result);
             }
 #endif // TARGET_XARCH
+
+            case NI_Vector128_AsVector2:
+            {
+                simd8_t result = GetConstantSimd16(arg0VN).v64[0];
+                return VNForSimd8Con(result);
+            }
 
             case NI_Vector128_AsVector3:
             {
@@ -8393,7 +8398,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
 
                 // Handle `x & AllBitsSet == x` and `AllBitsSet & x == x`
-                ValueNum allBitsVN = VNAllBitsForType(type);
+                ValueNum allBitsVN = VNAllBitsForType(type, simdSize);
 
                 if (cnsVN == allBitsVN)
                 {
@@ -8482,7 +8487,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     // Handle `x >= 0 == true` for unsigned types.
                     if ((cnsVN == arg1VN) && (cnsVN == VNZeroForType(simdType)))
                     {
-                        return VNAllBitsForType(type);
+                        unsigned elementCount = simdSize / genTypeSize(baseType);
+                        return VNAllBitsForType(type, elementCount);
                     }
                 }
                 else if (varTypeIsFloating(baseType))
@@ -8528,7 +8534,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     // Handle `0 <= x == true` for unsigned types.
                     if ((cnsVN == arg0VN) && (cnsVN == VNZeroForType(simdType)))
                     {
-                        return VNAllBitsForType(type);
+                        unsigned elementCount = simdSize / genTypeSize(baseType);
+                        return VNAllBitsForType(type, elementCount);
                     }
                 }
                 else if (varTypeIsFloating(baseType))
@@ -8598,7 +8605,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                     // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
                     if (VNIsVectorNaN(simdType, baseType, cnsVN))
                     {
-                        return VNAllBitsForType(type);
+                        unsigned elementCount = simdSize / genTypeSize(baseType);
+                        return VNAllBitsForType(type, elementCount);
                     }
                 }
                 break;
@@ -8615,7 +8623,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                 }
 
                 // Handle `x | ~0 == ~0` and `~0 | x== ~0`
-                ValueNum allBitsVN = VNAllBitsForType(type);
+                ValueNum allBitsVN = VNAllBitsForType(type, simdSize);
 
                 if (cnsVN == allBitsVN)
                 {
@@ -8849,7 +8857,8 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
 
                 if (varTypeIsIntegral(baseType))
                 {
-                    return VNAllBitsForType(type);
+                    unsigned elementCount = simdSize / genTypeSize(baseType);
+                    return VNAllBitsForType(type, elementCount);
                 }
                 break;
             }
@@ -9054,6 +9063,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 {
     var_types      type     = tree->TypeGet();
     var_types      baseType = tree->GetSimdBaseType();
+    unsigned       simdSize = tree->GetSimdSize();
     NamedIntrinsic ni       = tree->GetHWIntrinsicId();
 
     switch (ni)
@@ -9078,7 +9088,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
                 }
 
                 // Handle `AllBitsSet ? x : y`
-                ValueNum allBitsVN = VNAllBitsForType(type);
+                ValueNum allBitsVN = VNAllBitsForType(type, simdSize);
 
                 if (arg0VN == allBitsVN)
                 {

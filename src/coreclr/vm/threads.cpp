@@ -114,7 +114,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
     return m_argBuffer;
 }
 
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+#if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
@@ -1132,31 +1132,24 @@ void InitThreadManager()
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
+#if defined(TARGET_AMD64)
+        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
+        // to the patched barrier, but are not part of the patched set of helpers.
+        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
+#endif // TARGET_AMD64
+
     }
     else
     {
-        // I am using virtual protect to cover the entire range that this code falls in.
-        //
-
-        // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
-        // so instead we'll leave it writable from here forward.
-
-        DWORD oldProt;
-        if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            _ASSERTE(!"ClrVirtualProtect of code page failed");
-            COMPlusThrowWin32();
-        }
-
 #ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
+        JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
 #else
-        JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
+        JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-        JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
+        JIT_WriteBarrier_Table_Loc = NULL;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
@@ -1330,7 +1323,7 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pGCFrame              = NULL;
+    m_pGCFrame              = GCFRAME_TOP;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -2915,7 +2908,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         if (m_State & TS_DebugWillSync)
         {
             ResetThreadState(TS_DebugWillSync);
-            InterlockedDecrement(&m_DebugWillSyncCount);    
+            InterlockedDecrement(&m_DebugWillSyncCount);
         }
 
         SetThreadState(TS_Dead);
@@ -6867,14 +6860,6 @@ void Thread::DoExtraWorkForFinalizer()
 
     if (RequireSyncBlockCleanup())
     {
-#ifndef TARGET_UNIX
-        InteropSyncBlockInfo::FlushStandbyList();
-#endif // !TARGET_UNIX
-
-#ifdef FEATURE_COMINTEROP
-        RCW::FlushStandbyList();
-#endif // FEATURE_COMINTEROP
-
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
     }
     if (SystemDomain::System()->RequireAppDomainCleanup())

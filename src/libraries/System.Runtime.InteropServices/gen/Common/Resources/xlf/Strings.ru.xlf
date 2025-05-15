@@ -432,6 +432,11 @@
         <target state="translated">Конфигурация "StringMarshalling" и "StringMarshallingCustomType" должна соответствовать базовому COM-интерфейсу.</target>
         <note />
       </trans-unit>
+      <trans-unit id="GenericDelegatesNotSupported">
+        <source>Marshalling a generic delegate is not supported. Consider using a function pointer instead.</source>
+        <target state="new">Marshalling a generic delegate is not supported. Consider using a function pointer instead.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
         <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
         <target state="translated">Тип маршалера должен быть закрытым универсальным или иметь то же количество универсальных параметров, что и управляемый тип, чтобы создаваемый код мог использовать конкретный экземпляр.</target>

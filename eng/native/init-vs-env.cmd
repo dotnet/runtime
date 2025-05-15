@@ -53,11 +53,7 @@ set "__VSCOMNTOOLS="
 set "VSCMD_START_DIR="
 
 :VSDetected
-if "%VisualStudioVersion%"=="17.0" (
-    set __VSVersion=vs2022
-    set __PlatformToolset=v143
-    goto :SetVCEnvironment
-)
+goto :SetVCEnvironment
 
 :VSMissing
 echo %__MsgPrefix%Error: Visual Studio 2022 with C++ tools required. ^

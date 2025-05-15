@@ -2095,11 +2095,6 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
  *  entry, which is never more than 10 bytes), so this can be used to merely
  *  compute the size of the table.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset)
 {
     unsigned   varNum;
@@ -3547,9 +3542,6 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     return totalSize;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /*****************************************************************************/
 #if DUMP_GC_TABLES

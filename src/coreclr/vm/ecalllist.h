@@ -97,6 +97,7 @@ FCFuncStart(gCOMTypeHandleFuncs)
     FCFuncElement("ContainsGenericVariables", RuntimeTypeHandle::ContainsGenericVariables)
     FCFuncElement("IsUnmanagedFunctionPointer", RuntimeTypeHandle::IsUnmanagedFunctionPointer)
     FCFuncElement("CompareCanonicalHandles", RuntimeTypeHandle::CompareCanonicalHandles)
+    FCFuncElement("InternalAllocNoChecks_FastPath", RuntimeTypeHandle::InternalAllocNoChecks_FastPath)
 FCFuncEnd()
 
 FCFuncStart(gMetaDataImport)
@@ -337,7 +338,6 @@ FCFuncStart(gRuntimeHelpers)
     FCFuncElement("TryEnsureSufficientExecutionStack", ReflectionInvocation::TryEnsureSufficientExecutionStack)
     FCFuncElement("AllocTailCallArgBufferWorker", TailCallHelp::AllocTailCallArgBufferWorker)
     FCFuncElement("GetTailCallInfo", TailCallHelp::GetTailCallInfo)
-    FCFuncElement("Box", JIT_Box)
 FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)
@@ -370,10 +370,6 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()
 
-FCFuncStart(gComAwareWeakReferenceFuncs)
-    FCFuncElement("HasInteropInfo", ComAwareWeakReferenceNative::HasInteropInfo)
-FCFuncEnd()
-
 //
 //
 // Class definitions
@@ -387,7 +383,6 @@ FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("AssemblyLoadContext", "System.Runtime.Loader", gAssemblyLoadContextFuncs)
 FCClassElement("Buffer", "System", gBufferFuncs)
 FCClassElement("CastHelpers", "System.Runtime.CompilerServices", gCastHelpers)
-FCClassElement("ComAwareWeakReference", "System", gComAwareWeakReferenceFuncs)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime", gDependentHandleFuncs)
 FCClassElement("Environment", "System", gEnvironmentFuncs)
