@@ -242,7 +242,11 @@ C_FUNC(\Name):
     bl C_FUNC(RhpGetThread)
     add         \target, x0, OFFSETOF__Thread__m_eeAllocContext
 
+    .ifc \target, x1
+    EPILOG_RESTORE_REG_PAIR           x0, xzr, 0x10
+    .else
     EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
+    .endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
 #else
     INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread), OFFSETOF__Thread__m_eeAllocContext
