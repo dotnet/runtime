@@ -868,11 +868,6 @@ void Lowering::LowerCast(GenTree* tree)
     {
         // If we don't have AVX10v2 saturating conversion instructions for
         // floating->integral, we have to handle the saturation logic here.
-        //
-        // Since this implements ordinary casts, we bend the normal rules around ISA support
-        // for HWIntrinsics and assume the baseline ISA set (SSE2 and below) is available.
-        // For this reason, we eschew most gentree convenience methods (e.g. gtNewSimdBinOpNode)
-        // and create the HWIntrinsic nodes explicitly, as most helpers assert ISA support.
 
         JITDUMP("LowerCast before:\n");
         DISPTREERANGE(BlockRange(), tree);
@@ -909,8 +904,8 @@ void Lowering::LowerCast(GenTree* tree)
             GenTree* zero = comp->gtNewZeroConNode(TYP_SIMD16);
             GenTree* fixupVal =
                 comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, srcVector, zero, maxScalarIntrinsic, srcBaseType, 16);
-            GenTree* toScalar =
-                comp->gtNewSimdHWIntrinsicNode(srcType, fixupVal, NI_Vector128_ToScalar, srcBaseType, 16);
+
+            GenTree* toScalar = comp->gtNewSimdToScalarNode(srcType, fixupVal, srcBaseType, 16);
 
             castRange.InsertAtEnd(zero);
             castRange.InsertAtEnd(fixupVal);
@@ -1023,7 +1018,6 @@ void Lowering::LowerCast(GenTree* tree)
                 //   var fixupVal = Sse.And(srcVec, nanMask);
                 //   convertResult = Sse.ConvertToInt32WithTruncation(fixupVal);
 
-                NamedIntrinsic andIntrinsic = (srcType == TYP_FLOAT) ? NI_SSE_And : NI_SSE2_And;
                 NamedIntrinsic compareNaNIntrinsic =
                     (srcType == TYP_FLOAT) ? NI_SSE_CompareScalarOrdered : NI_SSE2_CompareScalarOrdered;
 
@@ -1034,9 +1028,8 @@ void Lowering::LowerCast(GenTree* tree)
                 castRange.InsertAtEnd(srcClone);
                 castRange.InsertAtEnd(nanMask);
 
-                srcClone = comp->gtClone(srcVector);
-                GenTree* fixupVal =
-                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, nanMask, srcClone, andIntrinsic, srcBaseType, 16);
+                srcClone          = comp->gtClone(srcVector);
+                GenTree* fixupVal = comp->gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, nanMask, srcClone, srcBaseType, 16);
 
                 castRange.InsertAtEnd(srcClone);
                 castRange.InsertAtEnd(fixupVal);
@@ -1122,16 +1115,15 @@ void Lowering::LowerCast(GenTree* tree)
                             // This creates the equivalent of the following C# code:
                             //   floorVal = ((srcVector.AsUInt64() >>> 21) << 21).AsDouble();
 
-                            GenTree* twentyOne = comp->gtNewIconNode(21);
-                            GenTree* rightShift =
-                                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, floorVal, twentyOne,
-                                                               NI_SSE2_ShiftRightLogical, CORINFO_TYPE_ULONG, 16);
+                            GenTree* twentyOne  = comp->gtNewIconNode(21);
+                            GenTree* rightShift = comp->gtNewSimdBinOpNode(GT_RSZ, TYP_SIMD16, floorVal, twentyOne,
+                                                                           CORINFO_TYPE_ULONG, 16);
                             castRange.InsertAtEnd(twentyOne);
                             castRange.InsertAtEnd(rightShift);
 
                             twentyOne = comp->gtClone(twentyOne);
-                            floorVal  = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, rightShift, twentyOne,
-                                                                       NI_SSE2_ShiftLeftLogical, CORINFO_TYPE_ULONG, 16);
+                            floorVal  = comp->gtNewSimdBinOpNode(GT_LSH, TYP_SIMD16, rightShift, twentyOne,
+                                                                 CORINFO_TYPE_ULONG, 16);
                             castRange.InsertAtEnd(twentyOne);
                             castRange.InsertAtEnd(floorVal);
                         }
@@ -1194,23 +1186,21 @@ void Lowering::LowerCast(GenTree* tree)
 
                             GenTree* thirtyOne = comp->gtNewIconNode(31);
                             GenTree* mask =
-                                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, result, thirtyOne,
-                                                               NI_SSE2_ShiftRightArithmetic, CORINFO_TYPE_INT, 16);
+                                comp->gtNewSimdBinOpNode(GT_RSH, TYP_SIMD16, result, thirtyOne, CORINFO_TYPE_INT, 16);
                             GenTree* andMask =
-                                comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, mask, negated, NI_SSE2_And, dstBaseType, 16);
+                                comp->gtNewSimdBinOpNode(GT_AND, TYP_SIMD16, mask, negated, dstBaseType, 16);
 
                             castRange.InsertAtEnd(thirtyOne);
                             castRange.InsertAtEnd(mask);
                             castRange.InsertAtEnd(andMask);
 
-                            convertResult = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, andMask, resultClone, NI_SSE2_Or,
-                                                                           dstBaseType, 16);
+                            convertResult =
+                                comp->gtNewSimdBinOpNode(GT_OR, TYP_SIMD16, andMask, resultClone, dstBaseType, 16);
                         }
 
                         // Because the results are in a SIMD register, we need to ToScalar() them out.
                         castRange.InsertAtEnd(convertResult);
-                        convertResult = comp->gtNewSimdHWIntrinsicNode(TYP_INT, convertResult, NI_Vector128_ToScalar,
-                                                                       dstBaseType, 16);
+                        convertResult = comp->gtNewSimdToScalarNode(TYP_INT, convertResult, dstBaseType, 16);
                     }
                     else
                     {

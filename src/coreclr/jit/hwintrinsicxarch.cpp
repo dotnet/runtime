@@ -856,39 +856,6 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
 }
 
 //------------------------------------------------------------------------
-// isBaselineIsa: Gets a value that indicates whether the InstructionSet is
-// part of the required hardware support for this platform
-//
-// Arguments:
-//    isa - The InstructionSet to check
-//
-// Return Value:
-//    true if isa is part of the baseline; otherwise, false
-bool HWIntrinsicInfo::isBaselineIsa(CORINFO_InstructionSet isa)
-{
-    switch (isa)
-    {
-        case InstructionSet_X86Base:
-        case InstructionSet_SSE:
-        case InstructionSet_SSE2:
-#ifdef TARGET_AMD64
-        case InstructionSet_X86Base_X64:
-        case InstructionSet_SSE_X64:
-        case InstructionSet_SSE2_X64:
-#endif // TARGET_AMD64
-        case InstructionSet_Vector128:
-        {
-            return true;
-        }
-
-        default:
-        {
-            return false;
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
 //
 // Arguments:

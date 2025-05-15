@@ -826,10 +826,6 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 #if defined(FEATURE_HW_INTRINSICS)
     else if (node->OperIsHWIntrinsic())
     {
-        // All intrinsics introduced in HIR must be explicitly supported.
-        NamedIntrinsic intrinsicId = node->AsHWIntrinsic()->GetHWIntrinsicId();
-        assert(m_compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrinsicId)));
-
         if (node->AsHWIntrinsic()->IsUserCall())
         {
             m_rationalizer.RewriteHWIntrinsicAsUserCall(use, this->m_ancestors);

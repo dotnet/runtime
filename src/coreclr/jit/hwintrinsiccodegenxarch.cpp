@@ -403,9 +403,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     GenTree*               embMaskNode = nullptr;
     GenTree*               embMaskOp   = nullptr;
 
-    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics.
-    // We allow an exception for baseline intrinsics to be introduced unconditionally in LIR.
-    assert(compiler->compIsaSupportedDebugOnly(isa) || HWIntrinsicInfo::isBaselineIsa(isa));
+    // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
+    assert(compiler->compIsaSupportedDebugOnly(isa));
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
     assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
 
