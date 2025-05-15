@@ -166,6 +166,8 @@ switch (testCase) {
     case "EnvVariablesTest":
         dotnet.withEnvironmentVariable("foo", "bar");
         break;
+    case "HttpNoStreamingTest":
+        break;
     case "BrowserProfilerTest":
         break;
     case "OverrideBootConfigName":
@@ -255,6 +257,29 @@ try {
             });
             exports.MemoryTest.Run();
             exit(0);
+            break;
+        case "HttpNoStreamingTest":
+            console.log("not ready yet")
+            const myExportsHttp = await getAssemblyExports(config.mainAssemblyName);
+            const httpNoStreamingTest = myExportsHttp.HttpTest.HttpNoStreamingTest;
+            console.log("ready");
+            if (config.runtimeConfig.runtimeOptions.configProperties) {
+                const configProperties = config.runtimeConfig.runtimeOptions.configProperties;
+                console.log("configProperties: " + Object.keys(configProperties).length);
+                const wasmEnableStreamingResponse = configProperties["System.Net.Http.WasmEnableStreamingResponse"];
+                if (wasmEnableStreamingResponse === undefined) {
+                    exit(2);
+                }
+                if (wasmEnableStreamingResponse === true) {
+                    exit(3);
+                }
+            }
+
+            const retHttp = await httpNoStreamingTest();
+            document.getElementById("out").innerHTML = retHttp;
+            console.debug(`ret: ${retHttp}`);
+
+            exit(retHttp == 42 ? 0 : 1);
             break;
         case "EnvVariablesTest":
             console.log("not ready yet")
