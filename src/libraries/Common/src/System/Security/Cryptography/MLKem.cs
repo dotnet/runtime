@@ -1662,9 +1662,8 @@ namespace System.Security.Cryptography
 
         private static MLKemAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
         {
-            MLKemAlgorithm algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm) ??
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, identifier.Algorithm));
+            MLKemAlgorithm? algorithm = MLKemAlgorithm.FromOid(identifier.Algorithm);
+            Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
             if (identifier.Parameters.HasValue)
             {
