@@ -254,19 +254,43 @@ namespace System.Security.Cryptography.Tests
                     SubjectPublicKeyInfoAsn.Decode(exportSpki(mldsa), AsnEncodingRules.DER).SubjectPublicKey.Span.ToArray()));
         }
 
-        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> callback)
+        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> callback) =>
+            AssertExportMLDsaSecretKey(callback, callback);
+
+        internal static void AssertExportMLDsaSecretKey(Action<Func<MLDsa, byte[]>> directCallback, Action<Func<MLDsa, byte[]>> indirectCallback)
         {
-            callback(mldsa =>
+            directCallback(mldsa =>
             {
                 byte[] buffer = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
                 mldsa.ExportMLDsaSecretKey(buffer.AsSpan());
                 return buffer;
             });
+
+            AssertExportPkcs8PrivateKey(exportPkcs8 =>
+                indirectCallback(mldsa =>
+                    Decode(exportPkcs8(mldsa)).ToArray()));
+
+            static ReadOnlyMemory<byte> Decode(ReadOnlyMemory<byte> source)
+            {
+                MLDsaPrivateKeyAsn decoded =
+                    MLDsaPrivateKeyAsn.Decode(
+                        PrivateKeyInfoAsn.Decode(source, AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER);
+
+                if (decoded.ExpandedKey is null)
+                    throw TestException_NoExpandedKey;
+
+                return decoded.ExpandedKey.Value;
+            }
         }
 
-        internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback)
+        internal static Exception TestException_NoExpandedKey = new TestException();
+
+        internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> callback) =>
+            AssertExportMLDsaPrivateSeed(callback, callback);
+
+        internal static void AssertExportMLDsaPrivateSeed(Action<Func<MLDsa, byte[]>> directCallback, Action<Func<MLDsa, byte[]>> indirectCallback)
         {
-            callback(mldsa =>
+            directCallback(mldsa =>
             {
                 byte[] buffer = new byte[mldsa.Algorithm.PrivateSeedSizeInBytes];
                 mldsa.ExportMLDsaPrivateSeed(buffer.AsSpan());
@@ -274,13 +298,23 @@ namespace System.Security.Cryptography.Tests
             });
 
             AssertExportPkcs8PrivateKey(exportPkcs8 =>
-                callback(mldsa =>
+                indirectCallback(mldsa =>
                     Decode(exportPkcs8(mldsa)).ToArray()));
 
-            static ReadOnlyMemory<byte> Decode(ReadOnlyMemory<byte> source) =>
-                MLDsaPrivateKeyAsn.Decode(
-                    PrivateKeyInfoAsn.Decode(source, AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER).Seed.Value;
+            static ReadOnlyMemory<byte> Decode(ReadOnlyMemory<byte> source)
+            {
+                MLDsaPrivateKeyAsn decoded =
+                    MLDsaPrivateKeyAsn.Decode(
+                        PrivateKeyInfoAsn.Decode(source, AsnEncodingRules.DER).PrivateKey, AsnEncodingRules.DER);
+
+                if (decoded.Seed is null)
+                    throw TestException_NoPrivateSeed;
+
+                return decoded.Seed.Value;
+            }
         }
+
+        internal static Exception TestException_NoPrivateSeed = new TestException();
 
         internal static void AssertExportPkcs8PrivateKey(MLDsa mldsa, Action<byte[]> callback) =>
             AssertExportPkcs8PrivateKey(export => callback(export(mldsa)));
@@ -433,5 +467,7 @@ namespace System.Security.Cryptography.Tests
             Char = 2,
             All = Char | Byte,
         }
+
+        private sealed class TestException : Exception { }
     }
 }

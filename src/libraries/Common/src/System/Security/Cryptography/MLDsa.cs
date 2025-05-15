@@ -1463,6 +1463,7 @@ namespace System.Security.Cryptography
         {
             int publicKeySizeInBytes = Algorithm.PublicKeySizeInBytes;
             byte[] rented = CryptoPool.Rent(publicKeySizeInBytes);
+
             try
             {
                 Span<byte> publicKey = rented.AsSpan(0, publicKeySizeInBytes);
@@ -1528,6 +1529,7 @@ namespace System.Security.Cryptography
             AsnWriter tmp = ExportPkcs8PrivateKeyCallback(static pkcs8 =>
             {
                 AsnWriter writer = new(AsnEncodingRules.BER, initialCapacity: pkcs8.Length);
+
                 try
                 {
                     writer.WriteEncodedValueForCrypto(pkcs8);
@@ -1682,6 +1684,7 @@ namespace System.Security.Cryptography
         private static void ThrowIfInvalidLength(ReadOnlySpan<byte> data)
         {
             int bytesRead;
+
             try
             {
                 AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out bytesRead);
