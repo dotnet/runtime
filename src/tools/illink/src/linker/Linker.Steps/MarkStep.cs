@@ -3369,6 +3369,11 @@ namespace Mono.Linker.Steps
 				if (!returnTypeDefinition.IsImport) {
 					// What we keep here is correct most of the time, but not every time. Fine for now.
 					MarkDefaultConstructor (returnTypeDefinition, new DependencyInfo (DependencyKind.InteropMethodDependency, method), origin);
+
+					// We need to make sure the return type is marked as instantiated.  If the type happens to have a .ctor() then we'll get lucky and that
+					// will trigger marking as instantiated.  We need to also cover the case when a type doesn't have a .ctor()
+					MarkRequirementsForInstantiatedTypes (returnTypeDefinition);
+
 					MarkFields (returnTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method), origin);
 				}
 			}
@@ -3391,6 +3396,10 @@ namespace Mono.Linker.Steps
 						MarkFields (paramTypeDefinition, includeStaticFields, new DependencyInfo (DependencyKind.InteropMethodDependency, method), origin);
 						if (pd.ParameterType.IsByReference) {
 							MarkDefaultConstructor (paramTypeDefinition, new DependencyInfo (DependencyKind.InteropMethodDependency, method), origin);
+
+							// We need to make sure the return type is marked as instantiated.  If the type happens to have a .ctor() then we'll get lucky and that
+							// will trigger marking as instantiated.  We need to also cover the case when a type doesn't have a .ctor()
+							MarkRequirementsForInstantiatedTypes (paramTypeDefinition);
 						}
 					}
 				}
