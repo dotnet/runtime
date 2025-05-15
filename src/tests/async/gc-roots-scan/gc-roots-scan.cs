@@ -52,7 +52,6 @@ public class Async2RootReporting
         return result;
     }
 
-    [MethodImpl(MethodImplOptions.Async)]
     static async Task<int> Recursive2(int n)
     {
         Task<int> cTask = cs.Task;

@@ -25,7 +25,6 @@ public class Async2Implement
 
     class Derived1a : IBase1
     {
-        [MethodImpl(MethodImplOptions.Async)]
         public async Task<int> M1()
         {
             await Task.Yield();
@@ -40,7 +39,6 @@ public class Async2Implement
 
     class Derived2 : IBase2
     {
-        [MethodImpl(MethodImplOptions.Async)]
         public async Task<int> M1()
         {
             await Task.Yield();
