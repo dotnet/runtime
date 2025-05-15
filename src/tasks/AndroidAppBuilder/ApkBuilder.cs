@@ -315,8 +315,8 @@ public partial class ApkBuilder
             {
                 string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
                 string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
-                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase))
-                    .Where(lib => !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
+                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
                     .ToArray();
 
                 foreach (string lib in staticLibs)
