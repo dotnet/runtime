@@ -7,13 +7,13 @@
 // optimizations have already been performed, right before lowering.
 //
 // The transformation performs the following key operations:
-// 
+//
 // 1. Each async call becomes a suspension point where execution can pause and
 //    return to the caller, accompanied by a resumption point where execution can
 //    continue when the awaited operation completes.
-// 
+//
 // 2. When suspending at a suspension point a continuation object is created that contains:
-//    - All live local variables 
+//    - All live local variables
 //    - State number to identify which await is being resumed
 //    - Return value from the awaited operation (filled in by the callee later)
 //    - Exception information if an exception occurred

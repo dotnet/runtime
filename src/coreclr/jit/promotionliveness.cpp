@@ -6,7 +6,7 @@
 
 //
 // This file implements a specialized liveness analysis for physically promoted struct fields
-// and remainders. Unlike standard JIT liveness analysis, it focuses on accurately tracking 
+// and remainders. Unlike standard JIT liveness analysis, it focuses on accurately tracking
 // which fields are live at specific program points to optimize physically promoted struct operations.
 //
 // Key characteristics:
@@ -20,7 +20,7 @@
 //
 // 2. Liveness Representation:
 //    - Writes liveness into IR using normal GTF_VAR_DEATH flags
-//    - Important: After liveness is computed but before replacement phase completes, 
+//    - Important: After liveness is computed but before replacement phase completes,
 //      GTF_VAR_DEATH semantics temporarily differ from the rest of the JIT
 //      (e.g., "LCL_FLD int V16 [+8] (last use)" indicates that specific field is dying,
 //      not the whole variable)
