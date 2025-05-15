@@ -1060,7 +1060,6 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
     if (m_methodName && InterpConfig.InterpDump() && !strcmp(m_methodName, InterpConfig.InterpDump()))
         m_verbose = true;
-    m_verbose = true;
 #endif
 }
 
