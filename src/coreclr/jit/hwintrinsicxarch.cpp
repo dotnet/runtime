@@ -1512,6 +1512,133 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_AddSaturate:
+        case NI_Vector256_AddSaturate:
+        case NI_Vector512_AddSaturate:
+        {
+            assert(sig->numArgs == 2);
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+                }
+                else if (varTypeIsSmall(simdBaseType))
+                {
+                    if (simdSize == 64)
+                    {
+                        intrinsic = NI_AVX512BW_AddSaturate;
+                    }
+                    else if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX2_AddSaturate;
+                    }
+                    else
+                    {
+                        assert(simdSize == 16);
+                        intrinsic = NI_SSE2_AddSaturate;
+                    }
+
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                }
+                else if (varTypeIsUnsigned(simdBaseType))
+                {
+                    // For unsigned we simply have to detect `(x + y) < x`
+                    // and in that scenario return MaxValue (AllBitsSet)
+
+                    GenTree* cns     = gtNewAllBitsSetConNode(retType);
+                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+
+                    GenTree* tmp     = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+                    GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
+                    GenTree* msk     = gtNewSimdCmpOpNode(GT_LT, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
+
+                    retNode = gtNewSimdCndSelNode(retType, msk, cns, tmpDup1, simdBaseJitType, simdSize);
+                }
+                else
+                {
+                    // For signed the logic is a bit more complex, but is
+                    // explained on the managed side as part of Scalar<T>.AddSaturate
+
+                    GenTreeVecCon* minCns = gtNewVconNode(retType);
+                    GenTreeVecCon* maxCns = gtNewVconNode(retType);
+
+                    switch (simdBaseType)
+                    {
+                        case TYP_SHORT:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT16_MAX);
+                            break;
+                        }
+
+                        case TYP_INT:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT32_MAX);
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT64_MAX);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+                    GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+
+                    GenTree* tmp = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize);
+
+                    GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
+                    GenTree* tmpDup2 = gtCloneExpr(tmpDup1);
+
+                    GenTree* msk = gtNewSimdIsNegativeNode(retType, tmpDup1, simdBaseJitType, simdSize);
+                    GenTree* ovf = gtNewSimdCndSelNode(retType, msk, maxCns, minCns, simdBaseJitType, simdSize);
+
+                    // The mask we need is ((a ^ b) & ~(b ^ c)) < 0
+
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                    {
+                        // tmpDup1 = a: 0xF0
+                        // op1Dup1 = b: 0xCC
+                        // op2Dup2 = c: 0xAA
+                        //
+                        // 0x18    = A ? norBC : andBC
+                        //           a ? ~(b | c) : (b & c)
+                        msk = gtNewSimdTernaryLogicNode(retType, tmp, op1Dup1, op2Dup1, gtNewIconNode(0x18),
+                                                        simdBaseJitType, simdSize);
+                    }
+                    else
+                    {
+                        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+
+                        GenTree* msk2 = gtNewSimdBinOpNode(GT_XOR, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk3 =
+                            gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
+
+                        msk = gtNewSimdBinOpNode(GT_AND_NOT, retType, msk2, msk3, simdBaseJitType, simdSize);
+                    }
+
+                    msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseJitType, simdSize);
+                }
+            }
+            break;
+        }
+
         case NI_Vector128_AndNot:
         case NI_Vector256_AndNot:
         case NI_Vector512_AndNot:
@@ -3340,6 +3467,219 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_NarrowWithSaturation:
+        case NI_Vector256_NarrowWithSaturation:
+        case NI_Vector512_NarrowWithSaturation:
+        {
+            assert(sig->numArgs == 2);
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                if (simdBaseType == TYP_DOUBLE)
+                {
+                    // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
+                    retNode = gtNewSimdNarrowNode(retType, op1, op2, CORINFO_TYPE_FLOAT, simdSize);
+                }
+                else if ((simdSize == 16) && ((simdBaseType == TYP_SHORT) || (simdBaseType == TYP_INT)))
+                {
+                    // PackSignedSaturate uses the base type of the return for the simdBaseType
+                    simdBaseJitType = (simdBaseType == TYP_SHORT) ? CORINFO_TYPE_BYTE : CORINFO_TYPE_SHORT;
+
+                    intrinsic = NI_SSE2_PackSignedSaturate;
+                    retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                }
+                else if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    if ((simdSize == 32) || (simdSize == 64))
+                    {
+                        if (simdSize == 32)
+                        {
+                            intrinsic = NI_Vector256_ToVector512Unsafe;
+
+                            op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD64, op1, intrinsic, simdBaseJitType, simdSize);
+                            op1 = gtNewSimdWithUpperNode(TYP_SIMD64, op1, op2, simdBaseJitType, simdSize * 2);
+                        }
+
+                        switch (simdBaseType)
+                        {
+                            case TYP_SHORT:
+                            {
+                                intrinsic = NI_AVX512BW_ConvertToVector256SByteWithSaturation;
+                                break;
+                            }
+
+                            case TYP_USHORT:
+                            {
+                                intrinsic = NI_AVX512BW_ConvertToVector256ByteWithSaturation;
+                                break;
+                            }
+
+                            case TYP_INT:
+                            {
+                                intrinsic = NI_AVX512F_ConvertToVector256Int16WithSaturation;
+                                break;
+                            }
+
+                            case TYP_UINT:
+                            {
+                                intrinsic = NI_AVX512F_ConvertToVector256UInt16WithSaturation;
+                                break;
+                            }
+
+                            case TYP_LONG:
+                            {
+                                intrinsic = NI_AVX512F_ConvertToVector256Int32WithSaturation;
+                                break;
+                            }
+
+                            case TYP_ULONG:
+                            {
+                                intrinsic = NI_AVX512F_ConvertToVector256UInt32WithSaturation;
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        assert(simdSize == 16);
+                        intrinsic = NI_Vector128_ToVector256Unsafe;
+
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, intrinsic, simdBaseJitType, simdSize);
+                        op1 = gtNewSimdWithUpperNode(TYP_SIMD32, op1, op2, simdBaseJitType, simdSize * 2);
+
+                        switch (simdBaseType)
+                        {
+                            case TYP_USHORT:
+                            {
+                                intrinsic = NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation;
+                                break;
+                            }
+
+                            case TYP_UINT:
+                            {
+                                intrinsic = NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation;
+                                break;
+                            }
+
+                            case TYP_LONG:
+                            {
+                                intrinsic = NI_AVX512F_VL_ConvertToVector128Int32WithSaturation;
+                                break;
+                            }
+
+                            case TYP_ULONG:
+                            {
+                                intrinsic = NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation;
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                    }
+
+                    if (simdSize == 64)
+                    {
+                        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op1, intrinsic, simdBaseJitType, simdSize);
+                        op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD32, op2, intrinsic, simdBaseJitType, simdSize);
+
+                        retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize);
+                    }
+                    else
+                    {
+                        retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize * 2);
+                    }
+                }
+                else
+                {
+                    // gtNewSimdNarrowNode uses the base type of the return for the simdBaseType
+                    CorInfoType narrowSimdBaseJitType;
+
+                    GenTreeVecCon* minCns = varTypeIsSigned(simdBaseType) ? gtNewVconNode(retType) : nullptr;
+                    GenTreeVecCon* maxCns = gtNewVconNode(retType);
+
+                    switch (simdBaseType)
+                    {
+                        case TYP_SHORT:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int16_t>(INT8_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT8_MAX);
+
+                            narrowSimdBaseJitType = CORINFO_TYPE_BYTE;
+                            break;
+                        }
+
+                        case TYP_USHORT:
+                        {
+                            maxCns->EvaluateBroadcastInPlace<uint16_t>(UINT8_MAX);
+                            narrowSimdBaseJitType = CORINFO_TYPE_UBYTE;
+                            break;
+                        }
+
+                        case TYP_INT:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int32_t>(INT16_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT16_MAX);
+
+                            narrowSimdBaseJitType = CORINFO_TYPE_SHORT;
+                            break;
+                        }
+
+                        case TYP_UINT:
+                        {
+                            maxCns->EvaluateBroadcastInPlace<uint32_t>(UINT16_MAX);
+                            narrowSimdBaseJitType = CORINFO_TYPE_USHORT;
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int64_t>(INT32_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT32_MAX);
+
+                            narrowSimdBaseJitType = CORINFO_TYPE_INT;
+                            break;
+                        }
+
+                        case TYP_ULONG:
+                        {
+                            maxCns->EvaluateBroadcastInPlace<uint64_t>(UINT32_MAX);
+                            narrowSimdBaseJitType = CORINFO_TYPE_UINT;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    if (minCns != nullptr)
+                    {
+                        op1 = gtNewSimdMaxNode(retType, op1, minCns, simdBaseJitType, simdSize);
+                        op2 = gtNewSimdMaxNode(retType, op2, gtCloneExpr(minCns), simdBaseJitType, simdSize);
+                    }
+
+                    op1 = gtNewSimdMinNode(retType, op1, maxCns, simdBaseJitType, simdSize);
+                    op2 = gtNewSimdMinNode(retType, op2, gtCloneExpr(maxCns), simdBaseJitType, simdSize);
+
+                    retNode = gtNewSimdNarrowNode(retType, op1, op2, narrowSimdBaseJitType, simdSize);
+                }
+            }
+            break;
+        }
+
         case NI_Vector128_op_UnaryNegation:
         case NI_Vector256_op_UnaryNegation:
         case NI_Vector512_op_UnaryNegation:
@@ -3710,6 +4050,133 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_SubtractSaturate:
+        case NI_Vector256_SubtractSaturate:
+        case NI_Vector512_SubtractSaturate:
+        {
+            assert(sig->numArgs == 2);
+
+            if ((simdSize != 32) || varTypeIsFloating(simdBaseType) ||
+                compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                op2 = impSIMDPopStack();
+                op1 = impSIMDPopStack();
+
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    retNode = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
+                }
+                else if (varTypeIsSmall(simdBaseType))
+                {
+                    if (simdSize == 64)
+                    {
+                        intrinsic = NI_AVX512BW_SubtractSaturate;
+                    }
+                    else if (simdSize == 32)
+                    {
+                        intrinsic = NI_AVX2_SubtractSaturate;
+                    }
+                    else
+                    {
+                        assert(simdSize == 16);
+                        intrinsic = NI_SSE2_SubtractSaturate;
+                    }
+
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
+                }
+                else if (varTypeIsUnsigned(simdBaseType))
+                {
+                    // For unsigned we simply have to detect `(x - y) > x`
+                    // and in that scenario return MinValue (Zero)
+
+                    GenTree* cns     = gtNewZeroConNode(retType);
+                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+
+                    GenTree* tmp     = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
+                    GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
+                    GenTree* msk     = gtNewSimdCmpOpNode(GT_GT, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
+
+                    retNode = gtNewSimdCndSelNode(retType, msk, cns, tmpDup1, simdBaseJitType, simdSize);
+                }
+                else
+                {
+                    // For signed the logic is a bit more complex, but is
+                    // explained on the managed side as part of Scalar<T>.SubtractSaturate
+
+                    GenTreeVecCon* minCns = gtNewVconNode(retType);
+                    GenTreeVecCon* maxCns = gtNewVconNode(retType);
+
+                    switch (simdBaseType)
+                    {
+                        case TYP_SHORT:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int16_t>(INT16_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int16_t>(INT16_MAX);
+                            break;
+                        }
+
+                        case TYP_INT:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int32_t>(INT32_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int32_t>(INT32_MAX);
+                            break;
+                        }
+
+                        case TYP_LONG:
+                        {
+                            minCns->EvaluateBroadcastInPlace<int64_t>(INT64_MIN);
+                            maxCns->EvaluateBroadcastInPlace<int64_t>(INT64_MAX);
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
+                    }
+
+                    GenTree* op1Dup1 = fgMakeMultiUse(&op1);
+                    GenTree* op2Dup1 = fgMakeMultiUse(&op2);
+
+                    GenTree* tmp = gtNewSimdBinOpNode(GT_SUB, retType, op1, op2, simdBaseJitType, simdSize);
+
+                    GenTree* tmpDup1 = fgMakeMultiUse(&tmp);
+                    GenTree* tmpDup2 = gtCloneExpr(tmpDup1);
+
+                    GenTree* msk = gtNewSimdIsNegativeNode(retType, tmpDup1, simdBaseJitType, simdSize);
+                    GenTree* ovf = gtNewSimdCndSelNode(retType, msk, maxCns, minCns, simdBaseJitType, simdSize);
+
+                    // The mask we need is ((a ^ b) & (b ^ c)) < 0
+
+                    if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                    {
+                        // tmpDup1 = a: 0xF0
+                        // op1Dup1 = b: 0xCC
+                        // op2Dup2 = c: 0xAA
+                        //
+                        // 0x18    = B ? norAC : andAC
+                        //           b ? ~(a | c) : (a & c)
+                        msk = gtNewSimdTernaryLogicNode(retType, tmp, op1Dup1, op2Dup1, gtNewIconNode(0x24),
+                                                        simdBaseJitType, simdSize);
+                    }
+                    else
+                    {
+                        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+
+                        GenTree* msk2 = gtNewSimdBinOpNode(GT_XOR, retType, tmp, op1Dup1, simdBaseJitType, simdSize);
+                        GenTree* msk3 =
+                            gtNewSimdBinOpNode(GT_XOR, retType, op1Dup2, op2Dup1, simdBaseJitType, simdSize);
+
+                        msk = gtNewSimdBinOpNode(GT_AND, retType, msk2, msk3, simdBaseJitType, simdSize);
+                    }
+
+                    msk     = gtNewSimdIsNegativeNode(retType, msk, simdBaseJitType, simdSize);
+                    retNode = gtNewSimdCndSelNode(retType, msk, ovf, tmpDup2, simdBaseJitType, simdSize);
+                }
+            }
+            break;
+        }
+
         case NI_Vector128_Sum:
         case NI_Vector256_Sum:
         case NI_Vector512_Sum:
@@ -3805,34 +4272,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
-
-            if (!indexOp->OperIsConst())
-            {
-                if (!opts.OptimizationEnabled())
-                {
-                    // Only enable late stage rewriting if optimizations are enabled
-                    // as we won't otherwise encounter a constant at the later point
-                    return nullptr;
-                }
-
-                op3 = impPopStack().val;
-                op2 = impPopStack().val;
-                op1 = impSIMDPopStack();
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, simdBaseJitType, simdSize);
-
-                retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
-                break;
-            }
-
-            ssize_t imm8  = indexOp->AsIntCon()->IconValue();
-            ssize_t count = simdSize / genTypeSize(simdBaseType);
-
-            if ((imm8 >= count) || (imm8 < 0))
-            {
-                // Using software fallback if index is out of range (throw exception)
-                return nullptr;
-            }
 
             switch (simdBaseType)
             {
@@ -4405,6 +4844,65 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         }
                     }
 
+                    // Some normalization cases require us to swap the operands, which might require
+                    // spilling side effects. Check that here.
+                    //
+                    // cast in switch clause is needed for old gcc
+                    switch ((TernaryLogicOperKind)info.oper1)
+                    {
+                        case TernaryLogicOperKind::Not:
+                        {
+                            assert(info.oper1Use != TernaryLogicUseFlags::None);
+
+                            bool needSideEffectSpill = false;
+
+                            if (info.oper2 == TernaryLogicOperKind::And)
+                            {
+                                assert(info.oper2Use != TernaryLogicUseFlags::None);
+
+                                if ((control == static_cast<uint8_t>(~0xCC & 0xF0)) || // ~B & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
+                                    (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
+                                {
+                                    // We're normalizing to ~B & C, so we need another swap
+                                    std::swap(val2, val3);
+                                    needSideEffectSpill = (control == static_cast<uint8_t>(~0xAA & 0xCC)); // ~C & B
+                                }
+                            }
+                            else if (info.oper2 == TernaryLogicOperKind::Or)
+                            {
+                                assert(info.oper2Use != TernaryLogicUseFlags::None);
+
+                                if ((control == static_cast<uint8_t>(~0xCC | 0xF0)) || // ~B | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
+                                    (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
+                                {
+                                    // We're normalizing to ~B | C, so we need another swap
+                                    std::swap(val2, val3);
+                                    needSideEffectSpill = (control == static_cast<uint8_t>(~0xAA | 0xCC)); // ~C | B
+                                }
+                            }
+
+                            if (needSideEffectSpill)
+                            {
+                                // Side-effect cases:
+                                // ~B op A ; order before swap C A B
+                                //    op1 & op2 already set to be spilled; no further spilling necessary
+                                // ~C op A ; order before swap B A C
+                                //    op1 already set to be spilled; no further spilling necessary
+                                // ~C op B ; order before swap A B C
+                                //    nothing already set to be spilled; op1 & op2 need to be spilled
+
+                                spillOp1 = true;
+                                spillOp2 = true;
+                            }
+                            break;
+                        }
+
+                        default:
+                            break;
+                    }
+
                     if (spillOp1)
                     {
                         impSpillSideEffect(true, stackState.esStackDepth -
@@ -4529,8 +5027,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     (control == static_cast<uint8_t>(~0xAA & 0xF0)) || // ~C & A
                                     (control == static_cast<uint8_t>(~0xAA & 0xCC)))   // ~C & B
                                 {
-                                    // We're normalizing to ~B & C, so we need another swap
-                                    std::swap(*val2, *val3);
+                                    // We already normalized to ~B & C above.
                                 }
                                 else
                                 {
@@ -4556,8 +5053,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                     (control == static_cast<uint8_t>(~0xAA | 0xF0)) || // ~C | A
                                     (control == static_cast<uint8_t>(~0xAA | 0xCC)))   // ~C | B
                                 {
-                                    // We're normalizing to ~B & C, so we need another swap
-                                    std::swap(*val2, *val3);
+                                    // We already normalized to ~B | C above.
                                 }
                                 else
                                 {

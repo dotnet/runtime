@@ -414,6 +414,21 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Validates that the actual span is the same as the expected span.
+        /// </summary>
+        /// <param name="expected">The expected span.</param>
+        /// <param name="actual">The actual span.</param>
+        public static void Same<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual)
+        {
+            if (expected.Length != actual.Length)
+            {
+                throw new XunitException($"Expected length: {expected.Length}{Environment.NewLine}Actual length: {actual.Length}");
+            }
+
+            AssertExtensions.TrueExpression(expected.Overlaps(actual, out int offset) && offset == 0);
+        }
+
         // NOTE: Consider using SequenceEqual below instead, as it will give more useful information about what
         // the actual differences are, especially for large arrays/spans.
         /// <summary>

@@ -568,6 +568,31 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
 }
 
 //------------------------------------------------------------------------
+// HasGCByRef: //   Check if this classlayout has a TYP_BYREF GC pointer in it.
+//
+// Return value:
+//   True if so.
+//
+bool ClassLayout::HasGCByRef() const
+{
+    if (!HasGCPtr())
+    {
+        return false;
+    }
+
+    unsigned numSlots = GetSlotCount();
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        if (GetGCPtrType(i) == TYP_BYREF)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // IsStackOnly: does the layout represent a block that can never be on the heap?
 //
 // Parameters:

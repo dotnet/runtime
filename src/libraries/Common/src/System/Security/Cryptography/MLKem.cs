@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class MLKem : IDisposable
     {
         private static readonly string[] s_knownOids = [Oids.MlKem512, Oids.MlKem768, Oids.MlKem1024];
@@ -56,11 +56,11 @@ namespace System.Security.Cryptography
         ///   The specific ML-KEM algorithm for this key.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         protected MLKem(MLKemAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             Algorithm = algorithm;
         }
 
@@ -74,10 +74,10 @@ namespace System.Security.Cryptography
         ///   The generated key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occured generating the ML-KEM key.
+        ///   An error occurred generating the ML-KEM key.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem GenerateKey(MLKemAlgorithm algorithm)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
             ThrowIfNotSupported();
             return MLKemImplementation.GenerateKeyImpl(algorithm);
         }
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] Decapsulate(byte[] ciphertext)
         {
-            ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(ciphertext);
 
             if (ciphertext.Length != Algorithm.CiphertextSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidCiphertextLength, nameof(ciphertext));
@@ -326,7 +326,7 @@ namespace System.Security.Cryptography
         ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.PrivateSeedSizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidSeedLength, nameof(source));
@@ -357,9 +357,9 @@ namespace System.Security.Cryptography
         ///   <see cref="MLKemAlgorithm.PrivateSeedSizeInBytes" /> from <paramref name="algorithm" />.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -370,7 +370,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPrivateSeed(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ImportPrivateSeed(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="algorithm" /> is <see langword="null" />
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.DecapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidDecapsulationKeyLength, nameof(source));
@@ -415,9 +415,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportDecapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportDecapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
 
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            ThrowIfNull(algorithm);
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             if (source.Length != algorithm.EncapsulationKeySizeInBytes)
                 throw new ArgumentException(SR.Argument_KemInvalidEncapsulationKeyLength, nameof(source));
@@ -472,9 +472,9 @@ namespace System.Security.Cryptography
         ///   <paramref name="source"/> has a length that is not valid for the ML-KEM algorithm.
         /// </exception>
         /// <exception cref="ArgumentNullException">
-        ///   <para><paramref name="algorithm" /> is <see langword="null" /></para>
+        ///   <para><paramref name="algorithm" /> is <see langword="null" />.</para>
         ///   <para>-or-</para>
-        ///   <para><paramref name="source" /> is <see langword="null" /></para>
+        ///   <para><paramref name="source" /> is <see langword="null" />.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred while importing the key.
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportEncapsulationKey(MLKemAlgorithm algorithm, byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return ImportEncapsulationKey(algorithm, new ReadOnlySpan<byte>(source));
         }
@@ -707,7 +707,7 @@ namespace System.Security.Cryptography
         ///   Export the current key in the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
-        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 PrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -803,7 +803,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -856,7 +856,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return TryExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters, destination, out bytesWritten);
         }
 
@@ -902,7 +902,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -923,7 +923,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -942,7 +942,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -963,7 +963,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -982,7 +982,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -1003,7 +1003,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of the this key.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///    <paramref name="pbeParameters" /> or <paramref name="password" /> is <see langword="null" />.
@@ -1022,7 +1022,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return ExportEncryptedPkcs8PrivateKey(password.AsSpan(), pbeParameters);
         }
 
@@ -1056,7 +1056,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, ReadOnlySpan<char>.Empty, passwordBytes);
             ThrowIfDisposed();
 
@@ -1097,7 +1097,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(pbeParameters);
+            ArgumentNullException.ThrowIfNull(pbeParameters);
             PasswordBasedEncryption.ValidatePbeParameters(pbeParameters, password, ReadOnlySpan<byte>.Empty);
             ThrowIfDisposed();
 
@@ -1138,7 +1138,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, PbeParameters pbeParameters)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
             return ExportEncryptedPkcs8PrivateKeyPem(password.AsSpan(), pbeParameters);
         }
 
@@ -1170,6 +1170,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source)
         {
+            ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
             unsafe
@@ -1200,7 +1201,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportSubjectPublicKeyInfo(byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportSubjectPublicKeyInfo(new ReadOnlySpan<byte>(source));
         }
 
@@ -1250,7 +1251,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportPkcs8PrivateKey(byte[] source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(source));
         }
 
@@ -1362,7 +1363,7 @@ namespace System.Security.Cryptography
         ///   The imported key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="password" /> is <see langword="null" />.
+        ///   <paramref name="password" /> or <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -1385,9 +1386,10 @@ namespace System.Security.Cryptography
         ///   The platform does not support ML-KEM. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports ML-KEM.
         /// </exception>
-        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, ReadOnlySpan<byte> source)
+        public static MLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source)
         {
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
             ThrowIfTrailingData(source);
             ThrowIfNotSupported();
 
@@ -1449,7 +1451,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromPem(string source)
         {
-            ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
             return ImportFromPem(source.AsSpan());
         }
 
@@ -1580,8 +1582,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, string password)
         {
-            ThrowIfNull(source);
-            ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(password);
 
             return ImportFromEncryptedPem(source.AsSpan(), password.AsSpan());
         }
@@ -1592,8 +1594,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static MLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
         {
-            ThrowIfNull(source);
-            ThrowIfNull(passwordBytes);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(passwordBytes);
 
             return ImportFromEncryptedPem(source.AsSpan(), new ReadOnlySpan<byte>(passwordBytes));
         }
@@ -1689,79 +1691,78 @@ namespace System.Security.Cryptography
             MLKemAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
             MLKemPrivateKeyAsn kemKey = MLKemPrivateKeyAsn.Decode(privateKeyContents, AsnEncodingRules.BER);
 
-            try
+            if (kemKey.Seed is ReadOnlyMemory<byte> seed)
             {
-                if (kemKey.Seed is ReadOnlyMemory<byte> seed)
-                {
-                    kem = ImportPrivateSeed(algorithm, seed.Span);
-                }
-                else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
-                {
-                    kem = ImportDecapsulationKey(algorithm, expandedKey.Span);
-                }
-                else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
-                {
-                    MLKem key = ImportPrivateSeed(algorithm, both.Seed.Span);
-                    int decapsulationKeySize = key.Algorithm.DecapsulationKeySizeInBytes;
-                    byte[] rent = CryptoPool.Rent(decapsulationKeySize);
-                    Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
-
-                    try
-                    {
-                        key.ExportDecapsulationKey(buffer);
-
-                        if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
-                        {
-                            kem = key;
-                        }
-                        else
-                        {
-                            throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
-                        }
-                    }
-                    catch
-                    {
-                        key.Dispose();
-                        throw;
-                    }
-                    finally
-                    {
-                        CryptoPool.Return(rent, decapsulationKeySize);
-                    }
-                }
-                else
+                if (seed.Length != algorithm.PrivateSeedSizeInBytes)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
+
+                kem = MLKemImplementation.ImportPrivateSeedImpl(algorithm, seed.Span);
             }
-            catch (ArgumentException ae)
+            else if (kemKey.ExpandedKey is ReadOnlyMemory<byte> expandedKey)
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, ae);
+                if (expandedKey.Length != algorithm.DecapsulationKeySizeInBytes)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
+
+                kem = MLKemImplementation.ImportDecapsulationKeyImpl(algorithm, expandedKey.Span);
             }
-        }
+            else if (kemKey.Both is MLKemPrivateKeyBothAsn both)
+            {
+                int decapsulationKeySize = algorithm.DecapsulationKeySizeInBytes;
 
-        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
-        {
-            AsnDecoder.ReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out int bytesRead);
+                if (both.Seed.Length != algorithm.PrivateSeedSizeInBytes ||
+                    both.ExpandedKey.Length != decapsulationKeySize)
+                {
+                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                }
 
-            if (bytesRead != data.Length)
+                MLKem key = MLKemImplementation.ImportPrivateSeedImpl(algorithm, both.Seed.Span);
+                byte[] rent = CryptoPool.Rent(decapsulationKeySize);
+                Span<byte> buffer = rent.AsSpan(0, decapsulationKeySize);
+
+                try
+                {
+                    key.ExportDecapsulationKey(buffer);
+
+                    if (CryptographicOperations.FixedTimeEquals(buffer, both.ExpandedKey.Span))
+                    {
+                        kem = key;
+                    }
+                    else
+                    {
+                        throw new CryptographicException(SR.Cryptography_KemPkcs8KeyMismatch);
+                    }
+                }
+                catch
+                {
+                    key.Dispose();
+                    throw;
+                }
+                finally
+                {
+                    CryptoPool.Return(rent, decapsulationKeySize);
+                }
+            }
+            else
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
         }
 
-        private static void ThrowIfNull(
-            [NotNull] object? argument,
-            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        private static void ThrowIfTrailingData(ReadOnlySpan<byte> data)
         {
-#if NET
-            ArgumentNullException.ThrowIfNull(argument, paramName);
-#else
-            if (argument is null)
+            // The only thing we are checking here is that TryReadEncodedValue was able to decode it and that, given
+            // the length of the data, that it the same length as the span. The encoding rules don't matter for length
+            // checking, so just use BER.
+            bool success = AsnDecoder.TryReadEncodedValue(data, AsnEncodingRules.BER, out _, out _, out _, out int bytesRead);
+
+            if (!success || bytesRead != data.Length)
             {
-                throw new ArgumentNullException(paramName);
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
-#endif
         }
 
         private protected void ThrowIfDisposed()
@@ -1814,17 +1815,17 @@ namespace System.Security.Cryptography
             // Decapsulation keys are always larger than the seed, so if we end up with a seed export it should
             // fit in the initial buffer.
             int size = Algorithm.DecapsulationKeySizeInBytes + 32;
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(size); // Released to callers, do not use CryptoPool.
+            byte[] buffer = CryptoPool.Rent(size); // Only passed out as span, callees can't keep a reference to it
             int written;
 
             while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
             {
-                ClearAndReturnToPool(buffer, written);
+                CryptoPool.Return(buffer);
                 size = checked(size * 2);
                 buffer = ArrayPool<byte>.Shared.Rent(size);
             }
 
-            if (written > buffer.Length)
+            if (written < 0 || written > buffer.Length)
             {
                 // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
                 CryptographicOperations.ZeroMemory(buffer);
@@ -1832,14 +1833,8 @@ namespace System.Security.Cryptography
             }
 
             TResult result = func(buffer.AsSpan(0, written));
-            ClearAndReturnToPool(buffer, written);
+            CryptoPool.Return(buffer, written);
             return result;
-
-            static void ClearAndReturnToPool(byte[] buffer, int clearSize)
-            {
-                CryptographicOperations.ZeroMemory(buffer.AsSpan(0, clearSize));
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
         }
 
         private static string EncodeAsnWriterToPem(string label, AsnWriter writer, bool clear = true)
