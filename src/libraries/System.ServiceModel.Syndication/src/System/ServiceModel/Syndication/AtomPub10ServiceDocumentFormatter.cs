@@ -24,10 +24,7 @@ namespace System.ServiceModel.Syndication
 
         public AtomPub10ServiceDocumentFormatter(Type documentTypeToCreate) : base()
         {
-            if (documentTypeToCreate is null)
-            {
-                throw new ArgumentNullException(nameof(documentTypeToCreate));
-            }
+            ArgumentNullException.ThrowIfNull(documentTypeToCreate);
 
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
@@ -48,10 +45,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
@@ -60,20 +54,14 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             ReadDocument(reader);
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             if (Document == null)
             {
@@ -85,10 +73,7 @@ namespace System.ServiceModel.Syndication
 
         public override void ReadFrom(XmlReader reader)
         {
-            if (reader is null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             reader.MoveToContent();
             if (!CanRead(reader))
@@ -101,10 +86,7 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer is null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             if (Document == null)
             {

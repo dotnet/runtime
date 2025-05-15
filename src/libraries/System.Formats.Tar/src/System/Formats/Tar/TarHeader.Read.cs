@@ -15,6 +15,8 @@ namespace System.Formats.Tar
     // Reads the header attributes from a tar archive entry.
     internal sealed partial class TarHeader
     {
+        private readonly byte[] ArrayOf12NullBytes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
@@ -537,11 +539,18 @@ namespace System.Formats.Tar
         private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
             // Convert byte arrays
-            long aTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
-
-            long cTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
-            _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
+            ReadOnlySpan<byte> aTimeBuffer = buffer.Slice(FieldLocations.ATime, FieldLengths.ATime);
+            if (!aTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // null values are ignored
+            {
+                long aTime = TarHelpers.ParseNumeric<long>(aTimeBuffer);
+                _aTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(aTime);
+            }
+            ReadOnlySpan<byte> cTimeBuffer = buffer.Slice(FieldLocations.CTime, FieldLengths.CTime);
+            if (!cTimeBuffer.SequenceEqual(ArrayOf12NullBytes)) // An all nulls buffer is interpreted as MinValue
+            {
+                long cTime = TarHelpers.ParseNumeric<long>(cTimeBuffer);
+                _cTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(cTime);
+            }
 
             // TODO: Read the bytes of the currently unsupported GNU fields, in case user wants to write this entry into another GNU archive, they need to be preserved. https://github.com/dotnet/runtime/issues/68230
         }

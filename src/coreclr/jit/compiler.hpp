@@ -887,7 +887,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 /*****************************************************************************
  *  Get the funcIdx for the EH funclet that begins with block.
  *  This is only valid after funclets are created.
- *  It is only valid for blocks marked with BBF_FUNCLET_BEG because
+ *  It is only valid for blocks that begin a funclet because
  *  otherwise we would have to do a more expensive check to determine
  *  if this should return the filter funclet or the filter handler funclet.
  *
@@ -896,8 +896,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     if (UsesFunclets())
     {
-        assert(fgFuncletsCreated);
-        assert(block->HasFlag(BBF_FUNCLET_BEG));
+        assert(bbIsFuncletBeg(block));
 
         EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
         unsigned int funcIdx = eh->ebdFuncIndex;
@@ -1553,7 +1552,7 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 //    New CT_HELPER node
 //
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
-    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4)
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
@@ -1571,6 +1570,12 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
+
+    if (arg4 != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg4));
+        result->gtFlags |= arg4->gtFlags & GTF_ALL_EFFECT;
+    }
 
     if (arg3 != nullptr)
     {
@@ -2922,6 +2927,12 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
     }
 
+    if (ILargNum >= lvaAsyncContinuationArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+
     if (ILargNum >= lvaVarargsHandleArg)
     {
         ILargNum++;
@@ -3726,14 +3737,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline void Compiler::optAssertionReset(AssertionIndex limit)
 {
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     while (optAssertionCount > limit)
     {
         AssertionIndex index        = optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion->op1.lcl.lclNum;
+        unsigned lclNum = curAssertion->op1.lclNum;
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
@@ -3744,9 +3755,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lcl.lclNum no longer depends upon this assertion
+            //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lcl.lclNum;
+            lclNum = curAssertion->op2.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
@@ -3754,7 +3765,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
     {
         AssertionIndex index        = ++optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
-        unsigned       lclNum       = curAssertion->op1.lcl.lclNum;
+        unsigned       lclNum       = curAssertion->op1.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3764,9 +3775,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lcl.lclNum now depends upon this assertion
+            //  op2.lclNum now depends upon this assertion
             //
-            lclNum = curAssertion->op2.lcl.lclNum;
+            lclNum = curAssertion->op2.lclNum;
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
@@ -3782,7 +3793,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 {
     assert(index > 0);
     assert(index <= optAssertionCount);
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     AssertionDsc* curAssertion = optGetAssertion(index);
 
@@ -3797,7 +3808,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     //
     if (index == optAssertionCount)
     {
-        unsigned lclNum = curAssertion->op1.lcl.lclNum;
+        unsigned lclNum = curAssertion->op1.lclNum;
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3807,9 +3818,9 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lcl.lclNum no longer depends upon this assertion
+            //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lcl.lclNum;
+            lclNum = curAssertion->op2.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
 
@@ -4273,8 +4284,6 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
 
-    result = result || (varNum == lvaPSPSym);
-
     return result;
 }
 
@@ -4375,6 +4384,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -4455,6 +4465,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+        case GT_RETURN_SUSPEND:
             visitor(this->AsUnOp()->gtOp1);
             return;
 

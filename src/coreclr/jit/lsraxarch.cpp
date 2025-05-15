@@ -441,6 +441,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMP:
         case GT_TEST:
         case GT_BT:
+#ifdef TARGET_AMD64
+        case GT_CCMP:
+#endif
             srcCount = BuildCmp(tree);
             break;
 
@@ -622,6 +625,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -1355,6 +1363,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {

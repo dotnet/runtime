@@ -25,6 +25,8 @@ namespace System.Net.Http.Tests
         private const string fooHttps = "https://foo.com";
         private const string fooWs = "ws://foo.com";
         private const string fooWss = "wss://foo.com";
+        private const string ManualSettingsProxyHost = "myproxy.local";
+        private const string ManualSettingsProxyBypassList = "localhost;*.local";
 
         public HttpWindowsProxyTest(ITestOutputHelper output)
         {
@@ -325,6 +327,89 @@ namespace System.Net.Http.Tests
                 Assert.Equal(firstProxy, proxyC);
                 Assert.False(multiC.ReadNext(out proxyC, out _));
             }, manualConfig.ToString()).DisposeAsync();
+        }
+
+        public static IEnumerable<object[]> ManualSettingsMemberData()
+        {
+            yield return new object[] { "http://example.org", false };
+            yield return new object[] { "http://example.local", true };
+            yield return new object[] { "http://localhost", true };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(ManualSettingsMemberData))]
+        public async Task GetProxy_BothAutoDetectAndManualSettingsButFailedAutoDetect_ManualSettingsUsed(string destination, bool bypassProxy)
+        {
+            await RemoteExecutor.Invoke((destinationValue, bypassProxyValue) =>
+            {
+                TestControl.ResetAll();
+                FakeRegistry.WinInetProxySettings.AutoDetect = true;
+                FakeRegistry.WinInetProxySettings.Proxy = ManualSettingsProxyHost;
+                FakeRegistry.WinInetProxySettings.ProxyBypass = ManualSettingsProxyBypassList;
+                TestControl.PACFileNotDetectedOnNetwork = true;
+
+                Uri destination = new Uri(destinationValue);
+                bool bypassProxy = bool.Parse(bypassProxyValue);
+
+                IWebProxy webProxy = new HttpWindowsProxy();
+
+                // The first GetProxy() call will try using WinInetProxyHelper (and thus WinHTTP) since AutoDetect is on.
+                Uri proxyUri1 = webProxy.GetProxy(destination);
+
+                // The second GetProxy call will skip using WinHTTP since AutoDetect is on but
+                // there was a recent AutoDetect failure. This tests the codepath in HttpWindowsProxy
+                // which queries WinInetProxyHelper.RecentAutoDetectionFailure.
+                Uri proxyUri2 = webProxy.GetProxy(destination);
+
+                if (bypassProxy)
+                {
+                    Assert.Null(proxyUri1);
+                    Assert.Null(proxyUri2);
+                }
+                else
+                {
+                    Assert.Equal(ManualSettingsProxyHost, proxyUri1.Host);
+                    Assert.Equal(ManualSettingsProxyHost, proxyUri2.Host);
+                }
+            }, destination, bypassProxy.ToString()).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(ManualSettingsMemberData))]
+        public async Task GetProxy_ManualSettingsOnly_ManualSettingsUsed(string destination, bool bypassProxy)
+        {
+            await RemoteExecutor.Invoke((destinationValue, bypassProxyValue) =>
+            {
+                TestControl.ResetAll();
+                FakeRegistry.WinInetProxySettings.Proxy = ManualSettingsProxyHost;
+                FakeRegistry.WinInetProxySettings.ProxyBypass = ManualSettingsProxyBypassList;
+
+                Uri destination = new Uri(destinationValue);
+                bool bypassProxy = bool.Parse(bypassProxyValue);
+
+                IWebProxy webProxy = new HttpWindowsProxy();
+                Uri proxyUri = webProxy.GetProxy(destination);
+                if (bypassProxy)
+                {
+                    Assert.Null(proxyUri);
+                }
+                else
+                {
+                    Assert.Equal(ManualSettingsProxyHost, proxyUri.Host);
+                }
+            }, destination, bypassProxy.ToString()).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task IsBypassed_ReturnsFalse()
+        {
+            await RemoteExecutor.Invoke(() =>
+            {
+                TestControl.ResetAll();
+                FakeRegistry.WinInetProxySettings.AutoDetect = true;
+                IWebProxy webProxy = new HttpWindowsProxy();
+                Assert.False(webProxy.IsBypassed(new Uri("http://www.microsoft.com/")));
+            }).DisposeAsync();
         }
     }
 }

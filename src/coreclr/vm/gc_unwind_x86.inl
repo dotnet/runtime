@@ -126,6 +126,11 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
 #define fastSkipSigned(src) (decodeSigned(src))
 #endif
 
+unsigned int DecodeGCHdrInfoMethodSize(GCInfoToken gcInfoToken)
+{
+    PTR_CBYTE table = (PTR_CBYTE) gcInfoToken.Info;
+    return fastDecodeUnsigned(table);
+}
 
 /*****************************************************************************
  *
@@ -798,11 +803,6 @@ RegMask     convertAllRegsMask(unsigned inMask) // EAX,ECX,EDX,EBX, EBP,ESI,EDI
          in the array, and argTabBytes specifies the total byte size of the
          array. [ Note this is an extremely rare case ]
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 static
 unsigned scanArgRegTable(PTR_CBYTE    table,
                          unsigned     curOffs,
@@ -1466,10 +1466,6 @@ FINISHED:
     _ASSERTE(int(stackDepth) < INT_MAX); // check that it did not underflow
     return (stackDepth * sizeof(unsigned));
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 /*****************************************************************************
  * scan the register argument table for the fully interruptible case.
@@ -2939,9 +2935,6 @@ bool UnwindEbpDoubleAlignFrame(
 #ifdef FEATURE_EH_FUNCLETS
         // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
         // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
-        // TODO If funclet frame layout is changed from CodeGen::genFuncletProlog() and genFuncletEpilog(),
-        //      we need to change here accordingly. It is likely to have changes when introducing PSPSym.
-        // TODO Currently we assume that ESP of funclet frames is always fixed but actually it could change.
         if (isFunclet)
         {
             baseSP = curESP;

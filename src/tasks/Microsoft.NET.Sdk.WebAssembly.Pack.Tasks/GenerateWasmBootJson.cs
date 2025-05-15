@@ -60,6 +60,10 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] Extensions { get; set; }
 
+    public string[]? Profilers { get; set; }
+
+    public string? RuntimeConfigJsonPath { get; set; }
+
     public string StartupMemoryCache { get; set; }
 
     public string Jiterpreter { get; set; }
@@ -87,6 +91,8 @@ public class GenerateWasmBootJson : Task
     public bool FingerprintAssets { get; set; }
 
     public string ApplicationEnvironment { get; set; }
+
+    public string MergeWith { get; set; }
 
     public override bool Execute()
     {
@@ -432,8 +438,23 @@ public class GenerateWasmBootJson : Task
             }
         }
 
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            result.runtimeConfig = runtimeConfig;
+        }
+
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            result.environmentVariables ??= new();
+            result.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+        }
+
         helper.ComputeResourcesHash(result);
-        helper.WriteConfigToFile(result, OutputPath);
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {

@@ -99,7 +99,6 @@ MethodTable* g_pCastHelpers;
 GPTR_IMPL(MethodTable,      g_pEHClass);
 GPTR_IMPL(MethodTable,      g_pExceptionServicesInternalCallsClass);
 GPTR_IMPL(MethodTable,      g_pStackFrameIteratorClass);
-GVAL_IMPL(bool,             g_isNewExceptionHandlingEnabled);
 #endif
 
 GVAL_IMPL_INIT(PTR_WSTR, g_EntryAssemblyPath, NULL);
@@ -199,12 +198,6 @@ bool g_fManagedAttach = false;
 // Do we own the lifetime of the process, ie. is it an EXE?
 //
 bool g_fWeControlLifetime = false;
-
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-bool dbg_fDrasticShutdown = false;
-#endif
-bool g_fInControlC = false;
 
 #endif // #ifndef DACCESS_COMPILE
 
