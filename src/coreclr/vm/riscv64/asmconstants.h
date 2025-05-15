@@ -132,9 +132,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab
 #define               OFFSETOF__Array__m_Length     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
 
-#define               OFFSETOF__String__m_Length     0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__String__m_Length == offsetof(StringObject, m_StringLength));
-
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
 
 #define               ASM_LARGE_OBJECT_SIZE 85000
