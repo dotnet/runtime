@@ -7,7 +7,7 @@
         .code
 
 
-include AsmMacros.inc
+include AsmMacros_Shared.inc
 
 
 ifdef FEATURE_CACHED_INTERFACE_DISPATCH
