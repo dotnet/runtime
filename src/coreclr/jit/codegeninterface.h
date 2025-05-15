@@ -179,8 +179,11 @@ private:
 public:
     static bool instIsFP(instruction ins);
 #if defined(TARGET_XARCH)
-    static bool     instIsEmbeddedBroadcastCompatible(instruction ins);
+    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+    static bool instIsEmbeddedMaskingCompatible(instruction ins);
+
     static unsigned instInputSize(instruction ins);
+    static unsigned instKMaskBaseSize(instruction ins);
 #endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods

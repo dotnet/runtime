@@ -8260,7 +8260,7 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
     {
         assert(emitComp->IsBaselineVector256IsaSupportedDebugOnly());
         dataSize = 16;
-        ins      = INS_vbroadcastf128;
+        ins      = INS_vbroadcastf32x4;
     }
 
     if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))

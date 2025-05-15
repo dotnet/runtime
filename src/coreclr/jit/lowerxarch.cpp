@@ -1735,11 +1735,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         BlockRange().InsertBefore(userIntrin, op4);
 
                         userIntrin->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, op4);
-                        if (varTypeIsSmall(simdBaseType))
-                        {
-                            assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
-                            userIntrin->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
-                        }
                         return nextNode;
                     }
                 }
@@ -1805,11 +1800,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             BlockRange().InsertBefore(node, control);
 
             node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
-            if (varTypeIsSmall(simdBaseType))
-            {
-                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
-                node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
-            }
             return LowerNode(node);
         }
     }
@@ -1896,10 +1886,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerNode(op2);
 
             node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2);
-            if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
-            {
-                node->NormalizeJitBaseTypeToInt(intrinsicId, simdBaseType);
-            }
             break;
         }
 
@@ -1959,10 +1945,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LowerNode(op3);
 
             node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2, op3);
-            if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
-            {
-                node->NormalizeJitBaseTypeToInt(intrinsicId, simdBaseType);
-            }
             break;
         }
 
@@ -3195,10 +3177,17 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                         if (varTypeIsSmall(simdBaseType))
                         {
                             // Fixup the base type so embedded broadcast and the mask size checks still work
-                            node->NormalizeJitBaseTypeToInt(testIntrinsicId, simdBaseType);
 
-                            simdBaseJitType = node->GetSimdBaseJitType();
-                            simdBaseType    = node->GetSimdBaseType();
+                            if (varTypeIsUnsigned(simdBaseType))
+                            {
+                                simdBaseJitType = CORINFO_TYPE_UINT;
+                                simdBaseType    = TYP_UINT;
+                            }
+                            else
+                            {
+                                simdBaseJitType = CORINFO_TYPE_INT;
+                                simdBaseType    = TYP_INT;
+                            }
 
                             maskBaseJitType = simdBaseJitType;
                             maskBaseType    = simdBaseType;
@@ -3611,11 +3600,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         BlockRange().InsertBefore(node, control);
 
         node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
-        if (varTypeIsSmall(simdBaseType))
-        {
-            assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(ternaryLogicId));
-            node->NormalizeJitBaseTypeToInt(ternaryLogicId, simdBaseType);
-        }
         return LowerNode(node);
     }
 
@@ -3944,7 +3928,6 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 // to BlendVariableMask, we need to "un-normalize". We no longer have the original
                 // base type, so we use the mask base type instead.
                 NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-                assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId));
 
                 if (!condition->OperIsHWIntrinsic())
                 {
@@ -8069,7 +8052,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 {
                     // These intrinsics are "ins reg/mem, xmm"
                     instruction  ins       = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType);
-                    insTupleType tupleType = comp->GetEmitter()->insTupleTypeInfo(ins);
+                    insTupleType tupleType = emitter::insTupleTypeInfo(ins);
                     unsigned     simdSize  = hwintrinsic->GetSimdSize();
                     unsigned     memSize   = 0;
 
@@ -9007,7 +8990,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case HW_Category_IMM:
         {
             instruction  ins       = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType);
-            insTupleType tupleType = comp->GetEmitter()->insTupleTypeInfo(ins);
+            insTupleType tupleType = emitter::insTupleTypeInfo(ins);
 
             switch (parentIntrinsicId)
             {
@@ -9059,7 +9042,6 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 case NI_AVX10v1_ShiftRightArithmetic:
                 {
                     assert((tupleType & INS_TT_MEM128) != 0);
-                    tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
 
                     // Shift amount (op2) can be either imm8 or vector. If vector, it will always be xmm/m128.
                     //
@@ -9068,13 +9050,19 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
                     if (!HWIntrinsicInfo::isImmOp(parentIntrinsicId, parentNode->Op(2)))
                     {
+                        tupleType    = static_cast<insTupleType>(INS_TT_MEM128);
                         expectedSize = genTypeSize(TYP_SIMD16);
                         break;
                     }
-                    else if (!comp->canUseEvexEncoding())
+                    else
                     {
-                        supportsMemoryOp = false;
-                        break;
+                        tupleType = static_cast<insTupleType>(tupleType & ~INS_TT_MEM128);
+
+                        if (!comp->canUseEvexEncoding())
+                        {
+                            supportsMemoryOp = false;
+                            break;
+                        }
                     }
 
                     goto SIZE_FROM_TUPLE_TYPE;
@@ -9395,7 +9383,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childBaseType == TYP_DOUBLE);
             }
 
-            if (parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding())
+            if (parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic() && comp->canUseEvexEncoding())
             {
                 GenTree* broadcastOperand = hwintrinsic->Op(1);
 
@@ -9437,7 +9425,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             assert(hwintrinsic->OperIsMemoryLoad());
             assert(varTypeIsFloating(childBaseType));
 
-            return (parentBaseType == childBaseType) && parentNode->OperIsEmbBroadcastCompatible() &&
+            return (parentBaseType == childBaseType) && parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
                    comp->canUseEvexEncoding();
         }
 
@@ -9590,7 +9578,8 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
 
     if (IsContainableHWIntrinsicOp(parentNode, childNode, &supportsRegOptional))
     {
-        if (childNode->IsCnsVec() && parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding())
+        if (childNode->IsCnsVec() && parentNode->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
+            comp->canUseEvexEncoding())
         {
             TryFoldCnsVecForEmbeddedBroadcast(parentNode, childNode->AsVecCon());
         }
@@ -10022,7 +10011,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (containedOperand != nullptr)
                     {
-                        if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible() &&
+                        if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
                             comp->canUseEvexEncoding())
                         {
                             TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
@@ -10364,7 +10353,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (containedOperand != nullptr)
                         {
-                            if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible() &&
+                            if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic() &&
                                 comp->canUseEvexEncoding())
                             {
                                 TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
@@ -10448,7 +10437,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         if (containedOperand != nullptr)
                         {
-                            if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible())
+                            if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic())
                             {
                                 TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                             }
@@ -10619,25 +10608,39 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 // contained and not a memory operand and know to invoke the special handling
                                 // so that the embedded masking can work as expected.
 
-                                bool isEmbeddedMask = false;
-
                                 if (op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                                 {
-                                    isEmbeddedMask = !comp->opts.MinOpts() && comp->canUseEmbeddedMasking();
+                                    bool isEmbeddedMask = !comp->opts.MinOpts() && comp->canUseEmbeddedMasking();
 
                                     if (op2->isRMWHWIntrinsic(comp))
                                     {
                                         // TODO-AVX512-CQ: Ensure we can support embedded operations on RMW intrinsics
                                         isEmbeddedMask = false;
                                     }
-                                }
 
-                                if (isEmbeddedMask)
-                                {
-                                    uint32_t maskSize = genTypeSize(simdBaseType);
-                                    uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+                                    if (isEmbeddedMask)
+                                    {
+                                        NamedIntrinsic op2IntrinsicId  = op2->AsHWIntrinsic()->GetHWIntrinsicId();
+                                        var_types      op2SimdBaseType = op2->AsHWIntrinsic()->GetSimdBaseType();
 
-                                    if ((maskSize == operSize) && IsInvariantInRange(op2, node))
+                                        instruction ins = HWIntrinsicInfo::lookupIns(op2IntrinsicId, op2SimdBaseType);
+
+                                        unsigned expectedMaskSize = CodeGenInterface::instKMaskBaseSize(ins);
+                                        expectedMaskSize *= (genTypeSize(op2->TypeGet()) / 16);
+                                        assert(expectedMaskSize != 0);
+
+                                        // It's safe to use the return and base type of the BlendVariableMask node
+                                        // since anything which lowered to it will have validated compatibility itself
+                                        unsigned actualMaskSize =
+                                            genTypeSize(node->TypeGet()) / genTypeSize(simdBaseType);
+
+                                        if (actualMaskSize != expectedMaskSize)
+                                        {
+                                            isEmbeddedMask = false;
+                                        }
+                                    }
+
+                                    if (isEmbeddedMask && IsInvariantInRange(op2, node))
                                     {
                                         MakeSrcContained(node, op2);
                                         op2->MakeEmbMaskOp();
@@ -11151,7 +11154,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             if (containedOperand != nullptr)
                             {
-                                if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible())
+                                if (containedOperand->IsCnsVec() && node->isEmbeddedBroadcastCompatibleHWIntrinsic())
                                 {
                                     TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                                 }

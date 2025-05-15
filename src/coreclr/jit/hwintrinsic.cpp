@@ -1845,6 +1845,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
 #ifdef TARGET_XARCH
         if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
         {

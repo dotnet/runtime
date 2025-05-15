@@ -2679,7 +2679,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildDelayFreeUses(operand, op1);
                         }
                     }
@@ -2692,7 +2691,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildOperandUses(operand);
                         }
                     }
