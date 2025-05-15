@@ -1165,6 +1165,7 @@ struct HWIntrinsicInfo
     //
     static NamedIntrinsic GetMaskVariant(NamedIntrinsic id)
     {
+        assert(HasAllMaskVariant(id));
         switch (id)
         {
             case NI_Sve_And:

@@ -96,7 +96,7 @@ GenTree* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node)
         // variant of the intrinsic must have a fixed number of operands.
         int numArgs = HWIntrinsicInfo::lookupNumArgs(maskVariant);
         assert(numArgs >= 0);
-        if (node->GetOperandCount() == numArgs)
+        if (node->GetOperandCount() == (size_t)numArgs)
         {
             // We're sure it will work at this point, so perform the pattern match on operands.
             if (canMorphAllVectorOperandsToMasks(node))
