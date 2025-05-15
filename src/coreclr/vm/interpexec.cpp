@@ -1058,11 +1058,11 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     {
                     size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
-                    if (targetMethod & INTERP_METHOD_DESC_TAG)
+                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
                     {
                         // First execution of this call. Ensure target method is compiled and
                         // patch the data item slot with the actual method code.
-                        MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
+                        MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
                         PCODE code = pMD->GetNativeCode();
                         if (!code) {
                             // This is an optimization to ensure that the stack walk will not have to search
