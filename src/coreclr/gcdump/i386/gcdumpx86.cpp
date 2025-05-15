@@ -204,11 +204,6 @@ size_t            GCDump::DumpInfoHdr (PTR_CBYTE      gcInfoBlock,
 }
 
 /*****************************************************************************/
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                                         const InfoHdr& header,
                                         unsigned       methodSize,
@@ -927,10 +922,6 @@ DONE_REGTAB:
 
     return  (table - tableStart);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 /*****************************************************************************/
 

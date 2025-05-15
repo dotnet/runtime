@@ -1588,7 +1588,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 						vt_slot ++;
 					continue;
 				}
-				if (mono_method_get_imt_slot (method) != slot_num) {
+				if (m_method_is_virtual (method) && mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
 				}

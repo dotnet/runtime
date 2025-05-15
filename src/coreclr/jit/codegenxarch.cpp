@@ -182,27 +182,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     if (compiler->UsesFunclets())
     {
         // Generate a call to the finally, like this:
-        //      mov         rcx,qword ptr [rbp + 20H]       // Load rcx with PSPSym
         //      call        finally-funclet
         //      jmp         finally-return                  // Only for non-retless finally calls
         // The jmp can be a NOP if we're going to the next block.
-        // If we're generating code for the main function (not a funclet), and there is no localloc,
-        // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
-        // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
-
-        // x86 funclet ABI doesn't store the stack pointer in ECX. It's recovered from the context
-        // instead after executing the funclet.
-#ifndef TARGET_X86
-        if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
-            (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
-        {
-            inst_Mov(TYP_I_IMPL, REG_ARG_0, REG_SPBASE, /* canSkip */ false);
-        }
-        else
-        {
-            GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
-        }
-#endif // !TARGET_X86
 
         if (block->HasFlag(BBF_RETLESS_CALL))
         {
@@ -455,8 +437,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd8Const(val8);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -483,10 +464,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                simd16_t val16 = {};
+                simd_t val16 = {};
                 memcpy(&val16, &val12, sizeof(val12));
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(val16);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, EA_16BYTE, targetReg);
             }
             break;
         }
@@ -513,8 +493,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(val16);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -541,8 +520,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd32Const(val32);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -567,8 +545,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else
             {
-                CORINFO_FIELD_HANDLE hnd = emit->emitSimd64Const(val64);
-                emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
+                emit->emitSimdConstCompressedLoad(val, attr, targetReg);
             }
             break;
         }
@@ -2056,6 +2033,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -2238,6 +2219,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
             genConsumeReg(treeNode);
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -6340,7 +6325,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
     }
 
-    params.isJump = call->IsFastTailCall();
+    params.isJump      = call->IsFastTailCall();
+    params.hasAsyncRet = call->IsAsync();
 
     // We need to propagate the IL offset information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
@@ -10571,10 +10557,10 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         if (frameSize > 0)
         {
 #ifdef TARGET_X86
-            /* Add 'compiler->compLclFrameSize' to ESP */
-            /* Use pop ECX to increment ESP by 4, unless compiler->compJmpOpUsed is true */
+            // Add 'compiler->compLclFrameSize' to ESP. Use "pop ECX" for that, except in cases
+            // where ECX may contain some state.
 
-            if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed)
+            if ((frameSize == TARGET_POINTER_SIZE) && !compiler->compJmpOpUsed && !compiler->compIsAsync())
             {
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
                 regSet.verifyRegUsed(REG_ECX);
@@ -10582,8 +10568,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
             else
 #endif // TARGET_X86
             {
-                /* Add 'compiler->compLclFrameSize' to ESP */
-                /* Generate "add esp, <stack-size>" */
+                // Add 'compiler->compLclFrameSize' to ESP
+                // Generate "add esp, <stack-size>"
                 inst_RV_IV(INS_add, REG_SPBASE, frameSize, EA_PTRSIZE);
             }
         }
@@ -10661,7 +10647,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 // do nothing before popping the callee-saved registers
             }
 #ifdef TARGET_X86
-            else if (compiler->compLclFrameSize == REGSIZE_BYTES)
+            else if ((compiler->compLclFrameSize == REGSIZE_BYTES) && !compiler->compJmpOpUsed &&
+                     !compiler->compIsAsync())
             {
                 // "pop ecx" will make ESP point to the callee-saved registers
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
@@ -10862,9 +10849,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *
  *  Funclets have the following incoming arguments:
  *
- *      catch/filter-handler: rcx = InitialSP, rdx = the exception object that was caught (see GT_CATCH_ARG)
- *      filter:               rcx = InitialSP, rdx = the exception object to filter (see GT_CATCH_ARG)
- *      finally/fault:        rcx = InitialSP
+ *      catch/filter-handler: rcx/rdi = the exception object that was caught (see GT_CATCH_ARG)
+ *      filter:               rcx/rdi = the exception object to filter (see GT_CATCH_ARG)
+ *      finally/fault:        none
  *
  *  Funclets set the following registers on exit:
  *
@@ -10874,34 +10861,13 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *
  *  The AMD64 funclet prolog sequence is:
  *
- *     push ebp
- *     push callee-saved regs
- *                      ; TODO-AMD64-CQ: We probably only need to save any callee-save registers that we actually use
- *                      ;         in the funclet. Currently, we save the same set of callee-saved regs calculated for
- *                      ;         the entire function.
- *     sub sp, XXX      ; Establish the rest of the frame.
- *                      ;   XXX is determined by lvaOutgoingArgSpaceSize plus space for the PSP slot, aligned
- *                      ;   up to preserve stack alignment. If we push an odd number of registers, we also
- *                      ;   generate this, to keep the stack aligned.
- *
- *     ; Fill the PSP slot, for use by the VM (it gets reported with the GC info), or by code generation of nested
- *     ;    filters.
- *     ; This is not part of the "OS prolog"; it has no associated unwind data, and is not reversed in the funclet
- *     ;    epilog.
- *     ; Also, re-establish the frame pointer from the PSP.
- *
- *     mov rbp, [rcx + PSP_slot_InitialSP_offset]       ; Load the PSP (InitialSP of the main function stored in the
- *                                                      ; PSP of the dynamically containing funclet or function)
- *     mov [rsp + PSP_slot_InitialSP_offset], rbp       ; store the PSP in our frame
- *     lea ebp, [rbp + Function_InitialSP_to_FP_delta]  ; re-establish the frame pointer of the parent frame. If
- *                                                      ; Function_InitialSP_to_FP_delta==0, we don't need this
- *                                                      ; instruction.
+ *     sub sp, XXX      ; Establish the frame.
+ *                      ;   XXX is determined by lvaOutgoingArgSpaceSize, aligned up to preserve stack alignment.
+ *                      ;   If we push an odd number of registers, we also generate this, to keep the stack aligned.
  *
  *  The epilog sequence is then:
  *
  *     add rsp, XXX
- *     pop callee-saved regs    ; if necessary
- *     pop rbp
  *     ret
  *
  *  The funclet frame is thus:
@@ -10913,14 +10879,8 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      +=======================+ <---- Caller's SP
  *      |    Return address     |
  *      |-----------------------|
- *      |      Saved EBP        |
- *      |-----------------------|
- *      |Callee saved registers |
- *      |-----------------------|
  *      ~  possible 8 byte pad  ~
  *      ~     for alignment     ~
- *      |-----------------------|
- *      |        PSP slot       | // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      |   Outgoing arg space  | // this only exists if the function makes a call
  *      |-----------------------| <---- Initial SP
@@ -10929,10 +10889,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      |       | downward      |
  *              V
  *
- * TODO-AMD64-Bug?: the frame pointer should really point to the PSP slot (the debugger seems to assume this
- * in DacDbiInterfaceImpl::InitParentFrameInfo()), or someplace above Initial-SP. There is an AMD64
- * UNWIND_INFO restriction that it must be within 240 bytes of Initial-SP. See jit64\amd64\inc\md.h
- * "FRAMEPTR OFFSETS" for details.
  */
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
@@ -10955,19 +10911,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    // We need to push ebp, since it's callee-saved.
-    // We need to push the callee-saved registers. We only need to push the ones that we need, but we don't
-    // keep track of that on a per-funclet basis, so we push the same set as in the main function.
-    // The only fixed-size frame we need to allocate is whatever is big enough for the PSPSym, since nothing else
+    // We do not need to push callee-saved registers. The runtime takes care of preserving them.
+    // We do not need to allocate fixed-size frame, since nothing else
     // is stored here (all temps are allocated in the parent frame).
-    // We do need to allocate the outgoing argument space, in case there are calls here. This must be the same
-    // size as the parent frame's outgoing argument space, to keep the PSPSym offset the same.
-
-    inst_RV(INS_push, REG_FPBASE, TYP_REF);
-    compiler->unwindPush(REG_FPBASE);
-
-    // Callee saved int registers are pushed to stack.
-    genPushCalleeSavedRegisters();
+    // We do need to allocate the outgoing argument space, in case there are calls here.
 
     regMaskTP maskArgRegsLiveIn;
     if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
@@ -10979,38 +10926,11 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
     }
 
-    regNumber initReg       = REG_EBP; // We already saved EBP, so it can be trashed
-    bool      initRegZeroed = false;
-
-    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
-
-    // Callee saved float registers are copied to stack in their assigned stack slots
-    // after allocating space for them as part of funclet frame.
-    genPreserveCalleeSavedFltRegs(genFuncletInfo.fiSpDelta);
+    bool initRegZeroed = false;
+    genAllocLclFrame(genFuncletInfo.fiSpDelta, REG_NA, &initRegZeroed, maskArgRegsLiveIn);
 
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
-
-    // If there is no PSPSym (NativeAOT ABI), we are done.
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    GetEmitter()->emitIns_R_AR(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_ARG_0, genFuncletInfo.fiPSP_slot_InitialSP_offset);
-
-    regSet.verifyRegUsed(REG_FPBASE);
-
-    GetEmitter()->emitIns_AR_R(INS_mov, EA_PTRSIZE, REG_FPBASE, REG_SPBASE, genFuncletInfo.fiPSP_slot_InitialSP_offset);
-
-    if (genFuncletInfo.fiFunction_InitialSP_to_FP_delta != 0)
-    {
-        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_FPBASE, REG_FPBASE,
-                                   genFuncletInfo.fiFunction_InitialSP_to_FP_delta);
-    }
-
-    // We've modified EBP, but not really. Say that we haven't...
-    regSet.rsRemoveRegsModified(RBM_FPBASE);
 }
 
 /*****************************************************************************
@@ -11031,12 +10951,7 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
-    // Restore callee saved XMM regs from their stack slots before modifying SP
-    // to position at callee saved int regs.
-    genRestoreCalleeSavedFltRegs(genFuncletInfo.fiSpDelta);
     inst_RV_IV(INS_add, REG_SPBASE, genFuncletInfo.fiSpDelta, EA_PTRSIZE);
-    genPopCalleeSavedRegisters();
-    inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
     instGen_Return(0);
 }
 
@@ -11058,13 +10973,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(isFramePointerUsed());
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
                                                                           // finalized
-    assert(compiler->compCalleeFPRegsSavedMask != (regMaskTP)-1); // The float registers to be preserved is finalized
-
-    // Even though lvaToInitialSPRelativeOffset() depends on compLclFrameSize,
-    // that's ok, because we're figuring out an offset in the parent frame.
-    genFuncletInfo.fiFunction_InitialSP_to_FP_delta =
-        compiler->lvaToInitialSPRelativeOffset(0, true); // trick to find the Initial-SP-relative offset of the frame
-                                                         // pointer.
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
 #ifndef UNIX_AMD64_ABI
@@ -11075,53 +10983,22 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 #endif // UNIX_AMD64_ABI
     unsigned offset = compiler->lvaOutgoingArgSpaceSize;
 
-    genFuncletInfo.fiPSP_slot_InitialSP_offset = offset;
-
     // How much stack do we allocate in the funclet?
     // We need to 16-byte align the stack.
 
-    unsigned totalFrameSize =
-        REGSIZE_BYTES                                       // return address
-        + REGSIZE_BYTES                                     // pushed EBP
-        + (compiler->compCalleeRegsPushed * REGSIZE_BYTES); // pushed callee-saved int regs, not including EBP
-
-    // Entire 128-bits of XMM register is saved to stack due to ABI encoding requirement.
-    // Copying entire XMM register to/from memory will be performant if SP is aligned at XMM_REGSIZE_BYTES boundary.
-    unsigned calleeFPRegsSavedSize = genCountBits(compiler->compCalleeFPRegsSavedMask) * XMM_REGSIZE_BYTES;
-    unsigned FPRegsPad             = (calleeFPRegsSavedSize > 0) ? AlignmentPad(totalFrameSize, XMM_REGSIZE_BYTES) : 0;
-
-    unsigned PSPSymSize = (compiler->lvaPSPSym != BAD_VAR_NUM) ? REGSIZE_BYTES : 0;
-
-    totalFrameSize += FPRegsPad               // Padding before pushing entire xmm regs
-                      + calleeFPRegsSavedSize // pushed callee-saved float regs
-                      // below calculated 'pad' will go here
-                      + PSPSymSize                        // PSPSym
-                      + compiler->lvaOutgoingArgSpaceSize // outgoing arg space
-        ;
+    unsigned totalFrameSize = REGSIZE_BYTES // return address
+                              + compiler->lvaOutgoingArgSpaceSize;
 
     unsigned pad = AlignmentPad(totalFrameSize, 16);
 
-    genFuncletInfo.fiSpDelta = FPRegsPad                           // Padding to align SP on XMM_REGSIZE_BYTES boundary
-                               + calleeFPRegsSavedSize             // Callee saved xmm regs
-                               + pad + PSPSymSize                  // PSPSym
-                               + compiler->lvaOutgoingArgSpaceSize // outgoing arg space
-        ;
+    genFuncletInfo.fiSpDelta = pad + compiler->lvaOutgoingArgSpaceSize;
 
 #ifdef DEBUG
     if (verbose)
     {
         printf("\n");
         printf("Funclet prolog / epilog info\n");
-        printf("   Function InitialSP-to-FP delta: %d\n", genFuncletInfo.fiFunction_InitialSP_to_FP_delta);
         printf("                         SP delta: %d\n", genFuncletInfo.fiSpDelta);
-        printf("       PSP slot Initial SP offset: %d\n", genFuncletInfo.fiPSP_slot_InitialSP_offset);
-    }
-
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-        assert(genFuncletInfo.fiPSP_slot_InitialSP_offset ==
-               compiler->lvaGetInitialSPRelativeOffset(compiler->lvaPSPSym)); // same offset used in main function and
-                                                                              // funclet!
     }
 #endif // DEBUG
 }
@@ -11167,8 +11044,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // TODO We may need EBP restore sequence here if we introduce PSPSym
-
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
@@ -11213,35 +11088,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 }
 
 #endif // TARGET_X86
-
-void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
-{
-    assert(compiler->compGeneratingProlog);
-
-    if (compiler->lvaPSPSym == BAD_VAR_NUM)
-    {
-        return;
-    }
-
-    noway_assert(isFramePointerUsed()); // We need an explicit frame pointer
-
-#if defined(TARGET_AMD64)
-
-    // The PSP sym value is Initial-SP, not Caller-SP!
-    // We assume that RSP is Initial-SP when this function is called. That is, the stack frame
-    // has been established.
-    //
-    // We generate:
-    //     mov     [rbp-20h], rsp       // store the Initial-SP (our current rsp) in the PSPsym
-
-    GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaPSPSym, 0);
-
-#else // TARGET*
-
-    NYI("Set function PSP sym");
-
-#endif // TARGET*
-}
 
 //-----------------------------------------------------------------------------
 // genZeroInitFrameUsingBlockInit: architecture-specific helper for genZeroInitFrame in the case
