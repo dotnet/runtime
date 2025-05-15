@@ -31,6 +31,8 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
     _Out_ void** fpAddRef,
     _Out_ void** fpRelease);
 
+extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease();
+
 extern "C" void* QCALLTYPE ComWrappers_AllocateRefCountedHandle(_In_ QCall::ObjectHandleOnStack obj);
 
 extern "C" void const* QCALLTYPE ComWrappers_GetIReferenceTrackerTargetVftbl();

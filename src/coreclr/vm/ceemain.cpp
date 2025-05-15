@@ -659,6 +659,11 @@ void EEStartupHelper()
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
+        if (g_pConfig != NULL)
+        {
+            IfFailGoLog(g_pConfig->sync());
+        }
+
         Thread::StaticInitialize();
 
         JITInlineTrackingMap::StaticInitialize();
@@ -748,11 +753,6 @@ void EEStartupHelper()
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
         InitEventStore();
-
-        if (g_pConfig != NULL)
-        {
-            IfFailGoLog(g_pConfig->sync());
-        }
 
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);

@@ -14,9 +14,26 @@ internal readonly struct Loader_1 : ILoader
 
     private enum ModuleFlags_1 : uint
     {
-        Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-        ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+        Tenured = 0x1,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
+        ClassFreed = 0x4,
+        EditAndContinue = 0x8, // Edit and Continue is enabled for this module
+
+        ProfilerNotified = 0x10,
+        EtwNotified = 0x20,
+
+        ReflectionEmit = 0x40,    // Reflection.Emit was used to create this module
+        ProfilerDisableOptimizations = 0x80,
+        ProfilerDisableInlining = 0x100,
+
+        DebuggerUserOverridePriv = 0x400,
+        DebuggerAllowJitOptsPriv = 0x800,
+        DebuggerTrackJitInfoPriv = 0x1000,
+        DebuggerEnCEnabledPriv = 0x2000,
+        DebuggerPDBsCopied = 0x4000,
+        DebuggerIgnorePDbs = 0x8000,
+
+        IJWFixedUp = 0x80000,
+        BeingUnloaded = 0x100000,
     }
 
     private readonly Target _target;
@@ -196,10 +213,37 @@ internal readonly struct Loader_1 : ILoader
         ModuleFlags flags = default;
         if (runtimeFlags.HasFlag(ModuleFlags_1.Tenured))
             flags |= ModuleFlags.Tenured;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ClassFreed))
+            flags |= ModuleFlags.ClassFreed;
         if (runtimeFlags.HasFlag(ModuleFlags_1.EditAndContinue))
             flags |= ModuleFlags.EditAndContinue;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerNotified))
+            flags |= ModuleFlags.ProfilerNotified;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.EtwNotified))
+            flags |= ModuleFlags.EtwNotified;
         if (runtimeFlags.HasFlag(ModuleFlags_1.ReflectionEmit))
             flags |= ModuleFlags.ReflectionEmit;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableOptimizations))
+            flags |= ModuleFlags.ProfilerDisableOptimizations;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.ProfilerDisableInlining))
+            flags |= ModuleFlags.ProfilerDisableInlining;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerUserOverridePriv))
+            flags |= ModuleFlags.DebuggerUserOverridePriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerAllowJitOptsPriv))
+            flags |= ModuleFlags.DebuggerAllowJitOptsPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerTrackJitInfoPriv))
+            flags |= ModuleFlags.DebuggerTrackJitInfoPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerEnCEnabledPriv))
+            flags |= ModuleFlags.DebuggerEnCEnabledPriv;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerPDBsCopied))
+            flags |= ModuleFlags.DebuggerPDBsCopied;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.DebuggerIgnorePDbs))
+            flags |= ModuleFlags.DebuggerIgnorePDbs;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.IJWFixedUp))
+            flags |= ModuleFlags.IJWFixedUp;
+        if (runtimeFlags.HasFlag(ModuleFlags_1.BeingUnloaded))
+            flags |= ModuleFlags.BeingUnloaded;
+
         return flags;
     }
 
