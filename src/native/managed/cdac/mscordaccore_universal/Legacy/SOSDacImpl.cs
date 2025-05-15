@@ -132,7 +132,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetAssemblyData(ulong baseDomainPtr, ulong assembly, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyData(baseDomainPtr, assembly, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetAssemblyList(ulong appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ulong[] values, int* pNeeded)
+    int ISOSDacInterface.GetAssemblyList(ulong appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ulong[]? values, int* pNeeded)
     {
         if (appDomain == 0)
         {
@@ -173,7 +173,7 @@ internal sealed unsafe partial class SOSDacImpl
                 }
                 else
                 {
-                    for (int i = 0; i < modules.Count && n < count; i++)
+                    for (int i = 0; i < modules.Count; i++)
                     {
                         Contracts.ModuleHandle module = modules[i];
                         if (loader.IsAssemblyLoaded(module))
@@ -197,7 +197,7 @@ internal sealed unsafe partial class SOSDacImpl
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            ulong[] valuesLocal = new ulong[count];
+            ulong[]? valuesLocal = values != null ? new ulong[count] : null;
             int neededLocal;
             int hrLocal = _legacyImpl.GetAssemblyList(appDomain, count, valuesLocal, &neededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
@@ -210,7 +210,7 @@ internal sealed unsafe partial class SOSDacImpl
                     // easiest for consumers and verification if the DAC and cDAC return the same order
                     for (int i = 0; i < neededLocal; i++)
                     {
-                        Debug.Assert(values[i] == valuesLocal[i], $"cDAC: {values[i]:x}, DAC: {valuesLocal[i]:x}");
+                        Debug.Assert(values[i] == valuesLocal![i], $"cDAC: {values[i]:x}, DAC: {valuesLocal[i]:x}");
                     }
                 }
             }
@@ -315,6 +315,13 @@ internal sealed unsafe partial class SOSDacImpl
             else
             {
                 OutputBufferHelpers.CopyStringToBuffer(frameName, count, pNeeded, name);
+
+                if (frameName is not null && pNeeded is not null)
+                {
+                    // the DAC version of this API does not count the trailing null terminator
+                    // if a buffer is provided
+                    (*pNeeded)--;
+                }
             }
         }
         catch (System.Exception ex)

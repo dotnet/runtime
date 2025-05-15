@@ -772,7 +772,7 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
      pRD->volatileCurrContextPointers.X0 = &m_Args->X0;
      pRD->volatileCurrContextPointers.X1 = &m_Args->X1;
-     pRD->volatileCurrContextPointers.X1 = &m_Args->X2;
+     pRD->volatileCurrContextPointers.X2 = &m_Args->X2;
 
      pRD->pCurrentContext->X19 = m_Args->X19;
      pRD->pCurrentContext->X20 = m_Args->X20;
@@ -847,15 +847,17 @@ extern "C" void STDCALL JIT_PatchedCodeLast();
 
 static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
-    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-    ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
     if (IsWriteBarrierCopyEnabled())
     {
-        writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+        BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
+        BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
+        ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
+        {
+            writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+            writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+        }
+        JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
     }
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()

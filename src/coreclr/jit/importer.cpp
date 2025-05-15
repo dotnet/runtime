@@ -6041,7 +6041,7 @@ checkForAwait:
 
         // check if it is an Await intrinsic
         if (eeIsIntrinsic(nextCallTok.hMethod) &&
-            lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+            lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
         {
             // yes, this is an Await
             return true;

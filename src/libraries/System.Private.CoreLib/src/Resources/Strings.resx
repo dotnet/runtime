@@ -4358,4 +4358,7 @@
   <data name="ComVariant_VariantWrapper_In_Variant" xml:space="preserve">
     <value>VariantWrappers cannot be stored in Variants.</value>
   </data>
+  <data name="NotImplemented_CreateObjectWithUserState" xml:space="preserve">
+    <value>Creating an object wrapper for a COM instance with user state is not implemented.</value>
+  </data>
 </root>

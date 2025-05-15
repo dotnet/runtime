@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
@@ -11,7 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
-    public static class PrivateKeyAssociationTests
+    public static partial class PrivateKeyAssociationTests
     {
         private const int PROV_RSA_FULL = 1;
         private const int PROV_DSS = 3;
@@ -846,85 +844,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
-        public static void CheckCopyWithPrivateKey_SlhDsa()
-        {
-            string certPem = PemEncoding.WriteString("CERTIFICATE", SlhDsaTestData.IetfSlhDsaSha2_128sCertificate);
+        private static partial Func<X509Certificate2, SlhDsa, X509Certificate2> CopyWithPrivateKey_SlhDsa =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
 
-            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(certPem))
-            using (SlhDsa privKey = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8))
-            using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
-            {
-                CheckCopyWithPrivateKey(
-                    pubOnly,
-                    wrongAlg,
-                    privKey,
-                    [
-                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128s),
-                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_192f),
-                        () => SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaShake256f),
-                    ],
-                    (cert, key) => cert.CopyWithPrivateKey(key),
-                    cert => cert.GetSlhDsaPublicKey(),
-                    cert => cert.GetSlhDsaPrivateKey(),
-                    (priv, pub) =>
-                    {
-                        byte[] data = new byte[RandomNumberGenerator.GetInt32(97)];
-                        RandomNumberGenerator.Fill(data);
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPublicKey =>
+            cert => cert.GetSlhDsaPublicKey();
 
-                        byte[] signature = priv.SignData(data);
-                        Assert.True(pub.VerifyData(data, signature));
-                    });
-            }
-        }
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey =>
+            cert => cert.GetSlhDsaPrivateKey();
 
-        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
-        public static void CheckCopyWithPrivateKey_SlhDsa_OtherSlhDsa()
-        {
-            string certPem = PemEncoding.WriteString("CERTIFICATE", SlhDsaTestData.IetfSlhDsaSha2_128sCertificate);
-
-            using (X509Certificate2 pubOnly = X509Certificate2.CreateFromPem(certPem))
-            {
-                using (SlhDsaMockImplementation publicSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s))
-                {
-                    Exception e = new Exception("no secret key");
-                    publicSlhDsa.ExportSlhDsaSecretKeyCoreHook = _ => throw e;
-                    publicSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
-                        SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);
-
-                    Assert.Same(e, AssertExtensions.Throws<Exception>(() => pubOnly.CopyWithPrivateKey(publicSlhDsa)));
-                }
-
-                SlhDsaMockImplementation privateSlhDsa = SlhDsaMockImplementation.Create(SlhDsaAlgorithm.SlhDsaSha2_128s);
-                privateSlhDsa.ExportSlhDsaPublicKeyCoreHook = (Span<byte> destination) =>
-                    SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue.CopyTo(destination);
-                privateSlhDsa.ExportSlhDsaSecretKeyCoreHook = (Span<byte> destination) =>
-                    SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue.CopyTo(destination);
-
-                using (X509Certificate2 privCert = pubOnly.CopyWithPrivateKey(privateSlhDsa))
-                {
-                    AssertExtensions.TrueExpression(privCert.HasPrivateKey);
-
-                    using (SlhDsa certPrivateSlhDsa = privCert.GetSlhDsaPrivateKey())
-                    {
-                        AssertExtensions.SequenceEqual(
-                            SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
-                            certPrivateSlhDsa.ExportSlhDsaSecretKey());
-
-                        privateSlhDsa.Dispose();
-                        privateSlhDsa.ExportSlhDsaPublicKeyCoreHook = _ => Assert.Fail();
-                        privateSlhDsa.ExportSlhDsaSecretKeyCoreHook = _ => Assert.Fail();
-
-                        // Ensure the key is actual a clone
-                        AssertExtensions.SequenceEqual(
-                            SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
-                            certPrivateSlhDsa.ExportSlhDsaSecretKey());
-                    }
-                }
-            }
-        }
-
-        private static void CheckCopyWithPrivateKey<TKey>(
+        private static partial void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,
             TKey correctPrivateKey,
@@ -933,70 +862,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Func<X509Certificate2, TKey> getPublicKey,
             Func<X509Certificate2, TKey> getPrivateKey,
             Action<TKey, TKey> keyProver)
-            where TKey : class, IDisposable
-        {
-            Exception e = AssertExtensions.Throws<ArgumentException>(
-                null,
-                () => copyWithPrivateKey(wrongAlgorithmCert, correctPrivateKey));
-
-            Assert.Contains("algorithm", e.Message);
-
-            List<TKey> generatedKeys = new();
-
-            foreach (Func<TKey> func in incorrectKeys)
-            {
-                TKey incorrectKey = func();
-                generatedKeys.Add(incorrectKey);
-
-                e = AssertExtensions.Throws<ArgumentException>(
-                    "privateKey",
-                    () => copyWithPrivateKey(cert, incorrectKey));
-
-                Assert.Contains("key does not match the public key for this certificate", e.Message);
-            }
-
-            using (X509Certificate2 withKey = copyWithPrivateKey(cert, correctPrivateKey))
-            {
-                e = AssertExtensions.Throws<InvalidOperationException>(
-                    () => copyWithPrivateKey(withKey, correctPrivateKey));
-
-                Assert.Contains("already has an associated private key", e.Message);
-
-                foreach (TKey incorrectKey in generatedKeys)
-                {
-                    e = AssertExtensions.Throws<InvalidOperationException>(
-                        () => copyWithPrivateKey(withKey, incorrectKey));
-
-                    Assert.Contains("already has an associated private key", e.Message);
-                }
-
-                using (TKey pub = getPublicKey(withKey))
-                using (TKey pub2 = getPublicKey(withKey))
-                using (TKey pubOnly = getPublicKey(cert))
-                using (TKey priv = getPrivateKey(withKey))
-                using (TKey priv2 = getPrivateKey(withKey))
-                {
-                    Assert.NotSame(pub, pub2);
-                    Assert.NotSame(pub, pubOnly);
-                    Assert.NotSame(pub2, pubOnly);
-                    Assert.NotSame(priv, priv2);
-
-                    keyProver(priv, pub2);
-                    keyProver(priv2, pub);
-                    keyProver(priv, pubOnly);
-
-                    priv.Dispose();
-                    pub2.Dispose();
-
-                    keyProver(priv2, pub);
-                    keyProver(priv2, pubOnly);
-                }
-            }
-
-            foreach (TKey incorrectKey in generatedKeys)
-            {
-                incorrectKey.Dispose();
-            }
-        }
+            where TKey : class, IDisposable;
     }
 }
