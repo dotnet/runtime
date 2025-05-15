@@ -58,6 +58,142 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
     return hwIntrinsicInfoArray[id - NI_HW_INTRINSIC_START - 1];
 }
 
+//------------------------------------------------------------------------
+// lookupIns: Gets the instruction associated with a given NamedIntrinsic and base type
+//
+// Arguments:
+//    id   -- The NamedIntrinsic associated for which to lookup its instruction
+//    type -- The base type for which to lookup the instruction
+//    comp -- The optional compiler instance which is used to special case instruction lookup
+//
+// Return Value:
+//    The instruction for id and type
+instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compiler* comp)
+{
+    if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
+    {
+        assert(!"Unexpected type");
+        return INS_invalid;
+    }
+
+    uint16_t    result = lookup(id).ins[type - TYP_BYTE];
+    instruction ins    = static_cast<instruction>(result);
+
+#if defined(TARGET_X86)
+    if (ins == INS_movd64)
+    {
+        ins = INS_movd32;
+    }
+#endif // TARGET_X86
+
+#if defined(TARGET_XARCH)
+    instruction evexIns = ins;
+
+    switch (ins)
+    {
+        case INS_movdqa32:
+        {
+            if (varTypeIsLong(type))
+            {
+                evexIns = INS_vmovdqa64;
+            }
+            break;
+        }
+
+        case INS_movdqu32:
+        {
+            if (varTypeIsLong(type))
+            {
+                evexIns = INS_vmovdqu64;
+            }
+            break;
+        }
+
+        case INS_vbroadcastf32x4:
+        {
+            if (type == TYP_DOUBLE)
+            {
+                evexIns = INS_vbroadcastf64x2;
+            }
+            break;
+        }
+
+        case INS_vbroadcasti32x4:
+        {
+            if (varTypeIsLong(type))
+            {
+                evexIns = INS_vbroadcasti64x2;
+            }
+            break;
+        }
+
+        case INS_vextractf32x4:
+        {
+            if (type == TYP_DOUBLE)
+            {
+                evexIns = INS_vextractf64x2;
+            }
+            else if (varTypeIsInt(type))
+            {
+                evexIns = INS_vextracti32x4;
+            }
+            else if (varTypeIsLong(type))
+            {
+                evexIns = INS_vextracti64x2;
+            }
+            break;
+        }
+
+        case INS_vextracti32x4:
+        {
+            if (varTypeIsLong(type))
+            {
+                evexIns = INS_vextracti64x2;
+            }
+            break;
+        }
+
+        case INS_vinsertf32x4:
+        {
+            if (type == TYP_DOUBLE)
+            {
+                evexIns = INS_vinsertf64x2;
+            }
+            else if (varTypeIsInt(type))
+            {
+                evexIns = INS_vinserti32x4;
+            }
+            else if (varTypeIsLong(type))
+            {
+                evexIns = INS_vinserti64x2;
+            }
+            break;
+        }
+
+        case INS_vinserti32x4:
+        {
+            if (varTypeIsLong(type))
+            {
+                evexIns = INS_vinserti64x2;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    if ((evexIns != ins) && (comp != nullptr) && comp->canUseEvexEncoding())
+    {
+        ins = evexIns;
+    }
+#endif // TARGET_XARCH
+
+    return ins;
+}
+
 #if defined(TARGET_XARCH)
 const TernaryLogicInfo& TernaryLogicInfo::lookup(uint8_t control)
 {
@@ -1845,6 +1981,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (simdBaseJitType != CORINFO_TYPE_UNDEF)
     {
         simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+
 #ifdef TARGET_XARCH
         if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
         {
@@ -1993,7 +2130,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (!isScalar)
         {
-            if (HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid)
+            if (HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, this) == INS_invalid)
             {
                 assert(!"Unexpected HW intrinsic");
                 return nullptr;
