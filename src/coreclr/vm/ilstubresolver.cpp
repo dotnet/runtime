@@ -213,6 +213,18 @@ void ILStubResolver::ResolveToken(mdToken token, ResolvedToken* resolvedToken)
             resolvedToken->TypeHandle = TypeHandle(pMT);
         }
         break;
+
+    case mdtTypeSpec:
+        {
+            TokenLookupMap::TypeSpecEntry entry = m_pCompileTimeState->m_tokenLookupMap.LookupTypeSpec(token);
+            _ASSERTE(entry.ClassSignatureToken != mdTokenNil);
+            _ASSERTE(!entry.Type.IsNull());
+            resolvedToken->TypeSignature = m_pCompileTimeState->m_tokenLookupMap.LookupSig(entry.ClassSignatureToken);
+
+            SigTypeContext typeContext{ m_pStubMD->GetClassInstantiation(), m_pStubMD->GetMethodInstantiation() };
+            resolvedToken->TypeHandle = resolvedToken->TypeSignature.GetTypeHandleThrowing(m_pStubMD->GetModule(), &typeContext);
+        }
+        break;
 #endif // !defined(DACCESS_COMPILE)
 
     default:

@@ -1136,19 +1136,25 @@ GCFrame::~GCFrame()
     }
     CONTRACTL_END;
 
-    // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
-    // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
-    BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
-    if (!wasCoop)
+    // m_pNext is NULL when the frame was already popped from the stack.
+    if (m_Next != NULL)
     {
-        m_pCurThread->DisablePreemptiveGC();
-    }
+        // This is a GCFrame that was not popped.  This is a problem.
+        // We should have popped it before we destruct
+        // Do a manual switch to the GC cooperative mode instead of using the GCX_COOP_THREAD_EXISTS
+        // macro so that this function isn't slowed down by having to deal with FS:0 chain on x86 Windows.
+        BOOL wasCoop = m_pCurThread->PreemptiveGCDisabled();
+        if (!wasCoop)
+        {
+            m_pCurThread->DisablePreemptiveGC();
+        }
 
-    Pop();
+        Pop();
 
-    if (!wasCoop)
-    {
-        m_pCurThread->EnablePreemptiveGC();
+        if (!wasCoop)
+        {
+            m_pCurThread->EnablePreemptiveGC();
+        }
     }
 }
 
@@ -1174,7 +1180,7 @@ void GCFrame::Push(Thread* pThread)
     // in which the compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple GCFrames in coreclr.dll
-    _ASSERTE(((m_Next == NULL) ||
+    _ASSERTE(((m_Next == GCFRAME_TOP) ||
               (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
              "Pushing a GCFrame out of order ?");
 
@@ -1221,7 +1227,7 @@ void GCFrame::Remove()
 
     GCFrame *pPrevFrame = NULL;
     GCFrame *pFrame = m_pCurThread->GetGCFrame();
-    while (pFrame != NULL)
+    while (pFrame != GCFRAME_TOP)
     {
         if (pFrame == this)
         {
@@ -1333,7 +1339,7 @@ BOOL IsProtectedByGCFrame(OBJECTREF *ppObjectRef)
     GetThread()->StackWalkFrames(IsProtectedByGCFrameStackWalkFramesCallback, &d);
 
     GCFrame* pGCFrame = GetThread()->GetGCFrame();
-    while (pGCFrame != NULL)
+    while (pGCFrame != GCFRAME_TOP)
     {
         if (pGCFrame->Protects(ppObjectRef)) {
             d.count++;
@@ -1357,7 +1363,8 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ReturnKind returnKind = m_Thread->GetHijackReturnKind();
+    bool hasAsyncRet;
+    ReturnKind returnKind = m_Thread->GetHijackReturnKind(&hasAsyncRet);
     _ASSERTE(IsValidReturnKind(returnKind));
 
     int regNo = 0;
@@ -1395,6 +1402,15 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 
         regNo++;
     } while (moreRegisters);
+
+    if (hasAsyncRet)
+    {
+        PTR_PTR_Object objPtr = dac_cast<PTR_PTR_Object>(&m_Args->AsyncRet);
+        LOG((LF_GC, INFO3, "Hijack Frame Promoting Async Continuation Return" FMT_ADDR "to",
+            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
+        (*fn)(objPtr, sc, CHECK_APP_DOMAIN);
+        LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
+    }
 }
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
@@ -1505,6 +1521,9 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
 
         if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
             msig.SetHasParamTypeArg();
+
+        if (pFunction->IsAsyncMethod())
+            msig.SetIsAsyncCall();
 
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
@@ -1783,7 +1802,7 @@ UINT ComMethodFrame::GetNumCallerStackBytes()
     SUPPORTS_DAC;
 
     ComCallMethodDesc* pCMD = PTR_ComCallMethodDesc((TADDR)GetDatum());
-    PREFIX_ASSUME(pCMD != NULL);
+    _ASSERTE(pCMD != NULL);
     // assumes __stdcall
     // compute the callee pop stack bytes
     return pCMD->GetNumStackBytes();
@@ -2119,6 +2138,40 @@ PTR_InterpMethodContextFrame InterpreterFrame::GetTopInterpMethodContextFrame()
     return pFrame;
 }
 
+void InterpreterFrame::SetContextToInterpMethodContextFrame(T_CONTEXT * pContext)
+{
+    PTR_InterpMethodContextFrame pFrame = GetTopInterpMethodContextFrame();
+    SetIP(pContext, (TADDR)pFrame->ip);
+    SetSP(pContext, dac_cast<TADDR>(pFrame));
+    SetFP(pContext, (TADDR)pFrame->pStack);
+    SetFirstArgReg(pContext, (TADDR)this);
+}
+
+void InterpreterFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    SyncRegDisplayToCurrentContext(pRD);
+    TransitionFrame::UpdateRegDisplay_Impl(pRD, updateFloats);
+}
+
+#ifndef DACCESS_COMPILE
+void InterpreterFrame::ExceptionUnwind_Impl()
+{
+    WRAPPER_NO_CONTRACT;
+
+    Thread *pThread = GetThread();
+    InterpThreadContext *pThreadContext = pThread->GetInterpThreadContext();
+    InterpMethodContextFrame *pInterpMethodContextFrame = m_pTopInterpMethodContextFrame;
+
+    // Unwind the interpreter frames belonging to the current InterpreterFrame.
+    while (pInterpMethodContextFrame != NULL)
+    {
+        pThreadContext->frameDataAllocator.PopInfo(pInterpMethodContextFrame);
+        pThreadContext->pStackPointer = pInterpMethodContextFrame->pStack;
+        pInterpMethodContextFrame = pInterpMethodContextFrame->pParent;
+    }
+}
+#endif // !DACCESS_COMPILE
+
 #endif // FEATURE_INTERPRETER
 
 #ifndef DACCESS_COMPILE
@@ -2339,9 +2392,17 @@ void ComputeCallRefMap(MethodDesc* pMD,
     // See code:getMethodSigInternal
     //
     assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
-    if (pMD->RequiresInstArg() && !isDispatchCell)
+    if (!isDispatchCell)
     {
-        msig.SetHasParamTypeArg();
+        if (pMD->RequiresInstArg())
+        {
+            msig.SetHasParamTypeArg();
+        }
+
+        if (pMD->IsAsyncMethod())
+        {
+            msig.SetIsAsyncCall();
+        }
     }
 
     ArgIterator argit(&msig);

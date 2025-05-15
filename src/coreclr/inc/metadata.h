@@ -1035,7 +1035,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         mdToken    *tkEnclosedToken) PURE;    // [OUT] The enclosed type token
 
 #define MD_STREAM_VER_1X    0x10000
-#define MD_STREAM_VER_2_B1  0x10001
 #define MD_STREAM_VER_2     0x20000
     STDMETHOD_(DWORD, GetMetadataStreamVersion)() PURE;  //returns DWORD with major version of
                                 // MD stream in senior word and minor version--in junior word
@@ -1045,30 +1044,6 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         mdCustomAttribute mdAttribute,      // [IN] The Custom Attribute
         LPCUTF8          *pszNamespace,     // [OUT] Namespace of Custom Attribute.
         LPCUTF8          *pszName) PURE;    // [OUT] Name of Custom Attribute.
-
-    STDMETHOD(SetOptimizeAccessForSpeed)(// S_OK or error
-        BOOL    fOptSpeed) PURE;
-
-    STDMETHOD(SetVerifiedByTrustedSource)(// S_OK or error
-        BOOL    fVerified) PURE;
-
-    STDMETHOD(GetRvaOffsetData)(
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount             // [OUT] Number of records in FieldRVA table.
-        ) PURE;
-
-    //----------------------------------------------------------------------------------------
-    // !!! READ THIS !!!
-    //
-    // New methods have to be added at the end. The order and signatures of the existing methods
-    // have to be preserved. We need to maintain a backward compatibility for this interface to
-    // allow ildasm to work on SingleCLR.
-    //
-    //----------------------------------------------------------------------------------------
 
 };  // IMDInternalImport
 

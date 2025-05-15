@@ -6,6 +6,15 @@
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 
+#if defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpStubDispatchDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpStubDispatchDoNotFailToBuild, _TEXT
+#endif
+
+
 // trick to avoid PLT relocation at runtime which corrupts registers
 #define REL_C_FUNC(name) C_FUNC(name)@gotpcrel
 
@@ -20,7 +29,15 @@ LEAF_ENTRY RhpInterfaceDispatch\entries, _TEXT
         mov     r10, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
 
         // Load the MethodTable from the object instance in rdi.
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
         ALTERNATE_ENTRY RhpInterfaceDispatchAVLocation\entries
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
         mov     rax, [rdi]
 
         CurrentOffset = OFFSETOF__InterfaceDispatchCache__m_rgEntries

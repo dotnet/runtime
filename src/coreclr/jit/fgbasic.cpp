@@ -2610,7 +2610,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 //    change. The original this (info.compThisArg) then remains
 //    unmodified in the method.  fgAddInternal is responsible for
 //    adding the code to copy the initial this into the temp.
-
+//
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
 {
     LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
@@ -4904,7 +4904,9 @@ BasicBlock* Compiler::fgSplitBlockAtBeginning(BasicBlock* curr)
     if (curr->IsLIR())
     {
         newBlock->SetFirstLIRNode(curr->GetFirstLIRNode());
+        newBlock->SetLastLIRNode(curr->GetLastLIRNode());
         curr->SetFirstLIRNode(nullptr);
+        curr->SetLastLIRNode(nullptr);
     }
     else
     {
@@ -5110,7 +5112,7 @@ BasicBlock* Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     if (unreachable)
     {
-        PREFIX_ASSUME(bPrev != nullptr);
+        assert(bPrev != nullptr);
 
         fgUnreachableBlock(block);
 
@@ -6319,8 +6321,8 @@ BasicBlock* Compiler::fgNewBBinRegion(BBKinds     jumpKind,
     else
     {
         noway_assert(tryIndex > 0 || hndIndex > 0);
-        PREFIX_ASSUME(tryIndex <= compHndBBtabCount);
-        PREFIX_ASSUME(hndIndex <= compHndBBtabCount);
+        assert(tryIndex <= compHndBBtabCount);
+        assert(hndIndex <= compHndBBtabCount);
 
         // Decide which region to put in, the "try" region or the "handler" region.
         if (tryIndex == 0)

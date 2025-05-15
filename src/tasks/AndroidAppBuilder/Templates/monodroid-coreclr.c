@@ -157,7 +157,7 @@ free_resources ()
     }
     if (g_executable_path)
     {
-        free (g_executable_path);
+        free ((void*)g_executable_path);
         g_executable_path = NULL;
     }
     if (g_coreclr_handle)

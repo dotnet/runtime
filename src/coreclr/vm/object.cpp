@@ -301,18 +301,6 @@ STRINGREF AllocateString(SString sstr)
     return strObj;
 }
 
-CHARARRAYREF AllocateCharArray(DWORD dwArrayLength)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    return (CHARARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_CHAR, dwArrayLength);
-}
-
 void Object::ValidateHeap(BOOL bDeep)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -360,7 +348,7 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
     ErectWriteBarrier(dst, ref);
 }
 
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
+void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 {
 
     STATIC_CONTRACT_NOTHROW;
@@ -407,7 +395,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 // Copy value class into the argument specified by the argDest.
 // The destOffset is nonzero when copying values into Nullable<T>, it is the offset
 // of the T value inside of the Nullable<T>
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
+void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -897,71 +885,6 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
     EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data, &pinnedStr);
     EmptyStringIsFrozen = pinnedStr != nullptr;
     return EmptyStringRefPtr;
-}
-
-// strAChars must be null-terminated, with an appropriate aLength
-// strBChars must be null-terminated, with an appropriate bLength OR bLength == -1
-// If bLength == -1, we stop on the first null character in strBChars
-BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChars, _In_z_ INT8 *strBChars, INT32 aLength, INT32 bLength, INT32 *result) {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(strAChars));
-        PRECONDITION(CheckPointer(strBChars));
-        PRECONDITION(CheckPointer(result));
-    } CONTRACTL_END;
-
-    WCHAR *strAStart = strAChars;
-    INT8  *strBStart = strBChars;
-    unsigned charA;
-    unsigned charB;
-
-    while (true)
-    {
-        charA = *strAChars;
-        charB = (unsigned) *strBChars;
-
-        //Case-insensitive comparison on chars greater than 0x7F
-        //requires a locale-aware casing operation and we're not going there.
-        if ((charA|charB)>0x7F) {
-            *result = 0;
-            return FALSE;
-        }
-
-        // uppercase both chars.
-        if (charA>='a' && charA<='z') {
-            charA ^= 0x20;
-        }
-        if (charB>='a' && charB<='z') {
-            charB ^= 0x20;
-        }
-
-        //Return the (case-insensitive) difference between them.
-        if (charA!=charB) {
-            *result = (int)(charA-charB);
-            return TRUE;
-        }
-
-
-        if (charA==0)   // both strings have null character
-        {
-            if (bLength == -1)
-            {
-                *result = aLength - static_cast<INT32>(strAChars - strAStart);
-                return TRUE;
-            }
-            if (strAChars==strAStart + aLength || strBChars==strBStart + bLength)
-            {
-                *result = aLength - bLength;
-                return TRUE;
-            }
-            // else both embedded zeros
-        }
-
-        // Next char
-        strAChars++; strBChars++;
-    }
 }
 
 /*============================InternalTrailByteCheck============================
