@@ -4125,6 +4125,11 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     {
                         replacementNode->SetUnusedValue();
                     }
+
+                    GenTree* next = node->gtNext;
+                    BlockRange().Remove(op4);
+                    BlockRange().Remove(node);
+                    return next;
                 }
                 break;
             }

@@ -3715,10 +3715,14 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
     if (!ilVersion.IsNull())
     {
-        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
-        ilVersion.GetVersionId();
-        ilVersion.GetRejitState();
-        ilVersion.GetIL();
+        EX_TRY
+        {
+            ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+            ilVersion.GetVersionId();
+            ilVersion.GetRejitState();
+            ilVersion.GetIL();
+        }
+        EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
     }
 #endif
 

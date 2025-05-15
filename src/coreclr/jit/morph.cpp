@@ -4164,7 +4164,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // DEBUG
     };
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     for (CallArg& arg : callee->gtArgs.Args())
     {
         if (arg.AbiInfo.IsSplitAcrossRegistersAndStack())
@@ -4173,9 +4173,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
             return false;
         }
     }
-#endif // TARGET_ARM || TARGET_RISCV64
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
         const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
@@ -4185,7 +4183,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
             return false;
         }
     }
-#endif // TARGET_ARM || TARGET_RISCV64
+#endif // TARGET_ARM || TARGET_RISCV64 || defined(TARGET_LOONGARCH64)
 
 #ifdef TARGET_ARM
     if (compIsProfilerHookNeeded())
