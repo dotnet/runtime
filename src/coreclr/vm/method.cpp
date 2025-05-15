@@ -3675,6 +3675,8 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // Need to save the Debug-Info for this method so that we can see it in a debugger later.
 #ifdef FEATURE_CODE_VERSIONING
     {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
         CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
         NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(dac_cast<PTR_MethodDesc>(this));
         for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
