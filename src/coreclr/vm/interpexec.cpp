@@ -1205,6 +1205,7 @@ CALL_TARGET_IP:
                 case INTOP_UNBOX:
                 case INTOP_UNBOX_ANY:
                 {
+                    int opcode = *ip;
                     int dreg = ip[1];
                     int sreg = ip[2];
                     MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
@@ -1215,18 +1216,20 @@ CALL_TARGET_IP:
                     else
                         helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
 
-                    switch (*ip) {
-                        case INTOP_BOX:
-                            LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, LOCAL_VAR_ADDR(sreg, void));
-                            break;
-                        case INTOP_UNBOX:
-                            LOCAL_VAR(dreg, void*) = helper(pMT, LOCAL_VAR(sreg, Object*));
-                            break;
-                        case INTOP_UNBOX_ANY:
-                            void *unboxedData = helper(pMT, LOCAL_VAR(sreg, Object*));
+                    if (opcode == INTOP_BOX) {
+                        // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
+                        void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
+                        LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
+                    } else {
+                        // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
+                        Object *src = LOCAL_VAR(sreg, Object*);
+                        void *unboxedData = helper(pMT, src);
+                        if (opcode == INTOP_UNBOX)
+                            LOCAL_VAR(dreg, void*) = unboxedData;
+                        else
                             CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMT);
-                            break;
                     }
+
                     ip += 5;
                     break;
                 }

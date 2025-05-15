@@ -392,11 +392,15 @@ public class InterpreterTest
 
     public static bool TestBoxing()
     {
-        int i = 4;
-        object oI = i;
-        int j = (int)oI;
-        if (j != i)
-            return false;
-        return true;
+        int l = 7, r = 4;
+        object s = BoxedSubtraction(l, r);
+        // `(s is int result)` generates isinst so we have to do this in steps
+        int result = (int)s;
+        return result == 3;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    static object BoxedSubtraction (object lhs, object rhs) {
+        return (int)lhs - (int)rhs;
     }
 }
