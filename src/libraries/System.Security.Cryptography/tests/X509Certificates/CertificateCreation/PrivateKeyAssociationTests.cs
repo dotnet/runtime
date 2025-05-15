@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support asymmetric cryptography")]
-    public static class PrivateKeyAssociationTests
+    public static partial class PrivateKeyAssociationTests
     {
         private const int PROV_RSA_FULL = 1;
         private const int PROV_DSS = 3;
@@ -844,7 +844,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        private static void CheckCopyWithPrivateKey<TKey>(
+        private static partial Func<X509Certificate2, SlhDsa, X509Certificate2> CopyWithPrivateKey_SlhDsa =>
+            (cert, key) => cert.CopyWithPrivateKey(key);
+
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPublicKey =>
+            cert => cert.GetSlhDsaPublicKey();
+
+        private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey =>
+            cert => cert.GetSlhDsaPrivateKey();
+
+        private static partial void CheckCopyWithPrivateKey<TKey>(
             X509Certificate2 cert,
             X509Certificate2 wrongAlgorithmCert,
             TKey correctPrivateKey,
@@ -853,70 +862,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Func<X509Certificate2, TKey> getPublicKey,
             Func<X509Certificate2, TKey> getPrivateKey,
             Action<TKey, TKey> keyProver)
-            where TKey : class, IDisposable
-        {
-            Exception e = AssertExtensions.Throws<ArgumentException>(
-                null,
-                () => copyWithPrivateKey(wrongAlgorithmCert, correctPrivateKey));
-
-            Assert.Contains("algorithm", e.Message);
-
-            List<TKey> generatedKeys = new();
-
-            foreach (Func<TKey> func in incorrectKeys)
-            {
-                TKey incorrectKey = func();
-                generatedKeys.Add(incorrectKey);
-
-                e = AssertExtensions.Throws<ArgumentException>(
-                    "privateKey",
-                    () => copyWithPrivateKey(cert, incorrectKey));
-
-                Assert.Contains("key does not match the public key for this certificate", e.Message);
-            }
-
-            using (X509Certificate2 withKey = copyWithPrivateKey(cert, correctPrivateKey))
-            {
-                e = AssertExtensions.Throws<InvalidOperationException>(
-                    () => copyWithPrivateKey(withKey, correctPrivateKey));
-
-                Assert.Contains("already has an associated private key", e.Message);
-
-                foreach (TKey incorrectKey in generatedKeys)
-                {
-                    e = AssertExtensions.Throws<InvalidOperationException>(
-                        () => copyWithPrivateKey(withKey, incorrectKey));
-
-                    Assert.Contains("already has an associated private key", e.Message);
-                }
-
-                using (TKey pub = getPublicKey(withKey))
-                using (TKey pub2 = getPublicKey(withKey))
-                using (TKey pubOnly = getPublicKey(cert))
-                using (TKey priv = getPrivateKey(withKey))
-                using (TKey priv2 = getPrivateKey(withKey))
-                {
-                    Assert.NotSame(pub, pub2);
-                    Assert.NotSame(pub, pubOnly);
-                    Assert.NotSame(pub2, pubOnly);
-                    Assert.NotSame(priv, priv2);
-
-                    keyProver(priv, pub2);
-                    keyProver(priv2, pub);
-                    keyProver(priv, pubOnly);
-
-                    priv.Dispose();
-                    pub2.Dispose();
-
-                    keyProver(priv2, pub);
-                    keyProver(priv2, pubOnly);
-                }
-            }
-
-            foreach (TKey incorrectKey in generatedKeys)
-            {
-                incorrectKey.Dispose();
-            }
-        }
+            where TKey : class, IDisposable;
     }
 }

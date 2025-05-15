@@ -216,6 +216,7 @@ instructionset     ,ARM64 ,                      ,Rcpc    ,26 ,Rcpc             
 instructionset     ,ARM64 ,VectorT128            ,        ,39 ,VectorT128            ,vectort128
 instructionset     ,ARM64 ,                      ,Rcpc2   ,42 ,Rcpc2                 ,rcpc2
 instructionset     ,ARM64 ,Sve                   ,        ,43 ,Sve                   ,sve
+instructionset     ,ARM64 ,Sve2                   ,       ,59 ,Sve2                  ,sve2
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
@@ -226,6 +227,7 @@ instructionset64bit,ARM64 ,Rdm
 instructionset64bit,ARM64 ,Sha1
 instructionset64bit,ARM64 ,Sha256
 instructionset64bit,ARM64 ,Sve
+instructionset64bit,ARM64 ,Sve2
 
 vectorinstructionset,ARM64,Vector64
 vectorinstructionset,ARM64,Vector128
@@ -241,6 +243,7 @@ implication        ,ARM64 ,Vector64   ,AdvSimd
 implication        ,ARM64 ,Vector128  ,AdvSimd
 implication        ,ARM64 ,VectorT128 ,AdvSimd
 implication        ,ARM64 ,Sve        ,AdvSimd
+implication        ,ARM64 ,Sve2       ,Sve
 
 ; Definition of Riscv64 instruction sets
 definearch         ,RiscV64 ,64Bit     ,RiscV64, RiscV64

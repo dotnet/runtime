@@ -65,7 +65,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    ld   a4, g_sw_ww_table
+    ld   a4, g_write_watch_table
 #endif
 
     ld   a5, g_ephemeral_low
@@ -944,11 +944,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
     mv    a1, a0
     li    a0, 0
     j C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 

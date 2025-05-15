@@ -85,7 +85,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(void, JIT_Patchpoint, int* counter, int ilOffset);
-EXTERN_C FCDECL1(void, JIT_PartialCompilationPatchpoint, int ilOffset);
+EXTERN_C FCDECL1(void, JIT_PatchpointForced, int ilOffset);
 
 //
 // JIT HELPER ALIASING FOR PORTABILITY.
@@ -171,7 +171,22 @@ extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, Che
 #else
 // Regular checked write barrier.
 extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
-#endif
+
+#ifdef TARGET_ARM64
+#define RhpCheckedAssignRef RhpCheckedAssignRefArm64
+#define RhpByRefAssignRef RhpByRefAssignRefArm64
+#define RhpAssignRef RhpAssignRefArm64
+#elif defined (TARGET_LOONGARCH64)
+#define RhpAssignRef RhpAssignRefLoongArch64
+#elif defined (TARGET_RISCV64)
+#define RhpAssignRef RhpAssignRefRiscV64
+#endif // TARGET_*
+
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
+
+extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
@@ -276,9 +291,10 @@ extern "C"
 
 // JIThelp.asm/JIThelp.s
 #define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_CheckedWriteBarrier##reg(); \
     void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg();
+    void STDCALL JIT_WriteBarrier##reg(); \
+    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
+    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
 
     ENUM_X86_WRITE_BARRIER_REGISTERS()
 #undef X86_WRITE_BARRIER_REGISTER
@@ -611,7 +627,7 @@ public:
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars) override final;
-    void CompressDebugInfo();
+    void CompressDebugInfo(PCODE nativeEntry);
     virtual void SetDebugInfo(PTR_BYTE pDebugInfo) = 0;
 
     virtual PatchpointInfo* GetPatchpointInfo()
@@ -877,6 +893,8 @@ public:
     }
 #endif
 
+    void PublishFinalCodeAddress(PCODE addr);
+
     CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm, bool allowInlining = true)
         : CEECodeGenInfo(fd, header, jm, allowInlining)
@@ -900,6 +918,7 @@ public:
           m_pPatchpointInfoFromRuntime(NULL),
           m_ilOffset(0)
 #endif
+        , m_finalCodeAddressSlot(NULL)
     {
         CONTRACTL
         {
@@ -950,6 +969,8 @@ public:
     void setPatchpointInfo(PatchpointInfo* patchpointInfo) override;
     PatchpointInfo* getOSRInfo(unsigned* ilOffset) override;
 
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() override final;
+
 protected :
 
 #ifdef FEATURE_PGO
@@ -994,6 +1015,7 @@ protected :
     PatchpointInfo        * m_pPatchpointInfoFromRuntime;
     unsigned                m_ilOffset;
 #endif
+    PCODE* m_finalCodeAddressSlot;
 
 };
 
@@ -1085,9 +1107,6 @@ void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 // the pointer to the pinned string is returned in *ppPinnedPointer. ppPinnedPointer == nullptr
 // means that the caller does not care whether the string is pinned or not.
 STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString = nullptr);
-
-FCDECL2(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* data);
-FCDECL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* data);
 
 BOOL ObjIsInstanceOf(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastException = FALSE);
 

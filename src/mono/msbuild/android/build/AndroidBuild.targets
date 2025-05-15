@@ -259,7 +259,8 @@
         ProjectName="$(AppName)"
         RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        StripDebugSymbols="$(StripDebugSymbols)">
+        StripDebugSymbols="$(StripDebugSymbols)"
+        StaticLinkedRuntime="$(StaticLinkedRuntime)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

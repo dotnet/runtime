@@ -4031,7 +4031,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         // Get the module file name
         LPCWSTR wszFileName = pFile->GetPath();
         _ASSERTE(wszFileName != NULL);
-        PREFIX_ASSUME(wszFileName != NULL);
+        _ASSERTE(wszFileName != NULL);
 
         // If there is no filename, which is the case for RefEmit modules and for SQL
         // modules, then rather than returning an empty string for the name, just use the
