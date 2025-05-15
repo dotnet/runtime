@@ -134,14 +134,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             // Size of the MethodDesc is variable, read it from the targets lookup table
             // See MethodDesc::SizeOf in method.cpp for details
-            // TODO(cdac): make sure this value is stored in minidumps
             TargetPointer methodDescSizeTable = target.ReadGlobalPointer(Constants.Globals.MethodDescSizeTable);
 
             ushort arrayOffset = (ushort)(desc.Flags & (ushort)(
                 MethodDescFlags_1.MethodDescFlags.ClassificationMask |
                 MethodDescFlags_1.MethodDescFlags.HasNonVtableSlot |
                 MethodDescFlags_1.MethodDescFlags.HasMethodImpl |
-                MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot));
+                MethodDescFlags_1.MethodDescFlags.HasNativeCodeSlot |
+                MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData));
             return target.Read<byte>(methodDescSizeTable + arrayOffset);
         }
 
