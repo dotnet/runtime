@@ -7106,6 +7106,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             if (optLocalAssertionProp)
             {
                 isQmarkColon = true;
+                BitVecOps::ClearD(apTraits, apLocalPostorder);
             }
             break;
 
@@ -7744,6 +7745,30 @@ DONE_MORPHING_CHILDREN:
     {
         qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
+    }
+
+    // Give assertion prop another shot at this tree
+    //
+    if (optLocalAssertionProp && (optAssertionCount > 0))
+    {
+        GenTree* optimizedTree = tree;
+        bool     again         = true;
+        bool     didOptimize   = false;
+
+        while (again)
+        {
+            tree          = optimizedTree;
+            optimizedTree = optAssertionProp(apLocalPostorder, tree, nullptr, nullptr);
+            again         = (optimizedTree != nullptr);
+            didOptimize |= again;
+        }
+
+        assert(tree != nullptr);
+
+        if (didOptimize)
+        {
+            gtUpdateNodeSideEffects(tree);
+        }
     }
 
     // Try to fold it, maybe we get lucky,
@@ -11718,13 +11743,12 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 {
     // Active dependent assertions are killed here
     //
-    ASSERT_TP killed = BitVecOps::MakeCopy(apTraits, GetAssertionDep(lclNum));
-    BitVecOps::IntersectionD(apTraits, killed, apLocal);
-
-    if (killed)
-    {
+    ASSERT_TP killed = GetAssertionDep(lclNum);
 
 #ifdef DEBUG
+    bool hasKills = !BitVecOps::IsEmptyIntersection(apTraits, apLocal, killed);
+    if (hasKills)
+    {
         AssertionIndex index = optAssertionCount;
         while (killed && (index > 0))
         {
@@ -11744,10 +11768,11 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 
             index--;
         }
+    }
 #endif
 
-        BitVecOps::DiffD(apTraits, apLocal, killed);
-    }
+    BitVecOps::DiffD(apTraits, apLocal, killed);
+    BitVecOps::DiffD(apTraits, apLocalPostorder, killed);
 }
 
 //------------------------------------------------------------------------
@@ -11764,7 +11789,7 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 //
 void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree))
 {
-    if (BitVecOps::IsEmpty(apTraits, apLocal))
+    if (BitVecOps::IsEmpty(apTraits, apLocal) && BitVecOps::IsEmpty(apTraits, apLocalPostorder))
     {
         return;
     }
@@ -12450,6 +12475,11 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         compCurStmt      = stmt;
         GenTree* oldTree = stmt->GetRootNode();
 
+        if (optLocalAssertionProp)
+        {
+            BitVecOps::Assign(apTraits, apLocalPostorder, apLocal);
+        }
+
 #ifdef DEBUG
 
         unsigned oldHash = verbose ? gtHashValue(oldTree) : DUMMY_INIT(~0);
@@ -12670,7 +12700,8 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
             // Each block starts with an empty table, and no available assertions
             //
             optAssertionReset(0);
-            apLocal = BitVecOps::MakeEmpty(apTraits);
+            BitVecOps::ClearD(apTraits, apLocal);
+            BitVecOps::ClearD(apTraits, apLocalPostorder);
         }
         else
         {
@@ -12808,6 +12839,8 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                 apLocal = BitVecOps::MakeEmpty(apTraits);
             }
 
+            BitVecOps::Assign(apTraits, apLocalPostorder, apLocal);
+
             JITDUMPEXEC(optDumpAssertionIndices("Assertions in: ", apLocal));
         }
     }
@@ -12876,6 +12909,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         // Local assertion prop is enabled if we are optimizing.
         //
         optAssertionInit(/* isLocalProp*/ true);
+        apLocalPostorder = BitVecOps::MakeEmpty(apTraits);
     }
     else
     {
