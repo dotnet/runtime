@@ -244,7 +244,7 @@ languageDecl            : _LANGUAGE SQSTRING                                    
                         ;
 /*  Basic tokens  */
 id                      : ID                                  { $$ = $1; }
-                        | ASYNC_                              { $$ = new char[] { 'a', 's', 'y', 'n', 'c', '\0' }; }
+                        | ASYNC_                              { $$ = newString("async"); }
                         | SQSTRING                            { $$ = $1; }
                         ;
 

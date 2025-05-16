@@ -3674,7 +3674,7 @@ yyreduce:
 
   case 38: /* id: ASYNC_  */
 #line 247 "asmparse.y"
-                                                              { (yyval.string) = new char[] { 'a', 's', 'y', 'n', 'c', '\0' }; }
+                                                              { (yyval.string) = newString("async"); }
 #line 3679 "prebuilt\\asmparse.cpp"
     break;
 
