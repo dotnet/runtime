@@ -5673,9 +5673,9 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     uint32_t elemSize = genTypeSize(simdBaseType);
     uint32_t count    = simdSize / elemSize;
 
-    ssize_t imm8      = static_cast<uint8_t>(op2->AsIntCon()->IconValue()) % count;
-    ssize_t simd16Cnt = 16 / elemSize;
-    ssize_t simd16Idx = imm8 / simd16Cnt;
+    uint32_t imm8      = static_cast<uint8_t>(op2->AsIntCon()->IconValue()) % count;
+    uint32_t simd16Cnt = 16 / elemSize;
+    uint32_t simd16Idx = imm8 / simd16Cnt;
 
     assert((0 <= imm8) && (imm8 < count));
 
