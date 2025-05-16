@@ -19,7 +19,7 @@ namespace System.Resources
         private object? _binaryFormatter; // binary formatter instance to use for deserializing
 
         // statics used to dynamically call into BinaryFormatter
-        private static Func<object?, Stream, object>? s_deserializeMethod;
+        private static Func<object, Stream, object>? s_deserializeMethod;
 
         // This is the constructor the RuntimeResourceSet calls,
         // passing in the stream to read from and the RuntimeResourceSet's
@@ -87,7 +87,7 @@ namespace System.Resources
             object graph;
             try
             {
-                graph = s_deserializeMethod!(_binaryFormatter, _store.BaseStream);
+                graph = s_deserializeMethod!(_binaryFormatter!, _store.BaseStream);
             }
             catch (Exception ex) when (ex is TypeLoadException or MissingMethodException)
             {
