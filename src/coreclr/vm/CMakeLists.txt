@@ -299,7 +299,7 @@ set(VM_SOURCES_WKS
     assemblyspec.cpp
     baseassemblyspec.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatchCoreclr.cpp
+    CachedInterfaceDispatch_Coreclr.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
