@@ -1515,7 +1515,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
         {
             GenTree* resultOffsetNode = m_comp->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
             GenTree* resultAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
-            GenTree* resultData       = m_comp->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, resultIndirFlags);
+            GenTree* resultData = m_comp->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, resultIndirFlags);
             GenTree* storeResult;
             if ((callDefInfo.DefinitionNode->GetLclOffs() == 0) &&
                 ClassLayout::AreCompatible(resultLcl->GetLayout(), layout.ReturnStructLayout))
