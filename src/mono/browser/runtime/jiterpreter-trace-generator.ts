@@ -3837,35 +3837,20 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
             append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
             return true;
         }
-        case SimdIntrinsic3.V128_I1_SHUFFLE: {
-            // Detect a constant indices vector and turn it into a const. This allows
-            //  v8 to use a more optimized implementation of the swizzle opcode
-            const indicesOffset = getArgU16(ip, 3),
-                constantIndices = get_known_constant_value(builder, indicesOffset);
-
-            // Pre-load destination ptr
-            builder.local("pLocals");
-            // Load vec
-            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-
-            if (typeof (constantIndices) === "object") {
-                // HACK: Use the known constant vector directly instead of loading it from memory.
-                builder.appendSimd(WasmSimdOpcode.v128_const);
-                builder.appendBytes(constantIndices);
-            } else {
-                // Load the indices from memory
-                append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-            }
-
-            // we now have two vectors on the stack, the values and the byte indices
-            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
-            append_simd_store(builder, ip);
-            return true;
-        }
+        case SimdIntrinsic3.V128_I1_SHUFFLE:
         case SimdIntrinsic3.V128_I2_SHUFFLE:
         case SimdIntrinsic3.V128_I4_SHUFFLE:
-            // FIXME: I8
-            return emit_shuffle(builder, ip, index === SimdIntrinsic3.V128_I2_SHUFFLE ? 8 : 4);
+        case SimdIntrinsic3.V128_I8_SHUFFLE: {
+            let elementCount = 16;
+            if (index === SimdIntrinsic3.V128_I2_SHUFFLE)
+                elementCount = 8;
+            else if (index === SimdIntrinsic3.V128_I4_SHUFFLE)
+                elementCount = 4;
+            else if (index === SimdIntrinsic3.V128_I8_SHUFFLE)
+                elementCount = 2;
+
+            return emit_shuffle(builder, ip, elementCount);
+        }
         default:
             return false;
     }
@@ -3873,66 +3858,114 @@ function emit_simd_3 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
     return false;
 }
 
-// implement i16 and i32 shuffles on top of wasm's only shuffle opcode by expanding the
-//  element shuffle indices into byte indices
+// implement shuffles on top of wasm's swizzle opcode by expanding the
+// element shuffle indices into byte indices
 function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: number): boolean {
     const elementSize = 16 / elementCount,
         indicesOffset = getArgU16(ip, 3),
         constantIndices = get_known_constant_value(builder, indicesOffset);
-    mono_assert((elementSize === 2) || (elementSize === 4), "Unsupported shuffle element size");
 
     // Pre-load destination ptr
     builder.local("pLocals");
     // Load vec
     append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
     if (typeof (constantIndices) === "object") {
-        // HACK: We have a known constant shuffle vector with char or int indices. Expand it to
+        // HACK: We have a known constant shuffle vector indices. Expand it to
         //  byte indices and then embed a new constant in the trace.
-        const newShuffleVector = new Uint8Array(sizeOfV128),
-            nativeIndices = (elementSize === 2)
-                ? new Uint16Array(constantIndices.buffer, constantIndices.byteOffset, elementCount)
-                : new Uint32Array(constantIndices.buffer, constantIndices.byteOffset, elementCount);
-        for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
-            const elementIndex = nativeIndices[i];
-            for (let j = 0; j < elementSize; j++)
-                newShuffleVector[k + j] = (elementIndex * elementSize) + j;
+        let nativeIndices = new Uint8Array(constantIndices.buffer, constantIndices.byteOffset, 16);
+        if (elementCount !== 16) {
+            const newShuffleVector = new Uint8Array(sizeOfV128);
+            for (let i = 0, k = 0; i < elementCount; i++, k += elementSize) {
+                // The indices are lane sized but are only valid when less than
+                // elementCount. To avoid some complications we load them as bytes, read the
+                // first byte of the lane for the lane index then make sure remaining bytes are 0.
+                let elementIndex = nativeIndices[k];
+
+                // if any of the remaining bytes in the lane are != 0 it was an invalid index
+                for (let j = 1; j < elementSize && elementIndex < elementCount; j++)
+                    elementIndex = nativeIndices[k + j] === 0 ? elementIndex : 0xff;
+
+                for (let j = 0; j < elementSize; j++) {
+                    // The shuffle vector is lane sized but the swizzle opcode needs byte indices
+                    // so we multiply the lane index by elementSize to get the byte offset then add
+                    // the offset of the byte inside the lane. Since we are using lanes as indices
+                    // we need to check if the lane index is valid. We use min elementCount to force
+                    // invalid indices to fit in the byte sized lane and let the intrinsic handle it.
+                    newShuffleVector[k + j] = Math.min(elementIndex, elementCount) * elementSize + j;
+                }
+            }
+            nativeIndices = newShuffleVector;
         }
-        // console.log(`shuffle w/element size ${elementSize} with constant indices ${nativeIndices} (${constantIndices}) -> byte indices ${newShuffleVector}`);
         builder.appendSimd(WasmSimdOpcode.v128_const);
-        builder.appendBytes(newShuffleVector);
+        builder.appendBytes(nativeIndices);
     } else {
-        // Load indices (in chars)
+        // Load indices as v128
         append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-        // There's no direct narrowing opcode for i32 -> i8, so we have to do two steps :(
-        if (elementCount === 4) {
-            // i32{lane0 ... lane3} -> i16{lane0 ... lane3, 0 ...}
-            builder.v128_const(0);
-            builder.appendSimd(WasmSimdOpcode.i16x8_narrow_i32x4_u);
+        if (elementCount !== 16) {
+            const shift = elementCount === 8 ? 1 : elementCount === 4 ? 2 : 3;
+            // for i32x4 and i64x2 clamp indices to the first invalid index value which
+            // is elementCount this ensures that the multiply + add will not overflow
+            // the lane size but the lane index will remain invalid for the intrinsic to
+            // handle.
+            if (elementCount === 4) {
+                builder.i32_const(elementCount);
+                builder.appendSimd(WasmSimdOpcode.i32x4_splat);
+                builder.appendSimd(WasmSimdOpcode.i32x4_min_u);
+            } else if (elementCount === 8) {
+                builder.i32_const(elementCount);
+                builder.appendSimd(WasmSimdOpcode.i16x8_splat);
+                builder.appendSimd(WasmSimdOpcode.i16x8_min_u);
+            }
+
+            // We need to convert lane indices to byte indices so we can
+            // use the swizzle opcode, The operations is the same as above
+            // but vectorized. for example:
+            // i32x4{3, 2, 1, 0} => i8x16{12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3}
+            //
+            // 1: multiply the lane indices by elementSize using shl to
+            //  get the byte offset of the first byte in the 16 lanes
+            // i32x4{3, 2, 1, 0}
+            // -----------------------------------------
+            // 2 i16x8.shl
+            // => {12,0,0,0, 8,0,0,0, 4,0,0,0, 0,0,0,0}
+            builder.i32_const(shift);
+            builder.appendSimd(WasmSimdOpcode.i8x16_shl);
+
+            // 2: create a vector to swizzle the now shifted first byte
+            //  of each lane into every byte of that lane.
+            // {0,0,0,0, 4,4,4,4, 8,8,8,8, 12,12,12,12} i8x16.swizzle
+            // => {12,12,12,12, 8,8,8,8, 4,4,4,4, 0,0,0,0}
+            builder.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < elementCount; i++) {
+                for (let j = 0; j < elementSize; j++)
+                    builder.appendU8(i * elementSize);
+            }
+            builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
+
+            // 3: create a vector with the offset of each byte inside each
+            //  lane then Or it with the now shifted and swizzled indices.
+            //  It is safe to use Or directly thanks to the previous shift
+            // {0,1,2,3, 0,1,2,3, 0,1,2,3, 0,1,2,3} i8x16.or
+            // => {12,13,14,15, 8,9,10,11, 4,5,6,7, 0,1,2,3}
+            builder.appendSimd(WasmSimdOpcode.v128_const);
+            for (let i = 0; i < elementCount; i++) {
+                for (let j = 0; j < elementSize; j++)
+                    builder.appendU8(j);
+            }
+            builder.appendSimd(WasmSimdOpcode.v128_or);
+
+            // for i64x2 we don't have a min so reload the original indices
+            // divide by 2 and check if any bits are still set. If so,
+            // invalidate those lanes
+            if (elementCount == 2) {
+                append_ldloc(builder, indicesOffset, WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+                builder.i32_const(1);
+                builder.appendSimd(WasmSimdOpcode.i64x2_shr_u);
+                builder.v128_const(0);
+                builder.appendSimd(WasmSimdOpcode.i64x2_ne);
+                builder.appendSimd(WasmSimdOpcode.v128_or);
+            }
         }
-        // Load a zero vector (narrow takes two vectors)
-        builder.v128_const(0);
-        // i16{lane0 ... lane7} -> i8{lane0 ... lane7, 0 ...}
-        builder.appendSimd(WasmSimdOpcode.i8x16_narrow_i16x8_u);
-        // i8{0, 1, 2, 3 ...} -> i8{0, 0, 1, 1, 2, 2, 3, 3 ...}
-        builder.appendSimd(WasmSimdOpcode.v128_const);
-        for (let i = 0; i < elementCount; i++) {
-            for (let j = 0; j < elementSize; j++)
-                builder.appendU8(i);
-        }
-        builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
-        // multiply indices by 2 or 4 to scale from elt indices to byte indices
-        builder.i32_const(elementCount === 4 ? 2 : 1);
-        builder.appendSimd(WasmSimdOpcode.i8x16_shl);
-        // now add an offset to the additional bytes of each lane, i.e.
-        // 0 1 2 3 0 1 2 3 ...
-        builder.appendSimd(WasmSimdOpcode.v128_const);
-        for (let i = 0; i < elementCount; i++) {
-            for (let j = 0; j < elementSize; j++)
-                builder.appendU8(j);
-        }
-        // we can do a bitwise or since we know we previously multiplied all the lanes by 2 or 4,
-        //  so the 1 and 2 bits are already clear
-        builder.appendSimd(WasmSimdOpcode.v128_or);
     }
     // we now have two vectors on the stack, the values and the byte indices
     builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
