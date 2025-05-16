@@ -40,7 +40,7 @@ public class Runtime_115487
 
     private static int Antigen()
     {
-        new TestClass().Method0();
+        new Runtime_115487().Method0();
         return string.Join(Environment.NewLine, toPrint).GetHashCode();
     }
 }

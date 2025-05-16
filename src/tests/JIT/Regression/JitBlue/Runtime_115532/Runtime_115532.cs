@@ -3,6 +3,7 @@
 
 // set DOTNET_TieredCompilation=0
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Numerics;
@@ -20,9 +21,16 @@ public class Runtime_115532
         {
             Vector128<double> vdec = Vector128<double>.Zero
                 .WithElement(0, (double)s_decimal_6)
-                .WithElement(1, (double)s_int_9)
-                .WithElement(2, 0.0)
-                .WithElement(3, 0.0);
+                .WithElement(1, (double)s_int_9);
+
+            try
+            {
+                vdec = vdec.WithElement(2, 0.0)
+                           .WithElement(3, 0.0);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
 
             return vdec.GetElement(0);
         }
@@ -31,7 +39,7 @@ public class Runtime_115532
     [Fact]
     public static void Problem()
     {
-        Assert((double)s_decimal_6, new Runtime_115532().LeafMethod3());
+        Assert.Equal((double)s_decimal_6, new Runtime_115532().LeafMethod3());
     }
 }
 
