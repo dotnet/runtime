@@ -3271,7 +3271,7 @@ int LinearScan::BuildMul(GenTree* tree)
 //
 void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 {
-    if (!compiler->canUseVexEncoding())
+    if (!getEvexIsSupported())
     {
         return;
     }
@@ -3280,7 +3280,7 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 
     if (sizeOfSIMDVector >= 32)
     {
-        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncodingDebugOnly()));
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && getEvexIsSupported()));
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
