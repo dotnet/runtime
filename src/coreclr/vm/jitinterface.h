@@ -540,8 +540,9 @@ public:
         STANDARD_VM_CONTRACT;
         COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &m_MethodInfo);
 
-        // Either the member header was NULL or remains the same as the input.
-        _ASSERTE(m_ILHeader == NULL || ilHeader == m_ILHeader);
+        // The header maybe replaced during the call to getMethodInfoWorker. This is most probable
+        // when the input is null (that is, no metadata), but we can also examine the method and generate
+        // an entirely new IL body (for example, intrinsic methods).
         m_ILHeader = ilHeader;
     }
 
