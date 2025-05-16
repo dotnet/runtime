@@ -702,6 +702,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
+                            case NI_Sve_And_Predicates:
+                            case NI_Sve_BitwiseClear_Predicates:
+                            case NI_Sve_Or_Predicates:
+                            case NI_Sve_Xor_Predicates:
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, INS_OPTS_SCALABLE_B);
+                                break;
+
                             default:
                             {
                                 GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
@@ -2478,6 +2486,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
+            case NI_Sve_ConditionalSelect_Predicates:
             {
                 GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_B);
                 break;

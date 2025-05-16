@@ -233,6 +233,11 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a reduce operation.
     HW_Flag_ReduceOperation = 0x2000000,
 
+    // This intrinsic could be implemented with another intrinsic when it is operating on operands that are all of
+    // type TYP_MASK, and this other intrinsic will produces a value of this type. Used in morph to convert vector
+    // operations into mask operations when the intrinsic is operating on mask vectors (mainly bitwise operations).
+    HW_Flag_HasAllMaskVariant = 0x4000000,
+
 #else
 #error Unsupported platform
 #endif
@@ -1132,6 +1137,67 @@ struct HWIntrinsicInfo
                 unreached();
         }
     }
+
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+    // HasAllMaskVariant: Does the intrinsic have an intrinsic variant that operates on mask types?
+    //
+    // Arguments:
+    //    id       -- the intrinsic to check for a mask-type variant.
+    //
+    // Return Value:
+    //    true when the intrinsic has a mask-type variant, else false
+    //
+    static bool HasAllMaskVariant(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasAllMaskVariant) != 0;
+    }
+
+    // GetMaskVariant: Given an intrinsic that has a variant that operates on mask types, return the ID of
+    //                 this variant intrinsic. Call HasAllMaskVariant before using this function, as it will
+    //                 assert if no match is found.
+    //
+    // Arguments:
+    //    id       -- the intrinsic with a mask-type variant.
+    //
+    // Return Value:
+    //    The ID of the mask-type variant for the given intrinsic
+    //
+    static NamedIntrinsic GetMaskVariant(NamedIntrinsic id)
+    {
+        assert(HasAllMaskVariant(id));
+        switch (id)
+        {
+            case NI_Sve_And:
+                return NI_Sve_And_Predicates;
+            case NI_Sve_BitwiseClear:
+                return NI_Sve_BitwiseClear_Predicates;
+            case NI_Sve_Xor:
+                return NI_Sve_Xor_Predicates;
+            case NI_Sve_Or:
+                return NI_Sve_Or_Predicates;
+            case NI_Sve_ZipHigh:
+                return NI_Sve_ZipHigh_Predicates;
+            case NI_Sve_ZipLow:
+                return NI_Sve_ZipLow_Predicates;
+            case NI_Sve_UnzipOdd:
+                return NI_Sve_UnzipOdd_Predicates;
+            case NI_Sve_UnzipEven:
+                return NI_Sve_UnzipEven_Predicates;
+            case NI_Sve_TransposeEven:
+                return NI_Sve_TransposeEven_Predicates;
+            case NI_Sve_TransposeOdd:
+                return NI_Sve_TransposeOdd_Predicates;
+            case NI_Sve_ReverseElement:
+                return NI_Sve_ReverseElement_Predicates;
+            case NI_Sve_ConditionalSelect:
+                return NI_Sve_ConditionalSelect_Predicates;
+
+            default:
+                unreached();
+        }
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 #endif // TARGET_ARM64
 
