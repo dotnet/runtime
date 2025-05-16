@@ -9,7 +9,7 @@
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
-typedef Object* (*HELPER_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
+typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -1243,7 +1243,7 @@ CALL_TARGET_IP:
                     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
                     void* pHelper = pMethod->pDataItems[ip[4]];
 
-                    HELPER_NEWARR helperFn = reinterpret_cast<HELPER_NEWARR>(pHelper);
+                    HELPER_FTN_NEWARR helperFn = reinterpret_cast<HELPER_FTN_NEWARR>(pHelper);
 
                     Object* arr = helperFn(arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
