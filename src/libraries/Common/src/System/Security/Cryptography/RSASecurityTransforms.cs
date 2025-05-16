@@ -454,7 +454,7 @@ namespace System.Security.Cryptography
 
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize, padding.PssSaltLength);
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize, padding.CalculatePssSaltLength(KeySize, hashAlgorithm));
 
                 try
                 {

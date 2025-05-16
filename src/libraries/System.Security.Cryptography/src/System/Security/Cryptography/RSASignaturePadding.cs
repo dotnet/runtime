@@ -11,11 +11,11 @@ namespace System.Security.Cryptography
     /// </summary>
     public sealed class RSASignaturePadding : IEquatable<RSASignaturePadding>
     {
-    /// <summary>
-    /// Represents a constant value indicating that the salt length should match the hash length.
-    /// </summary>
-    /// <remarks>This value is typically used in cryptographic operations where the salt length is required to
-    /// be the same as the hash length.</remarks>
+        /// <summary>
+        /// Represents a constant value indicating that the salt length should match the hash length.
+        /// </summary>
+        /// <remarks>This value is typically used in cryptographic operations where the salt length is required to
+        /// be the same as the hash length.</remarks>
         public const int PssSaltLengthIsHashLength = -1;
         /// <summary>
         /// Represents the maximum allowable length, in bytes, for a PSS (Probabilistic Signature Scheme) salt.

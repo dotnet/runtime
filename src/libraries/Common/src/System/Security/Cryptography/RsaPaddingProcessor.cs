@@ -393,20 +393,11 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_SignHash_WrongSize);
             }
 
-            // In this implementation, sLen is restricted to the length of the input hash.
-            int sLen = saltLength switch
-            {
-                // TODO: set max length
-                RSASignaturePadding.PssSaltLengthMax => 16,
-                RSASignaturePadding.PssSaltLengthIsHashLength => hLen,
-                _ => saltLength
-            };
-
             // 3.  if emLen < hLen + sLen + 2, encoding error.
             //
             // sLen = hLen in this implementation.
 
-            if (emLen < 2 + hLen + sLen)
+            if (emLen < 2 + hLen + saltLength)
             {
                 throw new CryptographicException(SR.Cryptography_KeyTooSmall);
             }
@@ -432,7 +423,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(hasher.HashLengthInBytes == hLen);
                 // 4. Generate a random salt of length sLen
                 Debug.Assert(hLen is >= 0 and <= 64);
-                Span<byte> salt = stackalloc byte[sLen];
+                Span<byte> salt = stackalloc byte[saltLength];
                 RandomNumberGenerator.Fill(salt);
 
                 // 5. Let M' = an octet string of 8 zeros concat mHash concat salt
@@ -450,7 +441,7 @@ namespace System.Security.Cryptography
 
                 // 7. Generate PS as zero-valued bytes of length emLen - sLen - hLen - 2.
                 // 8. Let DB = PS || 0x01 || salt
-                int psLen = emLen - sLen - hLen - 2;
+                int psLen = emLen - saltLength - hLen - 2;
                 db.Slice(0, psLen).Clear();
                 db[psLen] = 0x01;
                 salt.CopyTo(db.Slice(psLen + 1));
