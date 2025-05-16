@@ -127,7 +127,7 @@ namespace System.Net.Mail
 
         private static void PrepareCommand(SmtpConnection conn, string type, string message)
         {
-            conn.BufferBuilder.Append(SmtpCommands.Auth.Span);
+            conn.BufferBuilder.Append(SmtpCommands.Auth);
             conn.BufferBuilder.Append(type);
             conn.BufferBuilder.Append((byte)' ');
             conn.BufferBuilder.Append(message);
@@ -449,14 +449,14 @@ namespace System.Net.Mail
 
     internal static class MailCommand
     {
-        internal static void Send(SmtpConnection conn, ReadOnlyMemory<byte> command, MailAddress from, bool allowUnicode)
+        internal static void Send(SmtpConnection conn, ReadOnlySpan<byte> command, MailAddress from, bool allowUnicode)
         {
             Task task = SendAsync<SyncReadWriteAdapter>(conn, command, from, allowUnicode);
             Debug.Assert(task.IsCompleted, "MailCommand.SendAsync should be completed synchronously.");
             task.GetAwaiter().GetResult();
         }
 
-        internal static IAsyncResult BeginSend(SmtpConnection conn, ReadOnlyMemory<byte> command, MailAddress from, bool allowUnicode, AsyncCallback callback, object? state)
+        internal static IAsyncResult BeginSend(SmtpConnection conn, ReadOnlySpan<byte> command, MailAddress from, bool allowUnicode, AsyncCallback callback, object? state)
         {
             return TaskToAsyncResult.Begin(SendAsync<AsyncReadWriteAdapter>(conn, command, from, allowUnicode), callback, state);
         }
@@ -466,12 +466,18 @@ namespace System.Net.Mail
             TaskToAsyncResult.End(asyncResult);
         }
 
-        internal static async Task SendAsync<TIOAdapter>(SmtpConnection conn, ReadOnlyMemory<byte> command, MailAddress from, bool allowUnicode, CancellationToken cancellationToken = default)
+        internal static Task SendAsync<TIOAdapter>(SmtpConnection conn, ReadOnlySpan<byte> command, MailAddress from, bool allowUnicode, CancellationToken cancellationToken = default)
             where TIOAdapter : IReadWriteAdapter
         {
             PrepareCommand(conn, command, from, allowUnicode);
-            LineInfo info = await CheckCommand.SendAsync<TIOAdapter>(conn, cancellationToken).ConfigureAwait(false);
-            CheckResponse(info.StatusCode, info.Line);
+            return SendAndCheck(conn, cancellationToken);
+
+            static async Task<LineInfo> SendAndCheck(SmtpConnection conn, CancellationToken cancellationToken)
+            {
+                LineInfo info = await CheckCommand.SendAsync<TIOAdapter>(conn, cancellationToken).ConfigureAwait(false);
+                CheckResponse(info.StatusCode, info.Line);
+                return info;
+            }
         }
 
         private static void CheckResponse(SmtpStatusCode statusCode, string response)
@@ -497,7 +503,7 @@ namespace System.Net.Mail
             }
         }
 
-        private static void PrepareCommand(SmtpConnection conn, ReadOnlyMemory<byte> command, MailAddress from, bool allowUnicode)
+        private static void PrepareCommand(SmtpConnection conn, ReadOnlySpan<byte> command, MailAddress from, bool allowUnicode)
         {
             if (conn.IsStreamOpen)
             {
@@ -628,25 +634,25 @@ namespace System.Net.Mail
 
     internal static class SmtpCommands
     {
-        internal static ReadOnlyMemory<byte> Auth => "AUTH "u8.ToArray();
-        internal static ReadOnlyMemory<byte> CRLF => "\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Data => "DATA\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> DataStop => "\r\n.\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> EHello => "EHLO "u8.ToArray();
-        internal static ReadOnlyMemory<byte> Expand => "EXPN "u8.ToArray();
-        internal static ReadOnlyMemory<byte> Hello => "HELO "u8.ToArray();
-        internal static ReadOnlyMemory<byte> Help => "HELP"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Mail => "MAIL FROM:"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Noop => "NOOP\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Quit => "QUIT\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Recipient => "RCPT TO:"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Reset => "RSET\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Send => "SEND FROM:"u8.ToArray();
-        internal static ReadOnlyMemory<byte> SendAndMail => "SAML FROM:"u8.ToArray();
-        internal static ReadOnlyMemory<byte> SendOrMail => "SOML FROM:"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Turn => "TURN\r\n"u8.ToArray();
-        internal static ReadOnlyMemory<byte> Verify => "VRFY "u8.ToArray();
-        internal static ReadOnlyMemory<byte> StartTls => "STARTTLS"u8.ToArray();
+        internal static ReadOnlySpan<byte> Auth => "AUTH "u8;
+        internal static ReadOnlySpan<byte> CRLF => "\r\n"u8;
+        internal static ReadOnlySpan<byte> Data => "DATA\r\n"u8;
+        internal static ReadOnlySpan<byte> DataStop => "\r\n.\r\n"u8;
+        internal static ReadOnlySpan<byte> EHello => "EHLO "u8;
+        internal static ReadOnlySpan<byte> Expand => "EXPN "u8;
+        internal static ReadOnlySpan<byte> Hello => "HELO "u8;
+        internal static ReadOnlySpan<byte> Help => "HELP"u8;
+        internal static ReadOnlySpan<byte> Mail => "MAIL FROM:"u8;
+        internal static ReadOnlySpan<byte> Noop => "NOOP\r\n"u8;
+        internal static ReadOnlySpan<byte> Quit => "QUIT\r\n"u8;
+        internal static ReadOnlySpan<byte> Recipient => "RCPT TO:"u8;
+        internal static ReadOnlySpan<byte> Reset => "RSET\r\n"u8;
+        internal static ReadOnlySpan<byte> Send => "SEND FROM:"u8;
+        internal static ReadOnlySpan<byte> SendAndMail => "SAML FROM:"u8;
+        internal static ReadOnlySpan<byte> SendOrMail => "SOML FROM:"u8;
+        internal static ReadOnlySpan<byte> Turn => "TURN\r\n"u8;
+        internal static ReadOnlySpan<byte> Verify => "VRFY "u8;
+        internal static ReadOnlySpan<byte> StartTls => "STARTTLS"u8;
     }
 
     internal readonly struct LineInfo
