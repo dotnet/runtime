@@ -2093,6 +2093,33 @@ bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool suppor
     return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
 }
 
+void Compiler::setBaselineISAsSupported()
+{
+#ifdef FEATURE_HW_INTRINSICS
+    CORINFO_InstructionSetFlags supportedISAs = opts.compSupportsISA;
+
+#if defined(TARGET_XARCH)
+    supportedISAs.AddInstructionSet(InstructionSet_X86Base);
+    supportedISAs.AddInstructionSet(InstructionSet_SSE);
+    supportedISAs.AddInstructionSet(InstructionSet_SSE2);
+#if defined(TARGET_AMD64)
+    supportedISAs.AddInstructionSet(InstructionSet_X86Base_X64);
+    supportedISAs.AddInstructionSet(InstructionSet_SSE_X64);
+    supportedISAs.AddInstructionSet(InstructionSet_SSE2_X64);
+#endif // TARGET_AMD64
+#elif defined(TARGET_ARM64)
+    supportedISAs.AddInstructionSet(InstructionSet_ArmBase);
+    supportedISAs.AddInstructionSet(InstructionSet_AdvSimd);
+    supportedISAs.AddInstructionSet(InstructionSet_ArmBase_Arm64);
+    supportedISAs.AddInstructionSet(InstructionSet_AdvSimd_Arm64);
+    supportedISAs.AddInstructionSet(InstructionSet_Vector64);
+#endif
+    supportedISAs.AddInstructionSet(InstructionSet_Vector128);
+
+    opts.setSupportedISAs(supportedISAs);
+#endif // FEATURE_HW_INTRINSICS
+}
+
 #ifdef PROFILING_SUPPORTED
 // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
 // These are used when DOTNET_JitEltHookEnabled=1

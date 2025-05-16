@@ -914,6 +914,9 @@ PhaseStatus Rationalizer::DoPhase()
         block->bbStmtList = nullptr;
 
         assert(BlockRange().CheckLIR(comp, true));
+
+        // Allow unrestricted use of baseline HWIntrinsic ISAs in LIR.
+        comp->setBaselineISAsSupported();
     }
 
     comp->compRationalIRForm = true;

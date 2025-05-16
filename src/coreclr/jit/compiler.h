@@ -9661,6 +9661,7 @@ private:
 #endif // DEBUG
 
     bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
+    void setBaselineISAsSupported();
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will exactly match the target machine

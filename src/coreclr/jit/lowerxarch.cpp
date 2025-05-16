@@ -4443,8 +4443,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     break;
                 }
 
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-
                 // We will be constructing the following parts:
                 //   ...
                 //          /--*  tmp1 simd16
@@ -4498,8 +4496,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   tmp1 = Sse2.UnpackLow(tmp1, tmp2);
                 //   ...
 
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
                 ReplaceWithLclVar(tmp1Use);
@@ -4529,8 +4525,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 // This is roughly the following managed code:
                 //   ...
                 //   return Sse2.Shuffle(tmp1, 0x00);
-
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
                 idx = comp->gtNewIconNode(0x00, TYP_INT);
                 BlockRange().InsertAfter(tmp1, idx);
@@ -4579,8 +4573,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 //   var tmp2 = tmp1;
                 //   return Sse.Shuffle(tmp1, tmp2, 0x00);
 
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE));
-
                 node->Op(1) = tmp1;
                 LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
                 ReplaceWithLclVar(tmp1Use);
@@ -4616,8 +4608,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     node->SetSimdBaseJitType(CORINFO_TYPE_DOUBLE);
                     break;
                 }
-
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
                 // We will be constructing the following parts:
                 //   ...
@@ -4748,7 +4738,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
             if ((simdBaseType == TYP_SHORT) || (simdBaseType == TYP_USHORT))
             {
-                assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
                 insIntrinsic = NI_SSE2_Insert;
             }
             else if (comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
@@ -4808,7 +4797,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
 
             assert((simdBaseType != TYP_SHORT) && (simdBaseType != TYP_USHORT));
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
             GenTree* op[16];
             op[0] = tmp1;
@@ -5035,8 +5023,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   tmp2 = Sse.UnpackLow(opP, opQ);
             //   return Sse.MoveLowToHigh(tmp1, tmp2);
 
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE));
-
             GenTree* op[4];
             op[0] = tmp1;
 
@@ -5099,8 +5085,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   ...
             //   var tmp2 = Vector128.CreateScalarUnsafe(op2);
             //   return Sse.UnpackLow(tmp1, tmp2);
-
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
 
             tmp2 = InsertNewSimdCreateScalarUnsafeNode(TYP_SIMD16, op2, simdBaseJitType, 16);
             LowerNode(tmp2);
@@ -5414,7 +5398,6 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         case TYP_SHORT:
         case TYP_USHORT:
         {
-            assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
             break;
         }
 
@@ -6230,8 +6213,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     }
     else
     {
-        assert(comp->compIsaSupportedDebugOnly(InstructionSet_SSE2));
-
         switch (simdBaseType)
         {
             case TYP_SHORT:
