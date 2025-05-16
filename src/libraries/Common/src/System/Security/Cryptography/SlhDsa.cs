@@ -300,7 +300,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>The instance represents only a public key.</para>
         ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the data.</para>
+        ///   <para>An error occurred while signing the hash.</para>
         /// </exception>
         public void SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>The instance represents only a public key.</para>
         ///   <para>-or-</para>
-        ///   <para>An error occurred while signing the data.</para>
+        ///   <para>An error occurred while signing the hash.</para>
         /// </exception>
         /// <remarks>
         ///   A <see langword="null" /> context is treated as empty.
@@ -386,7 +386,7 @@ namespace System.Security.Cryptography
         ///   The default value is an empty buffer.
         /// </param>
         /// <returns>
-        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a <see cref="ReadOnlySpan{T}.Length"/> in excess of
@@ -400,7 +400,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
         ///   <para>-or-</para>
-        ///   <para>An error occurred while verifying the data.</para>
+        ///   <para>An error occurred while verifying the hash.</para>
         /// </exception>
         public bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> context = default)
         {
@@ -440,7 +440,7 @@ namespace System.Security.Cryptography
         ///   The default value is <see langword="null" />.
         /// </param>
         /// <returns>
-        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="context"/> has a length in excess of 255 bytes.
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para><paramref name="hashAlgorithmOid"/> is a well-known algorithm and <paramref name="hash"/> does not have the expected length.</para>
         ///   <para>-or-</para>
-        ///   <para>An error occurred while verifying the data.</para>
+        ///   <para>An error occurred while verifying the hash.</para>
         /// </exception>
         /// <remarks>
         ///   A <see langword="null" /> context is treated as empty.
@@ -1800,7 +1800,7 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the signature, which will always be the exactly correct size for the algorithm.
         /// </param>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while signing the data.
+        ///   An error occurred while signing the hash.
         /// </exception>
         protected abstract void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, Span<byte> destination);
 
@@ -1820,10 +1820,10 @@ namespace System.Security.Cryptography
         ///   The signature to verify.
         /// </param>
         /// <returns>
-        ///   <see langword="true"/> if the signature validates the data; otherwise, <see langword="false"/>.
+        ///   <see langword="true"/> if the signature validates the hash; otherwise, <see langword="false"/>.
         /// </returns>
         /// <exception cref="CryptographicException">
-        ///   An error occurred while verifying the data.
+        ///   An error occurred while verifying the hash.
         /// </exception>
         protected abstract bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> signature);
 
