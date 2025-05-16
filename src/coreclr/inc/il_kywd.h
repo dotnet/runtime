@@ -109,6 +109,7 @@
     KYWD( "noinlining",     NOINLINING_,        NO_VALUE )
     KYWD( "nooptimization", NOOPTIMIZATION_,    NO_VALUE )
     KYWD( "aggressiveoptimization", AGGRESSIVEOPTIMIZATION_, NO_VALUE )
+    KYWD( "async",          ASYNC_,             NO_VALUE )
     KYWD( "nomangle",       NOMANGLE_,          NO_VALUE )
     KYWD( "lasterr",        LASTERR_,           NO_VALUE )
     KYWD( "winapi",         WINAPI_,            NO_VALUE )
