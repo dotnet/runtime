@@ -3923,7 +3923,7 @@ namespace System.Diagnostics.Tracing
         {
             return GetInstance(null) as EventSource;
 
-            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+            [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetInstance")]
             [return: UnsafeAccessorType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource")]
             static extern object GetInstance(
                 [UnsafeAccessorType("System.Diagnostics.Metrics.MetricsEventSource, System.Diagnostics.DiagnosticSource")] object? _);

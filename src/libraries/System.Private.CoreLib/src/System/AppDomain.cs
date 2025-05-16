@@ -427,9 +427,9 @@ namespace System
                 [UnsafeAccessorType("System.Security.Principal.GenericPrincipal, System.Security.Claims")] object? _);
 
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetDefaultInstance")]
-            [return: UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Claims")]
+            [return: UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows")]
             static extern object GetDefaultWindowsPrincipal(
-                [UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Claims")] object? _);
+                [UnsafeAccessorType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows")] object? _);
         }
     }
 }
