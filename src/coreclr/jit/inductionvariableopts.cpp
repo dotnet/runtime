@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
 // This file contains code to optimize induction variables in loops based on
 // scalar evolution analysis (see scev.h and scev.cpp for more information
 // about the scalar evolution analysis).
 //
-// Currently the following optimizations are done:
+// Currently the following optimizations are implemented:
 //
 // IV widening:
 //   This widens primary induction variables from 32 bits into 64 bits. This is
@@ -37,14 +38,19 @@
 //   single instruction, bypassing the need to do a separate comparison with a
 //   bound.
 //
-// Strength reduction (disabled):
-//   This changes the stride of primary IVs in a loop to avoid more expensive
-//   multiplications inside the loop. Commonly the primary IVs are only used
-//   for indexing memory at some element size, which can end up with these
-//   multiplications.
+// Strength reduction:
+//   Strength reduction identifies cases where all uses of a primary IV compute
+//   a common derived value. Commonly this happens when indexing memory at some
+//   element size, resulting in multiplications. It introduces a new primary IV
+//   that directly computes this derived value, avoiding the need for the
+//   original primary IV and its associated calculations. The optimization
+//   handles GC pointers carefully, ensuring all accesses remain within managed
+//   objects.
 //
-//   Strength reduction frequently relies on reversing the loop to remove the
-//   last non-multiplied use of the primary IV.
+// Unused IV removal:
+//   This removes induction variables that are only used for self-updates with
+//   no external uses. This commonly happens after other IV optimizations have
+//   replaced all meaningful uses of an IV with a different, more efficient IV.
 //
 
 #include "jitpch.h"
