@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using System.Net.Test.Common;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Mail.Tests
 {
@@ -51,6 +52,13 @@ namespace System.Net.Mail.Tests
                 _smtp.Dispose();
             }
             base.Dispose(disposing);
+        }
+
+        ITestOutputHelper _output;
+
+        public SmtpClientTest(ITestOutputHelper output)
+        {
+            _output = output;
         }
 
         [Theory]
@@ -237,7 +245,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TestMailDelivery()
         {
-            using var server = new LoopbackSmtpServer();
+            using var server = new LoopbackSmtpServer(_output);
             using SmtpClient client = server.CreateClient();
             client.Credentials = new NetworkCredential("foo", "bar");
             MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
@@ -282,7 +290,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void SendMailAsync_CanBeCanceled_CancellationToken_SetAlready()
         {
-            using var server = new LoopbackSmtpServer();
+            using var server = new LoopbackSmtpServer(_output);
             using SmtpClient client = server.CreateClient();
 
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -299,7 +307,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public async Task SendMailAsync_CanBeCanceled_CancellationToken()
         {
-            using var server = new LoopbackSmtpServer();
+            using var server = new LoopbackSmtpServer(_output);
             using SmtpClient client = server.CreateClient();
 
             server.ReceiveMultipleConnections = true;
