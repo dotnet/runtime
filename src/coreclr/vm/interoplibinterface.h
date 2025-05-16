@@ -127,6 +127,8 @@ public:
     static void OnAfterGCScanRoots(_In_ bool isConcurrent);
 
 #ifdef FEATURE_GCBRIDGE
+    static FCDECL0(void, WaitForGCBridgeFinish);
+
     static void TriggerGCBridge(
         _In_ size_t sccsLen,
         _In_ StronglyConnectedComponent* sccs,

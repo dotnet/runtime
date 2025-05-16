@@ -160,6 +160,7 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
 namespace
 {
     Volatile<BOOL> g_GCBridgeActive = FALSE;
+    CLREvent* g_bridgeFinished = nullptr;
 
     void ReleaseGCBridgeArgumentsWorker(
         _In_ size_t sccsLen,
@@ -185,6 +186,29 @@ namespace
         free(ccrs);
     }
 }
+
+FCIMPL0(void, Interop::WaitForGCBridgeFinish)
+{
+    FCALL_CONTRACT;
+
+    if (!g_GCBridgeActive)
+        return;
+
+    {
+        GCX_PREEMP();
+        g_bridgeFinished->Wait(INFINITE, false);
+    }
+
+    // FIXME
+    // If GC happens between this point and the moment we obtain the WeakReference target, then
+    // we would need to wait again, otherwise we fail to wait for the bridge to finish for the
+    // new GC.
+    //
+    // In order to fix this we would need to prevent any GC's in this time frame. Sounds like we should
+    // have an FCALL that also obtains the weak ref target, with checking for active bridge and deref of
+    // the gc handle to be done within COOPERATIVE gc state.
+}
+FCIMPLEND
 
 void Interop::TriggerGCBridge(
     _In_ size_t sccsLen,
@@ -221,6 +245,17 @@ void Interop::TriggerGCBridge(
         return;
     }
 
+    // This runs during GC while the world is stopped, no synchronisation required
+    if (!g_bridgeFinished)
+    {
+        g_bridgeFinished = new CLREvent();
+        g_bridgeFinished->CreateManualEvent(false);
+    }
+    else
+    {
+        g_bridgeFinished->Reset();
+    }
+
     // Mark the GCBridge as active.
     g_GCBridgeActive = TRUE;
 }
@@ -238,6 +273,7 @@ void Interop::ReleaseGCBridgeArguments(
     {
         GCX_COOP();
         g_GCBridgeActive = FALSE;
+        g_bridgeFinished->Set();
     }
 
     ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);

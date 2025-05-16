@@ -52,6 +52,11 @@ namespace System
             Create(target, trackResurrection);
         }
 
+#if FEATURE_GCBRIDGE
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void WaitForGCBridgeFinish();
+#endif
+
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected WeakReference(SerializationInfo info, StreamingContext context)
@@ -126,6 +131,10 @@ namespace System
                 if (wh == 0)
                     return false;
 
+#if FEATURE_GCBRIDGE
+                WaitForGCBridgeFinish();
+#endif
+
                 bool result = GCHandle.InternalGet(wh) != null;
 
                 // must keep the instance alive as long as we use the handle.
@@ -169,6 +178,10 @@ namespace System
 
                     return target;
                 }
+#endif
+
+#if FEATURE_GCBRIDGE
+                WaitForGCBridgeFinish();
 #endif
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
