@@ -18,6 +18,7 @@ internal static partial class Interop
             PKCS12_ALWAYS_CNG_KSP              = 0x00000200,
             PKCS12_ALLOW_OVERWRITE_KEY         = 0x00004000,
             PKCS12_NO_PERSIST_KEY              = 0x00008000,
+            PKCS12_NAMED_NO_PERSIST_KEY        = 0x00020000,
             PKCS12_INCLUDE_EXTENDED_PROPERTIES = 0x00000010,
             None                               = 0x00000000,
         }
