@@ -5172,8 +5172,8 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         return LowerNode(node);
     }
 
-    uint32_t count    = simdSize / genTypeSize(simdBaseType);
     uint32_t elemSize = genTypeSize(simdBaseType);
+    uint32_t count    = simdSize / elemSize;
 
     if (op1->OperIs(GT_IND))
     {
@@ -5667,12 +5667,17 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         return node->gtNext;
     }
 
-    ssize_t count     = simdSize / genTypeSize(simdBaseType);
-    ssize_t imm8      = op2->AsIntCon()->IconValue();
-    ssize_t simd16Cnt = 16 / genTypeSize(simdBaseType);
+    // We should have a bounds check inserted for any index outside the allowed range
+    // but we need to generate some code anyways, and so we'll simply mask here for simplicity.
+
+    uint32_t elemSize = genTypeSize(simdBaseType);
+    uint32_t count    = simdSize / elemSize;
+
+    ssize_t imm8      = static_cast<uint8_t>(op2->AsIntCon()->IconValue()) % count;
+    ssize_t simd16Cnt = 16 / elemSize;
     ssize_t simd16Idx = imm8 / simd16Cnt;
 
-    assert(0 <= imm8 && imm8 < count);
+    assert((0 <= imm8) && (imm8 < count));
 
     switch (simdBaseType)
     {
