@@ -908,6 +908,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\UnsafeAccessorAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\UnsafeAccessorTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ValueTaskAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\YieldAwaitable.cs" />
@@ -961,6 +962,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\ComVisibleAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CreateObjectFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CreateComInterfaceFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CreatedWrapperFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CriticalHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CULong.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\CurrencyWrapper.cs" />
@@ -2723,6 +2725,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve2.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsArmIntrinsics)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\AdvSimd.PlatformNotSupported.cs" />
@@ -2734,6 +2737,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sha256.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Arm\Sve2.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(SupportsWasmIntrinsics)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\Wasm\WasmBase.cs" />
@@ -2774,7 +2778,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolCallbackWrapper.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
   </ItemGroup>
   <ItemGroup Condition="('$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true') and '$(FeatureWasmManagedThreads)' != 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Browser.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.Browser.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ThreadPoolBoundHandle.Browser.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmManagedThreads)' != 'true'">

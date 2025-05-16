@@ -1260,9 +1260,10 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - windows_x86
+          helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
-            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release -test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc Release -rc Release
             dependsOnGlobalBuilds:
               - nameSuffix: CoreCLR_Libraries
                 buildConfig: release
@@ -1273,12 +1274,11 @@ extends:
                   artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Release$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
-            enablePublishTestResults: true
-            testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
+            timeoutInMinutes: 150
             postBuildSteps:
-              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
+              - template: /eng/pipelines/installer/helix.yml
                 parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
+                  creator: dotnet-bot
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -1292,9 +1292,10 @@ extends:
             - windows_x64
             - osx_x64
             - linux_x64
+          helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
-            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release -test
+            buildArgs: -s host+packs -c $(_BuildConfig) -lc ${{ variables.debugOnPrReleaseOnRolling }} -rc Release
             dependsOnGlobalBuilds:
               - nameSuffix: CoreCLR_Libraries
                 buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -1305,12 +1306,11 @@ extends:
                   artifactFileName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)$(archiveExtension)
                   unpackFolder: $(Build.SourcesDirectory)/artifacts/bin
                   displayName: 'unified artifacts'
-            enablePublishTestResults: true
-            testRunTitle: Installer-$(osGroup)$(osSubgroup)_$(archType)
+            timeoutInMinutes: 150
             postBuildSteps:
-              - template: /eng/pipelines/installer/steps/upload-job-artifacts.yml
+              - template: /eng/pipelines/installer/helix.yml
                 parameters:
-                  name: $(osGroup)$(osSubgroup)_$(archType)
+                  creator: dotnet-bot
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),

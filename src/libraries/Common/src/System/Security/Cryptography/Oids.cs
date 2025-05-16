@@ -66,6 +66,7 @@ namespace System.Security.Cryptography
         internal const string Pkcs7Hashed = "1.2.840.113549.1.7.5";
         internal const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
 
+        // Hash algorithms
         internal const string Md5 = "1.2.840.113549.2.5";
         internal const string Sha1 = "1.3.14.3.2.26";
         internal const string Sha256 = "2.16.840.1.101.3.4.2.1";
