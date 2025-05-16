@@ -321,7 +321,6 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
@@ -530,7 +529,7 @@
 
     <Message Text="Linking for initial memory %24(WasmInitialHeapSize)=$(WasmInitialHeapSize) bytes. Set this msbuild property to change the value." Importance="High" />
     <Message Text="Linking with emcc with $(WasmLinkOptimizationFlag). This may take a while ..." Importance="High" />
-    <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="High" />
+    <Message Text="Running emcc with @(_EmccLinkStepArgs->'%(Identity)', ' ')" Importance="Low" />
     <Exec Command='emcc "@$(_WasmDefaultFlagsRsp)" $(_WasmDefaultFlags) "@$(_WasmDefaultLinkFlagsRsp)" "@$(_WasmLinkRsp)"' EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_EmccLinkStepConsoleOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_EmccLinkStepExitCode" />

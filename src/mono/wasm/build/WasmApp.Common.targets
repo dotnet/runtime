@@ -889,7 +889,6 @@
   <Target Name="_CheckToolchainIsExpectedVersion" />
 
   <Target Name="_WasmWriteRspForLinking">
-    <Message Text="Writing to $(_WasmLinkRsp) @(_WasmLinkStepArgs->'%(Identity)', ' ')" Importance="High" />
     <WriteLinesToFile Lines="@(_WasmLinkStepArgs)" File="$(_WasmLinkRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_WasmLinkRsp)" />
