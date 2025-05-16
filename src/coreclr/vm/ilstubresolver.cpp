@@ -559,3 +559,43 @@ void ILStubResolver::StubGenFailed(ILStubResolver* pResolver)
 
     pResolver->ClearCompileTimeState(ILNotYetGenerated);
 }
+
+#ifndef DACCESS_COMPILE
+void FinalizeILStub(
+    _In_ ILStubResolver* ilResolver,
+    _In_ ILStubLinker* sl,
+    _Out_ DynamicResolver** dynamicResolver,
+    _Out_ COR_ILMETHOD_DECODER** methodILDecoder)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(ilResolver != NULL);
+    _ASSERTE(sl != NULL);
+    _ASSERTE(dynamicResolver != NULL);
+    _ASSERTE(methodILDecoder != NULL);
+
+    UINT maxStack;
+    size_t cbCode = sl->Link(&maxStack);
+    DWORD cbSig = sl->GetLocalSigSize();
+
+    COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
+    BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+    BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+    _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+    size_t numEH = sl->GetNumEHClauses();
+    if (numEH > 0)
+    {
+        sl->WriteEHClauses(ilResolver->AllocEHSect(numEH));
+    }
+
+    sl->GenerateCode(pbBuffer, cbCode);
+    sl->GetLocalSig(pbLocalSig, cbSig);
+
+    // Store the token lookup map
+    ilResolver->SetTokenLookupMap(sl->GetTokenLookupMap());
+    ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+    *dynamicResolver = (DynamicResolver*)ilResolver;
+    *methodILDecoder = pILHeader;
+}
+#endif // !DACCESS_COMPILE

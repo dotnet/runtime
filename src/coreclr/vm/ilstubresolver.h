@@ -108,5 +108,12 @@ protected:
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
 
+#ifndef DACCESS_COMPILE
+void FinalizeILStub(
+    _In_ ILStubResolver* ilResolver,
+    _In_ ILStubLinker* sl,
+    _Out_ DynamicResolver** dynamicResolver,
+    _Out_ COR_ILMETHOD_DECODER** methodILDecoder);
+#endif // !DACCESS_COMPILE
 
 #endif // __ILSTUBRESOLVER_H__
