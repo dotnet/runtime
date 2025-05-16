@@ -207,7 +207,7 @@ static void ScanStackRoots(Thread * pThread, promote_func* fn, ScanContext* sc)
     }
 
     GCFrame* pGCFrame = pThread->GetGCFrame();
-    while (pGCFrame != NULL)
+    while (pGCFrame != GCFRAME_TOP)
     {
         pGCFrame->GcScanRoots(fn, sc);
         pGCFrame = pGCFrame->PtrNextFrame();
@@ -388,8 +388,10 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
 #endif
 #ifdef FEATURE_COMWRAPPERS
     bool isRooted = false;
-    if (ComWrappersNative::HasManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+    if (ComWrappersNative::IsManagedObjectComWrapper((OBJECTREF)pObject, &isRooted))
+    {
         return isRooted;
+    }
 #endif
 #ifdef FEATURE_OBJCMARSHAL
     bool isReferenced = false;
@@ -964,7 +966,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (g_sw_ww_enabled_for_gc_heap && (args->write_watch_table != nullptr))
         {
             assert(args->is_runtime_suspended);
-            g_sw_ww_table = args->write_watch_table;
+            g_write_watch_table = args->write_watch_table;
         }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
@@ -1121,7 +1123,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
         assert(args->write_watch_table != nullptr);
-        g_sw_ww_table = args->write_watch_table;
+        g_write_watch_table = args->write_watch_table;
         g_sw_ww_enabled_for_gc_heap = true;
         stompWBCompleteActions |= ::SwitchToWriteWatchBarrier(true);
 #else
@@ -1132,7 +1134,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     case WriteBarrierOp::SwitchToNonWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        g_sw_ww_table = 0;
+        g_write_watch_table = 0;
         g_sw_ww_enabled_for_gc_heap = false;
         stompWBCompleteActions |= ::SwitchToNonWriteWatchBarrier(true);
 #else

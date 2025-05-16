@@ -96,6 +96,34 @@ There is no defined/enforced/declared ordering between the generic parameter and
 call(["this" pointer] [return buffer pointer] [generics context|varargs cookie] [userargs]*)
 ```
 
+## Async
+
+Async calling convention is additive to other calling conventions when supported. The set of scenarios is constrained to regular static/virtual calls and does not, for example, support PInvokes or varargs. At the minimum ordinary static calls, calls with `this` parameter or generic hidden parameters are supported.
+
+Async calling convention adds an extra `Continuation` parameter and an extra return, which sematically takes precedence when not `null`. A non-null `Continuation` upon return signals that the computation is not complete and the formal result is not ready. A non-null argument means that the function is resuming and should extract the state from the `Continuation` and continue execution (while ignoring all other arguments).
+
+The `Continuation` is a managed object and needs to be tracked accordingly. The GC info includes the continuation result as live at Async call sites.
+
+### Returning `Continuation`
+To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result.
+
+| arch | `REG_ASYNC_CONTINUATION_RET` |
+| ------------- | ------------- |
+| x86  | ecx  |
+| x64  | rcx  |
+| arm | r2  |
+| arm64  | x2  |
+| risc-v  | a2  |
+
+### Passing `Continuation` argument
+The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present.
+
+```
+call(["this" pointer] [return buffer pointer] [generics context] [continuation] [userargs])   // not x86
+
+call(["this" pointer] [return buffer pointer] [userargs] [generics context] [continuation])   // x86
+```
+
 ## AMD64-only: by-value value types
 
 Just like native, AMD64 has implicit-byrefs. Any structure (value type in IL parlance) that is not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes in size) that is declared to be passed by value, is instead passed by reference. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack. However, there are some cases within remoting or reflection where apparently stackalloc is too hard, and so they pass in pointers within the GC heap, thus the JITed code must report these implicit byref parameters as interior pointers (BYREFs in JIT parlance), in case the callee is one of these reflection paths. Similarly, all writes must use checked write barriers.
@@ -200,11 +228,7 @@ For Windows/x86 on NativeAOT and Linux/x86, funclets are used just like on other
 
 ## Cloned finallys
 
-JIT64 attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). Because the VM semantics for non-rude Thread.Abort dictate that handlers will not be aborted, the JIT must mark these 'inlined' finally bodies. These show up as special entries at the end of the EH tables and are marked with `COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_DUPLICATED`, and the try_start, try_end, and handler_start are all the same: the start of the cloned finally.
-
-RyuJit also implements finally cloning, for all supported architectures. However, the implementation does not yet handle the thread abort case; cloned finally bodies are not guaranteed to remain intact and are not reported to the runtime. Because of this, finally cloning is disabled for VMs that support thread abort (desktop clr).
-
-JIT32 does not implement finally cloning.
+RyuJIT attempts to speed the normal control flow by 'inlining' a called finally along the 'normal' control flow (i.e., leaving a try body in a non-exceptional manner via C# fall-through). This optimization is supported on all architectures.
 
 ## Invoking Finallys/Non-local exits
 
@@ -352,15 +376,17 @@ When an exception occurs, the VM is invoked to do some processing. If the except
 
 The VM sets the frame register to be the same as the parent function. This allows the funclets to access local variables using frame-relative addresses.
 
-For filter funclets and on CoreCLR/AMD64 for all funclets, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
+For filter funclets, all other register values that existed at the exception point in the corresponding "try" region are trashed on entry to the funclet. That is, the only registers that have known values are those of the funclet parameters and the frame register.
 
-For other funclets on all platforms except CoreCLR/AMD64, all non-volatile registers are restored to their values at the exception point. The JIT codegen [does not take advantage of it currently](https://github.com/dotnet/runtime/pull/114630#issuecomment-2810210759).
+For other funclets, all non-volatile registers are restored to their values at the exception point. The JIT codegen [does not take advantage of it currently](https://github.com/dotnet/runtime/pull/114630#issuecomment-2810210759).
 
 ### Registers on return from a funclet
 
 When a funclet finishes execution, and the VM returns execution to the function (or an enclosing funclet, if there is EH clause nesting), the non-volatile registers are restored to the values they held at the exception point. Note that the volatile registers have been trashed.
 
-Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame.
+Any register value changes made in the funclet are lost. If a funclet wants to make a variable change known to the main function (or the funclet that contains the "try" region), that variable change needs to be made to the shared main function stack frame. This not a fundamental limitation. If necessary, the runtime can be updated to preserve non-volatile register changes made in funclets.
+
+Funclets are not required to preserve non-volatile registers.
 
 ## Windows/x86 EH considerations
 
@@ -498,85 +524,6 @@ When the inner "throw new UserException4" is executed, the exception handling fi
 ## Filter GC semantics
 
 Filters are invoked in the 1st pass of EH processing and as such execution might resume back at the faulting address, or in the filter-handler, or someplace else. Because the VM must allow GC's to occur during and after a filter invocation, but before the EH subsystem knows where it will resume, we need to keep everything alive at both the faulting address **and** within the filter. This is accomplished by 3 means: (1) the VM's stackwalker and GCInfoDecoder report as live both the filter frame and its corresponding parent frame, (2) the JIT encodes all stack slots that are live within the filter as being pinned, and (3) the JIT reports as live (and possible zero-initializes) anything live-out of the filter. Because of (1) it is likely that a stack variable that is live within the filter and the try body will be double reported. During the mark phase of the GC double reporting is not a problem. The problem only arises if the object is relocated: if the same location is reported twice, the GC will try to relocate the address stored at that location twice. Thus we prevent the object from being relocated by pinning it, which leads us to why we must do (2). (3) is done so that after the filter returns, we can still safely incur a GC before executing the filter-handler or any outer handler within the same frame. For the same reason, control must exit a filter region via its final block (in other words, a filter region must terminate with the instruction that leaves the filter region, and the program may not exit the filter region via other paths).
-
-## Duplicated Clauses
-
-Duplicated clauses are a special set of entries in the EH tables to assist the VM. Specifically, if handler 'A' is also protected by an outer EH clause 'B', then the JIT must emit a duplicated clause, a duplicate of 'B', that marks the whole handler 'A' (which is now lexically disjoint for the range of code for the corresponding try body 'A') as being protected by the handler for 'B'.
-
-Duplicated clauses are not needed for x86 and for NativeAOT ABI.
-
-During exception dispatch the VM uses these duplicated clauses to know when to skip any frames between the handler and its parent function. After skipping to the parent function, due to a duplicated clause, the VM searches for a regular/non-duplicate clause in the parent function. The order of duplicated clauses is important. They should appear after all of the main function clauses. They should still follow the normal sorting rules (inner-to-outer, top-to-bottom), but because the try-start/try-end will all be the same for a given handler, they should maintain the ordering, regarding inner-to-outer, as the corresponding original clause.
-
-Example:
-
-```
-A: try {
-B:	...
-C:	try {
-D:		...
-E:		try {
-F:			...
-G:		}
-H:		catch {
-I:			...
-J:		}
-K:		...
-L:	}
-M:	finally {
-N:		...
-O:	}
-P:	...
-Q: }
-R: catch {
-S:	...
-T: }
-```
-
-In MSIL this would generate 3 EH clauses:
-
-```
-.try E-G catch H-J
-.try C-L finally M-O
-.try A-Q catch R-T
-```
-
-The native code would be laid out as follows (the order of the handlers is irrelevant except they are after the main method body) with their corresponding (fake) native offsets:
-
-```
-A: -> 1
-B: -> 2
-C: -> 3
-D: -> 4
-E: -> 5
-F: -> 6
-G: -> 7
-K: -> 8
-L: -> 9
-P: -> 10
-Q: -> 11
-H: -> 12
-I: -> 13
-J: -> 14
-M: -> 15
-N: -> 16
-O: -> 17
-R: -> 18
-S: -> 19
-T: -> 20
-```
-
-The native EH clauses would be listed as follows:
-
-```
-1. .try 5-7 catch 12-14 (top-most & inner-most first)
-2. .try 3-9 finally 15-17 (top-most & next inner-most)
-3. .try 1-11 catch 18-20 (top-most & outer-most)
-4. .try 12-14 finally 15-17 duplicated (inner-most because clause 2 is inside clause 3, top-most because handler H-J is first)
-5. .try 12-14 catch 18-20 duplicated
-6. .try 15-17 catch 18-20
-```
-
-If the handlers were in a different order, then clause 6 might appear before clauses 4 and 5, but never in between.
 
 ## Clauses covering the same try region
 

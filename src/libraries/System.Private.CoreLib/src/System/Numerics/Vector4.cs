@@ -488,15 +488,15 @@ namespace System.Numerics
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
-        /// <returns>A new <see cref="Vector4" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A <see cref="Vector4" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        internal static Vector4 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector4();
+        public static Vector4 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector4();
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
-        /// <returns>A new <see cref="Vector4" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A <see cref="Vector4" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        internal static Vector4 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector4();
+        public static Vector4 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector4();
 
         /// <summary>
         /// Computes the cross product of two vectors. For homogeneous coordinates,
@@ -966,10 +966,8 @@ namespace System.Numerics
         /// <param name="position">The vector to transform.</param>
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector4 Transform(Vector2 position, Matrix4x4 matrix) => Transform(position, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector4 Transform(Vector2 position, in Matrix4x4.Impl matrix)
+        public static Vector4 Transform(Vector2 position, Matrix4x4 matrix)
         {
             // This implementation is based on the DirectX Math Library XMVector2Transform method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
@@ -990,10 +988,8 @@ namespace System.Numerics
         /// <param name="position">The vector to transform.</param>
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector4 Transform(Vector3 position, Matrix4x4 matrix) => Transform(position, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector4 Transform(Vector3 position, in Matrix4x4.Impl matrix)
+        public static Vector4 Transform(Vector3 position, Matrix4x4 matrix)
         {
             // This implementation is based on the DirectX Math Library XMVector3Transform method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
@@ -1015,10 +1011,8 @@ namespace System.Numerics
         /// <param name="vector">The vector to transform.</param>
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector4 Transform(Vector4 vector, Matrix4x4 matrix) => Transform(vector, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector4 Transform(Vector4 vector, in Matrix4x4.Impl matrix)
+        public static Vector4 Transform(Vector4 vector, Matrix4x4 matrix)
         {
             // This implementation is based on the DirectX Math Library XMVector4Transform method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl

@@ -117,14 +117,16 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */

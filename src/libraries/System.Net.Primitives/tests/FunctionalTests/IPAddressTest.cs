@@ -346,6 +346,10 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<SocketException>(() => IPAddress.Broadcast.Address = MaxAddress - 1);
             Assert.Throws<SocketException>(() => IPAddress.Loopback.Address = MaxAddress - 1);
             Assert.Throws<SocketException>(() => IPAddress.None.Address = MaxAddress - 1);
+
+            Assert.Throws<SocketException>(() => IPAddress.IPv6Any.ScopeId = 1);
+            Assert.Throws<SocketException>(() => IPAddress.IPv6Loopback.ScopeId = 1);
+            Assert.Throws<SocketException>(() => IPAddress.IPv6None.ScopeId = 1);
         }
 #pragma warning restore 618
     }

@@ -226,10 +226,6 @@ BOOL Exception::IsPreallocatedOOMException()
 }
 
 //------------------------------------------------------------------------------
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
 {
     LIMITED_METHOD_CONTRACT;
@@ -778,10 +774,6 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
             return NULL;
     }
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 // ---------------------------------------------------------------------------
 // HRException class.  Implements exception API for exceptions from HRESULTS

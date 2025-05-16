@@ -9832,5 +9832,10 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
+
+        public static T BitwiseClearXor<T>(T op1, T op2, T op3) where T : IBitwiseOperators<T, T, T>
+        {
+            return op1 ^ (op2 & ~op3);
+        }
     }
 }
