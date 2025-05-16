@@ -894,6 +894,7 @@ void EEStartupHelper()
 #endif
 
         // throws on error
+        _ASSERTE(GetThreadNULLOk() == NULL);
         SetupThread();
 
 #ifdef DEBUGGING_SUPPORTED
