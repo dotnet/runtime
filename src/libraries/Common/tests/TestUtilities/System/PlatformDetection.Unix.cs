@@ -241,22 +241,21 @@ namespace System
             }
             else if (File.Exists("/etc/os-release"))
             {
-                foreach (ReadOnlySpan<char> line in File.ReadAllLines("/etc/os-release"))
+                foreach (string line in File.ReadAllLines("/etc/os-release"))
                 {
                     if (line.StartsWith("ID=", StringComparison.Ordinal))
                     {
-                        result.Id = line[3..].Trim(['"', '\'']).ToString();
+                        result.Id = line.Substring(3).Trim('"', '\'');
                     }
                     else if (line.StartsWith("VERSION_ID=", StringComparison.Ordinal))
                     {
-                        ReadOnlySpan<char> versionId = line[11..].Trim(['"', '\'']);
+                        string versionId = line.Substring(11).Trim('"', '\'');
                         int dashIndex = versionId.IndexOf('_');
                         if (dashIndex != -1)
                         {
-                            versionId = versionId[..dashIndex];
+                            versionId = versionId.Substring(0, dashIndex);
                         }
-
-                        result.VersionId = ToVersion(versionId.ToString());
+                        result.VersionId = ToVersion(versionId);
                     }
                 }
             }
