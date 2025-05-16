@@ -51,7 +51,7 @@
 
 LOCAL_LABEL(RhpNewFast_RarePath):
         mv    a1, zero
-        mv    a0, a1
+        mv    a0, s1
 
         EPILOG_RESTORE_REG               s1,     0x10
         EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20
