@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <_TargetsBaseName Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">BrowserWasmApp</_TargetsBaseName>
     <_TargetsBaseName Condition="'$(RuntimeIdentifier)' == 'wasi-wasm'">WasiApp</_TargetsBaseName>
     <_TargetsBaseName Condition="'$(_TargetsBaseName)' == ''">Unknown RID=$(RuntimeIdentifier)</_TargetsBaseName>
