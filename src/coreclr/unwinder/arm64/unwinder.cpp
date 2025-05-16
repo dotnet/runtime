@@ -33,6 +33,10 @@
 #define FIELD_OFFSET(type, field)    ((LONG)__builtin_offsetof(type, field))
 #endif
 
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
+extern "C" void* PacStripPtr(void* ptr);
+#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
+
 #ifdef HOST_UNIX
 #define RtlZeroMemory ZeroMemory
 
@@ -265,16 +269,71 @@ do {                                                                            
 
 #endif // !defined(DEBUGGER_UNWIND)
 
-//
 // Macros for stripping pointer authentication (PAC) bits.
-//
+#if !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
-#if !defined(DEBUGGER_STRIP_PAC)
+#define STRIP_PAC(pointer)    RtlStripPacOnline(pointer)
 
-// NOTE: Pointer authentication is not used by .NET, so the implementation does nothing
-#define STRIP_PAC(Params, pointer)
+FORCEINLINE
+VOID RtlStripPacOnline(_Inout_ PULONG64 Pointer)
 
-#endif
+/*++
+
+Routine Description:
+
+   This routine strips the ARM64 Pointer Authentication Code (PAC) from a
+   pointer using the ARM64-native xpaci intrinsic directly. Hence this should
+   only be called when stripping a pointer at runtime (not debugger)
+
+Arguments:
+
+   Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+
+Return Value:
+
+   None.
+
+--*/
+
+{
+    *Pointer = (ULONG64)PacStripPtr((void *) (*Pointer));
+}
+#else
+
+#define STRIP_PAC(pointer)    RtlStripPacManual(pointer)
+
+FORCEINLINE
+VOID
+RtlStripPacManual(
+    _Inout_ PULONG64 Pointer
+)
+/*++
+
+Routine Description:
+
+    This routine manually strips the ARM64 Pointer Authentication Code (PAC)
+    from a pointer. This is functionally similar to the XPAC family of
+    instructions.
+
+    N.B. Even though PAC is only supported on ARM64, this routine is available
+         on all architectures to conveniently enable scenarios such as the
+         Debugger.
+
+Arguments:
+
+    Pointer - Supplies a pointer to the pointer whose PAC will be stripped.
+
+Return Value:
+
+    None.
+
+--*/
+{
+    *Pointer &= 0x0000FFFFFFFFFFFF;
+    return;
+}
+
+#endif // !defined(DACCESS_COMPILE) && !defined(FEATURE_CDAC_UNWINDER)
 
 //
 // Macros to clarify opcode parsing
@@ -2357,7 +2416,7 @@ ExecuteCodes:
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
 
-            STRIP_PAC(UnwindParams, &ContextRecord->Lr);
+            STRIP_PAC(&ContextRecord->Lr);
 
             //
             // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
