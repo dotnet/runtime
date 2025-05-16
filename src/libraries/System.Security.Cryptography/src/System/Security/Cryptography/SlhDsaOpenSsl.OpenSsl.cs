@@ -86,21 +86,21 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.Crypto.SlhDsaVerifyPure(_key, data, context, signature);
 
-        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, Span<byte> destination) =>
-            Helpers.SlhDsaPrehash(
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, Span<byte> destination) =>
+            Helpers.SlhDsaPreHash(
                 hash,
                 context,
-                preHashAlgorithm,
-                new Helpers.StackTuple<SafeEvpPKeyHandle, Span<byte>>(_key, destination),
-                static (message, state) => Interop.Crypto.SlhDsaSignPreHash(state.Item1, message, state.Item2));
+                hashAlgorithmOid,
+                Helpers.CreateStackTuple(_key, destination),
+                static (message, state) => Interop.Crypto.SlhDsaSignPreEncoded(state.Item1, message, state.Item2));
 
-        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, HashAlgorithmName preHashAlgorithm, ReadOnlySpan<byte> signature) =>
-            Helpers.SlhDsaPrehash(
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            Helpers.SlhDsaPreHash(
                 hash,
                 context,
-                preHashAlgorithm,
-                new Helpers.StackTuple<SafeEvpPKeyHandle, ReadOnlySpan<byte>>(_key, signature),
-                static (message, state) => Interop.Crypto.SlhDsaVerifyPreHash(state.Item1, message, state.Item2));
+                hashAlgorithmOid,
+                Helpers.CreateStackTuple(_key, signature),
+                static (message, state) => Interop.Crypto.SlhDsaVerifyPreEncoded(state.Item1, message, state.Item2));
 
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportPublicKey(_key, destination);

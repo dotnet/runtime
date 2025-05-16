@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Security.Cryptography.SLHDsa.Tests
 {
@@ -45,12 +46,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         public void NistPreHashSignatureVerificationTest(SlhDsaTestData.SlhDsaSigVerTestVector vector)
         {
             byte[] msg = vector.Message;
-            HashAlgorithmName preHashAlgorithm = vector.HashAlgorithm.Value;
             byte[] ctx = vector.Context;
             byte[] sig = vector.Signature;
-
             byte[] hash;
-            if (preHashAlgorithm.Name == "SHAKE128")
+
+#if NET
+            if (vector.HashAlgorithm == SlhDsaTestHelpers.Shake128Oid)
             {
                 using (Shake128 hasher = new Shake128())
                 {
@@ -58,7 +59,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                     hash = hasher.GetHashAndReset(256 / 8);
                 }
             }
-            else if (preHashAlgorithm.Name == "SHAKE256")
+            else if (vector.HashAlgorithm == SlhDsaTestHelpers.Shake256Oid)
             {
                 using (Shake256 hasher = new Shake256())
                 {
@@ -67,8 +68,25 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 }
             }
             else
+#endif
             {
-                using (IncrementalHash hasher = IncrementalHash.CreateHash(preHashAlgorithm))
+                HashAlgorithmName hashAlgorithmName =
+                    vector.HashAlgorithm switch
+                    {
+                        SlhDsaTestHelpers.Md5Oid => HashAlgorithmName.MD5,
+                        SlhDsaTestHelpers.Sha1Oid => HashAlgorithmName.SHA1,
+                        SlhDsaTestHelpers.Sha256Oid => HashAlgorithmName.SHA256,
+                        SlhDsaTestHelpers.Sha384Oid => HashAlgorithmName.SHA384,
+                        SlhDsaTestHelpers.Sha512Oid => HashAlgorithmName.SHA512,
+#if NET
+                        SlhDsaTestHelpers.Sha3_256Oid => HashAlgorithmName.SHA3_256,
+                        SlhDsaTestHelpers.Sha3_384Oid => HashAlgorithmName.SHA3_384,
+                        SlhDsaTestHelpers.Sha3_512Oid => HashAlgorithmName.SHA3_512,
+#endif
+                        _ => throw new XunitException($"Unknown hash algorithm OID: {vector.HashAlgorithm}"),
+                    };
+
+                using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
                 {
                     hasher.AppendData(msg);
                     hash = hasher.GetHashAndReset();
@@ -77,11 +95,11 @@ namespace System.Security.Cryptography.SLHDsa.Tests
 
             // Test signature verification with public key
             using SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, vector.PublicKey);
-            Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyPreHash(hash, sig, preHashAlgorithm, ctx));
+            Assert.Equal(vector.TestPassed, publicSlhDsa.VerifyPreHash(hash, sig, vector.HashAlgorithm, ctx));
 
             // Test signature verification with secret key
             using SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, vector.SecretKey);
-            Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyPreHash(hash, sig, preHashAlgorithm, ctx));
+            Assert.Equal(vector.TestPassed, secretSlhDsa.VerifyPreHash(hash, sig, vector.HashAlgorithm, ctx));
         }
 
         // Signing takes a relatively long time so we'll just run it on a representative sample of algorithms.
@@ -101,8 +119,6 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // These tend to be over 10x slower than the fast counterparts. For perf numbers, see
             // section 10 in https://sphincs.org/data/sphincs+-r3.1-specification.pdf (from June 2022).
             SlhDsaAlgorithm.SlhDsaSha2_128s,
-            SlhDsaAlgorithm.SlhDsaShake192s,
-            SlhDsaAlgorithm.SlhDsaSha2_256s,
         ];
 
         [Theory]
@@ -159,7 +175,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         }
 
         [Theory]
-        [MemberData(nameof(AlgorithmsData_Small))]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public void GenerateSignExportPublicVerifyWithPublicOnly(SlhDsaAlgorithm algorithm)
         {
             byte[] publicKey;
@@ -202,6 +218,55 @@ namespace System.Security.Cryptography.SLHDsa.Tests
                 slhDsa.SignData(data, signature, []);
 
                 ExerciseSuccessfulVerify(slhDsa, data, signature, []);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
+        public void GenerateSignPreHashExportPublicVerifyWithPublicOnly(SlhDsaAlgorithm algorithm)
+        {
+            byte[] publicKey;
+            string shake256Oid = SlhDsaTestHelpers.Shake256Oid;
+            byte[] data = new byte[512 / 8];
+            byte[] signature;
+
+            using (SlhDsa slhDsa = GenerateKey(algorithm))
+            {
+                signature = slhDsa.SignPreHash(data, shake256Oid);
+                AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(data, signature, shake256Oid));
+
+                publicKey = slhDsa.ExportSlhDsaPublicKey();
+            }
+
+            using (SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(algorithm, publicKey))
+            {
+                ExerciseSuccessfulVerifyPreHash(publicSlhDsa, data, signature, shake256Oid, []);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AlgorithmsData_Small))]
+        public void GenerateExportSecretKeySignPreHashAndVerify(SlhDsaAlgorithm algorithm)
+        {
+            byte[] secretKey;
+            string shake256Oid = SlhDsaTestHelpers.Shake256Oid;
+            byte[] data = new byte[512 / 8];
+            byte[] signature;
+
+            using (SlhDsa slhDsa = GenerateKey(algorithm))
+            {
+                signature = slhDsa.SignPreHash(data, shake256Oid);
+                secretKey = slhDsa.ExportSlhDsaSecretKey();
+            }
+
+            using (SlhDsa slhDsa = ImportSlhDsaSecretKey(algorithm, secretKey))
+            {
+                ExerciseSuccessfulVerifyPreHash(slhDsa, data, signature, shake256Oid, []);
+
+                signature.AsSpan().Clear();
+                slhDsa.SignPreHash(data, signature, shake256Oid, []);
+
+                ExerciseSuccessfulVerifyPreHash(slhDsa, data, signature, shake256Oid, []);
             }
         }
 
@@ -263,6 +328,50 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             }
 
             AssertExtensions.TrueExpression(slhDsa.VerifyData(data, signature, context));
+        }
+
+        protected static void ExerciseSuccessfulVerifyPreHash(SlhDsa slhDsa, byte[] data, byte[] signature, string hashAlgorithmOid, byte[] context)
+        {
+            ReadOnlySpan<byte> buffer = [0, 1, 2, 3];
+            AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, context));
+
+            if (data.Length > 0)
+            {
+                data[0] ^= 1;
+                AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, context));
+                data[0] ^= 1;
+            }
+            else
+            {
+                Assert.Fail("Empty hash is not supported.");
+            }
+
+            signature[0] ^= 1;
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, context));
+            signature[0] ^= 1;
+
+            if (context.Length > 0)
+            {
+                AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, Array.Empty<byte>()));
+                AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, ReadOnlySpan<byte>.Empty));
+
+                context[0] ^= 1;
+                AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, context));
+                context[0] ^= 1;
+            }
+            else
+            {
+                AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, Array.Empty<byte>()));
+                AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, ReadOnlySpan<byte>.Empty));
+
+                AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, buffer.Slice(0, 1)));
+                AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, buffer.Slice(1)));
+            }
+
+            string hashAlgorithmOid2 = "1." + hashAlgorithmOid;
+            AssertExtensions.FalseExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid2, context));
+
+            AssertExtensions.TrueExpression(slhDsa.VerifyPreHash(data, signature, hashAlgorithmOid, context));
         }
     }
 }

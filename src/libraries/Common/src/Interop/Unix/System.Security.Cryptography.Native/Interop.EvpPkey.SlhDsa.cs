@@ -132,17 +132,17 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_SlhDsaSignPreHash(
+        private static partial int CryptoNative_SlhDsaSignPreEncoded(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
             ReadOnlySpan<byte> msg, int msgLength,
             Span<byte> destination, int destinationLength);
 
-        internal static void SlhDsaSignPreHash(
+        internal static void SlhDsaSignPreEncoded(
             SafeEvpPKeyHandle pkey,
             ReadOnlySpan<byte> msg,
             Span<byte> destination)
         {
-            int ret = CryptoNative_SlhDsaSignPreHash(
+            int ret = CryptoNative_SlhDsaSignPreEncoded(
                 pkey, GetExtraHandle(pkey),
                 msg, msg.Length,
                 destination, destination.Length);
@@ -154,17 +154,17 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_SlhDsaVerifyPreHash(
+        private static partial int CryptoNative_SlhDsaVerifyPreEncoded(
             SafeEvpPKeyHandle pkey, IntPtr extraHandle,
             ReadOnlySpan<byte> msg, int msgLength,
             ReadOnlySpan<byte> signature, int signatureLength);
 
-        internal static bool SlhDsaVerifyPreHash(
+        internal static bool SlhDsaVerifyPreEncoded(
             SafeEvpPKeyHandle pkey,
             ReadOnlySpan<byte> msg,
             ReadOnlySpan<byte> signature)
         {
-            int ret = CryptoNative_SlhDsaVerifyPreHash(
+            int ret = CryptoNative_SlhDsaVerifyPreEncoded(
                 pkey, GetExtraHandle(pkey),
                 msg, msg.Length,
                 signature, signature.Length);

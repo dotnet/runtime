@@ -195,10 +195,10 @@ done:
 #endif
 }
 
-int32_t CryptoNative_SlhDsaSignPreHash(EVP_PKEY *pkey,
-                                       void* extraHandle,
-                                       uint8_t* msg, int32_t msgLen,
-                                       uint8_t* destination, int32_t destinationLen)
+int32_t CryptoNative_SlhDsaSignPreEncoded(EVP_PKEY *pkey,
+                                          void* extraHandle,
+                                          uint8_t* msg, int32_t msgLen,
+                                          uint8_t* destination, int32_t destinationLen)
 {
 
     assert(pkey);
@@ -267,10 +267,10 @@ done:
 #endif
 }
 
-int32_t CryptoNative_SlhDsaVerifyPreHash(EVP_PKEY *pkey,
-                                         void* extraHandle,
-                                         uint8_t* msg, int32_t msgLen,
-                                         uint8_t* sig, int32_t sigLen)
+int32_t CryptoNative_SlhDsaVerifyPreEncoded(EVP_PKEY *pkey,
+                                            void* extraHandle,
+                                            uint8_t* msg, int32_t msgLen,
+                                            uint8_t* sig, int32_t sigLen)
 {
     assert(pkey);
     assert(msgLen >= 0);

@@ -51,26 +51,26 @@ PALEXPORT int32_t CryptoNative_SlhDsaVerifyPure(EVP_PKEY *pkey,
                                                 uint8_t* sig, int32_t sigLen);
 
  /*
-Sign an encoded pre-hashed message using the provided SLH-DSA key. The encoding is
-described in FIPS 205, Algorithm 23.
+Sign an encoded message using the provided SLH-DSA key. The encoding is described
+in FIPS 205, Algorithm 22 line 8 (pure) and Algorithm 23 line 24 (pre-hash).
 
 Returns 1 on success, 0 on a mismatched signature, -1 on error.
 */
-PALEXPORT int32_t CryptoNative_SlhDsaSignPreHash(EVP_PKEY *pkey,
-                                                 void* extraHandle,
-                                                 uint8_t* msg, int32_t msgLen,
-                                                 uint8_t* destination, int32_t destinationLen);
+PALEXPORT int32_t CryptoNative_SlhDsaSignPreEncoded(EVP_PKEY *pkey,
+                                                    void* extraHandle,
+                                                    uint8_t* msg, int32_t msgLen,
+                                                    uint8_t* destination, int32_t destinationLen);
 
 /*
-Verify a message using the provided SLH-DSA key. The encoding is
-described in FIPS 205, Algorithm 23.
+Verify an encoded message using the provided SLH-DSA key. The encoding is described
+in FIPS 205, Algorithm 22 line 8 (pure) and Algorithm 23 line 24 (pre-hash).
 
 Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
 */                                             
-PALEXPORT int32_t CryptoNative_SlhDsaVerifyPreHash(EVP_PKEY *pkey,
-                                                   void* extraHandle,
-                                                   uint8_t* msg, int32_t msgLen,
-                                                   uint8_t* sig, int32_t sigLen);
+PALEXPORT int32_t CryptoNative_SlhDsaVerifyPreEncoded(EVP_PKEY *pkey,
+                                                      void* extraHandle,
+                                                      uint8_t* msg, int32_t msgLen,
+                                                      uint8_t* sig, int32_t sigLen);
 
 /*
 Export the secret key from the given SLH-DSA key.

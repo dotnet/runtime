@@ -469,25 +469,25 @@ namespace Internal.Cryptography
         internal static bool IsSlhDsaOid(string? oid) =>
             SlhDsaAlgorithm.GetAlgorithmFromOid(oid) is not null;
 
-        public delegate void SlhDsaPrehashActionCallback<T, TState>(Span<T> span, TState arg)
+        public delegate void SlhDsaPreHashActionCallback<T, TState>(Span<T> span, TState arg)
             where TState : allows ref struct;
 
-        public delegate TResult SlhDsaPrehashFuncCallback<T, TState, TResult>(Span<T> span, TState arg)
+        public delegate TResult SlhDsaPreHashFuncCallback<T, TState, TResult>(Span<T> span, TState arg)
             where TState : allows ref struct;
 
-        internal static void SlhDsaPrehash<TState>(
+        internal static void SlhDsaPreHash<TState>(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> context,
-            HashAlgorithmName preHashAlgorithm,
+            ReadOnlySpan<char> hashAlgorithmOid,
             TState state,
-            SlhDsaPrehashActionCallback<byte, TState> callback)
+            SlhDsaPreHashActionCallback<byte, TState> callback)
             where TState : allows ref struct
         {
-            SlhDsaPrehash(
+            SlhDsaPreHash(
                 hash,
                 context,
-                preHashAlgorithm,
-                StackTuple.Create(state, callback),
+                hashAlgorithmOid,
+                CreateStackTuple(state, callback),
                 static (message, myState) =>
                 {
                     myState.Item2(message, myState.Item1);
@@ -495,21 +495,19 @@ namespace Internal.Cryptography
                 });
         }
 
-        internal static TResult SlhDsaPrehash<TState, TResult>(
+        internal static TResult SlhDsaPreHash<TState, TResult>(
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> context,
-            HashAlgorithmName preHashAlgorithm,
+            ReadOnlySpan<char> hashAlgorithmOid,
             TState state,
-            SlhDsaPrehashFuncCallback<byte, TState, TResult> callback)
+            SlhDsaPreHashFuncCallback<byte, TState, TResult> callback)
             where TState : allows ref struct
         {
-            string? oid = Helpers.GetOidFromHashAlgorithm(preHashAlgorithm);
+            // The OIDs for the algorithms above have max length 11. We'll just round up for a conservative initial estimate.
+            const int MaxEncodedOidLengthForCommonHashAlgorithms = 16;
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER, MaxEncodedOidLengthForCommonHashAlgorithms);
+            writer.WriteObjectIdentifier(hashAlgorithmOid);
 
-            // TODO should we throw instead?
-            Debug.Assert(oid != null, $"Hash algorithm {preHashAlgorithm} must have already been validated.");
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.WriteObjectIdentifier(oid);
             int encodedOidLength = writer.GetEncodedLength();
             int messageLength =
                 1 +                 // Pre-hash encoding flag
@@ -518,37 +516,37 @@ namespace Internal.Cryptography
                 encodedOidLength +  // OID
                 hash.Length;        // Hash
 
-            // The maximum hash output size we know is 512 bits, but we'll be defensive here.
-            const int MessageLengthUpperBound = 1 + 1 + 255 + 11 + (512 / 8);
+            const int MessageLengthUpperBoundEstimate = 1 + 1 + 255 + 11 + (512 / 8);
             Debug.Assert(
-                messageLength <= MessageLengthUpperBound,
-                $"Message length {messageLength} exceeds the upper bound of {MessageLengthUpperBound}.");
+                messageLength <= MessageLengthUpperBoundEstimate,
+                $"Message length {messageLength} exceeds the upper bound of {MessageLengthUpperBoundEstimate}.");
 
+            // Unknown hash algorithms might overshoot the estimated upper bound so we will rent as a backup.
             byte[]? rented = null;
             Span<byte> message =
-                messageLength > MessageLengthUpperBound
+                messageLength > MessageLengthUpperBoundEstimate
                     ? (rented = CryptoPool.Rent(messageLength))
-                    : stackalloc byte[MessageLengthUpperBound];
-
-            // Pre-hash encoding flag
-            message[0] = 0x01;
-
-            // Context length
-            message[1] = checked((byte)context.Length);
-
-            // Context
-            context.CopyTo(message.Slice(2));
-
-            // OID
-            writer.Encode(
-                new StackTuple<Span<byte>, int>(message, context.Length),
-                (state, encoded) => encoded.CopyTo(state.Item1.Slice(2 + state.Item2)));
-
-            // Hash
-            hash.CopyTo(message.Slice(2 + context.Length + encodedOidLength));
+                    : stackalloc byte[MessageLengthUpperBoundEstimate];
 
             try
             {
+                // Pre-hash encoding flag
+                message[0] = 0x01;
+
+                // Context length
+                message[1] = checked((byte)context.Length);
+
+                // Context
+                context.CopyTo(message.Slice(2));
+
+                // OID
+                writer.Encode(
+                    message.Slice(2 + context.Length),
+                    (dest, encoded) => encoded.CopyTo(dest));
+
+                // Hash
+                hash.CopyTo(message.Slice(2 + context.Length + encodedOidLength));
+
                 return callback(message.Slice(0, messageLength), state);
             }
             finally
@@ -560,14 +558,11 @@ namespace Internal.Cryptography
             }
         }
 
-        internal static class StackTuple
+        internal static StackTuple<T1, T2> CreateStackTuple<T1, T2>(T1 item1, T2 item2)
+            where T1 : allows ref struct
+            where T2 : allows ref struct
         {
-            internal static StackTuple<T1, T2> Create<T1, T2>(T1 item1, T2 item2)
-                where T1 : allows ref struct
-                where T2 : allows ref struct
-            {
-                return new StackTuple<T1, T2>(item1, item2);
-            }
+            return new StackTuple<T1, T2>(item1, item2);
         }
 
         internal ref struct StackTuple<T1, T2>
