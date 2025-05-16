@@ -25,6 +25,10 @@
 #include "ecall.h"
 #include "threadsuspend.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 // target write barriers
 EXTERN_C void JIT_WriteBarrier(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_End();
@@ -288,7 +292,7 @@ struct WriteBarrierDescriptor
     DWORD   m_dw_g_ephemeral_high_offset;   // Offset of the instruction reading g_ephemeral_high
     DWORD   m_dw_g_card_table_offset;       // Offset of the instruction reading g_card_table
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    DWORD   m_dw_g_sw_ww_table_offset;      // Offset of the instruction reading g_sw_ww_table
+    DWORD   m_dw_g_write_watch_table_offset;// Offset of the instruction reading g_write_watch_table
 #endif
 };
 
@@ -459,7 +463,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
             GWB_PATCH_OFFSET(g_ephemeral_high);
             GWB_PATCH_OFFSET(g_card_table);
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-            GWB_PATCH_OFFSET(g_sw_ww_table);
+            GWB_PATCH_OFFSET(g_write_watch_table);
 #endif
         }
 
@@ -469,6 +473,12 @@ void UpdateGCWriteBarriers(bool postGrow = false)
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     // The runtime is not always suspended when this is called (unlike StompWriteBarrierEphemeral) but we have
     // no way to update the barrier code atomically on ARM since each 32-bit value we change is loaded over
     // two instructions. So we have to suspend the EE (which forces code out of the barrier functions) before
@@ -494,6 +504,12 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
@@ -503,6 +519,12 @@ int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
@@ -511,6 +533,12 @@ int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
@@ -1105,88 +1133,6 @@ void ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
     _ASSERTE(patcherTarget == (PCODE)NULL);
 }
 
-Stub *GenerateInitPInvokeFrameHelper()
-{
-    CONTRACT(Stub*)
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    CPUSTUBLINKER sl;
-    CPUSTUBLINKER *psl = &sl;
-
-    CORINFO_EE_INFO::InlinedCallFrameInfo FrameInfo;
-    InlinedCallFrame::GetEEInfo(&FrameInfo);
-
-    ThumbReg regFrame   = ThumbReg(4);
-    ThumbReg regThread  = ThumbReg(5);
-    ThumbReg regScratch = ThumbReg(6);
-    ThumbReg regR9 = ThumbReg(9);
-
-    // Erect frame to perform call to GetThread
-    psl->ThumbEmitProlog(1, sizeof(ArgumentRegisters), FALSE); // Save r4 for aligned stack
-
-    // Save argument registers around the GetThread call. Don't bother with using ldm/stm since this inefficient path anyway.
-    for (int reg = 0; reg < 4; reg++)
-        psl->ThumbEmitStoreRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
-
-    psl->ThumbEmitGetThread(regThread);
-
-    for (int reg = 0; reg < 4; reg++)
-        psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
-
-    // mov [regFrame], FrameIdentifier::InlinedCallFrame
-    psl->ThumbEmitMovConstant(regScratch, (DWORD)FrameIdentifier::InlinedCallFrame);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, 0);
-
-    // ldr regScratch, [regThread + offsetof(Thread, m_pFrame)]
-    // str regScratch, [regFrame + FrameInfo.offsetOfFrameLink]
-    psl->ThumbEmitLoadRegIndirect(regScratch, regThread, offsetof(Thread, m_pFrame));
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameLink);
-
-    // str FP, [regFrame + FrameInfo.offsetOfCalleeSavedFP]
-    psl->ThumbEmitStoreRegIndirect(thumbRegFp, regFrame, FrameInfo.offsetOfCalleeSavedFP);
-
-    // str R9, [regFrame + FrameInfo.offsetOfSPAfterProlog]
-    psl->ThumbEmitStoreRegIndirect(regR9, regFrame, FrameInfo.offsetOfSPAfterProlog);
-
-    // mov [regFrame + FrameInfo.offsetOfReturnAddress], 0
-    psl->ThumbEmitMovConstant(regScratch, 0);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress);
-
-    DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
-    psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
-    psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP);
-
-    // mov [regThread + offsetof(Thread, m_pFrame)], regFrame
-    psl->ThumbEmitStoreRegIndirect(regFrame, regThread, offsetof(Thread, m_pFrame));
-
-    // leave current Thread in R4
-
-    psl->ThumbEmitEpilog();
-
-    // A single process-wide stub that will never unload
-    RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-}
-
-void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
-{
-    ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThreadHelper);
-
-    ThumbEmitCallRegister(ThumbReg(0));
-
-    if (dest != ThumbReg(0))
-    {
-        ThumbEmitMovRegReg(dest, ThumbReg(0));
-    }
-}
-
-
 // Emits code to adjust for a static delegate target.
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
@@ -1670,10 +1616,17 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
      pRD->IsCallerSPValid      = FALSE;
 
      pRD->pCurrentContext->Pc = m_ReturnAddress;
-     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + sizeof(struct HijackArgs);
+     size_t s = sizeof(struct HijackArgs);
+     _ASSERTE(s%4 == 0); // HijackArgs contains register values and hence will be a multiple of 4
+     // stack must be multiple of 8. So if s is not multiple of 8 then there must be padding of 4 bytes
+     s = s + s%8;
+     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
      pRD->pCurrentContext->R0 = m_Args->R0;
+     pRD->pCurrentContext->R2 = m_Args->R2;
+
      pRD->volatileCurrContextPointers.R0 = &m_Args->R0;
+     pRD->volatileCurrContextPointers.R2 = &m_Args->R2;
 
      pRD->pCurrentContext->R4 = m_Args->R4;
      pRD->pCurrentContext->R5 = m_Args->R5;
@@ -1723,7 +1676,6 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
         ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
     }
@@ -1758,7 +1710,7 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1766,6 +1718,15 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
+
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

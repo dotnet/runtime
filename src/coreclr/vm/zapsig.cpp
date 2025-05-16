@@ -921,12 +921,15 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
     // in non-generic structs.
     BOOL isInstantiatingStub = (methodFlags & ENCODE_METHOD_SIG_InstantiatingStub);
     BOOL isUnboxingStub = (methodFlags & ENCODE_METHOD_SIG_UnboxingStub);
+    bool isAsyncVariant = (methodFlags & ENCODE_METHOD_SIG_AsyncVariant) != 0;
 
     pMethod = MethodDesc::FindOrCreateAssociatedMethodDesc(pMethod, thOwner.GetMethodTable(),
                                                             isUnboxingStub,
                                                             inst,
                                                             !(isInstantiatingStub || isUnboxingStub) && !actualOwnerRequired,
-                                                            actualOwnerRequired);
+                                                            actualOwnerRequired,
+                                                            TRUE,
+                                                            isAsyncVariant == pMethod->IsAsyncVariantMethod() ? AsyncVariantLookup::MatchingAsyncVariant : AsyncVariantLookup::AsyncOtherVariant);
 
     if (methodFlags & ENCODE_METHOD_SIG_Constrained)
     {
@@ -1216,6 +1219,8 @@ BOOL ZapSig::EncodeMethod(
         methodFlags |= ENCODE_METHOD_SIG_InstantiatingStub;
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
+    if (pMethod->IsAsyncVariantMethod())
+        methodFlags |= ENCODE_METHOD_SIG_AsyncVariant;
 
     // Assume that the owner type is going to be needed
     methodFlags |= ENCODE_METHOD_SIG_OwnerType;

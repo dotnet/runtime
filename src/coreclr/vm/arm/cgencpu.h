@@ -52,9 +52,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
 EXTERN_C void checkStack(void);
 
 #define THUMB_CODE      1
@@ -256,6 +253,30 @@ inline TADDR GetFP(const T_CONTEXT * context)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return (TADDR)(context->R11);
+}
+
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->R0 = DWORD(value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->R0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->R1 = DWORD(value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->R1);
 }
 
 inline void ClearITState(T_CONTEXT *context) {
@@ -554,8 +575,6 @@ public:
         // bx lr
         ThumbEmitJumpRegister(thumbRegLr);
     }
-
-    void ThumbEmitGetThread(ThumbReg dest);
 
     void ThumbEmitNop()
     {
@@ -922,6 +941,16 @@ struct HijackArgs
         size_t ReturnValue[1]; // this may not be the return value when return is >32bits
                                // or return value is in VFP reg but it works for us as
                                // this is only used by functions OnHijackWorker()
+    };
+
+    // saving r1 as well, as it can have partial return value when return is > 32 bits
+    // also keeps the struct size 8-byte aligned.
+    DWORD R1;
+
+    union
+    {
+        DWORD R2;
+        size_t AsyncRet;
     };
 
     //

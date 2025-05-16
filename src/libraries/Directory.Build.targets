@@ -167,12 +167,20 @@
   </Target>
 
   <!-- Adds Nullable annotation attributes to C# non .NETCoreApp builds. -->
-  <ItemGroup Condition="'$(Nullable)' != '' and
-                        '$(Nullable)' != 'disable' and
-                        '$(SkipIncludeNullableAttributes)' != 'true' and
+  <ItemGroup Condition="'$(SkipIncludeNullableAttributes)' != 'true' and
                         '$(MSBuildProjectExtension)' == '.csproj' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
+  </ItemGroup>
+
+  <!-- Adds polyfills on non-.NETCoreApp builds -->
+  <ItemGroup Condition="'$(SkipIncludePolyfills)' != 'true' and
+                        '$(MSBuildProjectExtension)' == '.csproj' and
+                        '$(IsTestProject)' != 'true' and
+                        '$(IsTestSupportProject)' != 'true' and
+                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\ExceptionPolyfills.cs" Link="System\ExceptionPolyfills.cs" />
   </ItemGroup>
 
   <!-- If a tfm doesn't target .NETCoreApp but uses the platform support attributes, then we include the
@@ -201,10 +209,11 @@
     </When>
   </Choose>
 
-  <ItemGroup Condition="'$(IncludeIndexRangeTypes)' == 'true' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <ItemGroup Condition="'$(IncludeIndexRangeTypes)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <Compile Include="$(CoreLibSharedDir)System\Index.cs" Link="System\Index.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Range.cs" Link="System\Range.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing.cs" Link="System\Numerics\Hashing.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
+             Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -488,8 +488,9 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compILCodeSize   = methodInfo->ILCodeSize;
     info.compILImportSize = 0;
 
-    info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs          = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compIsVarArgs             = false;
+    info.compUsesAsyncContinuation = false;
 }
 
 //------------------------------------------------------------------------
@@ -1996,9 +1997,34 @@ void Compiler::compSetProcessor()
 // don't actually exist. The JIT is in charge of adding those and ensuring
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
-    // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
-    uint32_t preferredVectorBitWidth   = (ReinterpretHexAsDecimal(JitConfig.PreferredVectorBitWidth()) / 128) * 128;
-    uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
+    // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
+    // No check is done for the validity of the value, since it will be clamped to max supported by
+    // hardware and config when queried.  We will, therefore, remove the marker ISA and allow it to
+    // be re-added if appropriate based on the hardware ISA evaluations below.
+
+    uint32_t preferredVectorBitWidth = 0;
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector128))
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector128);
+        preferredVectorBitWidth = 128;
+    }
+    else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector256))
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector256);
+        preferredVectorBitWidth = 256;
+    }
+    else if (instructionSetFlags.HasInstructionSet(InstructionSet_Vector512))
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_Vector512);
+        preferredVectorBitWidth = 512;
+    }
+
+    opts.preferredVectorByteLength = preferredVectorBitWidth / BITS_PER_BYTE;
+
+    // Only one marker ISA should have been passed in, and it should now be cleared.
+    assert(!instructionSetFlags.HasInstructionSet(InstructionSet_Vector128) &&
+           !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
+           !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
     {
@@ -2030,20 +2056,6 @@ void Compiler::compSetProcessor()
             assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
 
             instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-
-            if ((preferredVectorByteLength == 0) && jitFlags.IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING))
-            {
-                // Some architectures can experience frequency throttling when
-                // executing 512-bit width instructions. To account for this we set the
-                // default preferred vector width to 256-bits in some scenarios. Power
-                // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
-                // allow using such instructions where hardware support is available.
-                //
-                // Do not condition this based on stress mode as it makes the support
-                // reported inconsistent across methods and breaks expectations/functionality
-
-                preferredVectorByteLength = 256 / 8;
-            }
         }
         else
         {
@@ -2051,8 +2063,6 @@ void Compiler::compSetProcessor()
             assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX10v1));
         }
     }
-
-    opts.preferredVectorByteLength = preferredVectorByteLength;
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
     {
@@ -2310,7 +2320,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef DEBUG
 
     const JitConfigValues::MethodSet* pfAltJit;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_AOT))
     {
         pfAltJit = &JitConfig.AltJitNgen();
     }
@@ -2336,7 +2346,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #else // !DEBUG
 
     const char* altJitVal;
-    if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (jitFlags->IsSet(JitFlags::JIT_FLAG_AOT))
     {
         altJitVal = JitConfig.AltJitNgen().list();
     }
@@ -2639,6 +2649,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     //emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
     //genTypeStSzs[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
 #endif // TARGET_ARM64
+
+    bool enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;
+
+#ifdef DEBUG
+    static ConfigMethodRange JitInlineMethodsWithEHRange;
+    JitInlineMethodsWithEHRange.EnsureInit(JitConfig.JitInlineMethodsWithEHRange());
+    const unsigned hash    = impInlineRoot()->info.compMethodHash();
+    const bool     inRange = JitInlineMethodsWithEHRange.Contains(hash);
+    enableInliningMethodsWithEH &= inRange;
+#endif
+
+    opts.compInlineMethodsWithEH = enableInliningMethodsWithEH;
 
     if (compIsForInlining())
     {
@@ -2972,13 +2994,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Honour DOTNET_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
     // only if VM has not asked us to generate profiler hooks in the first place.
     // That is, override VM only if it hasn't asked for a profiler callback for this method.
-    // Don't run this stress mode when pre-JITing, as we would need to emit a relocation
+    // Don't run this stress mode under AOT, as we would need to emit a relocation
     // for the call to the fake ELT hook, which wouldn't make sense, as we can't store that
-    // in the pre-JIT image.
+    // in the AOT image.
     if (!compProfilerHookNeeded)
     {
         if ((JitConfig.JitELTHookEnabled() != 0) ||
-            (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+            (!jitFlags->IsSet(JitFlags::JIT_FLAG_AOT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
         {
             opts.compJitELTHookEnabled = true;
         }
@@ -3094,7 +3116,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (opts.compProcedureSplitting)
     {
-        // Note that opts.compdbgCode is true under ngen for checked assemblies!
+        // Note that opts.compDbgCode is true under AOT for checked assemblies!
         opts.compProcedureSplitting = !opts.compDbgCode || enableFakeSplitting;
 
 #ifdef DEBUG
@@ -3200,9 +3222,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             printf("OPTIONS: optimizer should use profile data\n");
         }
 
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_AOT))
         {
-            printf("OPTIONS: Jit invoked for ngen\n");
+            printf("OPTIONS: Jit invoked for AOT\n");
+        }
+
+        if (compIsAsync())
+        {
+            printf("OPTIONS: compilation is an async state machine\n");
         }
     }
 #endif
@@ -3245,7 +3272,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
-        regIntLast = REG_R23;
+        regIntLast = REG_R31;
     }
 #endif // TARGET_AMD64
 
@@ -3279,15 +3306,15 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 bool Compiler::compJitHaltMethod()
 {
-    /* This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code */
-    /* Note that this these two "Jit" environment variables also work for ngen images */
+    // This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code.
+    // Note that these two "Jit" environment variables also work for AOT images.
 
     if (JitConfig.JitHalt().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }
 
-    /* Use this Hash variant when there are a lot of method with the same name and different signatures */
+    // Use this Hash variant when there are a lot of method with the same name and different signatures.
 
     unsigned fJitHashHaltVal = (unsigned)JitConfig.JitHashHalt();
     if ((fJitHashHaltVal != (unsigned)-1) && (fJitHashHaltVal == info.compMethodHash()))
@@ -3766,9 +3793,8 @@ void Compiler::compSetOptimizationLevel()
     {
         theMinOptsValue = true;
     }
-    // For PREJIT we never drop down to MinOpts
-    // unless unless CLFLG_MINOPT is set
-    else if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    // For AOT we never drop down to MinOpts unless unless CLFLG_MINOPT is set
+    else if (!IsAot())
     {
         if ((unsigned)JitConfig.JitMinOptsCodeSize() < info.compILCodeSize)
         {
@@ -3808,10 +3834,9 @@ void Compiler::compSetOptimizationLevel()
         }
     }
 #else  // !DEBUG
-    // Retail check if we should force Minopts due to the complexity of the method
-    // For PREJIT we never drop down to MinOpts
-    // unless unless CLFLG_MINOPT is set
-    if (!theMinOptsValue && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
+    // Retail check if we should force Minopts due to the complexity of the method.
+    // For AOT we never drop down to MinOpts unless unless CLFLG_MINOPT is set.
+    if (!theMinOptsValue && !IsAot() &&
         ((DEFAULT_MIN_OPTS_CODE_SIZE < info.compILCodeSize) || (DEFAULT_MIN_OPTS_INSTR_COUNT < opts.instrCount) ||
          (DEFAULT_MIN_OPTS_BB_COUNT < fgBBcount) || (DEFAULT_MIN_OPTS_LV_NUM_COUNT < lvaCount) ||
          (DEFAULT_MIN_OPTS_LV_REF_COUNT < opts.lvRefCount)))
@@ -3880,14 +3905,13 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
 #endif
 
-        if (opts.OptimizationDisabled() ||
-            (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && !IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
+        if (opts.OptimizationDisabled() || IsReadyToRun())
         {
-            // The JIT doesn't currently support loop alignment for prejitted images outside NativeAOT.
+            // The JIT doesn't currently support loop alignment for AOT images outside NativeAOT.
             // (The JIT doesn't know the final address of the code, hence
             // it can't align code based on unknown addresses.)
 
-            codeGen->SetAlignLoops(false); // loop alignment not supported for prejitted code
+            codeGen->SetAlignLoops(false); // loop alignment not supported for AOT code
         }
         else
         {
@@ -4705,6 +4729,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
+        // Re-establish profile consistency, now that inlining and morph have run.
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, &Compiler::fgRepairProfile);
+
         // Scale block weights and mark run rarely blocks.
         //
         DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
@@ -5010,9 +5038,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
-        // Run profile repair
+        // Ensure profile is consistent before starting backend phases
         //
-        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
+        DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, &Compiler::fgRepairProfile);
     }
 
 #ifdef DEBUG
@@ -5049,6 +5077,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
 #endif // TARGET_ARM
+
+    if (compIsAsync())
+    {
+        DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
+    }
 
     // Assign registers to variables, etc.
 
@@ -6043,6 +6076,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     if (enableAvailableIsas)
     {
+        CORINFO_InstructionSetFlags currentInstructionSetFlags = compileFlags->GetInstructionSetFlags();
         CORINFO_InstructionSetFlags instructionSetFlags;
 
         // We need to assume, by default, that all flags coming from the VM are invalid.
@@ -6056,6 +6090,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
+        if (info.compMatchedVM)
+        {
+            // Keep the existing VectorT* ISAs.
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            }
+        }
+
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
@@ -6110,7 +6153,29 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
+
+        if (JitConfig.EnableArm64Sve2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
+        }
 #elif defined(TARGET_XARCH)
+        if (info.compMatchedVM)
+        {
+            // Keep the existing VectorT* ISAs.
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            }
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT256);
+            }
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT512))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT512);
+            }
+        }
+
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
@@ -6270,6 +6335,21 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAPX() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_APX);
+        }
+#elif defined(TARGET_RISCV64)
+        if (JitConfig.EnableHWIntrinsic() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
+        }
+
+        if (JitConfig.EnableRiscV64Zba() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zba);
+        }
+
+        if (JitConfig.EnableRiscV64Zbb() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
         }
 #endif
 
@@ -6707,11 +6787,11 @@ void Compiler::compCompileFinish()
     }
 #endif // TRACK_ENREG_STATS
 
-    // Only call _DbgBreakCheck when we are jitting, not when we are ngen-ing
-    // For ngen the int3 or breakpoint instruction will be right at the
-    // start of the ngen method and we will stop when we execute it.
+    // Only call _DbgBreakCheck when we are jitting, not when we are generating AOT code.
+    // For AOT the int3 or breakpoint instruction will be right at the
+    // start of the AOT method and we will stop when we execute it.
     //
-    if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (!IsAot())
     {
         if (compJitHaltMethod())
         {
@@ -6978,9 +7058,9 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     const bool forceInline = !!(info.compFlags & CORINFO_FLG_FORCEINLINE);
 
-    if (!compIsForInlining() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (!compIsForInlining() && IsAot())
     {
-        // We're prejitting the root method. We also will analyze it as
+        // We're AOT compiling the root method. We also will analyze it as
         // a potential inline candidate.
         InlineResult prejitResult(this, info.compMethodHnd, "prejit");
 
@@ -7827,12 +7907,7 @@ START:
             pParam->pPrevComp = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
-#if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
-#else
             assert(pParam->pComp != nullptr);
-#endif
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
@@ -9250,16 +9325,12 @@ void Compiler::PrintPerMethodLoopHoistStats()
 void Compiler::RecordStateAtEndOfInlining()
 {
 #if defined(DEBUG)
-
-    m_compCyclesAtEndOfInlining    = 0;
-    m_compTickCountAtEndOfInlining = 0;
-    bool b                         = CycleTimer::GetThreadCyclesS(&m_compCyclesAtEndOfInlining);
-    if (!b)
+    LARGE_INTEGER lpCycles;
+    BOOL          result = QueryPerformanceCounter(&lpCycles);
+    if (result == TRUE)
     {
-        return; // We don't have a thread cycle counter.
+        m_compCyclesAtEndOfInlining = (int64_t)lpCycles.QuadPart;
     }
-    m_compTickCountAtEndOfInlining = GetTickCount();
-
 #endif // defined(DEBUG)
 }
 
@@ -9270,19 +9341,24 @@ void Compiler::RecordStateAtEndOfInlining()
 void Compiler::RecordStateAtEndOfCompilation()
 {
 #if defined(DEBUG)
-
-    // Common portion
     m_compCycles = 0;
-    uint64_t compCyclesAtEnd;
-    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
-    if (!b)
+
+    LARGE_INTEGER lpCycles;
+    BOOL          result = QueryPerformanceCounter(&lpCycles);
+    if (result == TRUE)
     {
-        return; // We don't have a thread cycle counter.
+        if ((int64_t)lpCycles.QuadPart > m_compCyclesAtEndOfInlining)
+        {
+            LARGE_INTEGER lpFreq;
+            result = QueryPerformanceFrequency(&lpFreq);
+            if (result == TRUE)
+            {
+                m_compCycles = (int64_t)lpCycles.QuadPart - m_compCyclesAtEndOfInlining;
+                m_compCycles *= 1000000;
+                m_compCycles /= (int64_t)lpFreq.QuadPart;
+            }
+        }
     }
-    assert(compCyclesAtEnd >= m_compCyclesAtEndOfInlining);
-
-    m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
-
 #endif // defined(DEBUG)
 }
 
@@ -9385,6 +9461,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
  *      dBlockList                  : Display a BasicBlockList*.
+ *      dIsa                        : Display a CORINFO_InstructionSet
+ *      dIsaFlags                   : Display a CORINFO_InstructionSetFlags
  *
  * The following find an object in the IR and return it, as well as setting a global variable with the value that can
  * be used in the debugger (e.g., in the watch window, or as a way to get an address for data breakpoints).
@@ -9468,6 +9546,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Functions which don't require a Compiler*
 #pragma comment(linker, "/include:dRegMask")
 #pragma comment(linker, "/include:dBlockList")
+#pragma comment(linker, "/include:dIsa")
+#pragma comment(linker, "/include:dIsaFlags")
 
 // Functions which search for objects in the IR
 #pragma comment(linker, "/include:dFindTreeInTree")
@@ -10348,6 +10428,41 @@ JITDBGAPI void __cdecl dBlockList(BasicBlockList* list)
     {
         printf(FMT_BB " ", list->block->bbNum);
         list = list->next;
+    }
+    printf("\n");
+}
+
+JITDBGAPI void __cdecl dIsa(const CORINFO_InstructionSet isa)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dIsa %u\n", sequenceNumber++);
+    printf("%s\n", InstructionSetToString(isa));
+}
+
+JITDBGAPI void __cdecl dIsaFlags(const CORINFO_InstructionSetFlags& isaFlags)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dIsaFlags %u\n", sequenceNumber++);
+    if (isaFlags.IsEmpty())
+    {
+        printf("<empty>\n");
+    }
+    else
+    {
+        bool first = true;
+        // The flags start at '1'. We don't know the last flag, so compute the maximum.
+        // It would be better if CORINFO_InstructionSet defined InstructionSet_FIRST and InstructionSet_LAST,
+        // or even better, if CORINFO_InstructionSetFlags defined an iterator over the instruction sets in the flags.
+        CORINFO_InstructionSet isaFirst = (CORINFO_InstructionSet)1;
+        CORINFO_InstructionSet isaLast  = (CORINFO_InstructionSet)(sizeof(CORINFO_InstructionSetFlags) * 8 - 1);
+        for (CORINFO_InstructionSet isa = isaFirst; isa <= isaLast; isa = (CORINFO_InstructionSet)((int)isa + 1))
+        {
+            if (isaFlags.HasInstructionSet(isa))
+            {
+                printf("%s%s", first ? "" : " ", InstructionSetToString(isa));
+                first = false;
+            }
+        }
     }
     printf("\n");
 }
