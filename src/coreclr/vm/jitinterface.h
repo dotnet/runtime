@@ -334,9 +334,6 @@ struct TransientMethodDetails final
     TransientMethodDetails& operator=(TransientMethodDetails&&);
 };
 
-// Forward declaration
-class MethodInfoWorkerContext;
-
 class CEEInfo : public ICorJitInfo
 {
     friend class CEEDynamicCodeInfo;
@@ -470,8 +467,9 @@ public:
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
 protected:
-    void getMethodInfoWorker(
-        MethodInfoWorkerContext& cxt,
+    COR_ILMETHOD_DECODER* getMethodInfoWorker(
+        MethodDesc* ftn,
+        COR_ILMETHOD_DECODER* header,
         CORINFO_METHOD_INFO* methInfo,
         CORINFO_CONTEXT_HANDLE exactContext = NULL);
 
@@ -645,7 +643,7 @@ public:
 
     // This is an internal helper used on the VM side. It should be called
     // shortly after creating an instance of CEECodeGenInfo.
-    CORINFO_METHOD_INFO getMethodInfoWithContext(MethodInfoWorkerContext& cxt);
+    CORINFO_METHOD_INFO getMethodInfoInternal();
 
 protected:
 

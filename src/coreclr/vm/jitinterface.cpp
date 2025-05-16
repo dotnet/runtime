@@ -7494,20 +7494,21 @@ static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 
 //---------------------------------------------------------------------------------------
 //
-void CEEInfo::getMethodInfoWorker(
-    MethodInfoWorkerContext& cxt,
+COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
+    MethodDesc* ftn,
+    COR_ILMETHOD_DECODER* header,
     CORINFO_METHOD_INFO* methInfo,
     CORINFO_CONTEXT_HANDLE exactContext)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(cxt.Method != NULL);
+    _ASSERTE(ftn != NULL);
     _ASSERTE(methInfo != NULL);
 
-    MethodDesc* ftn      = cxt.Method;
     methInfo->ftn        = (CORINFO_METHOD_HANDLE)ftn;
     methInfo->regionKind = CORINFO_REGION_JIT;
 
-    _ASSERTE(!cxt.HasTransientMethodDetails());
+    MethodInfoWorkerContext cxt{ ftn, header };
+
     TransientMethodDetails* detailsMaybe = NULL;
     if (FindTransientMethodDetails(ftn, &detailsMaybe))
         cxt.UpdateWith(*detailsMaybe);
@@ -7663,6 +7664,8 @@ void CEEInfo::getMethodInfoWorker(
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
 
+    COR_ILMETHOD_DECODER* ilHeader = cxt.Header;
+
     // If we have transient method details we need to handle
     // the lifetime of the details.
     if (cxt.HasTransientMethodDetails())
@@ -7676,6 +7679,8 @@ void CEEInfo::getMethodInfoWorker(
         // transferred or was found in this instance.
         cxt.UpdateWith({});
     }
+
+    return ilHeader;
 } // getMethodInfoWorker
 
 //---------------------------------------------------------------------------------------
@@ -7697,20 +7702,17 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-
-    MethodInfoWorkerContext cxt{ ftn };
     if (ftn->IsDynamicMethod()
         || (ftn->IsIL() && ftn->GetRVA() == 0)) // IL methods with no RVA indicate there is no implementation defined in metadata.
     {
-        getMethodInfoWorker(cxt, methInfo, context);
+        getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
         // Get the IL header and set it.
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
-        cxt.Header = &header;
-        getMethodInfoWorker(cxt, methInfo, context);
+        getMethodInfoWorker(ftn, &header, methInfo, context);
         result = true;
     }
 
@@ -7893,9 +7895,8 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             }
             else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
             {
-                MethodInfoWorkerContext cxt{ pCallee };
                 CORINFO_METHOD_INFO methodInfo;
-                getMethodInfoWorker(cxt, &methodInfo);
+                getMethodInfoWorker(pCallee, NULL, &methodInfo);
                 if (methodInfo.EHcount > 0)
                 {
                     result = INLINE_FAIL;
@@ -12293,23 +12294,18 @@ void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     return result;
 }
 
-CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfoWithContext(
-    MethodInfoWorkerContext& cxt)
+CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfoInternal()
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(cxt.Method != NULL);
 
     CORINFO_METHOD_INFO methInfo;
-    getMethodInfoWorker(cxt, &methInfo);
-
-    // Verify method attributes and signature are consistant
-    _ASSERTE(!!cxt.Method->IsStatic() == ((methInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
+    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &methInfo);
 
     // Either the member header was NULL or remains the same as the input.
-    _ASSERTE(m_ILHeader == NULL || cxt.Header == m_ILHeader);
+    _ASSERTE(m_ILHeader == NULL || ilHeader == m_ILHeader);
 
     // Update the member with the result of the MethodInfo call.
-    m_ILHeader = cxt.Header;
+    m_ILHeader = ilHeader;
     return methInfo;
 }
 
@@ -13072,12 +13068,15 @@ void ThrowExceptionForJit(HRESULT res)
 // ********************************************************************
 //#define PERF_TRACK_METHOD_JITTIMES
 
-static TADDR UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInfo, CORJIT_FLAGS* pJitFlags, CORINFO_METHOD_INFO methodInfo,
-                              MethodInfoWorkerContext *pCxt, NativeCodeVersion nativeCodeVersion, ULONG* pSizeOfCode)
+static TADDR UnsafeJitFunctionWorker(
+    EECodeGenManager *pJitMgr,
+    CEECodeGenInfo *pJitInfo,
+    CORJIT_FLAGS jitFlags,
+    CORINFO_METHOD_INFO methodInfo,
+    NativeCodeVersion nativeCodeVersion,
+    ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
-    if (pCxt->HasTransientMethodDetails())
-        pJitInfo->AddTransientMethodDetails(pCxt->CreateTransientMethodDetails());
 
     MethodDesc * pMethodForSecurity = pJitInfo->GetMethodForSecurity(methodInfo.ftn);
     MethodDesc * ftn = nativeCodeVersion.GetMethodDesc();
@@ -13142,7 +13141,7 @@ static TADDR UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *
         res = invokeCompileMethod(pJitMgr,
                                   pJitInfo,
                                   &methodInfo,
-                                  *pJitFlags,
+                                  jitFlags,
                                   &nativeEntry,
                                   &sizeOfCode);
 
@@ -13395,7 +13394,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     bool enableInlining = !config->GetJitCompilationFlags().IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING);
 
     CORINFO_METHOD_INFO methodInfo{};
-    MethodInfoWorkerContext cxt{ ftn, ILHeader };
 
 #ifdef FEATURE_INTERPRETER
     InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
@@ -13413,10 +13411,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     if (interpreterMgr->IsInterpreterLoaded())
     {
         CInterpreterJitInfo interpreterJitInfo{ ftn, ILHeader, interpreterMgr, enableInlining };
-        methodInfo = interpreterJitInfo.getMethodInfoWithContext(cxt);
+        methodInfo = interpreterJitInfo.getMethodInfoInternal();
         *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
-        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
+        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, *pJitFlags, methodInfo, nativeCodeVersion, pSizeOfCode);
     }
 #endif // FEATURE_INTERPRETER
 
@@ -13446,9 +13444,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         while (true)
         {
             CEEJitInfo jitInfo{ ftn, ILHeader, jitMgr, enableInlining };
-            methodInfo = jitInfo.getMethodInfoWithContext(cxt);
+            methodInfo = jitInfo.getMethodInfoInternal();
             *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
+            // Enable the jump stub overflow check
             jsoCheck.Enable(jitInfo);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
@@ -13461,19 +13460,13 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
+            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, *pJitFlags, methodInfo, nativeCodeVersion, pSizeOfCode);
             if (!retMaybe)
                 COMPlusThrow(kInvalidProgramException);
 
+            // If we detect a jump stub overflow, we need to retry.
             if (jsoCheck.Detected(jitInfo, jitMgr))
-            {
-                // Get any transient method details and take ownership
-                // from the JITInfo instance. We are going to be recreating
-                // a new JITInfo and will reuse these details there.
-                TransientMethodDetails details = jitInfo.RemoveTransientMethodDetails(ftn);
-                cxt.TakeOwnership(std::move(details));
                 continue;
-            }
 
             ret = PINSTRToPCODE(retMaybe);
             jitInfo.PublishFinalCodeAddress(ret);
