@@ -13313,42 +13313,39 @@ public:
 BOOL JumpStubOverflowCheck::g_fAllowRel32 = TRUE;
 #endif // TARGET_AMD64
 
-#ifdef LOGGING
-class LogJitMethod final
+static void LogJitMethodBegin(MethodDesc* ftn)
 {
-    MethodDesc* _ftn;
-public:
-    LogJitMethod(MethodDesc* ftn)
-        : _ftn{ ftn }
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(ftn != NULL);
+#ifdef LOGGING
+    if (ftn->IsNoMetadata())
     {
-        STANDARD_VM_CONTRACT;
-        _ASSERTE(_ftn != NULL);
-        if (_ftn->IsNoMetadata())
+        if (ftn->IsILStub())
         {
-            if (_ftn->IsILStub())
-            {
-                LOG((LF_JIT, LL_INFO10000, "{ Jitting IL Stub (%p)\n", _ftn));
-            }
-            else
-            {
-                LOG((LF_JIT, LL_INFO10000, "{ Jitting dynamic method (%p)\n", _ftn));
-            }
+            LOG((LF_JIT, LL_INFO10000, "{ Jitting IL Stub (%p)\n", ftn));
         }
         else
         {
-            LPCUTF8 cls  = _ftn->GetMethodTable()->GetDebugClassName();
-            LPCUTF8 name = _ftn->GetName();
-            LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s::%s  %s\n", _ftn, cls, name, _ftn->m_pszDebugMethodSignature));
+            LOG((LF_JIT, LL_INFO10000, "{ Jitting dynamic method (%p)\n", ftn));
         }
     }
-
-    ~LogJitMethod()
+    else
     {
-        STANDARD_VM_CONTRACT;
-        LOG((LF_JIT, LL_INFO10000, "Done Jitting method (%p) }\n", _ftn));
+        LPCUTF8 cls  = ftn->GetMethodTable()->GetDebugClassName();
+        LPCUTF8 name = ftn->GetName();
+        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s::%s  %s\n", ftn, cls, name, ftn->m_pszDebugMethodSignature));
     }
-};
 #endif // LOGGING
+}
+
+static void LogJitMethodEnd(MethodDesc* ftn)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(ftn != NULL);
+#ifdef LOGGING
+    LOG((LF_JIT, LL_INFO10000, "Done Jitting method (%p) }\n", ftn));
+#endif // LOGGING
+}
 
 // ********************************************************************
 //                  README!!
@@ -13378,15 +13375,13 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     // If it's generic then we can only enter through an instantiated MethodDesc
     _ASSERTE(!ftn->IsGenericMethodDefinition());
 
-#ifdef LOGGING
-    LogJitMethod{ ftn };
-#endif // LOGGING
-
     PCODE ret = (PCODE)NULL;
     NormalizedTimer timer;
     int64_t c100nsTicksInJit = 0;
 
     COOPERATIVE_TRANSITION_BEGIN();
+
+    LogJitMethodBegin(ftn);
 
     timer.Start();
 
@@ -13497,6 +13492,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     InterlockedIncrement64((LONG64*)&g_cMethodsJitted);
     t_cMethodsJittedForThread++;
+
+    LogJitMethodEnd(ftn);
 
     COOPERATIVE_TRANSITION_END();
     return ret;
