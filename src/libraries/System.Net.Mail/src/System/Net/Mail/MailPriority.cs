@@ -141,8 +141,9 @@ namespace System.Net.Mail
                     // extract the encoding from =?encoding?BorQ?blablalba?=
                     inputEncoding = MimeBasePart.DecodeEncoding(value);
                 }
-                catch (ArgumentException) { }
-                ;
+                catch (ArgumentException)
+                {
+                }
 
                 if (inputEncoding != null && value != null)
                 {
@@ -261,8 +262,8 @@ namespace System.Net.Mail
             }
             else
             {
-                using var stream = writer.GetContentStream();
                 // No content to write, just close the stream
+                writer.GetContentStream().Close();
             }
         }
 

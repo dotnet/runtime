@@ -23,16 +23,6 @@ namespace System.Net.Mail
             return task.GetAwaiter().GetResult();
         }
 
-        internal static IAsyncResult BeginSend(SmtpConnection conn, AsyncCallback callback, object? state)
-        {
-            return TaskToAsyncResult.Begin(SendAsync<AsyncReadWriteAdapter>(conn), callback, state);
-        }
-
-        internal static LineInfo EndSend(IAsyncResult asyncResult)
-        {
-            return TaskToAsyncResult.End<LineInfo>(asyncResult);
-        }
-
         internal static async Task<LineInfo> SendAsync<TIOAdapter>(SmtpConnection conn, CancellationToken cancellationToken = default)
             where TIOAdapter : IReadWriteAdapter
         {
