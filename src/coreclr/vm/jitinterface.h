@@ -524,6 +524,7 @@ public:
           m_pRealCodeHeader(NULL),
           m_pCodeHeap(NULL),
           m_ILHeader(header),
+          m_MethodInfo(),
           m_GCinfo_len(0),
           m_EHinfo_len(0),
           m_iOffsetMapping(0),
@@ -536,12 +537,12 @@ public:
           m_numRichOffsetMappings(0),
           m_gphCache()
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        } CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
+        COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &m_MethodInfo);
+
+        // Either the member header was NULL or remains the same as the input.
+        _ASSERTE(m_ILHeader == NULL || ilHeader == m_ILHeader);
+        m_ILHeader = ilHeader;
     }
 
     ~CEECodeGenInfo()
@@ -641,9 +642,7 @@ public:
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
-    // This is an internal helper used on the VM side. It should be called
-    // shortly after creating an instance of CEECodeGenInfo.
-    CORINFO_METHOD_INFO getMethodInfoInternal();
+    CORINFO_METHOD_INFO getMethodInfoInternal() const;
 
 protected:
 
@@ -675,6 +674,7 @@ protected:
     BYTE*                   m_pRealCodeHeader;
     HeapList*               m_pCodeHeap;
     COR_ILMETHOD_DECODER*   m_ILHeader;     // the code header to use. This may have been generated due to dynamic IL generation.
+    CORINFO_METHOD_INFO     m_MethodInfo;
 
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem

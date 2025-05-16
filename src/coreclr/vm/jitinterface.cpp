@@ -12294,19 +12294,10 @@ void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     return result;
 }
 
-CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfoInternal()
+CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfoInternal() const
 {
     STANDARD_VM_CONTRACT;
-
-    CORINFO_METHOD_INFO methInfo;
-    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &methInfo);
-
-    // Either the member header was NULL or remains the same as the input.
-    _ASSERTE(m_ILHeader == NULL || ilHeader == m_ILHeader);
-
-    // Update the member with the result of the MethodInfo call.
-    m_ILHeader = ilHeader;
-    return methInfo;
+    return m_MethodInfo;
 }
 
 /*********************************************************************/
