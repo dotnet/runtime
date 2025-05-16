@@ -114,10 +114,13 @@ public class InterpreterTest
         if (!TestLocalloc())
             Environment.FailFast(null);
 
-        if (!TestArray())
+        if (!TestVirtual())
             Environment.FailFast(null);
 
-        if (!TestVirtual())
+        if (!TestBoxing())
+            Environment.FailFast(null);
+
+        if (!TestArray())
             Environment.FailFast(null);
 
         System.GC.Collect();
@@ -389,8 +392,22 @@ public class InterpreterTest
             return false;
         return true;
     }
+  
+    public static bool TestBoxing()
+    {
+        int l = 7, r = 4;
+        object s = BoxedSubtraction(l, r);
+        // `(s is int result)` generates isinst so we have to do this in steps
+        int result = (int)s;
+        return result == 3;
+    }
 
-    public static bool TestArray()
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    static object BoxedSubtraction (object lhs, object rhs) {
+        return (int)lhs - (int)rhs;
+    }
+  
+  public static bool TestArray()
     {
         // sbyte
         if (!ArraySByte(0, 0)) return false;
