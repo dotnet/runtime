@@ -156,7 +156,6 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ConvertToSingle,
 	SN_Divide,
 	SN_Equals,
-	SN_ExtractMostSignificantBits,
 	SN_Floor,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,

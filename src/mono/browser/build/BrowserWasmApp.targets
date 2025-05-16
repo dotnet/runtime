@@ -25,6 +25,7 @@
 
     <WasmGenerateAppBundleDependsOn>
       $(WasmGenerateAppBundleDependsOn);
+      GenerateBuildRuntimeConfigurationFiles;
       _GetWasmGenerateAppBundleDependencies;
       _WasmGenerateAppBundle;
       _WasmGenerateRunV8Script;
@@ -181,7 +182,7 @@
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
       RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
       CacheBootResources="$(BlazorCacheBootResources)"
-      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       >
@@ -320,7 +321,6 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />

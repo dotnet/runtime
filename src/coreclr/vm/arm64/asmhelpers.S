@@ -210,7 +210,7 @@ LEAF_ENTRY JIT_UpdateWriteBarrierState, _TEXT
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
+    PREPARE_EXTERNAL_VAR g_write_watch_table, x12
     ldr  x2, [x12]
 #endif
 
