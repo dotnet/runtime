@@ -16,6 +16,7 @@
 
 struct InterpMethod
 {
+    InterpMethod *self;
     CORINFO_METHOD_HANDLE methodHnd;
     int32_t allocaSize;
     void** pDataItems;
@@ -23,6 +24,7 @@ struct InterpMethod
 
     InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals)
     {
+        this->self = this;
         this->methodHnd = methodHnd;
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;

@@ -91,6 +91,8 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int8_t *stack;
 
     InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
+    assert(pMethod->self == pMethod);
+
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
     stack = pFrame->pStack;
@@ -1172,6 +1174,7 @@ CALL_TARGET_IP:
 
                     // Set execution state for the new frame
                     pMethod = *(InterpMethod**)pFrame->startIp;
+                    assert(pMethod->self == pMethod);
                     stack = pFrame->pStack;
                     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
@@ -1421,6 +1424,20 @@ do {                                                                           \
                 case INTOP_STELEM_R8:
                 {
                     STELEM(double, double);
+                }
+                case INTOP_LDTOKEN:
+                {
+                    int dreg = ip[1];
+                    void *nativeHandle = pMethod->pDataItems[ip[2]];
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[3]];
+                    HELPER_FTN_PP helper = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helper = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helper = (HELPER_FTN_PP)helperDirectOrIndirect;
+                    void *managedHandle = helper(nativeHandle);
+                    LOCAL_VAR(dreg, void*) = managedHandle;
+                    ip += 4;
                     break;
                 }
                 case INTOP_FAILFAST:
@@ -1456,6 +1473,7 @@ do {                                                                           \
 
         stack = pFrame->pStack;
         pMethod = *(InterpMethod**)pFrame->startIp;
+        assert(pMethod->self == pMethod);
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
         goto MAIN_LOOP;
     }
@@ -1472,6 +1490,7 @@ EXIT_FRAME:
         ip = pFrame->ip;
         stack = pFrame->pStack;
         pMethod = *(InterpMethod**)pFrame->startIp;
+        assert(pMethod->self == pMethod);
         pFrame->ip = NULL;
 
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;

@@ -3710,6 +3710,42 @@ retry_emit:
                 break;
             }
 
+            case CEE_LDTOKEN:
+            {
+                AddIns(INTOP_LDTOKEN);
+
+                CORINFO_RESOLVED_TOKEN resolvedToken = { 0 };
+                resolvedToken.tokenScope = m_compScopeHnd;
+                resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
+                resolvedToken.token = getU4LittleEndian(m_ip + 1);
+                resolvedToken.tokenType = CORINFO_TOKENKIND_Ldtoken;
+                m_compHnd->resolveToken(&resolvedToken);
+
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                PushStackType(StackTypeVT, clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                // see jit/importer.cpp CEE_LDTOKEN
+                CorInfoHelpFunc helper;
+                if (resolvedToken.hClass) {
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
+                } else if (resolvedToken.hMethod) {
+                    helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
+                } else if (resolvedToken.hField) {
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
+                } else {
+                    helper = CORINFO_HELP_FAIL_FAST;
+                    assert(!"Token not resolved or resolved to unexpected type");
+                }
+
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helper);
+                m_ip += 5;
+                break;
+            }
+
             default:
                 assert(0);
                 break;
