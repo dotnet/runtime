@@ -809,9 +809,10 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         // we only unhijack if we are going to install a new or better hijack.
         CrossThreadUnhijack();
 
-        void* pvRetAddr = *ppvRetAddrLocation;
 #if defined(TARGET_ARM64)
-        pvRetAddr = PacStripPtr(pvRetAddr);
+        void* pvRetAddr = PacStripPtr(*ppvRetAddrLocation);
+#else
+        void* pvRetAddr = *ppvRetAddrLocation;
 #endif // TARGET_ARM64
 
         ASSERT(pvRetAddr != NULL);
@@ -825,10 +826,11 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
                                                                 frameIterator->GetRegisterSet()));
 #endif
 
-        *ppvRetAddrLocation = (void*)pfnHijackFunction;
+        void* pvHijacedkAddr = (void*)pfnHijackFunction;
 #if defined(TARGET_ARM64)
-        *ppvRetAddrLocation = PacSignPtr(*ppvRetAddrLocation);
+        pvHijacedkAddr = PacSignPtr(pvHijacedkAddr);
 #endif // TARGET_ARM64
+        *ppvRetAddrLocation = pvHijacedkAddr;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
@@ -957,10 +959,11 @@ void Thread::UnhijackWorker()
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
 
-    *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
+    void* pvHijackedRetAddr = m_pvHijackedReturnAddress;
 #if defined(TARGET_ARM64)
-    *m_ppvHijackedReturnAddressLocation = PacSignPtr(*m_ppvHijackedReturnAddressLocation);
+    pvHijackedRetAddr = PacSignPtr(pvHijackedRetAddr);
 #endif // TARGET_ARM64
+    *m_ppvHijackedReturnAddressLocation = pvHijackedRetAddr;
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;

@@ -4604,11 +4604,11 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86
     m_ppvHJRetAddrPtr = esb->m_ppvRetAddrPtr;
 
     // Remember the place that the return would have gone
-    m_pvHJRetAddr = *esb->m_ppvRetAddrPtr;
+    void* pvRetAddrPtr = *esb->m_ppvRetAddrPtr;
 #if defined(TARGET_ARM64)
-    m_pvHJRetAddr = PacStripPtr(m_pvHJRetAddr);
+    pvRetAddrPtr = PacStripPtr(pvRetAddrPtr);
 #endif // TARGET_ARM64
-
+    m_pvHJRetAddr = pvRetAddrPtr;
     IS_VALID_CODE_PTR((FARPROC) (TADDR)m_pvHJRetAddr);
     // TODO [DAVBR]: For the full fix for VsWhidbey 450273, the below
     // may be uncommented once isLegalManagedCodeCaller works properly
@@ -4652,10 +4652,11 @@ void Thread::UnhijackThread()
 
         STRESS_LOG2(LF_SYNC, LL_INFO100, "Unhijacking return address 0x%p for thread %p\n", m_pvHJRetAddr, this);
         // restore the return address and clear the flag
-        *m_ppvHJRetAddrPtr = m_pvHJRetAddr;
+        void* pvHijackedRetAddr = m_pvHJRetAddr;
 #if defined(TARGET_ARM64)
-        *m_ppvHJRetAddrPtr = PacSignPtr(*m_ppvHJRetAddrPtr);
+        pvHijackedRetAddr = PacSignPtr(pvHijackedRetAddr);
 #endif // TARGET_ARM64
+        *m_ppvHJRetAddrPtr = pvHijackedRetAddr;
         ResetThreadState(TS_Hijacked);
 
         // But don't touch m_pvHJRetAddr.  We may need that to resume a thread that

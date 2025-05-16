@@ -32,8 +32,6 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 
 #if defined(TARGET_ARM64)
     *retAddr = PacStripPtr(*retAddr);
-    void* tailCallAwareReturnAddress = thread->GetTailCallTls()->GetFrame()->TailCallAwareReturnAddress;
-    tailCallAwareReturnAddress = PacStripPtr(tailCallAwareReturnAddress);
 #endif // TARGET_ARM64
 
     return thread->GetTailCallTls();
