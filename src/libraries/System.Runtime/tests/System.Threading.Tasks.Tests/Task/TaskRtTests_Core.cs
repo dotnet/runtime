@@ -4,6 +4,7 @@
 using Xunit;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 // TPL namespaces
 using System.Threading;
 using System.Threading.Tasks;
