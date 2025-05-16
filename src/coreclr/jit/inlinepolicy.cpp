@@ -1372,8 +1372,13 @@ void ExtendedDefaultPolicy::NoteInt(InlineObservation obs, int value)
             // TODO: Enable for PgoSource::Static as well if it's not the generic profile we bundle.
             if (m_HasProfileWeights && (m_RootCompiler->fgHaveTrustedProfileWeights()))
             {
-                JITDUMP("Callee has trusted profile\n");
+                JITDUMP("Callee and root has trusted profile\n");
                 maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILProf());
+            }
+            else if (m_RootCompiler->fgHaveSufficientProfileWeights())
+            {
+                JITDUMP("Root has sufficient profile\n");
+                maxCodeSize = static_cast<unsigned>(JitConfig.JitExtDefaultPolicyMaxILRoot());
             }
             else
             {
