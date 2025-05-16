@@ -158,8 +158,8 @@ C_FUNC(\Name):
     // by the linker (GD->IE/LE relaxation).
     la.tls.desc  $a0, \var
 
-    ori  \target, $tp, 0
-    addi.d  \target, $a0, \ofs
+    addi.d  \target, $tp, \ofs
+    add.d  \target, \target, $a0
 
     ld.d  $a0, $sp, 0
     ld.d  $ra, $sp, 8
