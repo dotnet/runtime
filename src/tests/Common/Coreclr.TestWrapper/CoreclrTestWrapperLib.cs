@@ -681,7 +681,7 @@ namespace CoreclrTestLib
         // The children are sorted in the order they should be dumped
         static unsafe IEnumerable<Process> FindChildProcessesByName(Process process, string childName)
         {
-            process.TryGetProcessName(out int parentProcessName);
+            process.TryGetProcessName(out string parentProcessName);
             process.TryGetProcessId(out int parentProcessId);
             Console.WriteLine($"Finding all child processes of '{parentProcessName}' (ID: {parentProcessId}) with name '{childName}'");
 
