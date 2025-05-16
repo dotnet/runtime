@@ -95,7 +95,6 @@ JITMETADATAMETRIC(MorphTrackedLocals,                    int,              0)
 JITMETADATAMETRIC(MorphLocals,                           int,              0)
 JITMETADATAMETRIC(EnumeratorGDVProvisionalNoEscape,      int,              0)
 JITMETADATAMETRIC(EnumeratorGDVCanCloneToEnsureNoEscape, int,              0)
-JITMETADATAMETRIC(InstructionCount,                      int,              JIT_METADATA_LOWER_IS_BETTER)
 
 #undef JITMETADATA
 #undef JITMETADATAINFO
