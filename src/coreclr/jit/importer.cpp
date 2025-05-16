@@ -8221,7 +8221,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto CONV;
 
             case CEE_CONV_R_UN:
-                lclTyp = TYP_DOUBLE;
+                // Because there is no IL instruction conv.r4.un, compilers consistently
+                // emit conv.r.un followed immediately by conv.r4 for unsigned->float casts.
+                // We recognize this pattern and create the intended cast.
+                // Otherwise, conv.r.un is treated as a cast to double.
+                lclTyp = ((OPCODE)getU1LittleEndian(codeAddr) == CEE_CONV_R4) ? TYP_FLOAT : TYP_DOUBLE;
                 goto CONV_UN;
 
             CONV_UN:
