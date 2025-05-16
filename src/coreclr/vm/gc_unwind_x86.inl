@@ -2443,7 +2443,7 @@ void UnwindEspFrameEpilog(
 
         // We have already popped off the frame (excluding the callee-saved registers)
 
-        if (epilogBase[0] == X86_INSTR_POP_ECX)
+        if (epilogBase[offset] == X86_INSTR_POP_ECX)
         {
             // We may use "POP ecx" for doing "ADD ESP, 4",
             // or we may not (in the case of JMP epilogs)
@@ -2560,7 +2560,7 @@ void UnwindEbpDoubleAlignFrameEpilog(
         {
             // do nothing before popping the callee-saved registers
         }
-        else if (info->rawStkSize == sizeof(void*) && epilogBase[0] == X86_INSTR_POP_ECX)
+        else if (info->rawStkSize == sizeof(void*) && epilogBase[offset] == X86_INSTR_POP_ECX)
         {
             // We may use "POP ecx" for doing "ADD ESP, 4",
             // or we may not (in the case of JMP epilogs)
