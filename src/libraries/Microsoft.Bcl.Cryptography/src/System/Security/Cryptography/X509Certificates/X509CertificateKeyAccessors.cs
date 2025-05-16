@@ -191,7 +191,6 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(SlhDsa)));
 #endif
 
-
 #if !NET10_0_OR_GREATER
         private static ArraySegment<byte> GetCertificateSubjectPublicKeyInfo(X509Certificate2 certificate)
         {
