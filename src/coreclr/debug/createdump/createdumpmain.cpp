@@ -220,11 +220,11 @@ int createdump_main(const int argc, const char* argv[])
 
     if (CreateDump(options))
     {
-        printf_status("Dump successfully written in %llums\n", minipal_hires_ticks() - g_startTime);
+        printf_status("Dump successfully written in %llums\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
     }
     else
     {
-        printf_error("Failure took %llums\n", minipal_hires_ticks() - g_startTime);
+        printf_error("Failure took %llums\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
         exitCode = -1;
     }
 
