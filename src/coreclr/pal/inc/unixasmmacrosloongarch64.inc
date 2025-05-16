@@ -446,14 +446,14 @@ C_FUNC(\Name\()_End):
         .endif
 
         // Save $a0, $ra
-        PROLOG_SAVE_REG_PAIR_INDEXED   4, 1, 16
+        PROLOG_SAVE_REG_PAIR_INDEXED   4, 1, 16, 0
 
         // This instruction is recognized and potentially patched
         // by the linker (GD->IE/LE relaxation).
         la.tls.desc  $a0, t_runtime_thread_locals
 
-        ori  \target, $tp, 0
-        addi.d  \target, $a0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        addi.d  \target, $tp, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        add.d  \target, \target, $a0
 
         // Restore $a0, $ra
         EPILOG_RESTORE_REG_PAIR_INDEXED 4, 1, 16
