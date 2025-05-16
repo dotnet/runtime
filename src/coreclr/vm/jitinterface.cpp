@@ -6612,14 +6612,14 @@ void CEEInfo::setMethodAttribs (
 }
 
 /*********************************************************************/
-class MethodInfoHelperContext final
+class MethodInfoWorkerContext final
 {
 public:
     MethodDesc* Method;
     COR_ILMETHOD_DECODER* Header;
     DynamicResolver* TransientResolver;
 
-    MethodInfoHelperContext(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header = NULL)
+    MethodInfoWorkerContext(MethodDesc* pMD, _In_opt_ COR_ILMETHOD_DECODER* header = NULL)
         : Method{ pMD }
         , Header{ header }
         , TransientResolver{}
@@ -6628,17 +6628,17 @@ public:
         _ASSERTE(pMD != NULL);
     }
 
-    MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
-    MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
+    MethodInfoWorkerContext(const MethodInfoWorkerContext&) = delete;
+    MethodInfoWorkerContext(MethodInfoWorkerContext&& other) = delete;
 
-    ~MethodInfoHelperContext()
+    ~MethodInfoWorkerContext()
     {
         STANDARD_VM_CONTRACT;
         delete TransientResolver;
     }
 
-    MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
-    MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
+    MethodInfoWorkerContext& operator=(const MethodInfoWorkerContext&) = delete;
+    MethodInfoWorkerContext& operator=(MethodInfoWorkerContext&& other) = delete;
 
     bool HasTransientMethodDetails() const
     {
@@ -6699,7 +6699,7 @@ void getMethodInfoILMethodHeaderHelper(
         (CorInfoOptions)((header->GetFlags() & CorILMethod_InitLocals) ? CORINFO_OPT_INIT_LOCALS : 0) ;
 }
 
-mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
+static mdToken FindGenericMethodArgTypeSpec(IMDInternalImport* pInternalImport)
 {
     STANDARD_VM_CONTRACT;
 
@@ -7289,7 +7289,7 @@ bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
 }
 
 static bool getILIntrinsicImplementationForRuntimeHelpers(
-    MethodInfoHelperContext& cxt,
+    MethodInfoWorkerContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
     SigPointer* localSig)
 {
@@ -7494,18 +7494,23 @@ static bool getILIntrinsicImplementationForActivator(MethodDesc* ftn,
 
 //---------------------------------------------------------------------------------------
 //
-
-static void getMethodInfoHelper(
-    MethodInfoHelperContext& cxt,
+void CEEInfo::getMethodInfoWorker(
+    MethodInfoWorkerContext& cxt,
     CORINFO_METHOD_INFO* methInfo,
-    CORINFO_CONTEXT_HANDLE exactContext = NULL)
+    CORINFO_CONTEXT_HANDLE exactContext)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(cxt.Method != NULL);
     _ASSERTE(methInfo != NULL);
 
     MethodDesc* ftn      = cxt.Method;
     methInfo->ftn        = (CORINFO_METHOD_HANDLE)ftn;
     methInfo->regionKind = CORINFO_REGION_JIT;
+
+    _ASSERTE(!cxt.HasTransientMethodDetails());
+    TransientMethodDetails* detailsMaybe = NULL;
+    if (FindTransientMethodDetails(ftn, &detailsMaybe))
+        cxt.UpdateWith(*detailsMaybe);
 
     CORINFO_MODULE_HANDLE scopeHnd = NULL;
 
@@ -7657,23 +7662,6 @@ static void getMethodInfoHelper(
         &context,
         CONV_TO_JITSIG_FLAGS_LOCALSIG,
         &methInfo->locals);
-} // getMethodInfoHelper
-
-
-void CEEInfo::getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo)
-{
-    MethodInfoHelperContext cxt{ pMD };
-
-    // We will either find or create transient method details.
-    _ASSERTE(!cxt.HasTransientMethodDetails());
-
-    // IL methods with no RVA indicate there is no implementation defined in metadata.
-    // Check if we previously generated details/implementation for this method.
-    TransientMethodDetails* detailsMaybe = NULL;
-    if (FindTransientMethodDetails(pMD, &detailsMaybe))
-        cxt.UpdateWith(*detailsMaybe);
-
-    getMethodInfoHelper(cxt, methInfo);
 
     // If we have transient method details we need to handle
     // the lifetime of the details.
@@ -7688,7 +7676,7 @@ void CEEInfo::getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methI
         // transferred or was found in this instance.
         cxt.UpdateWith({});
     }
-}
+} // getMethodInfoWorker
 
 //---------------------------------------------------------------------------------------
 //
@@ -7708,31 +7696,27 @@ CEEInfo::getMethodInfo(
 
     JIT_TO_EE_TRANSITION();
 
-    MethodDesc * ftn = GetMethod(ftnHnd);
+    MethodDesc* ftn = GetMethod(ftnHnd);
 
-    // Get the IL header
-    MethodInfoHelperContext cxt{ ftn };
-    if (ftn->IsDynamicMethod())
+    MethodInfoWorkerContext cxt{ ftn };
+    if (ftn->IsDynamicMethod()
+        || (ftn->IsIL() && ftn->GetRVA() == 0)) // IL methods with no RVA indicate there is no implementation defined in metadata.
     {
-        getMethodInfoHelper(cxt, methInfo, context);
+        getMethodInfoWorker(cxt, methInfo, context);
         result = true;
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
+        // Get the IL header and set it.
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
-        getMethodInfoHelper(cxt, methInfo, context);
-        result = true;
-    }
-    else if (ftn->IsIL() && ftn->GetRVA() == 0)
-    {
-        getTransientMethodInfo(ftn, methInfo);
+        getMethodInfoWorker(cxt, methInfo, context);
         result = true;
     }
 
     if (result)
     {
-        LOG((LF_JIT, LL_INFO100000, "Getting method info (possible inline) %s::%s%s\n",
+        LOG((LF_JIT, LL_INFO100000, "Getting method info (possible inline) %s::%s  %s\n",
             ftn->m_pszDebugClassName, ftn->m_pszDebugMethodName, ftn->m_pszDebugMethodSignature));
     }
 
@@ -7909,9 +7893,9 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             }
             else if (pCallee->IsIL() && pCallee->GetRVA() == 0)
             {
+                MethodInfoWorkerContext cxt{ pCallee };
                 CORINFO_METHOD_INFO methodInfo;
-                getTransientMethodInfo(pCallee, &methodInfo);
-
+                getMethodInfoWorker(cxt, &methodInfo);
                 if (methodInfo.EHcount > 0)
                 {
                     result = INLINE_FAIL;
@@ -12309,6 +12293,26 @@ void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     return result;
 }
 
+CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfo(
+    MethodInfoWorkerContext& cxt)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(cxt.Method != NULL);
+
+    CORINFO_METHOD_INFO methInfo;
+    getMethodInfoWorker(cxt, &methInfo);
+
+    // Verify method attributes and signature are consistant
+    _ASSERTE(!!cxt.Method->IsStatic() == ((methInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
+
+    // Either the member header was NULL or remains the same as the input.
+    _ASSERTE(m_ILHeader == NULL || cxt.Header == m_ILHeader);
+
+    // Update the member with the result of the MethodInfo call.
+    m_ILHeader = cxt.Header;
+    return methInfo;
+}
+
 /*********************************************************************/
 HRESULT CEEJitInfo::allocPgoInstrumentationBySchema(
             CORINFO_METHOD_HANDLE ftnHnd, /* IN */
@@ -13067,13 +13071,9 @@ void ThrowExceptionForJit(HRESULT res)
 
 // ********************************************************************
 //#define PERF_TRACK_METHOD_JITTIMES
-#ifdef TARGET_AMD64
-BOOL g_fAllowRel32 = TRUE;
-#endif
 
-
-PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInfo, CORJIT_FLAGS* pJitFlags, CORINFO_METHOD_INFO methodInfo,
-                              MethodInfoHelperContext *pCxt, NativeCodeVersion nativeCodeVersion, ULONG* pSizeOfCode)
+static TADDR UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInfo, CORJIT_FLAGS* pJitFlags, CORINFO_METHOD_INFO methodInfo,
+                              MethodInfoWorkerContext *pCxt, NativeCodeVersion nativeCodeVersion, ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     if (pCxt->HasTransientMethodDetails())
@@ -13081,11 +13081,6 @@ PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInf
 
     MethodDesc * pMethodForSecurity = pJitInfo->GetMethodForSecurity(methodInfo.ftn);
     MethodDesc * ftn = nativeCodeVersion.GetMethodDesc();
-
-#ifdef _DEBUG
-    LPCUTF8 cls  = ftn->GetMethodTable()->GetDebugClassName();
-    LPCUTF8 name = ftn->GetName();
-#endif
 
     //Since the check could trigger a demand, we have to do this every time.
     //This is actually an overly complicated way to make sure that a method can access all its arguments
@@ -13182,8 +13177,6 @@ PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInf
 
     }
 
-    LOG((LF_JIT, LL_INFO10000, "Done Jitting method %s::%s  %s }\n",cls,name, ftn->m_pszDebugMethodSignature));
-
     if (res == CORJIT_SKIPPED)
     {
         // We are done
@@ -13231,8 +13224,132 @@ PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInf
     ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
 
     // We are done
-    return (PCODE)nativeEntry;
+    return (TADDR)nativeEntry;
 }
+
+class JumpStubOverflowCheck final
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64)
+    static BOOL g_fAllowRel32;
+#endif // TARGET_AMD64
+
+    BOOL _fForceJumpStubOverflow;
+    BOOL _fAllowRel32;
+    size_t _reserveForJumpStubs;
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+public:
+    JumpStubOverflowCheck()
+    {
+        STANDARD_VM_CONTRACT;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        _fForceJumpStubOverflow = FALSE;
+#ifdef _DEBUG
+        // Always exercise the overflow codepath with force relocs
+        if (PEDecoder::GetForceRelocs())
+            _fForceJumpStubOverflow = TRUE;
+#endif
+
+        _fAllowRel32 = FALSE;
+#if defined(TARGET_AMD64)
+        _fAllowRel32 = (g_fAllowRel32 | _fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
+#endif // TARGET_AMD64
+
+        _reserveForJumpStubs = 0;
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    }
+
+    ~JumpStubOverflowCheck() = default;
+
+    void Enable(CEEJitInfo& jitInfo)
+    {
+        STANDARD_VM_CONTRACT;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64)
+        if (_fForceJumpStubOverflow)
+            jitInfo.SetJumpStubOverflow(_fAllowRel32);
+        jitInfo.SetAllowRel32(_fAllowRel32);
+#else
+        if (_fForceJumpStubOverflow)
+            jitInfo.SetJumpStubOverflow(_fForceJumpStubOverflow);
+#endif
+        jitInfo.SetReserveForJumpStubs(_reserveForJumpStubs);
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    }
+
+    bool Detected(CEEJitInfo& jitInfo, EEJitManager* jitMgr)
+    {
+        STANDARD_VM_CONTRACT;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        if (jitInfo.IsJumpStubOverflow())
+        {
+            // Backout and try again with fAllowRel32 == FALSE.
+            jitInfo.BackoutJitData(jitMgr);
+
+#if defined(TARGET_AMD64)
+            // Disallow rel32 relocs in future.
+            g_fAllowRel32 = FALSE;
+
+            _fAllowRel32 = FALSE;
+#endif // TARGET_AMD64
+#if defined(TARGET_ARM64)
+            _fForceJumpStubOverflow = FALSE;
+#endif // TARGET_ARM64
+
+            _reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
+            return true;
+        }
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+
+        // No overflow detected
+        return false;
+    }
+};
+
+#if defined(TARGET_AMD64)
+BOOL JumpStubOverflowCheck::g_fAllowRel32 = TRUE;
+#endif // TARGET_AMD64
+
+#ifdef LOGGING
+class LogJitMethod final
+{
+    MethodDesc* _ftn;
+public:
+    LogJitMethod(MethodDesc* ftn)
+        : _ftn{ ftn }
+    {
+        STANDARD_VM_CONTRACT;
+        _ASSERTE(_ftn != NULL);
+        if (_ftn->IsNoMetadata())
+        {
+            if (_ftn->IsILStub())
+            {
+                LOG((LF_JIT, LL_INFO10000, "{ Jitting IL Stub (%p)\n", _ftn));
+            }
+            else
+            {
+                LOG((LF_JIT, LL_INFO10000, "{ Jitting dynamic method (%p)\n", _ftn));
+            }
+        }
+        else
+        {
+            LPCUTF8 cls  = _ftn->GetMethodTable()->GetDebugClassName();
+            LPCUTF8 name = _ftn->GetName();
+            LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s::%s  %s\n", _ftn, cls, name, _ftn->m_pszDebugMethodSignature));
+        }
+    }
+
+    ~LogJitMethod()
+    {
+        STANDARD_VM_CONTRACT;
+        LOG((LF_JIT, LL_INFO10000, "Done Jitting method (%p) }\n", _ftn));
+    }
+};
+#endif // LOGGING
 
 // ********************************************************************
 //                  README!!
@@ -13250,7 +13367,7 @@ PCODE UnsafeJitFunctionWorker(EECodeGenManager *pJitMgr, CEECodeGenInfo *pJitInf
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         _In_opt_ COR_ILMETHOD_DECODER* ILHeader,
                         _In_ CORJIT_FLAGS* pJitFlags,
-                        _In_opt_ ULONG* pSizeOfCode)
+                        _In_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
@@ -13258,6 +13375,13 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
+
+    // If it's generic then we can only enter through an instantiated MethodDesc
+    _ASSERTE(!ftn->IsGenericMethodDefinition());
+
+#ifdef LOGGING
+    LogJitMethod{ ftn };
+#endif // LOGGING
 
     PCODE ret = (PCODE)NULL;
     NormalizedTimer timer;
@@ -13267,124 +13391,65 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     timer.Start();
 
-#ifdef FEATURE_INTERPRETER
-    InterpreterJitManager *interpreterMgr = ExecutionManager::GetInterpreterJitManager();
+    // Negate the check for no inlining so the logic is easier to follow
+    bool enableInlining = !config->GetJitCompilationFlags().IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING);
 
-    LPWSTR interpreterConfig;
-    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
-
-    if ((interpreterConfig != NULL) && !interpreterMgr->LoadInterpreter())
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
-    }
-#endif // FEATURE_INTERPRETER
-
-    EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
-    if (!jitMgr->LoadJIT())
-    {
-#ifdef ALLOW_SXS_JIT
-        if (!jitMgr->IsMainJitLoaded())
-        {
-            // Don't want to throw InvalidProgram from here.
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
-        }
-        if (!jitMgr->IsAltJitLoaded())
-        {
-            // Don't want to throw InvalidProgram from here.
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load alternative JIT compiler"));
-        }
-#else // ALLOW_SXS_JIT
-        // Don't want to throw InvalidProgram from here.
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
-#endif // ALLOW_SXS_JIT
-    }
-
-#ifdef _DEBUG
-    // This is here so we can see the name and class easily in the debugger
-
-    LPCUTF8 cls  = ftn->GetMethodTable()->GetDebugClassName();
-    LPCUTF8 name = ftn->GetName();
-
-    if (ftn->IsNoMetadata())
-    {
-        if (ftn->IsILStub())
-        {
-            LOG((LF_JIT, LL_INFO10000, "{ Jitting IL Stub }\n"));
-        }
-        else
-        {
-            LOG((LF_JIT, LL_INFO10000, "{ Jitting dynamic method }\n"));
-        }
-    }
-    else
-    {
-        SString methodString;
-        if (LoggingOn(LF_JIT, LL_INFO10000))
-            TypeString::AppendMethodDebug(methodString, ftn);
-
-        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %s %s\n", ftn, methodString.GetUTF8(), ftn->m_pszDebugMethodSignature));
-    }
-#endif // _DEBUG
-
-    MethodInfoHelperContext cxt{ ftn, ILHeader };
-    CORINFO_METHOD_INFO methodInfo;
-    getMethodInfoHelper(cxt, &methodInfo);
-
-    if (ILHeader == nullptr)
-        ILHeader = cxt.Header;
-
-    // If it's generic then we can only enter through an instantiated MethodDesc
-    _ASSERTE(!ftn->IsGenericMethodDefinition());
-
-    // method attributes and signature are consistant
-    _ASSERTE(!!ftn->IsStatic() == ((methodInfo.args.callConv & CORINFO_CALLCONV_HASTHIS) == 0));
-
-    *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
+    CORINFO_METHOD_INFO methodInfo{};
+    MethodInfoWorkerContext cxt{ ftn, ILHeader };
 
 #ifdef FEATURE_INTERPRETER
-    bool useInterpreter = interpreterMgr->IsInterpreterLoaded();
-
-    if (useInterpreter)
+    InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
+    if (!interpreterMgr->IsInterpreterLoaded())
     {
-        CInterpreterJitInfo interpreterJitInfo(ftn, ILHeader, interpreterMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+        LPWSTR interpreterConfig;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
+        if ((interpreterConfig != NULL) && !interpreterMgr->LoadInterpreter())
+        {
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
+        }
+    }
+
+    // If the interpreter was loaded, use it.
+    if (interpreterMgr->IsInterpreterLoaded())
+    {
+        CInterpreterJitInfo interpreterJitInfo{ ftn, ILHeader, interpreterMgr, enableInlining };
+        methodInfo = interpreterJitInfo.getMethodInfo(cxt);
+        *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
+
         ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
     }
 #endif // FEATURE_INTERPRETER
 
     if (!ret)
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        BOOL fForceJumpStubOverflow = FALSE;
+        EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
+        if (!jitMgr->LoadJIT())
+        {
+#ifdef ALLOW_SXS_JIT
+            if (!jitMgr->IsMainJitLoaded())
+            {
+                // Don't want to throw InvalidProgram from here.
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
+            }
+            if (!jitMgr->IsAltJitLoaded())
+            {
+                // Don't want to throw InvalidProgram from here.
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load alternative JIT compiler"));
+            }
+#else // ALLOW_SXS_JIT
+            // Don't want to throw InvalidProgram from here.
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load JIT compiler"));
+#endif // ALLOW_SXS_JIT
+        }
 
-#ifdef _DEBUG
-        // Always exercise the overflow codepath with force relocs
-        if (PEDecoder::GetForceRelocs())
-            fForceJumpStubOverflow = TRUE;
-#endif
-
-#if defined(TARGET_AMD64)
-        BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
-#endif
-
-        size_t reserveForJumpStubs = 0;
-
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
+        JumpStubOverflowCheck jsoCheck{};
         while (true)
         {
-            CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
+            CEEJitInfo jitInfo{ ftn, ILHeader, jitMgr, enableInlining };
+            methodInfo = jitInfo.getMethodInfo(cxt);
+            *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-#if defined(TARGET_AMD64)
-            if (fForceJumpStubOverflow)
-                jitInfo.SetJumpStubOverflow(fAllowRel32);
-            jitInfo.SetAllowRel32(fAllowRel32);
-#else
-            if (fForceJumpStubOverflow)
-                jitInfo.SetJumpStubOverflow(fForceJumpStubOverflow);
-#endif
-            jitInfo.SetReserveForJumpStubs(reserveForJumpStubs);
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            jsoCheck.Enable(jitInfo);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
             // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
@@ -13396,28 +13461,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-            ret = UnsafeJitFunctionWorker(jitMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
-            if (!ret)
+            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
+            if (!retMaybe)
                 COMPlusThrow(kInvalidProgramException);
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-            if (jitInfo.IsJumpStubOverflow())
+            if (jsoCheck.Detected(jitInfo, jitMgr))
             {
-                // Backout and try again with fAllowRel32 == FALSE.
-                jitInfo.BackoutJitData(jitMgr);
-
-#ifdef TARGET_AMD64
-                // Disallow rel32 relocs in future.
-                g_fAllowRel32 = FALSE;
-
-                fAllowRel32 = FALSE;
-#endif // TARGET_AMD64
-#ifdef TARGET_ARM64
-                fForceJumpStubOverflow = FALSE;
-#endif // TARGET_ARM64
-
-                reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
-
                 // Get any transient method details and take ownership
                 // from the JITInfo instance. We are going to be recreating
                 // a new JITInfo and will reuse these details there.
@@ -13425,12 +13474,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                 cxt.TakeOwnership(std::move(details));
                 continue;
             }
-#endif // (TARGET_AMD64 || TARGET_ARM64)
 
-#ifdef TARGET_ARM
-            ret |= THUMB_CODE;
-#endif
-
+            ret = PINSTRToPCODE(retMaybe);
             jitInfo.PublishFinalCodeAddress(ret);
 
             // We are done
