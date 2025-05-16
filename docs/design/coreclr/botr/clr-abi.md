@@ -148,6 +148,11 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 *Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
 
+## Calls to ReadyToRun helper functions
+Calls to ReadyToRun helpers functions have a special ABI on some architectures to address memory ordering problems.
+
+On Arm64, the address of the ReadyToRun helper itself must be passed in `XIP0` AKA `X16` AKA `R16`.
+
 ## Small primitive returns
 
 Primitive value types smaller than 32-bits are widened to 32-bits: signed small types are sign extended and unsigned small types are zero extended. This can be different from the standard calling conventions that may leave the state of unused bits in the return register undefined.

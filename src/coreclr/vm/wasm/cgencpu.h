@@ -8,6 +8,8 @@
 #include "stublink.h"
 #include "utilcode.h"
 
+#define OFFSET_OF_STUBPRECODE_INDIRECTED_CALL_ENTRYPOINT 0
+
 // preferred alignment for data
 #define DATA_ALIGNMENT 4
 

@@ -227,6 +227,12 @@ struct StubPrecode
 
     static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
+    PCODE GetEntrypointForIndirectedCallRegister()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return PINSTRToPCODE(dac_cast<TADDR>(this) + OFFSET_OF_STUBPRECODE_INDIRECTED_CALL_ENTRYPOINT);
+    }
+
 #endif // !DACCESS_COMPILE
 };
 

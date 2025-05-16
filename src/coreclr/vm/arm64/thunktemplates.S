@@ -17,6 +17,7 @@
 
 
 #define DATA_SLOT(stub, field, thunkSize, thunkTemplateName) C_FUNC(thunkTemplateName) + THUNKS_MAP_SIZE + stub##Data__##field + IN_PAGE_INDEX * thunkSize
+#define XIP_RELATIVE_DATA_SLOT(stub, field, offset) #(\THUNKS_MAP_SIZE + stub##Data__##field - offset)
 
 // ----------
 // StubPrecode
@@ -34,9 +35,9 @@
     ldr x12, DATA_SLOT(StubPrecode, SecretParam, STUB_PRECODE_CODESIZE, StubPrecodeCodeTemplate)
     br x10
 
-    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 2 pointers + 1 byte
-    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 2 pointers + 1 byte
-    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 2 pointers + 1 byte
+    ldr x10, [xip0, XIP_RELATIVE_DATA_SLOT(StubPrecode, Target, 12)]
+    ldr x12, [xip0, XIP_RELATIVE_DATA_SLOT(StubPrecode, SecretParam, 12)]
+    br  x10
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -60,10 +61,10 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
     IN_PAGE_INDEX = 0
     .rept FIXUP_PRECODE_NUM_THUNKS_PER_MAPPING
 
-    ldr x11, DATA_SLOT(FixupPrecode, Target, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
-    br  x11
-    ldr x12, DATA_SLOT(FixupPrecode, MethodDesc, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
-    ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
+    ldr xip0, DATA_SLOT(FixupPrecode, Target, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
+    br  xip0
+    ldr x12, [xip0, XIP_RELATIVE_DATA_SLOT(FixupPrecode, MethodDesc, 8)]
+    ldr x11, [xip0, XIP_RELATIVE_DATA_SLOT(FixupPrecode, PrecodeFixupThunk, 8)]
     br  x11        
     brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
 
@@ -89,6 +90,7 @@ LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
     IN_PAGE_INDEX = 0
     .rept CALLCOUNTING_NUM_THUNKS_PER_MAPPING
 
+        dmb ishld
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell, CALLCOUNTING_CODESIZE, CallCountingStubCodeTemplate)
         ldrh w10, [x9]
         subs w10, w10, #1
@@ -99,7 +101,6 @@ LEAF_END_MARKED FixupPrecodeCodeTemplate, _TEXT
 0:
         ldr  x10, DATA_SLOT(CallCountingStub, TargetForThresholdReached, CALLCOUNTING_CODESIZE, CallCountingStubCodeTemplate)
         br   x10
-        brk     0xf000      // Stubs need to be 40-byte in size to allow for the data to be pointer aligned
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -115,7 +116,11 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
 #ifdef DATA_SLOT
 #undef DATA_SLOT
 #endif
+#ifdef XIP_DATA_SLOT
+#undef XIP_DATA_SLOT
+#endif
 #define DATA_SLOT(stub, field) . - (. - C_FUNC(stub##Code\STUB_PAGE_SIZE)) + \STUB_PAGE_SIZE + stub##Data__##field
+#define XIP_RELATIVE_DATA_SLOT(stub, field, offset) (\STUB_PAGE_SIZE + stub##Data__##field - offset)
 
     .irp STUB_PAGE_SIZE, 16384, 32768, 65536
 
@@ -123,18 +128,22 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
         ldr x10, DATA_SLOT(StubPrecode, Target)
         ldr x12, DATA_SLOT(StubPrecode, SecretParam)
         br x10
+        ldr x10, [xip0, XIP_RELATIVE_DATA_SLOT(StubPrecode, Target, 12)]
+        ldr x12, [xip0, XIP_RELATIVE_DATA_SLOT(StubPrecode, SecretParam, 12)]
+        br  x10
     LEAF_END_MARKED StubPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY FixupPrecodeCode\STUB_PAGE_SIZE
-        ldr x11, DATA_SLOT(FixupPrecode, Target)
-        br  x11
-        ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
-        ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
+        ldr xip0, DATA_SLOT(FixupPrecode, Target)
+        br  xip0
+        ldr x12, [xip0, XIP_RELATIVE_DATA_SLOT(FixupPrecode, MethodDesc, 8)]
+        ldr x11, [xip0, XIP_RELATIVE_DATA_SLOT(FixupPrecode, PrecodeFixupThunk, 8)]
         br  x11        
     LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
 LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
+        dmb ishld
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh w10, [x9]
         subs w10, w10, #1

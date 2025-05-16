@@ -145,6 +145,7 @@ public:
         pStubData->RemainingCallCountCell = remainingCallCountCell;
         pStubData->TargetForMethod = targetForMethod;
         pStubData->TargetForThresholdReached = CallCountingStub::TargetForThresholdReached;
+        MemoryBarrier(); // Ensure that all writes to the stub data are visible before we pass the stub to other threads
     }
 
     static void StaticInitialize();

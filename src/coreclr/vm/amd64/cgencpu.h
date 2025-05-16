@@ -18,6 +18,8 @@
 
 #include "xmmintrin.h"
 
+#define OFFSET_OF_STUBPRECODE_INDIRECTED_CALL_ENTRYPOINT 0
+
 // Given a return address retrieved during stackwalk,
 // this is the offset by which it should be decremented to lend somewhere in a call instruction.
 #define STACKWALK_CONTROLPC_ADJUST_OFFSET 1
