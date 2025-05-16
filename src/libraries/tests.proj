@@ -200,13 +200,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <!-- gRPC tests should be run only manually -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
-    <!-- Helix error - DEVICE_FILE_COPY_FAILURE -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration\tests\Microsoft.Extensions.Configuration.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.External.Tests\Microsoft.Extensions.DependencyInjection.ExternalContainers.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\DisabledFileLockingTests\System.IO.FileSystem.DisabledFileLocking.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Pipelines\tests\System.IO.Pipelines.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.AsyncInterfaces\tests\Microsoft.Bcl.AsyncInterfaces.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Configuration.ConfigurationManager\tests\System.Configuration.ConfigurationManager.Tests.csproj" />
   </ItemGroup>
 
   <!-- arm32-only android failures -->
