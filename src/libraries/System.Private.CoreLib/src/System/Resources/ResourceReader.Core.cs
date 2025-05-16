@@ -117,11 +117,11 @@ namespace System.Resources
 
             [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
             [return: UnsafeAccessorType(BinaryFormatterTypeName)]
-            static extern object? CreateBinaryFormatter();
+            static extern object CreateBinaryFormatter();
 
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Deserialize")]
             static extern object Deserialize(
-                [UnsafeAccessorType(BinaryFormatterTypeName)] object? formatter,
+                [UnsafeAccessorType(BinaryFormatterTypeName)] object formatter,
                 Stream serializationStream);
         }
         private static bool ValidateReaderType(string readerType)
