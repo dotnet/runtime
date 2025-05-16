@@ -1041,7 +1041,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     if (fHasNonTrivialParent)
     {
         CONSISTENCY_CHECK(fParentHasLayout);
-        PREFAST_ASSUME(pParentLayoutInfo != NULL);  // See if (fParentHasLayout) branch above
+        _ASSERTE(pParentLayoutInfo != NULL);  // See if (fParentHasLayout) branch above
 
         UINT numChildCTMFields = cInstanceFields;
 

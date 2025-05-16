@@ -66,6 +66,7 @@ namespace System.Security.Cryptography
         internal const string Pkcs7Hashed = "1.2.840.113549.1.7.5";
         internal const string Pkcs7Encrypted = "1.2.840.113549.1.7.6";
 
+        // Hash algorithms
         internal const string Md5 = "1.2.840.113549.2.5";
         internal const string Sha1 = "1.3.14.3.2.26";
         internal const string Sha256 = "2.16.840.1.101.3.4.2.1";
@@ -74,6 +75,8 @@ namespace System.Security.Cryptography
         internal const string Sha3_256 = "2.16.840.1.101.3.4.2.8";
         internal const string Sha3_384 = "2.16.840.1.101.3.4.2.9";
         internal const string Sha3_512 = "2.16.840.1.101.3.4.2.10";
+        internal const string Shake128 = "2.16.840.1.101.3.4.2.11";
+        internal const string Shake256 = "2.16.840.1.101.3.4.2.12";
 
         // DSA CMS uses the combined signature+digest OID
         internal const string DsaWithSha1 = "1.2.840.10040.4.3";
@@ -110,24 +113,24 @@ namespace System.Security.Cryptography
         internal const string SlhDsaSha2_192f = "2.16.840.1.101.3.4.3.23";
         internal const string SlhDsaSha2_256s = "2.16.840.1.101.3.4.3.24";
         internal const string SlhDsaSha2_256f = "2.16.840.1.101.3.4.3.25";
-        internal const string SlhDsaShake_128s = "2.16.840.1.101.3.4.3.26";
-        internal const string SlhDsaShake_128f = "2.16.840.1.101.3.4.3.27";
-        internal const string SlhDsaShake_192s = "2.16.840.1.101.3.4.3.28";
-        internal const string SlhDsaShake_192f = "2.16.840.1.101.3.4.3.29";
-        internal const string SlhDsaShake_256s = "2.16.840.1.101.3.4.3.30";
-        internal const string SlhDsaShake_256f = "2.16.840.1.101.3.4.3.31";
+        internal const string SlhDsaShake128s = "2.16.840.1.101.3.4.3.26";
+        internal const string SlhDsaShake128f = "2.16.840.1.101.3.4.3.27";
+        internal const string SlhDsaShake192s = "2.16.840.1.101.3.4.3.28";
+        internal const string SlhDsaShake192f = "2.16.840.1.101.3.4.3.29";
+        internal const string SlhDsaShake256s = "2.16.840.1.101.3.4.3.30";
+        internal const string SlhDsaShake256f = "2.16.840.1.101.3.4.3.31";
         internal const string SlhDsaSha2_128sPreHashSha256 = "2.16.840.1.101.3.4.3.35";
         internal const string SlhDsaSha2_128fPreHashSha256 = "2.16.840.1.101.3.4.3.36";
         internal const string SlhDsaSha2_192sPreHashSha512 = "2.16.840.1.101.3.4.3.37";
         internal const string SlhDsaSha2_192fPreHashSha512 = "2.16.840.1.101.3.4.3.38";
         internal const string SlhDsaSha2_256sPreHashSha512 = "2.16.840.1.101.3.4.3.39";
         internal const string SlhDsaSha2_256fPreHashSha512 = "2.16.840.1.101.3.4.3.40";
-        internal const string SlhDsaShake_128sPreHashShake128 = "2.16.840.1.101.3.4.3.41";
-        internal const string SlhDsaShake_128fPreHashShake128 = "2.16.840.1.101.3.4.3.42";
-        internal const string SlhDsaShake_192sPreHashShake256 = "2.16.840.1.101.3.4.3.43";
-        internal const string SlhDsaShake_192fPreHashShake256 = "2.16.840.1.101.3.4.3.44";
-        internal const string SlhDsaShake_256sPreHashShake256 = "2.16.840.1.101.3.4.3.45";
-        internal const string SlhDsaShake_256fPreHashShake256 = "2.16.840.1.101.3.4.3.46";
+        internal const string SlhDsaShake128sPreHashShake128 = "2.16.840.1.101.3.4.3.41";
+        internal const string SlhDsaShake128fPreHashShake128 = "2.16.840.1.101.3.4.3.42";
+        internal const string SlhDsaShake192sPreHashShake256 = "2.16.840.1.101.3.4.3.43";
+        internal const string SlhDsaShake192fPreHashShake256 = "2.16.840.1.101.3.4.3.44";
+        internal const string SlhDsaShake256sPreHashShake256 = "2.16.840.1.101.3.4.3.45";
+        internal const string SlhDsaShake256fPreHashShake256 = "2.16.840.1.101.3.4.3.46";
 
         internal const string Mgf1 = "1.2.840.113549.1.1.8";
         internal const string PSpecified = "1.2.840.113549.1.1.9";

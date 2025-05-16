@@ -372,13 +372,6 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT)
-        {
-            // Initiate shutdown so the ProcessExit handlers run
-            ForceEEShutdown(SCA_ReturnWhenShutdownComplete);
-        }
-
-        g_fInControlC = true;     // only for weakening assertions in checked build.
         return FALSE;             // keep looking for a real handler.
     }
 }
@@ -659,6 +652,11 @@ void EEStartupHelper()
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
+        if (g_pConfig != NULL)
+        {
+            IfFailGoLog(g_pConfig->sync());
+        }
+
         Thread::StaticInitialize();
 
         JITInlineTrackingMap::StaticInitialize();
@@ -749,11 +747,6 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
-        if (g_pConfig != NULL)
-        {
-            IfFailGoLog(g_pConfig->sync());
-        }
-
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -767,7 +760,7 @@ void EEStartupHelper()
         }
 
 #ifdef ENABLE_STARTUP_DELAY
-        PREFIX_ASSUME(NULL != g_pConfig);
+        _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
             ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
