@@ -1088,6 +1088,7 @@ namespace System.Threading.Tasks.Tests
                 thread.Start();
                 thread.Interrupt();
                 cts.Cancel();
+                thread.Join();
 
                 if (threadException is AggregateException ae &&
                     ae.InnerExceptions.Any(e => e is ThreadInterruptedException))
