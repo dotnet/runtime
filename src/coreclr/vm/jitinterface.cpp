@@ -1964,12 +1964,12 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
             // if it's the unmanaged view of the managed type, we always use the unmanaged alignment requirement
             result = pMT->GetNativeLayoutInfo()->GetLargestAlignmentRequirement();
         }
-        else if (pInfo->IsManagedSequential() || pInfo->IsBlittable())
+        else if (pInfo->GetLayoutType() == EEClassLayoutInfo::LayoutType::Sequential || pInfo->IsBlittable())
         {
             _ASSERTE(!pMT->ContainsGCPointers());
 
             // if it's managed sequential, we use the managed alignment requirement
-            result = pInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
+            result = pInfo->GetAlignmentRequirement();
         }
     }
 
