@@ -1056,6 +1056,49 @@ namespace System.Threading.Tasks.Tests
             { }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void RunInlineTaskInterruptTest()
+        {
+            object[][] rows = Enumerable.Range(1, 100000)
+                .Select(x => new object[] { $"T{x}" })
+                .ToArray();
+
+            for (int attempt = 1; attempt <= 100000; attempt++)
+            {
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Exception? threadException = null;
+
+                Thread thread = new Thread(() =>
+                {
+                    try
+                    {
+                        List<object[]> list = rows.AsParallel()
+                            .AsOrdered()
+                            .WithCancellation(cts.Token)
+                            .OrderBy(row => row[0])
+                            .ToList();
+                    }
+                    catch (Exception ex)
+                    {
+                        threadException = ex;
+                    }
+                });
+
+                thread.Start();
+                thread.Interrupt();
+                cts.Cancel();
+
+                if (threadException is AggregateException ae &&
+                    ae.InnerExceptions.Any(e => e is ThreadInterruptedException))
+                {
+                    // The expected exception was thrown
+                    return;
+                }
+            }
+
+            Assert.Fail("RunInlineTaskInterruptTest:    > error: ThreadInterruptedException was not thrown.");
+        }
+
         // Simply throws an exception from the task and ensures it is propagated.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunTaskExceptionTest()
