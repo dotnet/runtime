@@ -187,16 +187,29 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    ContainCheckBinary(binOp);
-
-    if (!comp->opts.OptimizationEnabled())
-        return binOp->gtNext;
-
     GenTree*& op1 = binOp->gtOp1;
     GenTree*& op2 = binOp->gtOp2;
 
     bool isOp1Negated = op1->OperIs(GT_NOT);
     bool isOp2Negated = op2->OperIs(GT_NOT);
+
+    LIR::Use use;
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && op2->IsIntegralConst() &&
+        isPow2(op2->AsIntConCommon()->IntegralValue()) && BlockRange().TryGetUse(binOp, &use))
+    {
+        GenTree* user = use.User();
+        if ((user->OperIs(GT_EQ) && user->gtGetOp2()->IsIntegralConst(op2->AsIntConCommon()->IntegralValue())))
+        {
+            // (a & bit) == bit   =>   (a & bit) != 0
+            user->ChangeOper(GT_NE);
+            user->gtGetOp2()->AsIntConCommon()->SetIntegralValue(0);
+        }
+    }
+
+    ContainCheckBinary(binOp);
+
+    if (!comp->opts.OptimizationEnabled())
+        return binOp->gtNext;
 
     if (comp->compOpportunisticallyDependsOn(InstructionSet_Zbs) && binOp->OperIs(GT_OR, GT_XOR, GT_AND))
     {
@@ -212,9 +225,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     if (BlockRange().TryGetUse(binOp, &use))
                     {
                         GenTree* user = use.User();
-                        if ((user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0)) ||   // (a >> N) & bit != 0
-                            (user->OperIs(GT_EQ) && user->gtGetOp2()->IsIntegralConst(bit)) || // (a >> N) & bit == bit
-                            (op1->OperIs(GT_RSZ, GT_RSH) && bit == 1))                         // (a >> N) & 1
+                        if ((user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0)) || // (a >> N) & bit != 0
+                            (op1->OperIs(GT_RSZ, GT_RSH) && bit == 1))                       // (a >> N) & 1
                         {
 
                             if (user->OperIs(GT_EQ, GT_NE))
@@ -235,8 +247,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                             binOp->ChangeOper(GT_BIT_EXTRACT);
                             binOp->gtType = TYP_INT;
 
-                            uint32_t log2 = BitOperations::Log2(bit);
-                            constant->SetIntegralValue(log2);
+                            uint32_t bitIndex = BitOperations::Log2(bit);
+                            constant->SetIntegralValue(bitIndex);
                             constant->SetContained();
 
                             if (op1->OperIs(GT_RSZ, GT_RSH)) // (a >> N) & bit  =>  BIT_EXTRACT(a, N + log2(bit))
@@ -247,7 +259,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                 {
                                     int size = emitActualTypeSize(op1) * 8;
                                     assert(shiftAmount->AsIntConCommon()->IntegralValue() < size);
-                                    int bitIndex = log2 + shiftAmount->AsIntConCommon()->IntegralValue();
+                                    bitIndex += shiftAmount->AsIntConCommon()->IntegralValue();
                                     if (bitIndex < (size - 1))
                                     {
                                         constant->SetIntegralValue(bitIndex);
@@ -281,7 +293,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                 }
                                 else // shiftAmount is variable
                                 {
-                                    removeShift = (log2 == 0);
+                                    removeShift = (bitIndex == 0);
                                     if (removeShift)
                                     {
                                         op2 = shiftAmount;

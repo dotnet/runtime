@@ -5380,10 +5380,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         }
         else if (ins == INS_bseti || ins == INS_bclri || ins == INS_bexti || ins == INS_binvi)
         {
-            assert(imm >= 0);
+            // Use base instructions where possible:
+            // "bexti rd, rs, 0" is equivalent to "andi rd, rs, 1"
+            // "bseti/bclri/binvi rd, rs, imm" are equivalent to "ori/andi/xori rd, rs, (~)(1 << imm)" for imm < 11
+            int minBitIndex = (ins == INS_bexti) ? 0 : 11;
+            assert(imm >= minBitIndex);
             assert(imm < emitActualTypeSize(src1) * 8);
-            // If (1 << bitIndex) fits in 12 bits, it's better to emit ori/andi/xori instead of bseti/bclri/binvi
-            assert(ins == INS_bexti || !isValidSimm12(1 << imm));
         }
 
         assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori ||
