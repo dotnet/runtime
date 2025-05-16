@@ -53,8 +53,8 @@ bool MethodDesc::TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_
     ilResolver->SetStubTargetMethodDesc(pAsyncOtherVariant);
 
     // Generate all IL associated data for JIT
-    FinalizeILStub(ilResolver, &sl, resolver, methodILDecoder);
-    ilResolver.SuppressRelease();
+    *methodILDecoder = ConstructILStub(ilResolver, &sl);
+    *resolver = ilResolver.Extract();
     return true;
 }
 

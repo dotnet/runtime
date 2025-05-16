@@ -97,9 +97,7 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->SetStubMethodDesc(pStubMD);
 
-    DynamicResolver* dynamicResolver;
-    COR_ILMETHOD_DECODER* methodILDecoder;
-    FinalizeILStub(pResolver, pStubLinker, &dynamicResolver, &methodILDecoder);
+    ConstructILStub(pResolver, pStubLinker);
 
     RETURN pStubMD;
 }

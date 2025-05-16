@@ -11,7 +11,7 @@
 #define __ILSTUBRESOLVER_H__
 
 #include "stubgen.h"
-class ILStubResolver : DynamicResolver
+class ILStubResolver : public DynamicResolver
 {
     friend class ILStubCache;
     friend class ILStubLinker;
@@ -109,11 +109,9 @@ protected:
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
 
 #ifndef DACCESS_COMPILE
-void FinalizeILStub(
+COR_ILMETHOD_DECODER* ConstructILStub(
     _In_ ILStubResolver* ilResolver,
-    _In_ ILStubLinker* sl,
-    _Out_ DynamicResolver** dynamicResolver,
-    _Out_ COR_ILMETHOD_DECODER** methodILDecoder);
+    _In_ ILStubLinker* sl);
 #endif // !DACCESS_COMPILE
 
 #endif // __ILSTUBRESOLVER_H__

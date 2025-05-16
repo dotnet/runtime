@@ -62,7 +62,6 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
     ilResolver->SetStubMethodDesc(this);
 
-    FinalizeILStub(ilResolver, &sl, resolver, methodILDecoder);
-
-    ilResolver.SuppressRelease();
+    *methodILDecoder = ConstructILStub(ilResolver, &sl);
+    *resolver = ilResolver.Extract();
 }

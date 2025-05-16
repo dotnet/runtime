@@ -561,17 +561,13 @@ void ILStubResolver::StubGenFailed(ILStubResolver* pResolver)
 }
 
 #ifndef DACCESS_COMPILE
-void FinalizeILStub(
+COR_ILMETHOD_DECODER* ConstructILStub(
     _In_ ILStubResolver* ilResolver,
-    _In_ ILStubLinker* sl,
-    _Out_ DynamicResolver** dynamicResolver,
-    _Out_ COR_ILMETHOD_DECODER** methodILDecoder)
+    _In_ ILStubLinker* sl)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(ilResolver != NULL);
     _ASSERTE(sl != NULL);
-    _ASSERTE(dynamicResolver != NULL);
-    _ASSERTE(methodILDecoder != NULL);
 
     UINT maxStack;
     size_t cbCode = sl->Link(&maxStack);
@@ -595,7 +591,6 @@ void FinalizeILStub(
     ilResolver->SetTokenLookupMap(sl->GetTokenLookupMap());
     ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
 
-    *dynamicResolver = (DynamicResolver*)ilResolver;
-    *methodILDecoder = pILHeader;
+    return pILHeader;
 }
 #endif // !DACCESS_COMPILE

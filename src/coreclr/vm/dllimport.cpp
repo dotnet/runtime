@@ -6483,8 +6483,8 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT
-    FinalizeILStub(ilResolver, &sl, ppResolver, ppHeader);
-    ilResolver.SuppressRelease();
+    *ppHeader = ConstructILStub(ilResolver, &sl);
+    *ppResolver = ilResolver.Extract();
     return true;
 }
 
