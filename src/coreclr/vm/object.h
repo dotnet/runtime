@@ -264,6 +264,7 @@ class Object
     static DWORD ComputeHashCode();
     static DWORD GetGlobalNewHashCode();
 
+    inline INT32 TryGetHashCode();
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
@@ -2268,7 +2269,11 @@ public:
 
     void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const
     {
+#ifdef DACCESS_COMPILE
+        return GetStackTrace(stackTrace, outKeepaliveArray, NULL);
+#else
         return GetStackTrace(stackTrace, outKeepaliveArray, GetThread());
+#endif // DACCESS_COMPILE
     }
 
 private:

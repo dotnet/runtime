@@ -588,8 +588,10 @@ namespace System.Net.Http
                         var expect100Timer = new Timer(
                             static s => ((TaskCompletionSource<bool>)s!).TrySetResult(true),
                             allowExpect100ToContinue, _pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
+#pragma warning disable CA2025
                         sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(
                             request, allowExpect100ToContinue.Task, CreateRequestContentStream(request), expect100Timer, async, cancellationToken);
+#pragma warning restore
                     }
                 }
 

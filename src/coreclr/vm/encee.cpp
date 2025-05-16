@@ -1092,7 +1092,7 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
     // Look for an existing entry for the specified class
     while (ppData < ppLast)
     {
-        PREFIX_ASSUME(ppLast != NULL);
+        _ASSERTE(ppLast != NULL);
         if ((*ppData)->GetMethodTable() == pMT)
             return *ppData;
         ++ppData;

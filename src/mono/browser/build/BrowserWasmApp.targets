@@ -25,6 +25,7 @@
 
     <WasmGenerateAppBundleDependsOn>
       $(WasmGenerateAppBundleDependsOn);
+      GenerateBuildRuntimeConfigurationFiles;
       _GetWasmGenerateAppBundleDependencies;
       _WasmGenerateAppBundle;
       _WasmGenerateRunV8Script;
@@ -181,7 +182,7 @@
       WasmIcuDataFileName="$(WasmIcuDataFileName)"
       RuntimeAssetsLocation="$(WasmRuntimeAssetsLocation)"
       CacheBootResources="$(BlazorCacheBootResources)"
-      RuntimeConfigJsonPath="$(_WasmRuntimeConfigFilePath)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
       >
