@@ -42,7 +42,7 @@ NESTED_ENTRY RhpNewArrayMaybeFrozen, _TEXT, NoHandler
 
     PUSH_COOP_PINVOKE_FRAME $a2
 
-    b    C_FUNC(RhpGcAllocMaybeFrozen)
+    bl   C_FUNC(RhpGcAllocMaybeFrozen)
 
     POP_COOP_PINVOKE_FRAME
     EPILOG_RETURN
@@ -56,7 +56,7 @@ NESTED_ENTRY RhExceptionHandling_FailedAllocation, _TEXT, NoHandler
 
     PUSH_COOP_PINVOKE_FRAME $a2
 
-    b    C_FUNC(RhExceptionHandling_FailedAllocation_Helper)
+    bl   C_FUNC(RhExceptionHandling_FailedAllocation_Helper)
 
     POP_COOP_PINVOKE_FRAME
     EPILOG_RETURN
