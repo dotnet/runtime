@@ -1188,7 +1188,7 @@ static InterpType GetInterpType(CorInfoType corInfoType)
         case CORINFO_TYPE_VOID:
             return InterpTypeVoid;
         default:
-            assert(0);
+            assert(!"Unimplemented CorInfoType");
             break;
     }
     return InterpTypeVoid;
@@ -1721,7 +1721,17 @@ int32_t InterpCompiler::GetDataItemIndex(void *data)
 
 int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
 {
-    size_t data = (size_t)mHandle | INTERP_METHOD_DESC_TAG;
+    size_t data = (size_t)mHandle | INTERP_METHOD_HANDLE_TAG;
+    return GetDataItemIndex((void*)data);
+}
+
+int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
+{
+    void *indirect;
+    void *direct = m_compHnd->getHelperFtn(ftn, &indirect);
+    size_t data = !direct
+        ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
+        : (size_t)direct;
     return GetDataItemIndex((void*)data);
 }
 
@@ -3457,6 +3467,43 @@ retry_emit:
                 m_ip += 1;
                 break;
 
+            case CEE_BOX:
+            {
+                CHECK_STACK(1);
+                m_pStackPointer -= 1;
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
+                CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
+                AddIns(INTOP_BOX);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                PushStackType(StackTypeO, boxedClsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_UNBOX:
+            case CEE_UNBOX_ANY:
+            {
+                CHECK_STACK(1);
+                m_pStackPointer -= 1;
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper(clsHnd);
+                AddIns(opcode == CEE_UNBOX ? INTOP_UNBOX : INTOP_UNBOX_ANY);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                if (opcode == CEE_UNBOX)
+                    PushStackType(StackTypeI, NULL);
+                else
+                    PushInterpType(GetInterpType(m_compHnd->asCorInfoType(clsHnd)), clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
+
             default:
                 assert(0);
                 break;
@@ -3644,11 +3691,18 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             printf(")");
             break;
         }
-        case InterpOpMethodToken:
+        case InterpOpMethodHandle:
         {
-            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_DESC_TAG);
+            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_HANDLE_TAG);
             printf(" ");
             PrintMethodName(mh);
+            break;
+        }
+        case InterpOpClassHandle:
+        {
+            CORINFO_CLASS_HANDLE ch = (CORINFO_CLASS_HANDLE)((size_t)m_dataItems.Get(*pData));
+            printf(" ");
+            PrintClassName(ch);
             break;
         }
         default:

@@ -104,6 +104,10 @@ public class BootJsonData
     /// Gets or sets environment variables.
     /// </summary>
     public System.Collections.Generic.Dictionary<string, string> environmentVariables { get; set; }
+    /// <summary>
+    /// Subset of runtimeconfig.json
+    /// </summary>
+    public RuntimeConfigData runtimeConfig { get; set; }
 
     /// <summary>
     /// Gets or sets diagnostic tracing.
@@ -119,6 +123,25 @@ public class BootJsonData
     /// Gets or sets pthread pool unused size.
     /// </summary>
     public int? pthreadPoolUnusedSize { get; set; }
+}
+
+/// <summary>
+/// Subset of runtimeconfig.json
+/// </summary>
+public class RuntimeConfigData
+{
+    /// <summary>
+    /// Runtime options
+    /// </summary>
+    public RuntimeOptionsData runtimeOptions { get; set; }
+}
+
+public class RuntimeOptionsData
+{
+    /// <summary>
+    /// Config properties for the runtime
+    /// </summary>
+    public Dictionary<string, object> configProperties { get; set; }
 }
 
 public class ResourcesData

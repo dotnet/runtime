@@ -117,6 +117,9 @@ public class InterpreterTest
         if (!TestVirtual())
             Environment.FailFast(null);
 
+        if (!TestBoxing())
+            Environment.FailFast(null);
+
         System.GC.Collect();
     }
 
@@ -385,5 +388,19 @@ public class InterpreterTest
         if (itest.VirtualMethod() != 0xbebe)
             return false;
         return true;
+    }
+
+    public static bool TestBoxing()
+    {
+        int l = 7, r = 4;
+        object s = BoxedSubtraction(l, r);
+        // `(s is int result)` generates isinst so we have to do this in steps
+        int result = (int)s;
+        return result == 3;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+    static object BoxedSubtraction (object lhs, object rhs) {
+        return (int)lhs - (int)rhs;
     }
 }

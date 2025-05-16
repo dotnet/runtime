@@ -121,6 +121,14 @@ namespace System.Collections.Immutable.Tests
         public void Create()
         {
             IEnumerable<KeyValuePair<string, string>> pairs = new Dictionary<string, string> { { "a", "b" } };
+            ReadOnlySpan<KeyValuePair<string, string>> pairsWithDuplicates =
+            [
+                new KeyValuePair<string, string>("a", "b"),
+                new KeyValuePair<string, string>("a", "c"),
+                new KeyValuePair<string, string>("b", "d"),
+                new KeyValuePair<string, string>("B", "e"),
+                new KeyValuePair<string, string>("a", "f"),
+            ];
             StringComparer keyComparer = StringComparer.OrdinalIgnoreCase;
             StringComparer valueComparer = StringComparer.CurrentCulture;
 
@@ -153,6 +161,31 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(1, dictionary.Count);
             Assert.Same(keyComparer, dictionary.KeyComparer);
             Assert.Same(valueComparer, dictionary.ValueComparer);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite<string, string>();
+            Assert.Equal(0, dictionary.Count);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite<string, string>(keyComparer);
+            Assert.Equal(0, dictionary.Count);
+            Assert.Same(keyComparer, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite(pairsWithDuplicates);
+            Assert.Equal(3, dictionary.Count);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+            Assert.Equal("f", dictionary["a"]);
+            Assert.Equal("d", dictionary["b"]);
+            Assert.Equal("e", dictionary["B"]);
+
+            dictionary = ImmutableDictionary.CreateRangeWithOverwrite(keyComparer, pairsWithDuplicates);
+            Assert.Equal(2, dictionary.Count);
+            Assert.Same(keyComparer, dictionary.KeyComparer);
+            Assert.Same(EqualityComparer<string>.Default, dictionary.ValueComparer);
+            Assert.Equal("f", dictionary["a"]);
+            Assert.Equal("e", dictionary["b"]);
         }
 
         [Fact]
