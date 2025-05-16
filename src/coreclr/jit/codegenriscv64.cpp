@@ -3209,7 +3209,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             bool useAddSub = !(!tree->OperIs(GT_EQ, GT_NE) || (imm == -2048));
             bool useShiftRight =
                 !isUnsigned && ((tree->OperIs(GT_LT) && (imm == 0)) || (tree->OperIs(GT_LE) && (imm == -1)));
-            bool useLoadImm = isUnsigned && tree->OperIs(GT_LT, GT_GE) && (imm == 0);
+            bool useLoadImm = isUnsigned && ((tree->OperIs(GT_LT, GT_GE) && (imm == 0)) ||
+                                             (tree->OperIs(GT_LE, GT_GT) && (imm == -1)));
 
             if (cmpSize == EA_4BYTE)
             {
@@ -3254,7 +3255,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 assert(tree->OperIs(GT_LT, GT_LE, GT_GT, GT_GE));
                 if (useLoadImm)
                 {
-                    imm = tree->OperIs(GT_GE) ? 1 : 0;
+                    // unsigned (a <= ~0), (a >= 0) / (a > ~0), (a < 0) is always true / false
+                    imm = tree->OperIs(GT_GE, GT_LE) ? 1 : 0;
                     emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, targetReg, REG_ZERO, imm);
                 }
                 else if (useShiftRight)
@@ -3274,6 +3276,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     if (tree->OperIs(GT_LE, GT_GT))
                         imm += 1;
                     assert(emitter::isValidSimm12(imm));
+                    assert(!isUnsigned || (imm != 0)); // should be handled in useLoadImm
 
                     emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, regOp1, imm);
 

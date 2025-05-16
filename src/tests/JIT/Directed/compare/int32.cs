@@ -12,86 +12,86 @@ using Xunit;
 
 public static class CompareTestInt
 {
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Lt2((int, float) x) => (x.Item1 < 2);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Gt2((int, float) x) => (x.Item1 > 2);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Le2((int, float) x) => (x.Item1 <= 2);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ge2((int, float) x) => (x.Item1 >= 2);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Lt0((int, float) x) => (x.Item1 < 0);
     
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Gt0((int, float) x) => (x.Item1 > 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Le0((int, float) x) => (x.Item1 <= 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ge0((int, float) x) => (x.Item1 >= 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Eq0((int, float) x) => (x.Item1 == 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ne0((int, float) x) => (x.Item1 != 0);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Lt1((int, float) x) => (x.Item1 < 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Gt1((int, float) x) => (x.Item1 > 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Le1((int, float) x) => (x.Item1 <= 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ge1((int, float) x) => (x.Item1 >= 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Eq1((int, float) x) => (x.Item1 == 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ne1((int, float) x) => (x.Item1 != 1);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool LtMinus1((int, float) x) => (x.Item1 < -1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool GtMinus1((int, float) x) => (x.Item1 > -1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool LeMinus1((int, float) x) => (x.Item1 <= -1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool GeMinus1((int, float) x) => (x.Item1 >= -1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool EqMinus1((int, float) x) => (x.Item1 == -1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMinus1((int, float) x) => (x.Item1 != -1);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Eq2048((int, float) x) => (x.Item1 == 2048);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ne2048((int, float) x) => (x.Item1 != 2048);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool EqMinus2048((int, float) x) => (x.Item1 == -2048);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMinus2048((int, float) x) => (x.Item1 != -2048);
 
     [Fact]
@@ -135,86 +135,86 @@ public static class CompareTestInt
 
 public static class CompareTestUint
 {
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Lt2((uint, float) x) => (x.Item1 < 2);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Gt2((uint, float) x) => (x.Item1 > 2);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Le2((uint, float) x) => (x.Item1 <= 2);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ge2((uint, float) x) => (x.Item1 >= 2);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Lt0((uint, float) x) => (x.Item1 < 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Gt0((uint, float) x) => (x.Item1 > 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Le0((uint, float) x) => (x.Item1 <= 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ge0((uint, float) x) => (x.Item1 >= 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Eq0((uint, float) x) => (x.Item1 == 0);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ne0((uint, float) x) => (x.Item1 != 0);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Lt1((uint, float) x) => (x.Item1 < 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Gt1((uint, float) x) => (x.Item1 > 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Le1((uint, float) x) => (x.Item1 <= 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ge1((uint, float) x) => (x.Item1 >= 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Eq1((uint, float) x) => (x.Item1 == 1);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ne1((uint, float) x) => (x.Item1 != 1);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool LtMinus1((uint, float) x) => (x.Item1 < 0xFFFF_FFFFu);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool GtMinus1((uint, float) x) => (x.Item1 > 0xFFFF_FFFFu);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool LeMinus1((uint, float) x) => (x.Item1 <= 0xFFFF_FFFFu);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool GeMinus1((uint, float) x) => (x.Item1 >= 0xFFFF_FFFFu);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool EqMinus1((uint, float) x) => (x.Item1 == 0xFFFF_FFFFu);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMinus1((uint, float) x) => (x.Item1 != 0xFFFF_FFFFu);
 
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Eq2048((uint, float) x) => (x.Item1 == 2048);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool Ne2048((uint, float) x) => (x.Item1 != 2048);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool EqMinus2048((uint, float) x) => (x.Item1 == 0xFFFF_F800u);
 
-    [MethodImplAttribute(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMinus2048((uint, float) x) => (x.Item1 != 0xFFFF_F800u);
 
     [Fact]

@@ -453,7 +453,8 @@ int LinearScan::BuildNode(GenTree* tree)
                     bool useAddSub     = !(!tree->OperIs(GT_EQ, GT_NE) || op2->IsIntegralConst(-2048));
                     bool useShiftRight = !isUnsigned && ((tree->OperIs(GT_LT) && op2->IsIntegralConst(0)) ||
                                                          (tree->OperIs(GT_LE) && op2->IsIntegralConst(-1)));
-                    bool useLoadImm    = isUnsigned && tree->OperIs(GT_LT, GT_GE) && op2->IsIntegralConst(0);
+                    bool useLoadImm    = isUnsigned && ((tree->OperIs(GT_LT, GT_GE) && op2->IsIntegralConst(0)) ||
+                                                     (tree->OperIs(GT_LE, GT_GT) && op2->IsIntegralConst(-1)));
 
                     if (!useAddSub && !useShiftRight && !useLoadImm)
                         buildInternalIntRegisterDefForNode(tree);
