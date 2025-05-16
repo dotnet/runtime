@@ -11,6 +11,7 @@ namespace System.Security.Cryptography.Tests
 {
     public static partial class MLDsaTestsData
     {
+        // Data is from https://datatracker.ietf.org/doc/draft-ietf-lamps-dilithium-certificates/09/
         internal static partial MLDsaKeyInfo IetfMLDsa44 => field ??= new MLDsaKeyInfo(
             MLDsaAlgorithm.MLDsa44,
                                  "d7b2b47254aae0db45e7930d4a98d2c97d8f1397d17" +

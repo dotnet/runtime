@@ -249,6 +249,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             AsnWriter writer = ExportSubjectPublicKeyInfoCore();
+
             // SPKI does not contain sensitive data.
             return EncodeAsnWriterToPem(PemLabels.SpkiPublicKey, writer, clear: false);
         }
@@ -636,15 +637,8 @@ namespace System.Security.Cryptography
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(password, pbeParameters);
 
-            try
-            {
-                // Skip clear since the data is already encrypted.
-                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
-            }
-            finally
-            {
-                writer.Reset();
-            }
+            // Skip clear since the data is already encrypted.
+            return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
         }
 
         /// <summary>
@@ -687,15 +681,8 @@ namespace System.Security.Cryptography
 
             AsnWriter writer = ExportEncryptedPkcs8PrivateKeyCore(passwordBytes, pbeParameters);
 
-            try
-            {
-                // Skip clear since the data is already encrypted.
-                return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
-            }
-            finally
-            {
-                writer.Reset();
-            }
+            // Skip clear since the data is already encrypted.
+            return EncodeAsnWriterToPem(PemLabels.EncryptedPkcs8PrivateKey, writer, clear: false);
         }
 
         /// <inheritdoc cref="ExportEncryptedPkcs8PrivateKeyPem(ReadOnlySpan{char}, PbeParameters)"/>
@@ -868,7 +855,7 @@ namespace System.Security.Cryptography
                             throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                         }
 
-                        return ImportMLDsaPublicKey(algorithm, spki.SubjectPublicKey.Span);
+                        return MLDsaImplementation.ImportPublicKey(algorithm, spki.SubjectPublicKey.Span);
                     }
                 }
             }

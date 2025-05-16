@@ -250,8 +250,8 @@ namespace System.Security.Cryptography.Tests
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(
                 export => Assert.Throws<CryptographicException>(() => export(mldsa)),
-                // Seed is is not available in PKCS#8, so helper will throw a known exception
-                export => Assert.Same(MLDsaTestHelpers.TestException_NoPrivateSeed, Assert.ThrowsAny<Exception>(() => export(mldsa))));
+                // Seed is is not available in PKCS#8
+                export => Assert.Null(export(mldsa)));
         }
 
         [Theory]
@@ -265,8 +265,8 @@ namespace System.Security.Cryptography.Tests
 
             MLDsaTestHelpers.AssertExportMLDsaSecretKey(
                 export => AssertExtensions.SequenceEqual(info.SecretKey, export(mldsa)),
-                // Seed is preferred in PKCS#8, so secret key won't be available and helper will throw a known exception
-                export => Assert.Same(MLDsaTestHelpers.TestException_NoExpandedKey, Assert.ThrowsAny<Exception>(() => export(mldsa))));
+                // Seed is preferred in PKCS#8, so secret key won't be available
+                export => Assert.Null(export(mldsa)));
 
             MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
                 AssertExtensions.SequenceEqual(info.PrivateSeed, export(mldsa)));

@@ -164,8 +164,6 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddFillDestination(1);
 
             int publicKeySize = algorithm.PublicKeySizeInBytes;
-
-            // Span overload
             byte[] publicKey = CreatePaddedFilledArray(publicKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
@@ -186,8 +184,6 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddFillDestination(1);
 
             int secretKeySize = algorithm.SecretKeySizeInBytes;
-
-            // Span overload
             byte[] secretKey = CreatePaddedFilledArray(secretKeySize, 42);
 
             // Extra bytes in destination buffer should not be touched
@@ -213,8 +209,6 @@ namespace System.Security.Cryptography.Tests
             mldsa.AddFillDestination(1);
 
             int signatureSize = algorithm.SignatureSizeInBytes;
-
-            // Span overload
             byte[] signature = CreatePaddedFilledArray(signatureSize, 42);
 
             // Extra bytes in destination buffer should not be touched

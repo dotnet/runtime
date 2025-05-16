@@ -3,7 +3,6 @@
 
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
-using System.Security.Cryptography.SLHDsa.Tests;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Sdk;
@@ -132,7 +131,7 @@ namespace System.Security.Cryptography.Tests
             byte[] encodedBytes = CreateAsn1EncodedBytes();
             int actualEncodedLength = encodedBytes.Length;
 
-            // Add a trailing byte so the length indicated in the encoding will be larger than the actual data.
+            // Add a trailing byte so the length indicated in the encoding will be smaller than the actual data.
             Array.Resize(ref encodedBytes, actualEncodedLength + 1);
             AssertThrows(encodedBytes);
 
@@ -164,6 +163,23 @@ namespace System.Security.Cryptography.Tests
             MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
                 AssertThrowIfNotSupported(() =>
                     Assert.Throws<CryptographicException>(() => import(indefiniteLengthOctet))));
+        }
+
+        [Fact]
+        public static void ImportPkcs8_BerEncoding()
+        {
+            // Seed is DER encoded, so create a BER encoding from it by making it use indefinite length encoding.
+            byte[] seedPkcs8 = MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed;
+
+            // Two 0x00 bytes at the end signal the end of the indefinite length encoding
+            byte[] indefiniteLengthOctet = new byte[seedPkcs8.Length + 2];
+            seedPkcs8.CopyTo(indefiniteLengthOctet);
+            indefiniteLengthOctet[1] = 0b1000_0000; // change length to indefinite
+
+            MLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
+                MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
+                    WithDispose(import(indefiniteLengthOctet), mldsa =>
+                        AssertExtensions.SequenceEqual(MLDsaTestsData.IetfMLDsa44.PrivateSeed, export(mldsa)))));
         }
 
         [Fact]
@@ -405,15 +421,17 @@ namespace System.Security.Cryptography.Tests
 
             MLDsaTestHelpers.AssertImportPublicKey(import =>
                 AssertThrowIfNotSupported(() =>
-                    Assert.Equal(algorithm, import().Algorithm)), algorithm, publicKey);
+                    WithDispose(import(), mldsa => 
+                        Assert.Equal(algorithm, mldsa.Algorithm))), algorithm, publicKey);
 
             MLDsaTestHelpers.AssertImportSecretKey(import =>
                 AssertThrowIfNotSupported(() =>
-                    Assert.Equal(algorithm, import().Algorithm)), algorithm, secretKey);
+                    WithDispose(import(), mldsa => 
+                        Assert.Equal(algorithm, mldsa.Algorithm))), algorithm, secretKey);
 
             MLDsaTestHelpers.AssertImportPrivateSeed(import =>
                 AssertThrowIfNotSupported(() =>
-                    Assert.Equal(algorithm, import().Algorithm)), algorithm, privateSeed);
+                    WithDispose(import(), mldsa => Assert.Equal(algorithm, mldsa.Algorithm))), algorithm, privateSeed);
         }
 
         [Theory]
@@ -422,7 +440,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportPublicKey(import =>
                 MLDsaTestHelpers.AssertExportMLDsaPublicKey(export =>
-                    AssertExtensions.SequenceEqual(info.PublicKey, export(import()))),
+                    WithDispose(import(), mldsa =>
+                        AssertExtensions.SequenceEqual(info.PublicKey, export(mldsa)))),
                 info.Algorithm,
                 info.PublicKey);
         }
@@ -433,7 +452,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportSecretKey(import =>
                 MLDsaTestHelpers.AssertExportMLDsaSecretKey(export =>
-                    AssertExtensions.SequenceEqual(info.SecretKey, export(import()))),
+                    WithDispose(import(), mldsa =>
+                        AssertExtensions.SequenceEqual(info.SecretKey, export(mldsa)))),
                 info.Algorithm,
                 info.SecretKey);
         }
@@ -444,7 +464,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportPrivateSeed(import =>
                 MLDsaTestHelpers.AssertExportMLDsaPrivateSeed(export =>
-                    AssertExtensions.SequenceEqual(info.PrivateSeed, export(import()))),
+                    WithDispose(import(), mldsa =>
+                        AssertExtensions.SequenceEqual(info.PrivateSeed, export(mldsa)))),
                 info.Algorithm,
                 info.PrivateSeed);
         }
@@ -455,7 +476,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportSubjectKeyPublicInfo(import =>
                 MLDsaTestHelpers.AssertExportSubjectPublicKeyInfo(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(import(info.Pkcs8PublicKey)))));
+                    WithDispose(import(info.Pkcs8PublicKey), mldsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PublicKey, export(mldsa)))));
         }
 
         [Theory]
@@ -464,7 +486,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportFromPem(import =>
                 MLDsaTestHelpers.AssertExportToPublicKeyPem(export =>
-                    Assert.Equal(info.PublicKeyPem, export(import(info.PublicKeyPem)))));
+                    WithDispose(import(info.PublicKeyPem), mldsa =>
+                        Assert.Equal(info.PublicKeyPem, export(mldsa)))));
         }
 
         [Theory]
@@ -473,16 +496,19 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
                 MLDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey_Seed, export(import(info.Pkcs8PrivateKey_Seed)))));
+                    WithDispose(import(info.Pkcs8PrivateKey_Seed), mldsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey_Seed, export(mldsa)))));
 
             MLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
                 MLDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                    AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey_Expanded, export(import(info.Pkcs8PrivateKey_Expanded)))));
+                    WithDispose(import(info.Pkcs8PrivateKey_Expanded), mldsa =>
+                        AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey_Expanded, export(mldsa)))));
 
             MLDsaTestHelpers.AssertImportPkcs8PrivateKey(import =>
                 MLDsaTestHelpers.AssertExportPkcs8PrivateKey(export =>
-                    // We will only export seed instead of both since either is valid.
-                    AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey_Seed, export(import(info.Pkcs8PrivateKey_Both)))));
+                    WithDispose(import(info.Pkcs8PrivateKey_Both), mldsa =>
+                        // We will only export seed instead of both since either is valid.
+                        AssertExtensions.SequenceEqual(info.Pkcs8PrivateKey_Seed, export(mldsa)))));
         }
 
         [Theory]
@@ -491,7 +517,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportFromPem(import =>
                 MLDsaTestHelpers.AssertExportToPrivateKeyPem(export =>
-                    Assert.Equal(info.PrivateKeyPem, export(import(info.PrivateKeyPem)))));
+                    WithDispose(import(info.PrivateKeyPem), mldsa =>
+                        Assert.Equal(info.PrivateKeyPem, export(mldsa)))));
         }
 
         [Theory]
@@ -585,6 +612,15 @@ namespace System.Security.Cryptography.Tests
                 {
                     Assert.Contains("MLDsa", pnse.Message);
                 }
+            }
+        }
+
+        private static void WithDispose<T>(T disposable, Action<T> callback)
+            where T : IDisposable
+        {
+            using (disposable)
+            {
+                callback(disposable);
             }
         }
 
