@@ -688,7 +688,7 @@ namespace System.Security.Cryptography
                 }
                 else if (padding.Mode == RSASignaturePaddingMode.Pss)
                 {
-                    RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, encodedBytes, KeySize);
+                    RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, encodedBytes, KeySize, padding.CalculatePssSaltLength(KeySize, hashAlgorithm));
                 }
                 else
                 {
@@ -774,7 +774,7 @@ namespace System.Security.Cryptography
                     }
                     else if (padding == RSASignaturePadding.Pss)
                     {
-                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, KeySize);
+                        return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, KeySize, padding.CalculatePssSaltLength(KeySize, hashAlgorithm));
                     }
                     else
                     {

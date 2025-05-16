@@ -454,7 +454,7 @@ namespace System.Security.Cryptography
 
                 byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
-                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize);
+                RsaPaddingProcessor.EncodePss(hashAlgorithm, hash, buf, keySize, padding.PssSaltLength);
 
                 try
                 {
@@ -537,9 +537,8 @@ namespace System.Security.Cryptography
                         Debug.Fail($"TryRsaVerificationPrimitive with a pre-allocated buffer");
                         throw new CryptographicException();
                     }
-
                     Debug.Assert(bytesWritten == rsaSize);
-                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize);
+                    return RsaPaddingProcessor.VerifyPss(hashAlgorithm, hash, unwrapped, keySize, padding.CalculatePssSaltLength(KeySize, hashAlgorithm));
                 }
                 finally
                 {

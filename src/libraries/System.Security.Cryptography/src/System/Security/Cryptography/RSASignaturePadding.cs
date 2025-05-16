@@ -6,23 +6,49 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    // NOTE: This is *currently* 1:1 with the enum, but it exists to reserve room for more options
-    //       such as custom # of PSS salt bytes without having to modify other parts of the API
-    //       surface.
-
     /// <summary>
     /// Specifies the padding mode  and parameters to use with RSA signature creation or verification operations.
     /// </summary>
     public sealed class RSASignaturePadding : IEquatable<RSASignaturePadding>
     {
+    /// <summary>
+    /// Represents a constant value indicating that the salt length should match the hash length.
+    /// </summary>
+    /// <remarks>This value is typically used in cryptographic operations where the salt length is required to
+    /// be the same as the hash length.</remarks>
+        public const int PssSaltLengthIsHashLength = -1;
+        /// <summary>
+        /// Represents the maximum allowable length, in bytes, for a PSS (Probabilistic Signature Scheme) salt.
+        /// </summary>
+        /// <remarks>This constant is used to define the upper limit for the salt length in PSS-based
+        /// cryptographic operations. The maximum length is determined by the hash algorithm's output size.</remarks>
+        public const int PssSaltLengthMax = -2;
+
+        public int PssSaltLength
+        {
+            get { return _pssSaltLength; }
+        }
+
+        public static RSASignaturePadding CreatePss(int saltLength)
+        {
+            return new RSASignaturePadding(saltLength);
+        }
+
         private static readonly RSASignaturePadding s_pkcs1 = new RSASignaturePadding(RSASignaturePaddingMode.Pkcs1);
-        private static readonly RSASignaturePadding s_pss = new RSASignaturePadding(RSASignaturePaddingMode.Pss);
+        private static readonly RSASignaturePadding s_pss = CreatePss(PssSaltLengthIsHashLength);
 
         private readonly RSASignaturePaddingMode _mode;
+        private readonly int _pssSaltLength;
 
         private RSASignaturePadding(RSASignaturePaddingMode mode)
         {
             _mode = mode;
+        }
+
+        private RSASignaturePadding(int pssSaltLength)
+        {
+            _mode = RSASignaturePaddingMode.Pss;
+            _pssSaltLength = pssSaltLength;
         }
 
         /// <summary>
@@ -49,9 +75,20 @@ namespace System.Security.Cryptography
             get { return _mode; }
         }
 
+        internal int CalculatePssSaltLength(int rsaKeySizeInBits, HashAlgorithmName hashAlgorithm)
+        {
+            int emLen = (rsaKeySizeInBits + 7) / 8;
+            int hLen = RsaPaddingProcessor.HashLength(hashAlgorithm);
+            return PssSaltLength switch
+            {
+                PssSaltLengthMax => Math.Max(0, emLen - hLen - 2),
+                PssSaltLengthIsHashLength => hLen,
+                _ => PssSaltLength
+            };
+        }
         public override int GetHashCode()
         {
-            return _mode.GetHashCode();
+            return HashCode.Combine(_mode, _pssSaltLength);
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
@@ -61,7 +98,7 @@ namespace System.Security.Cryptography
 
         public bool Equals([NotNullWhen(true)] RSASignaturePadding? other)
         {
-            return other is not null && _mode == other._mode;
+            return other is not null && _mode == other._mode && _pssSaltLength == other._pssSaltLength;
         }
 
         public static bool operator ==(RSASignaturePadding? left, RSASignaturePadding? right)
