@@ -631,18 +631,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                     if (attribute is FromKeyedServicesAttribute fromKeyedServicesAttribute)
                     {
-                        if (fromKeyedServicesAttribute.LookupMode == ServiceKeyLookupMode.InheritKey)
+                        object? serviceKey = fromKeyedServicesAttribute.LookupMode switch
                         {
-                            ServiceIdentifier parameterSvcId = new(serviceIdentifier.ServiceKey, parameterType);
-                            callSite = GetCallSite(parameterSvcId, callSiteChain);
-                            isKeyedParameter = true;
-                            break;
-                        }
+                            ServiceKeyLookupMode.InheritKey => serviceIdentifier.ServiceKey,
+                            ServiceKeyLookupMode.ExplicitKey => fromKeyedServicesAttribute.Key,
+                            ServiceKeyLookupMode.NullKey => null,
+                            _ => null
+                        };
 
-                        if (fromKeyedServicesAttribute.LookupMode == ServiceKeyLookupMode.ExplicitKey)
+                        if (serviceKey is not null)
                         {
-                            ServiceIdentifier parameterSvcId = new(fromKeyedServicesAttribute.Key, parameterType);
-                            callSite = GetCallSite(parameterSvcId, callSiteChain);
+                            callSite = GetCallSite(new ServiceIdentifier(serviceKey, parameterType), callSiteChain);
                             isKeyedParameter = true;
                             break;
                         }

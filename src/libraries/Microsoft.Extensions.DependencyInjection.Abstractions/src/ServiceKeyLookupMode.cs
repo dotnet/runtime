@@ -16,8 +16,8 @@ namespace Microsoft.Extensions.DependencyInjection
         InheritKey,
 
         /// <summary>
-        /// A null key indicates that the parameter should be resolved for unkeyed services.
-        /// This is useful for DI implementations that require an explicit way to declare that the parameter should be resolved for unkeyed services.
+        /// A <see langword="null" /> key indicates that the parameter should be resolved from unkeyed services.
+        /// This is useful for DI implementations that require an explicit way to declare that the parameter should be resolved from unkeyed services.
         /// </summary>
         NullKey,
 
