@@ -12293,7 +12293,7 @@ void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     return result;
 }
 
-CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfo(
+CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfoWithContext(
     MethodInfoWorkerContext& cxt)
 {
     STANDARD_VM_CONTRACT;
@@ -13413,7 +13413,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     if (interpreterMgr->IsInterpreterLoaded())
     {
         CInterpreterJitInfo interpreterJitInfo{ ftn, ILHeader, interpreterMgr, enableInlining };
-        methodInfo = interpreterJitInfo.getMethodInfo(cxt);
+        methodInfo = interpreterJitInfo.getMethodInfoWithContext(cxt);
         *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
         ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, pJitFlags, methodInfo, &cxt, nativeCodeVersion, pSizeOfCode);
@@ -13446,7 +13446,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         while (true)
         {
             CEEJitInfo jitInfo{ ftn, ILHeader, jitMgr, enableInlining };
-            methodInfo = jitInfo.getMethodInfo(cxt);
+            methodInfo = jitInfo.getMethodInfoWithContext(cxt);
             *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
 
             jsoCheck.Enable(jitInfo);

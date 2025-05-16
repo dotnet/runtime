@@ -642,7 +642,10 @@ public:
     InfoAccessType emptyStringLiteral(void ** ppValue) override;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
-    CORINFO_METHOD_INFO getMethodInfo(MethodInfoWorkerContext& cxt);
+
+    // This is an internal helper used on the VM side. It should be called
+    // shortly after creating an instance of CEECodeGenInfo.
+    CORINFO_METHOD_INFO getMethodInfoWithContext(MethodInfoWorkerContext& cxt);
 
 protected:
 
