@@ -251,6 +251,12 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
+#ifdef FEATURE_GCBRIDGE
+FCFuncStart(gWeakReferenceFuncs)
+    FCFuncElement("WaitForGCBridgeFinish", Interop::WaitForGCBridgeFinish)
+FCFuncEnd()
+#endif
+
 FCFuncStart(gCastHelpers)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
@@ -408,6 +414,9 @@ FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
+#ifdef FEATURE_GCBRIDGE
+FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
+#endif
 
 #undef FCFuncElement
 #undef FCFuncElementSig
