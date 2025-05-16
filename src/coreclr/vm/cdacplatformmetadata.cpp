@@ -8,7 +8,6 @@ CDacPlatformMetadata g_cdacPlatformMetadata;
 
 void CDacPlatformMetadata::Init()
 {
-    PrecodeMachineDescriptor::Init(&g_cdacPlatformMetadata.precode);
 #if defined(TARGET_ARM)
     g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
 #elif defined(TARGET_ARM64) && defined(TARGET_APPLE)
@@ -17,6 +16,11 @@ void CDacPlatformMetadata::Init()
 #else
     g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::None;
 #endif
+}
+
+void CDacPlatformMetadata::InitPrecodes()
+{
+    PrecodeMachineDescriptor::Init(&g_cdacPlatformMetadata.precode);
 }
 
 #endif // !DACCESS_COMPILE

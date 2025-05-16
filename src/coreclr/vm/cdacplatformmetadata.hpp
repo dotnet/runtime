@@ -24,6 +24,7 @@ struct CDacPlatformMetadata
     CDacPlatformMetadata(const CDacPlatformMetadata&) = delete;
     CDacPlatformMetadata& operator=(const CDacPlatformMetadata&) = delete;
     static void Init();
+    static void InitPrecodes();
 };
 
 extern CDacPlatformMetadata g_cdacPlatformMetadata;

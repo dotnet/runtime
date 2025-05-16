@@ -625,7 +625,7 @@ public:
     }
 
 #if defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
-    PTR_LoaderHeap GetDynamicHelpersStubHeap()
+    PTR_InterleavedLoaderHeap GetDynamicHelpersStubHeap()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pDynamicHelpersStubHeap;

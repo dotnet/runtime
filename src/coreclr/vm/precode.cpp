@@ -496,8 +496,8 @@ extern "C" size_t StubPrecodeCode_Target_Offset;
 #endif
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-void (*StubPrecode::StubPrecodeCode)();
-void (*StubPrecode::StubPrecodeCode_End)();
+static void (*StubPrecodeCode)();
+static void (*StubPrecodeCode_End)();
 #endif
 
 #ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
@@ -533,13 +533,6 @@ void StubPrecode::StaticInitialize()
     #undef ENUM_PAGE_SIZE
 #else
     _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
-#endif
-#ifdef TARGET_LOONGARCH64
-    _ASSERTE(((*((short*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) >> 5) == StubPrecode::Type);
-#elif TARGET_RISCV64
-    _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == StubPrecode::Type);
-#else
-    _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == StubPrecode::Type);
 #endif
 
     InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage);
@@ -641,8 +634,8 @@ extern "C" size_t FixupPrecodeCode_PrecodeFixupThunk_Offset;
 #endif
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
-void (*FixupPrecode::FixupPrecodeCode)();
-void (*FixupPrecode::FixupPrecodeCode_End)();
+static void (*FixupPrecodeCode)();
+static void (*FixupPrecodeCode_End)();
 #endif
 
 #ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
@@ -679,21 +672,14 @@ void FixupPrecode::StaticInitialize()
 #else
     _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
-#ifdef TARGET_LOONGARCH64
-    _ASSERTE(((*((short*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) >> 5) == StubPrecode::Type);
-#elif TARGET_RISCV64
-    _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == FixupPrecode::Type);
-#else
-    _ASSERTE(*((BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode) + OFFSETOF_PRECODE_TYPE) == FixupPrecode::Type);
-#endif
 
     InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
 }
 
 void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
-#ifdef TARGET_X86
     int totalCodeSize = (pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize;
+#ifdef TARGET_X86
 
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
@@ -710,6 +696,10 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), FixupPrecode::CodeSize, pageSize);
 #endif // TARGET_X86
+    for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
+    {
+        FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBase + i));
+    }
 }
 
 BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
@@ -775,33 +765,53 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
 void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 {
-    dest->OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE;
-    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
-    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
-    //   PrecodeType >>= ShiftOfPrecodeType;
-    //   return (byte)PrecodeType;
-#ifdef TARGET_LOONGARCH64
-    dest->ReadWidthOfPrecodeType = 2;
-#else
-    dest->ReadWidthOfPrecodeType = 1;
-#endif
-#if defined(SHIFTOF_PRECODE_TYPE)
-    dest->ShiftOfPrecodeType = SHIFTOF_PRECODE_TYPE;
-#else
-    dest->ShiftOfPrecodeType = 0;
+    dest->InvalidPrecodeType = PRECODE_INVALID;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    dest->PInvokeImportPrecodeType = PRECODE_NDIRECT_IMPORT;
 #endif
 
-    dest->InvalidPrecodeType = InvalidPrecode::Type;
-    dest->StubPrecodeType = StubPrecode::Type;
-#ifdef HAS_NDIRECT_IMPORT_PRECODE
-    dest->PInvokeImportPrecodeType = NDirectImportPrecode::Type;
-#endif // HAS_NDIRECT_IMPORT_PRECODE
 #ifdef HAS_FIXUP_PRECODE
-    dest->FixupPrecodeType = FixupPrecode::Type;
-#endif
+    dest->FixupPrecodeType = PRECODE_FIXUP;
+    dest->FixupCodeOffset = FixupPrecode::FixupCodeOffset;
+    dest->FixupStubPrecodeSize = FixupPrecode::CodeSize;
+
+    memset(dest->FixupBytes, 0, FixupPrecode::CodeSize);
+    memset(dest->FixupIgnoredBytes, 0, FixupPrecode::CodeSize);
+
+    BYTE *pTemplateInstr;
+    BYTE *pTemplateInstrEnd;
+    uint8_t bytesMeaningful;
+#ifdef TARGET_X86
+    memset(dest->FixupIgnoredBytes + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset), 1, 4);
+    memset(dest->FixupIgnoredBytes + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset), 1, 4);
+    memset(dest->FixupIgnoredBytes + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset), 1, 4);
+#endif // TARGET_X86
+    pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode);
+    pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode_End);
+    bytesMeaningful = pTemplateInstrEnd - pTemplateInstr;
+    memcpy(dest->FixupBytes, pTemplateInstr, bytesMeaningful);
+    memset(dest->FixupIgnoredBytes + bytesMeaningful, 1, FixupPrecode::CodeSize - bytesMeaningful);
+#endif // HAS_FIXUP_PRECODE
+
+    dest->StubPrecodeSize = StubPrecode::CodeSize;
+    dest->StubPrecodeType = PRECODE_STUB;
+
+    memset(dest->StubBytes, 0, StubPrecode::CodeSize);
+    memset(dest->StubIgnoredBytes, 0, StubPrecode::CodeSize);
+#ifdef TARGET_X86
+    memset(dest->StubIgnoredBytes + SYMBOL_VALUE(StubPrecodeCode_Target_Offset), 1, 4);
+    memset(dest->StubIgnoredBytes + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset), 1, 4);
+#endif // TARGET_X86
+    pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode);
+    pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode_End);
+    bytesMeaningful = pTemplateInstrEnd - pTemplateInstr;
+    memcpy(dest->StubBytes, pTemplateInstr, bytesMeaningful);
+    memset(dest->StubIgnoredBytes + bytesMeaningful, 1, StubPrecode::CodeSize - bytesMeaningful);
+
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-    dest->ThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
+    dest->ThisPointerRetBufPrecodeType = PRECODE_THISPTR_RETBUF;
 #endif
+
     dest->StubCodePageSize = GetStubCodePageSize();
 }
 
