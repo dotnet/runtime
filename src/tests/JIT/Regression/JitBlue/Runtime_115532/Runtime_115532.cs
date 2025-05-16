@@ -20,9 +20,16 @@ public class Runtime_115532
         {
             Vector128<double> vdec = Vector128<double>.Zero
                 .WithElement(0, (double)s_decimal_6)
-                .WithElement(1, (double)s_int_9)
-                .WithElement(2, 0.0)
-                .WithElement(3, 0.0);
+                .WithElement(1, (double)s_int_9);
+
+            try
+            {
+                vdec = vdec.WithElement(2, 0.0)
+                           .WithElement(3, 0.0);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+            }
 
             return vdec.GetElement(0);
         }
