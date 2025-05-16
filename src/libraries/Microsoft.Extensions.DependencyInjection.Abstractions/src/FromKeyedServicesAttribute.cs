@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// Indicates that the parameter should be bound using the keyed service registered with the specified key.
     /// </summary>
     /// <seealso cref="ServiceKeyAttribute"/>
+    /// <seealso cref="ServiceKeyLookupMode"/>
     [AttributeUsage(AttributeTargets.Parameter)]
     public class FromKeyedServicesAttribute : Attribute
     {
