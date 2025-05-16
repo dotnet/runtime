@@ -202,14 +202,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-// TODO-Linux-x86: Do we need to handle the GC information for this NOP or JMP specially, as is done for other
-// architectures?
-#ifndef JIT32_GCENCODER
             // Because of the way the flowgraph is connected, the liveness info for this one instruction
             // after the call is not (can not be) correct in cases where a variable has a last use in the
             // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
             GetEmitter()->emitDisableGC();
-#endif // JIT32_GCENCODER
 
             GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
@@ -229,9 +225,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
                 inst_JMP(EJ_jmp, finallyContinuation);
             }
 
-#ifndef JIT32_GCENCODER
             GetEmitter()->emitEnableGC();
-#endif // JIT32_GCENCODER
         }
     }
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -1879,11 +1873,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
     switch (treeNode->gtOper)
     {
-#ifndef JIT32_GCENCODER
         case GT_START_NONGC:
             GetEmitter()->emitDisableGC();
             break;
-#endif // !defined(JIT32_GCENCODER)
 
         case GT_START_PREEMPTGC:
             // Kill callee saves GC registers, and create a label
@@ -3160,9 +3152,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
     {
         case GenTreeBlk::BlkOpKindCpObjRepInstr:
         case GenTreeBlk::BlkOpKindCpObjUnroll:
-#ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
             genCodeForCpObj(storeBlkNode->AsBlk());
             break;
 
@@ -3172,9 +3162,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             break;
 
         case GenTreeBlk::BlkOpKindRepInstr:
-#ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
             if (isCopyBlk)
             {
                 genCodeForCpBlkRepMovs(storeBlkNode);
@@ -3188,12 +3176,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
             {
-#ifndef JIT32_GCENCODER
                 if (storeBlkNode->gtBlkOpGcUnsafe)
                 {
                     GetEmitter()->emitDisableGC();
                 }
-#endif
                 if (storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
                 {
                     genCodeForCpBlkUnroll(storeBlkNode);
@@ -3203,18 +3189,14 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                     assert(storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnrollMemmove);
                     genCodeForMemmove(storeBlkNode);
                 }
-#ifndef JIT32_GCENCODER
                 if (storeBlkNode->gtBlkOpGcUnsafe)
                 {
                     GetEmitter()->emitEnableGC();
                 }
-#endif
             }
             else
             {
-#ifndef JIT32_GCENCODER
                 assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
                 genCodeForInitBlkUnroll(storeBlkNode);
             }
             break;

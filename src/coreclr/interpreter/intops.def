@@ -138,6 +138,10 @@ OPDEF(INTOP_CONV_R8_R4, "conv.r8.r4", 3, 1, 1, InterpOpNoArgs)
 
 OPDEF(INTOP_CONV_U8_R4, "conv.u8.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_CONV_U8_R8, "conv.u8.r8", 3, 1, 1, InterpOpNoArgs)
+
+OPDEF(INTOP_BOX, "box", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX, "unbox", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
+OPDEF(INTOP_UNBOX_ANY, "unbox.any", 5, 1, 1, InterpOpClassHandle) // [class handle data item] [helper data item]
 // Unary operations end
 
 OPDEF(INTOP_ADD_I4_IMM, "add.i4.imm", 4, 1, 1, InterpOpInt)
@@ -251,10 +255,10 @@ OPDEF(INTOP_STIND_VT_NOREF, "stind.vt.noref", 5, 0, 2, InterpOpTwoInts)
 OPDEF(INTOP_LDFLDA, "ldflda", 4, 1, 1, InterpOpInt)
 
 // Calls
-OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodToken)
-OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodToken)
-OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodToken)
-OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodToken)
+OPDEF(INTOP_CALL, "call", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
+OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
 OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
 
