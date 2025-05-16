@@ -4863,11 +4863,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* shiftBy = tree->gtGetOp2();
     emitAttr size    = emitTypeSize(tree);
 
-    if (shiftBy->isContainedIntOrIImmed())
+    if (shiftBy->isContainedIntOrIImmed() && !tree->gtSetFlags())
     {
         assert(tree->OperIsRotate() || (operandReg != REG_NA));
 
-        bool mightOptimizeLsh = tree->OperIs(GT_LSH) && !tree->gtSetFlags();
+        bool mightOptimizeLsh = tree->OperIs(GT_LSH);
 
         // Optimize "X<<1" to "lea [reg+reg]" or "add reg, reg"
         if (mightOptimizeLsh && shiftBy->IsIntegralConst(1))
@@ -4897,7 +4897,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
-            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && !tree->gtSetFlags())
+            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
             {
                 // If we have a contained source operand, we must emit rorx.
                 // We may also use rorx for 64bit values when a mov would otherwise be required,
