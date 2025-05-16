@@ -886,7 +886,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         state->returnKind = header.returnKind;
         codeSet           = 2; // Two byte encoding
         encoding          = header.returnKind;
-        _ASSERTE(encoding < SET_RET_KIND_MAX);
+        _ASSERTE(encoding <= SET_RET_KIND_MAX);
         goto DO_RETURN;
     }
 
@@ -950,6 +950,27 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         }
     }
 
+    if (state->noGCRegionCnt != header.noGCRegionCnt)
+    {
+        assert(state->noGCRegionCnt <= SET_NOGCREGIONS_MAX || state->noGCRegionCnt == HAS_NOGCREGIONS);
+
+        // We have two-byte encodings for 0..4
+        if (header.noGCRegionCnt <= SET_NOGCREGIONS_MAX)
+        {
+            state->noGCRegionCnt = header.noGCRegionCnt;
+            codeSet              = 2;
+            encoding             = (BYTE)(SET_NOGCREGIONS_CNT + header.noGCRegionCnt);
+            goto DO_RETURN;
+        }
+        else if (state->noGCRegionCnt != HAS_NOGCREGIONS)
+        {
+            state->noGCRegionCnt = HAS_NOGCREGIONS;
+            codeSet              = 2;
+            encoding             = FFFF_NOGCREGION_CNT;
+            goto DO_RETURN;
+        }
+    }
+
 DO_RETURN:
     _ASSERTE(encoding < MORE_BYTES_TO_FOLLOW);
     if (!state->isHeaderMatch(header))
@@ -964,7 +985,7 @@ static int measureDistance(const InfoHdr& header, const InfoHdrSmall* p, int clo
 
     if (p->untrackedCnt != header.untrackedCnt)
     {
-        if (header.untrackedCnt > 3)
+        if (header.untrackedCnt > SET_UNTRACKED_MAX)
         {
             if (p->untrackedCnt != HAS_UNTRACKED)
                 distance += 1;
@@ -1195,6 +1216,13 @@ static int measureDistance(const InfoHdr& header, const InfoHdrSmall* p, int clo
     if (header.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
     {
         distance += 1;
+        if (distance >= closeness)
+            return distance;
+    }
+
+    if (header.noGCRegionCnt > 0)
+    {
+        distance += 2;
         if (distance >= closeness)
             return distance;
     }
@@ -1546,7 +1574,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     ReturnKind returnKind = getReturnKind();
     _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
     _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-    _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
     header->returnKind = returnKind;
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
@@ -1599,7 +1627,8 @@ size_t GCInfo::gcInfoBlockHdrSave(
     if (mask == 0)
     {
         gcCountForHeader((UNALIGNED unsigned int*)&header->untrackedCnt,
-                         (UNALIGNED unsigned int*)&header->varPtrTableSize);
+                         (UNALIGNED unsigned int*)&header->varPtrTableSize,
+                         (UNALIGNED unsigned int*)&header->noGCRegionCnt);
     }
 
     //
@@ -1692,6 +1721,14 @@ size_t GCInfo::gcInfoBlockHdrSave(
         assert(mask == 0 || state.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
         unsigned offset = header->revPInvokeOffset;
         unsigned sz     = encodeUnsigned(mask ? dest : NULL, offset);
+        size += sz;
+        dest += (sz & mask);
+    }
+
+    if (header->noGCRegionCnt > SET_NOGCREGIONS_MAX)
+    {
+        unsigned count = header->noGCRegionCnt;
+        unsigned sz    = encodeUnsigned(mask ? dest : NULL, count);
         size += sz;
         dest += (sz & mask);
     }
@@ -2088,6 +2125,29 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
     return pasENUM_END;
 }
 
+// Small helper class to handle the No-GC-Interrupt callbacks
+// when reporting interruptible ranges.
+class NoGCRegionEncoder
+{
+    BYTE* dest;
+public:
+    size_t totalSize;
+
+    NoGCRegionEncoder(BYTE* dest)
+        : dest(dest)
+        , totalSize(0)
+    {
+    }
+
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
+    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
+    {
+        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igOffs);
+        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igSize);
+        return true;
+    }
+};
+
 /*****************************************************************************
  *
  *  Generate the register pointer map, and return its total size in bytes. If
@@ -2109,7 +2169,8 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     /* Start computing the total size of the table */
 
-    bool emitArgTabOffset = (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX);
+    bool emitArgTabOffset =
+        (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX || header.noGCRegionCnt != 0);
     if (mask != 0 && emitArgTabOffset)
     {
         assert(*pArgTabOffset <= MAX_UNSIGNED_SIZE_T);
@@ -2129,17 +2190,28 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
 /**************************************************************************
  *
- *                      Untracked ptr variables
+ *                Untracked ptr variables and no GC regions
  *
  **************************************************************************
  */
 #if DEBUG
     unsigned untrackedCount  = 0;
     unsigned varPtrTableSize = 0;
-    gcCountForHeader(&untrackedCount, &varPtrTableSize);
+    unsigned noGCRegionCount = 0;
+    gcCountForHeader(&untrackedCount, &varPtrTableSize, &noGCRegionCount);
     assert(untrackedCount == header.untrackedCnt);
     assert(varPtrTableSize == header.varPtrTableSize);
+    assert(noGCRegionCount == header.noGCRegionCnt);
 #endif // DEBUG
+
+    if (header.noGCRegionCnt != 0)
+    {
+        NoGCRegionEncoder encoder(mask != 0 ? dest : NULL);
+        compiler->GetEmitter()->emitGenNoGCLst(encoder, /* skipAllPrologsAndEpilogs = */ true);
+        totalSize += encoder.totalSize;
+        if (mask != 0)
+            dest += encoder.totalSize;
+    }
 
     if (header.untrackedCnt != 0)
     {
@@ -3582,7 +3654,14 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 
 size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize)
 {
-    printf("Pointer table:\n");
+    if (header.noGCRegionCnt > 0)
+    {
+        printf("No GC regions and pointer table:\n");
+    }
+    else
+    {
+        printf("Pointer table:\n");
+    }
 
     GCDump gcDump(GCINFO_VERSION);
 

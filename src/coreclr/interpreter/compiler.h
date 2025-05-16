@@ -292,6 +292,7 @@ private:
     TArray<void*> m_dataItems;
     int32_t GetDataItemIndex(void* data);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
+    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
