@@ -31,7 +31,7 @@ public class Runtime_115532
     [Fact]
     public static void Problem()
     {
-        Assert((double)s_decimal_6, new Runtime_115532().LeafMethod3());
+        Assert.Equal((double)s_decimal_6, new Runtime_115532().LeafMethod3());
     }
 }
 
