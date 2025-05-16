@@ -7757,8 +7757,13 @@ DONE_MORPHING_CHILDREN:
     if (fgGlobalMorph && optLocalAssertionProp && (optAssertionCount > 0))
     {
         GenTree* optimizedTree = tree;
-        bool     again         = true;
+        bool     again         = JitConfig.JitEnablePostorderLocalAssertionProp() > 0;
         bool     didOptimize   = false;
+
+        if (!again)
+        {
+            JITDUMP("*** Postorder assertion prop disabled by config\n");
+        }
 
         while (again)
         {
@@ -12914,6 +12919,7 @@ PhaseStatus Compiler::fgMorphBlocks()
         // Local assertion prop is enabled if we are optimizing.
         //
         optAssertionInit(/* isLocalProp*/ true);
+        apLocal          = BitVecOps::MakeEmpty(apTraits);
         apLocalPostorder = BitVecOps::MakeEmpty(apTraits);
     }
     else
