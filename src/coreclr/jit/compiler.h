@@ -6692,11 +6692,14 @@ private:
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #ifdef TARGET_ARM64
     bool canMorphVectorOperandToMask(GenTree* node);
     bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
     GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
-    GenTree* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
+    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
 #endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);

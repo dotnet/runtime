@@ -9353,151 +9353,11 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         default:
         {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-            bool       isScalar   = false;
-            genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
-            genTreeOps oper       = actualOper;
-
-            // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
-            assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
-
-            if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
+            GenTreeHWIntrinsic* maskedIntrinsic = fgOptimizeForMaskedIntrinsic(node);
+            if (maskedIntrinsic != nullptr)
             {
-                GenTree* op1 = node->Op(1);
-
-                GenTree* op2;
-                GenTree* actualOp2;
-
-                if (oper == GT_NOT)
-                {
-                    op2       = op1;
-                    actualOp2 = nullptr;
-                }
-                else
-                {
-                    op2       = node->Op(2);
-                    actualOp2 = op2;
-                }
-
-                // We need both operands to be ConvertMaskToVector in
-                // order to optimize this to a direct mask operation
-
-                if (!op1->OperIsConvertMaskToVector())
-                {
-                    break;
-                }
-
-                if (!op2->OperIsHWIntrinsic())
-                {
-#if defined(TARGET_XARCH)
-                    if ((oper != GT_XOR) || !op2->IsVectorAllBitsSet())
-                    {
-                        break;
-                    }
-
-                    // We want to explicitly recognize op1 ^ AllBitsSet as
-                    // some platforms don't have direct support for ~op1
-
-                    oper = GT_NOT;
-                    op2  = op1;
-#else
-                    break;
-#endif
-                }
-
-                GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
-                GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
-
-                if (!cvtOp2->OperIsConvertMaskToVector())
-                {
-                    break;
-                }
-
-                unsigned simdBaseTypeSize = genTypeSize(simdBaseType);
-
-                if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize) ||
-                    (genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
-                {
-                    // We need both operands to be the same kind of mask; otherwise
-                    // the bitwise operation can differ in how it performs
-                    break;
-                }
-
-                NamedIntrinsic maskIntrinsicId = NI_Illegal;
-
-#if defined(TARGET_XARCH)
-                switch (oper)
-                {
-                    case GT_AND:
-                    {
-                        maskIntrinsicId = NI_EVEX_AndMask;
-                        break;
-                    }
-
-                    case GT_NOT:
-                    {
-                        maskIntrinsicId = NI_EVEX_NotMask;
-                        break;
-                    }
-
-                    case GT_OR:
-                    {
-                        maskIntrinsicId = NI_EVEX_OrMask;
-                        break;
-                    }
-
-                    case GT_XOR:
-                    {
-                        maskIntrinsicId = NI_EVEX_XorMask;
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-#elif defined(TARGET_ARM64)
-                // TODO-ARM64-CQ: Support transforming bitwise operations on masks
-                break;
-#else
-#error Unsupported platform
-#endif // !TARGET_XARCH && !TARGET_ARM64
-
-                if (maskIntrinsicId == NI_Illegal)
-                {
-                    break;
-                }
-
-                if (oper == actualOper)
-                {
-                    node->ChangeHWIntrinsicId(maskIntrinsicId);
-                    node->Op(1) = cvtOp1->Op(1);
-                }
-                else
-                {
-                    assert(oper == GT_NOT);
-                    node->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
-                    node->gtFlags &= ~GTF_REVERSE_OPS;
-                }
-
-                node->gtType = TYP_MASK;
-                DEBUG_DESTROY_NODE(op1);
-
-                if (oper != GT_NOT)
-                {
-                    assert(actualOp2 != nullptr);
-                    node->Op(2) = cvtOp2->Op(1);
-                }
-
-                if (actualOp2 != nullptr)
-                {
-                    DEBUG_DESTROY_NODE(actualOp2);
-                }
-
+                node = maskedIntrinsic;
                 node->SetMorphed(this);
-                node = gtNewSimdCvtMaskToVectorNode(retType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
-                node->SetMorphed(this);
-                return node;
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
             break;
@@ -9679,17 +9539,169 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
     }
 
-#ifdef TARGET_ARM64
-    optimizedTree = fgMorphTryUseAllMaskVariant(node);
-    if (optimizedTree != nullptr)
-    {
-        optimizedTree->SetMorphed(this);
-        return optimizedTree;
-    }
-#endif
-
     return node;
 }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+//------------------------------------------------------------------------
+// fgOptimizeForMaskedIntrinsic: Tries to recognize intrinsics that are operating
+//                               on mask types and morphs the tree to use intrinsics
+//                               better suited to this.
+//
+// Arguments:
+//   node - the hardware intrinsic tree to try and optimize.
+//          This tree will be mutated if it is possible to optimize the tree.
+//
+// Return Value:
+//   The optimized tree, nullptr if no change was made.
+//
+GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node)
+{
+#if defined(TARGET_XARCH)
+    bool       isScalar   = false;
+    genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
+    genTreeOps oper       = actualOper;
+
+    // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
+    assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
+
+    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
+    {
+        GenTree* op1 = node->Op(1);
+
+        GenTree* op2;
+        GenTree* actualOp2;
+
+        if (oper == GT_NOT)
+        {
+            op2       = op1;
+            actualOp2 = nullptr;
+        }
+        else
+        {
+            op2       = node->Op(2);
+            actualOp2 = op2;
+        }
+
+        // We need both operands to be ConvertMaskToVector in
+        // order to optimize this to a direct mask operation
+
+        if (!op1->OperIsConvertMaskToVector())
+        {
+            return nullptr;
+        }
+
+        if (!op2->OperIsHWIntrinsic())
+        {
+            if ((oper != GT_XOR) || !op2->IsVectorAllBitsSet())
+            {
+                return nullptr;
+            }
+
+            // We want to explicitly recognize op1 ^ AllBitsSet as
+            // some platforms don't have direct support for ~op1
+
+            oper = GT_NOT;
+            op2  = op1;
+        }
+
+        GenTreeHWIntrinsic* cvtOp1 = op1->AsHWIntrinsic();
+        GenTreeHWIntrinsic* cvtOp2 = op2->AsHWIntrinsic();
+
+        if (!cvtOp2->OperIsConvertMaskToVector())
+        {
+            return nullptr;
+        }
+
+        unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+        if ((genTypeSize(cvtOp1->GetSimdBaseType()) != simdBaseTypeSize) ||
+            (genTypeSize(cvtOp2->GetSimdBaseType()) != simdBaseTypeSize))
+        {
+            // We need both operands to be the same kind of mask; otherwise
+            // the bitwise operation can differ in how it performs
+            return nullptr;
+        }
+
+        NamedIntrinsic maskIntrinsicId = NI_Illegal;
+
+        switch (oper)
+        {
+            case GT_AND:
+            {
+                maskIntrinsicId = NI_EVEX_AndMask;
+                break;
+            }
+
+            case GT_NOT:
+            {
+                maskIntrinsicId = NI_EVEX_NotMask;
+                break;
+            }
+
+            case GT_OR:
+            {
+                maskIntrinsicId = NI_EVEX_OrMask;
+                break;
+            }
+
+            case GT_XOR:
+            {
+                maskIntrinsicId = NI_EVEX_XorMask;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        if (maskIntrinsicId == NI_Illegal)
+        {
+            return nullptr;
+        }
+
+        if (oper == actualOper)
+        {
+            node->ChangeHWIntrinsicId(maskIntrinsicId);
+            node->Op(1) = cvtOp1->Op(1);
+        }
+        else
+        {
+            assert(oper == GT_NOT);
+            node->ResetHWIntrinsicId(maskIntrinsicId, this, cvtOp1->Op(1));
+            node->gtFlags &= ~GTF_REVERSE_OPS;
+        }
+
+        node->gtType = TYP_MASK;
+        DEBUG_DESTROY_NODE(op1);
+
+        if (oper != GT_NOT)
+        {
+            assert(actualOp2 != nullptr);
+            node->Op(2) = cvtOp2->Op(1);
+        }
+
+        if (actualOp2 != nullptr)
+        {
+            DEBUG_DESTROY_NODE(actualOp2);
+        }
+
+        node->SetMorphed(this);
+        node = gtNewSimdCvtMaskToVectorNode(node->TypeGet(), node, node->GetSimdBaseJitType(), node->GetSimdSize())
+                   ->AsHWIntrinsic();
+        node->SetMorphed(this);
+        return node;
+    }
+#elif defined(TARGET_ARM64)
+    return fgMorphTryUseAllMaskVariant(node);
+#else
+#error Unsupported platform
+#endif
+    return nullptr;
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // fgOptimizeHWIntrinsicAssociative: Morph an associative GenTreeHWIntrinsic tree.

@@ -85,7 +85,7 @@ GenTree* Compiler::doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic*
 // Return Value:
 //    The fully morphed tree if a change was made, else nullptr.
 //
-GenTree* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node)
+GenTreeHWIntrinsic* Compiler::fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node)
 {
     if (HWIntrinsicInfo::HasAllMaskVariant(node->GetHWIntrinsicId()))
     {
