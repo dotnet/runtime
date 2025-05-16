@@ -703,7 +703,7 @@ namespace Internal.Runtime.InteropServices
         private const string LicenseContextTypeName = "System.ComponentModel.LicenseContext, System.ComponentModel.TypeConverter";
         private const string LicenseInteropHelperTypeName = "System.ComponentModel.LicenseManager+LicenseInteropHelper, System.ComponentModel.TypeConverter";
         private const string CLRLicenseContextTypeName = "System.ComponentModel.LicenseManager+CLRLicenseContext, System.ComponentModel.TypeConverter";
-        private const string LicenseTypeName = "System.ComponentModel.License, System.ComponentModel.TypeConverter";
+        private const string LicenseRefTypeName = "System.ComponentModel.License&, System.ComponentModel.TypeConverter";
         private const string LicInfoHelperLicenseContextTypeName = "System.ComponentModel.LicenseManager+LicInfoHelperLicenseContext, System.ComponentModel.TypeConverter";
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
@@ -725,7 +725,7 @@ namespace Internal.Runtime.InteropServices
             [UnsafeAccessorType(LicenseInteropHelperTypeName)] object? licInteropHelper,
             [UnsafeAccessorType(LicenseContextTypeName)] object? licContext,
             Type type,
-            [UnsafeAccessorType(LicenseTypeName)] out object? license,
+            [UnsafeAccessorType(LicenseRefTypeName)] out object? license,
             out string? licenseKey);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
@@ -751,7 +751,7 @@ namespace Internal.Runtime.InteropServices
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return:UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)]
-        private static extern object? CreateLicInfoHelperLicenseContext();
+        private static extern object CreateLicInfoHelperLicenseContext();
 
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
         private static extern bool Contains(
@@ -791,8 +791,8 @@ namespace Internal.Runtime.InteropServices
             runtimeKeyAvail = false;
             licVerified = false;
 
-            object? licContext = CreateLicInfoHelperLicenseContext();
-            bool isValid = ValidateAndRetrieveLicenseDetails(null!, licContext!, type, out object? license, out _);
+            object licContext = CreateLicInfoHelperLicenseContext();
+            bool isValid = ValidateAndRetrieveLicenseDetails(null, licContext, type, out object? license, out _);
             if (!isValid)
             {
                 return;
