@@ -2,12 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    public record MLDsaKeyInfo(
+            MLDsaAlgorithm Algorithm,
+            string PublicKeyHex,
+            string PrivateSeedHex,
+            string SecretKeyHex,
+            string Pkcs8PrivateKey_Seed_Base64,
+            string Pkcs8PrivateKey_Expanded_Base64,
+            string Pkcs8PrivateKey_Both_Base64,
+            string Pkcs8PublicKeyBase64,
+            string Pkcs8EncryptedPrivateKeyBase64,
+            string CertificateBase64,
+            string EncryptionPassword,
+            PbeParameters EncryptionParameters)
+    {
+        public byte[] PublicKey => PublicKeyHex.HexToByteArray();
+        public byte[] PrivateSeed => PrivateSeedHex.HexToByteArray();
+        public byte[] SecretKey => SecretKeyHex.HexToByteArray();
+        public byte[] Pkcs8PrivateKey_Seed => Convert.FromBase64String(Pkcs8PrivateKey_Seed_Base64);
+        public byte[] Pkcs8PrivateKey_Expanded => Convert.FromBase64String(Pkcs8PrivateKey_Expanded_Base64);
+        public byte[] Pkcs8PrivateKey_Both => Convert.FromBase64String(Pkcs8PrivateKey_Both_Base64);
+        public byte[] Pkcs8PublicKey => Convert.FromBase64String(Pkcs8PublicKeyBase64);
+        public byte[] Pkcs8EncryptedPrivateKey => Convert.FromBase64String(Pkcs8EncryptedPrivateKeyBase64);
+        public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
+        public byte[] Certificate => Convert.FromBase64String(CertificateBase64);
+        public string EncryptedPem => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey);
+        public string PrivateKeyPem => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey_Seed);
+        public string PublicKeyPem => PemEncoding.WriteString("PUBLIC KEY", Pkcs8PublicKey);
+
+        public override string ToString() =>
+            $"{nameof(MLDsaKeyInfo)} {{ {nameof(Algorithm)} = \"{Algorithm.Name}\" }}";
+    }
+
     public class MLDsaNistTestCase
     {
         public int NistTestCaseId { get; init; }
@@ -33,6 +66,17 @@ namespace System.Security.Cryptography.Tests
 
     public static partial class MLDsaTestsData
     {
+        internal static partial MLDsaKeyInfo IetfMLDsa44 { get; }
+        internal static partial MLDsaKeyInfo IetfMLDsa65 { get; }
+        internal static partial MLDsaKeyInfo IetfMLDsa87 { get; }
+
+        public static IEnumerable<object[]> IetfMLDsaAlgorithms => field ??=
+            [
+                [IetfMLDsa44],
+                [IetfMLDsa65],
+                [IetfMLDsa87],
+            ];
+
         public static IEnumerable<object[]> AllMLDsaAlgorithms() =>
             [
                 [MLDsaAlgorithm.MLDsa44],

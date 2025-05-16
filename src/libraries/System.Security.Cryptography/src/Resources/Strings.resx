@@ -534,6 +534,9 @@
   <data name="Cryptography_MLDsaInvalidAlgorithmHandle" xml:space="preserve">
     <value>The specified EVP_PKEY handle is not a known ML-DSA algorithm.</value>
   </data>
+  <data name="Cryptography_MLDsaPkcs8KeyMismatch" xml:space="preserve">
+    <value>The specified PKCS#8 key contains a seed that does not match the expanded key.</value>
+  </data>
   <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
     <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>
   </data>
