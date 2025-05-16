@@ -17,6 +17,7 @@
 #include "configure.h"
 
 #include "../debug/ee/debugger.h"
+#include "ecall.h"
 
 #ifdef HAVE_GCCOVER
 #include "gccover.h"
