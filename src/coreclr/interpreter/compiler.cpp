@@ -3494,6 +3494,48 @@ retry_emit:
                         break;
                 }
                 break;
+            case CEE_THROW:
+                AddIns(INTOP_THROW);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                m_ip += 1;
+                break;
+
+            case CEE_BOX:
+            {
+                CHECK_STACK(1);
+                m_pStackPointer -= 1;
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
+                CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
+                AddIns(INTOP_BOX);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                PushStackType(StackTypeO, boxedClsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_UNBOX:
+            case CEE_UNBOX_ANY:
+            {
+                CHECK_STACK(1);
+                m_pStackPointer -= 1;
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper(clsHnd);
+                AddIns(opcode == CEE_UNBOX ? INTOP_UNBOX : INTOP_UNBOX_ANY);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                if (opcode == CEE_UNBOX)
+                    PushStackType(StackTypeI, NULL);
+                else
+                    PushInterpType(GetInterpType(m_compHnd->asCorInfoType(clsHnd)), clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
             case CEE_NEWARR:
             {
                 CHECK_STACK(1);
@@ -3504,8 +3546,7 @@ retry_emit:
                 ResolveToken(token, CORINFO_TOKENKIND_Newarr, &resolvedToken);
 
                 CORINFO_CLASS_HANDLE arrayClsHnd = resolvedToken.hClass;
-                CorInfoHelpFunc helperFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
-                void* pHelper = m_compHnd->getHelperFtn(helperFunc);
+                CorInfoHelpFunc helpFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
 
                 m_pStackPointer--;
 
@@ -3516,7 +3557,7 @@ retry_emit:
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
                 m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndex(pHelper);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
 
                 m_ip += 5;
                 break;
@@ -3645,48 +3686,6 @@ retry_emit:
                 CHECK_STACK(3);
                 EmitStelem(InterpTypeR8);
                 m_ip++;
-                break;
-            }
-            case CEE_THROW:
-                AddIns(INTOP_THROW);
-                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
-                m_ip += 1;
-                break;
-
-            case CEE_BOX:
-            {
-                CHECK_STACK(1);
-                m_pStackPointer -= 1;
-                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
-                CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
-                CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
-                AddIns(INTOP_BOX);
-                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                PushStackType(StackTypeO, boxedClsHnd);
-                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
-                m_ip += 5;
-                break;
-            }
-
-            case CEE_UNBOX:
-            case CEE_UNBOX_ANY:
-            {
-                CHECK_STACK(1);
-                m_pStackPointer -= 1;
-                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
-                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper(clsHnd);
-                AddIns(opcode == CEE_UNBOX ? INTOP_UNBOX : INTOP_UNBOX_ANY);
-                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
-                if (opcode == CEE_UNBOX)
-                    PushStackType(StackTypeI, NULL);
-                else
-                    PushInterpType(GetInterpType(m_compHnd->asCorInfoType(clsHnd)), clsHnd);
-                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
-                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
-                m_ip += 5;
                 break;
             }
 

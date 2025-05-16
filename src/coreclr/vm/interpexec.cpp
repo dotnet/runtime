@@ -1241,11 +1241,14 @@ CALL_TARGET_IP:
                         assert(0); // Interpreter-TODO: Invalid array length
 
                     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
-                    void* pHelper = pMethod->pDataItems[ip[4]];
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
+                    HELPER_FTN_NEWARR helper = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helper = *(HELPER_FTN_NEWARR *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helper = (HELPER_FTN_NEWARR)helperDirectOrIndirect;
 
-                    HELPER_FTN_NEWARR helperFn = reinterpret_cast<HELPER_FTN_NEWARR>(pHelper);
-
-                    Object* arr = helperFn(arrayClsHnd, (intptr_t)length);
+                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
                     LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
 
                     ip += 5;
