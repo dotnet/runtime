@@ -74,7 +74,7 @@ int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
     return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#else
+#elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     if (result != 0)
@@ -83,6 +83,8 @@ int64_t minipal_hires_ticks(void)
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
+#else
+    #error "minipal_hires_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 
@@ -115,23 +117,8 @@ int64_t minipal_lowres_ticks(void)
     }
 
     return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(ts.tv_nsec) / (int64_t)(tccMilliSecondsToNanoSeconds));
-#elif HAVE_GETHRTIME
-    return (int64_t)(gethrtime () / tccMilliSecondsToNanoSeconds);
-#elif HAVE_READ_REAL_TIME
-    timebasestruct_t tb;
-    read_real_time (&tb, TIMEBASE_SZ);
-    if (time_base_to_time (&tb, TIMEBASE_SZ) != 0)
-    {
-        assert(!"time_base_to_time() failed");
-    }
-    return (tb.tb_high * tccSecondsToMilliSeconds) + (tb.tb_low / tccMilliSecondsToNanoSeconds);
 #else
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) != 0)
-    {
-        assert(!"gettimeofday() failed\n");
-    }
-    return ((int64_t)(tv.tv_sec) * (int64_t)(tccSecondsToMilliSeconds)) + ((int64_t)(tv.tv_usec) / (int64_t)(tccMilliSecondsToMicroSeconds));
+    #error "minipal_lowres_ticks requires clock_gettime_nsec_np or clock_gettime to be supported."
 #endif
 }
 
