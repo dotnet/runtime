@@ -17,7 +17,7 @@ public class Async2Pgo
         AsyncEntryPoint().Wait();
     }
 
-    internal static async2 Task<int> AsyncEntryPoint()
+    internal static async Task<int> AsyncEntryPoint()
     {
         int[] arr = Enumerable.Range(0, 100_000).ToArray();
 
@@ -36,20 +36,20 @@ public class Async2Pgo
     private class AggregateSum : I<int>
     {
 #pragma warning disable CS1998
-        public async2 Task<int> Aggregate(int a, int b) => a + b;
+        public async Task<int> Aggregate(int a, int b) => a + b;
     }
-    
+
     public interface I<T>
     {
         public Task<T> Aggregate(T seed, T val);
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static async2 Task<T> AggregateDelegateAsync<T>(T[] arr, I<T> aggregate, T seed)
+    public static async Task<T> AggregateDelegateAsync<T>(T[] arr, I<T> aggregate, T seed)
     {
         foreach (T val in arr)
             seed = await aggregate.Aggregate(seed, val);
-            
+
         return seed;
     }
 }
