@@ -839,32 +839,12 @@ void EEStartupHelper()
 
 #ifdef PROFILING_SUPPORTED
         // Initialize the profiling services.
+        // THis must happen before the finalizer thread is stopped on its first wait.
         hr = ProfilingAPIUtility::InitializeProfiling();
 
         _ASSERTE(SUCCEEDED(hr));
         IfFailGo(hr);
 #endif // PROFILING_SUPPORTED
-
-        InitializeExceptionHandling();
-
-        //
-        // Install our global exception filter
-        //
-        if (!InstallUnhandledExceptionFilter())
-        {
-            IfFailGo(E_FAIL);
-        }
-
-        // throws on error
-        SetupThread();
-
-#ifdef DEBUGGING_SUPPORTED
-        // Notify debugger once the first thread is created to finish initialization.
-        if (g_pDebugInterface != NULL)
-        {
-            g_pDebugInterface->StartupPhase2(GetThread());
-        }
-#endif
 
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
@@ -882,8 +862,6 @@ void EEStartupHelper()
         // of the JIT helpers.
         InitJITHelpers1();
 
-        SyncBlockCache::Attach();
-
         // Set up the sync block
         SyncBlockCache::Start();
 
@@ -897,6 +875,36 @@ void EEStartupHelper()
         }
 
         IfFailGo(hr);
+
+        InitializeExceptionHandling();
+
+        //
+        // Install our global exception filter
+        //
+        if (!InstallUnhandledExceptionFilter())
+        {
+            IfFailGo(E_FAIL);
+        }
+
+#ifdef TARGET_WINDOWS
+        // g_pGCHeap->Initialize() above could take nontrivial time, so by now the finalizer thread
+        // should have initialized FLS slot for thread cleanup notifications.
+        // And ensured that COM is initialized (must happen before allocating FLS slot).
+        // Make sure that this was done.
+        FinalizerThread::WaitForFinalizerThreadStart();
+#endif
+
+        // throws on error
+        _ASSERTE(GetThreadNULLOk() == NULL);
+        SetupThread();
+
+#ifdef DEBUGGING_SUPPORTED
+        // Notify debugger once the first thread is created to finish initialization.
+        if (g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->StartupPhase2(GetThread());
+        }
+#endif
 
 #ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
@@ -957,12 +965,6 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#ifdef TARGET_WINDOWS
-        // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
-        // And ensured that COM is initialized (must happen before allocating FLS slot).
-        // Make sure that this was done.
-        FinalizerThread::WaitForFinalizerThreadStart();
-#endif
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
         hr = S_OK;
@@ -1764,6 +1766,8 @@ void InitFlsSlot()
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
+    _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
+
     if (t_flsState == FLS_STATE_INVOKED)
     {
         _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
