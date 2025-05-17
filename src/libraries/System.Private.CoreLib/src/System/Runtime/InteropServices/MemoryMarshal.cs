@@ -606,10 +606,11 @@ namespace System.Runtime.InteropServices
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
+
             if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+
+            MemoryExtensions.ValidateSliceArguments(array.Length, start, length);
 
             // Before using _index, check if _index < 0, then 'and' it with RemoveFlagsBitMask
             return new Memory<T>((object)array, start | (1 << 31), length);
