@@ -9,6 +9,8 @@
   .ver 4:0:0:0
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .assembly extern mscorlib {}
 .assembly extern common {}
 .assembly 'FilterToHandler' {}
@@ -57,9 +59,12 @@ done2:
 
 .class public auto ansi FilterToHandler {
 .method public static int32 Main() {
-.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-    01 00 00 00
-)
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/114902')
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[1] ('IsAppleMobile')
+}
 .entrypoint
 .maxstack	20
   .try
