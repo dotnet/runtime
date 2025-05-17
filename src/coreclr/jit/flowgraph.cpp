@@ -1284,9 +1284,9 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     if (!kind.needsRuntimeLookup)
     {
         CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
-        if (ptr != NULL)
+        if (ptr != NO_OBJECT_HANDLE)
         {
-            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+            tree = gtNewIconEmbObjHndNode(ptr);
         }
         else
         {

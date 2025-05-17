@@ -3600,9 +3600,6 @@ void MethodContext::dmpGetFieldInfo(const Agnostic_GetFieldInfo& key, const Agno
             case CORINFO_HELPER_ARG_TYPE_Class:
                 printf("{%u: cls-%016" PRIX64 "}", i, value.accessCalloutHelper.args[i].constant);
                 break;
-            case CORINFO_HELPER_ARG_TYPE_Module:
-                printf("{%u: mod-%016" PRIX64 "}", i, value.accessCalloutHelper.args[i].constant);
-                break;
             case CORINFO_HELPER_ARG_TYPE_Const:
                 printf("{%u: const-%016" PRIX64 "}", i, value.accessCalloutHelper.args[i].constant);
                 break;
@@ -4155,40 +4152,6 @@ CorInfoHelpFunc MethodContext::repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pReso
     DEBUG_REP(dmpGetCastingHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
-}
-
-void MethodContext::recEmbedModuleHandle(CORINFO_MODULE_HANDLE handle,
-                                         void**                ppIndirection,
-                                         CORINFO_MODULE_HANDLE result)
-{
-    if (EmbedModuleHandle == nullptr)
-        EmbedModuleHandle = new LightWeightMap<DWORDLONG, DLDL>();
-
-    DLDL value;
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = CastHandle(result);
-
-    DWORDLONG key = CastHandle(handle);
-    EmbedModuleHandle->Add(key, value);
-    DEBUG_REC(dmpEmbedModuleHandle(key, value));
-}
-void MethodContext::dmpEmbedModuleHandle(DWORDLONG key, DLDL value)
-{
-    printf("EmbedModuleHandle key mod-%016" PRIX64 ", value pp-%016" PRIX64 " res-%016" PRIX64 "", key, value.A, value.B);
-}
-CORINFO_MODULE_HANDLE MethodContext::repEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
-{
-    DWORDLONG key = CastHandle(handle);
-    DLDL value = LookupByKeyOrMiss(EmbedModuleHandle, key, ": key %016" PRIX64 "", key);
-
-    DEBUG_REP(dmpEmbedModuleHandle(key, value));
-
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (CORINFO_MODULE_HANDLE)value.B;
 }
 
 void MethodContext::recEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection, CORINFO_CLASS_HANDLE result)
@@ -6245,38 +6208,6 @@ void MethodContext::repGetProfilingHandle(bool* pbHookFunction, void** pProfiler
     *pbHookFunction      = value.bHookFunction != 0;
     *pProfilerHandle     = (void*)value.ProfilerHandle;
     *pbIndirectedHandles = value.bIndirectedHandles != 0;
-}
-
-void MethodContext::recEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection, CORINFO_FIELD_HANDLE result)
-{
-    if (EmbedFieldHandle == nullptr)
-        EmbedFieldHandle = new LightWeightMap<DWORDLONG, DLDL>();
-
-    DLDL value;
-    if (ppIndirection != nullptr)
-        value.A = CastPointer(*ppIndirection);
-    else
-        value.A = 0;
-    value.B     = CastHandle(result);
-
-    DWORDLONG key = CastHandle(handle);
-    EmbedFieldHandle->Add(key, value);
-    DEBUG_REC(dmpEmbedFieldHandle(key, value));
-}
-void MethodContext::dmpEmbedFieldHandle(DWORDLONG key, DLDL value)
-{
-    printf("EmbedFieldHandle NYI");
-}
-CORINFO_FIELD_HANDLE MethodContext::repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection)
-{
-    DWORDLONG key = CastHandle(handle);
-    DLDL value = LookupByKeyOrMiss(EmbedFieldHandle, key, ": key %016" PRIX64 "", key);
-
-    DEBUG_REP(dmpEmbedFieldHandle(key, value));
-
-    if (ppIndirection != nullptr)
-        *ppIndirection = (void*)value.A;
-    return (CORINFO_FIELD_HANDLE)value.B;
 }
 
 void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
