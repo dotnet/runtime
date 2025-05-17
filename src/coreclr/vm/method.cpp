@@ -253,6 +253,30 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
     return S_OK;
 }
 
+#ifdef FEATURE_INTERPRETER
+// Set the call stub for the interpreter to JIT/AOT calls
+// Returns true if the current call set the stub, false if it was already set
+bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+}
+
+CallStubHeader *MethodDesc::GetCallStub()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+}
+#endif // FEATURE_INTERPRETER
+
 #endif //!DACCESS_COMPILE
 
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
