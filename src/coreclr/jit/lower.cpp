@@ -394,6 +394,33 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 }
 
 //------------------------------------------------------------------------
+// IsProfitableToSetZeroFlag: Checks if it's profitable to optimize an shift
+// and rotate operations to set the zero flag.
+//
+// Arguments:
+//    op - The operation node to check.
+//
+// Return value:
+//    true if it's profitable to set the zero flag; otherwise false.
+//
+bool Lowering::IsProfitableToSetZeroFlag(GenTree* op) const
+{
+#ifdef TARGET_XARCH
+    if (op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_ROL))
+    {
+        // BMI2 instructions (SHLX, SARX, SHRX, RORX) do not set zero flag.
+        if (!op->AsOp()->gtGetOp2()->OperIsConst())
+        {
+            return false;
+        }
+    }
+
+#endif // TARGET_XARCH
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerNode: this is the main entry point for Lowering.
 //
 // Arguments:
@@ -4204,7 +4231,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
     LIR::Use use;
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
-        BlockRange().TryGetUse(cmp, &use))
+        BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();
