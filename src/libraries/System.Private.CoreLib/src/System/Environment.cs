@@ -249,6 +249,10 @@ namespace System
             }
         }
 
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 32-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static int TickCount => (int)TickCount64;
+
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)
         {
             Debug.Assert(target != EnvironmentVariableTarget.Process);

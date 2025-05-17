@@ -14,6 +14,7 @@
 #include "slist.h"
 #include "volatile.h"
 #include "yieldprocessornormalized.h"
+#include "minipal/time.h"
 
 #include "../../utilcode/yieldprocessornormalized.cpp"
 

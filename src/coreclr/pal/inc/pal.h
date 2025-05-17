@@ -3146,30 +3146,6 @@ RaiseFailFastException(
     IN DWORD dwFlags);
 
 PALIMPORT
-DWORD
-PALAPI
-GetTickCount();
-
-PALIMPORT
-ULONGLONG
-PALAPI
-GetTickCount64();
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceCounter(
-    OUT LARGE_INTEGER *lpPerformanceCount
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceFrequency(
-    OUT LARGE_INTEGER *lpFrequency
-    );
-
-PALIMPORT
 BOOL
 PALAPI
 QueryThreadCycleTime(

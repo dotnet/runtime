@@ -13,7 +13,7 @@ namespace System.Diagnostics
 
         private static long QueryPerformanceCounter()
         {
-            return (long)Interop.Sys.GetTimestamp();
+            return Interop.Sys.GetTimestamp();
         }
     }
 }
