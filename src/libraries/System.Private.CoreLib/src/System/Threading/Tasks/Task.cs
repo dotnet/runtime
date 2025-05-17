@@ -1082,7 +1082,7 @@ namespace System.Threading.Tasks
                     // to the guideline that an exception implies that no state change took place),
                     // so it is safe to catch the exception and move the task to a final state.  The
                     // same cannot be said for Wait()/WaitAll()/FastWaitAll().
-                    if (!scheduler.TryRunInline(this, false))
+                    if (!(taskQueued = scheduler.TryRunInline(this, false)))
                     {
                         scheduler.InternalQueueTask(this);
                         taskQueued = true; // only mark this after successfully queuing the task.
