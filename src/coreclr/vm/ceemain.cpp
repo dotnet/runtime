@@ -837,6 +837,15 @@ void EEStartupHelper()
         InitializeDebugger(); // throws on error
 #endif // DEBUGGING_SUPPORTED
 
+#ifdef PROFILING_SUPPORTED
+        // Initialize the profiling services.
+        // THis must happen before the finalizer thread is stopped on its first wait.
+        hr = ProfilingAPIUtility::InitializeProfiling();
+
+        _ASSERTE(SUCCEEDED(hr));
+        IfFailGo(hr);
+#endif // PROFILING_SUPPORTED
+
         // This isn't done as part of InitializeGarbageCollector() above because
         // debugger must be initialized before creating EE thread objects
         FinalizerThread::FinalizerThreadCreate();
@@ -866,14 +875,6 @@ void EEStartupHelper()
         }
 
         IfFailGo(hr);
-
-#ifdef PROFILING_SUPPORTED
-        // Initialize the profiling services.
-        hr = ProfilingAPIUtility::InitializeProfiling();
-
-        _ASSERTE(SUCCEEDED(hr));
-        IfFailGo(hr);
-#endif // PROFILING_SUPPORTED
 
         InitializeExceptionHandling();
 
