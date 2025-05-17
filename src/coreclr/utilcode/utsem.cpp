@@ -120,14 +120,14 @@ UTSemReadWrite::UTSemReadWrite()
     }
 #endif //SELF_NO_HOST
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     m_dwFlag = 0;
     m_hReadWaiterSemaphore = NULL;
     m_hWriteWaiterEvent = NULL;
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     m_initialized = false;
     memset(&m_rwLock, 0, sizeof(pthread_rwlock_t));
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 }
 
 
@@ -145,7 +145,7 @@ UTSemReadWrite::~UTSemReadWrite()
     }
     CONTRACTL_END;
     
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     _ASSERTE_MSG((m_dwFlag == (ULONG)0), "Destroying a UTSemReadWrite while in use");
 
     if (m_hReadWaiterSemaphore != NULL)
@@ -153,10 +153,10 @@ UTSemReadWrite::~UTSemReadWrite()
 
     if (m_hWriteWaiterEvent != NULL)
         CloseHandle(m_hWriteWaiterEvent);
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     if (m_initialized)
         pthread_rwlock_destroy(&m_rwLock);
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 }
 
 //=======================================================================================
@@ -174,7 +174,7 @@ UTSemReadWrite::Init()
     CONTRACTL_END;
 
     
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     _ASSERTE(m_hReadWaiterSemaphore == NULL);
     _ASSERTE(m_hWriteWaiterEvent == NULL);
 
@@ -183,10 +183,10 @@ UTSemReadWrite::Init()
 
     m_hWriteWaiterEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     IfNullRet(m_hWriteWaiterEvent);
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     pthread_rwlock_init(&m_rwLock, nullptr);
     m_initialized = true;
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     return S_OK;
 } // UTSemReadWrite::Init
@@ -210,7 +210,7 @@ HRESULT UTSemReadWrite::LockRead()
     // holding this lock.
     IncCantStopCount();
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     // First do some spinning - copied from file:..\VM\crst.cpp#CrstBase::SpinEnter
     for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
     {
@@ -277,9 +277,9 @@ HRESULT UTSemReadWrite::LockRead()
 ReadLockAcquired:
     _ASSERTE ((m_dwFlag & READERS_MASK) != 0 && "reader count is zero after acquiring read lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == 0 && "writer count is nonzero after acquiring write lock");
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     pthread_rwlock_rdlock(&m_rwLock);
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     EE_LOCK_TAKEN(this);
 
@@ -307,7 +307,7 @@ HRESULT UTSemReadWrite::LockWrite()
     // holding this lock.
     IncCantStopCount();
     
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     // First do some spinning - copied from file:..\VM\crst.cpp#CrstBase::SpinEnter
     for (DWORD iter = 0; iter < g_SpinConstants.dwRepetitions; iter++)
     {
@@ -371,9 +371,9 @@ HRESULT UTSemReadWrite::LockWrite()
 WriteLockAcquired:
     _ASSERTE ((m_dwFlag & READERS_MASK) == 0 && "reader count is nonzero after acquiring write lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == WRITERS_INCR && "writer count is not 1 after acquiring write lock");
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     pthread_rwlock_wrlock(&m_rwLock);
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     EE_LOCK_TAKEN(this);
 
@@ -396,7 +396,7 @@ void UTSemReadWrite::UnlockRead()
     }
     CONTRACTL_END;
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     ULONG dwFlag;
 
 
@@ -442,9 +442,9 @@ void UTSemReadWrite::UnlockRead()
             }
         }
     }
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     pthread_rwlock_unlock(&m_rwLock);
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     DecCantStopCount();
     EE_LOCK_RELEASED(this);
@@ -465,7 +465,7 @@ void UTSemReadWrite::UnlockWrite()
     }
     CONTRACTL_END;
     
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     ULONG dwFlag;
     ULONG count;
 
@@ -510,15 +510,15 @@ void UTSemReadWrite::UnlockWrite()
             }
         }
     }
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     pthread_rwlock_unlock(&m_rwLock);
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
     DecCantStopCount();
     EE_LOCK_RELEASED(this);
 } // UTSemReadWrite::UnlockWrite
 
-#if defined(_DEBUG) && defined(TARGET_WINDOWS)
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
 
 //=======================================================================================
 BOOL
@@ -534,5 +534,5 @@ UTSemReadWrite::Debug_IsLockedForWrite()
     return ((m_dwFlag & WRITERS_MASK) != 0);
 }
 
-#endif // defined(_DEBUG) && defined(TARGET_WINDOWS)
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
 

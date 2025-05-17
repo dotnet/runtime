@@ -13,7 +13,7 @@
 //              INCLUDES
 // -------------------------------------------------------------
 #include "utilcode.h"
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #include <pthread.h>
 #endif // TARGET_UNIX
 
@@ -42,20 +42,20 @@ public:
     void UnlockRead();      // Unlock the object for reading
     void UnlockWrite();     // Unlock the object for writing
     
-#if defined(_DEBUG) && defined(TARGET_WINDOWS)
+#if defined(_DEBUG) && defined(HOST_WINDOWS)
     BOOL Debug_IsLockedForRead();
     BOOL Debug_IsLockedForWrite();
-#endif // defined(_DEBUG) && defined(TARGET_WINDOWS)
+#endif // defined(_DEBUG) && defined(HOST_WINDOWS)
 
 private:
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
     Volatile<ULONG> m_dwFlag;               // internal state, see implementation
     HANDLE          m_hReadWaiterSemaphore; // semaphore for awakening read waiters
     HANDLE          m_hWriteWaiterEvent;    // event for awakening write waiters
-#else // TARGET_WINDOWS
+#else // HOST_WINDOWS
     bool m_initialized;
     pthread_rwlock_t m_rwLock;
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 };  // class UTSemReadWrite
 
 #endif // __UTSEM_H__
