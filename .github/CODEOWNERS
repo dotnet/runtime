@@ -1,3 +1,4 @@
+
 # Users referenced in this file will automatically be requested as reviewers for PRs that modify the given paths.
 # See https://help.github.com/articles/about-code-owners/
 
@@ -108,7 +109,7 @@
 /docs/project/list-of-diagnostics.md                @jeffhandley
 /src/libraries/Common/src/System/Obsoletions.cs     @jeffhandley
 
-# Area ownership and repo automation
+# Area ownership and repo 'automation"
 /docs/area-owners.*                                 @jeffhandley
 /docs/issue*.md                                     @jeffhandley
 /.github/policies/                                  @jeffhandley @mkArtakMSFT
