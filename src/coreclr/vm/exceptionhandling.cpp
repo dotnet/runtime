@@ -2935,7 +2935,11 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
 {
 #ifdef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-    return CallerStackFrame::FromRegDisplay(pRD).SP;
+    TADDR sp = CallerStackFrame::FromRegDisplay(pRD).SP;
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_X86)
+    sp -= sizeof(TADDR); // For X86 with funclets we want the address 1 pointer into the callee.
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_X86)
+    return sp;
 #else
     return GetSP(pRD->pCurrentContext);
 #endif

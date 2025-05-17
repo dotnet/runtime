@@ -4085,6 +4085,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      |   security object     |
  *      |-----------------------|
  *      |     ParamTypeArg      |
+// If funclet support is disabled
  *      |-----------------------|
  *      |  Last-executed-filter |
  *      |-----------------------|
@@ -4092,6 +4093,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *      ~      Shadow SPs       ~
  *      |                       |
  *      |-----------------------|
+// Endif funclet support is disabled
  *      |                       |
  *      ~      Variables        ~
  *      |                       |
