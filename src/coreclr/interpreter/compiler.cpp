@@ -3607,7 +3607,7 @@ retry_emit:
             case CEE_LDELEM_U4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_U4, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
                 m_ip++;
                 break;
             }

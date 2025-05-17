@@ -1267,8 +1267,7 @@ do {                                                                           \
         assert(0);                                                             \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
-    size_t size = arr->GetComponentSize();                                     \
-    etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
                                                                                \
     LOCAL_VAR(ip[1], dtype) = *pElem;                                          \
     ip += 4;                                                                   \
@@ -1296,11 +1295,6 @@ do {                                                                           \
                 case INTOP_LDELEM_I4:
                 {
                     LDELEM(int32_t, int32_t);
-                    break;
-                }
-                case INTOP_LDELEM_U4:
-                {
-                    LDELEM(int32_t, uint32_t);
                     break;
                 }
                 case INTOP_LDELEM_I8:
@@ -1331,8 +1325,7 @@ do {                                                                           \
         assert(0);                                                             \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
-    size_t size = arr->GetComponentSize();                                     \
-    etype* pElem = reinterpret_cast<etype*>(pData + idx * size);               \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
                                                                                \
     *pElem = (etype)LOCAL_VAR(ip[3], dtype);                                   \
     ip += 4;                                                                   \
