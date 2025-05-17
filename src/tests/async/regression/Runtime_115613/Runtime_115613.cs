@@ -35,13 +35,13 @@ public class Runtime_115613
         bool vr6 = M5().GetAwaiter().GetResult();
     }
 
-    private static async2 Task<bool> M5()
+    private static async Task<bool> M5()
     {
         var vr5 = await M7();
         return false;
     }
 
-    private static async2 Task<Vector128<short>> M7()
+    private static async Task<Vector128<short>> M7()
     {
         var vr2 = new uint[]
         {
