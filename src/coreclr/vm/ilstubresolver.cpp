@@ -348,43 +348,7 @@ void ILStubResolver::SetLoaderHeap(PTR_LoaderHeap pLoaderHeap)
     m_loaderHeap = pLoaderHeap;
 }
 
-COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
-{
-    STANDARD_VM_CONTRACT;
-
 #ifndef DACCESS_COMPILE
-    _ASSERTE(!IsILGenerated());
-    _ASSERTE(sl != NULL);
-
-    UINT maxStack;
-    size_t cbCode = sl->Link(&maxStack);
-    DWORD cbSig = sl->GetLocalSigSize();
-
-    COR_ILMETHOD_DECODER* pILHeader = AllocGeneratedIL(cbCode, cbSig, maxStack);
-    BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-    BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-    _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-    size_t numEH = sl->GetNumEHClauses();
-    if (numEH > 0)
-    {
-        sl->WriteEHClauses(AllocEHSect(numEH));
-    }
-
-    sl->GenerateCode(pbBuffer, cbCode);
-    sl->GetLocalSig(pbLocalSig, cbSig);
-
-    // Store the token lookup map
-    SetTokenLookupMap(sl->GetTokenLookupMap());
-    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-    return pILHeader;
-#else
-    DacNotImpl();
-    return NULL;
-#endif // !DACCESS_COMPILE
-}
-
 static COR_ILMETHOD_DECODER CreateILHeader(size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
 {
     COR_ILMETHOD_DECODER ilHeader{};
@@ -406,7 +370,6 @@ ILStubResolver::AllocGeneratedIL(
 {
     STANDARD_VM_CONTRACT;
 
-#if !defined(DACCESS_COMPILE)
     _ASSERTE(0 != cbCode);
 
     // Perform a single allocation for all needed memory
@@ -447,12 +410,39 @@ ILStubResolver::AllocGeneratedIL(
     newMemory.SuppressRelease();
     return pILHeader;
 
-#else  // DACCESS_COMPILE
-    DacNotImpl();
-    return NULL;
-
-#endif // DACCESS_COMPILE
 } // ILStubResolver::AllocGeneratedIL
+
+COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!IsILGenerated());
+    _ASSERTE(sl != NULL);
+
+    UINT maxStack;
+    size_t cbCode = sl->Link(&maxStack);
+    DWORD cbSig = sl->GetLocalSigSize();
+
+    COR_ILMETHOD_DECODER* pILHeader = AllocGeneratedIL(cbCode, cbSig, maxStack);
+    BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+    BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+    _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+    size_t numEH = sl->GetNumEHClauses();
+    if (numEH > 0)
+    {
+        sl->WriteEHClauses(AllocEHSect(numEH));
+    }
+
+    sl->GenerateCode(pbBuffer, cbCode);
+    sl->GetLocalSig(pbLocalSig, cbSig);
+
+    // Store the token lookup map
+    SetTokenLookupMap(sl->GetTokenLookupMap());
+    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+    return pILHeader;
+}
+#endif // !DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 //

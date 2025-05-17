@@ -53,7 +53,6 @@ public:
     void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
     void SetStubMethodDesc(MethodDesc* pStubMD);
 
-    COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
     COR_ILMETHOD_DECODER* GetILHeader();
     COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
 
@@ -70,7 +69,10 @@ public:
     // See callsites for more details.
     void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
 
+#ifndef DACCESS_COMPILE
+    COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
     COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl);
+#endif // !DACCESS_COMPILE
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
