@@ -648,6 +648,11 @@ namespace System.Runtime
         [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
+#if TARGET_WINDOWS
+            // Alert the debugger that we threw an exception.
+            InternalCalls.RhpFirstChanceException();
+#endif // TARGET_WINDOWS
+
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
@@ -665,6 +670,7 @@ namespace System.Runtime
             DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+
 #if !NATIVEAOT
         public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
         {
