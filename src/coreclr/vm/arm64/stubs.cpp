@@ -840,17 +840,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 }
 #endif // FEATURE_COMINTEROP
 
-#if !defined(DACCESS_COMPILE)
-
-void InitJITWriteBarrierHelpers()
-{
-    STANDARD_VM_CONTRACT;
-
-    g_WriteBarrierManager.Initialize();
-}
-
-#endif // !defined(DACCESS_COMPILE)
-
 #ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
