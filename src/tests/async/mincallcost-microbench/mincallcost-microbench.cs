@@ -115,7 +115,6 @@ public class Async2MinCallCostMicrobench
 
         return 0;
     }
-#pragma warning disable CS1998
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<long> AsyncCallingAsync()

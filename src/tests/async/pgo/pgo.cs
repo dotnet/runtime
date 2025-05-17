@@ -35,7 +35,6 @@ public class Async2Pgo
 
     private class AggregateSum : I<int>
     {
-#pragma warning disable CS1998
         public async Task<int> Aggregate(int a, int b) => a + b;
     }
 
