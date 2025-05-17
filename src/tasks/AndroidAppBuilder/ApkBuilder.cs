@@ -195,11 +195,11 @@ public partial class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
-        // if (StripDebugSymbols)
-        // {
+        if (StripDebugSymbols)
+        {
             extensionsToIgnore.Add(".pdb");
             extensionsToIgnore.Add(".dbg");
-        // }
+        }
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
@@ -386,8 +386,10 @@ public partial class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
 
         AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
-        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
-        project.BuildCMake(OutputDir, StripDebugSymbols);
+        project.GenerateCMake(OutputDir, MinApiLevel);
+        project.BuildCMake(OutputDir);
+
+        // TODO: Strip debug symbols after build: llvm-strip --strip-unneeded lib*.so
 
         string abi = project.Abi;
 
@@ -474,12 +476,12 @@ public partial class ApkBuilder
             var excludedLibs = new HashSet<string> { "libmonodroid.so" };
             if (IsCoreCLR)
             {
-                // if (StripDebugSymbols)
-                // {
+                if (StripDebugSymbols)
+                {
                     // exclude debugger support libs
                     excludedLibs.Add("libmscordbi.so");
                     excludedLibs.Add("libmscordaccore.so");
-                // }
+                }
             }
             if (!StaticLinkedRuntime)
                 dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
