@@ -2553,6 +2553,9 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (index < 0 || index >= elems) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+
+				// Fixup the index to be in range so codegen is still valid
+				index %= elems;
 			}
 
 			// Bounds check is elided if we know the index is safe.
@@ -3220,8 +3223,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// If the index is provably a constant, we can generate vastly better code.
 			int index = GTMREG_TO_INT (args[1]->inst_c0);
 			if (index < 0 || index >= elems) {
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
-					MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+				
+				// Fixup the index to be in range so codegen is still valid
+				index %= elems;
 			}
 
 			return emit_vector_insert_element (cfg, klass, args [0], arg0_type, args [2], index, FALSE);
@@ -3766,6 +3772,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			if (index < 0 || index >= len) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+
+				// Fixup the index to be in range so codegen is still valid
+				index %= len;
 			}
 
 			int opcode = type_to_extract_op (ty);
@@ -3852,6 +3861,9 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			if (index < 0 || index >= len) {
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, len);
 				MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+				
+				// Fixup the index to be in range so codegen is still valid
+				index %= len;
 			}
 
 			if (args [0]->dreg == dreg) {
