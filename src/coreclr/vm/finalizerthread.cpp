@@ -125,13 +125,8 @@ void FinalizerThread::FinalizeAllObjects()
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
-    // Non-host environment
-
     // We don't want kLowMemoryNotification to starve out kFinalizer
-    // (as the latter may help correct the former), and we don't want either
-    // to starve out kProfilingAPIAttach, as we want decent responsiveness
-    // to a user trying to attach a profiler.  So check in this order:
-    //     kProfilingAPIAttach alone (0 wait)
+    // (as the latter may help correct the former). So check in this order:
     //     kFinalizer alone (2s wait)
     //     all events together (infinite wait)
 
@@ -162,7 +157,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
         //
         //     * kLowMemoryNotification (if it's non-NULL && g_fEEStarted)
         //     * kFinalizer (always)
-        //     * kProfilingAPIAttach (if it's non-NULL)
         //
         // The enum code:MHandleType values become important here, as
         // WaitForMultipleObjects needs to wait on a contiguous set of non-NULL
