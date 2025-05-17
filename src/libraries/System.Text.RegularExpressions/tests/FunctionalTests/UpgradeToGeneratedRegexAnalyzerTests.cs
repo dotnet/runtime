@@ -15,6 +15,7 @@ using VerifyCS = System.Text.RegularExpressions.Tests.CSharpCodeFixVerifier<
 namespace System.Text.RegularExpressions.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/69823", TestRuntimes.Mono)]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class UpgradeToGeneratedRegexAnalyzerTests
     {
         private const string UseRegexSourceGeneratorDiagnosticId = @"SYSLIB1045";
