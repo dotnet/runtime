@@ -67,10 +67,6 @@ namespace Microsoft.Android.Build
                 // Use "-s" to strip debug symbols, it complains it's unused but it works
                 cmakeGenArgs += " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
             }
-            else
-            {
-                cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
-            }
 
             Utils.RunProcess(logger, Cmake, workingDir: workingDir, args: cmakeGenArgs);
         }
