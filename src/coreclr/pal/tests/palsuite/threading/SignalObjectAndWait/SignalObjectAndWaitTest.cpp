@@ -10,8 +10,6 @@ enum class SignalableObjectType
     Invalid = First,
     ManualResetEvent,
     AutoResetEvent,
-    Semaphore,
-    FullSemaphore,
     Mutex,
     UnlockedMutex,
 
@@ -27,8 +25,6 @@ enum class WaitableObjectType
     UnsignaledManualResetEvent,
     AutoResetEvent,
     UnsignaledAutoResetEvent,
-    Semaphore,
-    EmptySemaphore,
     Mutex,
     LockedMutex,
 
@@ -87,12 +83,6 @@ HANDLE CreateObjectToSignal(SignalableObjectType objectType)
         case SignalableObjectType::AutoResetEvent:
             return CreateEvent(nullptr, false, false, nullptr);
 
-        case SignalableObjectType::Semaphore:
-            return CreateSemaphoreExW(nullptr, 0, 1, nullptr, 0, 0);
-
-        case SignalableObjectType::FullSemaphore:
-            return CreateSemaphoreExW(nullptr, 1, 1, nullptr, 0, 0);
-
         case SignalableObjectType::Mutex:
             return CreateMutex(nullptr, true, nullptr);
 
@@ -115,10 +105,6 @@ void VerifySignal(HANDLE h, SignalableObjectType objectType)
         case SignalableObjectType::AutoResetEvent:
             TestAssert(WaitForSingleObject(h, 0) == WAIT_OBJECT_0);
             SetEvent(h);
-            break;
-
-        case SignalableObjectType::Semaphore:
-            TestAssert(!ReleaseSemaphore(h, 1, nullptr));
             break;
 
         case SignalableObjectType::Mutex:
@@ -157,12 +143,6 @@ HANDLE CreateObjectToWaitOn(WaitableObjectType objectType)
         case WaitableObjectType::UnsignaledAutoResetEvent:
             return CreateEvent(nullptr, false, false, nullptr);
 
-        case WaitableObjectType::Semaphore:
-            return CreateSemaphoreExW(nullptr, 1, 1, nullptr, 0, 0);
-
-        case WaitableObjectType::EmptySemaphore:
-            return CreateSemaphoreExW(nullptr, 0, 1, nullptr, 0, 0);
-
         case WaitableObjectType::Mutex:
             return CreateMutex(nullptr, false, nullptr);
 
@@ -184,8 +164,6 @@ void VerifyWait(HANDLE h, WaitableObjectType objectType)
 
         case WaitableObjectType::AutoResetEvent:
         case WaitableObjectType::UnsignaledAutoResetEvent:
-        case WaitableObjectType::Semaphore:
-        case WaitableObjectType::EmptySemaphore:
             TestAssert(WaitForSingleObject(h, 0) == WAIT_TIMEOUT);
             break;
 
@@ -219,12 +197,6 @@ void CloseObjectToWaitOn(HANDLE h, WaitableObjectType objectType)
             CloseHandle(h);
             break;
 
-        case WaitableObjectType::Semaphore:
-        case WaitableObjectType::EmptySemaphore:
-            ReleaseSemaphore(h, 1, nullptr);
-            CloseHandle(h);
-            break;
-
         case WaitableObjectType::Mutex:
             ReleaseMutex(h);
             CloseHandle(h);
@@ -252,11 +224,6 @@ bool Verify(SignalableObjectType signalableObjectType, WaitableObjectType waitab
 
     switch (signalableObjectType)
     {
-        case SignalableObjectType::FullSemaphore:
-            TestAssert(waitResult == WAIT_FAILED);
-            TestAssert(errorCode == ERROR_TOO_MANY_POSTS);
-            return false;
-
         case SignalableObjectType::UnlockedMutex:
             TestAssert(waitResult == WAIT_FAILED);
             TestAssert(errorCode == ERROR_NOT_OWNER);
@@ -270,7 +237,6 @@ bool Verify(SignalableObjectType signalableObjectType, WaitableObjectType waitab
     {
         case WaitableObjectType::UnsignaledManualResetEvent:
         case WaitableObjectType::UnsignaledAutoResetEvent:
-        case WaitableObjectType::EmptySemaphore:
             TestAssert(waitResult == WAIT_TIMEOUT);
             break;
 

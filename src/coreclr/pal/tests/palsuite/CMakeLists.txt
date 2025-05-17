@@ -44,10 +44,6 @@ add_executable_clr(paltests
   #composite/object_management/mutex/nonshared/mutex.cpp
   #composite/object_management/mutex/shared/main.cpp
   #composite/object_management/mutex/shared/mutex.cpp
-  #composite/object_management/semaphore/nonshared/main.cpp
-  #composite/object_management/semaphore/nonshared/semaphore.cpp
-  #composite/object_management/semaphore/shared/main.cpp
-  #composite/object_management/semaphore/shared/semaphore.cpp
   #composite/synchronization/criticalsection/criticalsection.cpp
   #composite/synchronization/criticalsection/mainWrapper.cpp
   #composite/synchronization/nativecriticalsection/mtx_critsect.cpp
@@ -404,9 +400,6 @@ add_executable_clr(paltests
   threading/CreateProcessW/test1/parentProcess.cpp
   threading/CreateProcessW/test2/childprocess.cpp
   threading/CreateProcessW/test2/parentprocess.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test1/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test2/CreateSemaphore.cpp
-  threading/CreateSemaphoreW_ReleaseSemaphore/test3/createsemaphore.cpp
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
@@ -418,7 +411,6 @@ add_executable_clr(paltests
   threading/CriticalSectionFunctions/test7/test7.cpp
   threading/CriticalSectionFunctions/test8/test8.cpp
   threading/DuplicateHandle/test1/test1.cpp
-  threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test11/childprocess.cpp
   threading/DuplicateHandle/test11/test11.cpp
   threading/DuplicateHandle/test12/test12.cpp
@@ -460,7 +452,6 @@ add_executable_clr(paltests
   threading/QueueUserAPC/test6/test6.cpp
   threading/QueueUserAPC/test7/test7.cpp
   threading/ReleaseMutex/test3/ReleaseMutex.cpp
-  threading/releasesemaphore/test1/test.cpp
   threading/ResetEvent/test1/test1.cpp
   threading/ResetEvent/test2/test2.cpp
   threading/ResetEvent/test3/test3.cpp
@@ -480,7 +471,6 @@ add_executable_clr(paltests
   threading/ThreadPriority/test1/ThreadPriority.cpp
   threading/WaitForMultipleObjects/test1/test1.cpp
   threading/WaitForMultipleObjectsEx/test1/test1.cpp
-  threading/WaitForMultipleObjectsEx/test2/test2.cpp
   threading/WaitForMultipleObjectsEx/test3/test3.cpp
   threading/WaitForMultipleObjectsEx/test4/test4.cpp
   threading/WaitForMultipleObjectsEx/test5/helper.cpp
@@ -489,12 +479,10 @@ add_executable_clr(paltests
   threading/WaitForMultipleObjectsEx/test6/test6.cpp
   threading/WaitForSingleObject/test1/test1.cpp
   threading/WaitForSingleObject/WFSOExMutexTest/WFSOExMutexTest.cpp
-  threading/WaitForSingleObject/WFSOExSemaphoreTest/WFSOExSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOExThreadTest/WFSOExThreadTest.cpp
   threading/WaitForSingleObject/WFSOMutexTest/WFSOMutexTest.cpp
   threading/WaitForSingleObject/WFSOProcessTest/ChildProcess.cpp
   threading/WaitForSingleObject/WFSOProcessTest/WFSOProcessTest.cpp
-  threading/WaitForSingleObject/WFSOSemaphoreTest/WFSOSemaphoreTest.cpp
   threading/WaitForSingleObject/WFSOThreadTest/WFSOThreadTest.cpp
   threading/YieldProcessor/test1/test1.cpp
 )

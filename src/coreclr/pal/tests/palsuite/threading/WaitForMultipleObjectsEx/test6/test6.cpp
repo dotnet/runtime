@@ -20,7 +20,6 @@
 BOOL g_bMutex         = 0;
 BOOL g_bEvent         = 0;
 BOOL g_bNamedEvent    = 0;
-BOOL g_bSemaphore     = 0;
 BOOL g_bProcess       = 0;
 BOOL g_bLocalWaitAll  = 0;
 BOOL g_bRemoteWaitAll = 0;
@@ -131,7 +130,6 @@ DWORD PALAPI TestThread(PVOID pArg)
     HANDLE hNamedEvent;
     HANDLE hEvent[2] = { 0, 0 };
     HANDLE hMutex = 0;
-    HANDLE hSemaphore = 0;
     HANDLE hObjs[2];
     DWORD dwThreadNum;
     DWORD dwSlaveThreadTid = 0;
@@ -141,14 +139,11 @@ DWORD PALAPI TestThread(PVOID pArg)
     char szCmd[128];
     char szEventName[128] = { 0 };
     char szMutexName[128] = { 0 };
-    char szSemName[128] = { 0 };
     WCHAR wszEventName[128] = { 0 };
     WCHAR wszMutexName[128] = { 0 };
-    WCHAR wszSemName[128] = { 0 };
     BOOL bMutex         = g_bMutex;
     BOOL bEvent         = g_bEvent;
     BOOL bNamedEvent    = g_bNamedEvent;
-    BOOL bSemaphore     = g_bSemaphore;
     BOOL bProcess       = g_bProcess;
     BOOL bLocalWaitAll  = g_bLocalWaitAll;
     BOOL bRemoteWaitAll = g_bRemoteWaitAll;
@@ -163,34 +158,30 @@ DWORD PALAPI TestThread(PVOID pArg)
     szEventName[127] = 0;
     sprintf_s(szMutexName, 128, "%s_Mutex", szTestName);
     szMutexName[127] = 0;
-    sprintf_s(szSemName, 128, "%s_Semaphore", szTestName);
-    szSemName[127] = 0;
 
     iRet = MultiByteToWideChar(CP_ACP, 0, szEventName, strlen(szEventName)+1, wszEventName, 128);
     iRet &= MultiByteToWideChar(CP_ACP, 0, szMutexName, strlen(szMutexName)+1, wszMutexName, 128);
-    iRet &= MultiByteToWideChar(CP_ACP, 0, szSemName, strlen(szSemName)+1, wszSemName, 128);
 
     if (0 == iRet)
     {
         Fail("[TestThread] Failed to convert strings\n");
     }
 
-    Trace("[TestThread] TestName=%s Event: %S, Mutex: %S, Semaphore = %S\n",
-       szTestName, wszEventName, wszMutexName, wszSemName);
+    Trace("[TestThread] TestName=%s Event: %S, Mutex: %S\n",
+       szTestName, wszEventName, wszMutexName);
 
     hEvent[0] = CreateEvent(NULL, FALSE, FALSE, NULL);
     hEvent[1] = CreateEvent(NULL, FALSE, FALSE, NULL);
 
     hNamedEvent = CreateEventW(NULL, FALSE, FALSE, wszEventName);
     hMutex = CreateMutexW(NULL, FALSE, wszMutexName);
-    hSemaphore = CreateSemaphoreExW(NULL, 0, 256, wszSemName, 0, 0);
 
     if (NULL == hEvent[0] || NULL == hEvent[1] || NULL == hMutex ||
-    NULL == hNamedEvent || NULL == hSemaphore)
+    NULL == hNamedEvent)
     {
         Fail("[TestThread] Failed to create objects "
-             "[hNamedEvent=%p hMutex=%p hSemaphore=%p]\n",
-             (VOID*)hNamedEvent, (VOID*)hMutex, (VOID*)hSemaphore);
+             "[hNamedEvent=%p hMutex=%p]\n",
+             (VOID*)hNamedEvent, (VOID*)hMutex);
     }
 
     for (iCnt=0; iCnt<iCount; iCnt++)
@@ -202,12 +193,11 @@ DWORD PALAPI TestThread(PVOID pArg)
             bMutex         = 0;
             bEvent         = 0;
             bNamedEvent    = 0;
-            bSemaphore     = 0;
             bProcess       = 0;
             bLocalWaitAll  = 0;
             bRemoteWaitAll = 0;
 
-            iRnd = rand() % 7;
+            iRnd = rand() % 6;
             switch(iRnd)
             {
             case 0:
@@ -220,15 +210,12 @@ DWORD PALAPI TestThread(PVOID pArg)
                 bNamedEvent = 1;
                 break;
             case 3:
-                bSemaphore = 1;
-                break;
-            case 4:
                 bProcess = 1;
                 break;
-            case 5:
+            case 4:
                 bLocalWaitAll = 1;
                 break;
-            case 6:
+            case 5:
                 bRemoteWaitAll = 1;
                 break;
             }
@@ -352,65 +339,6 @@ DWORD PALAPI TestThread(PVOID pArg)
                      GetLastError());
             }
             Trace("Named event with remote thread awakening test done\n");
-            Trace("======================================================================\n");
-        }
-
-        if (bSemaphore)
-        {
-            Trace("======================================================================\n");
-            Trace("Semaphore with remote thread awakening test\n");
-            Trace("----------------------------------------\n");
-
-            ZeroMemory ( &si, sizeof(si) );
-            si.cb = sizeof(si);
-            ZeroMemory ( &pi, sizeof(pi) );
-
-            sprintf_s (szCmd, 128, "child6 -semaphore %s", szTestName);
-            szCmd[127] = 0;
-
-            LPWSTR szCmdW = convert(szCmd);
-            bRet = CreateProcessW(NULL, szCmdW, NULL, NULL, FALSE,
-                                  0, NULL, NULL, &si, &pi);
-            free(szCmdW);
-            if (FALSE == bRet)
-            {
-                Fail("CreateProcessW failed [GetLastError()=%u]\n",
-                     GetLastError());
-            }
-
-
-            Trace("Setting event %s\n", szEventName);
-            bRet = SetEvent(hNamedEvent);
-            if (FALSE == bRet)
-            {
-                Fail("[child] SetEvent failed [GetLastError()=%u]\n",
-                     GetLastError());
-            }
-
-            Trace("Going to wait on semaphore %s\n", szSemName);
-
-
-            hObjs[0] = pi.hProcess;
-            hObjs[0] = hEvent[0];
-            hObjs[1] = hSemaphore;
-            for (i=0;i<10;i++)
-            {
-                dwRet = WaitForMultipleObjects(2, hObjs, FALSE, INFINITE);
-                if (1 != dwRet)
-                {
-                    Trace("WaitForMultipleObjects failed [tid=%u dwRet=%u GetLastError()=%u]\n",
-                          GetCurrentThreadId(), dwRet, GetLastError());
-                    DebugBreak();
-                }
-            }
-
-            dwRet = WaitForSingleObject(pi.hProcess, INFINITE);
-            if (WAIT_FAILED == dwRet)
-            {
-                Fail("WaitForMultipleObjects failed [GetLastError()=%u]\n",
-                     GetLastError());
-            }
-            Trace("Semaphore with remote thread awakening test done\n");
             Trace("======================================================================\n");
         }
 
@@ -601,7 +529,6 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
         g_bMutex = 1;
         g_bEvent = 1;
         g_bNamedEvent = 1;
-        g_bSemaphore = 1;
         g_bProcess = 1;
         g_bLocalWaitAll = 1;
         g_bRemoteWaitAll = 1;
@@ -622,10 +549,6 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
             {
                 g_bNamedEvent = 1;
             }
-            else if (0 == strcmp(argv[i], "-semaphore"))
-            {
-                g_bSemaphore = 1;
-            }
             else if (0 == strcmp(argv[i], "-process"))
             {
                 g_bProcess = 1;
@@ -643,7 +566,6 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
                 g_bMutex = 1;
                 g_bEvent = 1;
                 g_bNamedEvent = 1;
-                g_bSemaphore = 1;
                 g_bProcess = 1;
                 g_bLocalWaitAll = 1;
                 g_bRemoteWaitAll = 1;

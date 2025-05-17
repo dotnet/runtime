@@ -203,7 +203,6 @@ set(SOURCES
   sharedmemory/sharedmemory.cpp
   sync/cs.cpp
   synchobj/event.cpp
-  synchobj/semaphore.cpp
   synchobj/mutex.cpp
   synchmgr/synchcontrollers.cpp
   synchmgr/synchmanager.cpp
