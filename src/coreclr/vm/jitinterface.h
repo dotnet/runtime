@@ -397,12 +397,6 @@ public:
 
     void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
-private:
-#ifdef _DEBUG
-    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
-    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
-#endif
-
 public:
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
@@ -424,8 +418,12 @@ public:
     TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
-    // Get method info for a transient method
-    void getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo);
+protected:
+    COR_ILMETHOD_DECODER* getMethodInfoWorker(
+        MethodDesc* ftn,
+        COR_ILMETHOD_DECODER* header,
+        CORINFO_METHOD_INFO* methInfo,
+        CORINFO_CONTEXT_HANDLE exactContext = NULL);
 
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
@@ -469,7 +467,7 @@ class CEECodeGenInfo : public CEEInfo
 {
 public:
     // ICorJitInfo stuff
-    CEECodeGenInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm, bool allowInlining = true)
+    CEECodeGenInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm, bool allowInlining)
         : CEEInfo(fd, allowInlining),
           m_jitManager(jm),
           m_CodeHeader(NULL),
@@ -478,6 +476,7 @@ public:
           m_pRealCodeHeader(NULL),
           m_pCodeHeap(NULL),
           m_ILHeader(header),
+          m_MethodInfo(),
           m_GCinfo_len(0),
           m_EHinfo_len(0),
           m_iOffsetMapping(0),
@@ -490,12 +489,13 @@ public:
           m_numRichOffsetMappings(0),
           m_gphCache()
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        } CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
+        COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &m_MethodInfo);
+
+        // The header maybe replaced during the call to getMethodInfoWorker. This is most probable
+        // when the input is null (that is, no metadata), but we can also examine the method and generate
+        // an entirely new IL body (for example, intrinsic methods).
+        m_ILHeader = ilHeader;
     }
 
     ~CEECodeGenInfo()
@@ -595,6 +595,8 @@ public:
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
+    CORINFO_METHOD_INFO getMethodInfoInternal() const;
+
 protected:
 
     template <typename TCodeHeader>
@@ -624,7 +626,8 @@ protected:
     size_t                  m_codeWriteBufferSize;
     BYTE*                   m_pRealCodeHeader;
     HeapList*               m_pCodeHeap;
-    COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
+    COR_ILMETHOD_DECODER*   m_ILHeader;     // the code header to use. This may have been generated due to dynamic IL generation.
+    CORINFO_METHOD_INFO     m_MethodInfo;
 
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
@@ -832,7 +835,7 @@ public:
     void PublishFinalCodeAddress(PCODE addr);
 
     CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
-               EECodeGenManager* jm, bool allowInlining = true)
+               EECodeGenManager* jm, bool allowInlining)
         : CEECodeGenInfo(fd, header, jm, allowInlining)
 #ifdef FEATURE_EH_FUNCLETS
         , m_moduleBase(0),
@@ -962,7 +965,7 @@ public:
     // ICorJitInfo stuff
 
     CInterpreterJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
-                        EECodeGenManager* jm, bool allowInlining = true)
+                        EECodeGenManager* jm, bool allowInlining)
         : CEECodeGenInfo(fd, header, jm, allowInlining)
     {
         CONTRACTL

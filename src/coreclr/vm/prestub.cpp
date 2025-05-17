@@ -743,11 +743,7 @@ namespace
             return NULL;
 
         COR_ILMETHOD_DECODER::DecoderStatus status = COR_ILMETHOD_DECODER::FORMAT_ERROR;
-        {
-            // Decoder ctor can AV on a malformed method header
-            AVInRuntimeImplOkayHolder AVOkay;
-            pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, pMD->GetMDImport(), &status);
-        }
+        pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, pMD->GetMDImport(), &status);
 
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
