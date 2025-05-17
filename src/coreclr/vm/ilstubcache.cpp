@@ -97,7 +97,7 @@ MethodDesc* ILStubCache::CreateAndLinkNewILStubMethodDesc(LoaderAllocator* pAllo
 
     pResolver->SetStubMethodDesc(pStubMD);
 
-    ConstructILStub(pResolver, pStubLinker);
+    pResolver->FinalizeILStub(pStubLinker);
 
     RETURN pStubMD;
 }

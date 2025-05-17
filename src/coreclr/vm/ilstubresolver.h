@@ -53,8 +53,8 @@ public:
     void SetStubTargetMethodSig(PCCOR_SIGNATURE pStubTargetMethodSig, DWORD cbStubTargetSigLength);
     void SetStubMethodDesc(MethodDesc* pStubMD);
 
-    COR_ILMETHOD_DECODER * AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
-    COR_ILMETHOD_DECODER * GetILHeader();
+    COR_ILMETHOD_DECODER* AllocGeneratedIL(size_t cbCode, DWORD cbLocalSig, UINT maxStack);
+    COR_ILMETHOD_DECODER* GetILHeader();
     COR_ILMETHOD_SECT_EH* AllocEHSect(size_t nClauses);
 
     bool IsCompiled();
@@ -69,6 +69,8 @@ public:
     // This is only set for StructMarshal interop stubs.
     // See callsites for more details.
     void SetLoaderHeap(PTR_LoaderHeap pLoaderHeap);
+
+    COR_ILMETHOD_DECODER* FinalizeILStub(ILStubLinker* sl);
 
     static void StubGenFailed(ILStubResolver* pResolver);
 
@@ -107,11 +109,5 @@ protected:
 };
 
 typedef Holder<ILStubResolver*, DoNothing<ILStubResolver*>, ILStubResolver::StubGenFailed, 0> ILStubGenHolder;
-
-#ifndef DACCESS_COMPILE
-COR_ILMETHOD_DECODER* ConstructILStub(
-    _In_ ILStubResolver* ilResolver,
-    _In_ ILStubLinker* sl);
-#endif // !DACCESS_COMPILE
 
 #endif // __ILSTUBRESOLVER_H__

@@ -1007,7 +1007,7 @@ namespace
         pReturnCode->EmitRET();
 
         // Generate all IL associated data for JIT
-        *methodILDecoder = ConstructILStub(ilResolver, &sl);
+        *methodILDecoder = ilResolver->FinalizeILStub(&sl);
         *resolver = ilResolver.Extract();
     }
 }

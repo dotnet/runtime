@@ -348,6 +348,43 @@ void ILStubResolver::SetLoaderHeap(PTR_LoaderHeap pLoaderHeap)
     m_loaderHeap = pLoaderHeap;
 }
 
+COR_ILMETHOD_DECODER* ILStubResolver::FinalizeILStub(ILStubLinker* sl)
+{
+    STANDARD_VM_CONTRACT;
+
+#ifndef DACCESS_COMPILE
+    _ASSERTE(!IsILGenerated());
+    _ASSERTE(sl != NULL);
+
+    UINT maxStack;
+    size_t cbCode = sl->Link(&maxStack);
+    DWORD cbSig = sl->GetLocalSigSize();
+
+    COR_ILMETHOD_DECODER* pILHeader = AllocGeneratedIL(cbCode, cbSig, maxStack);
+    BYTE* pbBuffer = (BYTE*)pILHeader->Code;
+    BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
+    _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
+
+    size_t numEH = sl->GetNumEHClauses();
+    if (numEH > 0)
+    {
+        sl->WriteEHClauses(AllocEHSect(numEH));
+    }
+
+    sl->GenerateCode(pbBuffer, cbCode);
+    sl->GetLocalSig(pbLocalSig, cbSig);
+
+    // Store the token lookup map
+    SetTokenLookupMap(sl->GetTokenLookupMap());
+    SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
+
+    return pILHeader;
+#else
+    DacNotImpl();
+    return NULL;
+#endif // !DACCESS_COMPILE
+}
+
 static COR_ILMETHOD_DECODER CreateILHeader(size_t cbCode, UINT maxStack, BYTE* pNewILCodeBuffer, BYTE* pNewLocalSig, DWORD cbLocalSig)
 {
     COR_ILMETHOD_DECODER ilHeader{};
@@ -559,38 +596,3 @@ void ILStubResolver::StubGenFailed(ILStubResolver* pResolver)
 
     pResolver->ClearCompileTimeState(ILNotYetGenerated);
 }
-
-#ifndef DACCESS_COMPILE
-COR_ILMETHOD_DECODER* ConstructILStub(
-    _In_ ILStubResolver* ilResolver,
-    _In_ ILStubLinker* sl)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(ilResolver != NULL);
-    _ASSERTE(sl != NULL);
-
-    UINT maxStack;
-    size_t cbCode = sl->Link(&maxStack);
-    DWORD cbSig = sl->GetLocalSigSize();
-
-    COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-    BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-    BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-    _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-
-    size_t numEH = sl->GetNumEHClauses();
-    if (numEH > 0)
-    {
-        sl->WriteEHClauses(ilResolver->AllocEHSect(numEH));
-    }
-
-    sl->GenerateCode(pbBuffer, cbCode);
-    sl->GetLocalSig(pbLocalSig, cbSig);
-
-    // Store the token lookup map
-    ilResolver->SetTokenLookupMap(sl->GetTokenLookupMap());
-    ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-    return pILHeader;
-}
-#endif // !DACCESS_COMPILE
