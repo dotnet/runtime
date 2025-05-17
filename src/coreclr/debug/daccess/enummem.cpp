@@ -25,6 +25,8 @@
 #include <interoplibabi.h>
 #endif // FEATURE_COMWRAPPERS
 
+#include "cdacplatformmetadata.hpp"
+
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)

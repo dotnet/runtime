@@ -678,7 +678,7 @@ void FixupPrecode::StaticInitialize()
 
 void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
-    int totalCodeSize = (pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize;
+    int totalCodeSize = (int)((pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize);
 #ifdef TARGET_X86
 
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
@@ -788,7 +788,7 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 #endif // TARGET_X86
     pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode);
     pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode_End);
-    bytesMeaningful = pTemplateInstrEnd - pTemplateInstr;
+    bytesMeaningful = (uint8_t)(pTemplateInstrEnd - pTemplateInstr);
     memcpy(dest->FixupBytes, pTemplateInstr, bytesMeaningful);
     memset(dest->FixupIgnoredBytes + bytesMeaningful, 1, FixupPrecode::CodeSize - bytesMeaningful);
 #endif // HAS_FIXUP_PRECODE
@@ -804,7 +804,7 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 #endif // TARGET_X86
     pTemplateInstr = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode);
     pTemplateInstrEnd = (BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode_End);
-    bytesMeaningful = pTemplateInstrEnd - pTemplateInstr;
+    bytesMeaningful = (uint8_t)(pTemplateInstrEnd - pTemplateInstr);
     memcpy(dest->StubBytes, pTemplateInstr, bytesMeaningful);
     memset(dest->StubIgnoredBytes + bytesMeaningful, 1, StubPrecode::CodeSize - bytesMeaningful);
 
@@ -817,3 +817,50 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 
 #endif // !DACCESS_COMPILE
 
+#ifdef DACCESS_COMPILE
+#include <cdacplatformmetadata.hpp>
+
+#ifdef HAS_FIXUP_PRECODE
+BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    PrecodeMachineDescriptor *precodeDescriptor = &(&g_cdacPlatformMetadata)->precode;
+    PTR_BYTE pInstr = dac_cast<PTR_BYTE>(PCODEToPINSTR(addr));
+    for (int i = 0; i < precodeDescriptor->FixupStubPrecodeSize; i++)
+    {
+        if (precodeDescriptor->FixupIgnoredBytes[i] == 0)
+        {
+            if (precodeDescriptor->FixupBytes[i] != *pInstr)
+            {
+                return FALSE;
+            }
+        }
+        pInstr++;
+    }
+
+    return TRUE;
+}
+#endif // HAS_FIXUP_PRECODE
+
+#ifdef HAS_FIXUP_PRECODE
+BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    PrecodeMachineDescriptor *precodeDescriptor = &(&g_cdacPlatformMetadata)->precode;
+    PTR_BYTE pInstr = dac_cast<PTR_BYTE>(PCODEToPINSTR(addr));
+    for (int i = 0; i < precodeDescriptor->StubPrecodeSize; i++)
+    {
+        if (precodeDescriptor->StubIgnoredBytes[i] == 0)
+        {
+            if (precodeDescriptor->StubBytes[i] != *pInstr)
+            {
+                return FALSE;
+            }
+        }
+        pInstr++;
+    }
+
+    return TRUE;
+}
+#endif // HAS_FIXUP_PRECODE
+#endif // DACCESS_COMPILE

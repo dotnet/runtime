@@ -18,6 +18,7 @@
 #include "../../vm/common.h"
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
+#include "../../vm/cdacplatformmetadata.hpp"
 
 #ifdef DEBUGGING_SUPPORTED
 

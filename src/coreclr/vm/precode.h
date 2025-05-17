@@ -782,7 +782,6 @@ static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
 
-#ifndef DACCESS_COMPILE
 // A summary of the precode layout for diagnostic purposes
 struct PrecodeMachineDescriptor
 {
@@ -816,7 +815,6 @@ public:
     PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
     static void Init(PrecodeMachineDescriptor* dest);
 };
-#endif //DACCESS_COMPILE
 
 extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
 #ifdef HAS_FIXUP_PRECODE

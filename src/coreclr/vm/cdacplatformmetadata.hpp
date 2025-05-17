@@ -7,7 +7,6 @@
 #include "precode.h"
 
 // Cross-cutting metadata for cDAC
-#ifndef DACCESS_COMPILE
 enum class CDacCodePointerFlags : uint8_t
 {
     None = 0,
@@ -27,8 +26,7 @@ struct CDacPlatformMetadata
     static void InitPrecodes();
 };
 
-extern CDacPlatformMetadata g_cdacPlatformMetadata;
-#endif // DACCESS_COMPILE
+GVAL_DECL(CDacPlatformMetadata, g_cdacPlatformMetadata);
 
 
 #endif// CDACPLATFORMMETADATA_HPP__
