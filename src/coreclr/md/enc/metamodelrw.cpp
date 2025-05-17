@@ -7144,8 +7144,10 @@ CMiniMdRW::ValidateVirtualSortAfterAddRecord(
 void
 CMiniMdRW::Debug_CheckIsLockedForWrite()
 {
+#ifdef TARGET_WINDOWS
     // If this assert fires, then we are trying to modify MetaData that is not locked for write
     _ASSERTE((dbg_m_pLock == NULL) || dbg_m_pLock->Debug_IsLockedForWrite());
+#endif
 }
 
 #endif //_DEBUG
