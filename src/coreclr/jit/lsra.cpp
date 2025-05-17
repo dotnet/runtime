@@ -830,6 +830,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegCount       = ACTUAL_REG_COUNT;
     needNonIntegerRegisters = false;
 
+#if defined(TARGET_XARCH)
+    evexIsSupported = compiler->canUseEvexEncoding();
+#endif
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
@@ -837,6 +841,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
     regIntLast        = compiler->regIntLast;
     isApxSupported    = compiler->canUseApxEncoding();
+    canUseApxRegs     = isApxSupported && evexIsSupported;
+
     if (isApxSupported)
     {
         int size   = (int)ACTUAL_REG_COUNT + 1;
@@ -860,12 +866,16 @@ LinearScan::LinearScan(Compiler* theCompiler)
     }
 #endif // TARGET_AMD64
 
+#if defined(TARGET_X86)
+    canUseApxRegs = false;
+#endif
+
 #if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
     memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
-    if (!compiler->canUseEvexEncoding())
+    if (!evexIsSupported)
     {
         availableRegCount -= (CNT_HIGHFLOAT + CNT_MASK_REGS);
     }
@@ -960,7 +970,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #if defined(TARGET_AMD64)
-    if (compiler->canUseEvexEncoding())
+    if (evexIsSupported)
     {
         availableFloatRegs |= RBM_HIGHFLOAT.GetFloatRegSet();
         availableDoubleRegs |= RBM_HIGHFLOAT.GetFloatRegSet();

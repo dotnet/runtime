@@ -1962,7 +1962,7 @@ void LinearScan::buildPhysRegRecords()
     // callee trash and should appear at the end up the existing callee
     // trash set
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         regOrderFlt     = &lsraRegOrderFltEvex[0];
         regOrderFltSize = lsraRegOrderFltEvexSize;
@@ -1987,7 +1987,7 @@ void LinearScan::buildPhysRegRecords()
 #if defined(TARGET_XARCH)
     // xarch has mask registers available when EVEX is supported
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         for (unsigned int i = 0; i < lsraRegOrderMskSize; i++)
         {
@@ -3846,13 +3846,17 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
         assert(op2 != nullptr);
         if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
         {
-            if (op1->isContainedIndir())
+            if (op1->isContainedIndir() && !getCanUseApxRegs())
             {
                 return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
             }
-            else
+            else if (op2->isContainedIndir() && !getCanUseApxRegs())
             {
                 return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
+            }
+            else
+            {
+                return BuildRMWUses(node, op1, op2, candidates, candidates);
             }
         }
         return BuildRMWUses(node, op1, op2, candidates, candidates);
@@ -3863,9 +3867,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
-        if (op1->isContainedIndir() &&
-            ((varTypeUsesFloatReg(node) || node->OperGet() == GT_BSWAP || node->OperGet() == GT_BSWAP16)) &&
-            candidates == RBM_NONE)
+        if (op1->isContainedIndir() && (candidates == RBM_NONE) && !getCanUseApxRegs())
         {
             srcCount += BuildOperandUses(op1, lowGprRegs);
         }
@@ -3879,7 +3881,7 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 
 #ifdef TARGET_XARCH
-        if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && candidates == RBM_NONE)
+        if (op2->isContainedIndir() && (candidates == RBM_NONE) && !getCanUseApxRegs())
         {
             candidates = lowGprRegs;
         }
@@ -3941,7 +3943,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
 
-    GenTree* op1 = storeLoc->gtGetOp1();
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
@@ -3981,14 +3982,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 #else
     defCandidates = allRegs(type);
 #endif // TARGET_X86
-
-#ifdef TARGET_AMD64
-    if (op1->isContained() && op1->OperIs(GT_BITCAST) && varTypeUsesIntReg(varDsc->GetRegisterType(storeLoc)))
-    {
-        defCandidates = lowGprRegs;
-    }
-
-#endif // TARGET_AMD64
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
@@ -4153,20 +4146,9 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*         bitCastSrc   = op1->gtGetOp1();
-        RegisterType     registerType = regType(bitCastSrc->TypeGet());
-        SingleTypeRegSet candidates   = RBM_NONE;
-#ifdef TARGET_AMD64
-        if (registerType == IntRegisterType)
-        {
-            candidates = lowGprRegs;
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            candidates = allRegs(registerType);
-        }
-        singleUseRef = BuildUse(bitCastSrc, candidates);
+        GenTree*     bitCastSrc   = op1->gtGetOp1();
+        RegisterType registerType = regType(bitCastSrc->TypeGet());
+        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4248,16 +4230,7 @@ int LinearScan::BuildSimple(GenTree* tree)
     }
     if (tree->IsValue())
     {
-#ifdef TARGET_AMD64
-        if ((tree->OperGet() == GT_BSWAP || tree->OperGet() == GT_BSWAP16) && varTypeUsesIntReg(tree))
-        {
-            BuildDef(tree, lowGprRegs);
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            BuildDef(tree);
-        }
+        BuildDef(tree);
     }
     return srcCount;
 }

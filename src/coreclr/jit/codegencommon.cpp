@@ -5044,8 +5044,11 @@ void CodeGen::genFnProlog()
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
 #if defined(TARGET_AMD64)
-    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs.
-    excludeMask = excludeMask | RBM_HIGHINT;
+    // we'd require eEVEX present to enable EGPRs in HWIntrinsics.
+    if (!compiler->canUseEvexEncoding() || !compiler->canUseApxEncoding())
+    {
+        excludeMask = excludeMask | RBM_HIGHINT;
+    }
 #endif // !defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM
