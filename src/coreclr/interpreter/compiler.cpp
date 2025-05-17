@@ -1993,21 +1993,23 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 }
 
-void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
+void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType, size_t size)
 {
     m_pStackPointer -= 2;
     AddIns(opcode);
     m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
     PushInterpType(interpType, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    m_pLastNewIns->data[0] = size;
 }
 
-void InterpCompiler::EmitStelem(InterpType interpType)
+void InterpCompiler::EmitStelem(InterpType interpType, size_t size)
 {
     m_pStackPointer -= 3;
     int32_t opcode = GetStelemForType(interpType);
     AddIns(opcode);
     m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+    m_pLastNewIns->data[0] = size;
 }
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
@@ -3572,119 +3574,127 @@ retry_emit:
             case CEE_LDELEM_I1:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4, sizeof(int8_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_U1:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4, sizeof(uint8_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I2:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4, sizeof(int16_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_U2:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4, sizeof(uint16_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4, sizeof(int32_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_U4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4, sizeof(uint32_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I8:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8);
+                EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8, sizeof(int64_t));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_I:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_I, InterpTypeI);
+#ifdef TARGET_64BIT
+                EmitLdelem(INTOP_LDELEM_I, InterpTypeI8, sizeof(int64_t));
+#else
+                EmitLdelem(INTOP_LDELEM_I, InterpTypeI4, sizeof(int32_t));
+#endif
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_R4:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4);
+                EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4, sizeof(float));
                 m_ip++;
                 break;
             }
             case CEE_LDELEM_R8:
             {
                 CHECK_STACK(2);
-                EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8);
+                EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8, sizeof(double));
                 m_ip++;
                 break;
             }
             case CEE_STELEM_I:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeI);
+#ifdef TARGET_64BIT
+                EmitStelem(InterpTypeI, sizeof(int64_t));
+#else
+                EmitStelem(InterpTypeI, sizeof(int32_t));
+#endif
                 m_ip++;
                 break;
             }
             case CEE_STELEM_I1:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeI1);
+                EmitStelem(InterpTypeI1, sizeof(int8_t));
                 m_ip++;
                 break;
             }
             case CEE_STELEM_I2:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeI2);
+                EmitStelem(InterpTypeI2, sizeof(int16_t));
                 m_ip++;
                 break;
             }
             case CEE_STELEM_I4:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeI4);
+                EmitStelem(InterpTypeI4, sizeof(int32_t));
                 m_ip++;
                 break;
             }
             case CEE_STELEM_I8:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeI8);
+                EmitStelem(InterpTypeI8, sizeof(int64_t));
                 m_ip++;
                 break;
             }
             case CEE_STELEM_R4:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeR4);
+                EmitStelem(InterpTypeR4, sizeof(float));
                 m_ip++;
                 break;
             }
             case CEE_STELEM_R8:
             {
                 CHECK_STACK(3);
-                EmitStelem(InterpTypeR8);
+                EmitStelem(InterpTypeR8, sizeof(double));
                 m_ip++;
                 break;
             }
