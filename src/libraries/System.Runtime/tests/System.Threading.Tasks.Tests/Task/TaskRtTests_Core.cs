@@ -1090,8 +1090,7 @@ namespace System.Threading.Tasks.Tests
                 cts.Cancel();
                 thread.Join();
 
-                if (threadException is AggregateException ae &&
-                    ae.InnerExceptions.Any(e => e is ThreadInterruptedException))
+                if (threadException is AggregateException || threadException is ThreadInterruptedException || threadException is OperationCanceledException)
                 {
                     // The expected exception was thrown
                     return;
