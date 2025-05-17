@@ -3743,7 +3743,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
+        /// <inheritdoc cref="Vector64.SinCos(Vector64{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector128<double> Sin, Vector128<double> Cos) SinCos(Vector128<double> vector)
         {
@@ -3763,7 +3763,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <inheritdoc cref="Vector64.Cos(Vector64{float})" />
+        /// <inheritdoc cref="Vector64.SinCos(Vector64{float})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (Vector128<float> Sin, Vector128<float> Cos) SinCos(Vector128<float> vector)
         {

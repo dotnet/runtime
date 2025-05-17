@@ -715,11 +715,11 @@ namespace System.Numerics
             return Unsafe.ReadUnaligned<Vector2>(in address);
         }
 
-        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
+        /// <inheritdoc cref="Vector4.Log(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Log(Vector2 vector) => Vector128.Log(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
-        /// <inheritdoc cref="Vector4.Log(Vector4)" />
+        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Log2(Vector2 vector) => Vector128.Log2(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
