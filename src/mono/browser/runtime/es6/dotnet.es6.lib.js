@@ -38,7 +38,7 @@ function setup(emscriptenBuildOptions) {
     noExitRuntime = dotnet_replacements.noExitRuntime;
     fetch = dotnet_replacements.fetch;
     require = dotnet_replacements.require;
-    _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
+    _scriptName = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
     Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
         quit_, ExitStatus,
