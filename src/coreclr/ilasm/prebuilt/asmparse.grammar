@@ -68,6 +68,7 @@ languageDecl            : '.language' SQSTRING
                         ;
 /*  Basic tokens  */
 id                      : ID 
+                        | 'async' 
                         | SQSTRING 
                         ;
 
@@ -528,6 +529,7 @@ implAttr                : /* EMPTY */
                         | implAttr 'aggressiveinlining' 
                         | implAttr 'nooptimization' 
                         | implAttr 'aggressiveoptimization' 
+                        | implAttr 'async' 
                         | implAttr 'flags' '(' int32 ')' 
                         ;
 
