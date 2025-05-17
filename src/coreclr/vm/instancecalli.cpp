@@ -62,25 +62,6 @@ void MethodDesc::GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILM
     NewHolder<ILStubResolver> ilResolver = new ILStubResolver();
     ilResolver->SetStubMethodDesc(this);
 
-    {
-        UINT maxStack;
-        size_t cbCode = sl.Link(&maxStack);
-        DWORD cbSig = sl.GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-        sl.GenerateCode(pbBuffer, cbCode);
-        sl.GetLocalSig(pbLocalSig, cbSig);
-
-        // Store the token lookup map.
-        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-        *resolver = (DynamicResolver*)ilResolver;
-        *methodILDecoder = pILHeader;
-    }
-
-    ilResolver.SuppressRelease();
+    *methodILDecoder = ilResolver->FinalizeILStub(&sl);
+    *resolver = ilResolver.Extract();
 }
