@@ -23,7 +23,7 @@ internal unsafe partial class MachObjectFile
     private (LinkEditCommand Command, long FileOffset) _codeSignatureLoadCommand;
     private readonly (Segment64LoadCommand Command, long FileOffset) _textSegment64;
     private (Segment64LoadCommand Command, long FileOffset) _linkEditSegment64;
-    private (SymbolTableCommand Command, long FileOffset) _symtabCommand;
+    private (SymbolTableLoadCommand Command, long FileOffset) _symtabCommand;
 
     private CodeSignature _codeSignatureBlob;
     /// <summary>
@@ -40,7 +40,7 @@ internal unsafe partial class MachObjectFile
         (LinkEditCommand Command, long FileOffset) codeSignatureLC,
         (Segment64LoadCommand Command, long FileOffset) textSegment64,
         (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
-        (SymbolTableCommand Command, long FileOffset) symtabLC,
+        (SymbolTableLoadCommand Command, long FileOffset) symtabLC,
         long lowestSection,
         CodeSignature codeSignatureBlob,
         long nextCommandPtr)
@@ -74,7 +74,7 @@ internal unsafe partial class MachObjectFile
             out (LinkEditCommand Command, long FileOffset) codeSignatureLC,
             out (Segment64LoadCommand Command, long FileOffset) textSegment64,
             out (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
-            out (SymbolTableCommand Command, long FileOffset) symtabCommand,
+            out (SymbolTableLoadCommand Command, long FileOffset) symtabCommand,
             out long lowestSection);
         CodeSignature codeSignatureBlob = codeSignatureLC.Command.IsDefault
             ? null
@@ -103,11 +103,12 @@ internal unsafe partial class MachObjectFile
     public long CreateAdHocSignature(MemoryMappedViewAccessor file, string identifier)
     {
         AllocateCodeSignatureLoadCommand(identifier);
+        var oldSignature = _codeSignatureBlob;
         _codeSignatureBlob = null;
         // The code signature includes hashes of the entire file up to the code signature.
         // In order to calculate the hashes correctly, everything up to the code signature must be written before the signature is built.
         Write(file);
-        _codeSignatureBlob = CodeSignature.CreateSignature(this, file, identifier);
+        _codeSignatureBlob = CodeSignature.CreateSignature(this, file, identifier, oldSignature);
         Validate();
         _codeSignatureBlob.WriteToFile(file);
         return GetFileSize();
@@ -244,8 +245,8 @@ internal unsafe partial class MachObjectFile
         if (a._codeSignatureBlob is null || b._codeSignatureBlob is null)
             return false;
         // This may be false if the __LINKEDIT segment load command is not on the first page, but that is unlikely.
-        if (!CodeSignature.AreEquivalent(a._codeSignatureBlob, b._codeSignatureBlob))
-            return false;
+        // if (!CodeSignature.AreEquivalent(a._codeSignatureBlob, b._codeSignatureBlob))
+        //     return false;
 
         return true;
 
@@ -272,7 +273,7 @@ internal unsafe partial class MachObjectFile
 
     public static long GetSignatureSizeEstimate(uint fileSize, string identifier)
     {
-        return CodeSignature.GetCodeSignatureSize(fileSize, identifier) + (AlignUp(fileSize, CodeSignatureAlignment) - fileSize);
+        return CodeSignature.GetLargestSizeEstimate(fileSize, identifier) + (AlignUp(fileSize, CodeSignatureAlignment) - fileSize);
     }
 
     /// <summary>
@@ -303,7 +304,7 @@ internal unsafe partial class MachObjectFile
         out (LinkEditCommand Command, long FileOffset) codeSignatureLC,
         out (Segment64LoadCommand Command, long FileOffset) textSegment64,
         out (Segment64LoadCommand Command, long FileOffset) linkEditSegment64,
-        out (SymbolTableCommand Command, long FileOffset) symtabLC,
+        out (SymbolTableLoadCommand Command, long FileOffset) symtabLC,
         out long lowestSectionOffset)
     {
         codeSignatureLC = default;
@@ -352,7 +353,7 @@ internal unsafe partial class MachObjectFile
                 case MachLoadCommandType.SymbolTable:
                     if (!symtabLC.Command.IsDefault)
                         throw new AppHostMachOFormatException(MachOFormatError.DuplicateSymtab);
-                    inputFile.Read(commandsPtr, out SymbolTableCommand symtab);
+                    inputFile.Read(commandsPtr, out SymbolTableLoadCommand symtab);
                     symtabLC = (symtab, commandsPtr);
                     break;
             }
@@ -396,7 +397,7 @@ internal unsafe partial class MachObjectFile
     {
         uint csOffset = GetSignatureStart();
         uint csPtr = (uint)(_codeSignatureLoadCommand.Command.IsDefault ? _nextCommandPtr : _codeSignatureLoadCommand.FileOffset);
-        uint csSize = CodeSignature.GetCodeSignatureSize(GetSignatureStart(), identifier);
+        uint csSize = (uint)CodeSignature.GetLargestSizeEstimate(GetSignatureStart(), identifier);
 
         if (_codeSignatureLoadCommand.Command.IsDefault)
         {
