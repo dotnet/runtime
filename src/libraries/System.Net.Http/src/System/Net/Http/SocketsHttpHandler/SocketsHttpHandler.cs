@@ -620,15 +620,25 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
-
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            return handler.SendAsync(request, cancellationToken);
+            async Task<HttpResponseMessage> CreateHandlerAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+
+                HttpMessageHandlerStage handler = SetupHandlerChain();
+
+                return await handler.SendAsync(request, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return _handler is { } handler
+                ? handler.SendAsync(request, cancellationToken)
+                : CreateHandlerAndSendAsync(request, cancellationToken);
         }
 
         private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)

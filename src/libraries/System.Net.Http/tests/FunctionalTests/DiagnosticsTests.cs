@@ -1120,9 +1120,8 @@ namespace System.Net.Http.Functional.Tests
                         Exception exception = null;
                         if (bool.Parse(testAsync))
                         {
-                            Task sendTask = client.SendAsync(request);
-                            Assert.True(sendTask.IsFaulted);
-                            exception = sendTask.Exception.InnerException;
+                            exception = await Record.ExceptionAsync(
+                                () => client.SendAsync(request));
                         }
                         else
                         {
