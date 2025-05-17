@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -19,9 +19,6 @@ namespace System.ComponentModel
         /// This is the default value.
         /// </summary>
         private object? _value;
-
-        // Delegate ad hoc created 'TypeDescriptor.ConvertFromInvariantString' reflection object cache
-        private static object? s_convertFromInvariantString;
 
         [FeatureSwitchDefinition("System.ComponentModel.DefaultValueAttribute.IsSupported")]
         [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
@@ -82,20 +79,9 @@ namespace System.ComponentModel
                 {
                     conversionResult = null;
 
-                    // lazy init reflection objects
-                    if (s_convertFromInvariantString == null)
-                    {
-                        Type? typeDescriptorType = Type.GetType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter", throwOnError: false);
-                        MethodInfo? mi = typeDescriptorType?.GetMethod("ConvertFromInvariantString", BindingFlags.NonPublic | BindingFlags.Static);
-                        s_convertFromInvariantString = mi == null ? new object() : mi.CreateDelegate<Func<Type, string, object>>();
-                    }
-
-                    if (s_convertFromInvariantString is not Func<Type, string?, object> convertFromInvariantString)
-                        return false;
-
                     try
                     {
-                        conversionResult = convertFromInvariantString(typeToConvert, stringValue);
+                        conversionResult = ConvertFromInvariantString(null, typeToConvert, stringValue!);
                     }
                     catch
                     {
@@ -103,6 +89,14 @@ namespace System.ComponentModel
                     }
 
                     return true;
+
+                    [RequiresUnreferencedCode("DefaultValueAttribute usage of TypeConverter is not compatible with trimming.")]
+                    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "ConvertFromInvariantString")]
+                    static extern object ConvertFromInvariantString(
+                        [UnsafeAccessorType("System.ComponentModel.TypeDescriptor, System.ComponentModel.TypeConverter")] object? _,
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+                        string stringValue
+                    );
                 }
             }
             catch

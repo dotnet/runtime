@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -3044,6 +3045,10 @@ namespace System.ComponentModel
         // string method is the failure is silent during type load making diagnosing the issue difficult.
         private sealed class ComNativeDescriptorProxy : TypeDescriptionProvider
         {
+            [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+            [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
+            private static extern object CreateComNativeDescriptor();
+
             private readonly TypeDescriptionProvider _comNativeDescriptor;
 
             public ComNativeDescriptorProxy()
@@ -3053,8 +3058,7 @@ namespace System.ComponentModel
                     throw new NotSupportedException(SR.ComObjectDescriptorsNotSupported);
                 }
 
-                Type realComNativeDescriptor = Type.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms", throwOnError: true)!;
-                _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor)!;
+                _comNativeDescriptor = (TypeDescriptionProvider)CreateComNativeDescriptor();
             }
 
             [return: NotNullIfNotNull(nameof(instance))]

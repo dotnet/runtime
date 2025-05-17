@@ -1693,11 +1693,16 @@ namespace System.Net
                 {
                     // This is legacy feature and we don't have public API at the moment.
                     // So we want to process it only if explicitly set.
-                    var settings = typeof(SocketsHttpHandler).GetField("_settings", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(handler);
-                    Debug.Assert(settings != null);
-                    FieldInfo? fi = Type.GetType("System.Net.Http.HttpConnectionSettings, System.Net.Http")?.GetField("_impersonationLevel", BindingFlags.NonPublic | BindingFlags.Instance);
-                    Debug.Assert(fi != null);
-                    fi.SetValue(settings, request.ImpersonationLevel);
+                    GetImpersonationLevel(GetSettings(handler)) = request.ImpersonationLevel;
+
+                    const string HttpConnectionSettingsTypeName = "System.Net.Http.HttpConnectionSettings, System.Net.Http";
+
+                    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Settings")]
+                    [return: UnsafeAccessorType(HttpConnectionSettingsTypeName)]
+                    static extern object GetSettings(SocketsHttpHandler handler);
+
+                    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_impersonationLevel")]
+                    static extern ref TokenImpersonationLevel GetImpersonationLevel([UnsafeAccessorType(HttpConnectionSettingsTypeName)] object settings);
                 }
 
                 if (parameters.CookieContainer != null)
