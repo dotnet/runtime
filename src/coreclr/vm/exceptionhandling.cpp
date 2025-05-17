@@ -1558,7 +1558,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 void FirstChanceExceptionNotification()
 {
 #ifdef TARGET_WINDOWS
-    // Thow an SEH exception and immediately catch it. This is used to notify debuggers and other tools
+    // Throw an SEH exception and immediately catch it. This is used to notify debuggers and other tools
     // that an exception has been thrown.
     if (minipal_is_native_debugger_present())
     {
