@@ -13,4 +13,8 @@
              Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+
 </Project>
