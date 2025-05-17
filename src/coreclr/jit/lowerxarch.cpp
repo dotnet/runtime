@@ -5658,14 +5658,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    if (!op2->OperIsConst())
-    {
-        comp->getSIMDInitTempVarNum(simdType);
-
-        // We will specially handle WithElement in codegen when op2 isn't a constant
-        ContainCheckHWIntrinsic(node);
-        return node->gtNext;
-    }
+    assert(op2->OperIsConst());
 
     ssize_t count     = simdSize / genTypeSize(simdBaseType);
     ssize_t imm8      = op2->AsIntCon()->IconValue();
