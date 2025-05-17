@@ -6,6 +6,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 public class Async2FibonacceWithYields
@@ -34,7 +35,7 @@ public class Async2FibonacceWithYields
         public MyInt(int i) => this.i = i;
     }
 
-    public static async2 Task AsyncEntry()
+    public static async Task AsyncEntry()
     {
         for (int i = 0; i < iterations; i++)
         {
@@ -46,7 +47,7 @@ public class Async2FibonacceWithYields
         }
     }
 
-    static async2 Task<MyInt> Fib(MyInt n)
+    static async Task<MyInt> Fib(MyInt n)
     {
         int i = n.i;
         if (i <= 1)

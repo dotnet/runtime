@@ -7,5 +7,9 @@
     <RunAnalyzers>true</RunAnalyzers>
     <NoWarn>$(NoWarn);xUnit1013</NoWarn>
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)RuntimeAsyncMethodGenerationAttribute.cs" />
+  </ItemGroup>
 </Project>
