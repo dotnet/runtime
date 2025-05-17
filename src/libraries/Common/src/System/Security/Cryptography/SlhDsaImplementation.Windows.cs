@@ -23,6 +23,12 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             throw new PlatformNotSupportedException();
 
+        protected override void SignPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, Span<byte> destination) =>
+            throw new PlatformNotSupportedException();
+
+        protected override bool VerifyPreHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> context, ReadOnlySpan<char> hashAlgorithmOid, ReadOnlySpan<byte> signature) =>
+            throw new PlatformNotSupportedException();
+
         protected override void ExportSlhDsaPublicKeyCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 

@@ -99,6 +99,9 @@
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>
+  <data name="Argument_HashImprecise" xml:space="preserve">
+    <value>Hash must be exactly {0} bytes.</value>
+  </data>
   <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
     <value>The method cannot be called with an invalid or closed SafeHandle.</value>
   </data>
@@ -390,6 +393,9 @@
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
+  <data name="Cryptography_HashLengthMismatch" xml:space="preserve">
+    <value>The specified hash is not a valid size for this hash algorithm.</value>
+  </data>
   <data name="Cryptography_HashNotYetFinalized" xml:space="preserve">
     <value>Hash must be finalized before the hash value is retrieved.</value>
   </data>
@@ -482,6 +488,9 @@
   </data>
   <data name="Cryptography_InvalidOID" xml:space="preserve">
     <value>Object identifier (OID) is unknown.</value>
+  </data>
+  <data name="Cryptography_InvalidOidFormat" xml:space="preserve">
+    <value>Invalid OID format.</value>
   </data>
   <data name="Cryptography_InvalidOperation" xml:space="preserve">
     <value>This operation is not supported for this class.</value>
