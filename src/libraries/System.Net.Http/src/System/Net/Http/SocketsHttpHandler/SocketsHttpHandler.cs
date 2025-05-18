@@ -20,6 +20,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandlerStage? _handler;
+        private Task<HttpMessageHandlerStage>? _handlerChainSetupTask;
         private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
 
@@ -626,11 +627,17 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
+            // SetupHandlerChain may block for a few seconds in some environments.
+            // (See https://github.com/dotnet/runtime/issues/115301. )
+            // The setup procedure is being enqueued to thread pool to prevent the caller from blocking
             async Task<HttpResponseMessage> CreateHandlerAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+                if (Volatile.Read(ref _handlerChainSetupTask) is null)
+                {
+                    _handlerChainSetupTask = Task.Run(SetupHandlerChain);
+                }
 
-                HttpMessageHandlerStage handler = SetupHandlerChain();
+                HttpMessageHandlerStage handler = await _handlerChainSetupTask!.ConfigureAwait(false);
 
                 return await handler.SendAsync(request, cancellationToken)
                     .ConfigureAwait(false);
