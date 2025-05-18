@@ -599,13 +599,13 @@ namespace System.Net.Http
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
-
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 throw error;
             }
+
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             return handler.Send(request, cancellationToken);
         }
