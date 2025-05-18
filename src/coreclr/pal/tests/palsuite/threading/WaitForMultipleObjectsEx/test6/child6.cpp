@@ -20,6 +20,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
     BOOL bNamedEvent = 0;
     BOOL bMutex = 0;
     BOOL bMutexAndNamedEvent = 0;
+    BOOL bSemaphore = 0;
     DWORD dwRet;
     HANDLE hNamedEvent;
     HANDLE hMutex;
@@ -27,9 +28,12 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
     WCHAR wszTestName[256] = { 0 };
     char szEventName[128] = { 0 };
     char szMutexName[128] = { 0 };
+    char szSemName[128] = { 0 };
     WCHAR wszEventName[128];
     WCHAR wszMutexName[128];
+    WCHAR wszSemName[128];
     DWORD iExitCode = 0;
+    HANDLE hSemaphore;
 
     if(0 != (PAL_Initialize(argc, argv)))
     {
@@ -51,6 +55,10 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
         else if (0 == strcmp(argv[i],"-mutex_and_named_event"))
         {
             bMutexAndNamedEvent = 1;
+        }
+        else if (0 == strcmp(argv[i],"-semaphore"))
+        {
+            bSemaphore = 1;
         }
         else if (0 == strcmp(argv[i],"-exitcode") && i < argc-1 )
         {
@@ -75,16 +83,19 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
     szEventName[127] = 0;
     sprintf_s(szMutexName, 128, "%s_Mutex", szTestName);
     szMutexName[127] = 0;
+    sprintf_s(szSemName, 128, "%s_Semaphore", szTestName);
+    szSemName[127] = 0;
 
     iRet = MultiByteToWideChar(CP_ACP, 0, szEventName, strlen(szEventName)+1, wszEventName, 128);
     iRet &= MultiByteToWideChar(CP_ACP, 0, szMutexName, strlen(szMutexName)+1, wszMutexName, 128);
+    iRet &= MultiByteToWideChar(CP_ACP, 0, szSemName, strlen(szSemName)+1, wszSemName, 128);
     if (0 == iRet)
     {
         Fail("[child] Failed to convert strings\n");
     }
 
-    Trace("[child] TestName=%s Event: %S, Mutex: %S\n",
-          szTestName, wszEventName, wszMutexName);
+    Trace("[child] TestName=%s Event: %S, Mutex: %S, Semaphore = %S\n",
+          szTestName, wszEventName, wszMutexName, wszSemName);
 
     hNamedEvent = OpenEventW(0, FALSE, wszEventName);
     if (NULL == hNamedEvent)
@@ -96,6 +107,12 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
     if (NULL == hMutex)
     {
         Fail("[child] OpenMutexW failed [GetLastError()=%u]\n",
+             GetLastError());
+    }
+    hSemaphore = CreateSemaphoreExW(NULL, 0, 256, wszSemName, 0, 0);
+    if (NULL == hSemaphore)
+    {
+        Fail("[child] CreateSemaphore failed [GetLastError()=%u]\n",
              GetLastError());
     }
 
@@ -145,6 +162,31 @@ PALTEST(threading_WaitForMultipleObjectsEx_test6_paltest_waitformultipleobjectse
         {
             Fail("[child] SetEvent failed [GetLastError()=%u]\n",
                  GetLastError());
+        }
+    }
+    else if (bSemaphore)
+    {
+        LONG lPrevCount = 42;
+
+
+        Trace("[child] Going to wait on event %s\n", szEventName);
+        dwRet = WaitForSingleObject(hNamedEvent, INFINITE);
+        if (WAIT_FAILED == dwRet)
+        {
+            Fail("[child] WaitForMultipleObjects failed [GetLastError()=%u]\n",
+                 GetLastError());
+        }
+
+        Trace("[child] Releasing semaphore %s\n", szSemName);
+        bRet = ReleaseSemaphore(hSemaphore, 10, &lPrevCount);
+        if (FALSE == bRet)
+        {
+            Fail("ReleaseMutex failed [GetLastError()=%u]\n",
+                 GetLastError());
+        }
+        if (0 != lPrevCount)
+        {
+            Fail("Previous count from semaphore=%d, expected 0\n", lPrevCount);
         }
     }
     else if (bNamedEvent)

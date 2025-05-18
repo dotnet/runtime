@@ -4,6 +4,8 @@ To compile:
 
 PAL,Composite,palsuite\composite\object_management\mutex\nonshared,mutex=main.c mutex.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
 PAL,Composite,palsuite\composite\object_management\mutex\shared,mutex=main.c mutex.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
+PAL,Composite,palsuite\composite\object_management\semaphore\nonshared,semaphore=main.c semaphore.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
+PAL,Composite,palsuite\composite\object_management\semaphore\shared,semaphore=main.c semaphore.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
 PAL,Composite,palsuite\composite\object_management\event\nonshared,event=main.c event.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
 PAL,Composite,palsuite\composite\object_management\event\shared,event=main.c event.c,<SUPPORTEXE>,<TESTLANGCPP>,<COMPILEONLY>
 
@@ -17,8 +19,8 @@ main  [PROCESS_COUNT]  [THREAD_COUNT] [REPEAT_COUNT]
 
 
 Output:
-The performance numbers will be in <process_logical_id>_[event|mutex].txt 
-(will be at palsuite\composite\object_management\[mutex|event]\[shared|nonshared]\obj[r|c|d] directory if u use rrunmod.pl)
+The performance numbers will be in <process_logical_id>_[event|semaphore|mutex].txt 
+(will be at palsuite\composite\object_management\[mutex|event|semaphore]\[shared|nonshared]\obj[r|c|d] directory if u use rrunmod.pl)
 
 So if process_count is 3, you will have files 0_mutex.txt, 1_mutex.txt and so on…
 

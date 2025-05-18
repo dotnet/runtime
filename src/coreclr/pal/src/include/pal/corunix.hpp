@@ -161,6 +161,7 @@ namespace CorUnix
         otiManualResetEvent,
         otiMutex,
         otiNamedMutex,
+        otiSemaphore,
         otiFile,
         otiFileMapping,
         otiSocket,
