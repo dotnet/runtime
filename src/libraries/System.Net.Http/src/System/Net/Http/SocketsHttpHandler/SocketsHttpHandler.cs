@@ -632,15 +632,9 @@ namespace System.Net.Http
             // The setup procedure is enqueued to thread pool to prevent the caller from blocking.
             async Task<HttpResponseMessage> CreateHandlerAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                if (Volatile.Read(ref _handlerChainSetupTask) is null)
-                {
-                    _handlerChainSetupTask = Task.Run(SetupHandlerChain);
-                }
-
-                HttpMessageHandlerStage handler = await _handlerChainSetupTask!.ConfigureAwait(false);
-
-                return await handler.SendAsync(request, cancellationToken)
-                    .ConfigureAwait(false);
+                _handlerChainSetupTask ??= Task.Run(SetupHandlerChain);
+                HttpMessageHandlerStage handler = await _handlerChainSetupTask.ConfigureAwait(false);
+                return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             return _handler is { } handler
