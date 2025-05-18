@@ -587,7 +587,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Remove unnecessary atomic nodes, and make appropriate descendents of the atomic node themselves atomic.
+        /// Remove unnecessary atomic nodes, and make appropriate descendants of the atomic node themselves atomic.
         /// </summary>
         /// <remarks>
         /// e.g. (?>(?>(?>a*))) => (?>a*)
