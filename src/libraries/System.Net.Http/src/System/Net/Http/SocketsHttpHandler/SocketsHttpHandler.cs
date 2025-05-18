@@ -628,8 +628,8 @@ namespace System.Net.Http
             }
 
             // SetupHandlerChain may block for a few seconds in some environments.
-            // (See https://github.com/dotnet/runtime/issues/115301. )
-            // The setup procedure is being enqueued to thread pool to prevent the caller from blocking
+            // E.g. during the first access of HttpClient.DefaultProxy - https://github.com/dotnet/runtime/issues/115301.
+            // The setup procedure is enqueued to thread pool to prevent the caller from blocking.
             async Task<HttpResponseMessage> CreateHandlerAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 if (Volatile.Read(ref _handlerChainSetupTask) is null)
