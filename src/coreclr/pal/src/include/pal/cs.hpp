@@ -37,12 +37,6 @@ namespace CorUnix
         CPalThread *pThread,
         CRITICAL_SECTION *pcs
         );
-
-#ifdef _DEBUG
-    void PALCS_ReportStatisticalData(void);
-    void PALCS_DumpCSList();
-#endif // _DEBUG
-
 }
 
 #endif // _PAL_CS_HPP
