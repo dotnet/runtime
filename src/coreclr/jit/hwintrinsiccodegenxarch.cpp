@@ -1974,6 +1974,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector512_WithElement:
         {
             // Optimize the case where op2 is not a constant.
+
+            assert(!op1->isContained());
             assert(!op2->OperIsConst());
 
             // We don't have an instruction to implement this intrinsic if the index is not a constant.
