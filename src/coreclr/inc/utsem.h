@@ -41,7 +41,7 @@ public:
     HRESULT LockWrite();    // Lock the object for writing
     void UnlockRead();      // Unlock the object for reading
     void UnlockWrite();     // Unlock the object for writing
-    
+
 #if defined(_DEBUG) && defined(HOST_WINDOWS)
     BOOL Debug_IsLockedForRead();
     BOOL Debug_IsLockedForWrite();
