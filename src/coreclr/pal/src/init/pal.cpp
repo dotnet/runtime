@@ -111,7 +111,7 @@ BOOL g_useDefaultBaseAddr = FALSE;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
-static PCRITICAL_SECTION init_critsec = NULL;
+static CRITICAL_SECTION* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 

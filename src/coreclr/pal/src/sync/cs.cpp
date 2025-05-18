@@ -199,7 +199,7 @@ Function:
 
 See MSDN doc.
 --*/
-void InitializeCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
+void InitializeCriticalSection(CRITICAL_SECTION* lpCriticalSection)
 {
     PERF_ENTRY(InitializeCriticalSection);
     ENTRY("InitializeCriticalSection(lpCriticalSection=%p)\n",
@@ -218,7 +218,7 @@ Function:
 
 See MSDN doc.
 --*/
-BOOL InitializeCriticalSectionAndSpinCount(LPCRITICAL_SECTION lpCriticalSection,
+BOOL InitializeCriticalSectionAndSpinCount(CRITICAL_SECTION* lpCriticalSection,
                                            DWORD dwSpinCount)
 {
     BOOL bRet = TRUE;
@@ -241,7 +241,7 @@ Function:
 
 See MSDN doc.
 --*/
-void DeleteCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
+void DeleteCriticalSection(CRITICAL_SECTION* lpCriticalSection)
 {
     PERF_ENTRY(DeleteCriticalSection);
     ENTRY("DeleteCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
@@ -258,7 +258,7 @@ Function:
 
 See MSDN doc.
 --*/
-void EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
+void EnterCriticalSection(CRITICAL_SECTION* lpCriticalSection)
 {
     PERF_ENTRY(EnterCriticalSection);
     ENTRY("EnterCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
@@ -277,7 +277,7 @@ Function:
 
 See MSDN doc.
 --*/
-VOID LeaveCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
+VOID LeaveCriticalSection(CRITICAL_SECTION* lpCriticalSection)
 {
     PERF_ENTRY(LeaveCriticalSection);
     ENTRY("LeaveCriticalSection(lpCriticalSection=%p)\n", lpCriticalSection);
@@ -309,7 +309,7 @@ Function:
 Deletes a critical section
 --*/
 VOID InternalDeleteCriticalSection(
-    PCRITICAL_SECTION pCriticalSection)
+    CRITICAL_SECTION* pCriticalSection)
 {
     PAL_CRITICAL_SECTION * pPalCriticalSection =
         reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
@@ -523,7 +523,7 @@ namespace CorUnix
     suspension as long as it holds the CS
     --*/
     void InternalInitializeCriticalSectionAndSpinCount(
-        PCRITICAL_SECTION pCriticalSection,
+        CRITICAL_SECTION* pCriticalSection,
         DWORD dwSpinCount,
         bool fInternal)
     {
@@ -618,7 +618,7 @@ namespace CorUnix
     --*/
     void InternalEnterCriticalSection(
         CPalThread * pThread,
-        PCRITICAL_SECTION pCriticalSection)
+        CRITICAL_SECTION* pCriticalSection)
     {
         PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
@@ -774,7 +774,7 @@ namespace CorUnix
     Leaves a currently owned CS
     --*/
     void InternalLeaveCriticalSection(CPalThread * pThread,
-                                      PCRITICAL_SECTION pCriticalSection)
+                                      CRITICAL_SECTION* pCriticalSection)
     {
         PAL_CRITICAL_SECTION * pPalCriticalSection =
             reinterpret_cast<PAL_CRITICAL_SECTION*>(pCriticalSection);
@@ -1345,11 +1345,11 @@ namespace CorUnix
 #ifdef MUTEX_BASED_CSS
     void InternalEnterCriticalSection(
         CPalThread * pThread,
-        PCRITICAL_SECTION pCriticalSection)
+        CRITICAL_SECTION* pCriticalSection)
 #else // MUTEX_BASED_CSS
     void MTX_InternalEnterCriticalSection(
         CPalThread * pThread,
-        PCRITICAL_SECTION pCriticalSection)
+        CRITICAL_SECTION* pCriticalSection)
 #endif // MUTEX_BASED_CSS
 
     {
@@ -1387,11 +1387,11 @@ namespace CorUnix
 #ifdef MUTEX_BASED_CSS
     void InternalLeaveCriticalSection(
         CPalThread * pThread,
-        PCRITICAL_SECTION pCriticalSection)
+        CRITICAL_SECTION* pCriticalSection)
 #else // MUTEX_BASED_CSS
     void MTX_InternalLeaveCriticalSection(
         CPalThread * pThread,
-        PCRITICAL_SECTION pCriticalSection)
+        CRITICAL_SECTION* pCriticalSection)
 #endif // MUTEX_BASED_CSS
     {
         PAL_CRITICAL_SECTION * pPalCriticalSection =

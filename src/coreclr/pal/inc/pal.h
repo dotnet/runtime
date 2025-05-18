@@ -2613,12 +2613,12 @@ typedef struct _CRITICAL_SECTION {
         BYTE rgNativeDataStorage[PAL_CS_NATIVE_DATA_SIZE];
         PVOID pvAlign; // make sure the storage is machine-pointer-size aligned
     } csnds;
-} CRITICAL_SECTION, *PCRITICAL_SECTION, *LPCRITICAL_SECTION;
+} CRITICAL_SECTION;
 
-PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT VOID PALAPI InitializeCriticalSection(OUT LPCRITICAL_SECTION lpCriticalSection);
-PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT LPCRITICAL_SECTION lpCriticalSection);
+PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT CRITICAL_SECTION* lpCriticalSection);
+PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT CRITICAL_SECTION* lpCriticalSection);
+PALIMPORT VOID PALAPI InitializeCriticalSection(OUT CRITICAL_SECTION* lpCriticalSection);
+PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT CRITICAL_SECTION* lpCriticalSection);
 
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02

@@ -403,8 +403,6 @@ int  __cdecl _mtinitlocks(void);    /* mlock.c */
 void __cdecl _mtdeletelocks(void);  /* mlock.c */
 int  __cdecl _mtinitlocknum(int);   /* mlock.c */
 
-/* Wrapper for InitializeCriticalSection API, with default spin count */
-int __cdecl __crtInitCritSecAndSpinCount(PCRITICAL_SECTION, DWORD);
 #define _CRT_SPINCOUNT  4000
 
 /*

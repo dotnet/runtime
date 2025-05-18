@@ -24,7 +24,7 @@ namespace CorUnix
     void CriticalSectionSubSysInitialize(void);
 
     void InternalInitializeCriticalSectionAndSpinCount(
-        PCRITICAL_SECTION pCriticalSection,
+        CRITICAL_SECTION* pCriticalSection,
         DWORD dwSpinCount,
         bool fInternal);
 
