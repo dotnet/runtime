@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.FileProviders
             foreach (IFileProvider fileProvider in _fileProviders)
             {
                 IChangeToken changeToken = fileProvider.Watch(pattern);
-                if (changeToken is not null && changeToken is not NullChangeToken)
+                if (changeToken is not (null or NullChangeToken))
                 {
                     changeTokens.Add(changeToken);
                 }
