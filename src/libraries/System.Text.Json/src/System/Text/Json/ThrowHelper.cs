@@ -209,13 +209,15 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
-        {
-            throw GetJsonReaderException(ref json, resource, nextByte, bytes);
-        }
+        public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource)
+            => throw GetJsonReaderException(ref json, resource, 0, default);
+
+        [DoesNotReturn]
+        public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte)
+            => throw GetJsonReaderException(ref json, resource, nextByte, default);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static JsonException GetJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
+        public static JsonException GetJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, scoped ReadOnlySpan<byte> bytes)
         {
             string message = GetResourceString(ref json, resource, nextByte, JsonHelpers.Utf8GetString(bytes));
 
@@ -442,7 +444,9 @@ namespace System.Text.Json
             throw new FormatException { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
-        public static void ThrowFormatException(NumericType numericType)
+        public static void ThrowFormatException(NumericType numericType) => throw GetFormatException(numericType);
+
+        private static FormatException GetFormatException(NumericType numericType)
         {
             string message = "";
 
@@ -495,11 +499,13 @@ namespace System.Text.Json
                     break;
             }
 
-            throw new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
+            return new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
         [DoesNotReturn]
-        public static void ThrowFormatException(DataType dataType)
+        public static void ThrowFormatException(DataType dataType) => throw GetFormatException(dataType);
+
+        private static FormatException GetFormatException(DataType dataType)
         {
             string message = "";
 
@@ -523,7 +529,7 @@ namespace System.Text.Json
                     break;
             }
 
-            throw new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
+            return new FormatException(message) { Source = ExceptionSourceValueToRethrowAsJsonException };
         }
 
         [DoesNotReturn]
