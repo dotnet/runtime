@@ -83,7 +83,7 @@ class SpanningTreeVisitor; // defined in fgprofile.cpp
 class CSE_DataFlow;        // defined in optcse.cpp
 struct CSEdsc;             // defined in optcse.h
 class CSE_HeuristicCommon; // defined in optcse.h
-class IntBoolOpDsc;         // defined in optimizer.cpp
+class IntBoolOpDsc;        // defined in optimizer.cpp
 class OptBoolsDsc;         // defined in optimizer.cpp
 struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
 class ProfileSynthesis;    // defined in profilesynthesis.h
