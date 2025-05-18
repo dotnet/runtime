@@ -177,6 +177,7 @@ export type LoaderHelpers = {
     // from wasm-feature-detect npm package
     exceptions: () => Promise<boolean>,
     simd: () => Promise<boolean>,
+    relaxedSimd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     emscriptenBuildOptions: EmscriptenBuildOptions,
@@ -230,6 +231,7 @@ export type RuntimeHelpers = {
 
     featureWasmEh: boolean,
     featureWasmSimd: boolean,
+    featureWasmRelaxedSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,

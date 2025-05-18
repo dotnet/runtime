@@ -129,6 +129,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </AddWasmStaticWebAssetsDependsOn>
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
+      GenerateBuildRuntimeConfigurationFiles;
       ResolveWasmOutputs;
     </GenerateBuildWasmBootJsonDependsOn>
   </PropertyGroup>
@@ -405,6 +406,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       Extensions="@(WasmBootConfigExtension)"
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(_WasmProfilers)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
@@ -812,6 +814,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(_WasmProfilers)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
