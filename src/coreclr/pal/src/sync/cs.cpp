@@ -444,39 +444,6 @@ VOID InternalDeleteCriticalSection(
     pPalCriticalSection->cisInitState = PalCsNotInitialized;
 }
 
-// The following PALCEnterCriticalSection and PALCLeaveCriticalSection
-// functions are intended to provide CorUnix's InternalEnterCriticalSection
-// and InternalLeaveCriticalSection functionalities to legacy C code,
-// which has no knowledge of CPalThread, classes and namespaces.
-
-/*++
-Function:
-  PALCEnterCriticalSection
-
-Provides CorUnix's InternalEnterCriticalSection functionality to legacy C code,
-which has no knowledge of CPalThread, classes and namespaces.
---*/
-VOID PALCEnterCriticalSection(CRITICAL_SECTION * pcs)
-{
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
-    CorUnix::InternalEnterCriticalSection(pThread, pcs);
-}
-
-/*++
-Function:
-  PALCLeaveCriticalSection
-
-Provides CorUnix's InternalLeaveCriticalSection functionality to legacy C code,
-which has no knowledge of CPalThread, classes and namespaces.
---*/
-VOID PALCLeaveCriticalSection(CRITICAL_SECTION * pcs)
-{
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? GetCurrentPalThread() : NULL);
-    CorUnix::InternalLeaveCriticalSection(pThread, pcs);
-}
-
 namespace CorUnix
 {
     static PalCsWaiterReturnState PALCS_WaitOnCS(

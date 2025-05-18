@@ -28,14 +28,6 @@ extern "C"
 VOID InternalInitializeCriticalSection(CRITICAL_SECTION *pcs);
 VOID InternalDeleteCriticalSection(CRITICAL_SECTION *pcs);
 
-/* The following PALCEnterCriticalSection and PALCLeaveCriticalSection
-   functions are intended to provide CorUnix's InternalEnterCriticalSection
-   and InternalLeaveCriticalSection functionalities to legacy C code,
-   which has no knowledge of CPalThread, classes and namespaces.
-*/
-VOID PALCEnterCriticalSection(CRITICAL_SECTION *pcs);
-VOID PALCLeaveCriticalSection(CRITICAL_SECTION *pcs);
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
