@@ -94,6 +94,9 @@ namespace Microsoft.Interop
             if (!OptionsAreValid(symbol, syntax, interfaceAttributeData, baseAttributeData, out DiagnosticInfo? optionsDiagnostic))
                 return DiagnosticOrInterfaceInfo.From(optionsDiagnostic);
 
+            if (!ExceptionToUnmanagedMarshallerIsValid(syntax, interfaceAttributeData, out DiagnosticInfo? exceptionToUnmanagedMarshallerDiagnostic))
+                return DiagnosticOrInterfaceInfo.From(exceptionToUnmanagedMarshallerDiagnostic);
+
             InterfaceInfo info = (
                 new ComInterfaceInfo(
                     ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol),
@@ -282,6 +285,34 @@ namespace Microsoft.Interop
                 }
             }
             optionsDiagnostic = null;
+            return true;
+        }
+
+        private static bool ExceptionToUnmanagedMarshallerIsValid(
+            InterfaceDeclarationSyntax syntax,
+            GeneratedComInterfaceCompilationData attrSymbolInfo,
+            [NotNullWhen(false)] out DiagnosticInfo? exceptionToUnmanagedMarshallerDiagnostic)
+        {
+            if (attrSymbolInfo.ExceptionToUnmanagedMarshaller is INamedTypeSymbol exceptionToUnmanagedMarshallerType)
+            {
+                if (!exceptionToUnmanagedMarshallerType.IsAccessibleFromFileScopedClass(out var details))
+                {
+                    exceptionToUnmanagedMarshallerDiagnostic = DiagnosticInfo.Create(
+                        GeneratorDiagnostics.ExceptionToUnmanagedMarshallerNotAccessibleByGeneratedCode,
+                        syntax.Identifier.GetLocation(),
+                        exceptionToUnmanagedMarshallerType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace(TypeNames.GlobalAlias, ""),
+                        details);
+                    return false;
+                }
+            }
+            else if (attrSymbolInfo.ExceptionToUnmanagedMarshaller is not null)
+            {
+                exceptionToUnmanagedMarshallerDiagnostic = DiagnosticInfo.Create(
+                    GeneratorDiagnostics.InvalidExceptionToUnmanagedMarshallerType,
+                    syntax.Identifier.GetLocation());
+                return false;
+            }
+            exceptionToUnmanagedMarshallerDiagnostic = null;
             return true;
         }
 

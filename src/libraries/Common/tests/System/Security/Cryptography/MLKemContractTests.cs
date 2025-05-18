@@ -119,8 +119,8 @@ namespace System.Security.Cryptography.Tests
             {
                 OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer);
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer);
+                    AssertExtensions.Same(ciphertext, ciphertextBuffer);
+                    AssertExtensions.Same(sharedSecret, sharedSecretBuffer);
                 }
             };
 
@@ -138,136 +138,12 @@ namespace System.Security.Cryptography.Tests
             {
                 OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer.Span);
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer.Span);
+                    AssertExtensions.Same(ciphertext, ciphertextBuffer.Span);
+                    AssertExtensions.Same(sharedSecret, sharedSecretBuffer.Span);
                 }
             };
 
             kem.Encapsulate(ciphertextBuffer.Span, sharedSecretBuffer.Span);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Written_DistinctBufferSameLength_Works(MLKemAlgorithm algorithm)
-        {
-            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
-            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes];
-            using MLKemContract kem = new(algorithm)
-            {
-                OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
-                {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer);
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer);
-                }
-            };
-
-            kem.Encapsulate(
-                ciphertextBuffer,
-                sharedSecretBuffer,
-                out int ciphertextBytesWritten,
-                out int sharedSecretBytesWritten);
-
-            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextBytesWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretBytesWritten);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Written_DistinctBufferOversized_Works(MLKemAlgorithm algorithm)
-        {
-            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes + 42];
-            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes + 42];
-            using MLKemContract kem = new(algorithm)
-            {
-                OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
-                {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer.AsSpan(0, algorithm.CiphertextSizeInBytes));
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer.AsSpan(0, algorithm.SharedSecretSizeInBytes));
-                }
-            };
-
-            kem.Encapsulate(
-                ciphertextBuffer,
-                sharedSecretBuffer,
-                out int ciphertextBytesWritten,
-                out int sharedSecretBytesWritten);
-
-            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextBytesWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretBytesWritten);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Written_UndersizedCiphertextBuffer(MLKemAlgorithm algorithm)
-        {
-            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes - 1];
-            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes];
-            using MLKemContract kem = new(algorithm);
-
-            Assert.Throws<ArgumentException>("ciphertext", () => kem.Encapsulate(
-                ciphertextBuffer,
-                sharedSecretBuffer,
-                out _,
-                out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Written_UndersizedSharedSecretBuffer(MLKemAlgorithm algorithm)
-        {
-            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
-            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes - 1];
-            using MLKemContract kem = new(algorithm);
-
-            Assert.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(
-                ciphertextBuffer,
-                sharedSecretBuffer,
-                out _,
-                out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Written_Overlaps_WhenTrimmed_Works(MLKemAlgorithm algorithm)
-        {
-            // sharedSecret does overlap ciphertext in this test. However, the part that overlaps will never
-            // be written to because it is trimmed to the exact size, which ends up with the buffers beside each
-            // other, which should work.
-            byte[] buffer = new byte[algorithm.SharedSecretSizeInBytes + algorithm.CiphertextSizeInBytes + 10];
-            Memory<byte> sharedSecretBuffer = buffer.AsMemory(0, algorithm.SharedSecretSizeInBytes + 10);
-            Memory<byte> ciphertextBuffer = buffer.AsMemory(algorithm.SharedSecretSizeInBytes);
-            AssertExtensions.TrueExpression(sharedSecretBuffer.Span.Overlaps(ciphertextBuffer.Span));
-
-            using MLKemContract kem = new(algorithm)
-            {
-                OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
-                {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer.Span.Slice(0, algorithm.CiphertextSizeInBytes));
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer.Span.Slice(0, algorithm.SharedSecretSizeInBytes));
-                    AssertExtensions.FalseExpression(ciphertext.Overlaps(sharedSecret));
-                }
-            };
-
-            kem.Encapsulate(
-                ciphertextBuffer.Span,
-                sharedSecretBuffer.Span,
-                out int ciphertextWritten,
-                out int sharedSecretWritten);
-
-            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertextWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretWritten);
-        }
-
-        [Fact]
-        public static void Encapsulate_Written_Disposed()
-        {
-            MLKemContract kem = new(MLKemAlgorithm.MLKem512);
-            kem.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => kem.Encapsulate(
-                new byte[kem.Algorithm.CiphertextSizeInBytes],
-                new byte[kem.Algorithm.SharedSecretSizeInBytes],
-                out _,
-                out _));
         }
 
         [Theory]
@@ -283,7 +159,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            byte[] ciphertext = kem.Encapsulate(out byte[] sharedSecret);
+            kem.Encapsulate(out byte[] ciphertext, out byte[] sharedSecret);
 
             Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertext.Length);
             Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecret.Length);
@@ -291,42 +167,12 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0xFE, sharedSecret);
         }
 
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Allocated_DestinationSecret(MLKemAlgorithm algorithm)
-        {
-            using MLKemContract kem = new(algorithm)
-            {
-                OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
-                {
-                    ciphertext.Fill(0xCA);
-                    sharedSecret.Fill(0xFE);
-                }
-            };
-
-            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes];
-            byte[] ciphertext = kem.Encapsulate(sharedSecret);
-
-            Assert.Equal(algorithm.CiphertextSizeInBytes, ciphertext.Length);
-            AssertExtensions.FilledWith<byte>(0xCA, ciphertext);
-            AssertExtensions.FilledWith<byte>(0xFE, sharedSecret);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Encapsulate_Allocated_DestinationSecret_WrongSecretBufferSize(MLKemAlgorithm algorithm)
-        {
-            using MLKemContract kem = new(algorithm);
-            byte[] sharedSecret = new byte[algorithm.SharedSecretSizeInBytes + 1];
-            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Encapsulate(sharedSecret));
-        }
-
         [Fact]
         public static void Encapsulate_Allocated_Disposed()
         {
             MLKemContract kem = new(MLKemAlgorithm.MLKem512);
             kem.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => kem.Encapsulate(out _));
+            Assert.Throws<ObjectDisposedException>(() => kem.Encapsulate(out _, out _));
         }
 
         [Theory]
@@ -384,8 +230,8 @@ namespace System.Security.Cryptography.Tests
             {
                 OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertextBuffer, ciphertext);
-                    AssertSameBuffer(sharedSecretBuffer, sharedSecret);
+                    AssertExtensions.Same(ciphertextBuffer, ciphertext);
+                    AssertExtensions.Same(sharedSecretBuffer, sharedSecret);
                 }
             };
 
@@ -404,92 +250,12 @@ namespace System.Security.Cryptography.Tests
             {
                 OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertextBuffer.Span, ciphertext);
-                    AssertSameBuffer(sharedSecretBuffer.Span, sharedSecret);
+                    AssertExtensions.Same(ciphertextBuffer.Span, ciphertext);
+                    AssertExtensions.Same(sharedSecretBuffer.Span, sharedSecret);
                 }
             };
 
             kem.Decapsulate(ciphertextBuffer.Span, sharedSecretBuffer.Span);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Decapsulate_Written_WrongCiphertextLength(MLKemAlgorithm algorithm)
-        {
-            using MLKemContract kem = new(algorithm);
-            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
-                new byte[algorithm.CiphertextSizeInBytes - 1],
-                new byte[algorithm.SharedSecretSizeInBytes],
-                out _));
-
-            AssertExtensions.Throws<ArgumentException>("ciphertext", () => kem.Decapsulate(
-                new byte[algorithm.CiphertextSizeInBytes + 1],
-                new byte[algorithm.SharedSecretSizeInBytes],
-                out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Decapsulate_Written_SharedSecretTooShort(MLKemAlgorithm algorithm)
-        {
-            using MLKemContract kem = new(algorithm);
-            AssertExtensions.Throws<ArgumentException>("sharedSecret", () => kem.Decapsulate(
-                new byte[algorithm.CiphertextSizeInBytes],
-                new byte[algorithm.SharedSecretSizeInBytes - 1],
-                out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Decapsulate_Written_Diposed(MLKemAlgorithm algorithm)
-        {
-            MLKemContract kem = new(algorithm);
-            kem.Dispose();
-
-            Assert.Throws<ObjectDisposedException>(() => kem.Decapsulate(
-                new byte[algorithm.CiphertextSizeInBytes],
-                new byte[algorithm.SharedSecretSizeInBytes],
-                out _));
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Decapsulate_Written_Oversized_Works(MLKemAlgorithm algorithm)
-        {
-            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
-            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes + 42];
-
-            using MLKemContract kem = new(algorithm)
-            {
-                OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
-                {
-                    AssertSameBuffer(ciphertextBuffer, ciphertext);
-                    AssertSameBuffer(sharedSecretBuffer.AsSpan(0, algorithm.SharedSecretSizeInBytes), sharedSecret);
-                }
-            };
-
-            kem.Decapsulate(ciphertextBuffer, sharedSecretBuffer, out int sharedSecretBytesWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretBytesWritten);
-        }
-
-        [Theory]
-        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
-        public static void Decapsulate_Written_Exact_Works(MLKemAlgorithm algorithm)
-        {
-            byte[] ciphertextBuffer = new byte[algorithm.CiphertextSizeInBytes];
-            byte[] sharedSecretBuffer = new byte[algorithm.SharedSecretSizeInBytes];
-
-            using MLKemContract kem = new(algorithm)
-            {
-                OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
-                {
-                    AssertSameBuffer(ciphertextBuffer, ciphertext);
-                    AssertSameBuffer(sharedSecretBuffer, sharedSecret);
-                }
-            };
-
-            kem.Decapsulate(ciphertextBuffer, sharedSecretBuffer, out int sharedSecretBytesWritten);
-            Assert.Equal(algorithm.SharedSecretSizeInBytes, sharedSecretBytesWritten);
         }
 
         [Theory]
@@ -523,7 +289,7 @@ namespace System.Security.Cryptography.Tests
             {
                 OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertextBuffer, ciphertext);
+                    AssertExtensions.Same(ciphertextBuffer, ciphertext);
                     sharedSecret.Fill(0x55);
                 }
             };
@@ -571,7 +337,7 @@ namespace System.Security.Cryptography.Tests
             {
                  OnExportPrivateSeedCore = (Span<byte> destination) =>
                  {
-                    AssertSameBuffer(privateSeedBuffer, destination);
+                     AssertExtensions.Same(privateSeedBuffer, destination);
                  }
             };
 
@@ -631,7 +397,7 @@ namespace System.Security.Cryptography.Tests
             {
                  OnExportDecapsulationKeyCore = (Span<byte> destination) =>
                  {
-                    AssertSameBuffer(privateSeedBuffer, destination);
+                     AssertExtensions.Same(privateSeedBuffer, destination);
                  }
             };
 
@@ -691,7 +457,7 @@ namespace System.Security.Cryptography.Tests
             {
                  OnExportEncapsulationKeyCore = (Span<byte> destination) =>
                  {
-                    AssertSameBuffer(privateSeedBuffer, destination);
+                     AssertExtensions.Same(privateSeedBuffer, destination);
                  }
             };
 
@@ -854,7 +620,7 @@ namespace System.Security.Cryptography.Tests
             {
                 OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
                 {
-                    AssertSameBuffer(buffer, destination);
+                    AssertExtensions.Same(buffer, destination);
                     bytesWritten = writtenSize;
                     return success;
                 }
@@ -919,7 +685,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten()
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten_Oversized()
         {
             MLKemContract kem = new(MLKemAlgorithm.MLKem512)
             {
@@ -927,6 +693,21 @@ namespace System.Security.Cryptography.Tests
                 {
                     // This is not possible and indiciates a derived type is misimplemented.
                     bytesWritten = destination.Length + 1;
+                    return true;
+                }
+            };
+
+            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten_Negative()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    bytesWritten = -1;
                     return true;
                 }
             };
@@ -1277,21 +1058,6 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.TrueExpression(reader.TryReadPrimitiveBitString(out int unusedBits, out subjectPublicKey));
             reader.ThrowIfNotEmpty();
             Assert.Equal(0, unusedBits);
-        }
-
-        private static void AssertSameBuffer(ReadOnlySpan<byte> buffer1, ReadOnlySpan<byte> buffer2)
-        {
-            if (buffer1.Length != buffer2.Length)
-            {
-                Assert.Fail("Expected buffers to have same length. " +
-                    $"The first buffer's length {buffer1.Length} does not match the second buffer's length {buffer2.Length}.");
-            }
-
-            if (!buffer1.Overlaps(buffer2, out int offset) || offset != 0)
-            {
-                Assert.Fail("Expected buffers to be the same memory location, but were not.");
-            }
-
         }
 
         private static bool TryExportEncryptedPkcs8PrivateKeyByKind(
