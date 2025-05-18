@@ -120,9 +120,6 @@
   <data name="ArrayDepthTooLarge" xml:space="preserve">
     <value>The maximum configured depth of {0} has been exceeded. Cannot read next JSON array.</value>
   </data>
-  <data name="CallFlushToAvoidDataLoss" xml:space="preserve">
-    <value>The JSON writer needs to be flushed before getting the current state. There are {0} bytes that have not been committed to the output.</value>
-  </data>
   <data name="CannotReadIncompleteUTF16" xml:space="preserve">
     <value>Cannot read incomplete UTF-16 JSON text as string with missing low surrogate.</value>
   </data>
@@ -619,12 +616,6 @@
   </data>
   <data name="CollectionIsReadOnly" xml:space="preserve">
     <value>Collection is read-only.</value>
-  </data>
-  <data name="ArrayIndexNegative" xml:space="preserve">
-    <value>Number was less than 0.</value>
-  </data>
-  <data name="ArrayTooSmall" xml:space="preserve">
-    <value>Destination array was not long enough.</value>
   </data>
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
