@@ -1802,7 +1802,7 @@ UINT ComMethodFrame::GetNumCallerStackBytes()
     SUPPORTS_DAC;
 
     ComCallMethodDesc* pCMD = PTR_ComCallMethodDesc((TADDR)GetDatum());
-    PREFIX_ASSUME(pCMD != NULL);
+    _ASSERTE(pCMD != NULL);
     // assumes __stdcall
     // compute the callee pop stack bytes
     return pCMD->GetNumStackBytes();

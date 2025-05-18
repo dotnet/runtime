@@ -382,7 +382,7 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
     if (ilOffset.m_funcletIndex <= PARENT_METHOD_INDEX)
     {
 #endif // FEATURE_EH_FUNCLETS
-        PREFIX_ASSUME( map != NULL );
+        _ASSERTE( map != NULL );
         LOG((LF_CORDB, LL_INFO10000, "DJI::MILOTN: ilOffset 0x%zx to nat 0x%x exact:%s (Entry IL Off:0x%x)\n",
              ilOffset.m_ilOffset, map->nativeStartOffset, (resultOffset.m_fExact ? "true" : "false"), map->ilOffset));
 
@@ -1845,7 +1845,7 @@ void DebuggerMethodInfo::DJIIterator::Next(BOOL fFirst /*=FALSE*/)
 
     if (!fFirst)
     {
-        PREFIX_ASSUME(m_pCurrent != NULL); // IsAtEnd() should have caught this.
+        _ASSERTE(m_pCurrent != NULL); // IsAtEnd() should have caught this.
         m_pCurrent = m_pCurrent->m_prevJitInfo;
     }
 

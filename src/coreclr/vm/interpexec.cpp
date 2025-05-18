@@ -8,6 +8,7 @@
 #include "interpexec.h"
 
 typedef void* (*HELPER_FTN_PP)(void*);
+typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -35,6 +36,13 @@ static void InterpBreakpoint()
 
 void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
 {
+    CONTRACTL
+    {
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
     pInterpreterFrame->SetInterpExecMethodSSP((TADDR)_rdsspq());
 #endif // HOST_AMD64 && HOST_WINDOWS
@@ -291,6 +299,12 @@ MAIN_LOOP:
                     }
                     break;
                 }
+
+                case INTOP_SAFEPOINT:
+                    if (g_TrapReturningThreads)
+                        JIT_PollGC();
+                    ip++;
+                    break;
 
                 case INTOP_BR:
                     ip += ip[1];
@@ -1057,11 +1071,11 @@ MAIN_LOOP:
 CALL_INTERP_SLOT:
                     {
                     size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
-                    if (targetMethod & INTERP_METHOD_DESC_TAG)
+                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
                     {
                         // First execution of this call. Ensure target method is compiled and
                         // patch the data item slot with the actual method code.
-                        MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_DESC_TAG);
+                        MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
                         PCODE code = pMD->GetNativeCode();
                         if (!code) {
                             // This is an optimization to ensure that the stack walk will not have to search
@@ -1179,7 +1193,7 @@ CALL_TARGET_IP:
                     {
                         pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
                         GCX_COOP();
-                        GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, 0x00000002);
+                        GCHeapUtilities::GetGCHeap()->GarbageCollect(-1, false, collection_blocking | collection_aggressive);
                     }
                     ip++;
                     break;
@@ -1198,6 +1212,38 @@ CALL_TARGET_IP:
                     }
                     DispatchManagedException(throwable);
                     UNREACHABLE();
+                    break;
+                }
+                case INTOP_BOX:
+                case INTOP_UNBOX:
+                case INTOP_UNBOX_ANY:
+                {
+                    int opcode = *ip;
+                    int dreg = ip[1];
+                    int sreg = ip[2];
+                    MethodTable *pMT = (MethodTable*)pMethod->pDataItems[ip[3]];
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
+                    HELPER_FTN_BOX_UNBOX helper = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helper = *(HELPER_FTN_BOX_UNBOX *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
+
+                    if (opcode == INTOP_BOX) {
+                        // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
+                        void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
+                        LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
+                    } else {
+                        // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
+                        Object *src = LOCAL_VAR(sreg, Object*);
+                        void *unboxedData = helper(pMT, src);
+                        if (opcode == INTOP_UNBOX)
+                            LOCAL_VAR(dreg, void*) = unboxedData;
+                        else
+                            CopyValueClassUnchecked(LOCAL_VAR_ADDR(dreg, void), unboxedData, pMT);
+                    }
+
+                    ip += 5;
                     break;
                 }
                 case INTOP_FAILFAST:
