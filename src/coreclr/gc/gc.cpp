@@ -9418,7 +9418,16 @@ bool gc_heap::get_card_table_commit_layout (uint8_t* from, uint8_t* to,
         assert (required_begin <= required_end);
         commit_end = align_on_page(required_end);
 
-        commit_end = min (commit_end, align_lower_page(bookkeeping_start + card_table_element_layout[i + 1]));
+        // Account for seg_mapping_table ending on the same page as mark_array begins.
+        // If background GC is disabled in run time (i.e. empty mark_array with 0 size), no need to align down.
+        if (i != seg_mapping_table_element
+#ifdef BACKGROUND_GC
+            || card_table_element_layout[mark_array_element] != card_table_element_layout[total_bookkeeping_elements]
+#endif // BACKGROUND_GC
+           )
+        {
+            commit_end = min (commit_end, align_lower_page(bookkeeping_start + card_table_element_layout[i + 1]));
+        }
         commit_begin = min (commit_begin, commit_end);
         assert (commit_begin <= commit_end);
 
