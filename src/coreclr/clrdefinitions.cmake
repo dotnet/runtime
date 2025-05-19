@@ -219,7 +219,8 @@ if (FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-  add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
+#  Re-enable when the dbgshim is fixed and generally available
+#  add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
 endif()
 
 # Use this function to enable building with a specific target OS and architecture set of defines
