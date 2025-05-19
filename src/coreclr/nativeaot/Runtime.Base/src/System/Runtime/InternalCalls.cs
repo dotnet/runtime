@@ -248,9 +248,9 @@ namespace System.Runtime
         internal static extern void RhpValidateExInfoStack();
 
 #if TARGET_WINDOWS
-        [RuntimeImport(Redhawk.BaseName, "RhpFirstChanceException")]
+        [RuntimeImport(Redhawk.BaseName, "RhpFirstChanceExceptionNotification")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void RhpFirstChanceException();
+        internal static extern void RhpFirstChanceExceptionNotification();
 #endif
 
 #if TARGET_WINDOWS

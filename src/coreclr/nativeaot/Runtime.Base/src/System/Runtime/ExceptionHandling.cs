@@ -650,7 +650,7 @@ namespace System.Runtime
         {
 #if TARGET_WINDOWS
             // Alert the debugger that we threw an exception.
-            InternalCalls.RhpFirstChanceException();
+            InternalCalls.RhpFirstChanceExceptionNotification();
 #endif // TARGET_WINDOWS
 
 #if NATIVEAOT

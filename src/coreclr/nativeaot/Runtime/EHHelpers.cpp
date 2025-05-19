@@ -88,7 +88,7 @@ FCIMPL0(void, RhpValidateExInfoStack)
 FCIMPLEND
 
 #ifdef TARGET_WINDOWS
-FCIMPL0(void, RhpFirstChanceException)
+FCIMPL0(void, RhpFirstChanceExceptionNotification)
 {
     // Throw an SEH exception and immediately catch it. This is used to notify debuggers and other tools
     // that an exception has been thrown.
