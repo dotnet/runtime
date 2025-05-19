@@ -118,6 +118,15 @@ EXIT:
     PERF_EXIT(GetSystemTime);
 }
 
+/*++
+Function:
+  QueryThreadCycleTime
+
+Puts the execution time (in nanoseconds) for the thread pointed to by ThreadHandle, into the unsigned long
+pointed to by CycleTime. ThreadHandle must refer to the current thread. Returns TRUE on success, FALSE on
+failure.
+--*/
+
 BOOL
 PALAPI
 QueryThreadCycleTime(
