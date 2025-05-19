@@ -9748,7 +9748,8 @@ inline bool GenTree::IsMaskZero() const
             assert(op1->OperIsHWIntrinsic());
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return ((id == NI_Sve_CreateFalseMaskAll) ||
+                ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64)));
     }
 
 #endif

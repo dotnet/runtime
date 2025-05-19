@@ -2757,6 +2757,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve_CreateFalseMaskByte:
+        case NI_Sve_CreateFalseMaskDouble:
+        case NI_Sve_CreateFalseMaskInt16:
+        case NI_Sve_CreateFalseMaskInt32:
+        case NI_Sve_CreateFalseMaskInt64:
+        case NI_Sve_CreateFalseMaskSByte:
+        case NI_Sve_CreateFalseMaskSingle:
+        case NI_Sve_CreateFalseMaskUInt16:
+        case NI_Sve_CreateFalseMaskUInt32:
+        case NI_Sve_CreateFalseMaskUInt64:
+        {
+            retNode = gtNewZeroConNode(TYP_SIMD16);
+            break;
+        }
+
         case NI_Sve_Load2xVectorAndUnzip:
         case NI_Sve_Load3xVectorAndUnzip:
         case NI_Sve_Load4xVectorAndUnzip:

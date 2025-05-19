@@ -76,8 +76,7 @@ public class ConstantMasks
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedZero(Vector<int> op1, Vector<int> op2) {
         //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
         //ARM64-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         Vector<int> result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.AbsoluteDifference(op1, op2), op1);
         Consume(result);
