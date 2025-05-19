@@ -9558,9 +9558,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node)
 {
 #if defined(TARGET_XARCH)
-    bool       isScalar   = false;
-    genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
-    genTreeOps oper       = actualOper;
+    bool        isScalar        = false;
+    genTreeOps  actualOper      = node->GetOperForHWIntrinsicId(&isScalar);
+    genTreeOps  oper            = actualOper;
+    var_types   retType         = node->TypeGet();
+    CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+    var_types   simdBaseType    = node->GetSimdBaseType();
+    unsigned    simdSize        = node->GetSimdSize();
 
     // We shouldn't find AND_NOT, OR_NOT or XOR_NOT nodes since it should only be produced in lowering
     assert((oper != GT_AND_NOT) && (oper != GT_OR_NOT) && (oper != GT_XOR_NOT));
@@ -9689,8 +9693,7 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         }
 
         node->SetMorphed(this);
-        node = gtNewSimdCvtMaskToVectorNode(node->TypeGet(), node, node->GetSimdBaseJitType(), node->GetSimdSize())
-                   ->AsHWIntrinsic();
+        node = gtNewSimdCvtMaskToVectorNode(retType, node, simdBaseJitType, simdSize)->AsHWIntrinsic();
         node->SetMorphed(this);
         return node;
     }
@@ -12646,7 +12649,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
 //
 Compiler::MorphUnreachableInfo::MorphUnreachableInfo(Compiler* comp)
     : m_traits(comp->m_dfsTree->GetPostOrderCount(), comp)
-    , m_vec(BitVecOps::MakeEmpty(&m_traits)){};
+    , m_vec(BitVecOps::MakeEmpty(&m_traits)) {};
 
 //------------------------------------------------------------------------
 // SetUnreachable: during morph, mark a block as unreachable
