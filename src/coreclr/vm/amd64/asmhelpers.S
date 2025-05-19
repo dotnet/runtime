@@ -378,9 +378,6 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
         alloc_stack     stack_alloc_size
 
-        // Mirror clearing of AVX state done by regular method prologs
-        vzeroupper
-
         END_PROLOGUE
 .endm
 
@@ -388,9 +385,6 @@ LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 // Epilogue of all funclet calling helpers (CallXXXXFunclet)
 //
 .macro FUNCLET_CALL_EPILOGUE
-        // Mirror clearing of AVX state done by regular method epilogs
-        vzeroupper
-
         free_stack      stack_alloc_size
 
         pop_nonvol_reg rbp
