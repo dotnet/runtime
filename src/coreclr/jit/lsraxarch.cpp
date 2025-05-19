@@ -2683,56 +2683,54 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX10v1_PermuteVar8x32x2:
             case NI_AVX10v1_PermuteVar16x16x2:
             case NI_AVX10v1_V512_PermuteVar64x8x2:
-                // TODO-XArch-APX: some of the permute intrinsics are APX-EVEX compatible, we need to separate and
-                // enable EGPRs for them.
+            {
+                assert(numArgs == 3);
+                assert(isRMW);
+                assert(HWIntrinsicInfo::IsPermuteVar2x(intrinsicId));
+
+                LIR::Use use;
+                GenTree* user = nullptr;
+
+                if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
                 {
-                    assert(numArgs == 3);
-                    assert(isRMW);
-                    assert(HWIntrinsicInfo::IsPermuteVar2x(intrinsicId));
-
-                    LIR::Use use;
-                    GenTree* user = nullptr;
-
-                    if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
-                    {
-                        user = use.User();
-                    }
-                    unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
-
-                    assert(!op1->isContained());
-                    assert(!op2->isContained());
-
-                    GenTree* emitOp1 = op1;
-                    GenTree* emitOp2 = op2;
-                    GenTree* emitOp3 = op3;
-
-                    if (resultOpNum == 2)
-                    {
-                        std::swap(emitOp1, emitOp2);
-                    }
-
-                    GenTree* ops[] = {op1, op2, op3};
-                    for (GenTree* op : ops)
-                    {
-                        if (op == emitOp1)
-                        {
-                            tgtPrefUse = BuildUse(op);
-                            srcCount++;
-                        }
-                        else if (op == emitOp2)
-                        {
-                            srcCount += BuildDelayFreeUses(op, emitOp1, ForceLowGprForApx(op));
-                        }
-                        else if (op == emitOp3)
-                        {
-                            srcCount += op->isContained() ? BuildOperandUses(op, ForceLowGprForApx(op))
-                                                          : BuildDelayFreeUses(op, emitOp1);
-                        }
-                    }
-
-                    buildUses = false;
-                    break;
+                    user = use.User();
                 }
+                unsigned resultOpNum = intrinsicTree->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
+
+                assert(!op1->isContained());
+                assert(!op2->isContained());
+
+                GenTree* emitOp1 = op1;
+                GenTree* emitOp2 = op2;
+                GenTree* emitOp3 = op3;
+
+                if (resultOpNum == 2)
+                {
+                    std::swap(emitOp1, emitOp2);
+                }
+
+                GenTree* ops[] = {op1, op2, op3};
+                for (GenTree* op : ops)
+                {
+                    if (op == emitOp1)
+                    {
+                        tgtPrefUse = BuildUse(op);
+                        srcCount++;
+                    }
+                    else if (op == emitOp2)
+                    {
+                        srcCount += BuildDelayFreeUses(op, emitOp1, ForceLowGprForApx(op));
+                    }
+                    else if (op == emitOp3)
+                    {
+                        srcCount += op->isContained() ? BuildOperandUses(op, ForceLowGprForApx(op))
+                                                      : BuildDelayFreeUses(op, emitOp1);
+                    }
+                }
+
+                buildUses = false;
+                break;
+            }
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
