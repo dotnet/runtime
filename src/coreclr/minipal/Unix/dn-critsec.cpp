@@ -4,8 +4,9 @@
 #include <assert.h>
 #include "../dn-critsec.h"
 
-bool DnCritSec::Initialize()
+bool DnCritSec_Initialize(DN_CRIT_SEC* cs)
 {
+    assert(cs != nullptr);
     pthread_mutexattr_t mutexAttributes;
     int st = pthread_mutexattr_init(&mutexAttributes);
     if (st != 0)
@@ -13,34 +14,33 @@ bool DnCritSec::Initialize()
 
     st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
     if (st == 0)
-        st = pthread_mutex_init(&_cs, &mutexAttributes);
+        st = pthread_mutex_init(&cs->_impl, &mutexAttributes);
 
     pthread_mutexattr_destroy(&mutexAttributes);
 
-    _isInitialized = (st == 0);
-    return _isInitialized;
+    return (st == 0);
 }
 
-void DnCritSec::Destroy()
+void DnCritSec_Destroy(DN_CRIT_SEC* cs)
 {
-    if (!_isInitialized)
-        return;
+    assert(cs != nullptr);
+    int st = pthread_mutex_destroy(&cs->_impl);
+    assert(st == 0);
+#ifdef _DEBUG
+    cs->_impl = {};
+#endif // _DEBUG
+}
 
-    _isInitialized = false;
-    int st = pthread_mutex_destroy(&_cs);
+void DnCritSec_Enter(DN_CRIT_SEC* cs)
+{
+    assert(cs != nullptr);
+    int st = pthread_mutex_lock(&cs->_impl);
     assert(st == 0);
 }
 
-void DnCritSec::Enter()
+void DnCritSec_Leave(DN_CRIT_SEC* cs)
 {
-    assert(_isInitialized);
-    int st = pthread_mutex_lock(&_cs);
-    assert(st == 0);
-}
-
-void DnCritSec::Leave()
-{
-    assert(_isInitialized);
-    int st = pthread_mutex_unlock(&_cs);
+    assert(cs != nullptr);
+    int st = pthread_mutex_unlock(&cs->_impl);
     assert(st == 0);
 }

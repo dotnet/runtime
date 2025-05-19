@@ -4,30 +4,30 @@
 #include <assert.h>
 #include "../dn-critsec.h"
 
-bool DnCritSec::Initialize()
+bool DnCritSec_Initialize(DN_CRIT_SEC* cs)
 {
-    ::InitializeCriticalSection(&_cs);
-    _isInitialized = true;
+    assert(cs != nullptr);
+    ::InitializeCriticalSection(&cs->_impl);
     return true;
 }
 
-void DnCritSec::Destroy()
+void DnCritSec_Destroy(DN_CRIT_SEC* cs)
 {
-    if (!_isInitialized)
-        return;
-
-    _isInitialized = false;
-    ::DeleteCriticalSection(&_cs);
+    assert(cs != nullptr);
+    ::DeleteCriticalSection(&cs->_impl);
+#ifdef _DEBUG
+    cs->_impl = {};
+#endif // _DEBUG
 }
 
-void DnCritSec::Enter()
+void DnCritSec_Enter(DN_CRIT_SEC* cs)
 {
-    assert(_isInitialized);
-    ::EnterCriticalSection(&_cs);
+    assert(cs != nullptr);
+    ::EnterCriticalSection(&cs->_impl);
 }
 
-void DnCritSec::Leave()
+void DnCritSec_Leave(DN_CRIT_SEC* cs)
 {
-    assert(_isInitialized);
-    ::LeaveCriticalSection(&_cs);
+    assert(cs != nullptr);
+    ::LeaveCriticalSection(&cs->_impl);
 }
