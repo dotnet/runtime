@@ -147,6 +147,7 @@ struct StubPrecode
     BYTE GetType();
 
     static BOOL IsStubPrecodeByASM(PCODE addr);
+    static BOOL IsStubPrecodeByASM_DAC(PCODE addr);
 #ifndef DACCESS_COMPILE
 
     void ResetTargetInterlocked()
@@ -408,6 +409,7 @@ struct FixupPrecode
     }
 
     static BOOL IsFixupPrecodeByASM(PCODE addr);
+    static BOOL IsFixupPrecodeByASM_DAC(PCODE addr);
 #ifndef DACCESS_COMPILE
 
     void ResetTargetInterlocked()

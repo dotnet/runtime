@@ -516,7 +516,7 @@ void StubPrecode::StaticInitialize()
 #else
     _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
-
+    _ASSERTE(IsStubPrecodeByASM_DAC((PCODE)StubPrecodeCode));
 }
 
 void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
@@ -642,7 +642,7 @@ void FixupPrecode::StaticInitialize()
     _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
 
-    _ASSERTE(IsFixedPrecodeByASM((PCODE)FixupPrecodeCode));
+    _ASSERTE(IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCode));
 }
 
 void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
@@ -675,7 +675,7 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
 {
     BYTE *pInstr = (BYTE*)PCODEToPINSTR(addr);
 #ifdef TARGET_X86
-    BOOL result =
+    return
         *(WORD*)(pInstr) == *(WORD*)(FixupPrecodeCode) &&
         *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(FixupPrecodeData, Target)) &&
         *(pInstr + 6) == *((BYTE*)FixupPrecodeCode + 6) &&
@@ -691,11 +691,8 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
         pTemplateInstr++;
     }
 
-    BOOL result = pTemplateInstr == pTemplateInstrEnd;
+    return pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
-
-    _ASSERTE(IsFixupPrecodeByASM_DAC(addr) == result);
-    return result;
 }
 
 #endif // HAS_FIXUP_PRECODE
@@ -789,7 +786,6 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 
 #endif // !DACCESS_COMPILE
 
-#ifdef DACCESS_COMPILE
 #include <cdacplatformmetadata.hpp>
 
 #ifdef HAS_FIXUP_PRECODE
@@ -841,4 +837,3 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 
     return TRUE;
 }
-#endif // DACCESS_COMPILE
