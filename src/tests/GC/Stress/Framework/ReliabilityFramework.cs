@@ -334,6 +334,22 @@ public class ReliabilityFramework
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests run count:\n{sb}");
     }
 
+    public void RecordTestRunCountSingle(string refOrID)
+    {
+        StringBuilder sb = new();
+        lock (_testRunCounterLock)
+        {
+            foreach(var item in _testRunCounter)
+            {
+                if(item.Key == refOrID)
+                {
+                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Run tests \"{item.Key}\" {item.Value} times.");
+                }
+            }  
+        }
+        
+    }
+
     public void HandleOom(Exception e, string message)
     {
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Exception while running tests: {0}", e));
@@ -981,7 +997,15 @@ public class ReliabilityFramework
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
                 _testsRunningCount, test.RunningCount, test.RefOrID, Process.GetCurrentProcess().Threads.Count));
 
+            lock(_testRunCounterLock)
+            {
+                string testRefOrID = test.RefOrID;
+                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
+            }
+
             newThread.Start(test);
+            RecordTestRunCountSingle(test.RefOrID);
+
         }
         catch (OutOfMemoryException e)
         {
@@ -1220,12 +1244,6 @@ public class ReliabilityFramework
                         SignalTestFinished(daTest);
                     }
                     break;
-            }
-
-            lock (_testRunCounterLock)
-            {
-                string testRefOrID = daTest.RefOrID;
-                _testRunCounter[testRefOrID] = _testRunCounter.GetValueOrDefault<string, uint>(testRefOrID, 0) + 1;
             }
         }
         catch (Exception e)
