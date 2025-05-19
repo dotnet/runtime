@@ -49239,8 +49239,14 @@ HRESULT GCHeap::Initialize()
         }
         else
         {
+#ifdef HOST_64BIT
             // If no hard_limit is configured the reservation size is min of 1/2 GetVirtualMemoryLimit() or max of 256Gb or 2x physical limit.
             gc_heap::regions_range = max((size_t)256 * 1024 * 1024 * 1024, (size_t)(2 * gc_heap::total_physical_mem));
+#else
+            gc_heap::regions_range = (2 * gc_heap::total_physical_mem) <= SIZE_MAX ?
+                                        (size_t)(2 * gc_heap::total_physical_mem) :
+                                        (size_t) gc_heap::total_physical_mem;
+#endif
         }
         size_t virtual_mem_limit = GCToOSInterface::GetVirtualMemoryLimit();
         gc_heap::regions_range = min(gc_heap::regions_range, virtual_mem_limit/2);
