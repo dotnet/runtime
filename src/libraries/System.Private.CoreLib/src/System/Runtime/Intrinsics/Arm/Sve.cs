@@ -7413,15 +7413,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> PopCount(Vector<ulong> value) => PopCount(value);
 
 
-        // Prefetch bytes
-
-        /// <summary>
-        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
-        /// </summary>
-        public static unsafe void Prefetch8Bit(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch8Bit(mask, address, prefetchType);
-
-
         // Prefetch halfwords
 
         /// <summary>
@@ -7447,6 +7438,15 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>  PRFD op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
         public static unsafe void Prefetch64Bit(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch64Bit(mask, address, prefetchType);
+
+
+        // Prefetch bytes
+
+        /// <summary>
+        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
+        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
+        /// </summary>
+        public static unsafe void Prefetch8Bit(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch8Bit(mask, address, prefetchType);
 
 
         // Reciprocal estimate

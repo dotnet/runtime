@@ -1778,10 +1778,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_Prefetch8Bit:
             case NI_Sve_Prefetch16Bit:
             case NI_Sve_Prefetch32Bit:
             case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             {
                 assert(hasImmediateOperand);
                 HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
