@@ -11590,7 +11590,7 @@ void CEEJitInfo::allocUnwindInfo (
 
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#if !defined(TARGET_X86)
 #ifdef TARGET_AMD64
     pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
@@ -11602,7 +11602,7 @@ void CEEJitInfo::allocUnwindInfo (
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
 #endif // TARGET_AMD64
-#endif // !TARGET_X86 && TARGET_WINDOWS
+#endif // !TARGET_X86
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS
