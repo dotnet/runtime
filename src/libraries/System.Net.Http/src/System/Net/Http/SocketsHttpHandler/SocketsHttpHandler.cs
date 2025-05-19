@@ -627,6 +627,10 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
+            return _handler is { } handler
+                ? handler.SendAsync(request, cancellationToken)
+                : CreateHandlerAndSendAsync(request, cancellationToken);
+
             // SetupHandlerChain may block for a few seconds in some environments.
             // E.g. during the first access of HttpClient.DefaultProxy - https://github.com/dotnet/runtime/issues/115301.
             // The setup procedure is enqueued to thread pool to prevent the caller from blocking.
@@ -636,10 +640,6 @@ namespace System.Net.Http
                 HttpMessageHandlerStage handler = await _handlerChainSetupTask.ConfigureAwait(false);
                 return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
-
-            return _handler is { } handler
-                ? handler.SendAsync(request, cancellationToken)
-                : CreateHandlerAndSendAsync(request, cancellationToken);
         }
 
         private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
