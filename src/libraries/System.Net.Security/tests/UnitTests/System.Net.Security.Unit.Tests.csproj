@@ -235,8 +235,6 @@
              Link="Common\System\Net\Security\SecurityBufferType.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
              Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.Windows.cs"
              Link="Common\System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
