@@ -392,7 +392,7 @@ public class InterpreterTest
             return false;
         return true;
     }
-  
+
     public static bool TestBoxing()
     {
         int l = 7, r = 4;
@@ -406,7 +406,7 @@ public class InterpreterTest
     static object BoxedSubtraction (object lhs, object rhs) {
         return (int)lhs - (int)rhs;
     }
-  
+
   public static bool TestArray()
     {
         // sbyte
@@ -465,13 +465,10 @@ public class InterpreterTest
         if (!ArrayFloat(32, float.MinValue)) return false;
         if (!ArrayFloat(32, float.MaxValue)) return false;
 
-        // // double
+        // double
         if (!ArrayDouble(0, 0)) return false;
         if (!ArrayDouble(1, 1)) return false;
         if (!ArrayDouble(32, 32)) return false;
-        // FIXME: ldc.r8 is NaN
-        // if (!ArrayDouble(32, double.MinValue)) return false;
-        // if (!ArrayDouble(32, double.MaxValue)) return false;
 
         return true;
     }
