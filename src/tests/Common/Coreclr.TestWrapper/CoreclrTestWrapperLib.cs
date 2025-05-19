@@ -335,6 +335,28 @@ namespace CoreclrTestLib
                 Console.WriteLine(error);
 
                 TryPrintStackTraceFromCrashReport(crashDumpPath + ".crashreport.json", outputWriter);
+
+                // Ensure the dump is accessible by current user
+                Process chown = new Process();
+                chown.StartInfo.FileName = "sudo";
+                chown.StartInfo.Arguments = $"chown \"{Environment.UserName}\" \"{crashDumpPath}\"";
+
+                chown.StartInfo.UseShellExecute = false;
+                chown.StartInfo.RedirectStandardOutput = true;
+                chown.StartInfo.RedirectStandardError = true;
+
+                Console.WriteLine($"Invoking: {chown.StartInfo.FileName} {chown.StartInfo.Arguments}");
+                chown.Start();
+                copyOutput = chown.StandardOutput.ReadToEndAsync();
+                copyError = chown.StandardError.ReadToEndAsync();
+
+                chown.WaitForExit(DEFAULT_TIMEOUT_MS);
+
+                Task.WaitAll(copyError, copyOutput);
+                Console.WriteLine("chown stdout:");
+                Console.WriteLine(copyOutput.Result);
+                Console.WriteLine("chown stderr:");
+                Console.WriteLine(copyError.Result);
             }
             else
             {
