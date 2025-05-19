@@ -389,7 +389,7 @@ public partial class ApkBuilder
         project.GenerateCMake(OutputDir, MinApiLevel);
         project.BuildCMake(OutputDir);
 
-        // TODO: Strip debug symbols after build: llvm-strip --strip-unneeded lib*.so
+        // TODO: https://github.com/dotnet/runtime/issues/115717
 
         string abi = project.Abi;
 
