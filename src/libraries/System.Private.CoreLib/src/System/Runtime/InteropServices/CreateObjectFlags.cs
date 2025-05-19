@@ -6,7 +6,6 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
-
     /// <summary>
     /// Enumeration of flags for <see cref="ComWrappers.GetOrCreateObjectForComInstance(IntPtr, CreateObjectFlags)"/>.
     /// </summary>

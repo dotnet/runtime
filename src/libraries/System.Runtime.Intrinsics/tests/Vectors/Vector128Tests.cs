@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
@@ -6672,5 +6673,267 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
         [Fact]
         public void CountIndexOfLastIndexOfWhereAllBitsSetUInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMaxTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector128<T> left = Vector128.CreateSequence<T>(start, T.One);
+            Vector128<T> right = Vector128.Create<T>(T.MaxValue - T.CreateTruncating(Vector128<T>.Count) + T.One);
+
+            Vector128<T> result = Vector128.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMinTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector128<T> left = Vector128.CreateSequence<T>(start, T.NegativeOne);
+            Vector128<T> right = Vector128.Create<T>(T.MinValue + T.CreateTruncating(Vector128<T>.Count) - T.One);
+
+            Vector128<T> result = Vector128.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void AddSaturateByteTest() => AddSaturateToMaxTest<byte>(1);
+
+        [Fact]
+        public void AddSaturateInt16Test()
+        {
+            AddSaturateToMinTest<short>(-1);
+            AddSaturateToMaxTest<short>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt32Test()
+        {
+            AddSaturateToMinTest<int>(-1);
+            AddSaturateToMaxTest<int>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt64Test()
+        {
+            AddSaturateToMinTest<long>(-1);
+            AddSaturateToMaxTest<long>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateIntPtrTest()
+        {
+            AddSaturateToMinTest<nint>(-1);
+            AddSaturateToMaxTest<nint>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateSByteTest()
+        {
+            AddSaturateToMinTest<sbyte>(-1);
+            AddSaturateToMaxTest<sbyte>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateUInt16Test() => AddSaturateToMaxTest<ushort>(1);
+
+        [Fact]
+        public void AddSaturateUInt32Test() => AddSaturateToMaxTest<uint>(1);
+
+        [Fact]
+        public void AddSaturateUInt64Test() => AddSaturateToMaxTest<ulong>(1);
+
+        [Fact]
+        public void AddSaturateUIntPtrTest() => AddSaturateToMaxTest<nuint>(1);
+
+        private (Vector128<TFrom> lower, Vector128<TFrom> upper) GetNarrowWithSaturationInputs<TFrom, TTo>()
+            where TFrom : unmanaged, IMinMaxValue<TFrom>, INumber<TFrom>
+            where TTo : unmanaged, IMinMaxValue<TTo>, INumber<TTo>
+        {
+            Vector128<TFrom> lower = Vector128.Create<TFrom>(TFrom.CreateTruncating(TTo.MaxValue) - TFrom.CreateTruncating(Vector128<TFrom>.Count) + TFrom.One)
+                                  + Vector128.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            Vector128<TFrom> upper = Vector128.Create<TFrom>(TFrom.CreateTruncating(TTo.MinValue) + TFrom.CreateTruncating(Vector128<TFrom>.Count) - TFrom.One)
+                                  - Vector128.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            return (lower, upper);
+        }
+
+        private void NarrowWithSaturationTest<TFrom, TTo>(Vector128<TFrom> lower, Vector128<TFrom> upper, Vector128<TTo> result)
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            for (int i = 0; i < Vector128<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(lower[i]);
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            for (int i = 0; i < Vector128<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(upper[i]);
+                Assert.Equal(expectedResult, result[Vector128<TFrom>.Count + i]);
+            }
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt16Test()
+        {
+            (Vector128<short> lower, Vector128<short> upper) = GetNarrowWithSaturationInputs<short, sbyte>();
+            Vector128<sbyte> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt32Test()
+        {
+            (Vector128<int> lower, Vector128<int> upper) = GetNarrowWithSaturationInputs<int, short>();
+            Vector128<short> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt64Test()
+        {
+            (Vector128<long> lower, Vector128<long> upper) = GetNarrowWithSaturationInputs<long, int>();
+            Vector128<int> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt16Test()
+        {
+            (Vector128<ushort> lower, Vector128<ushort> upper) = GetNarrowWithSaturationInputs<ushort, byte>();
+            Vector128<byte> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt32Test()
+        {
+            (Vector128<uint> lower, Vector128<uint> upper) = GetNarrowWithSaturationInputs<uint, ushort>();
+            Vector128<ushort> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt64Test()
+        {
+            (Vector128<ulong> lower, Vector128<ulong> upper) = GetNarrowWithSaturationInputs<ulong, uint>();
+            Vector128<uint> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMaxTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector128<T> left = Vector128.Create<T>(T.MaxValue - T.CreateTruncating(Vector128<T>.Count) + T.One);
+            Vector128<T> right = Vector128.CreateSequence<T>(start, T.NegativeOne);
+
+            Vector128<T> result = Vector128.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMinTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector128<T> left = Vector128.Create<T>(T.MinValue + T.CreateTruncating(Vector128<T>.Count) - T.One);
+            Vector128<T> right = Vector128.CreateSequence<T>(start, T.One);
+
+            Vector128<T> result = Vector128.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void SubtractSaturateByteTest() => SubtractSaturateToMinTest<byte>(1);
+
+        [Fact]
+        public void SubtractSaturateInt16Test()
+        {
+            SubtractSaturateToMinTest<short>(+1);
+            SubtractSaturateToMaxTest<short>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt32Test()
+        {
+            SubtractSaturateToMinTest<int>(+1);
+            SubtractSaturateToMaxTest<int>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt64Test()
+        {
+            SubtractSaturateToMinTest<long>(+1);
+            SubtractSaturateToMaxTest<long>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateIntPtrTest()
+        {
+            SubtractSaturateToMinTest<nint>(+1);
+            SubtractSaturateToMaxTest<nint>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateSByteTest()
+        {
+            SubtractSaturateToMinTest<sbyte>(+1);
+            SubtractSaturateToMaxTest<sbyte>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateUInt16Test() => SubtractSaturateToMinTest<ushort>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt32Test() => SubtractSaturateToMinTest<uint>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt64Test() => SubtractSaturateToMinTest<ulong>(1);
+
+        [Fact]
+        public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
     }
 }

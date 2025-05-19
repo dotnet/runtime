@@ -5,7 +5,7 @@ set(COMMON_RUNTIME_SOURCES
     allocheap.cpp
     rhassert.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatchAot.cpp
+    CachedInterfaceDispatch_Aot.cpp
     Crst.cpp
     DebugHeader.cpp
     MethodTable.cpp
@@ -213,7 +213,7 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/InteropThunksHelpers.${ASM_SUFFIX}
   ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/UniversalTransition.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
+  ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.${ASM_SUFFIX}
 )
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)

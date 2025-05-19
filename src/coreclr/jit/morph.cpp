@@ -4164,7 +4164,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
 #endif // DEBUG
     };
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     for (CallArg& arg : callee->gtArgs.Args())
     {
         if (arg.AbiInfo.IsSplitAcrossRegistersAndStack())
@@ -4173,9 +4173,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
             return false;
         }
     }
-#endif // TARGET_ARM || TARGET_RISCV64
 
-#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
     for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
     {
         const ABIPassingInformation& abiInfo = lvaGetParameterABIInfo(lclNum);
@@ -4185,7 +4183,7 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
             return false;
         }
     }
-#endif // TARGET_ARM || TARGET_RISCV64
+#endif // TARGET_ARM || TARGET_RISCV64 || defined(TARGET_LOONGARCH64)
 
 #ifdef TARGET_ARM
     if (compIsProfilerHookNeeded())
@@ -7106,6 +7104,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             if (optLocalAssertionProp)
             {
                 isQmarkColon = true;
+                BitVecOps::ClearD(apTraits, apLocalPostorder);
             }
             break;
 
@@ -7744,6 +7743,40 @@ DONE_MORPHING_CHILDREN:
     {
         qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
+    }
+
+    // During global morph, give assertion prop another shot at this tree.
+    //
+    // We need to use the "postorder" assertion set here, because apLocal
+    // may reflect results from subtrees that have since been reordered.
+    //
+    // apLocalPostorder only includes live assertions from prior statements.
+    //
+    if (fgGlobalMorph && optLocalAssertionProp && (optAssertionCount > 0))
+    {
+        GenTree* optimizedTree = tree;
+        bool     again         = JitConfig.JitEnablePostorderLocalAssertionProp() > 0;
+        bool     didOptimize   = false;
+
+        if (!again)
+        {
+            JITDUMP("*** Postorder assertion prop disabled by config\n");
+        }
+
+        while (again)
+        {
+            tree          = optimizedTree;
+            optimizedTree = optAssertionProp(apLocalPostorder, tree, nullptr, nullptr);
+            again         = (optimizedTree != nullptr);
+            didOptimize |= again;
+        }
+
+        assert(tree != nullptr);
+
+        if (didOptimize)
+        {
+            gtUpdateNodeSideEffects(tree);
+        }
     }
 
     // Try to fold it, maybe we get lucky,
@@ -11718,13 +11751,12 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 {
     // Active dependent assertions are killed here
     //
-    ASSERT_TP killed = BitVecOps::MakeCopy(apTraits, GetAssertionDep(lclNum));
-    BitVecOps::IntersectionD(apTraits, killed, apLocal);
-
-    if (killed)
-    {
+    ASSERT_TP killed = GetAssertionDep(lclNum);
 
 #ifdef DEBUG
+    bool hasKills = !BitVecOps::IsEmptyIntersection(apTraits, apLocal, killed);
+    if (hasKills)
+    {
         AssertionIndex index = optAssertionCount;
         while (killed && (index > 0))
         {
@@ -11744,10 +11776,11 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 
             index--;
         }
+    }
 #endif
 
-        BitVecOps::DiffD(apTraits, apLocal, killed);
-    }
+    BitVecOps::DiffD(apTraits, apLocal, killed);
+    BitVecOps::DiffD(apTraits, apLocalPostorder, killed);
 }
 
 //------------------------------------------------------------------------
@@ -11764,7 +11797,7 @@ void Compiler::fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree*
 //
 void Compiler::fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree))
 {
-    if (BitVecOps::IsEmpty(apTraits, apLocal))
+    if (BitVecOps::IsEmpty(apTraits, apLocal) && BitVecOps::IsEmpty(apTraits, apLocalPostorder))
     {
         return;
     }
@@ -12450,6 +12483,11 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         compCurStmt      = stmt;
         GenTree* oldTree = stmt->GetRootNode();
 
+        if (optLocalAssertionProp)
+        {
+            BitVecOps::Assign(apTraits, apLocalPostorder, apLocal);
+        }
+
 #ifdef DEBUG
 
         unsigned oldHash = verbose ? gtHashValue(oldTree) : DUMMY_INIT(~0);
@@ -12670,7 +12708,8 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
             // Each block starts with an empty table, and no available assertions
             //
             optAssertionReset(0);
-            apLocal = BitVecOps::MakeEmpty(apTraits);
+            BitVecOps::ClearD(apTraits, apLocal);
+            BitVecOps::ClearD(apTraits, apLocalPostorder);
         }
         else
         {
@@ -12808,6 +12847,8 @@ void Compiler::fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachable
                 apLocal = BitVecOps::MakeEmpty(apTraits);
             }
 
+            BitVecOps::Assign(apTraits, apLocalPostorder, apLocal);
+
             JITDUMPEXEC(optDumpAssertionIndices("Assertions in: ", apLocal));
         }
     }
@@ -12876,6 +12917,8 @@ PhaseStatus Compiler::fgMorphBlocks()
         // Local assertion prop is enabled if we are optimizing.
         //
         optAssertionInit(/* isLocalProp*/ true);
+        apLocal          = BitVecOps::MakeEmpty(apTraits);
+        apLocalPostorder = BitVecOps::MakeEmpty(apTraits);
     }
     else
     {
@@ -13011,10 +13054,12 @@ PhaseStatus Compiler::fgMorphBlocks()
 
     if (optLocalAssertionProp)
     {
-        Metrics.LocalAssertionCount    = optAssertionCount;
-        Metrics.LocalAssertionOverflow = optAssertionOverflow;
-        Metrics.MorphTrackedLocals     = lvaTrackedCount;
-        Metrics.MorphLocals            = lvaCount;
+        Metrics.LocalAssertionCount     = optAssertionCount;
+        Metrics.LocalAssertionOverflow  = optAssertionOverflow;
+        Metrics.MorphTrackedLocals      = lvaTrackedCount;
+        Metrics.MorphLocals             = lvaCount;
+        optLocalAssertionProp           = false;
+        optCrossBlockLocalAssertionProp = false;
     }
 
     // We may have converted a tailcall into a loop, in which case the first BB

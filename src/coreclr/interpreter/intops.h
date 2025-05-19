@@ -20,7 +20,8 @@ typedef enum
     InterpOpThreeInts,
     InterpOpBranch,
     InterpOpSwitch,
-    InterpOpMethodToken,
+    InterpOpMethodHandle,
+    InterpOpClassHandle,
 } InterpOpArgType;
 
 extern const uint8_t g_interpOpLen[];

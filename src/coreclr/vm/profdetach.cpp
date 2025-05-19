@@ -56,9 +56,6 @@ void ProfilerDetachInfo::Init()
 }
 
 
-// ----------------------------------------------------------------------------
-// Implementation of ProfilingAPIAttachDetach statics
-
 
 // ----------------------------------------------------------------------------
 // ProfilingAPIDetach::Initialize

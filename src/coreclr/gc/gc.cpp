@@ -10792,6 +10792,14 @@ size_t gc_heap::sort_mark_list()
         size_t region_index = get_basic_region_index_for_address (heap_segment_mem (region));
         uint8_t* region_limit = heap_segment_allocated (region);
 
+        // Due to GC holes, x can point to something in a region that already got freed. And that region's
+        // allocated would be 0 and cause an infinite loop which is much harder to handle on production than
+        // simply throwing an exception.
+        if (region_limit == 0)
+        {
+            FATAL_GC_ERROR();
+        }
+
         uint8_t*** mark_list_piece_start_ptr = &mark_list_piece_start[region_index];
         uint8_t*** mark_list_piece_end_ptr = &mark_list_piece_end[region_index];
 #else // USE_REGIONS
