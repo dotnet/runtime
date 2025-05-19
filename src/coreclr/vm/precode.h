@@ -225,7 +225,7 @@ struct StubPrecode
         pData->Target = (PCODE)target;
     }
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
 #endif // !DACCESS_COMPILE
 };
@@ -428,7 +428,7 @@ struct FixupPrecode
 
     static void StaticInitialize();
 
-    static void GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
 
     PTR_FixupPrecodeData GetData() const
     {
@@ -860,5 +860,10 @@ public:
     static void Init(PrecodeMachineDescriptor* dest);
 };
 #endif //DACCESS_COMPILE
+
+extern InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
+#ifdef HAS_FIXUP_PRECODE
+extern InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
+#endif
 
 #endif // __PRECODE_H__
