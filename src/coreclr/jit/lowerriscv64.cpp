@@ -300,33 +300,34 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         {
             GenTreeIntConCommon* constant = op2->AsIntConCommon();
             UINT64               bit      = (UINT64)constant->IntegralValue();
-            if (binOp->OperIs(GT_AND))
+            if (binOp->OperIs(GT_AND) && op1->OperIs(GT_RSZ, GT_RSH) && bit == 1)
             {
-                if (op1->OperIs(GT_RSZ, GT_RSH) && bit == 1)
-                {
-                    // (a >> N) & 1   =>   BIT_EXTRACT(a, N)
-                    binOp->ChangeOper(GT_BIT_EXTRACT);
-                    binOp->gtType = TYP_INT;
+                // (a >> N) & 1   =>   BIT_EXTRACT(a, N)
+                binOp->ChangeOper(GT_BIT_EXTRACT);
+                binOp->gtType = TYP_INT;
 
-                    BlockRange().Remove(op2);
-                    op2 = op1->gtGetOp2();
-                    BlockRange().Remove(op1);
-                    op1 = op1->gtGetOp1();
-                }
-                bit = ~bit; // check below if it's single-bit clear
+                BlockRange().Remove(op2);
+                op2 = op1->gtGetOp2();
+                BlockRange().Remove(op1);
+                op1 = op1->gtGetOp1();
             }
-
-            if (!op2->isContained() && isPow2(bit))
+            else
             {
-                assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
-                static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
-                constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
-                binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
+                if (binOp->OperIs(GT_AND))
+                    bit = ~bit;
 
-                bit = BitOperations::Log2(bit);
-                assert(bit >= 11); // smaller single-bit masks fit into ori/xori/andi
-                constant->SetIntegralValue(bit);
-                constant->SetContained();
+                if (!op2->isContained() && isPow2(bit))
+                {
+                    assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
+                    static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
+                    constexpr genTreeOps singleBitOpers[] = {GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR};
+                    binOp->ChangeOper(singleBitOpers[binOp->OperGet() - GT_OR]);
+
+                    bit = BitOperations::Log2(bit);
+                    assert(bit >= 11); // smaller single-bit masks fit into ori/xori/andi
+                    constant->SetIntegralValue(bit);
+                    constant->SetContained();
+                }
             }
         }
         else // op2 is not constant
