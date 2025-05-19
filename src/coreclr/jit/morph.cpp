@@ -9212,7 +9212,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
             // LE_UN/GT_UN(expr, int.MaxValue) => EQ/NE(RSZ(expr, 32), 0).
             else if (opts.OptimizationEnabled() && (op1->TypeIs(TYP_LONG) && (op2Value == UINT_MAX)))
             {
-                oper = (oper == GT_GT) ? GT_NE : GT_EQ;
+                oper            = (oper == GT_GT) ? GT_NE : GT_EQ;
                 GenTree* icon32 = gtNewIconNode(32, TYP_INT);
                 icon32->SetMorphed(this);
 
