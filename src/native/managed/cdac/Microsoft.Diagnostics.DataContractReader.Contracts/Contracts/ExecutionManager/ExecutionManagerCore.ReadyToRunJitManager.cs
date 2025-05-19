@@ -12,6 +12,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
     private sealed class ReadyToRunJitManager : JitManager
     {
+        private const uint GCINFO_VERSION = 4;
+
         private readonly uint _runtimeFunctionSize;
         private readonly PtrHashMapLookup _hashMap;
         private readonly HotColdLookup _hotCold;
@@ -23,6 +25,42 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             _hashMap = PtrHashMapLookup.Create(target);
             _hotCold = HotColdLookup.Create(target);
             _runtimeFunctions = RuntimeFunctionLookup.Create(target);
+        }
+
+        public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
+        {
+            gcInfo = TargetPointer.Null;
+            gcVersion = 0;
+
+            // ReadyToRunJitManager::GetGCInfoToken
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            Debug.Assert(rangeSection.Data.R2RModule != TargetPointer.Null);
+
+            Data.Module r2rModule = Target.ProcessedData.GetOrAdd<Data.Module>(rangeSection.Data.R2RModule);
+            Debug.Assert(r2rModule.ReadyToRunInfo != TargetPointer.Null);
+            Data.ReadyToRunInfo r2rInfo = Target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(r2rModule.ReadyToRunInfo);
+
+            // Check if address is in a thunk
+            if (IsStubCodeBlockThunk(rangeSection.Data, r2rInfo, jittedCodeAddress))
+                return;
+
+            // Find the relative address that we are looking for
+            TargetPointer addr = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetPointer imageBase = rangeSection.Data.RangeBegin;
+            TargetPointer relativeAddr = addr - imageBase;
+
+            uint index;
+            if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(r2rInfo.RuntimeFunctions, r2rInfo.NumRuntimeFunctions, relativeAddr, out index))
+                return;
+
+            Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
+
+            TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
+            uint unwindDataSize = sizeof(uint); // TODO(cdac): This is platform specific and maybe needs its own contract. Current value is for x86
+            gcInfo = unwindInfo + unwindDataSize;
+            gcVersion = GCINFO_VERSION; // TODO(cdac): This depends on the major version of the runtime.
         }
 
         public override bool GetMethodInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, [NotNullWhen(true)] out CodeBlock? info)
