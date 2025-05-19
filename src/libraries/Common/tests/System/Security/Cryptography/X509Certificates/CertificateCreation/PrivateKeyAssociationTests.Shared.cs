@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.SLHDsa.Tests;
 using Xunit;
 using Xunit.Sdk;
@@ -10,6 +11,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 {
     public static partial class PrivateKeyAssociationTests
     {
+        private static partial Func<X509Certificate2, MLKem, X509Certificate2> CopyWithPrivateKey_MLKem { get; }
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPublicKey { get; }
+        private static partial Func<X509Certificate2, MLKem> GetMLKemPrivateKey { get; }
         private static partial Func<X509Certificate2, SlhDsa, X509Certificate2> CopyWithPrivateKey_SlhDsa { get; }
         private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPublicKey { get; }
         private static partial Func<X509Certificate2, SlhDsa> GetSlhDsaPrivateKey { get; }
@@ -138,6 +142,153 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         AssertExtensions.SequenceEqual(
                             SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue,
                             certPrivateSlhDsa.ExportSlhDsaSecretKey());
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPublicKey_WithoutPrivateKey()
+        {
+            using (X509Certificate2 cert = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKem certKey = GetMLKemPublicKey(cert))
+            {
+                Assert.NotNull(certKey);
+                AssertExtensions.SequenceEqual(MLKemTestData.IetfMlKem512Spki, certKey.ExportSubjectPublicKeyInfo());
+
+                certKey.Encapsulate(out byte[] ciphertext, out _);
+                Assert.ThrowsAny<CryptographicException>(() => certKey.Decapsulate(ciphertext));
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPublicKey_WithPrivateKey()
+        {
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(
+                MLKemTestData.IetfMlKem512PrivateKeySeedPfx,
+                MLKemTestData.EncryptedPrivateKeyPassword))
+            using (MLKem certKey = GetMLKemPublicKey(cert))
+            {
+                AssertExtensions.TrueExpression(cert.HasPrivateKey);
+                Assert.NotNull(certKey);
+                AssertExtensions.SequenceEqual(MLKemTestData.IetfMlKem512Spki, certKey.ExportSubjectPublicKeyInfo());
+
+                certKey.Encapsulate(out byte[] ciphertext, out _);
+                Assert.ThrowsAny<CryptographicException>(() => certKey.Decapsulate(ciphertext));
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPrivateKey_NoPrivateKey()
+        {
+            using (X509Certificate2 cert = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKem certKey = GetMLKemPrivateKey(cert))
+            {
+                Assert.Null(certKey);
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void GetMLKemPrivateKey_WithPrivateKey()
+        {
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(
+                MLKemTestData.IetfMlKem512PrivateKeySeedPfx,
+                MLKemTestData.EncryptedPrivateKeyPassword))
+            using (MLKem certKey = GetMLKemPrivateKey(cert))
+            {
+                AssertExtensions.TrueExpression(cert.HasPrivateKey);
+                AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, certKey.ExportPrivateSeed());
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLKem()
+        {
+            using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKem privKey = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem512PrivateKeySeed))
+            using (X509Certificate2 wrongAlg = X509CertificateLoader.LoadCertificate(TestData.CertWithEnhancedKeyUsage))
+            {
+                CheckCopyWithPrivateKey(
+                    pubOnly,
+                    wrongAlg,
+                    privKey,
+                    [
+                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem512),
+                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem768),
+                        () => MLKem.GenerateKey(MLKemAlgorithm.MLKem1024),
+                    ],
+                    CopyWithPrivateKey_MLKem,
+                    GetMLKemPublicKey,
+                    GetMLKemPrivateKey,
+                    (priv, pub) =>
+                    {
+                        pub.Encapsulate(out byte[] ciphertext, out byte[] pubSharedSecret);
+                        byte[] privSharedSecret = priv.Decapsulate(ciphertext);
+                        AssertExtensions.SequenceEqual(pubSharedSecret, privSharedSecret);
+                    });
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_Seed()
+        {
+            using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
+            {
+                contract.OnExportPrivateSeedCore = (Span<byte> destination) =>
+                {
+                    MLKemTestData.IncrementalSeed.CopyTo(destination);
+                };
+
+                contract.OnExportEncapsulationKeyCore = (Span<byte> destination) =>
+                {
+                    using MLKem publicKem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki);
+                    publicKem.ExportEncapsulationKey(destination);
+                };
+
+                using (X509Certificate2 cert = CopyWithPrivateKey_MLKem(pubOnly, contract))
+                {
+                    AssertExtensions.TrueExpression(cert.HasPrivateKey);
+
+                    using (MLKem kem = GetMLKemPrivateKey(cert))
+                    {
+                        AssertExtensions.SequenceEqual(MLKemTestData.IncrementalSeed, kem.ExportPrivateSeed());
+                    }
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLKem), nameof(MLKem.IsSupported))]
+        public static void CheckCopyWithPrivateKey_MLKem_OtherMLKem_DecapsulationKey()
+        {
+            using (X509Certificate2 pubOnly = MLKemCertTests.LoadCertificateFromPem(MLKemTestData.IetfMlKem512CertificatePem))
+            using (MLKemContract contract = new(MLKemAlgorithm.MLKem512))
+            {
+                contract.OnExportPrivateSeedCore = (Span<byte> destination) =>
+                {
+                    throw new CryptographicException("Should signal to try decaps key");
+                };
+
+                contract.OnExportDecapsulationKeyCore = (Span<byte> destination) =>
+                {
+                    MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey.AsSpan().CopyTo(destination);
+                };
+
+                contract.OnExportEncapsulationKeyCore = (Span<byte> destination) =>
+                {
+                    using MLKem publicKem = MLKem.ImportSubjectPublicKeyInfo(MLKemTestData.IetfMlKem512Spki);
+                    publicKem.ExportEncapsulationKey(destination);
+                };
+
+                using (X509Certificate2 cert = CopyWithPrivateKey_MLKem(pubOnly, contract))
+                {
+                    AssertExtensions.TrueExpression(cert.HasPrivateKey);
+
+                    using (MLKem kem = GetMLKemPrivateKey(cert))
+                    {
+                        AssertExtensions.SequenceEqual(
+                            MLKemTestData.IetfMlKem512PrivateKeyDecapsulationKey,
+                            kem.ExportDecapsulationKey());
                     }
                 }
             }

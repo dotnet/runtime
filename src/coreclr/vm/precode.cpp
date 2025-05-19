@@ -15,11 +15,6 @@
 #include "perfmap.h"
 #endif
 
-InterleavedLoaderHeapConfig s_stubPrecodeHeapConfig;
-#ifdef HAS_FIXUP_PRECODE
-InterleavedLoaderHeapConfig s_fixupStubPrecodeHeapConfig;
-#endif
-
 //==========================================================================================
 // class Precode
 //==========================================================================================
@@ -500,12 +495,6 @@ static void (*StubPrecodeCode)();
 static void (*StubPrecodeCode_End)();
 #endif
 
-#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
-extern "C" void StubPrecodeCodeTemplate();
-#else
-#define StubPrecodeCodeTemplate NULL
-#endif
-
 void StubPrecode::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -523,34 +512,26 @@ void StubPrecode::StaticInitialize()
         default:
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unsupported OS page size"));
     }
-
-    if (StubPrecodeCodeTemplate != NULL && pageSize != 0x4000)
-    {
-        // This should fail if the template is used on a platform which doesn't support the supported page size for templates
-        ThrowHR(COR_E_EXECUTIONENGINE);
-    }
-
     #undef ENUM_PAGE_SIZE
 #else
     _ASSERTE((SIZE_T)((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
 
-    InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage);
 }
 
-void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
+void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
 #ifdef TARGET_X86
     int totalCodeSize = (pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
     {
-        memcpy(pageBase + i, (const void*)StubPrecodeCode, (uint8_t*)StubPrecodeCode_End - (uint8_t*)StubPrecodeCode);
+        memcpy(pageBase + i, (const void*)StubPrecodeCode, (BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode);
 
-        uint8_t* pTargetSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, Target);
-        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) = pTargetSlot;
+        BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, Target);
+        *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_Target_Offset)) = pTargetSlot;
 
         BYTE* pMethodDescSlot = pageBaseRX + i + pageSize + offsetof(StubPrecodeData, SecretParam);
-        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
+        *(BYTE**)(pageBase + i + SYMBOL_VALUE(StubPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)StubPrecodeCode), StubPrecode::CodeSize, pageSize);
@@ -638,12 +619,6 @@ static void (*FixupPrecodeCode)();
 static void (*FixupPrecodeCode_End)();
 #endif
 
-#ifdef FEATURE_MAP_THUNKS_FROM_IMAGE
-extern "C" void FixupPrecodeCodeTemplate();
-#else
-#define FixupPrecodeCodeTemplate NULL
-#endif
-
 void FixupPrecode::StaticInitialize()
 {
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -663,20 +638,14 @@ void FixupPrecode::StaticInitialize()
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Unsupported OS page size"));
     }
     #undef ENUM_PAGE_SIZE
-
-    if (FixupPrecodeCodeTemplate != NULL && pageSize != 0x4000)
-    {
-        // This should fail if the template is used on a platform which doesn't support the supported page size for templates
-        ThrowHR(COR_E_EXECUTIONENGINE);
-    }
 #else
     _ASSERTE((SIZE_T)((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode) <= FixupPrecode::CodeSize);
 #endif
 
-    InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
+    _ASSERTE(IsFixedPrecodeByASM((PCODE)FixupPrecodeCode));
 }
 
-void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
+void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T pageSize)
 {
     int totalCodeSize = (int)((pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize);
 #ifdef TARGET_X86
@@ -684,14 +653,14 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
         memcpy(pageBase + i, (const void*)FixupPrecodeCode, FixupPrecode::CodeSize);
-        uint8_t* pTargetSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, Target);
-        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) = pTargetSlot;
+        BYTE* pTargetSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, Target);
+        *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) = pTargetSlot;
 
         BYTE* pMethodDescSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, MethodDesc);
-        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
+        *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_MethodDesc_Offset)) = pMethodDescSlot;
 
         BYTE* pPrecodeFixupThunkSlot = pageBaseRX + i + pageSize + offsetof(FixupPrecodeData, PrecodeFixupThunk);
-        *(uint8_t**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) = pPrecodeFixupThunkSlot;
+        *(BYTE**)(pageBase + i + SYMBOL_VALUE(FixupPrecodeCode_PrecodeFixupThunk_Offset)) = pPrecodeFixupThunkSlot;
     }
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), FixupPrecode::CodeSize, pageSize);
@@ -706,7 +675,7 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
 {
     BYTE *pInstr = (BYTE*)PCODEToPINSTR(addr);
 #ifdef TARGET_X86
-    return
+    BOOL result =
         *(WORD*)(pInstr) == *(WORD*)(FixupPrecodeCode) &&
         *(DWORD*)(pInstr + SYMBOL_VALUE(FixupPrecodeCode_Target_Offset)) == (DWORD)(pInstr + GetStubCodePageSize() + offsetof(FixupPrecodeData, Target)) &&
         *(pInstr + 6) == *((BYTE*)FixupPrecodeCode + 6) &&
@@ -722,8 +691,11 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
         pTemplateInstr++;
     }
 
-    return pTemplateInstr == pTemplateInstrEnd;
+    BOOL result = pTemplateInstr == pTemplateInstrEnd;
 #endif // TARGET_X86
+
+    _ASSERTE(IsFixupPrecodeByASM_DAC(addr) == result);
+    return result;
 }
 
 #endif // HAS_FIXUP_PRECODE
@@ -821,7 +793,11 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
 #include <cdacplatformmetadata.hpp>
 
 #ifdef HAS_FIXUP_PRECODE
+#ifndef DACCESS_COMPILE
+BOOL FixupPrecode::IsFixupPrecodeByASM_DAC(PCODE addr)
+#else
 BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
+#endif
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PrecodeMachineDescriptor *precodeDescriptor = &(&g_cdacPlatformMetadata)->precode;
@@ -842,8 +818,11 @@ BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
 }
 #endif // HAS_FIXUP_PRECODE
 
-#ifdef HAS_FIXUP_PRECODE
+#ifndef DACCESS_COMPILE
+BOOL StubPrecode::IsStubPrecodeByASM_DAC(PCODE addr)
+#else
 BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
+#endif
 {
     LIMITED_METHOD_DAC_CONTRACT;
     PrecodeMachineDescriptor *precodeDescriptor = &(&g_cdacPlatformMetadata)->precode;
@@ -862,5 +841,4 @@ BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
 
     return TRUE;
 }
-#endif // HAS_FIXUP_PRECODE
 #endif // DACCESS_COMPILE
