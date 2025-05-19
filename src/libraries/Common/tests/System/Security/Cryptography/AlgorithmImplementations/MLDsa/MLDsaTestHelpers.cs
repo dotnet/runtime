@@ -415,7 +415,7 @@ namespace System.Security.Cryptography.Tests
 
             while (!func(buffer, out written))
             {
-                Array.Resize(ref buffer, buffer.Length * 2); 
+                Array.Resize(ref buffer, buffer.Length * 2);
             }
 
             return buffer.AsSpan(0, written).ToArray();
