@@ -1885,7 +1885,8 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
 
 static int32_t GetLdindForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_LDIND_I1;
         case InterpTypeU1: return INTOP_LDIND_U1;
         case InterpTypeI2: return INTOP_LDIND_I2;
@@ -1905,7 +1906,8 @@ static int32_t GetLdindForType(InterpType interpType)
 
 static int32_t GetStindForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_STIND_I1;
         case InterpTypeU1: return INTOP_STIND_U1;
         case InterpTypeI2: return INTOP_STIND_I2;
@@ -1925,7 +1927,8 @@ static int32_t GetStindForType(InterpType interpType)
 
 static int32_t GetStelemForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_STELEM_I1;
         case InterpTypeU1: return INTOP_STELEM_U1;
         case InterpTypeI2: return INTOP_STELEM_I2;
