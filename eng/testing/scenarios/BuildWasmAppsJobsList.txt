@@ -47,3 +47,5 @@ Wasm.Build.Tests.WorkloadTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
 Wasm.Build.Tests.DebugLevelTests
 Wasm.Build.Tests.PreloadingTests
+Wasm.Build.Tests.EnvVariablesTests
+Wasm.Build.Tests.HttpTests

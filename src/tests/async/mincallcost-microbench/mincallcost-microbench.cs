@@ -24,6 +24,7 @@ public class Async2MinCallCostMicrobench
         return 100;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     public static async Task AsyncEntry()
     {
         if (!GCSettings.IsServerGC)
@@ -66,6 +67,7 @@ public class Async2MinCallCostMicrobench
 
     static double time = 10.0;
     static bool printResult = false;
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task RunBench(string type)
     {
         if (printResult)
@@ -85,6 +87,7 @@ public class Async2MinCallCostMicrobench
             Console.WriteLine("Result = {0}", (long)avg);
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<long> Run(string type)
     {
         if (type == "AsyncCallingAsync")
@@ -114,6 +117,7 @@ public class Async2MinCallCostMicrobench
     }
 #pragma warning disable CS1998
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<long> AsyncCallingAsync()
     {
         Stopwatch timer = Stopwatch.StartNew();
@@ -131,6 +135,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<long> AsyncCallingValueTaskAsync()
     {
         Stopwatch timer = Stopwatch.StartNew();
@@ -148,6 +153,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<long> AsyncCallingAsync2()
     {
         Stopwatch timer = Stopwatch.StartNew();
@@ -165,7 +171,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
-    private static async2 Task<long> Async2CallingAsync()
+    private static async Task<long> Async2CallingAsync()
     {
         Stopwatch timer = Stopwatch.StartNew();
 
@@ -182,7 +188,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
-    private static async2 Task<long> Async2CallingValueTaskAsync()
+    private static async Task<long> Async2CallingValueTaskAsync()
     {
         Stopwatch timer = Stopwatch.StartNew();
 
@@ -199,7 +205,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
-    private static async2 Task<long> Async2CallingAsync2()
+    private static async Task<long> Async2CallingAsync2()
     {
         Stopwatch timer = Stopwatch.StartNew();
 
@@ -216,7 +222,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
-    private static async2 Task<long> Async2CallingAsync2NoInlining()
+    private static async Task<long> Async2CallingAsync2NoInlining()
     {
         Stopwatch timer = Stopwatch.StartNew();
 
@@ -233,7 +239,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
-    private static async2 Task<long> Async2CallingAsync2WithContextSave()
+    private static async Task<long> Async2CallingAsync2WithContextSave()
     {
         FakeThread thread = CurrentThread;
         if (thread == null)
@@ -274,6 +280,7 @@ public class Async2MinCallCostMicrobench
     public static FakeThread CurrentThread;
 
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<long> AsyncCallingYield()
     {
         Stopwatch timer = Stopwatch.StartNew();
@@ -291,7 +298,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
-    private static async2 Task<long> Async2CallingYield()
+    private static async Task<long> Async2CallingYield()
     {
         Stopwatch timer = Stopwatch.StartNew();
 
@@ -325,6 +332,7 @@ public class Async2MinCallCostMicrobench
         return numIters * 10;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task EmptyAsync()
     {
         // Add some work that forces the method to be a real async method
@@ -333,6 +341,7 @@ public class Async2MinCallCostMicrobench
         return;
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async ValueTask EmptyValueTaskAsync()
     {
         // Add some work that forces the method to be a real async method
@@ -341,7 +350,7 @@ public class Async2MinCallCostMicrobench
         return;
     }
 
-    private static async2 Task EmptyAsync2()
+    private static async Task EmptyAsync2()
     {
         // Add some work that forces the method to be a real async method
         if (time == 0)
@@ -350,7 +359,7 @@ public class Async2MinCallCostMicrobench
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 Task EmptyAsync2NoInlining()
+    private static async Task EmptyAsync2NoInlining()
     {
         // Add some work that forces the method to be a real async method
         if (time == 0)
@@ -358,8 +367,8 @@ public class Async2MinCallCostMicrobench
         return;
     }
 
-    // This simulates async2 capturing the same amount of state that existing async needs to capture to handle the current semantics around async locals and synchronizationcontext
-    private static async2 Task EmptyAsync2WithContextSave()
+    // This simulates async capturing the same amount of state that existing async needs to capture to handle the current semantics around async locals and synchronizationcontext
+    private static async Task EmptyAsync2WithContextSave()
     {
         FakeThread thread = CurrentThread;
         FakeExecContext? previousExecutionCtx = thread._execContext;

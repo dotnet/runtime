@@ -253,6 +253,30 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
     return S_OK;
 }
 
+#ifdef FEATURE_INTERPRETER
+// Set the call stub for the interpreter to JIT/AOT calls
+// Returns true if the current call set the stub, false if it was already set
+bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+}
+
+CallStubHeader *MethodDesc::GetCallStub()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+}
+#endif // FEATURE_INTERPRETER
+
 #endif //!DACCESS_COMPILE
 
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
@@ -3673,7 +3697,24 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 
     // Need to save the Debug-Info for this method so that we can see it in a debugger later.
-    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, this);
+#ifdef FEATURE_CODE_VERSIONING
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+        NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(dac_cast<PTR_MethodDesc>(this));
+        for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+        {
+            PCODE addrCode = iter->GetNativeCode();
+            EECodeInfo codeInfo(addrCode);
+            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
+        }
+    }
+#else
+    PCODE entryPoint = GetNativeCode();
+    EECodeInfo codeInfo(entryPoint);
+    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
+#endif // FEATURE_CODE_VERSIONING
 
     if (!IsNoMetadata() ||IsILStub())
     {
@@ -3715,10 +3756,14 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
     if (!ilVersion.IsNull())
     {
-        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
-        ilVersion.GetVersionId();
-        ilVersion.GetRejitState();
-        ilVersion.GetIL();
+        EX_TRY
+        {
+            ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+            ilVersion.GetVersionId();
+            ilVersion.GetRejitState();
+            ilVersion.GetIL();
+        }
+        EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
     }
 #endif
 
