@@ -1905,7 +1905,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
         }
 
         // If the continuation is unreachable, morph may
-        // have chaged the continuation to an empty BBJ_THROW.
+        // have changed the continuation to an empty BBJ_THROW.
         // Tolerate.
         //
         if (isEmpty && continuation->KindIs(BBJ_THROW))
