@@ -244,6 +244,21 @@ languageDecl            : _LANGUAGE SQSTRING                                    
                         ;
 /*  Basic tokens  */
 id                      : ID                                  { $$ = $1; }
+                        /* Allow methodImpl attributes to be used as identifiers */
+                        | NATIVE_                             { $$ = newString("native"); }
+                        | CIL_                                { $$ = newString("cil"); }
+                        | OPTIL_                              { $$ = newString("optil"); }
+                        | MANAGED_                            { $$ = newString("managed"); }
+                        | UNMANAGED_                          { $$ = newString("unmanaged"); }
+                        | FORWARDREF_                         { $$ = newString("forwardref"); }
+                        | PRESERVESIG_                        { $$ = newString("preservesig"); }
+                        | RUNTIME_                            { $$ = newString("runtime"); }
+                        | INTERNALCALL_                       { $$ = newString("internalcall"); }
+                        | SYNCHRONIZED_                       { $$ = newString("synchronized"); }
+                        | NOINLINING_                         { $$ = newString("noinlining"); }
+                        | AGGRESSIVEINLINING_                 { $$ = newString("aggressiveinlining"); }
+                        | NOOPTIMIZATION_                     { $$ = newString("nooptimization"); }
+                        | AGGRESSIVEOPTIMIZATION_             { $$ = newString("aggressiveoptimization"); }
                         | ASYNC_                              { $$ = newString("async"); }
                         | SQSTRING                            { $$ = $1; }
                         ;
