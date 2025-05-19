@@ -40,19 +40,16 @@ namespace System.Net.Mail
         private int _port;
         private int _timeout = 100000;
         private bool _inCall;
-        private bool _cancelled;
         private bool _timedOut;
         private string? _targetName;
         private SmtpDeliveryMethod _deliveryMethod = SmtpDeliveryMethod.Network;
         private SmtpDeliveryFormat _deliveryFormat = SmtpDeliveryFormat.SevenBit; // Non-EAI default
         private string? _pickupDirectoryLocation;
         private SmtpTransport _transport;
-        private MailMessage? _message; //required to prevent premature finalization
-        private SendOrPostCallback _onSendCompletedDelegate;
-        private Timer? _timer;
         private const int DefaultPort = 25;
         internal string _clientDomain;
         private bool _disposed;
+        private CancellationTokenSource _pendingSendCts;
         private ServicePoint? _servicePoint;
         // ports above this limit are invalid
         private const int MaxPortValue = 65535;
@@ -87,13 +84,13 @@ namespace System.Net.Mail
         }
 
         [MemberNotNull(nameof(_transport))]
-        [MemberNotNull(nameof(_onSendCompletedDelegate))]
         [MemberNotNull(nameof(_clientDomain))]
+        [MemberNotNull(nameof(_pendingSendCts))]
         private void Initialize()
         {
             _transport = new SmtpTransport(this);
+            _pendingSendCts = new CancellationTokenSource();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _transport);
-            _onSendCompletedDelegate = new SendOrPostCallback(SendCompletedWaitCallback);
 
             if (!string.IsNullOrEmpty(_host))
             {
@@ -384,11 +381,6 @@ namespace System.Net.Mail
             SendCompleted?.Invoke(this, e);
         }
 
-        private void SendCompletedWaitCallback(object? operationState)
-        {
-            OnSendCompleted((AsyncCompletedEventArgs)operationState!);
-        }
-
         public void Send(string from, string recipients, string? subject, string? body)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -412,12 +404,26 @@ namespace System.Net.Mail
                 NetEventSource.Associate(this, message);
             }
 
+            CancellationTokenSource? cts = null;
+            if (cancellationToken.CanBeCanceled)
+            {
+                // If the caller provided a cancellation token, we link it to our pending send cancellation token source.
+                cts = CancellationTokenSource.CreateLinkedTokenSource(_pendingSendCts.Token, cancellationToken);
+                cancellationToken = cts.Token;
+            }
+            else
+            {
+                cancellationToken = _pendingSendCts.Token;
+            }
+
             // initial exceptions should be thrown directly, not via callback
             bool doInvokeSendCompleted = false;
 
             Exception? exception = null;
+            bool canceled = false;
             try
             {
+                Timer? timer = null;
                 try
                 {
                     if (InCall)
@@ -470,7 +476,7 @@ namespace System.Net.Mail
                     forceWrapExceptions = true;
 
                     _timedOut = false;
-                    _timer = new Timer(new TimerCallback(TimeOutCallback), null, Timeout, Timeout);
+                    timer = new Timer(new TimerCallback(TimeOutCallback), null, Timeout, Timeout);
                     bool allowUnicode = false;
                     string? pickupDirectory = PickupDirectoryLocation;
 
@@ -503,7 +509,6 @@ namespace System.Net.Mail
                                 message.BuildDeliveryStatusNotificationString(), allowUnicode, cancellationToken).ConfigureAwait(false);
                             break;
                     }
-                    _message = message;
                     doInvokeSendCompleted = invokeSendCompleted;
                     await message.SendAsync<TIOAdapter>(writer, DeliveryMethod != SmtpDeliveryMethod.Network, allowUnicode, cancellationToken).ConfigureAwait(false);
                     writer.Close();
@@ -526,6 +531,8 @@ namespace System.Net.Mail
                         throw;
                     }
 
+                    canceled = e is OperationCanceledException;
+
                     Abort();
                     if (_timedOut)
                     {
@@ -546,7 +553,7 @@ namespace System.Net.Mail
                 finally
                 {
                     InCall = false;
-                    _timer?.Dispose();
+                    timer?.Dispose();
                 }
             }
             catch (Exception e) when (doInvokeSendCompleted)
@@ -555,9 +562,11 @@ namespace System.Net.Mail
             }
             finally
             {
+                cts?.Dispose();
+
                 if (doInvokeSendCompleted)
                 {
-                    AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, _cancelled, userToken);
+                    AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, canceled, userToken);
                     OnSendCompleted(eventArgs);
                 }
             }
@@ -598,13 +607,16 @@ namespace System.Net.Mail
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (!InCall || _cancelled)
+            if (!InCall)
             {
                 return;
             }
 
-            _cancelled = true;
-            Abort();
+            // With every request we link this cancellation token source.
+            CancellationTokenSource currentCts = Interlocked.Exchange(ref _pendingSendCts, new CancellationTokenSource());
+
+            currentCts.Cancel();
+            currentCts.Dispose();
         }
 
 
@@ -726,17 +738,16 @@ namespace System.Net.Mail
         {
             if (disposing && !_disposed)
             {
-                if (InCall && !_cancelled)
+                _disposed = true;
+                if (InCall)
                 {
-                    _cancelled = true;
+                    _pendingSendCts?.Cancel();
                     Abort();
                 }
                 else
                 {
                     _transport?.ReleaseConnection();
                 }
-                _timer?.Dispose();
-                _disposed = true;
             }
         }
     }
