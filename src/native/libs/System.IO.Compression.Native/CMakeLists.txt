@@ -210,3 +210,7 @@ else ()
 endif ()
 
 install (TARGETS System.IO.Compression.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install (TARGETS System.IO.Compression.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+endif()

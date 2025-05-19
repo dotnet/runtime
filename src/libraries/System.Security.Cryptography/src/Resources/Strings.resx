@@ -747,6 +747,9 @@
   <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
     <value>The system cryptographic library returned error '{0}' of type '{1}'</value>
   </data>
+  <data name="Cryptography_UnmappedOpenSslCode" xml:space="preserve">
+    <value>OpenSSL mapping function {0} reported unhandled error code '{1}'.</value>
+  </data>
   <data name="Cryptography_UnsupportedPaddingMode" xml:space="preserve">
     <value>The specified PaddingMode is not supported.</value>
   </data>

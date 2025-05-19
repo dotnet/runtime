@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Mono.Cecil;
 
@@ -67,6 +68,29 @@ namespace Mono.Linker.Steps
 			}
 		}
 
+		bool TryResolveTargetType(TypeReference targetTypeReference, ICustomAttributeProvider unsafeAccessorTypeProvider, AssemblyDefinition assembly, [NotNullWhen(true)] out TypeDefinition? targetType)
+		{
+			targetType = null;
+			if (_context.TryResolve (targetTypeReference) is not TypeDefinition initialTargetType)
+				return false;
+
+			targetType = initialTargetType;
+
+			foreach (CustomAttribute attr in unsafeAccessorTypeProvider.CustomAttributes) {
+				if (attr.Constructor.DeclaringType.FullName == "System.Runtime.CompilerServices.UnsafeAccessorTypeAttribute") {
+					if (attr.HasConstructorArguments && attr.ConstructorArguments[0].Value is string typeName) {
+						TypeDefinition? newTargetType = _context.TryResolve (assembly, typeName);
+						if (newTargetType is null)
+							return false; // We can't find the target type, so there's nothing to mark.
+
+						targetType = newTargetType;
+					}
+				}
+			}
+
+			return true;
+		}
+
 		void ProcessConstructorAccessor (MethodDefinition method, string? name)
 		{
 			// A return type is required for a constructor, otherwise
@@ -76,7 +100,7 @@ namespace Mono.Linker.Steps
 			if (method.ReturnsVoid () || method.ReturnType.IsByRefOrPointer () || !string.IsNullOrEmpty (name))
 				return;
 
-			if (_context.TryResolve (method.ReturnType) is not TypeDefinition targetType)
+			if (!TryResolveTargetType(method.ReturnType, method.MethodReturnType, method.Module.Assembly, out TypeDefinition? targetType))
 				return;
 
 			foreach (MethodDefinition targetMethod in targetType.Methods) {
@@ -97,7 +121,7 @@ namespace Mono.Linker.Steps
 				name = method.Name;
 
 			TypeReference targetTypeReference = method.Parameters[0].ParameterType;
-			if (_context.TryResolve (targetTypeReference) is not TypeDefinition targetType)
+			if (!TryResolveTargetType (targetTypeReference, method.Parameters[0], method.Module.Assembly, out TypeDefinition? targetType))
 				return;
 
 			if (!isStatic && targetType.IsValueType && !targetTypeReference.IsByReference)
@@ -124,7 +148,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			TypeReference targetTypeReference = method.Parameters[0].ParameterType;
-			if (_context.TryResolve (targetTypeReference) is not TypeDefinition targetType)
+			if (!TryResolveTargetType (targetTypeReference, method.Parameters[0], method.Module.Assembly, out TypeDefinition? targetType))
 				return;
 
 			if (!isStatic && targetType.IsValueType && !targetTypeReference.IsByReference)

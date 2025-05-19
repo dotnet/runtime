@@ -509,6 +509,60 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+;;
+;; Prologue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
+        PUSH_CALLEE_SAVED_REGISTERS
+
+        arguments_scratch_area_size = 20h
+        xmm_save_area_size = 10 * 10h ;; xmm6..xmm15 save area
+        stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
+        rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
+        rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
+
+        alloc_stack     stack_alloc_size
+
+        ;; Mirror clearing of AVX state done by regular method prologs
+        vzeroupper
+
+        save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
+        save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
+        save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
+        save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
+        save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
+        save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
+        save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
+        save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
+        save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
+        save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
+
+        END_PROLOGUE
+endm
+
+;;
+;; Epilogue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_EPILOGUE macro
+        ;; Mirror clearing of AVX state done by regular method epilogs
+        vzeroupper
+
+        movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
+        movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
+        movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
+        movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
+        movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
+        movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
+        movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
+        movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
+        movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
+        movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
+
+        add     rsp, stack_alloc_size
+
+        POP_CALLEE_SAVED_REGISTERS
+endm
+
 ; This helper enables us to call into a funclet after restoring Fp register
 NESTED_ENTRY CallEHFunclet, _TEXT
         ; On entry:
@@ -519,19 +573,35 @@ NESTED_ENTRY CallEHFunclet, _TEXT
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
-        push_nonvol_reg rbp
-        alloc_stack     20h ; argument scratch space for the call
-        END_PROLOGUE
+        FUNCLET_CALL_PROLOGUE 0, 1
 
-        ; Restore RBP
+        ;  Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
         mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
-        ; Save the SP of this function.
+        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi - OFFSETOF__CONTEXT__Rbx]
+        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi - OFFSETOF__CONTEXT__Rbx]
+        mov     r12, [r8 + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
+        mov     r13, [r8 + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
+        mov     r14, [r8 + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
+        mov     r15, [r8 + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+
+        ; Restore XMM registers from CONTEXT
+        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15 - OFFSETOF__CONTEXT__Rbx]
+
+         ; Save the SP of this function.
         mov     [r9], rsp
         ; Invoke the funclet
         call    rdx
 
-        add     rsp, 20h
-        pop     rbp
+        FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFunclet, _TEXT
 
@@ -546,9 +616,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
-        push_nonvol_reg rbp
-        alloc_stack     20h ; argument scratch space for the call
-        END_PROLOGUE
+        FUNCLET_CALL_PROLOGUE 0, 1
 
         ; Save the SP of this function
         mov     [r9], rsp
@@ -557,8 +625,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT
         ; Invoke the filter funclet
         call    r8
 
-        add     rsp, 20h
-        pop     rbp
+        FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFilterFunclet, _TEXT
 

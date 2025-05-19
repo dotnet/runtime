@@ -171,7 +171,22 @@ extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, Che
 #else
 // Regular checked write barrier.
 extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
-#endif
+
+#ifdef TARGET_ARM64
+#define RhpCheckedAssignRef RhpCheckedAssignRefArm64
+#define RhpByRefAssignRef RhpByRefAssignRefArm64
+#define RhpAssignRef RhpAssignRefArm64
+#elif defined (TARGET_LOONGARCH64)
+#define RhpAssignRef RhpAssignRefLoongArch64
+#elif defined (TARGET_RISCV64)
+#define RhpAssignRef RhpAssignRefRiscV64
+#endif // TARGET_*
+
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
+
+extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
@@ -181,70 +196,6 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
-
-#ifdef TARGET_AMD64
-
-
-class WriteBarrierManager
-{
-public:
-    enum WriteBarrierType
-    {
-        WRITE_BARRIER_UNINITIALIZED,
-        WRITE_BARRIER_PREGROW64,
-        WRITE_BARRIER_POSTGROW64,
-#ifdef FEATURE_SVR_GC
-        WRITE_BARRIER_SVR64,
-#endif // FEATURE_SVR_GC
-        WRITE_BARRIER_BYTE_REGIONS64,
-        WRITE_BARRIER_BIT_REGIONS64,
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        WRITE_BARRIER_WRITE_WATCH_PREGROW64,
-        WRITE_BARRIER_WRITE_WATCH_POSTGROW64,
-#ifdef FEATURE_SVR_GC
-        WRITE_BARRIER_WRITE_WATCH_SVR64,
-#endif // FEATURE_SVR_GC
-        WRITE_BARRIER_WRITE_WATCH_BYTE_REGIONS64,
-        WRITE_BARRIER_WRITE_WATCH_BIT_REGIONS64,
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        WRITE_BARRIER_BUFFER
-    };
-
-    WriteBarrierManager();
-    void Initialize();
-
-    int UpdateEphemeralBounds(bool isRuntimeSuspended);
-    int UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    int SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
-    int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    size_t GetCurrentWriteBarrierSize();
-
-protected:
-    size_t GetSpecificWriteBarrierSize(WriteBarrierType writeBarrier);
-    PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
-    PCODE  GetCurrentWriteBarrierCode();
-    int ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
-    bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, bool bUseBitwiseWriteBarrier, WriteBarrierType* pNewWriteBarrierType);
-
-private:
-    void Validate();
-
-    WriteBarrierType    m_currentWriteBarrier;
-
-    PBYTE   m_pWriteWatchTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
-    PBYTE   m_pLowerBoundImmediate;         // PREGROW | POSTGROW |     | WRITE_WATCH | REGION
-    PBYTE   m_pCardTableImmediate;          // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
-    PBYTE   m_pCardBundleTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
-    PBYTE   m_pUpperBoundImmediate;         //         | POSTGROW |     | WRITE_WATCH | REGION
-    PBYTE   m_pRegionToGenTableImmediate;   //         |          |     | WRITE_WATCH | REGION
-    PBYTE   m_pRegionShrDest;               //         |          |     | WRITE_WATCH | REGION
-    PBYTE   m_pRegionShrSrc;                //         |          |     | WRITE_WATCH | RETION
-};
-
-#endif // TARGET_AMD64
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -276,9 +227,10 @@ extern "C"
 
 // JIThelp.asm/JIThelp.s
 #define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_CheckedWriteBarrier##reg(); \
     void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg();
+    void STDCALL JIT_WriteBarrier##reg(); \
+    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
+    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
 
     ENUM_X86_WRITE_BARRIER_REGISTERS()
 #undef X86_WRITE_BARRIER_REGISTER

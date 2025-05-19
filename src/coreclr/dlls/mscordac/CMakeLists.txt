@@ -116,10 +116,6 @@ else(CLR_CMAKE_HOST_WIN32)
         # ensure proper resolving of circular references between a subset of the libraries.
         set(START_LIBRARY_GROUP -Wl,--start-group)
         set(END_LIBRARY_GROUP -Wl,--end-group)
-
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
-        set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -150,10 +146,8 @@ set(COREDAC_LIBRARIES
     ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
     cee_dac
     cordbee_dac
-    ${START_WHOLE_ARCHIVE} # force all exports to be available
     corguids
     daccess
-    ${END_WHOLE_ARCHIVE}
     dbgutil
     mdcompiler_dac
     mdruntime_dac
@@ -200,10 +194,8 @@ if(CLR_CMAKE_HOST_WIN32)
 else(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         coreclrminipal
-        ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)
 

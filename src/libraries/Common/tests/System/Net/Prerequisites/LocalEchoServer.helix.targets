@@ -5,8 +5,8 @@
                                '$(Scenario)' == 'WasmTestOnFirefox')">
 
     <HelixExtensionTargets>$(HelixExtensionTargets);_AddMiddlewarePayload</HelixExtensionTargets>
-    <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
-    <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
+    <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(NetCoreAppPrevious)'))</TestEchoMiddleware>
+    <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(NetCoreAppPrevious)'))</RemoteLoopMiddleware>
   </PropertyGroup>
 
   <Target Name="_AddMiddlewarePayload">

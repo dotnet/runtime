@@ -808,6 +808,9 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
 
+// Enable postorder local assertion prop
+RELEASE_CONFIG_INTEGER(JitEnablePostorderLocalAssertionProp, "JitEnablePostorderLocalAssertionProp", 1)
+
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)
 

@@ -363,6 +363,44 @@ LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
     jmp METHODDESC_REGISTER
 LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
 
+//
+// Prologue of all funclet calling helpers (CallXXXXFunclet)
+//
+.macro FUNCLET_CALL_PROLOGUE localsCount, alignStack
+        push_nonvol_reg r15     // save preserved regs for OS stackwalker
+        push_nonvol_reg r14     // ...
+        push_nonvol_reg r13     // ...
+        push_nonvol_reg r12     // ...
+        push_nonvol_reg rbx     // ...
+        push_nonvol_reg rbp     // ...
+
+        stack_alloc_size = \localsCount * 8 + \alignStack * 8
+
+        alloc_stack     stack_alloc_size
+
+        // Mirror clearing of AVX state done by regular method prologs
+        vzeroupper
+
+        END_PROLOGUE
+.endm
+
+//
+// Epilogue of all funclet calling helpers (CallXXXXFunclet)
+//
+.macro FUNCLET_CALL_EPILOGUE
+        // Mirror clearing of AVX state done by regular method epilogs
+        vzeroupper
+
+        free_stack      stack_alloc_size
+
+        pop_nonvol_reg rbp
+        pop_nonvol_reg rbx
+        pop_nonvol_reg r12
+        pop_nonvol_reg r13
+        pop_nonvol_reg r14
+        pop_nonvol_reg r15
+.endm
+
 // This helper enables us to call into a funclet after restoring Fp register
 NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         // On entry:
@@ -373,16 +411,21 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
         // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         //
 
-        push_nonvol_reg rbp
+        FUNCLET_CALL_PROLOGUE 0, 1
 
-        // Restore RBP
+        //  Restore RBX, RBP, R12, R13, R14, R15 from CONTEXT
         mov     rbp, [rdx + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        mov     r12, [rdx + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
+        mov     r13, [rdx + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
+        mov     r14, [rdx + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
+        mov     r15, [rdx + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+
         // Save the SP of this function.
         mov     [rcx], rsp
         // Invoke the funclet
         call    rsi
 
-        pop_nonvol_reg rbp
+        FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFunclet, _TEXT
 
@@ -397,7 +440,7 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         // RCX = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         //
 
-        push_nonvol_reg rbp
+        FUNCLET_CALL_PROLOGUE 0, 1
 
         // Restore RBP
         mov     rbp, rsi
@@ -406,6 +449,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
         // Invoke the filter funclet
         call    rdx
 
-        pop_nonvol_reg rbp
+        FUNCLET_CALL_EPILOGUE
         ret
 NESTED_END CallEHFilterFunclet, _TEXT

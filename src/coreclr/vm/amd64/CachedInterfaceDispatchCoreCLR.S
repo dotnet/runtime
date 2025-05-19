@@ -9,6 +9,7 @@
 
 // Stub dispatch routine for dispatch to a vtable slot
 LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
+
         // r11 currently contains the indirection cell address.
         // load r11 to point to the vtable offset (which is stored in the m_pCache field).
         mov     r11, [r11 + OFFSETOF__InterfaceDispatchCell__m_pCache]
@@ -20,7 +21,15 @@ LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
         // Load the MethodTable from the object instance in rdi, and add it to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
-ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
+    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
         add     rax, [rdi]
 
         // Load the target address of the vtable chunk into rax

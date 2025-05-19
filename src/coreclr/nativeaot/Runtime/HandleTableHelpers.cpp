@@ -134,3 +134,12 @@ EXTERN_C uint32_t __stdcall RhIUnknown_AddRef(void* pComThis)
     ManagedObjectWrapper* wrapper = ToManagedObjectWrapper(pComThis);
     return wrapper->AddRef();
 }
+
+//
+// Release is implemented in native code so that it does not need to synchronize with the GC. This is important because Xaml
+// can invoke this Release during shutdown, and we don't want to synchronize with the GC at that time.
+//
+EXTERN_C uint32_t __stdcall RhUntracked_AddRefRelease(void*)
+{
+    return 1;
+}

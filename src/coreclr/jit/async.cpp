@@ -1,6 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// This file implements the transformation of C# async methods into state
+// machines. The transformation takes place late in the JIT pipeline, when most
+// optimizations have already been performed, right before lowering.
+//
+// The transformation performs the following key operations:
+//
+// 1. Each async call becomes a suspension point where execution can pause and
+//    return to the caller, accompanied by a resumption point where execution can
+//    continue when the awaited operation completes.
+//
+// 2. When suspending at a suspension point a continuation object is created that contains:
+//    - All live local variables
+//    - State number to identify which await is being resumed
+//    - Return value from the awaited operation (filled in by the callee later)
+//    - Exception information if an exception occurred
+//    - Resumption function pointer
+//    - Flags containing additional information
+//
+// 3. The method entry is modified to include dispatch logic that checks for an
+//    incoming continuation and jumps to the appropriate resumption point.
+//
+// 4. Special handling is included for:
+//    - Exception propagation across await boundaries
+//    - Return value management for different types (primitives, references, structs)
+//    - Tiered compilation and On-Stack Replacement (OSR)
+//    - Optimized state capture based on variable liveness analysis
+//
+// The transformation ensures that the semantics of the original async method are
+// preserved while enabling efficient suspension and resumption of execution.
+//
+
 #include "jitpch.h"
 #include "jitstd/algorithm.h"
 #include "async.h"

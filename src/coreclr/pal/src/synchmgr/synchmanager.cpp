@@ -44,18 +44,6 @@ SET_DEFAULT_DEBUG_CHANNEL(SYNC); // some headers have code with asserts, so do t
 
 const int CorUnix::CThreadSynchronizationInfo::PendingSignalingsArraySize;
 
-// We use the synchronization manager's worker thread to handle
-// process termination requests. It does so by calling the
-// registered handler function.
-PTERMINATION_REQUEST_HANDLER g_terminationRequestHandler = NULL;
-
-// Set the handler for process termination requests.
-VOID PALAPI PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationHandler)
-{
-    g_terminationRequestHandler = terminationHandler;
-}
-
 namespace CorUnix
 {
     /////////////////////////////////
@@ -1162,25 +1150,6 @@ namespace CorUnix
 
     /*++
     Method:
-        CPalSynchronizationManager::SendTerminationRequestToWorkerThread
-
-    Send a request to the worker thread to initiate process termination.
-    --*/
-    PAL_ERROR CPalSynchronizationManager::SendTerminationRequestToWorkerThread()
-    {
-        PAL_ERROR palErr = GetInstance()->WakeUpLocalWorkerThread(SynchWorkerCmdTerminationRequest);
-        if (palErr != NO_ERROR)
-        {
-            ERROR("Failed to wake up worker thread [errno=%d {%s%}]\n",
-                  errno, strerror(errno));
-            palErr = ERROR_INTERNAL_ERROR;
-        }
-
-        return palErr;
-    }
-
-    /*++
-    Method:
       CPalSynchronizationManager::AreAPCsPending
 
     Returns 'true' if there are APCs currently pending for the target
@@ -1558,22 +1527,6 @@ namespace CorUnix
         return palErr;
     }
 
-    // Entry point routine for the thread that initiates process termination.
-    DWORD PALAPI TerminationRequestHandlingRoutine(LPVOID pArg)
-    {
-        // Call the termination request handler if one is registered.
-        if (g_terminationRequestHandler != NULL)
-        {
-            // The process will terminate normally by calling exit.
-            // We use an exit code of '128 + signo'. This is a convention used in popular
-            // shells to calculate an exit code when the process was terminated by a signal.
-            // This is also used by the Process.ExitCode implementation.
-            g_terminationRequestHandler(128 + SIGTERM);
-        }
-
-        return 0;
-    }
-
     /*++
     Method:
       CPalSynchronizationManager::WorkerThread
@@ -1612,31 +1565,6 @@ namespace CorUnix
             }
             switch (swcCmd)
             {
-                case SynchWorkerCmdTerminationRequest:
-                    // This worker thread is being asked to initiate process termination
-
-                    HANDLE hTerminationRequestHandlingThread;
-                    palErr = InternalCreateThread(pthrWorker,
-                                      NULL,
-                                      0,
-                                      &TerminationRequestHandlingRoutine,
-                                      NULL,
-                                      0,
-                                      PalWorkerThread,
-                                      NULL,
-                                      &hTerminationRequestHandlingThread);
-
-                    if (NO_ERROR != palErr)
-                    {
-                        ERROR("Unable to create worker thread\n");
-                    }
-
-                    if (hTerminationRequestHandlingThread != NULL)
-                    {
-                        CloseHandle(hTerminationRequestHandlingThread);
-                    }
-
-                    break;
                 case SynchWorkerCmdNop:
                     TRACE("Synch Worker: received SynchWorkerCmdNop\n");
                     if (fShuttingDown)
@@ -1776,8 +1704,7 @@ namespace CorUnix
             }
 
             _ASSERT_MSG(SynchWorkerCmdNop == swcWorkerCmd ||
-                        SynchWorkerCmdShutdown == swcWorkerCmd ||
-                        SynchWorkerCmdTerminationRequest == swcWorkerCmd,
+                        SynchWorkerCmdShutdown == swcWorkerCmd,
                         "Unknown worker command code %u\n", swcWorkerCmd);
 
             TRACE("Got cmd %u from process pipe\n", swcWorkerCmd);
@@ -2216,9 +2143,8 @@ namespace CorUnix
                     "Value too big for swcWorkerCmd\n");
 
         _ASSERT_MSG((SynchWorkerCmdNop == swcWorkerCmd) ||
-                    (SynchWorkerCmdShutdown == swcWorkerCmd) ||
-                    (SynchWorkerCmdTerminationRequest == swcWorkerCmd),
-                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop, SynchWorkerCmdShutdown, and SynchWorkerCmdTerminationRequest."
+                    (SynchWorkerCmdShutdown == swcWorkerCmd),
+                    "WakeUpLocalWorkerThread supports only SynchWorkerCmdNop and SynchWorkerCmdShutdown."
                     "[received cmd=%d]\n", swcWorkerCmd);
 
         BYTE byCmd = (BYTE)(swcWorkerCmd & 0xFF);

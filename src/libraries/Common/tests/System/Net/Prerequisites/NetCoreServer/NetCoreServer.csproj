@@ -2,7 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>$(_TargetFrameworkForXHarness)</TargetFramework>
-    <TargetFramework Condition="'$(TargetFramework)' == ''">$(AspNetCoreAppCurrent)</TargetFramework>
+    <!-- this DLL is loaded into xharness via reflection. 
+         It could be running on machine with $(NetCoreAppPrevious) installed and it would be $(NetCoreAppPrevious) process.
+         Because xharness is built for $(NetPrevious).
+         That prevents dependencies from $(AspNetCoreAppCurrent) to be loaded -->
+    <TargetFramework Condition="'$(TargetFramework)' == ''">$(NetCoreAppPrevious)</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <OutputType>Exe</OutputType>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>

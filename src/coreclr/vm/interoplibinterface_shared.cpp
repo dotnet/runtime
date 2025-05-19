@@ -145,7 +145,7 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
     CONTRACTL_END;
 
 #ifdef FEATURE_COMWRAPPERS
-    ComWrappersNative::AfterRefCountedHandleCallbacks();
+    ComWrappersNative::OnAfterGCScanRoots();
 #endif // FEATURE_COMWRAPPERS
 
 #ifdef FEATURE_OBJCMARSHAL

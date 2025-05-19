@@ -59,6 +59,8 @@ namespace System.Numerics.Tensors
     public partial interface IReadOnlyTensor
     {
         nint FlattenedLength { get; }
+        bool HasAnyDenseDimensions { get; }
+        bool IsDense { get; }
         bool IsEmpty { get; }
         bool IsPinned { get; }
         object this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get; }
@@ -87,6 +89,7 @@ namespace System.Numerics.Tensors
         TSelf Slice(params scoped System.ReadOnlySpan<System.Buffers.NIndex> startIndexes);
         TSelf Slice(params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges);
         TSelf Slice(params scoped System.ReadOnlySpan<nint> startIndexes);
+        TSelf ToDenseTensor();
         bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination);
         bool TryFlattenTo(scoped System.Span<T> destination);
     }
@@ -138,6 +141,8 @@ namespace System.Numerics.Tensors
         public ReadOnlyTensorSpan(T[]? array, int start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Empty { get { throw null; } }
         public nint FlattenedLength { get { throw null; } }
+        public bool HasAnyDenseDimensions { get { throw null; } }
+        public bool IsDense { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref readonly T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get { throw null; } }
         public System.Numerics.Tensors.ReadOnlyTensorSpan<T> this[params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges] { get { throw null; } }
@@ -805,6 +810,8 @@ namespace System.Numerics.Tensors
         public TensorSpan(T[]? array, int start, scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides) { throw null; }
         public static System.Numerics.Tensors.TensorSpan<T> Empty { get { throw null; } }
         public nint FlattenedLength { get { throw null; } }
+        public bool HasAnyDenseDimensions { get { throw null; } }
+        public bool IsDense { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public ref T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get { throw null; } }
         public System.Numerics.Tensors.TensorSpan<T> this[params scoped System.ReadOnlySpan<System.Buffers.NRange> ranges] { get { throw null; } set { } }
@@ -863,6 +870,8 @@ namespace System.Numerics.Tensors
         internal Tensor() { }
         public static System.Numerics.Tensors.Tensor<T> Empty { get { throw null; } }
         public nint FlattenedLength { get { throw null; } }
+        public bool HasAnyDenseDimensions { get { throw null; } }
+        public bool IsDense { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public bool IsPinned { get { throw null; } }
         public ref T this[params scoped System.ReadOnlySpan<System.Buffers.NIndex> indexes] { get { throw null; } }
@@ -915,6 +924,7 @@ namespace System.Numerics.Tensors
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.Create(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, bool pinned) { throw null; }
         static System.Numerics.Tensors.Tensor<T> System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>.CreateUninitialized(scoped System.ReadOnlySpan<nint> lengths, scoped System.ReadOnlySpan<nint> strides, bool pinned) { throw null; }
+        public Tensor<T> ToDenseTensor() { throw null; }
         public string ToString(scoped System.ReadOnlySpan<nint> maximumLengths) { throw null; }
         public bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public bool TryFlattenTo(scoped System.Span<T> destination) { throw null; }

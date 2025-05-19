@@ -99,9 +99,6 @@ struct RCW
 
     static CreationFlags CreationFlagsFromObjForComIPFlags(ObjFromComIP::flags flags);
 
-    // List of RCW instances that have been freed since the last RCW cleanup.
-    static SLIST_HEADER s_RCWStandbyList;
-
     // Simple read-only iterator for all cached interface pointers.
     class CachedInterfaceEntryIterator
     {
@@ -160,9 +157,6 @@ struct RCW
         WRAPPER_NO_CONTRACT;
         ZeroMemory(this, sizeof(*this));
     }
-
-    // Deletes all items in code:s_RCWStandbyList.
-    static void FlushStandbyList();
 
     // Create a new wrapper for given IUnk, IDispatch
     static RCW* CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT);
@@ -489,20 +483,11 @@ struct RCW
 
         if (InterlockedDecrement(&m_cbUseCount) == 0)
         {
-            // this was the final decrement, go ahead and delete/recycle the RCW
-            {
-                GCX_PREEMP();
-                m_UnkEntry.Free();
-            }
+            // this was the final decrement, go ahead and delete the RCW
+            GCX_PREEMP();
+            m_UnkEntry.Free();
 
-            if (g_fEEShutDown)
-            {
-                delete this;
-            }
-            else
-            {
-                InterlockedPushEntrySList(&RCW::s_RCWStandbyList, (PSLIST_ENTRY)this);
-            }
+            delete this;
         }
     }
 

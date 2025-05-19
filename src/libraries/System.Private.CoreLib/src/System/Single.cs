@@ -1860,7 +1860,7 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (float Sin, float Cos) SinCos(float x) => MathF.SinCos(x);
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
         public static (float SinPi, float CosPi) SinCosPi(float x)
         {
             // This code is based on `cospif` and `sinpif` from amd/aocl-libm-ose

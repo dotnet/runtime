@@ -29,6 +29,9 @@ namespace System.Formats.Tar
         private const string GnuLongMetadataName = "././@LongLink";
         private const string ArgNameEntry = "entry";
 
+        private const int RootUidGid = 0;
+        private const string RootUNameGName = "root";
+
         // Writes the entry in the order required to be able to obtain the seekable data stream size.
         private void WriteWithSeekableDataStream(TarEntryFormat format, Stream archiveStream, Span<byte> buffer)
         {
@@ -358,9 +361,9 @@ namespace System.Formats.Tar
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
         private bool IsLinkNameTooLongForRegularField() => _linkName != null && (Encoding.UTF8.GetByteCount(_linkName) + 1) > FieldLengths.LinkName;
 
-        // Checks if the name string is too long to fit in the regular header field.
+        // Checks if the name string is too long to fit in the regular header field (excluding null char).
         // .NET strings do not include a null terminator by default, need to add it manually and also consider it for the length.
-        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name) + 1) > FieldLengths.Name;
+        private bool IsNameTooLongForRegularField() => (Encoding.UTF8.GetByteCount(_name)) > FieldLengths.Name;
 
         // Writes the current header as a Gnu entry into the archive stream.
         // Makes sure to add the preceding LongLink and/or LongPath entries if necessary, before the actual entry.
@@ -446,17 +449,17 @@ namespace System.Formats.Tar
         {
             Debug.Assert(_linkName != null);
             MemoryStream dataStream = GetLongMetadataStream(_linkName);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink, _uid, _gid, _uName, _gName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongLink);
         }
 
         private TarHeader GetGnuLongPathMetadataHeader()
         {
             MemoryStream dataStream = GetLongMetadataStream(_name);
-            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath, _uid, _gid, _uName, _gName);
+            return GetGnuLongMetadataHeader(dataStream, TarEntryType.LongPath);
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream (seekable).
-        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType, int mainEntryUid, int mainEntryGid, string? mainEntryUname, string? mainEntryGname)
+        private static TarHeader GetGnuLongMetadataHeader(MemoryStream dataStream, TarEntryType entryType)
         {
             Debug.Assert(entryType is TarEntryType.LongPath or TarEntryType.LongLink);
 
@@ -464,15 +467,15 @@ namespace System.Formats.Tar
             {
                 _name = GnuLongMetadataName, // Same name for both longpath or longlink
                 _mode = TarHelpers.GetDefaultMode(entryType),
-                _uid = mainEntryUid,
-                _gid = mainEntryGid,
-                _mTime = DateTimeOffset.UnixEpoch, // 0
+                _uid = RootUidGid,
+                _gid = RootUidGid,
+                _mTime = DateTimeOffset.UnixEpoch, // Stores as series of 0 characters
                 _typeFlag = entryType,
                 _dataStream = dataStream,
-                _uName = mainEntryUname,
-                _gName = mainEntryGname,
-                _aTime = DateTimeOffset.UnixEpoch, // 0
-                _cTime = DateTimeOffset.UnixEpoch, // 0
+                _uName = RootUNameGName,
+                _gName = RootUNameGName,
+                _aTime = default, // LongLink/LongPath entries store these as nulls
+                _cTime = default, // LongLink/LongPath entries store these as nulls
             };
         }
 
@@ -783,8 +786,19 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
-            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+            int checksum = 0;
+
+            if (_typeFlag is not TarEntryType.LongLink and not TarEntryType.LongPath)
+            {
+                if (_aTime != default)
+                {
+                    checksum += WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+                }
+                if (_cTime != default)
+                {
+                    checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
+                }
+            }
 
             if (_gnuUnusedBytes != null)
             {
@@ -1031,7 +1045,7 @@ namespace System.Formats.Tar
             destination[^2] = (byte)'\0';
 
             int i = destination.Length - 3;
-            int j = converted.Length - 1;
+            int j = converted.Length - 2; // Skip the null terminator in 'converted'
 
             while (i >= 0)
             {

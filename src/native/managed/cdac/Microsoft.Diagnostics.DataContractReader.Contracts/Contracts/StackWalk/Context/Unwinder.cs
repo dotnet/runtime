@@ -146,11 +146,16 @@ internal static unsafe partial class Unwinder
         {
             if (eman.GetCodeBlockHandle(controlPC) is CodeBlockHandle cbh)
             {
-                TargetPointer methodDesc = eman.GetMethodDesc(cbh);
-                TargetPointer unwindInfoBase = eman.GetUnwindInfoBaseAddress(cbh);
-                TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
-                if ((nuint)pUnwindInfoBase != 0) *(nuint*)pUnwindInfoBase = (nuint)unwindInfoBase.Value;
-                if ((nuint)pFuncEntry != 0) *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
+                if ((nuint)pUnwindInfoBase != 0)
+                {
+                    TargetPointer unwindInfoBase = eman.GetUnwindInfoBaseAddress(cbh);
+                    *(nuint*)pUnwindInfoBase = (nuint)unwindInfoBase.Value;
+                }
+                if ((nuint)pFuncEntry != 0)
+                {
+                    TargetPointer unwindInfo = eman.GetUnwindInfo(cbh, controlPC);
+                    *(nuint*)pFuncEntry = (nuint)unwindInfo.Value;
+                }
             }
         }
         catch (System.Exception ex)

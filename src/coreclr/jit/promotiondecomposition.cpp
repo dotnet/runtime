@@ -1,6 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// This file provides the machinery to decompose stores and initializations
+// involving physically promoted structs into stores/initialization involving
+// individual fields.
+//
+// Key components include:
+//
+// 1. DecompositionStatementList
+//    - Collects statement trees during decomposition
+//    - Converts them to a single comma tree at the end
+//
+// 2. DecompositionPlan
+//    - Plans the decomposition of block operations
+//    - Manages mappings between source and destination replacements
+//    - Supports both copies between structs and initializations
+//    - Creates specialized access plans for remainders (unpromoted parts)
+//
+// 3. Field-by-field copying and initialization
+//    - Determines optimal order and strategy for field operations
+//    - Handles cases where replacements partially overlap
+//    - Optimizes GC pointer handling to minimize write barriers
+//    - Special cases primitive fields when possible
+//
+// This works in coordination with the ReplaceVisitor from promotion.cpp to
+// transform IR after physical promotion decisions have been made.
+//
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"

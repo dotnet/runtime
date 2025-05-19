@@ -3333,7 +3333,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend)
     {
         GenTree* node = gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, impPopStack().val);
         node->SetHasOrderingSideEffect();
@@ -3341,7 +3341,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
     {
         // These are marked intrinsics simply to match them by name in
         // the Await pattern optimization. Make sure we keep pIntrinsicName assigned
@@ -11059,13 +11059,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                        }
+                        else if (strcmp(className, "AsyncHelpers") == 0)
+                        {
+                            if (strcmp(methodName, "AsyncSuspend") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                            }
                             else if (strcmp(methodName, "Await") == 0)
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_Await;
-                            }
-                            else if (strcmp(methodName, "AsyncSuspend") == 0)
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend;
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)

@@ -1405,9 +1405,9 @@ namespace System.Net.Http.Functional.Tests
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
 
         [ConditionalFact(nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
-        public void AllSocketsHttpHandlerCounters_Success_Recorded()
+        public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -1453,7 +1453,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.WaitForCloseAsync(CancellationToken.None);
                     });
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

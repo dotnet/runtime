@@ -851,18 +851,21 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    hdrInfo         info = { 0 };
+    hdrInfo info = { 0 };
 
     /* Extract the necessary information from the info block header */
 
-    pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
 
     /* workaround: prevent interruption within prolog/epilog */
 
     if  (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
         return false;
 
-    return (info.interruptible);
+    if  (!info.interruptible)
+        return false;
+
+    return !::IsInNoGCRegion(&info, table, dwRelOffset);
 }
 
 #endif // !USE_GC_INFO_DECODER
@@ -1494,13 +1497,20 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
 
+    /* Skip over no-GC region table */
+    unsigned count = hdrInfoBody->noGCRegionCnt;
+    while (count-- > 0)
+    {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
+
 #ifndef FEATURE_EH_FUNCLETS
     /* Parse the untracked frame variable table */
 
     /* The 'this' pointer can never be located in the untracked table */
     /* as we only allow pinned and byrefs in the untracked table      */
 
-    unsigned count = hdrInfoBody->untrackedCnt;
+    count = hdrInfoBody->untrackedCnt;
     while (count-- > 0)
     {
         fastSkipSigned(table);

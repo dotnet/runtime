@@ -27,6 +27,7 @@ namespace System.Formats.Tar
         /// <remarks>When using this constructor, <see cref="TarEntryFormat.Pax"/> is used as the default format of the entries written to the archive using the <see cref="WriteEntry(string, string?)"/> method.</remarks>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="archiveStream"/> does not support writing.</exception>
+        /// <remarks>The <see cref="TarEntryFormat.Pax"/> format is the default format as it is the most flexible and POSIX compatible. This is the only format with which <see cref="TarWriter"/> reads and stores <c>atime</c> and <c>ctime</c> when creating entries from filesystem entries.</remarks>
         public TarWriter(Stream archiveStream)
             : this(archiveStream, TarEntryFormat.Pax, leaveOpen: false)
         {
@@ -39,6 +40,7 @@ namespace System.Formats.Tar
         /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
+        /// <remarks>The <see cref="TarEntryFormat.Pax"/> format is the default format as it is the most flexible and POSIX compatible. This is the only format with which <see cref="TarWriter"/> reads and stores <c>atime</c> and <c>ctime</c> when creating entries from filesystem entries.</remarks>
         public TarWriter(Stream archiveStream, bool leaveOpen = false)
             : this(archiveStream, TarEntryFormat.Pax, leaveOpen)
         {
@@ -56,6 +58,7 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><paramref name="archiveStream"/> is unwritable.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is either <see cref="TarEntryFormat.Unknown"/>, or not one of the other enum values.</exception>
+        /// <remarks>The <see cref="TarEntryFormat.Pax"/> format is the default for the other <see cref="TarWriter"/> constructors. This is the recommended format as it is the most flexible and POSIX compatible. This is the only format  with which <see cref="TarWriter"/> reads and stores <c>atime</c> and <c>ctime</c> when creating entries from filesystem entries.</remarks>
         public TarWriter(Stream archiveStream, TarEntryFormat format = TarEntryFormat.Pax, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
@@ -133,6 +136,10 @@ namespace System.Formats.Tar
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> or <paramref name="entryName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
+        /// <remarks>
+        /// <para>The entry will be created using the format specified in the <see cref="TarWriter(Stream, TarEntryFormat, bool)"/> constructor, or will use <see cref="TarEntryFormat.Pax"/> if other constructors are used.</para>
+        /// <para>If the format is <see cref="TarEntryFormat.Pax"/>, the <c>atime</c> and <c>ctime</c> from the file will be stored in the <see cref="PaxTarEntry.ExtendedAttributes"/> dictionary. If the format is <see cref="TarEntryFormat.Gnu"/>, this method will not set a value for <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> because most TAR tools do not support these fields for this format.</para>
+        /// </remarks>
         public void WriteEntry(string fileName, string? entryName)
         {
             (string fullPath, string actualEntryName) = ValidateWriteEntryArguments(fileName, entryName);
@@ -149,6 +156,10 @@ namespace System.Formats.Tar
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> or <paramref name="entryName"/> is <see langword="null"/> or empty.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
+        /// <remarks>
+        /// <para>The entry will be created using the format specified in the <see cref="TarWriter(Stream, TarEntryFormat, bool)"/> constructor, or will use <see cref="TarEntryFormat.Pax"/> if other constructors are used.</para>
+        /// <para>If the format is <see cref="TarEntryFormat.Pax"/>, the <c>atime</c> and <c>ctime</c> from the file will be stored in the <see cref="PaxTarEntry.ExtendedAttributes"/> dictionary. If the format is <see cref="TarEntryFormat.Gnu"/>, this method will not set a value for <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> because most TAR tools do not support these fields for this format.</para>
+        /// </remarks>
         public Task WriteEntryAsync(string fileName, string? entryName, CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -217,6 +228,10 @@ namespace System.Formats.Tar
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="entry"/> is <see langword="null"/>.</exception>
         /// <exception cref="IOException">An I/O problem occurred.</exception>
+        /// <remarks>
+        /// <para>When writing a <see cref="GnuTarEntry"/> using this method, if <see cref="GnuTarEntry.AccessTime"/> and/or <see cref="GnuTarEntry.ChangeTime" /> are set, they will be preserved in the archive. These fields are unsupported by most TAR tools, so to ensure the archive is readable by other tools, make sure to set <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> to <see langword="default"/> or <see cref="DateTimeOffset.MinValue"/>.</para>
+        /// <para>To ensure an entry preserves the <c>atime</c> and <c>ctime</c> values and it is readable by other tools, it is recommended to convert the entry to <see cref="PaxTarEntry"/> instead. In that format, the two values get stored in the <see cref="PaxTarEntry.ExtendedAttributes"/>. The <see cref="TarEntryFormat.Pax"/> format is used as the default format by <see cref="TarWriter"/> as it is the most flexible and POSIX compatible.</para>
+        /// </remarks>
         public void WriteEntry(TarEntry entry)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);

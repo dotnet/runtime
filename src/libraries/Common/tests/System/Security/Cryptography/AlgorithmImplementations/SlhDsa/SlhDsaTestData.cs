@@ -553,19 +553,46 @@ namespace System.Security.Cryptography.SLHDsa.Tests
         //
         // Get base64 encrypted private key info:
         // > openssl pkcs8 -topk8 -outform DER -v2 "aes-192-cbc" -v2prf hmacWithSHA384 -iter 10 -in private.pem | base64 -w 64
-        public record SlhDsaGeneratedKeyInfo(
-            int Id,
-            SlhDsaAlgorithm Algorithm,
-            string SecretKeyHex,
-            string Pkcs8PrivateKeyBase64,
-            string Pkcs8PublicKeyBase64,
-            string Pkcs8EncryptedPrivateKeyBase64,
-            string CertificateBase64,
-            string SelfSignedCertificatePfxBase64,
-            string ThumbprintHex,
-            string EncryptionPassword,
-            PbeParameters EncryptionParameters)
+        public class SlhDsaGeneratedKeyInfo
         {
+            public SlhDsaGeneratedKeyInfo(
+                int Id,
+                SlhDsaAlgorithm Algorithm,
+                string SecretKeyHex,
+                string Pkcs8PrivateKeyBase64,
+                string Pkcs8PublicKeyBase64,
+                string Pkcs8EncryptedPrivateKeyBase64,
+                string CertificateBase64,
+                string SelfSignedCertificatePfxBase64,
+                string ThumbprintHex,
+                string EncryptionPassword,
+                PbeParameters EncryptionParameters)
+            {
+                this.Id = Id;
+                this.Algorithm = Algorithm;
+                this.SecretKeyHex = SecretKeyHex;
+                this.Pkcs8PrivateKeyBase64 = Pkcs8PrivateKeyBase64;
+                this.Pkcs8PublicKeyBase64 = Pkcs8PublicKeyBase64;
+                this.Pkcs8EncryptedPrivateKeyBase64 = Pkcs8EncryptedPrivateKeyBase64;
+                this.CertificateBase64 = CertificateBase64;
+                this.SelfSignedCertificatePfxBase64 = SelfSignedCertificatePfxBase64;
+                this.ThumbprintHex = ThumbprintHex;
+                this.EncryptionPassword = EncryptionPassword;
+                this.EncryptionParameters = EncryptionParameters;
+            }
+
+            public int Id { get; }
+            public SlhDsaAlgorithm Algorithm { get; }
+            public string SecretKeyHex { get; }
+            public string Pkcs8PrivateKeyBase64 { get; }
+            public string Pkcs8PublicKeyBase64 { get; }
+            public string Pkcs8EncryptedPrivateKeyBase64 { get; }
+            public string CertificateBase64 { get; }
+            public string SelfSignedCertificatePfxBase64 { get; }
+            public string ThumbprintHex { get; }
+            public string EncryptionPassword { get; }
+            public PbeParameters EncryptionParameters { get; }
+
             public byte[] SecretKey => SecretKeyHex.HexToByteArray();
             public byte[] PublicKey => SecretKey.AsSpan(Algorithm.SecretKeySizeInBytes/2).ToArray();
             public byte[] Pkcs8PrivateKey => Convert.FromBase64String(Pkcs8PrivateKeyBase64);
@@ -574,9 +601,9 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             public byte[] EncryptionPasswordBytes => Encoding.UTF8.GetBytes(EncryptionPassword); // Assuming UTF-8 encoding
             public byte[] Certificate => Convert.FromBase64String(CertificateBase64);
             public byte[] SelfSignedCertificatePfx => Convert.FromBase64String(SelfSignedCertificatePfxBase64);
-            public string EncryptedPem => PemEncoding.WriteString("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey);
-            public string PrivateKeyPem => PemEncoding.WriteString("PRIVATE KEY", Pkcs8PrivateKey);
-            public string PublicKeyPem => PemEncoding.WriteString("PUBLIC KEY", Pkcs8PublicKey);
+            public string EncryptedPem => ByteUtils.PemEncode("ENCRYPTED PRIVATE KEY", Pkcs8EncryptedPrivateKey);
+            public string PrivateKeyPem => ByteUtils.PemEncode("PRIVATE KEY", Pkcs8PrivateKey);
+            public string PublicKeyPem => ByteUtils.PemEncode("PUBLIC KEY", Pkcs8PublicKey);
             public byte[] Thumbprint => ThumbprintHex.HexToByteArray();
 
             public override string ToString() =>
@@ -588,16 +615,35 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             select new object[] { info };
 
         public static partial SlhDsaGeneratedKeyInfo[] GeneratedKeyInfosRaw { get; }
-
-        public record SlhDsaKeyGenTestVector(
-            int TestCaseId,
-            SlhDsaAlgorithm Algorithm,
-            string SecretKeySeedHex,
-            string SecretKeyPrfHex,
-            string PublicKeySeedHex,
-            string SecretKeyHex,
-            string PublicKeyHex)
+        
+        public class SlhDsaKeyGenTestVector
         {
+            public SlhDsaKeyGenTestVector(
+                int TestCaseId,
+                SlhDsaAlgorithm Algorithm,
+                string SecretKeySeedHex,
+                string SecretKeyPrfHex,
+                string PublicKeySeedHex,
+                string SecretKeyHex,
+                string PublicKeyHex)
+            {
+                this.TestCaseId = TestCaseId;
+                this.Algorithm = Algorithm;
+                this.SecretKeySeedHex = SecretKeySeedHex;
+                this.SecretKeyPrfHex = SecretKeyPrfHex;
+                this.PublicKeySeedHex = PublicKeySeedHex;
+                this.SecretKeyHex = SecretKeyHex;
+                this.PublicKeyHex = PublicKeyHex;
+            }
+
+            public int TestCaseId { get; }
+            public SlhDsaAlgorithm Algorithm { get; }
+            public string SecretKeySeedHex { get; }
+            public string SecretKeyPrfHex { get; }
+            public string PublicKeySeedHex { get; }
+            public string SecretKeyHex { get; }
+            public string PublicKeyHex { get; }
+
             public byte[] SecretKeySeed => SecretKeySeedHex.HexToByteArray();
             public byte[] SecretKeyPrf => SecretKeyPrfHex.HexToByteArray();
             public byte[] PublicKeySeed => PublicKeySeedHex.HexToByteArray();
@@ -722,16 +768,37 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             ),
         ];
 
-        public record SlhDsaSigVerTestVector(
-            int TestCaseId,
-            bool TestPassed,
-            SlhDsaAlgorithm Algorithm,
-            string SecretKeyHex,
-            string PublicKeyHex,
-            string MessageHex,
-            string ContextHex,
-            string SignatureHex)
+        public class SlhDsaSigVerTestVector
         {
+            public SlhDsaSigVerTestVector(
+                int TestCaseId,
+                bool TestPassed,
+                SlhDsaAlgorithm Algorithm,
+                string SecretKeyHex,
+                string PublicKeyHex,
+                string MessageHex,
+                string ContextHex,
+                string SignatureHex)
+            {
+                this.TestCaseId = TestCaseId;
+                this.TestPassed = TestPassed;
+                this.Algorithm = Algorithm;
+                this.SecretKeyHex = SecretKeyHex;
+                this.PublicKeyHex = PublicKeyHex;
+                this.MessageHex = MessageHex;
+                this.ContextHex = ContextHex;
+                this.SignatureHex = SignatureHex;
+            }
+
+            public int TestCaseId { get; }
+            public bool TestPassed { get; }
+            public SlhDsaAlgorithm Algorithm { get; }
+            public string SecretKeyHex { get; }
+            public string PublicKeyHex { get; }
+            public string MessageHex { get; }
+            public string ContextHex { get; }
+            public string SignatureHex { get; }
+
             public byte[] SecretKey => SecretKeyHex.HexToByteArray();
             public byte[] PublicKey => PublicKeyHex.HexToByteArray();
             public byte[] Message => MessageHex.HexToByteArray();

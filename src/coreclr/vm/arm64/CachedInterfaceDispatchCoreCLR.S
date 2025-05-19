@@ -11,6 +11,10 @@
 //
     LEAF_ENTRY RhpVTableOffsetDispatch, _TEXT
 
+        // Load the MethodTable from the object instance in x0
+    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
+        ldr     x9, [x0]
+
         // x11 currently contains the indirection cell address.
         // load x11 to point to the vtable offset (which is stored in the m_pCache field).
         ldr     x11, [x11, #OFFSETOF__InterfaceDispatchCell__m_pCache]
@@ -19,10 +23,8 @@
         // to get to the VTable chunk
         lsr     x10, x11, #32
 
-        // Load the MethodTable from the object instance in x0, and add it to the vtable offset
+        // Add the MethodTable to the vtable offset
         // to get the address in the vtable chunk list of what we want to dereference
-    ALTERNATE_ENTRY RhpVTableOffsetDispatchAVLocation
-        ldr     x9, [x0]
         add     x9, x10, x9
 
         // Load the target address of the vtable chunk into x9

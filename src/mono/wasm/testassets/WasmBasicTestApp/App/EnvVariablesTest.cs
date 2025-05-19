@@ -13,7 +13,7 @@ public partial class EnvVariablesTest
         // enumerate all environment variables
         foreach (string key in Environment.GetEnvironmentVariables().Keys)
         {
-            Console.WriteLine($"{key}={Environment.GetEnvironmentVariable(key)}");
+            Console.WriteLine($"TestOutput -> {key}={Environment.GetEnvironmentVariable(key)}");
         }
 
         return 42;

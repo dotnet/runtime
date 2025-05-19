@@ -298,7 +298,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
                 {
-                    return SyntaxFactory.ParseExpression($"@\"{str}\"");
+                    string escapedVerbatimText = str.Replace("\"", "\"\"");
+                    return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
                 }
                 else
                 {

@@ -743,6 +743,7 @@ MONO_RESTORE_WARNING
 				else if (tfrom_type == MONO_TYPE_U)
 					tfrom_type = MONO_TYPE_U8;
 #endif
+#if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)
 				if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
 					opcode = OP_MOVE_F_TO_I8;
 					tto_stack = STACK_I8;
@@ -753,6 +754,9 @@ MONO_RESTORE_WARNING
 					opcode = OP_MOVE;
 					tto_stack = STACK_I8;
 				}
+#else
+				return NULL;
+#endif
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
 #if TARGET_SIZEOF_VOID_P == 8 || defined(TARGET_WASM)

@@ -681,18 +681,14 @@ namespace System
         {
             // For signed addition, we can detect overflow by checking if the sign of
             // both inputs are the same and then if that differs from the sign of the
-            // output.
+            // output. The logic for how this works is explained in the
+            //   System.Runtime.Intrinsics.Scalar<T>.AddSaturate method
 
             Int128 result = left + right;
 
-            uint sign = (uint)(left._upper >> 63);
-
-            if (sign == (uint)(right._upper >> 63))
+            if ((long)((result._upper ^ left._upper) & ~(left._upper ^ right._upper)) < 0)
             {
-                if (sign != (uint)(result._upper >> 63))
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
+                ThrowHelper.ThrowOverflowException();
             }
             return result;
         }
@@ -2077,18 +2073,14 @@ namespace System
         {
             // For signed subtraction, we can detect overflow by checking if the sign of
             // both inputs are different and then if that differs from the sign of the
-            // output.
+            // output. The logic for how this works is explained in the
+            //   System.Runtime.Intrinsics.Scalar<T>.SubtractSaturate method
 
             Int128 result = left - right;
 
-            uint sign = (uint)(left._upper >> 63);
-
-            if (sign != (uint)(right._upper >> 63))
+            if ((long)((result._upper ^ left._upper) & (left._upper ^ right._upper)) < 0)
             {
-                if (sign != (uint)(result._upper >> 63))
-                {
-                    ThrowHelper.ThrowOverflowException();
-                }
+                ThrowHelper.ThrowOverflowException();
             }
             return result;
         }
