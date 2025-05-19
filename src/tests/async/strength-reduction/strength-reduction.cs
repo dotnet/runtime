@@ -16,7 +16,7 @@ public class StrengthReductionTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 Task<int> StrengthReduction(int[] arr)
+    private static async Task<int> StrengthReduction(int[] arr)
     {
         int sum = 0;
         foreach (int x in arr)

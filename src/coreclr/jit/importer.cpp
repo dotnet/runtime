@@ -9936,9 +9936,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
 
 #ifdef DEBUG
-                    // Under SPMI, look up info we might ask for if we stack allocate this array
+                    // Under SPMI, look up info we might ask for if we stack allocate this array,
+                    // but only if we know the precise type
                     //
-                    if (JitConfig.EnableExtraSuperPmiQueries())
+                    if (JitConfig.EnableExtraSuperPmiQueries() && !eeIsSharedInst(resolvedToken.hClass))
                     {
                         void* pEmbedClsHnd;
                         info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);

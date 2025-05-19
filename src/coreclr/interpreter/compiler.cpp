@@ -1418,6 +1418,10 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (target < 0 || target >= m_ILCodeSize)
         assert(0);
 
+    // Backwards branch, emit safepoint
+    if (ilOffset < 0)
+        AddIns(INTOP_SAFEPOINT);
+
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     assert(pTargetBB != NULL);
 
@@ -2122,6 +2126,10 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_pInitLocalsIns->data[1] = m_ILLocalsSize;
 
     codeEnd = m_ip + m_ILCodeSize;
+
+    // Safepoint at each method entry. This could be done as part of a call, rather than
+    // adding an opcode.
+    AddIns(INTOP_SAFEPOINT);
 
     linkBBlocks = true;
     needsRetryEmit = false;
