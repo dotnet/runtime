@@ -32,31 +32,32 @@ public class NonBridge2 : NonBridge
 public unsafe class GCBridgeTests 
 {
     [DllImport("GCBridgeNative")]
-    private static extern delegate* unmanaged<nint, StronglyConnectedComponent*, nint, ComponentCrossReference*, void> GetMarkCrossReferencesFtn();
+    private static extern delegate* unmanaged<MarkCrossReferences*, void> GetMarkCrossReferencesFtn();
 
     [DllImport("GCBridgeNative")]
-    private static extern void SetBridgeProcessingFinishCallback(delegate* unmanaged<nint, StronglyConnectedComponent*, nint, ComponentCrossReference*, void> callback);
+    private static extern void SetBridgeProcessingFinishCallback(delegate* unmanaged<MarkCrossReferences*, void> callback);
 
     static bool releaseHandles;
     static nint expectedSccsLen, expectedCcrsLen;
 
     [UnmanagedCallersOnly]
-    internal static unsafe void BridgeProcessingFinishCallback(nint sccsLen, StronglyConnectedComponent* sccs, nint ccrsLen, ComponentCrossReference* ccrs)
+    internal static unsafe void BridgeProcessingFinishCallback(MarkCrossReferences* mcr)
     {
-        Console.WriteLine("Bridge processing finish SCCs {0}, CCRs {1}", sccsLen, ccrsLen);
-        if (expectedSccsLen != sccsLen || expectedCcrsLen != ccrsLen)
+        Console.WriteLine("Bridge processing finish SCCs {0}, CCRs {1}", mcr->ComponentsLen, mcr->CrossReferencesLen);
+        if (expectedSccsLen != mcr->ComponentsLen || expectedCcrsLen != mcr->CrossReferencesLen)
         {
             Console.WriteLine("Expected SCCs {0}, CCRs {1}", expectedSccsLen, expectedCcrsLen);
             Environment.Exit(1);
         }
 
+        // FIXME This freed by the runtime instead ?
         if (releaseHandles)
         {
-            for (int i = 0; i < sccsLen; i++)
+            for (int i = 0; i < mcr->ComponentsLen; i++)
             {
-                for (int j = 0; j < sccs[i].Count; j++)
+                for (int j = 0; j < mcr->Components[i].Count; j++)
                 {
-                    IntPtr *pContext = (IntPtr*)sccs[i].Context[j];
+                    IntPtr *pContext = (IntPtr*)mcr->Components[i].Context[j];
                     GCHandle handle = GCHandle.FromIntPtr(*pContext);
                     handle.Free();
 
@@ -65,9 +66,7 @@ public unsafe class GCBridgeTests
             }
         }
 
-        JavaMarshal.ReleaseMarkCrossReferenceResources(
-            new Span<StronglyConnectedComponent>(sccs, (int)sccsLen),
-            new Span<ComponentCrossReference>(ccrs, (int)ccrsLen));
+        JavaMarshal.FinishCrossReferenceProcessing(mcr, Span<GCHandle>.Empty);
     }
 
     [Fact]

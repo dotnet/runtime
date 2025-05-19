@@ -2393,17 +2393,12 @@ namespace System.Runtime.InteropServices.Java
     [System.CLSCompliantAttribute(false)]
     public static class JavaMarshal
     {
-        public static unsafe void Initialize(
-            delegate* unmanaged<
-                System.IntPtr,
-                StronglyConnectedComponent*,
-                System.IntPtr,
-                ComponentCrossReference*,
-                void> markCrossReferences) => throw null;
-
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferences*, void> markCrossReferences) => throw null;
         public static GCHandle CreateReferenceTrackingHandle(object obj, System.IntPtr context) => throw null;
         public static System.IntPtr GetContext(GCHandle obj) => throw null;
-        public static unsafe void ReleaseMarkCrossReferenceResources(System.Span<StronglyConnectedComponent> sccs, System.Span<ComponentCrossReference> ccrs) => throw null;
+        public static unsafe void FinishCrossReferenceProcessing(
+            MarkCrossReferences* crossReferences,
+            System.Span<GCHandle> unreachableObjectHandles) => throw null;
     }
     [System.Runtime.Versioning.SupportedOSPlatform("android")]
     [System.CLSCompliantAttribute(false)]
@@ -2411,6 +2406,16 @@ namespace System.Runtime.InteropServices.Java
     {
         public System.IntPtr Count;
         public System.IntPtr* Context;
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
+    public unsafe struct MarkCrossReferences
+    {
+        public System.IntPtr ComponentsLen;
+        public StronglyConnectedComponent* Components;
+        public System.IntPtr CrossReferencesLen;
+        public ComponentCrossReference* CrossReferences;
     }
 }
 namespace System.Runtime.InteropServices.ObjectiveC

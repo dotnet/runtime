@@ -443,7 +443,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_JAVAMARSHAL)
     DllImportEntry(JavaMarshal_Initialize)
     DllImportEntry(JavaMarshal_CreateReferenceTrackingHandle)
-    DllImportEntry(JavaMarshal_ReleaseMarkCrossReferenceResources)
+    DllImportEntry(JavaMarshal_FinishCrossReferenceProcessing)
     DllImportEntry(JavaMarshal_GetContext)
 #endif
 #if defined(FEATURE_EVENTSOURCE_XPLAT)

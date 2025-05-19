@@ -11,7 +11,7 @@
 
 #include "interoplibinterface.h"
 
-using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(size_t, StronglyConnectedComponent*, size_t, ComponentCrossReference*);
+using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(MarkCrossReferences*);
 
 namespace
 {
@@ -64,17 +64,17 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     return (void*)instHandle;
 }
 
-extern "C" void QCALLTYPE JavaMarshal_ReleaseMarkCrossReferenceResources(
-    _In_ int32_t sccsLen,
-    _In_ StronglyConnectedComponent* sccs,
-    _In_ ComponentCrossReference* ccrs)
+extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
+    _In_ MarkCrossReferences *crossReferences,
+    _In_ int length,
+    _In_ void* unreachableObjectHandles)
 {
     QCALL_CONTRACT;
-    _ASSERTE(sccsLen >= 0);
+    _ASSERTE(crossReferences->ComponentsLen >= 0);
 
     BEGIN_QCALL;
 
-    Interop::ReleaseGCBridgeArguments(sccsLen, sccs, ccrs);
+    Interop::FinishCrossReferenceProcessing(crossReferences, length, unreachableObjectHandles);
 
     END_QCALL;
 }
@@ -113,7 +113,13 @@ bool JavaNative::TriggerGCBridge(
     if (g_MarkCrossReferences == NULL)
         return false;
 
-    g_MarkCrossReferences(sccsLen, sccs, ccrsLen, ccrs);
+    MarkCrossReferences arg;
+    arg.ComponentsLen = sccsLen;
+    arg.Components = sccs;
+    arg.CrossReferencesLen = ccrsLen;
+    arg.CrossReferences = ccrs;
+
+    g_MarkCrossReferences(&arg);
     return true;
 }
 

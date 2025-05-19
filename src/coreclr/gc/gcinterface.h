@@ -156,6 +156,15 @@ struct ComponentCrossReference
     size_t DestinationGroupIndex;
 };
 
+struct MarkCrossReferences
+{
+    size_t ComponentsLen;
+    StronglyConnectedComponent* Components;
+    size_t CrossReferencesLen;
+    ComponentCrossReference* CrossReferences;
+};
+
+
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
 struct OBJECTHANDLE__

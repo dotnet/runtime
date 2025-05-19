@@ -86,10 +86,10 @@ extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ QCall::ObjectHandleOnStack obj,
     _In_ void* context);
 
-extern "C" void QCALLTYPE JavaMarshal_ReleaseMarkCrossReferenceResources(
-    _In_ int32_t sccsLen,
-    _In_ StronglyConnectedComponent* sccs,
-    _In_ ComponentCrossReference* ccrs);
+extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
+    _In_ MarkCrossReferences *crossReferences,
+    _In_ int length,
+    _In_ void* unreachableObjectHandles);
 
 extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
     _In_ OBJECTHANDLE handle,
@@ -135,10 +135,11 @@ public:
         _In_ size_t ccrsLen,
         _In_ ComponentCrossReference* ccrs);
 
-    static void ReleaseGCBridgeArguments(
-        _In_ size_t sccsLen,
-        _In_ StronglyConnectedComponent* sccs,
-        _In_ ComponentCrossReference* ccrs);
+    static void FinishCrossReferenceProcessing(
+        _In_ MarkCrossReferences *crossReferences,
+        _In_ int length,
+        _In_ void* unreachableObjectHandles);
+
 #endif // FEATURE_GCBRIDGE
 };
 
