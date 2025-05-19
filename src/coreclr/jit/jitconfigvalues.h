@@ -658,6 +658,7 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // relies on PGO if it exists and generally is more aggressive.
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicy, "JitExtDefaultPolicy", 1)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, "JitExtDefaultPolicyMaxIL", 0x80)
+RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILRoot, "JitExtDefaultPolicyMaxILRoot", 0x100)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, "JitExtDefaultPolicyMaxILProf", 0x400)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, "JitExtDefaultPolicyMaxBB", 7)
 
