@@ -330,6 +330,8 @@ public:
     static void ReportGenerationBounds();
 
     virtual int RefreshMemoryLimit();
+
+    virtual void NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles);
 };
 
 #endif  // GCIMPL_H_
