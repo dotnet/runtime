@@ -11400,7 +11400,7 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 #ifndef TARGET_X86
     // Add space for personality routine
     unwindSize += sizeof(ULONG);
-#endif //  !TARGET_X86 && TARGET_WINDOWS
+#endif //  !TARGET_X86
 }
 
 // Reserve memory for the method/funclet's unwind information.
