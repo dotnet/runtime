@@ -505,6 +505,40 @@ namespace System.Data
                     case Tokens.UnaryOp; // fall through to UnaryOperator;
 
                     case Tokens.UnaryOp:
+                        /* Check for NOT followed by = */
+                        if (_op == Operators.Not)
+                        {
+                            /* Peek ahead to see if the next token is = */
+                            int savedPos = _pos;
+                            Tokens savedToken = _token;
+                            int savedOp = _op;
+                            int savedStart = _start;
+
+                            Scan();
+                            if (_token == Tokens.BinaryOp && _op == Operators.EqualTo)
+                            {
+                                /* NOT followed by = is a single NotEqual operator */
+                                _token = Tokens.BinaryOp;
+                                _op = Operators.NotEqual;
+                                _prevOperand = Empty;
+                                
+                                /* Force out to appropriate precedence; push operator. */
+                                BuildExpression(Operators.Priority(_op));
+                                
+                                // PushOperator descriptor
+                                _ops[_topOperator++] = new OperatorInfo(Nodes.Binop, _op, Operators.Priority(_op));
+                                goto loop;
+                            }
+                            else
+                            {
+                                /* Not a NOT= sequence, restore position and continue */
+                                _pos = savedPos;
+                                _token = savedToken;
+                                _op = savedOp;
+                                _start = savedStart;
+                            }
+                        }
+                        
                         /* Must be no operand. Push it. */
                         _ops[_topOperator++] = new OperatorInfo(Nodes.Unop, _op, Operators.Priority(_op));
                         goto loop;
