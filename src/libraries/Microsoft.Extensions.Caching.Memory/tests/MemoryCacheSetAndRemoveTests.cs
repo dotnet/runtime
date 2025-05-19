@@ -850,6 +850,21 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(cache.TryGetValue(cacheKey, out _));
         }
 
+        [Fact]
+        public void MixedKeysUsage()
+        {
+            // keys are split internally into 2 separate chunks
+            var cache = CreateCache();
+            var typed = Assert.IsType<MemoryCache>(cache);
+            object key0 = 123.45M, key1 = "123.45";
+            cache.Set(key0, "string value");
+            cache.Set(key1, "decimal value");
+
+            Assert.Equal(2, typed.Count);
+            Assert.Equal("string value", cache.Get(key0));
+            Assert.Equal("decimal value", cache.Get(key1));
+        }
+
         private class TestKey
         {
             public override bool Equals(object obj) => true;

@@ -159,6 +159,27 @@ public static partial class XmlSerializerTests
         Assert.Equal(x.F2, y.F2);
         Utils.Equal<SimpleType>(x.P1, y.P1, (a, b) => { return SimpleType.AreEqual(a, b); });
         Assert.Equal(x.P2, y.P2);
+
+        // Do it again with null and empty arrays
+        x = new TypeWithGetSetArrayMembers
+        {
+            F1 = null,
+            F2 = new int[] { },
+            P1 = new SimpleType[] { },
+            P2 = null
+        };
+        y = SerializeAndDeserialize<TypeWithGetSetArrayMembers>(x,
+@"<?xml version=""1.0""?>
+<TypeWithGetSetArrayMembers xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <F2 />
+  <P1 />
+</TypeWithGetSetArrayMembers>");
+
+        Assert.NotNull(y);
+        Assert.Null(y.F1);  // Arrays stay null
+        Assert.Empty(y.F2);
+        Assert.Empty(y.P1);
+        Assert.Null(y.P2);  // Arrays stay null
     }
 
     [Fact]
@@ -170,13 +191,55 @@ public static partial class XmlSerializerTests
         x.P2[0] = -1;
         x.P2[1] = 3;
 
-        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x,
-@"<?xml version=""1.0""?>
-<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />");
+        TypeWithGetOnlyArrayProperties y = SerializeAndDeserialize<TypeWithGetOnlyArrayProperties>(x, WithXmlHeader(@"<TypeWithGetOnlyArrayProperties xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" />"));
 
         Assert.NotNull(y);
         // XmlSerializer seems not complain about missing public setter of Array property
         // However, it does not serialize the property. So for this test case, I'll use it to verify there are no complaints about missing public setter
+    }
+
+    [Fact]
+    public static void Xml_ArraylikeMembers()
+    {
+        var assertEqual = (TypeWithArraylikeMembers a, TypeWithArraylikeMembers b) => {
+            Assert.Equal(a.IntAField, b.IntAField);
+            Assert.Equal(a.NIntAField, b.NIntAField);
+            Assert.Equal(a.IntLField, b.IntLField);
+            Assert.Equal(a.NIntLField, b.NIntLField);
+            Assert.Equal(a.IntAProp, b.IntAProp);
+            Assert.Equal(a.NIntAProp, b.NIntAProp);
+            Assert.Equal(a.IntLProp, b.IntLProp);
+            Assert.Equal(a.NIntLProp, b.NIntLProp);
+        };
+
+        // Populated array-like members
+        var x = TypeWithArraylikeMembers.CreateWithPopulatedMembers();
+        var y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, null /* Just checking the input and output objects is good enough here */, null, true);
+        Assert.NotNull(y);
+        assertEqual(x, y);
+
+        // Empty array-like members
+        x = TypeWithArraylikeMembers.CreateWithEmptyMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, WithXmlHeader("<TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <IntAField />\r\n  <NIntAField />\r\n  <IntLField />\r\n  <NIntLField />\r\n  <IntAProp />\r\n  <NIntAProp />\r\n  <IntLProp />\r\n  <NIntLProp />\r\n</TypeWithArraylikeMembers>"));
+        Assert.NotNull(y);
+        assertEqual(x, y);
+        Assert.Empty(y.IntAField);  // Check on a couple fields to be sure they are empty and not null.
+        Assert.Empty(y.NIntLProp);
+
+        // Null array-like members
+        // Null arrays and collections are omitted from xml output (or set to 'nil'). But they differ in deserialization.
+        // Null arrays are deserialized as null as expected. Null collections are unintuitively deserialized as empty collections. This behavior is preserved for compatibility with NetFx.
+        x = TypeWithArraylikeMembers.CreateWithNullMembers();
+        y = SerializeAndDeserialize<TypeWithArraylikeMembers>(x, WithXmlHeader("<TypeWithArraylikeMembers xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <NIntLField xsi:nil=\"true\" />\r\n  <NIntAProp xsi:nil=\"true\" />\r\n</TypeWithArraylikeMembers>"));
+        Assert.NotNull(y);
+        Assert.Null(y.IntAField);
+        Assert.Null(y.NIntAField);
+        Assert.Empty(y.IntLField);
+        Assert.Empty(y.NIntLField);
+        Assert.Null(y.IntAProp);
+        Assert.Null(y.NIntAProp);
+        Assert.Empty(y.IntLProp);
+        Assert.Empty(y.NIntLProp);
     }
 
     [Fact]
@@ -196,10 +259,10 @@ public static partial class XmlSerializerTests
         Assert.Equal((string)x[1], (string)y[1]);
     }
 
-// ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
-// pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
-// but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
-// horizon that it's not worth the trouble.
+    // ROC and Immutable types are not types from 'SerializableAssembly.dll', so they were not included in the
+    // pregenerated serializers for the sgen tests. We could wrap them in a type that does exist there...
+    // but I think the RO/Immutable story is wonky enough and RefEmit vs Reflection is near enough on the
+    // horizon that it's not worth the trouble.
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
@@ -453,6 +516,31 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty() { DateTimeProperty = new DateTime(100), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+        actual = SerializeAndDeserialize<DerivedClassWithSameProperty>(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001</DateTimeProperty>
+</DerivedClassWithSameProperty>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.Equal(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
     }
 
     [Fact]
@@ -1094,7 +1182,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             ms.Position = 0;
             string nl = Environment.NewLine;
             string actualFormatting = new StreamReader(ms).ReadToEnd();
-            string expectedFormatting = WithXmlHeader($"<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{ nl}</SimpleType>");
+            string expectedFormatting = WithXmlHeader($"<SimpleType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">{nl}  <P1>foo</P1>{nl}  <P2>1</P2>{nl}</SimpleType>");
             Assert.Equal(expectedFormatting, actualFormatting);
         }
     }
@@ -1122,6 +1210,53 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.StrictEqual(value.IntProperty, actual.IntProperty);
         Assert.Equal(value.StringProperty, actual.StringProperty);
         Assert.Equal(value.ListProperty.ToArray(), actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        BaseClassWithSamePropertyName castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        DerivedClassWithSameProperty castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
+
+
+        // Try again with a null list to ensure the correct property is deserialized to an empty list
+        value = new DerivedClassWithSameProperty2() { DateTimeProperty = new DateTime(100, DateTimeKind.Utc), IntProperty = 5, StringProperty = "TestString", ListProperty = null };
+
+        actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+<DerivedClassWithSameProperty2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <StringProperty>TestString</StringProperty>
+  <IntProperty>5</IntProperty>
+  <DateTimeProperty>0001-01-01T00:00:00.00001Z</DateTimeProperty>
+</DerivedClassWithSameProperty2>");
+
+        Assert.StrictEqual(value.DateTimeProperty, actual.DateTimeProperty);
+        Assert.StrictEqual(value.IntProperty, actual.IntProperty);
+        Assert.Equal(value.StringProperty, actual.StringProperty);
+        Assert.Empty(actual.ListProperty.ToArray());
+
+        // All base properties have been hidden, so they should be default here in the base class
+        castAsBase = (BaseClassWithSamePropertyName)actual;
+        Assert.StrictEqual(default(DateTime), castAsBase.DateTimeProperty);
+        Assert.StrictEqual(default(int), castAsBase.IntProperty);
+        Assert.Null(castAsBase.StringProperty);
+        Assert.Null(castAsBase.ListProperty);
+
+        // IntProperty and StringProperty are not hidden in Derived2, so they should be set here in the middle
+        castAsMiddle = (DerivedClassWithSameProperty)actual;
+        Assert.StrictEqual(value.IntProperty, castAsMiddle.IntProperty);
+        Assert.Equal(value.StringProperty, castAsMiddle.StringProperty);
+        // The other properties should be default
+        Assert.StrictEqual(default(DateTime), castAsMiddle.DateTimeProperty);
+        Assert.Null(castAsMiddle.ListProperty);
     }
 
     [Fact]
@@ -1388,6 +1523,30 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.NotNull(actual.ManyChoices);
         Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
         Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
+
+        // Try again with a null array
+        value = new TypeWithArrayPropertyHavingChoice() { ManyChoices = null, ChoiceArray = itemChoices };
+        actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithArrayPropertyHavingChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" />"));
+        Assert.NotNull(actual);
+        Assert.Null(actual.ManyChoices);   // Arrays keep null-ness
+    }
+
+    [Fact]
+    public static void Xml_TypeWithArrayPropertyHavingComplexChoice()
+    {
+        object[] choices = new object[] { new ComplexChoiceB { Name = "Beef" }, 5 };
+
+        // For each item in the choices array, add an enumeration value.
+        MoreChoices[] itemChoices = new MoreChoices[] { MoreChoices.Item, MoreChoices.Amount };
+
+        var value = new TypeWithPropertyHavingComplexChoice() { ManyChoices = choices, ChoiceArray = itemChoices };
+
+        var actual = SerializeAndDeserialize(value, WithXmlHeader("<TypeWithPropertyHavingComplexChoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <Item xsi:type=\"ComplexChoiceB\">\r\n    <Name>Beef</Name>\r\n  </Item>\r\n  <Amount>5</Amount>\r\n</TypeWithPropertyHavingComplexChoice>"));
+
+        Assert.NotNull(actual);
+        Assert.NotNull(actual.ManyChoices);
+        Assert.Equal(value.ManyChoices.Length, actual.ManyChoices.Length);
+        Assert.True(Enumerable.SequenceEqual(value.ManyChoices, actual.ManyChoices));
     }
 
     [Fact]
@@ -1588,6 +1747,54 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Null(actual.value);
         Assert.Null(((DerivedClass)actual).Value);
         Assert.Equal(value.value, ((DerivedClass)actual).value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInCollection()
+    {
+        var value = new MyList() {
+            new BaseClass() { Value = "base class" },
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<MyList>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <anyType xsi:type=""BaseClass"">
+    <Value>base class</Value>
+  </anyType>
+  <anyType xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </anyType>
+</ArrayOfAnyType>",
+() => { return new XmlSerializer(typeof(MyList), new Type[] { typeof(BaseClass) }); });
+
+        Assert.NotNull(actual);
+        Assert.Equal(2, actual.Count);
+        Assert.IsType<BaseClass>(actual[0]);
+        Assert.Equal("base class", ((BaseClass)actual[0]).Value);
+        Assert.IsType<DerivedClass>(actual[1]);
+        Assert.Equal("derived class", ((DerivedClass)actual[1]).Value);
+    }
+
+    [Fact]
+    public static void Xml_XmlIncludedTypesInCollectionSingle()
+    {
+        var value = new MyList() {
+            new DerivedClass() { Value = "derived class" }
+        };
+        var actual = SerializeAndDeserialize<MyList>(value,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <anyType xsi:type=""DerivedClass"">
+    <Value>derived class</Value>
+  </anyType>
+</ArrayOfAnyType>",
+() => { return new XmlSerializer(typeof(MyList), new Type[] { typeof(BaseClass) }); });
+
+        Assert.NotNull(actual);
+        Assert.Single(actual);
+        Assert.IsType<DerivedClass>(actual[0]);
+        Assert.Equal("derived class", ((DerivedClass)actual[0]).Value);
     }
 
     [Fact]
@@ -2383,6 +2590,32 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         {
             Assert.True(e is ExceptionType, $"Assert.True failed for {typeof(T)}. Expected: {typeof(ExceptionType)}; Actual: {e.GetType()}");
         }
+    }
+
+    private static Exception AssertTypeAndUnwrap<T>(object exception, string? message = null) where T : Exception
+    {
+        Assert.IsType<T>(exception);
+        var ex = exception as Exception;
+        if (message != null)
+            Assert.Contains(message, ex.Message);
+        Assert.NotNull(ex.InnerException);
+        return ex.InnerException;
+    }
+
+    private static void AssertXmlMappingException(Exception exception, string typeName, string fieldName, string msg = null)
+    {
+        var ex = exception;
+#if ReflectionOnly
+        // The ILGen Serializer does XmlMapping during serializer ctor and lets the exception out cleanly.
+        // The Reflection Serializer does XmlMapping in the Serialize() call and wraps the resulting exception
+        //      inside a catch-all IOE in Serialize().
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, "There was an error generating the XML document");
+#endif
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting type '{typeName}'");
+        ex = AssertTypeAndUnwrap<InvalidOperationException>(ex, $"There was an error reflecting field '{fieldName}'");
+        Assert.IsType<InvalidOperationException>(ex);
+        if (msg != null)
+            Assert.Contains(msg, ex.Message);
     }
 
     private static string Serialize<T>(T value, string baseline, Func<XmlSerializer> serializerFactory = null,

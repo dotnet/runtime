@@ -11,8 +11,13 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public partial class CryptoConfig
+    public class CryptoConfig
     {
+        internal const string CreateFromNameUnreferencedCodeMessage = "The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.";
+
+        // .NET does not support AllowOnlyFipsAlgorithms
+        public static bool AllowOnlyFipsAlgorithms => false;
+
 #if !BROWSER
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
 
@@ -491,6 +496,21 @@ namespace System.Security.Cryptography
         public static object? CreateFromName(string name)
         {
             return CreateFromName(name, null);
+        }
+
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
+        internal static T? CreateFromName<T>(string name) where T : class
+        {
+            object? o = CreateFromName(name);
+            try
+            {
+                return (T?)o;
+            }
+            catch
+            {
+                (o as IDisposable)?.Dispose();
+                throw;
+            }
         }
 
         [UnsupportedOSPlatform("browser")]

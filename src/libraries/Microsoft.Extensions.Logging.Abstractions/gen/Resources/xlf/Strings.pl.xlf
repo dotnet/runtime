@@ -4,7 +4,7 @@
     <body>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
         <source>Argument '{0}' is not referenced from the logging message</source>
-        <target state="needs-review-translation">Do argumentu „{0}” nie odwołuje się komunikat rejestrowania</target>
+        <target state="translated">Do argumentu „{0}” nie odwołuje się komunikat rejestrowania</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutMessage">
         <source>Argument '{0}' is using the unsupported out parameter modifier</source>
-        <target state="new">Argument '{0}' is using the unsupported out parameter modifier</target>
+        <target state="translated">Argument „{0}” używa nieobsługiwanego modyfikatora parametrów danych wyjściowych</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLoggingMethodParameterOutTitle">
         <source>Argument is using the unsupported out parameter modifier</source>
-        <target state="new">Argument is using the unsupported out parameter modifier</target>
+        <target state="translated">Argument używa nieobsługiwanego modyfikatora parametrów danych wyjściowych</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingMethodHasBodyMessage">
@@ -69,22 +69,22 @@
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionMessageFormat">
         <source>The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</source>
-        <target state="new">The Logging source generator is not available in C# {0}. Please use language version {1} or greater.</target>
+        <target state="translated">Generator źródła rejestrowania nie jest dostępny w języku C# {0}. Użyj wersji językowej {1} lub nowszej.</target>
         <note />
       </trans-unit>
       <trans-unit id="LoggingUnsupportedLanguageVersionTitle">
         <source>C# language version not supported by the source generator.</source>
-        <target state="new">C# language version not supported by the source generator.</target>
+        <target state="translated">Wersja języka C# nie jest obsługiwana przez generator źródła.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <target state="translated">Metoda rejestrowania „{0}” zawiera źle sformułowane ciągi formatu</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="new">Logging method contains malformed format strings</target>
+        <target state="translated">Metoda rejestrowania zawiera źle sformułowane ciągi formatu</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">
@@ -134,12 +134,12 @@
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenMessage">
         <source>Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</source>
-        <target state="new">Class '{0}' has a primary constructor parameter of type Microsoft.Extensions.Logging.ILogger that is hidden by a field in the class or a base class, preventing its use</target>
+        <target state="translated">Klasa „{0}” ma podstawowy parametr konstruktora typu Microsoft.Extensions.Logging.ILogger, który jest ukryty przez pole w klasie lub klasie podstawowej, co uniemożliwia jego użycie.</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="PrimaryConstructorParameterLoggerHiddenTitle">
         <source>Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</source>
-        <target state="new">Primary constructor parameter of type Microsoft.Extensions.Logging.ILogger is hidden by a field</target>
+        <target state="translated">Parametr podstawowy konstruktora typu Microsoft.Extensions.Logging.ILogger jest ukryty przez pole</target>
         <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
       </trans-unit>
       <trans-unit id="RedundantQualifierInMessageMessage">
@@ -184,12 +184,12 @@
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesMessage">
         <source>Multiple logging methods are using event name {0} in class {1}</source>
-        <target state="new">Multiple logging methods are using event name {0} in class {1}</target>
+        <target state="translated">Wiele metod rejestrowania używa nazwy zdarzenia {0} w klasie {1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ShouldntReuseEventNamesTitle">
         <source>Multiple logging methods should not use the same event name within a class</source>
-        <target state="new">Multiple logging methods should not use the same event name within a class</target>
+        <target state="translated">Wiele metod rejestrowania nie powinno używać tej samej nazwy zdarzenia w klasie</target>
         <note />
       </trans-unit>
       <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">

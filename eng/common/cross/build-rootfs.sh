@@ -33,7 +33,6 @@ __QEMUArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo=
 __UbuntuSuites="updates security backports"
-__DebianSuites=
 __LLDB_Package="liblldb-3.9-dev"
 __SkipUnmount=0
 
@@ -165,9 +164,13 @@ while :; do
         armel)
             __BuildArch=armel
             __UbuntuArch=armel
-            __UbuntuRepo="http://ftp.debian.org/debian/"
-            __CodeName=jessie
+            __UbuntuRepo="http://archive.debian.org/debian/"
+            __CodeName=buster
             __KeyringFile="/usr/share/keyrings/debian-archive-keyring.gpg"
+            __LLDB_Package="liblldb-6.0-dev"
+            __UbuntuPackages="${__UbuntuPackages// libomp-dev/}"
+            __UbuntuPackages="${__UbuntuPackages// libomp5/}"
+            __UbuntuSuites=
             ;;
         armv6)
             __BuildArch=armv6
@@ -188,8 +191,7 @@ while :; do
             __AlpineArch=loongarch64
             __QEMUArch=loongarch64
             __UbuntuArch=loong64
-            __UbuntuSuites=
-            __DebianSuites=unreleased
+            __UbuntuSuites=unreleased
             __LLDB_Package="liblldb-19-dev"
 
             if [[ "$__CodeName" == "sid" ]]; then
@@ -280,44 +282,21 @@ while :; do
 
             ;;
         xenial) # Ubuntu 16.04
-            if [[ "$__CodeName" != "jessie" ]]; then
-                __CodeName=xenial
-            fi
-            ;;
-        zesty) # Ubuntu 17.04
-            if [[ "$__CodeName" != "jessie" ]]; then
-                __CodeName=zesty
-            fi
+            __CodeName=xenial
             ;;
         bionic) # Ubuntu 18.04
-            if [[ "$__CodeName" != "jessie" ]]; then
-                __CodeName=bionic
-            fi
+            __CodeName=bionic
             ;;
         focal) # Ubuntu 20.04
-            if [[ "$__CodeName" != "jessie" ]]; then
-                __CodeName=focal
-            fi
+            __CodeName=focal
             ;;
         jammy) # Ubuntu 22.04
-            if [[ "$__CodeName" != "jessie" ]]; then
-                __CodeName=jammy
-            fi
+            __CodeName=jammy
             ;;
         noble) # Ubuntu 24.04
-            if [[ "$__CodeName" != "jessie" ]]; then
-                __CodeName=noble
-            fi
+            __CodeName=noble
             if [[ -n "$__LLDB_Package" ]]; then
                 __LLDB_Package="liblldb-18-dev"
-            fi
-            ;;
-        jessie) # Debian 8
-            __CodeName=jessie
-            __KeyringFile="/usr/share/keyrings/debian-archive-keyring.gpg"
-
-            if [[ -z "$__UbuntuRepo" ]]; then
-                __UbuntuRepo="http://ftp.debian.org/debian/"
             fi
             ;;
         stretch) # Debian 9
@@ -335,7 +314,7 @@ while :; do
             __KeyringFile="/usr/share/keyrings/debian-archive-keyring.gpg"
 
             if [[ -z "$__UbuntuRepo" ]]; then
-                __UbuntuRepo="http://ftp.debian.org/debian/"
+                __UbuntuRepo="http://archive.debian.org/debian/"
             fi
             ;;
         bullseye) # Debian 11
@@ -473,10 +452,6 @@ if [[ "$__AlpineVersion" =~ 3\.1[345] ]]; then
     # compiler-rt--static was merged in compiler-rt package in alpine 3.16
     # for older versions, we need compiler-rt--static, so replace the name
     __AlpinePackages="${__AlpinePackages/compiler-rt/compiler-rt-static}"
-fi
-
-if [[ "$__BuildArch" == "armel" ]]; then
-    __LLDB_Package="lldb-3.5-dev"
 fi
 
 __UbuntuPackages+=" ${__LLDB_Package:-}"
@@ -782,6 +757,8 @@ elif [[ "$__CodeName" == "haiku" ]]; then
     popd
     rm -rf "$__RootfsDir/tmp"
 elif [[ -n "$__CodeName" ]]; then
+    __Suites="$__CodeName $(for suite in $__UbuntuSuites; do echo -n "$__CodeName-$suite "; done)"
+
     if [[ "$__SkipEmulation" == "1" ]]; then
         if [[ -z "$AR" ]]; then
             if command -v ar &>/dev/null; then
@@ -794,19 +771,16 @@ elif [[ -n "$__CodeName" ]]; then
             fi
         fi
 
-        # shellcheck disable=SC2086
-        suites="$__CodeName $__DebianSuites $(echo $__UbuntuSuites | xargs -n 1 | xargs -I {} echo -n "$__CodeName-{} ")"
-
         PYTHON=${PYTHON_EXECUTABLE:-python3}
 
         # shellcheck disable=SC2086,SC2046
         echo running "$PYTHON" "$__CrossDir/install-debs.py" --arch "$__UbuntuArch" --mirror "$__UbuntuRepo" --rootfsdir "$__RootfsDir" --artool "$AR" \
-            $(echo $suites | xargs -n 1 | xargs -I {} echo -n "--suite {} ") \
+            $(for suite in $__Suites; do echo -n "--suite $suite "; done) \
             $__UbuntuPackages
 
         # shellcheck disable=SC2086,SC2046
         "$PYTHON" "$__CrossDir/install-debs.py" --arch "$__UbuntuArch" --mirror "$__UbuntuRepo" --rootfsdir "$__RootfsDir" --artool "$AR" \
-            $(echo $suites | xargs -n 1 | xargs -I {} echo -n "--suite {} ") \
+            $(for suite in $__Suites; do echo -n "--suite $suite "; done) \
             $__UbuntuPackages
 
         exit 0
@@ -837,7 +811,7 @@ elif [[ -n "$__CodeName" ]]; then
     cat > "$__RootfsDir/etc/apt/sources.list.d/$__CodeName.sources" <<EOF
 Types: deb
 URIs: $__UbuntuRepo
-Suites: $__CodeName $__DebianSuites $(echo $__UbuntuSuites | xargs -n 1 | xargs -I {} echo -n "$__CodeName-{} ")
+Suites: $__Suites
 Components: main universe
 Signed-By: $__KeyringFile
 EOF
@@ -852,12 +826,6 @@ EOF
 
     if [[ "$__SkipUnmount" == "0" ]]; then
         umount "$__RootfsDir"/* || true
-    fi
-
-    if [[ "$__BuildArch" == "armel" && "$__CodeName" == "jessie" ]]; then
-        pushd "$__RootfsDir"
-        patch -p1 < "$__CrossDir/$__BuildArch/armel.jessie.patch"
-        popd
     fi
 elif [[ "$__Tizen" == "tizen" ]]; then
     ROOTFS_DIR="$__RootfsDir" "$__CrossDir/tizen-build-rootfs.sh" "$__BuildArch"

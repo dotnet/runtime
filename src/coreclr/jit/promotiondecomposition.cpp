@@ -1,6 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// This file provides the machinery to decompose stores and initializations
+// involving physically promoted structs into stores/initialization involving
+// individual fields.
+//
+// Key components include:
+//
+// 1. DecompositionStatementList
+//    - Collects statement trees during decomposition
+//    - Converts them to a single comma tree at the end
+//
+// 2. DecompositionPlan
+//    - Plans the decomposition of block operations
+//    - Manages mappings between source and destination replacements
+//    - Supports both copies between structs and initializations
+//    - Creates specialized access plans for remainders (unpromoted parts)
+//
+// 3. Field-by-field copying and initialization
+//    - Determines optimal order and strategy for field operations
+//    - Handles cases where replacements partially overlap
+//    - Optimizes GC pointer handling to minimize write barriers
+//    - Special cases primitive fields when possible
+//
+// This works in coordination with the ReplaceVisitor from promotion.cpp to
+// transform IR after physical promotion decisions have been made.
+//
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"
@@ -234,17 +261,17 @@ private:
     //   need to be considered part of the remainder. For example, the last 4
     //   bytes of Span<T> on 64-bit are not returned as the remainder.
     //
-    StructSegments ComputeRemainder()
+    SegmentList ComputeRemainder()
     {
         ClassLayout* dstLayout = m_store->GetLayout(m_compiler);
 
-        StructSegments segments = m_compiler->GetSignificantSegments(dstLayout);
+        SegmentList segments(dstLayout->GetNonPadding(m_compiler));
 
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
 
-            segments.Subtract(StructSegments::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
+            segments.Subtract(SegmentList::Segment(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
         }
 
 #ifdef DEBUG
@@ -301,14 +328,14 @@ private:
             return RemainderStrategy(RemainderStrategy::NoRemainder);
         }
 
-        StructSegments remainder = ComputeRemainder();
+        SegmentList remainder = ComputeRemainder();
         if (remainder.IsEmpty())
         {
             JITDUMP("  => Remainder strategy: do nothing (no remainder)\n");
             return RemainderStrategy(RemainderStrategy::NoRemainder);
         }
 
-        StructSegments::Segment segment;
+        SegmentList::Segment segment;
         // See if we can "plug the hole" with a single primitive.
         if (remainder.CoveringSegment(&segment))
         {
@@ -523,16 +550,21 @@ private:
         target_ssize_t addrBaseOffs       = 0;
         FieldSeq*      addrBaseOffsFldSeq = nullptr;
         GenTreeFlags   indirFlags         = GTF_EMPTY;
-
+        GenTreeFlags   flagsToPropagate   = GTF_IND_COPYABLE_FLAGS;
         if (m_store->OperIs(GT_STORE_BLK))
         {
+            flagsToPropagate |= GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP;
             addr       = m_store->AsIndir()->Addr();
-            indirFlags = m_store->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            indirFlags = m_store->gtFlags & flagsToPropagate;
+            if (m_store->AsBlk()->GetLayout()->IsStackOnly(m_compiler))
+            {
+                indirFlags |= GTF_IND_TGT_NOT_HEAP;
+            }
         }
         else if (m_src->OperIs(GT_BLK))
         {
             addr       = m_src->AsIndir()->Addr();
-            indirFlags = m_src->gtFlags & GTF_IND_COPYABLE_FLAGS;
+            indirFlags = m_src->gtFlags & flagsToPropagate;
         }
 
         int numAddrUses = 0;
@@ -583,7 +615,17 @@ private:
                 numAddrUses++;
             }
 
-            if (numAddrUses > 1)
+            if (numAddrUses == 0)
+            {
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(addr, &sideEffects);
+
+                if (sideEffects != nullptr)
+                {
+                    statements->AddStatement(sideEffects);
+                }
+            }
+            else if (numAddrUses > 1)
             {
                 m_compiler->gtPeelOffsets(&addr, &addrBaseOffs, &addrBaseOffsFldSeq);
 
@@ -1201,7 +1243,7 @@ private:
 //   offset - [out] The sum of offset peeled such that ADD(addr, offset) is equivalent to the original addr.
 //   fldSeq - [out, optional] The combined field sequence for all the peeled offsets.
 //
-void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq)
+void Compiler::gtPeelOffsets(GenTree** addr, target_ssize_t* offset, FieldSeq** fldSeq) const
 {
     assert((*addr)->TypeIs(TYP_I_IMPL, TYP_BYREF, TYP_REF));
     *offset = 0;

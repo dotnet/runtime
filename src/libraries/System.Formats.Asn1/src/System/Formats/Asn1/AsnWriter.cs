@@ -231,12 +231,12 @@ namespace System.Formats.Asn1
         /// </exception>
         public TReturn Encode<TReturn>(Func<ReadOnlySpan<byte>, TReturn> encodeCallback)
         {
-            if (encodeCallback is null)
-                throw new ArgumentNullException(nameof(encodeCallback));
+            ArgumentNullException.ThrowIfNull(encodeCallback);
+
+            _encodeDepth = checked(_encodeDepth + 1);
 
             try
             {
-                _encodeDepth = checked(_encodeDepth + 1);
                 ReadOnlySpan<byte> encoded = EncodeAsSpan();
                 return encodeCallback(encoded);
             }
@@ -274,14 +274,51 @@ namespace System.Formats.Asn1
         public TReturn Encode<TState, TReturn>(TState state, Func<TState, ReadOnlySpan<byte>, TReturn> encodeCallback)
             where TState : allows ref struct
         {
-            if (encodeCallback is null)
-                throw new ArgumentNullException(nameof(encodeCallback));
+            ArgumentNullException.ThrowIfNull(encodeCallback);
+
+            _encodeDepth = checked(_encodeDepth + 1);
 
             try
             {
-                _encodeDepth = checked(_encodeDepth + 1);
                 ReadOnlySpan<byte> encoded = EncodeAsSpan();
                 return encodeCallback(state, encoded);
+            }
+            finally
+            {
+                _encodeDepth--;
+            }
+        }
+
+        /// <summary>
+        ///   Provides the encoded representation of the data to the specified callback.
+        /// </summary>
+        /// <param name="encodeCallback">
+        ///   The callback that receives the encoded data.
+        /// </param>
+        /// <param name="state">
+        ///   The state to pass to <paramref name="encodeCallback" />.
+        /// </param>
+        /// <typeparam name="TState">
+        ///   The type of the state.
+        /// </typeparam>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encodeCallback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+        ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
+        /// </exception>
+        public void Encode<TState>(TState state, Action<TState, ReadOnlySpan<byte>> encodeCallback)
+            where TState : allows ref struct
+        {
+            ArgumentNullException.ThrowIfNull(encodeCallback);
+
+            _encodeDepth = checked(_encodeDepth + 1);
+
+            try
+            {
+                ReadOnlySpan<byte> encoded = EncodeAsSpan();
+                encodeCallback(state, encoded);
             }
             finally
             {
@@ -341,10 +378,7 @@ namespace System.Formats.Asn1
         /// </exception>
         public bool EncodedValueEquals(AsnWriter other)
         {
-            if (other is null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
         }
@@ -505,10 +539,7 @@ namespace System.Formats.Asn1
         /// </exception>
         public void CopyTo(AsnWriter destination)
         {
-            if (destination is null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
+            ArgumentNullException.ThrowIfNull(destination);
 
             try
             {

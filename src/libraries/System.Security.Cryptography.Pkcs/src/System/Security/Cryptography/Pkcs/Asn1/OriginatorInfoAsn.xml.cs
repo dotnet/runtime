@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct OriginatorInfoAsn
     {
-        internal System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn[]? CertificateSet;
+        internal System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn[]? CertificateSet;
         internal ReadOnlyMemory<byte>[]? RevocationInfoChoices;
 
         internal readonly void Encode(AsnWriter writer)
@@ -114,12 +114,12 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 // Decode SEQUENCE OF for CertificateSet
                 {
                     collectionReader = sequenceReader.ReadSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
-                    var tmpList = new List<System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn>();
-                    System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn tmpItem;
+                    var tmpList = new List<System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn>();
+                    System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn tmpItem;
 
                     while (collectionReader.HasData)
                     {
-                        System.Security.Cryptography.Pkcs.Asn1.CertificateChoiceAsn.Decode(ref collectionReader, rebind, out tmpItem);
+                        System.Security.Cryptography.Asn1.Pkcs7.CertificateChoiceAsn.Decode(ref collectionReader, rebind, out tmpItem);
                         tmpList.Add(tmpItem);
                     }
 

@@ -330,15 +330,15 @@ enum_type:
 	case MONO_TYPE_ARRAY:
 		return MINT_TYPE_O;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype_internal (type->data.klass);
+		if (m_class_is_enumtype (m_type_data_get_klass_unchecked (type))) {
+			type = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (type));
 			goto enum_type;
 		} else
 			return MINT_TYPE_VT;
 	case MONO_TYPE_TYPEDBYREF:
 		return MINT_TYPE_VT;
 	case MONO_TYPE_GENERICINST:
-		type = m_class_get_byval_arg (type->data.generic_class->container_class);
+		type = m_class_get_byval_arg (m_type_data_get_generic_class_unchecked (type)->container_class);
 		goto enum_type;
 	case MONO_TYPE_VOID:
 		return MINT_TYPE_VOID;
@@ -734,6 +734,18 @@ handle_branch (TransformData *td, int long_op, int offset)
 		g_assert_not_reached ();
 	/* Add exception checkpoint or safepoint for backward branches */
 	if (offset < 0) {
+
+		InterpMethod *rtm = td->rtm;
+		guint16 samplepoint_profiling = 0;
+		if (mono_jit_trace_calls != NULL && mono_trace_eval (rtm->method))
+			samplepoint_profiling |= TRACING_FLAG;
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT | MONO_PROFILER_CALL_INSTRUMENTATION_SAMPLEPOINT_CONTEXT ))
+			samplepoint_profiling |= PROFILING_FLAG;
+		if (samplepoint_profiling) {
+			interp_add_ins (td, MINT_PROF_SAMPLEPOINT);
+			td->last_ins->data [0] = samplepoint_profiling;
+		}
+
 		if (mono_threads_are_safepoints_enabled ())
 			interp_add_ins (td, MINT_SAFEPOINT);
 	}
@@ -2582,43 +2594,49 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_CEQ_I4;
 			}
 		}
-	}
-	else if (in_corlib &&
+	} else if (in_corlib &&
 			   !strcmp ("System.Runtime.CompilerServices", klass_name_space) &&
 			   !strcmp ("RuntimeFeature", klass_name)) {
 		// NOTE: on the interpreter, use the C# code in System.Private.CoreLib for IsDynamicCodeSupported
 		// and always return false for IsDynamicCodeCompiled
 		if (!strcmp (tm, "get_IsDynamicCodeCompiled"))
 			*op = MINT_LDC_I4_0;
+	} else if (in_corlib && (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25))) {
+		if (klass_name_space[25] == '\0' &&
+			!strncmp ("Vector", klass_name, 6) &&
+			!strcmp (tm, "get_IsHardwareAccelerated")) {
+			*op = MINT_LDC_I4_0;
+		} else if (klass_name_space[25] == '.') {
+			if (!strncmp ("Arm", klass_name_space + 26, 3) ||
+				!strncmp ("X86", klass_name_space + 26, 3)) {
+					if (!strcmp (tm, "get_IsSupported"))
+						*op = MINT_LDC_I4_0;
+					else
+						interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
+			} else if (!strncmp ("Wasm", klass_name_space + 26, 4)) {
+				if (!strcmp (tm, "get_IsSupported")) {
+					*op = MINT_LDC_I4_0;
+				}
 #if defined(TARGET_WASM)
-	} else if (in_corlib &&
-			!strncmp ("System.Runtime.Intrinsics.Wasm", klass_name_space, 30) &&
-			!strcmp (klass_name, "WasmBase")) {
-		if (!strcmp (tm, "get_IsSupported")) {
-			*op = MINT_LDC_I4_1;
-		} else if (!strcmp (tm, "LeadingZeroCount")) {
-			if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
-				*op = MINT_CLZ_I4;
-			else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
-				*op = MINT_CLZ_I8;
-		} else if (!strcmp (tm, "TrailingZeroCount")) {
-			if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
-				*op = MINT_CTZ_I4;
-			else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
-				*op = MINT_CTZ_I8;
-		}
+				if (!strcmp (klass_name, "WasmBase")) {
+					if (!strcmp (tm, "get_IsSupported")) {
+						// override the value set above
+						*op = MINT_LDC_I4_1;
+					} else if (!strcmp (tm, "LeadingZeroCount")) {
+						if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
+							*op = MINT_CLZ_I4;
+						else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
+							*op = MINT_CLZ_I8;
+					} else if (!strcmp (tm, "TrailingZeroCount")) {
+						if (csignature->params [0]->type == MONO_TYPE_U4 || csignature->params [0]->type == MONO_TYPE_I4)
+							*op = MINT_CTZ_I4;
+						else if (csignature->params [0]->type == MONO_TYPE_U8 || csignature->params [0]->type == MONO_TYPE_I8)
+							*op = MINT_CTZ_I8;
+					}
+				}
 #endif
-	} else if (in_corlib &&
-			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
-			!strncmp ("System.Runtime.Intrinsics.PackedSimd", klass_name_space, 36) ||
-			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29) ||
-			!strncmp ("System.Runtime.Intrinsics.Wasm", klass_name_space, 30)) &&
-			!strcmp (tm, "get_IsSupported")) {
-		*op = MINT_LDC_I4_0;
-	} else if (in_corlib &&
-		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
-		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
-		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
+			}
+		}
 	} else if (in_corlib && !strncmp ("System.Numerics", klass_name_space, 15)) {
 		if (!strcmp ("Vector", klass_name) &&
 				!strcmp (tm, "get_IsHardwareAccelerated")) {
@@ -2671,11 +2689,53 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 					*op = MINT_LOG2_I8;
 			}
 		}
-	} else if (in_corlib &&
-			   (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
-				!strncmp ("Vector", klass_name, 6) &&
-				!strcmp (tm, "get_IsHardwareAccelerated"))) {
-		*op = MINT_LDC_I4_0;
+	} else if ((target_method->klass == mono_defaults.double_class) || (target_method->klass == mono_defaults.single_class)) {
+		MonoGenericContext *method_context = mono_method_get_context (target_method);
+		bool isDouble = target_method->klass == mono_defaults.double_class;
+		if (!strcmp (tm, "ConvertToIntegerNative") &&
+				method_context != NULL &&
+				method_context->method_inst->type_argc == 1) {
+			MonoTypeEnum tto_type = method_context->method_inst->type_argv [0]->type;
+			switch (tto_type) {
+				case MONO_TYPE_I1:
+					*op = isDouble ? MINT_CONV_I1_R8 : MINT_CONV_I1_R4;
+					break;
+				case MONO_TYPE_I2:
+					*op = isDouble ? MINT_CONV_I2_R8 : MINT_CONV_I2_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I4:
+					*op = isDouble ? MINT_CONV_I4_R8 : MINT_CONV_I4_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_I:
+#endif
+				case MONO_TYPE_I8:
+					*op = isDouble ? MINT_CONV_I8_R8 : MINT_CONV_I8_R4;
+					break;
+				case MONO_TYPE_U1:
+					*op = isDouble ? MINT_CONV_U1_R8 : MINT_CONV_U1_R4;
+					break;
+				case MONO_TYPE_U2:
+					*op = isDouble ? MINT_CONV_U2_R8 : MINT_CONV_U2_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 4
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U4:
+					*op = isDouble ? MINT_CONV_U4_R8 : MINT_CONV_U4_R4;
+					break;
+#if TARGET_SIZEOF_VOID_P == 8
+				case MONO_TYPE_U:
+#endif
+				case MONO_TYPE_U8:
+					*op = isDouble ? MINT_CONV_U8_R8 : MINT_CONV_U8_R4;
+					break;
+				default: return FALSE;
+			}
+		}
 	}
 
 	return FALSE;
@@ -2748,7 +2808,7 @@ interp_type_as_ptr (MonoType *tp)
 		return TRUE;
 	if ((tp)->type == MONO_TYPE_CHAR)
 		return TRUE;
-	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tp->data.klass))
+	if ((tp)->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (tp)))
 		return TRUE;
 	if (is_scalar_vtype (tp))
 		return TRUE;
@@ -4580,8 +4640,8 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 		int mt = mono_mint_type (header->locals [i]);
 		size = mono_interp_type_size (header->locals [i], mt, &align);
 		if (header->locals [i]->type == MONO_TYPE_VALUETYPE) {
-			if (mono_class_has_failure (header->locals [i]->data.klass)) {
-				mono_error_set_for_class_failure (error, header->locals [i]->data.klass);
+			if (mono_class_has_failure (m_type_data_get_klass_unchecked (header->locals [i]))) {
+				mono_error_set_for_class_failure (error, m_type_data_get_klass_unchecked (header->locals [i]));
 				return;
 			}
 		}
@@ -5320,7 +5380,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		guint16 enter_profiling = 0;
 		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 			enter_profiling |= TRACING_FLAG;
-		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
+		if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT))
 			enter_profiling |= PROFILING_FLAG;
 		if (enter_profiling) {
 			interp_add_ins (td, MINT_PROF_ENTER);
@@ -5889,7 +5949,7 @@ retry_emit:
 			guint16 exit_profiling = 0;
 			if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
 				exit_profiling |= TRACING_FLAG;
-			if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE)
+			if (rtm->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT))
 				exit_profiling |= PROFILING_FLAG;
 			if (exit_profiling) {
 				/* This does the return as well */
@@ -8056,6 +8116,16 @@ retry_emit:
 					push_simple_type (td, STACK_TYPE_I);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 					break;
+				case CEE_MONO_LDVIRTFTN_DELEGATE:
+					CHECK_STACK (td, 2);
+					td->sp -= 2;
+					td->ip += 1;
+					interp_add_ins (td, MINT_LDVIRTFTN_DELEGATE);
+					interp_ins_set_sregs2 (td->last_ins, td->sp [0].var, td->sp [1].var);
+					push_simple_type (td, STACK_TYPE_I);
+					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+					break;
+
 				case CEE_MONO_CALLI_EXTRA_ARG: {
 					int saved_local = td->sp [-1].var;
 					/* Same as CEE_CALLI, except that we drop the extra arg required for llvm specific behaviour */
@@ -9966,8 +10036,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
 		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
-		gpointer seq_points = NULL;
-		dn_simdhash_ght_try_get_value (jit_mm->seq_points, imethod->method, (void **)&seq_points);
+		gpointer seq_points = dn_simdhash_ght_get_value_or_default (jit_mm->seq_points, imethod->method);
 		if (!seq_points || seq_points != imethod->jinfo->seq_points)
 			dn_simdhash_ght_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}

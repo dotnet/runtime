@@ -522,9 +522,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        // In practice, this apparently rarely if ever contains useful text
-        internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_SERVER_ERROR, true);
-
         internal DereferenceAlias DerefAlias
         {
             get => (DereferenceAlias)GetIntValueHelper(LdapOption.LDAP_OPT_DEREF);
@@ -755,6 +752,12 @@ namespace System.DirectoryServices.Protocols
             {
                 throw new TlsOperationException(null, SR.TLSStopFailure);
             }
+        }
+
+        public int ProtocolVersion
+        {
+            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
+            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
         }
 
         private int GetIntValueHelper(LdapOption option)

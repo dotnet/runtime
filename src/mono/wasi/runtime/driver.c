@@ -266,7 +266,9 @@ mono_wasm_load_runtime (int debug_level)
 	monovm_initialize (2, appctx_keys, appctx_values);
 
 #ifndef INVARIANT_TIMEZONE
-	mono_register_timezones_bundle ();
+	char* invariant_timezone = monoeg_g_getenv ("DOTNET_SYSTEM_TIMEZONE_INVARIANT");
+	if (strcmp(invariant_timezone, "true") != 0 && strcmp(invariant_timezone, "1") != 0)
+		mono_register_timezones_bundle ();
 #endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 	mono_register_assemblies_bundle ();

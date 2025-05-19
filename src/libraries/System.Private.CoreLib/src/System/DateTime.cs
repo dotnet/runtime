@@ -148,10 +148,11 @@ namespace System
 
         private DateTime(ulong dateData)
         {
-            this._dateData = dateData;
+            Debug.Assert((dateData & TicksMask) <= MaxTicks);
+            _dateData = dateData;
         }
 
-        internal static DateTime UnsafeCreate(long ticks) => new DateTime((ulong)ticks);
+        internal static DateTime CreateUnchecked(long ticks) => new DateTime((ulong)ticks);
 
         public DateTime(long ticks, DateTimeKind kind)
         {
@@ -1086,7 +1087,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<uint> days = RuntimeHelpers.IsKnownConstant(month) && month == 1 || IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
@@ -1663,7 +1664,7 @@ namespace System
         {
             if (value == 0)
                 return 0.0;  // Returns OleAut's zero'ed date value.
-            if (value < TimeSpan.TicksPerDay) // This is a fix for VB. They want the default day to be 1/1/0001 rathar then 12/30/1899.
+            if (value < TimeSpan.TicksPerDay) // This is a fix for VB. They want the default day to be 1/1/0001 rather than 12/30/1899.
                 value += DoubleDateOffset; // We could have moved this fix down but we would like to keep the bounds check.
             if (value < OADateMinAsTicks)
                 throw new OverflowException(SR.Arg_OleAutDateInvalid);

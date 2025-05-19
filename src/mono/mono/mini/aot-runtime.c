@@ -614,11 +614,11 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 			t = g_new0 (MonoType, 1);
 			t->type = (MonoTypeEnum)type;
 			if (is_not_anonymous) {
-				t->data.generic_param = mono_generic_container_get_param (container, num);
+				m_type_data_set_generic_param (t, mono_generic_container_get_param (container, num));
 			} else {
 				/* Anonymous */
 				MonoGenericParam *par = mono_metadata_create_anon_gparam (module->assembly->image, num, type == MONO_TYPE_MVAR);
-				t->data.generic_param = par;
+				m_type_data_set_generic_param (t, par);
 				// FIXME: maybe do this for all anon gparams?
 				((MonoGenericParamFull*)par)->info.name = mono_make_generic_name_string (module->assembly->image, num);
 			}
@@ -759,24 +759,24 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		t->data.klass = decode_klass_ref (module, p, &p, error);
-		if (!t->data.klass)
+		m_type_data_set_klass_unchecked (t, decode_klass_ref (module, p, &p, error));
+		if (!m_type_data_get_klass_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_SZARRAY:
-		t->data.klass = decode_klass_ref (module, p, &p, error);
+		m_type_data_set_klass_unchecked (t, decode_klass_ref (module, p, &p, error));
 
-		if (!t->data.klass)
+		if (!m_type_data_get_klass_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_PTR:
-		t->data.type = decode_type (module, p, &p, error);
-		if (!t->data.type)
+		m_type_data_set_type_unchecked (t, decode_type (module, p, &p, error));
+		if (!m_type_data_get_type_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_FNPTR:
-		t->data.method = decode_signature (module, p, &p);
-		if (!t->data.method)
+		m_type_data_set_method_unchecked (t, decode_signature (module, p, &p));
+		if (!m_type_data_get_method_unchecked (t))
 			goto fail;
 		break;
 	case MONO_TYPE_GENERICINST: {
@@ -798,7 +798,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		if (!type)
 			goto fail;
 		klass = mono_class_from_mono_type_internal (type);
-		t->data.generic_class = mono_class_get_generic_class (klass);
+		m_type_data_set_generic_class_unchecked (t, mono_class_get_generic_class (klass));
 		break;
 	}
 	case MONO_TYPE_ARRAY: {
@@ -823,7 +823,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 			array->lobounds = (int *)g_malloc0 (sizeof (int) * array->numlobounds);
 		for (i = 0; i < array->numlobounds; ++i)
 			array->lobounds [i] = decode_value (p, &p);
-		t->data.array = array;
+		m_type_data_set_array_unchecked (t, array);
 		break;
 	}
 	case MONO_TYPE_VAR:
@@ -831,7 +831,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		MonoClass *klass = decode_klass_ref (module, p, &p, error);
 		if (!klass)
 			goto fail;
-		t->data.generic_param = m_class_get_byval_arg (klass)->data.generic_param;
+		m_type_data_set_generic_param_unchecked (t, m_type_data_get_generic_param (m_class_get_byval_arg (klass)));
 		break;
 	}
 	default:
@@ -2119,10 +2119,10 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 		void *handle;
 
 		g_assert (info);
-		
+
 		// Copy aotid to MonoImage
 		memcpy(&assembly->image->aotid, info->aotid, 16);
-		
+
 		if (info->flags & MONO_AOT_FILE_FLAG_SEPARATE_DATA) {
 			aot_data = open_aot_data (assembly, info, &handle);
 
@@ -4598,7 +4598,7 @@ inst_is_private (MonoGenericInst *inst)
 	for (guint i = 0; i < inst->type_argc; ++i) {
 		MonoType *t = inst->type_argv [i];
 		if ((t->type == MONO_TYPE_CLASS || t->type == MONO_TYPE_VALUETYPE)) {
-			int access_level = mono_class_get_flags (t->data.klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
+			int access_level = mono_class_get_flags (m_type_data_get_klass_unchecked (t)) & TYPE_ATTRIBUTE_VISIBILITY_MASK;
 			if (access_level == TYPE_ATTRIBUTE_NESTED_PRIVATE || access_level == TYPE_ATTRIBUTE_NOT_PUBLIC)
 				return TRUE;
 		}

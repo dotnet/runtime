@@ -9,11 +9,11 @@
     <ProjectReference Include="ILCompiler.Reflection.ReadyToRun.Experimental\ILCompiler.Reflection.ReadyToRun.Experimental.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true' ">
     <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.proj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetsMobile)' != 'true' ">
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.proj" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.proj" />
   </ItemGroup>

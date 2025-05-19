@@ -60,6 +60,22 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void RunDivRem_OneLargeOneHalfBI()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    tempByteArray1 = GetRandomByteArray(s_random, 512 + i);
+                    tempByteArray2 = GetRandomByteArray(s_random, 256 + j);
+                    VerifyDivRemString(Print(tempByteArray1) + Print(tempByteArray2) + "bDivRem");
+                }
+        }
+
+        [Fact]
         public static void RunDivRem_OneLargeOne0BI()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -112,6 +128,73 @@ namespace System.Numerics.Tests
 
             // 32 bit boundary  n1=0 n2=1
             VerifyDivRemString(Math.Pow(2, 33) + " 2 bDivRem");
+        }
+
+        [Fact]
+        public static void RunDivRemMedium()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            for (int i = 1; i < 8; i++)
+            {
+                var num = 1 << i;
+                tempByteArray1 = GetRandomByteArray(s_random, num);
+                tempByteArray2 = GetRandomByteArray(s_random, num / 2);
+                VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
+            }
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    int num = (1 << 7) + i;
+                    tempByteArray1 = GetRandomByteArray(s_random, num);
+                    tempByteArray2 = GetRandomByteArray(s_random, num / 3 + j);
+                    VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
+                }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void RunDivRemLarge()
+        {
+            byte[] tempByteArray1 = new byte[0];
+            byte[] tempByteArray2 = new byte[0];
+
+            for (int i = 8; i < 10; i++)
+            {
+                var num = 1 << i;
+                tempByteArray1 = GetRandomByteArray(s_random, num);
+                tempByteArray2 = GetRandomByteArray(s_random, num / 2);
+                VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
+            }
+
+            // Divide Method - Two Large BigIntegers
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    int num = (1 << 10) + i;
+                    tempByteArray1 = GetRandomByteArray(s_random, num);
+                    tempByteArray2 = GetRandomByteArray(s_random, num / 3 + j);
+                    VerifyDivRemString(Print(tempByteArray2) + Print(tempByteArray1) + "bDivRem");
+                }
+        }
+
+        [Fact]
+        public void D3n2nBound()
+        {
+            var right = (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 4 * 32 - 1))
+                + (BigInteger.One << (BigIntegerCalculator.DivideBurnikelZieglerThreshold * 2 * 32)) - 1;
+            var rem = right - 1;
+
+            var qi = BigIntegerCalculator.DivideBurnikelZieglerThreshold * 8 * 32 * 4 - 1;
+            var q = (BigInteger.One << qi) - 1;
+            var left = q * right + rem;
+
+            var (q2, r2) = BigInteger.DivRem(left, right);
+            Assert.Equal(q, q2);
+            Assert.Equal(rem, r2);
         }
 
         [Fact]
@@ -210,5 +293,17 @@ namespace System.Numerics.Tests
         {
             return MyBigIntImp.Print(bytes);
         }
+    }
+
+
+    [Collection(nameof(DisableParallelization))]
+    public class divremTestThreshold
+    {
+        [Fact]
+        public void RunDivRemMedium()
+        {
+            BigIntTools.Utils.RunWithFakeThreshold(BigIntegerCalculator.DivideBurnikelZieglerThreshold, 8, divremTest.RunDivRemMedium);
+        }
+
     }
 }

@@ -68,6 +68,11 @@ namespace ILCompiler
             return false;
         }
 
+        public override bool ComputeContainsByRefs(DefType type)
+        {
+            return false;
+        }
+
         public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             if (type.Context.Target.Architecture == TargetArchitecture.ARM64 &&

@@ -33,19 +33,10 @@ struct CORDBG_SYMBOL_URL
     GUID        FormatID;               // ID of the format type.
     WCHAR       rcName[2];              // Variable sized name of the item.
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6305) // "Potential mismatch between sizeof and countof quantities"
-#endif
-
     ULONG Size() const
     {
         return (ULONG)(sizeof(GUID) + ((u16_strlen(rcName) + 1) * 2));
     }
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 };
 
 
@@ -141,6 +132,7 @@ class RegMeta :
     , public IMetaDataEmit2
 #else
     , public IMetaDataEmit3
+    , public IILAsmPortablePdbWriter
 #endif
     , public IMetaDataAssemblyEmit
 #endif
@@ -1132,6 +1124,16 @@ public:
         USHORT      index,                  // [IN] Variable index (slot).
         char        *name,                  // [IN] Variable name.
         mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
+
+//*****************************************************************************
+// IILAsmPortablePdbWriter methods
+//*****************************************************************************
+    STDMETHODIMP ComputeSha256PdbStreamChecksum(                                        // S_OK or error.
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
+        BYTE (&checksum)[32]);                                                          // [OUT] 256-bit Pdb checksum
+
+    STDMETHODIMP ChangePdbStreamGuid(       // S_OK or error.
+        REFGUID newGuid);                   // [IN] GUID to use as the PDB GUID
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
@@ -2046,8 +2048,6 @@ private:
 #if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
     SHash<CustAttrHashTraits>   m_caHash;   // Hashed list of custom attribute types seen.
 #endif
-
-    bool        m_bKeepKnownCa;             // Should all known CA's be kept?
 
     MetaDataReorderingOptions m_ReorderingOptions;
 

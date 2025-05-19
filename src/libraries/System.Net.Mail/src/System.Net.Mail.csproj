@@ -47,6 +47,7 @@
     <Compile Include="System\Net\Mail\Attachment.cs" />
     <Compile Include="System\Net\Mail\AttachmentCollection.cs" />
     <Compile Include="System\Net\BufferedReadStream.cs" />
+    <Compile Include="System\Net\Mail\ReadWriteAdapter.cs" />
     <Compile Include="System\Net\Mail\LinkedResource.cs" />
     <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
     <Compile Include="System\Net\Mail\DomainLiteralReader.cs" />
@@ -118,8 +119,6 @@
              Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs"
-             Link="Common\System\Net\SecurityProtocol.cs" />
   </ItemGroup>
 
   <!-- Unix specific files -->

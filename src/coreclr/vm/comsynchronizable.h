@@ -39,8 +39,9 @@ public:
         ThreadAbortRequested = 128,
     };
 
-    static FCDECL0(INT32,   GetOptimalMaxSpinWaitsPerSpinIteration);
-    static FCDECL1(void,    Finalize,                       ThreadBaseObject* pThis);
+    static FCDECL0(INT32,       GetOptimalMaxSpinWaitsPerSpinIteration);
+    static FCDECL1(void,        Finalize, ThreadBaseObject* pThis);
+    static FCDECL0(FC_BOOL_RET, CatchAtSafePoint);
 };
 
 extern "C" void QCALLTYPE ThreadNative_Start(QCall::ThreadHandle thread, int threadStackSize, int priority, BOOL isThreadPool, PCWSTR pThreadName);
@@ -50,6 +51,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread();
+extern "C" void QCALLTYPE ThreadNative_PollGC();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId();
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);

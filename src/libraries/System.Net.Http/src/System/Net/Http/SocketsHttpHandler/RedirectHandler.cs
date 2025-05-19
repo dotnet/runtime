@@ -79,8 +79,6 @@ namespace System.Net.Http
                     }
                 }
 
-                request.MarkAsRedirected();
-
                 // Issue the redirected request.
                 response = await _redirectInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
             }

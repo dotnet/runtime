@@ -60,6 +60,31 @@ __forceinline /*static*/ SIZE_T StringObject::GetSize(DWORD strLen)
     return GetBaseSize() + strLen * sizeof(WCHAR);
 }
 
+inline INT32 Object::TryGetHashCode()
+{
+    LIMITED_METHOD_CONTRACT;
+    SUPPORTS_DAC;
+
+    DWORD bits = GetHeader()->GetBits();
+    if (bits & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX)
+    {
+        if (bits & BIT_SBLK_IS_HASHCODE)
+        {
+            // Common case: the object already has a hash code
+            return bits & MASK_HASHCODE;
+        }
+        else
+        {
+            // We have a sync block index. This means if we already have a hash code,
+            // it is in the sync block, otherwise we will return 0, which means "not set".
+            SyncBlock *psb = PassiveGetSyncBlock();
+            if (psb != NULL)
+                return psb->GetHashCode();
+        }
+    }
+    return 0;
+}
+
 #ifdef DACCESS_COMPILE
 
 inline void Object::EnumMemoryRegions(void)
@@ -120,14 +145,14 @@ FORCEINLINE bool Object::TryEnterObjMonitorSpinHelper()
     }
 
     AwareLock::EnterHelperResult result = EnterObjMonitorHelper(pCurThread);
-    if (result == AwareLock::EnterHelperResult_Entered)
+    if (result == AwareLock::EnterHelperResult::Entered)
     {
         return true;
     }
-    if (result == AwareLock::EnterHelperResult_Contention)
+    if (result == AwareLock::EnterHelperResult::Contention)
     {
         result = EnterObjMonitorHelperSpin(pCurThread);
-        if (result == AwareLock::EnterHelperResult_Entered)
+        if (result == AwareLock::EnterHelperResult::Entered)
         {
             return true;
         }

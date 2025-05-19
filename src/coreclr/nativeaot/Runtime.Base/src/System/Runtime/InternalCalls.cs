@@ -247,9 +247,11 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void RhpValidateExInfoStack();
 
+#if TARGET_WINDOWS
         [RuntimeImport(Redhawk.BaseName, "RhpCopyContextFromExInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
+#endif
 
         [RuntimeImport(Redhawk.BaseName, "RhpGetThreadAbortException")]
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -18,6 +18,8 @@ namespace ComWrappersTests
 
     public class Program : IDisposable
     {
+        record class WrappedUserState(object? UserState);
+
         class TestComWrappers : ComWrappers
         {
             private static IntPtr fpQueryInterface = default;
@@ -80,6 +82,41 @@ namespace ComWrappersTests
                         index++;
                     }
                 }
+                else if (obj is NotWrappedObject)
+                {
+                    // Return a single vtable for the INotWrappedObject interface.
+                    // Or two if the caller is requesting an IUnknown definition.
+                    count = flags.HasFlag(CreateComInterfaceFlags.CallerDefinedIUnknown) ? 2 : 1;
+                    entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NotWrappedObject), sizeof(ComInterfaceEntry) * count);
+
+                    var vtbl = new IUnknownVtbl()
+                    {
+                        QueryInterface = fpQueryInterface,
+                        AddRef = fpAddRef,
+                        Release = fpRelease
+                    };
+
+                    int index = 0;
+
+                    if (flags.HasFlag(CreateComInterfaceFlags.CallerDefinedIUnknown))
+                    {
+                        var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NotWrappedObject), sizeof(IUnknownVtbl));
+                        Marshal.StructureToPtr(vtbl, vtblRaw, false);
+
+                        entryRaw[index].IID = IUnknownVtbl.IID_IUnknown;
+                        entryRaw[index].Vtable = vtblRaw;
+                        index++;
+                    }
+
+                    {
+                        var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(NotWrappedObject), sizeof(IUnknownVtbl));
+                        Marshal.StructureToPtr(vtbl, vtblRaw, false);
+
+                        entryRaw[index].IID = typeof(INotWrappedObject).GUID;
+                        entryRaw[index].Vtable = vtblRaw;
+                        index++;
+                    }
+                }
 
                 return entryRaw;
             }
@@ -101,6 +138,39 @@ namespace ComWrappersTests
 
                 Assert.Fail("The COM object should support ITrackerObject or ITest for all tests in this test suite.");
                 return null;
+            }
+
+            public bool CalledUserStateOverload { get; set; } = false;
+
+            public bool CallBaseCreateObject { get; set; } = false;
+
+            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags, object? userState, out CreatedWrapperFlags createdWrapperFlags)
+            {
+                CalledUserStateOverload = true;
+
+                if (CallBaseCreateObject)
+                {
+                    return base.CreateObject(externalComObject, flags, userState, out createdWrapperFlags);
+                }
+
+                createdWrapperFlags = CreatedWrapperFlags.None;
+
+                int hr = Marshal.QueryInterface(externalComObject, typeof(INotWrappedObject).GUID, out IntPtr iNotWrappedObject);
+                if (hr == 0)
+                {
+                    // This is a non-wrapped object, return the user state as an object.
+                    Marshal.Release(iNotWrappedObject);
+                    createdWrapperFlags = CreatedWrapperFlags.NonWrapping;
+                    return new WrappedUserState(userState);
+                }
+
+                object result = CreateObject(externalComObject, flags);
+                if (result is ITrackerObjectWrapper trackerObj)
+                {
+                    createdWrapperFlags = CreatedWrapperFlags.TrackerObject;
+                }
+
+                return result;
             }
 
             public const int ReleaseObjectsCallAck = unchecked((int)-1);
@@ -402,9 +472,9 @@ namespace ComWrappersTests
             Console.WriteLine($"Running {nameof(ValidateFallbackQueryInterface)}...");
 
             var testObj = new Test()
-                {
-                    EnableICustomQueryInterface = true
-                };
+            {
+                EnableICustomQueryInterface = true
+            };
 
             var wrappers = new TestComWrappers();
 
@@ -717,10 +787,10 @@ namespace ComWrappersTests
                 switch (ComputeVtablesMode)
                 {
                     case FailureMode.ReturnInvalid:
-                    {
-                        count = -1;
-                        return null;
-                    }
+                        {
+                            count = -1;
+                            return null;
+                        }
                     case FailureMode.ThrowException:
                         throw new Exception() { HResult = ExceptionErrorCode };
                     default:
@@ -795,18 +865,13 @@ namespace ComWrappersTests
             Marshal.Release(trackerObjRaw);
         }
 
-        [Fact]
-        public void ValidateRuntimeTrackerScenario()
+        private void ValidateRuntimeTrackerScenarioCore(ComWrappers cw, Func<IntPtr, object> createObjectFunc)
         {
-            Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
-
-            var cw = new TestComWrappers();
-
             // Get an object from a tracker runtime.
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
             // Create a managed wrapper for the native object.
-            var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            var trackerObj = (ITrackerObjectWrapper)createObjectFunc(trackerObjRaw);
 
             // Ownership has been transferred to the wrapper.
             Marshal.Release(trackerObjRaw);
@@ -841,6 +906,32 @@ namespace ComWrappersTests
             testWrapperIds.Clear();
 
             ForceGC();
+        }
+
+        [Fact]
+        public void ValidateRuntimeTrackerScenario()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
+
+            var cw = new TestComWrappers();
+
+            ValidateRuntimeTrackerScenarioCore(cw, (trackerObjRaw) =>
+            {
+                return cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            });
+        }
+
+        [Fact]
+        public void ValidateRuntimeTrackerScenarioUserStateOverload()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenarioUserStateOverload)}...");
+
+            var cw = new TestComWrappers();
+
+            ValidateRuntimeTrackerScenarioCore(cw, (trackerObjRaw) =>
+            {
+                return cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None, userState: null);
+            });
         }
 
         [Fact]
@@ -1084,6 +1175,7 @@ namespace ComWrappersTests
 
                 staThread.Start();
                 mtaThread.Start();
+                testCompleted.WaitOne();
             }
             finally
             {
@@ -1092,8 +1184,6 @@ namespace ComWrappersTests
                     Marshal.Release(agileReference);
                 }
             }
-
-            testCompleted.WaitOne();
         }
 
         [DllImport("ole32.dll")]
@@ -1121,8 +1211,70 @@ namespace ComWrappersTests
                     }
                 }
 
-                return CustomQueryInterfaceResult.Failed;
+                return CustomQueryInterfaceResult.NotHandled;
             }
+        }
+
+        [Fact]
+        public void UserStateOverloadNotCalledWhenNoUserStatePassed()
+        {
+            Console.WriteLine($"Running {nameof(UserStateOverloadNotCalledWhenNoUserStatePassed)}...");
+
+            var testObj = new Test();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            var testObjFromNative = (ITestObjectWrapper)wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None);
+
+            Assert.False(wrappers.CalledUserStateOverload);
+
+            testObjFromNative.FinalRelease();
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(1)]
+        [InlineData("testString")]
+        public void UserStatePassedThrough(object? userState)
+        {
+            Console.WriteLine($"Running {nameof(UserStatePassedThrough)}...");
+
+            var testObj = new NotWrappedObject();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            var testObjFromNative = (WrappedUserState)wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None, userState);
+
+            Assert.True(wrappers.CalledUserStateOverload);
+            Assert.Same(userState, testObjFromNative.UserState);
+
+            Assert.False(ComWrappers.TryGetComInstance(testObjFromNative, out _));
+        }
+
+        [Fact]
+        public void UserStateBaseImplementationThrows()
+        {
+            Console.WriteLine($"Running {nameof(UserStateBaseImplementationThrows)}...");
+
+            var testObj = new NotWrappedObject();
+
+            var wrappers = new TestComWrappers();
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            wrappers.CallBaseCreateObject = true;
+
+            Assert.Throws<NotImplementedException>(() => wrappers.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.None, userState: null));
         }
     }
 }

@@ -732,6 +732,7 @@ OPDEF(MINT_SDB_INTR_LOC, "sdb_intr_loc", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_SDB_SEQ_POINT, "sdb_seq_point", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_SDB_BREAKPOINT, "sdb_breakpoint", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_LD_DELEGATE_METHOD_PTR, "ld_delegate_method_ptr", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_LDVIRTFTN_DELEGATE, "ldvirtftn_delegate", 4, 1, 2, MintOpNoArgs)
 
 // Math intrinsics
 // double
@@ -793,6 +794,7 @@ OPDEF(MINT_MINF, "min_f", 4, 1, 2, MintOpNoArgs)
 OPDEF(MINT_MAXF, "max_f", 4, 1, 2, MintOpNoArgs)
 
 OPDEF(MINT_PROF_ENTER, "prof_enter", 2, 0, 0, MintOpShortInt)
+OPDEF(MINT_PROF_SAMPLEPOINT, "prof_samplepoint", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_PROF_EXIT, "prof_exit", 5, 0, 1, MintOpShortAndInt)
 OPDEF(MINT_PROF_EXIT_VOID, "prof_exit_void", 2, 0, 0, MintOpNoArgs)
 OPDEF(MINT_PROF_COVERAGE_STORE, "prof_coverage_store", 5, 0, 0, MintOpLongInt)

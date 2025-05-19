@@ -50,7 +50,7 @@ namespace Internal.NativeFormat
         ThreadStaticDesc            = 0x48,
         ThreadStaticIndex           = 0x49,
         ThreadStaticOffset          = 0x4a,
-        FieldLayout                 = 0x4b,
+        // unused                   = 0x4b,
         // unused                   = 0x4c,
         // unused                   = 0x4d,
         ClassConstructorPointer     = 0x4e,
@@ -167,18 +167,6 @@ namespace Internal.NativeFormat
         NeedsUSGContext             = 0x08,
     };
 
-#if NATIVEFORMAT_PUBLICWRITER
-    public
-#else
-    internal
-#endif
-    enum CallingConventionConverterKind : uint
-    {
-        NoInstantiatingParam        = 0x00,   // The calling convention interpreter can assume that the calling convention of the target method has no instantiating parameter
-        HasInstantiatingParam       = 0x01,   // The calling convention interpreter can assume that the calling convention of the target method has an instantiating parameter
-        MaybeInstantiatingParam     = 0x02,   // The calling convention interpreter can assume that the calling convention of the target method may be a fat function pointer
-    }
-
     [Flags]
 #if NATIVEFORMAT_PUBLICWRITER
     public
@@ -190,7 +178,6 @@ namespace Internal.NativeFormat
         HasInstantiation            = 0x1,
         IsUnboxingStub              = 0x2,
         HasFunctionPointer          = 0x4,
-        FunctionPointerIsUSG        = 0x8,
     };
 
     [Flags]
@@ -205,17 +192,4 @@ namespace Internal.NativeFormat
         Static                      = 0x2,
         Unmanaged                   = 0x4,
     };
-
-#if NATIVEFORMAT_PUBLICWRITER
-    public
-#else
-    internal
-#endif
-    enum FieldStorage : uint
-    {
-        Instance                    = 0x0,
-        NonGCStatic                 = 0x1,
-        GCStatic                    = 0x2,
-        TLSStatic                   = 0x3,
-    }
 }

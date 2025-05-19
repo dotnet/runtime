@@ -649,7 +649,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
                     pAssembly = GetModule()->LoadAssembly(mdLinkRef);
-                    PREFIX_ASSUME(pAssembly != NULL);
+                    _ASSERTE(pAssembly != NULL);
                     break;
 #else
                     _ASSERTE(!"DAC shouldn't attempt to trigger loading");
@@ -1105,7 +1105,7 @@ void DECLSPEC_NORETURN ThrowMainMethodException(MethodDesc* pMD, UINT resID)
     {
         szUTFMethodName = "Invalid MethodDef record";
     }
-    PREFIX_ASSUME(szUTFMethodName!=NULL);
+    _ASSERTE(szUTFMethodName!=NULL);
     MAKE_WIDEPTR_FROMUTF8(szMethodName, szUTFMethodName);
     COMPlusThrowHR(COR_E_METHODACCESS, resID, szClassName, szMethodName);
 }
@@ -1226,10 +1226,7 @@ static void RunMainInternal(Param* pParam)
 
     GCPROTECT_END();
 
-    //<TODO>
-    // When we get mainCRTStartup from the C++ then this should be able to go away.</TODO>
-    fflush(stdout);
-    fflush(stderr);
+    minipal_log_flush_all();
 }
 
 /* static */
@@ -1513,7 +1510,7 @@ MethodDesc* Assembly::GetEntryPoint()
         // This code needs a class init frame, because without it, the
         // debugger will assume any code that results from searching for a
         // type handle (ie, loading an assembly) is the first line of a program.
-        FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
+        DebuggerClassInitMarkFrame __dcimf;
 
         MethodTable * pInitialMT = ClassLoader::LoadTypeDefOrRefThrowing(pModule, mdParent,
                                                                        ClassLoader::ThrowIfNotFound,
@@ -2418,7 +2415,7 @@ HRESULT Assembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
     ULONG size;
     BYTE *blob;
     IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
-    mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
+    mdAssembly asTK = TokenFromRid(1, mdtAssembly);
 
     HRESULT hr = mdImport->GetCustomAttributeByName(asTK,
                                             DEBUGGABLE_ATTRIBUTE_TYPE,

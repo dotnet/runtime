@@ -789,6 +789,7 @@ ep_rt_mono_component_init (void)
 	g_free (diag_env);
 
 	ep_rt_mono_runtime_provider_component_init ();
+	ep_rt_mono_sampling_provider_component_init ();
 	ep_rt_mono_profiler_provider_component_init ();
 }
 
@@ -836,6 +837,7 @@ void
 ep_rt_mono_fini (void)
 {
 	ep_rt_mono_runtime_provider_fini ();
+	ep_rt_mono_sampling_provider_component_fini ();
 	ep_rt_mono_profiler_provider_fini ();
 
 	if (_ep_rt_mono_default_profiler_provider) {

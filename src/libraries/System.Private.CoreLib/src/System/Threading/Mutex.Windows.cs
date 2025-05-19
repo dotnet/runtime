@@ -15,30 +15,98 @@ namespace System.Threading
         private const uint AccessRights =
             (uint)Interop.Kernel32.MAXIMUM_ALLOWED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
 
-        private void CreateMutexCore(bool initiallyOwned, string? name, out bool createdNew)
+        // Can't use MAXIMUM_ALLOWED in an access control entry (ACE)
+        private const int CurrentUserOnlyAceRights =
+            Interop.Kernel32.STANDARD_RIGHTS_REQUIRED | Interop.Kernel32.SYNCHRONIZE | Interop.Kernel32.MUTEX_MODIFY_STATE;
+
+        private void CreateMutexCore(bool initiallyOwned)
         {
-            uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
-            SafeWaitHandle mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
-            int errorCode = Marshal.GetLastPInvokeError();
-
-            if (mutexHandle.IsInvalid)
+            uint flags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
+            SafeWaitHandle handle = Interop.Kernel32.CreateMutexEx(lpMutexAttributes: 0, name: null, flags, AccessRights);
+            if (handle.IsInvalid)
             {
-                mutexHandle.SetHandleAsInvalid();
-                if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                int errorCode = Marshal.GetLastPInvokeError();
+                handle.SetHandleAsInvalid();
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+            }
 
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+            SafeWaitHandle = handle;
+        }
+
+        private unsafe void CreateMutexCore(
+            bool initiallyOwned,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            Thread.CurrentUserSecurityDescriptorInfo securityDescriptorInfo = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES* securityAttributesPtr = null;
+            if (!string.IsNullOrEmpty(name) && options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+                if (options.CurrentUserOnly)
+                {
+                    securityDescriptorInfo = new(CurrentUserOnlyAceRights);
+                    securityAttributes.nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES);
+                    securityAttributes.lpSecurityDescriptor = (void*)securityDescriptorInfo.SecurityDescriptor;
+                    securityAttributesPtr = &securityAttributes;
+                }
+            }
+
+            SafeWaitHandle mutexHandle;
+            int errorCode;
+            using (securityDescriptorInfo)
+            {
+                uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
+                mutexHandle = Interop.Kernel32.CreateMutexEx((nint)securityAttributesPtr, name, mutexFlags, AccessRights);
+                errorCode = Marshal.GetLastPInvokeError();
+
+                if (mutexHandle.IsInvalid)
+                {
+                    mutexHandle.SetHandleAsInvalid();
+                    if (errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                        throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+                }
+
+                if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS && securityAttributesPtr != null)
+                {
+                    try
+                    {
+                        if (!Thread.CurrentUserSecurityDescriptorInfo.IsSecurityDescriptorCompatible(
+                                securityDescriptorInfo.TokenUser,
+                                mutexHandle,
+                                Interop.Kernel32.MUTEX_MODIFY_STATE))
+                        {
+                            throw new WaitHandleCannotBeOpenedException(SR.Format(SR.NamedWaitHandles_ExistingObjectIncompatibleWithCurrentUserOnly, name));
+                        }
+                    }
+                    catch
+                    {
+                        mutexHandle.Dispose();
+                        throw;
+                    }
+                }
             }
 
             createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
             SafeWaitHandle = mutexHandle;
         }
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Mutex? result)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            result = null;
+            if (options.WasSpecified)
+            {
+                name = options.GetNameWithSessionPrefix(name);
+            }
+
             // To allow users to view & edit the ACL's, call OpenMutex
             // with parameters to allow us to view & edit the ACL.  This will
             // fail if we don't have permission to view or edit the ACL's.
@@ -47,6 +115,7 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
+                result = null;
                 int errorCode = Marshal.GetLastPInvokeError();
 
                 myHandle.Dispose();
@@ -59,6 +128,26 @@ namespace System.Threading
                     return OpenExistingResult.NameInvalid;
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, name);
+            }
+
+            if (options.WasSpecified && options.CurrentUserOnly)
+            {
+                try
+                {
+                    if (!Thread.CurrentUserSecurityDescriptorInfo.IsValidSecurityDescriptor(
+                            myHandle,
+                            Interop.Kernel32.MUTEX_MODIFY_STATE))
+                    {
+                        myHandle.Dispose();
+                        result = null;
+                        return OpenExistingResult.ObjectIncompatibleWithCurrentUserOnly;
+                    }
+                }
+                catch
+                {
+                    myHandle.Dispose();
+                    throw;
+                }
             }
 
             result = new Mutex(myHandle);

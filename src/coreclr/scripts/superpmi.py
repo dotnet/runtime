@@ -24,26 +24,27 @@ import json
 import locale
 import logging
 import math
-import os
 import multiprocessing
+import os
 import platform
+import queue
+import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
-import queue
-import re
+import time
 import urllib
 import urllib.request
 import zipfile
-import time
 
 from coreclr_arguments import *
 from jitutil import TempDir, ChangeDir, remove_prefix, is_zero_length_file, is_nonzero_length_file, \
     make_safe_filename, find_file, download_one_url, download_files, report_azure_error, \
     require_azure_storage_libraries, authenticate_using_azure, \
     create_unique_directory_name, create_unique_file_name, get_files_from_path, determine_jit_name, \
-    get_deepest_existing_directory
+    get_deepest_existing_directory, run_command
 
 locale.setlocale(locale.LC_ALL, '')  # Use '' for auto, or force e.g. to 'en_US.UTF-8'
 
@@ -145,13 +146,13 @@ to get that version. Otherwise, use "unknown-jit-ee-version".
 
 host_os_help = "OS (windows, osx, linux). Default: current OS."
 
-arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture."
+arch_help = "Architecture (x64, x86, arm, arm64, loongarch64, riscv64). Default: current architecture."
 
 target_os_help = "Target OS, for use with cross-compilation JIT (windows, osx, linux). Default: current OS."
 
-target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64). Passed as asm diffs target to SuperPMI. Default: current architecture."
+target_arch_help = "Target architecture, for use with cross-compilation JIT (x64, x86, arm, arm64, loongarch64, riscv64). Passed as asm diffs target to SuperPMI. Default: current architecture."
 
-mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64). Default: target architecture."
+mch_arch_help = "Architecture of MCH files to download, used for cross-compilation altjit (x64, x86, arm, arm64, loongarch64, riscv64). Default: target architecture."
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
@@ -314,6 +315,7 @@ collect_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help="P
 collect_parser.add_argument("--disable_r2r", action="store_true", help="Sets DOTNET_ReadyToRun=0 when doing collection to cause ReadyToRun images to not be used, and thus causes JIT compilation and SuperPMI collection of these methods.")
 collect_parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
 collect_parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
+collect_parser.add_argument("--jitoptrepeat_all", action="store_true", help="Sets DOTNET_JitOptRepeat=* when doing collections.")
 collect_parser.add_argument("--ci", action="store_true", help="Special collection mode for handling zero-sized files in Azure DevOps + Helix pipelines collections.")
 
 # Allow for continuing a collection in progress
@@ -864,6 +866,9 @@ class SuperPMICollect:
             else:
                 dotnet_env["TieredCompilation"] = "0"
 
+            if self.coreclr_args.jitoptrepeat_all:
+                dotnet_env["JitOptRepeat"] = "*"
+
             if self.coreclr_args.disable_r2r:
                 dotnet_env["ReadyToRun"] = "0"
 
@@ -1207,6 +1212,9 @@ class SuperPMICollect:
                         if line.startswith("--exportsfile:"):
                             arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--exportsfile:"):]))
                             return f"--exportsfile:{arg_path}"
+                        elif line.startswith("--sourcelink:"):
+                            arg_path = os.path.join(test_native_directory, os.path.basename(line[len("--sourcelink:"):]))
+                            return f"--sourcelink:{arg_path}"
                         elif line.startswith("--descriptor:"):
                             arg_path = os.path.join(test_directory, os.path.basename(line[len("--descriptor:"):]))
                             return f"--descriptor:{arg_path}"
@@ -1611,15 +1619,27 @@ def report_replay_asserts(asserts, output_mch_file):
 
     if asserts:
         logging.info("============================== Assertions:")
+        assertion_num = 0
+        assertion_count = len(asserts.items())
         for assertion_key, assertion_value in asserts.items():
-            logging.info("%s", assertion_key)
+            assertion_num += 1
+            assertion_instance_count = len(assertion_value)
+            logging.info("=== Assertion #%s/%s (count: %s): %s", assertion_num, assertion_count, assertion_instance_count, assertion_key)
             # Sort the values by increasing il size
             sorted_instances = sorted(assertion_value, key=lambda d: d['il'])
+            instance_num = 0
+            # Arbitrary maximum number of instances to show to avoid too much output. Note that all the assertions are in the log file,
+            # just not summarized.
+            instance_max = 25
             for instance in sorted_instances:
                 if output_mch_file:
                     logging.info("  %s # %s : IL size %s", instance['mch_file'], instance['mc_num'], instance['il'])
                 else:
                     logging.info("  # %s : IL size %s", instance['mc_num'], instance['il'])
+                instance_num += 1
+                if instance_num >= instance_max:
+                    logging.info("  ... omitting %s instances", assertion_instance_count - instance_num)
+                    break
 
 
 ################################################################################
@@ -3682,14 +3702,14 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
-    from jitutil import ContainerClient, DefaultAzureCredential
+    from jitutil import ContainerClient, AzureCliCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
     paths = []
     ok = True
     try:
-        az_credential = DefaultAzureCredential()
+        az_credential = AzureCliCredential()
         container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
         blob_name_prefix = az_collections_root_folder + "/"
         blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
@@ -3878,28 +3898,75 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
+    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
-    # Determine if a URL in Azure Storage should be allowed. The path looks like:
-    #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
-    # Filter to just the current jit-ee-guid, OS, and architecture.
-    # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
-    # If there are filters, only download those matching files.
-    def filter_superpmi_collections(path):
-        path = path.lower()
-        return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
+    path_var = os.environ.get("PATH")
+    azcopy_exe = "azcopy.exe" if platform.system() == "Windows" else "azcopy"
+    azcopy_path = find_file(azcopy_exe, path_var.split(os.pathsep)) if path_var is not None else None
 
-    paths = list_superpmi_collections_container(filter_superpmi_collections)
-    if paths is None or len(paths) == 0:
-        print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
-        return []
+    if azcopy_path is None or authenticate_using_azure:
+        # Determine if a URL in Azure Storage should be allowed. The path looks like:
+        #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
+        # Filter to just the current jit-ee-guid, OS, and architecture.
+        # Include both MCH and MCT files as well as the CLR JIT dll (processed below).
+        # If there are filters, only download those matching files.
+        def filter_superpmi_collections(path):
+            path = path.lower()
+            return path.startswith(blob_filter_string) and ((coreclr_args.filter is None) or any((filter_item.lower() in path) for filter_item in coreclr_args.filter))
 
-    blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
-    urls = [blob_url_prefix + path for path in paths]
+        paths = list_superpmi_collections_container(filter_superpmi_collections)
+        if paths is None or len(paths) == 0:
+            print("No Azure Storage MCH files to download from {}".format(blob_filter_string))
+            return []
 
-    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
-    return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+        urls = [blob_url_prefix + path for path in paths]
 
+        skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+        return download_files(urls, target_dir, is_azure_storage=True, display_progress=not skip_progress)
+    else:
+        logging.info("azcopy was found in PATH; will use azcopy for download")
+        local_paths = []
+        with TempDir() as temp_location:
+            source_url = "{}{}*".format(blob_url_prefix, blob_filter_string)
+            cli = [azcopy_path, "cp", source_url, temp_location]
+            if coreclr_args.filter is not None:
+                cli.append("--include-pattern")
+                cli.append(";".join("*" + filter_name + "*" for filter_name in coreclr_args.filter))
+    
+            # Log to a file to get "tee-like" behavior (streaming output in the console)
+            azcopy_log_path = os.path.join(temp_location, "azcopy.log")
+            run_command(cli, _output_file=azcopy_log_path)
+            os.remove(azcopy_log_path)
+
+            for file in os.listdir(temp_location):
+                download_path = os.path.join(temp_location, file)
+                if file.lower().endswith(".zip") or file.lower().endswith(".tar.gz"):
+                    logging.info("Uncompress %s => %s", download_path, target_dir)
+
+                    if file.lower().endswith(".zip"):
+                        with zipfile.ZipFile(download_path, "r") as zip:
+                            zip.extractall(target_dir)
+                            archive_names = zip.namelist()
+                    else:
+                        with tarfile.open(download_path, "r") as tar:
+                            tar.extractall(target_dir)
+                            archive_names = tar.getnames()
+
+                    for archive_name in archive_names:
+                        if archive_name.endswith("/"):
+                            # Directory
+                            continue
+
+                        target_path = os.path.join(target_dir, archive_name.replace("/", os.path.sep))
+                        local_paths.append(target_path)
+                else:
+                    logging.info("Copy %s => %s", download_path, target_dir)
+                    target_path = os.path.join(target_dir, file)
+                    shutil.copy2(download_path, target_path)
+                    local_paths.append(target_path)
+
+        return local_paths
 
 def upload_mch(coreclr_args):
     """ Upload a set of MCH files. Each MCH file is first ZIP compressed to save data space and upload/download time.
@@ -3909,7 +3976,7 @@ def upload_mch(coreclr_args):
     """
 
     require_azure_storage_libraries(need_azure_identity=True)
-    from jitutil import BlobServiceClient, DefaultAzureCredential
+    from jitutil import BlobServiceClient, AzureCliCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3945,7 +4012,7 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    default_credential = DefaultAzureCredential()
+    default_credential = AzureCliCredential()
 
     blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
@@ -4354,8 +4421,8 @@ def process_base_jit_path_arg(coreclr_args):
             baseline_hash = coreclr_args.base_git_hash
 
         if coreclr_args.base_git_hash is None:
-            # Enumerate the last 20 changes, starting with the baseline, that included JIT changes.
-            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*" ]
+            # Enumerate the last 20 changes, starting with the baseline, that included JIT and JIT-EE GUID changes.
+            command = [ "git", "log", "--pretty=format:%H", baseline_hash, "-20", "--", "src/coreclr/jit/*", "src/coreclr/inc/jiteeversionguid.h" ]
             logging.debug("Invoking: %s", " ".join(command))
             proc = subprocess.Popen(command, stdout=subprocess.PIPE)
             stdout_change_list, _ = proc.communicate()
@@ -4559,6 +4626,9 @@ def setup_args(args):
         logger.addHandler(file_handler)
         logging.critical("================ Logging to %s", log_file)
 
+    # Log the original command-line
+    logging.debug("Command line: %s", " ".join(sys.argv))
+
     # Finish verifying the arguments
 
     def setup_jit_ee_version_arg(jit_ee_version):
@@ -4606,6 +4676,15 @@ def setup_args(args):
                             lambda mch_arch: check_mch_arch(coreclr_args, mch_arch),
                             lambda mch_arch: "Unknown mch_arch {}\nSupported architectures: {}".format(mch_arch, (", ".join(coreclr_args.valid_arches))),
                             modify_arg=lambda mch_arch: mch_arch if mch_arch is not None else coreclr_args.target_arch) # Default to `target_arch`
+
+        # For LoongArch64, RiscV64, assume we are doing altjit cross-compilation and set mch_arch to 'arch', and target_os to Linux.
+        if coreclr_args.target_arch == "loongarch64" or coreclr_args.target_arch == "riscv64":
+            if coreclr_args.target_os == coreclr_args.host_os and coreclr_args.target_os != "linux":
+                logging.warning("Overriding 'target_os' to 'linux'")
+                coreclr_args.target_os = "linux"
+            if coreclr_args.mch_arch == coreclr_args.target_arch and coreclr_args.mch_arch != coreclr_args.arch:
+                logging.warning("Overriding 'mch_arch' to '%s'", coreclr_args.arch)
+                coreclr_args.mch_arch = coreclr_args.arch
 
     def verify_superpmi_common_args():
 
@@ -4907,6 +4986,11 @@ def setup_args(args):
                             "tiered_pgo",
                             lambda unused: True,
                             "Unable to set tiered_pgo")
+
+        coreclr_args.verify(args,
+                            "jitoptrepeat_all",
+                            lambda unused: True,
+                            "Unable to set jitoptrepeat_all")
 
         coreclr_args.verify(args,
                             "pmi_path",
@@ -5514,7 +5598,6 @@ def main(args):
 ################################################################################
 # __main__
 ################################################################################
-
 
 if __name__ == "__main__":
     args = parser.parse_args()

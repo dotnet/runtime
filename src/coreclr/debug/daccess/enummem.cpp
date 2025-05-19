@@ -318,8 +318,12 @@ HRESULT ClrDataAccess::EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags
 
     if (flags == CLRDATA_ENUM_MEM_HEAP2)
     {
-        EEJitManager* managerPtr = ExecutionManager::GetEEJitManager();
+        EECodeGenManager* managerPtr = ExecutionManager::GetEEJitManager();
         managerPtr->EnumMemoryRegions(flags);
+#ifdef FEATURE_INTERPRETER
+        managerPtr = ExecutionManager::GetInterpreterJitManager();
+        managerPtr->EnumMemoryRegions(flags);
+#endif // FEATURE_INTERPRETER
     }
 
     return status;
@@ -557,7 +561,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // included in the dump.  When we touch the header and each element looking for the
     // MD this happens.
     StackTraceArray stackTrace;
-    exceptRef->GetStackTrace(stackTrace);
+    exceptRef->GetStackTrace(stackTrace, /*outKeepAliveArray*/ NULL, /* pCurrentThread */ NULL);
 
     // The stackTraceArrayObj can be either a byte[] with the actual stack trace array or an object[] where the first element is the actual stack trace array.
     // In case it was the latter, we need to dump the actual stack trace array object here too.
@@ -587,8 +591,6 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
             // Pulls in data to translate from token to MethodDesc
             FindLoadedMethodRefOrDef(pMD->GetMethodTable()->GetModule(), pMD->GetMemberDef());
 
-            // Pulls in sequence points.
-            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
             PCODE addr = pMD->GetNativeCode();
             if (addr != (PCODE)NULL)
             {
@@ -965,9 +967,6 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                             // since most dumps will be for optimized targets.  However, being able to map
                             // back to source lines for functions on stacks is very useful and we don't
                             // want to allow the function to fail for all targets.
-
-                            // Pulls in sequence points and local variable info
-                            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, pMethodDesc);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
 

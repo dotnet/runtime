@@ -10,10 +10,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 .assembly Test_HndIndex_10_Plain
 {
-    .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [mscorlib]System.Security.SecurityTransparentAttribute::.ctor() = ( 01 00 00 00 )
 }
 
 .imagebase 0x00400000
@@ -34,6 +35,10 @@
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00
         )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+            string('Needs triage')
+            int32(0x2) // Mono
+        }
         .entrypoint
         .maxstack 8
         .locals init (class Test.DerivedClass derivedInstance, int32 exitCode)

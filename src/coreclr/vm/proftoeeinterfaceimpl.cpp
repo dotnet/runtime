@@ -4031,7 +4031,7 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         // Get the module file name
         LPCWSTR wszFileName = pFile->GetPath();
         _ASSERTE(wszFileName != NULL);
-        PREFIX_ASSUME(wszFileName != NULL);
+        _ASSERTE(wszFileName != NULL);
 
         // If there is no filename, which is the case for RefEmit modules and for SQL
         // modules, then rather than returning an empty string for the name, just use the
@@ -8085,10 +8085,10 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     }
 
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled && !pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
+    if (!pCf->IsFrameless() && InlinedCallFrame::FrameHasActiveCall(pCf->GetFrame()))
     {
         // Skip new exception handling helpers
-        InlinedCallFrame *pInlinedCallFrame = (InlinedCallFrame *)pCf->GetFrame();
+        InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pCf->GetFrame());
         PTR_NDirectMethodDesc pMD = pInlinedCallFrame->m_Datum;
         TADDR datum = dac_cast<TADDR>(pMD);
         if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
@@ -8199,7 +8199,7 @@ static BOOL EnsureFrameInitialized(Frame * pFrame)
         return TRUE;
     }
 
-    HelperMethodFrame * pHMF = (HelperMethodFrame *) pFrame;
+    HelperMethodFrame * pHMF = dac_cast<PTR_HelperMethodFrame>(pFrame);
 
     if (pHMF->EnsureInit(
         NULL                        // unwindState
@@ -8431,8 +8431,6 @@ Loop:
                 // about the most likely cases, and it's ok if the unlikely cases result
                 // in truncated stacks, as unlikely cases will be statistically
                 // irrelevant to CPU performance sampling profilers
-                CodeManState codeManState;
-                codeManState.dwIsSet = 0;
                 REGDISPLAY rd;
                 FillRegDisplay(&rd, &ctxCur);
 
@@ -8443,8 +8441,7 @@ Loop:
                 codeInfo.GetCodeManager()->UnwindStackFrame(
                     &rd,
                     &codeInfo,
-                    SpeculativeStackwalk,
-                    &codeManState);
+                    SpeculativeStackwalk);
 
                 ctxCur.Ebp = *rd.GetEbpLocation();
                 ctxCur.Esp = rd.SP;

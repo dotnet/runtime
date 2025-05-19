@@ -807,8 +807,8 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                                 // VectorT256
     { NI_Illegal, NI_Illegal },                                 // VectorT512
     { NI_Illegal, NI_Illegal },                                 // APX
-    { NI_Illegal, NI_Illegal },                                 // AVX10v2
-    { NI_Illegal, NI_Illegal },                                 // AVX10v2_V512
+    { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      // AVX10v2
+    { FIRST_NI_AVX10v2_V512, LAST_NI_AVX10v2_V512 },            // AVX10v2_V512
     { FIRST_NI_GFNI, LAST_NI_GFNI },
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },
@@ -857,6 +857,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // VectorT128
     { NI_Illegal, NI_Illegal },                         // Rcpc2
     { FIRST_NI_Sve, LAST_NI_Sve },
+    { FIRST_NI_Sve2, LAST_NI_Sve2 },                    // Sve2
     { FIRST_NI_ArmBase_Arm64, LAST_NI_ArmBase_Arm64 },
     { FIRST_NI_AdvSimd_Arm64, LAST_NI_AdvSimd_Arm64 },
     { NI_Illegal, NI_Illegal },                         // Aes_Arm64
@@ -866,6 +867,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { NI_Illegal, NI_Illegal },                         // Sha1_Arm64
     { NI_Illegal, NI_Illegal },                         // Sha256_Arm64
     { NI_Illegal, NI_Illegal },                         // Sve_Arm64
+    { NI_Illegal, NI_Illegal },                         // Sve2_Arm64
 #else
 #error Unsupported platform
 #endif
@@ -2075,14 +2077,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                     case NI_SSE41_ConvertToVector128Int64:
                     case NI_AVX2_BroadcastScalarToVector128:
                     case NI_AVX2_BroadcastScalarToVector256:
-                    case NI_AVX512F_BroadcastScalarToVector512:
-                    case NI_AVX512BW_BroadcastScalarToVector512:
                     case NI_AVX2_ConvertToVector256Int16:
                     case NI_AVX2_ConvertToVector256Int32:
                     case NI_AVX2_ConvertToVector256Int64:
-                    case NI_AVX2_BroadcastVector128ToVector256:
-                    case NI_AVX512F_BroadcastVector128ToVector512:
-                    case NI_AVX512F_BroadcastVector256ToVector512:
                     {
                         // These intrinsics have both pointer and vector overloads
                         // We want to be able to differentiate between them so lets

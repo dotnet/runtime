@@ -8,7 +8,9 @@
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT VSD_ResolveWorker
+#endif
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler
@@ -21,9 +23,12 @@
 #endif
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
+#ifdef FEATURE_INTERPRETER
+    IMPORT ExecuteInterpretedMethod
+#endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    IMPORT  g_sw_ww_table
+    IMPORT  g_write_watch_table
 #endif
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -35,9 +40,14 @@
     IMPORT  g_lowest_address
     IMPORT  g_highest_address
     IMPORT  g_card_table
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     IMPORT  g_dispatch_cache_chain_success_counter
+#endif
     IMPORT  g_pGetGCStaticBase
     IMPORT  g_pGetNonGCStaticBase
+
+    IMPORT g_pPollGC
+    IMPORT g_TrapReturningThreads
 
 #ifdef WRITE_BARRIER_CHECK
     SETALIAS g_GCShadow, ?g_GCShadow@@3PEAEEA
@@ -238,84 +248,6 @@ ThePreStubPatchLabel
         ret             lr
         LEAF_END
 
-;-----------------------------------------------------------------------------
-; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
-;
-; Update shadow copies of the various state info required for barrier
-;
-; State info is contained in a literal pool at the end of the function
-; Placed in text section so that it is close enough to use ldr literal and still
-; be relocatable. Eliminates need for PREPARE_EXTERNAL_VAR in hot code.
-;
-; Align and group state info together so it fits in a single cache line
-; and each entry can be written atomically
-;
-    LEAF_ENTRY JIT_UpdateWriteBarrierState
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
-
-        ; x0-x7, x10 will contain intended new state
-        ; x8 will preserve skipEphemeralCheck
-        ; x12 will be used for pointers
-
-        mov      x8, x0
-        mov      x9, x1
-
-        adrp     x12, g_card_table
-        ldr      x0, [x12, g_card_table]
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        adrp     x12, g_card_bundle_table
-        ldr      x1, [x12, g_card_bundle_table]
-#endif
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        adrp     x12, g_sw_ww_table
-        ldr      x2, [x12, g_sw_ww_table]
-#endif
-
-        adrp     x12, g_ephemeral_low
-        ldr      x3, [x12, g_ephemeral_low]
-
-        adrp     x12, g_ephemeral_high
-        ldr      x4, [x12, g_ephemeral_high]
-
-        ; Check skipEphemeralCheck
-        cbz      x8, EphemeralCheckEnabled
-        movz     x3, #0
-        movn     x4, #0
-
-EphemeralCheckEnabled
-        adrp     x12, g_lowest_address
-        ldr      x5, [x12, g_lowest_address]
-
-        adrp     x12, g_highest_address
-        ldr      x6, [x12, g_highest_address]
-
-#ifdef WRITE_BARRIER_CHECK
-        adrp     x12, $g_GCShadow
-        ldr      x7, [x12, $g_GCShadow]
-
-        adrp     x12, $g_GCShadowEnd
-        ldr      x10, [x12, $g_GCShadowEnd]
-#endif
-
-        ; Update wbs state
-        adrp     x12, JIT_WriteBarrier_Table_Loc
-        ldr      x12, [x12, JIT_WriteBarrier_Table_Loc]
-        add      x12, x12, x9
-        stp      x0, x1, [x12], 16
-        stp      x2, x3, [x12], 16
-        stp      x4, x5, [x12], 16
-        str      x6, [x12], 8
-#ifdef WRITE_BARRIER_CHECK
-        stp     x7, x10, [x12], 16
-#endif
-
-        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
-        EPILOG_RETURN
-
-    LEAF_END JIT_UpdateWriteBarrierState
-
 #ifdef FEATURE_COMINTEROP
 
 ; ------------------------------------------------------------------
@@ -429,7 +361,7 @@ NoFloatingPointRetVal
     GBLA ComCallPreStub_ErrorReturnOffset
     GBLA ComCallPreStub_FirstStackAdjust
 
-ComCallPreStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+ComCallPreStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 ComCallPreStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8) ; x8, reg args , fp & lr already pushed
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_FrameSize - ComCallPreStub_FirstStackAdjust
 ComCallPreStub_StackAlloc        SETA ComCallPreStub_StackAlloc + SIZEOF__FloatArgumentRegisters + 8; 8 for ErrorReturn
@@ -499,7 +431,7 @@ ComCallPreStub_ErrorExit
     GBLA GenericComCallStub_FrameOffset
     GBLA GenericComCallStub_FirstStackAdjust
 
-GenericComCallStub_FrameSize         SETA (SIZEOF__GSCookie + SIZEOF__ComMethodFrame)
+GenericComCallStub_FrameSize         SETA (SIZEOF__ComMethodFrame)
 GenericComCallStub_FirstStackAdjust  SETA (8 + SIZEOF__ArgumentRegisters + 2 * 8)
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_FrameSize - GenericComCallStub_FirstStackAdjust
 GenericComCallStub_StackAlloc        SETA GenericComCallStub_StackAlloc + SIZEOF__FloatArgumentRegisters
@@ -630,7 +562,7 @@ COMToCLRDispatchHelper_RegSetup
 ; ------------------------------------------------------------------
 ; Hijack function for functions which return a scalar type or a struct (value type)
     NESTED_ENTRY OnHijackTripThread
-    PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
+    PROLOG_SAVE_REG_PAIR   fp, lr, #-192!
     ; Spill callee saved registers
     PROLOG_SAVE_REG_PAIR   x19, x20, #16
     PROLOG_SAVE_REG_PAIR   x21, x22, #32
@@ -641,9 +573,12 @@ COMToCLRDispatchHelper_RegSetup
     ; save any integral return value(s)
     stp x0, x1, [sp, #96]
 
+    ; save async continuation return value
+    str x2, [sp, #112]
+
     ; save any FP/HFA/HVA return value(s)
-    stp q0, q1, [sp, #112]
-    stp q2, q3, [sp, #144]
+    stp q0, q1, [sp, #128]
+    stp q2, q3, [sp, #160]
 
     mov x0, sp
     bl OnHijackWorker
@@ -651,16 +586,19 @@ COMToCLRDispatchHelper_RegSetup
     ; restore any integral return value(s)
     ldp x0, x1, [sp, #96]
 
+    ; restore async continuation return value
+    ldr x2, [sp, #112]
+
     ; restore any FP/HFA/HVA return value(s)
-    ldp q0, q1, [sp, #112]
-    ldp q2, q3, [sp, #144]
+    ldp q0, q1, [sp, #128]
+    ldp q2, q3, [sp, #160]
 
     EPILOG_RESTORE_REG_PAIR   x19, x20, #16
     EPILOG_RESTORE_REG_PAIR   x21, x22, #32
     EPILOG_RESTORE_REG_PAIR   x23, x24, #48
     EPILOG_RESTORE_REG_PAIR   x25, x26, #64
     EPILOG_RESTORE_REG_PAIR   x27, x28, #80
-    EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
+    EPILOG_RESTORE_REG_PAIR   fp, lr,   #192!
     EPILOG_RETURN
     NESTED_END
 
@@ -693,7 +631,7 @@ COMToCLRDispatchHelper_RegSetup
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
 
-        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+        ; Using below prolog instead of PROLOG_SAVE_REG_PAIR fp,lr, #-96!
         ; is intentional. Above statement would also emit instruction to save
         ; sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         ; of method. However, this method needs to be able to change fp before calling funclet.
@@ -732,21 +670,23 @@ COMToCLRDispatchHelper_RegSetup
 
         NESTED_END CallEHFunclet
 
-        ; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
-        ; frame pointer for accessing the locals in the parent method.
+        ; This helper enables us to call into a filter funclet after restoring Fp register
         NESTED_ENTRY CallEHFilterFunclet
 
-        PROLOG_SAVE_REG_PAIR   fp, lr, #-16!
+        PROLOG_SAVE_REG_PAIR_NO_FP   fp, lr, #-16!
 
         ; On entry:
         ;
         ; X0 = throwable
-        ; X1 = SP of the caller of the method/funclet containing the filter
+        ; X1 = FP of the main function
         ; X2 = PC to invoke
         ; X3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
         ;
         ; Save the SP of this function
+        mov fp, sp
         str fp, [x3]
+        ; Restore frame pointer
+        mov fp, x1
         ; Invoke the filter funclet
         blr x2
 
@@ -759,8 +699,8 @@ COMToCLRDispatchHelper_RegSetup
         GBLA FaultingExceptionFrame_StackAlloc
         GBLA FaultingExceptionFrame_FrameOffset
 
-FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__GSCookie + SIZEOF__FaultingExceptionFrame)
-FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
+FaultingExceptionFrame_StackAlloc         SETA (SIZEOF__FaultingExceptionFrame)
+FaultingExceptionFrame_FrameOffset        SETA  0
 
         MACRO
         GenerateRedirectedStubWithFrame $STUB, $TARGET
@@ -831,6 +771,7 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
         GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
 ;
@@ -922,6 +863,7 @@ Fail
         EPILOG_BRANCH_REG  x9
 
         NESTED_END
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_READYTORUN
 
@@ -1136,6 +1078,24 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         EPILOG_BRANCH_REG x9
     NESTED_END
 
+    IMPORT JIT_PatchpointWorkerWorkerWithPolicy
+
+    NESTED_ENTRY JIT_Patchpoint
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
+        bl      JIT_PatchpointWorkerWorkerWithPolicy
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+    NESTED_END
+
+    // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+    LEAF_ENTRY JIT_PatchpointForced
+        mov x1, x0
+        mov x0, #0
+        b JIT_Patchpoint
+    LEAF_END
+
 #endif ; FEATURE_TIERED_COMPILATION
 
     LEAF_ENTRY  JIT_ValidateIndirectCall
@@ -1179,6 +1139,41 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 
 #endif ; FEATURE_SPECIAL_USER_MODE_APC
 
+    LEAF_ENTRY  JIT_PollGC
+        ldr     x9, =g_TrapReturningThreads
+        ldr     w9, [x9]
+        cbnz    w9, JIT_PollGCRarePath
+        ret
+JIT_PollGCRarePath
+        ldr     x9, =g_pPollGC
+        ldr     x9, [x9]
+        br x9
+    LEAF_END
+
+#ifdef FEATURE_INTERPRETER
+    NESTED_ENTRY InterpreterStub
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov         x1, METHODDESC_REGISTER         ; pMethodDesc
+
+        bl          ExecuteInterpretedMethod
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END
+#endif // FEATURE_INTERPRETER
+
+;x0 -This pointer
+;x1 -ReturnBuffer
+    LEAF_ENTRY ThisPtrRetBufPrecodeWorker
+        ldr  x12, [METHODDESC_REGISTER, #ThisPtrRetBufPrecodeData__Target]
+        mov  x11, x0     ; Move first arg pointer to temp register
+        mov  x0,  x1     ; Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+        mov  x1, x11     ; Move temp register to first arg register for static method with return buffer
+        EPILOG_BRANCH_REG x12
+    LEAF_END
 
 ; Must be at very end of file
     END
