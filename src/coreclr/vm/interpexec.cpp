@@ -48,6 +48,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
+typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -1294,6 +1295,132 @@ CALL_TARGET_IP:
                     }
 
                     ip += 5;
+                    break;
+                }
+                case INTOP_NEWARR:
+                {
+                    int32_t length = LOCAL_VAR(ip[2], int32_t);
+                    if (length < 0)
+                        assert(0); // Interpreter-TODO: Invalid array length
+
+                    CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
+                    HELPER_FTN_NEWARR helper = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helper = *(HELPER_FTN_NEWARR *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helper = (HELPER_FTN_NEWARR)helperDirectOrIndirect;
+
+                    Object* arr = helper(arrayClsHnd, (intptr_t)length);
+                    LOCAL_VAR(ip[1], OBJECTREF) = ObjectToOBJECTREF(arr);
+
+                    ip += 5;
+                    break;
+                }
+#define LDELEM(dtype,etype)                                                    \
+do {                                                                           \
+    BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
+    if (arrayRef == NULL)                                                      \
+        assert(0);                                                             \
+                                                                               \
+    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    uint32_t len = arr->GetNumComponents();                                    \
+    uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
+    if (idx >= len)                                                            \
+        assert(0);                                                             \
+                                                                               \
+    uint8_t* pData = arr->GetDataPtr();                                        \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
+                                                                               \
+    LOCAL_VAR(ip[1], dtype) = *pElem;                                          \
+    ip += 4;                                                                   \
+} while (0)
+                case INTOP_LDELEM_I1:
+                {
+                    LDELEM(int32_t, int8_t);
+                    break;
+                }
+                case INTOP_LDELEM_U1:
+                {
+                    LDELEM(int32_t, uint8_t);
+                    break;
+                }
+                case INTOP_LDELEM_I2:
+                {
+                    LDELEM(int32_t, int16_t);
+                    break;
+                }
+                case INTOP_LDELEM_U2:
+                {
+                    LDELEM(int32_t, uint16_t);
+                    break;
+                }
+                case INTOP_LDELEM_I4:
+                {
+                    LDELEM(int32_t, int32_t);
+                    break;
+                }
+                case INTOP_LDELEM_I8:
+                {
+                    LDELEM(int64_t, int64_t);
+                    break;
+                }
+                case INTOP_LDELEM_R4:
+                {
+                    LDELEM(float, float);
+                    break;
+                }
+                case INTOP_LDELEM_R8:
+                {
+                    LDELEM(double, double);
+                    break;
+                }
+#define STELEM(dtype,etype)                                                    \
+do {                                                                           \
+    BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
+    if (arrayRef == NULL)                                                      \
+        assert(0);                                                             \
+                                                                               \
+    ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
+    uint32_t len = arr->GetNumComponents();                                    \
+    uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
+    if (idx >= len)                                                            \
+        assert(0);                                                             \
+                                                                               \
+    uint8_t* pData = arr->GetDataPtr();                                        \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
+                                                                               \
+    *pElem = (etype)LOCAL_VAR(ip[3], dtype);                                   \
+    ip += 4;                                                                   \
+} while (0)
+                case INTOP_STELEM_I1:
+                {
+                    STELEM(int32_t, int8_t);
+                    break;
+                }
+                case INTOP_STELEM_I2:
+                {
+                    STELEM(int32_t, int16_t);
+                    break;
+                }
+                case INTOP_STELEM_I4:
+                {
+                    STELEM(int32_t, int32_t);
+                    break;
+                }
+                case INTOP_STELEM_I8:
+                {
+                    STELEM(int64_t, int64_t);
+                    break;
+                }
+                case INTOP_STELEM_R4:
+                {
+                    STELEM(float, float);
+                    break;
+                }
+                case INTOP_STELEM_R8:
+                {
+                    STELEM(double, double);
                     break;
                 }
                 case INTOP_FAILFAST:
