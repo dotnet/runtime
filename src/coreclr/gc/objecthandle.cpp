@@ -1208,9 +1208,6 @@ void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintpt
 #endif // FEATURE_REFCOUNTED_HANDLES
 }
 
-
-
-
 void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;
@@ -1536,6 +1533,58 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
 #endif // FEATURE_SIZED_REF_HANDLES
 
 #ifdef FEATURE_GCBRIDGE
+
+static void NullBridgeObjectWeakRef(Object **handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
+{
+    int length = (int)param1;
+    Object*** bridgeHandleArray = (Object***)param2;
+
+    Object* weakRef = *handle;
+    for (int i = 0; i < length; i++)
+    {
+        Object* bridgeRef = *bridgeHandleArray[i];
+        // FIXME Store these objects in a hashtable in order to optimize lookup
+        if (weakRef == bridgeRef)
+        {
+            LOG((LF_GC, LL_INFO100, LOG_HANDLE_OBJECT_CLASS("Null bridge Weak-", handle, "to unreachable ", weakRef)));
+            *handle = NULL;
+        }
+    }
+}
+
+void Ref_NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles)
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    // We are in cooperative mode so no GC should happen while we null these handles.
+    // WeakReference access from managed code should wait for this to finish as part
+    // of bridge processing finish. Other GCHandle accesses could be racy with this.
+
+    int max_slots = getNumberOfSlots();
+    uint32_t handleType[] = { HNDTYPE_WEAK_SHORT, HNDTYPE_WEAK_LONG };
+
+    HandleTableMap *walk = &g_HandleTableMap;
+    while (walk)
+    {
+        for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
+        {
+            if (walk->pBuckets[i] != NULL)
+            {
+                for (int j = 0; j < max_slots; j++)
+                {
+                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[j];
+                    if (hTable)
+                        HndEnumHandles(hTable, handleType, 2, NullBridgeObjectWeakRef, length, (uintptr_t)unreachableObjectHandles, false);
+                }
+            }
+        }
+        walk = walk->pNext;
+    }
+}
 
 void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintptr_t* pExtraInfo, uintptr_t lp1, uintptr_t lp2)
 {

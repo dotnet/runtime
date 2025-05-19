@@ -272,6 +272,13 @@ void Interop::FinishCrossReferenceProcessing(
     // This much be synchronized with the GC so switch to cooperative mode.
     {
         GCX_COOP();
+
+        GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+
+        IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
+        for (int i = 0; i < length; i++)
+            pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
+
         g_GCBridgeActive = FALSE;
         g_bridgeFinished->Set();
     }

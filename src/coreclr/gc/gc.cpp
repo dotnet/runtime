@@ -53304,6 +53304,15 @@ void GCHeap::DiagGetGCSettings(EtwGCSettingsInfo* etw_settings)
 #endif //FEATURE_EVENT_TRACE
 }
 
+void GCHeap::NullBridgeObjectsWeakRefs(int length, void* unreachableObjectHandles)
+{
+#ifdef FEATURE_GCBRIDGE
+    Ref_NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+#else
+    assert(false);
+#endif
+}
+
 #if defined(WRITE_BARRIER_CHECK) && !defined (SERVER_GC)
 // This code is designed to catch the failure to update the write barrier
 // The way it works is to copy the whole heap right after every GC.  The write

@@ -50,7 +50,8 @@ public unsafe class GCBridgeTests
             Environment.Exit(1);
         }
 
-        // FIXME This freed by the runtime instead ?
+        List<GCHandle> handlesToFree = new List<GCHandle>();
+
         if (releaseHandles)
         {
             for (int i = 0; i < mcr->ComponentsLen; i++)
@@ -58,15 +59,13 @@ public unsafe class GCBridgeTests
                 for (int j = 0; j < mcr->Components[i].Count; j++)
                 {
                     IntPtr *pContext = (IntPtr*)mcr->Components[i].Context[j];
-                    GCHandle handle = GCHandle.FromIntPtr(*pContext);
-                    handle.Free();
-
+                    handlesToFree.Add(GCHandle.FromIntPtr(*pContext));
                     NativeMemory.Free(pContext);
                 }
             }
         }
 
-        JavaMarshal.FinishCrossReferenceProcessing(mcr, Span<GCHandle>.Empty);
+        JavaMarshal.FinishCrossReferenceProcessing(mcr, CollectionsMarshal.AsSpan<GCHandle>(handlesToFree));
     }
 
     [Fact]
