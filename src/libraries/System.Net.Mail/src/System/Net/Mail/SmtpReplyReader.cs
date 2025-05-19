@@ -28,26 +28,6 @@ namespace System.Net.Mail
             _reader.Close(this);
         }
 
-        internal LineInfo[] ReadLines()
-        {
-            return _reader.ReadLines(this);
-        }
-
-        internal LineInfo ReadLine()
-        {
-            return _reader.ReadLine(this);
-        }
-
-        internal Task<LineInfo[]> ReadLinesAsync()
-        {
-            return _reader.ReadLinesAsync(this);
-        }
-
-        internal Task<LineInfo> ReadLineAsync()
-        {
-            return _reader.ReadLineAsync(this);
-        }
-
         internal Task<LineInfo[]> ReadLinesAsync<TIOAdapter>(CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter
         {
             return _reader.ReadLinesAsync<TIOAdapter>(this, false, cancellationToken);

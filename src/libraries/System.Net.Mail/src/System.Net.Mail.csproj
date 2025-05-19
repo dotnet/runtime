@@ -46,7 +46,6 @@
     <Compile Include="System\Net\Mail\Attachment.cs" />
     <Compile Include="System\Net\Mail\AttachmentCollection.cs" />
     <Compile Include="System\Net\BufferedReadStream.cs" />
-    <Compile Include="System\Net\Mail\ReadWriteAdapter.cs" />
     <Compile Include="System\Net\Mail\LinkedResource.cs" />
     <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
     <Compile Include="System\Net\Mail\DomainLiteralReader.cs" />
@@ -68,6 +67,8 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
@@ -107,9 +108,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -121,9 +120,7 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 

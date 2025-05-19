@@ -256,34 +256,6 @@ namespace System.Net.Mail
             return actual;
         }
 
-        internal LineInfo ReadLine(SmtpReplyReader caller)
-        {
-            LineInfo[] info = ReadLines(caller, true);
-            if (info != null && info.Length > 0)
-            {
-                return info[0];
-            }
-            return default;
-        }
-
-        internal LineInfo[] ReadLines(SmtpReplyReader caller)
-        {
-            return ReadLines(caller, false);
-        }
-
-        internal LineInfo[] ReadLines(SmtpReplyReader caller, bool oneLine)
-        {
-            Task<LineInfo[]> task = ReadLinesAsync<SyncReadWriteAdapter>(caller, oneLine);
-            Debug.Assert(task.IsCompleted, "ReadLinesAsync should complete synchronously for SyncReadWriteAdapter");
-
-            return task.GetAwaiter().GetResult();
-        }
-
-        internal Task<LineInfo[]> ReadLinesAsync(SmtpReplyReader caller, bool oneLine = false, CancellationToken cancellationToken = default)
-        {
-            return ReadLinesAsync<AsyncReadWriteAdapter>(caller, oneLine, cancellationToken);
-        }
-
         internal async Task<LineInfo[]> ReadLinesAsync<TIOAdapter>(SmtpReplyReader caller, bool oneLine = false, CancellationToken cancellationToken = default) where TIOAdapter : IReadWriteAdapter
         {
             if (caller != _currentReader || _readState == ReadState.Done)
@@ -351,12 +323,6 @@ namespace System.Net.Mail
                 }
             }
 
-        }
-
-        internal async Task<LineInfo> ReadLineAsync(SmtpReplyReader caller)
-        {
-            LineInfo[] lines = await ReadLinesAsync(caller, oneLine: true).ConfigureAwait(false);
-            return lines.Length > 0 ? lines[0] : default;
         }
 
         internal async Task<LineInfo> ReadLineAsync<TIOAdapter>(SmtpReplyReader caller, CancellationToken cancellationToken) where TIOAdapter : IReadWriteAdapter

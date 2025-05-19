@@ -5,7 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Security
+namespace System.Net
 {
     internal interface IReadWriteAdapter
     {
