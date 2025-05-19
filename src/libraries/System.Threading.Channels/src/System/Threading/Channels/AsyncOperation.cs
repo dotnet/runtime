@@ -357,6 +357,8 @@ namespace System.Threading.Channels
         /// <returns>true if the operation could be successfully transitioned to a completed state; false if it was already completed.</returns>
         public bool TrySetCanceled(CancellationToken cancellationToken = default)
         {
+            UnregisterCancellation();
+
             if (TryReserveCompletionIfCancelable())
             {
                 _error = ExceptionDispatchInfo.Capture(new OperationCanceledException(cancellationToken));

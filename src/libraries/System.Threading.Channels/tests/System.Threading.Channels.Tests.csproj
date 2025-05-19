@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="BoundedChannelTests.cs" />
+    <Compile Include="CancellationLeakTests.cs" />
     <Compile Include="ChannelClosedExceptionTests.cs" />
     <Compile Include="ChannelTestBase.cs" />
     <Compile Include="ChannelTests.cs" />
