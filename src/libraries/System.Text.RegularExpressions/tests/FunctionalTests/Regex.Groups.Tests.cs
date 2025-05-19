@@ -1051,6 +1051,25 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void BalancingGroup_CaptureCountConsistentWithConditional(RegexOptions options)
+        {
+            string input = "00123xzacvb1";
+            string pattern = @"\d+((?'x'[a-z-[b]]+)).(?<=(?'2-1'(?'x1'..)).{6})b(?(2)(?'Group2Captured'.)|(?'Group2NotCaptured'.))";
+
+            Match match = new Regex(pattern, options).Match(input);
+
+            // Since Group2Captured is matched, Group2 must have been evaluated as matched during conditional evaluation
+            Assert.True(match.Groups["Group2Captured"].Success);
+            Assert.False(match.Groups["Group2NotCaptured"].Success);
+
+            // Group2 should have capture count consistent with conditional evaluation
+            Assert.True(match.Groups[2].Success);
+            Assert.Equal(1, match.Groups[2].Captures.Count);
+        }
+
+        [Theory]
         [InlineData(@"(cat)([\v]*)(dog)", "cat\v\v\vdog")]
         [InlineData("abc", "def")] // no match
         public void Synchronized_ValidGroup_Success(string pattern, string input)

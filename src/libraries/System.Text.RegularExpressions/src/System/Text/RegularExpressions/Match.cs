@@ -331,7 +331,7 @@ namespace System.Text.RegularExpressions
 
                 limit = matchcount[cap] * 2;
                 matcharray = matches[cap];
-                
+
                 // If there were no captures to begin with, nothing to tidy
                 if (limit == 0)
                     continue;
