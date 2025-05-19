@@ -1688,8 +1688,6 @@ public:
     bool OperIsConvertMaskToVector() const;
     bool OperIsConvertVectorToMask() const;
     bool OperIsVectorConditionalSelect() const;
-    bool OperIsFalseMask() const;
-    bool OperIsTrueMask() const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -6479,37 +6477,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 #endif
     }
 
-    bool OperIsFalseMask() const
-    {
-#if defined(TARGET_ARM64)
-        static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
-                                           NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
-                                           NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
-                                           NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
-                                           NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
-
-        NamedIntrinsic id = GetHWIntrinsicId();
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
-#endif
-        return false;
-    }
-
-    bool OperIsTrueMask() const
-    {
-#if defined(TARGET_ARM64)
-        static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
-                                           NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
-                                           NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
-                                           NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
-                                           NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
-
-        NamedIntrinsic id = GetHWIntrinsicId();
-        return ((id == NI_Sve_CreateTrueMaskAll) ||
-                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
-#endif
-        return false;
-    }
-
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
     bool OperRequiresGlobRefFlag() const;
@@ -9625,21 +9592,10 @@ inline bool GenTree::IsFloatPositiveZero() const
 inline bool GenTree::IsVectorZero() const
 {
 #if defined(FEATURE_SIMD)
-    if (IsCnsVec() && AsVecCon()->IsZero())
-    {
-        return true;
-    }
-
-#if defined(TARGET_ARM64)
-    // Can also be an all false mask that has been converted to a vector.
-    if (OperIsConvertMaskToVector() && AsHWIntrinsic()->Op(1)->OperIsFalseMask())
-    {
-        return true;
-    }
-#endif // TARGET_ARM64
-#endif // FEATURE_SIMD
-
+    return IsCnsVec() && AsVecCon()->IsZero();
+#else
     return false;
+#endif // FEATURE_SIMD
 }
 
 //-------------------------------------------------------------------
@@ -9662,7 +9618,7 @@ inline bool GenTree::IsVectorNegativeZero(var_types simdBaseType) const
 }
 
 //-------------------------------------------------------------------
-// IsVectorNaN: returns true if this node is a vector constant with all bits zero.
+// IsVectorZero: returns true if this node is a vector constant with all bits zero.
 //
 // Arguments:
 //     simdBaseType - the base type of the constant being checked
@@ -9725,14 +9681,6 @@ inline bool GenTree::IsVectorAllBitsSet() const
     {
         return AsVecCon()->IsAllBitsSet();
     }
-
-#if defined(TARGET_ARM64)
-    // Can also be an all true mask that has been converted to a vector.
-    if (OperIsConvertMaskToVector() && AsHWIntrinsic()->Op(1)->OperIsTrueMask())
-    {
-        return true;
-    }
-#endif // TARGET_ARM64
 #endif // FEATURE_SIMD
 
     return false;
@@ -9756,65 +9704,54 @@ inline bool GenTree::IsVectorBroadcast(var_types simdBaseType) const
     return false;
 }
 
-//-------------------------------------------------------------------
-// IsMaskAllBitsSet: returns true if this node is a mask constant with all bits set.
-//
-// Returns:
-//     True if this node is a mask constant with all bits set
-//
 inline bool GenTree::IsMaskAllBitsSet() const
 {
-#if defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
+                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
+                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
+                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
+                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
 
-    if (OperIsTrueMask())
+    if (OperIsHWIntrinsic())
     {
-        return true;
-    }
-
-    // Can also be an all bits set vector that has been converted to a mask.
-    if (OperIsConvertVectorToMask())
-    {
-        assert(AsHWIntrinsic()->Op(1)->OperIsTrueMask());
-
-        GenTree* op2 = AsHWIntrinsic()->Op(2);
-        if (op2->IsCnsVec() && op2->AsVecCon()->IsAllBitsSet())
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
         {
-            return true;
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
+        return ((id == NI_Sve_CreateTrueMaskAll) ||
+                ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
     }
 
-#endif // TARGET_ARM64
+#endif
     return false;
 }
 
-//-------------------------------------------------------------------
-// IsMaskZero: returns true if this node is a mask constant with all bits zero.
-//
-// Returns:
-//     True if this node is a mask constant with all bits zero
-//
 inline bool GenTree::IsMaskZero() const
 {
-#if defined(TARGET_ARM64)
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
+                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
+                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
+                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
+                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
 
-    if (OperIsFalseMask())
+    if (OperIsHWIntrinsic())
     {
-        return true;
-    }
-
-    // Can also be an all zero vector that has been converted to a mask.
-    if (OperIsConvertVectorToMask())
-    {
-        assert(AsHWIntrinsic()->Op(1)->OperIsTrueMask());
-
-        GenTree* op2 = AsHWIntrinsic()->Op(2);
-        if (op2->IsCnsVec() && op2->AsVecCon()->IsZero())
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
         {
-            return true;
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
+        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
     }
 
-#endif // TARGET_ARM64
+#endif
     return false;
 }
 

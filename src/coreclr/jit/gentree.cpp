@@ -20437,8 +20437,7 @@ bool GenTree::isContainableHWIntrinsic() const
         }
     }
 #elif defined(TARGET_ARM64)
-    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect || IsVectorAllBitsSet() ||
-            IsMaskAllBitsSet() || IsVectorZero() || IsMaskZero());
+    return (AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
 #else
     return false;
 #endif // TARGET_XARCH
@@ -28128,38 +28127,6 @@ bool GenTree::OperIsVectorConditionalSelect() const
     if (OperIsHWIntrinsic())
     {
         return AsHWIntrinsic()->OperIsVectorConditionalSelect();
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
-// OperIsFalseMask: Is this a vector CreateFalseMask hwintrinsic
-//
-// Return Value:
-//    true if the node is a vector CreateFalseMask hwintrinsic
-//    otherwise; false
-//
-bool GenTree::OperIsFalseMask() const
-{
-    if (OperIsHWIntrinsic())
-    {
-        return AsHWIntrinsic()->OperIsFalseMask();
-    }
-    return false;
-}
-
-//------------------------------------------------------------------------
-// OperIsTrueMask: Is this a vector CreateTrueMask hwintrinsic
-//
-// Return Value:
-//    true if the node is a vector CreateTrueMask hwintrinsic
-//    otherwise; false
-//
-bool GenTree::OperIsTrueMask() const
-{
-    if (OperIsHWIntrinsic())
-    {
-        return AsHWIntrinsic()->OperIsTrueMask();
     }
     return false;
 }
