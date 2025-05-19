@@ -10,14 +10,7 @@ namespace System.Runtime.InteropServices.Java
     [SupportedOSPlatform("android")]
     public static partial class JavaMarshal
     {
-        public static unsafe void Initialize(
-            // Callback used to perform the marking of SCCs.
-            delegate* unmanaged<
-                nint,                               // Length of SCC collection
-                StronglyConnectedComponent*,        // SCC collection
-                nint,                               // Length of CCR collection
-                ComponentCrossReference*,           // CCR collection
-                void> markCrossReferences)
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferences*, void> markCrossReferences)
         {
 #if NATIVEAOT
             throw new NotImplementedException();
@@ -65,19 +58,19 @@ namespace System.Runtime.InteropServices.Java
 #endif
         }
 
-        public static unsafe void ReleaseMarkCrossReferenceResources(
-            Span<StronglyConnectedComponent> sccs,
-            Span<ComponentCrossReference> ccrs)
+        public static unsafe void FinishCrossReferenceProcessing(
+            MarkCrossReferences* crossReferences,
+            Span<GCHandle> unreachableObjectHandles)
         {
 #if NATIVEAOT
             throw new NotImplementedException();
 #elif MONO
             throw new NotSupportedException();
 #else
-            ReleaseMarkCrossReferenceResources(
-                sccs.Length,
-                Unsafe.AsPointer(ref MemoryMarshal.GetReference(sccs)),
-                Unsafe.AsPointer(ref MemoryMarshal.GetReference(ccrs)));
+            FinishCrossReferenceProcessing(
+                crossReferences,
+                unreachableObjectHandles.Length,
+                Unsafe.AsPointer(ref MemoryMarshal.GetReference(unreachableObjectHandles)));
 #endif
         }
 
@@ -89,8 +82,8 @@ namespace System.Runtime.InteropServices.Java
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_CreateReferenceTrackingHandle")]
         private static partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, IntPtr context);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_ReleaseMarkCrossReferenceResources")]
-        private static unsafe partial void ReleaseMarkCrossReferenceResources(int length, void* sccs, void* ccrs);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_FinishCrossReferenceProcessing")]
+        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferences* crossReferences, int length, void* unreachableObjectHandles);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_GetContext")]
         [SuppressGCTransition]

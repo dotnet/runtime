@@ -260,10 +260,10 @@ void Interop::TriggerGCBridge(
     g_GCBridgeActive = TRUE;
 }
 
-void Interop::ReleaseGCBridgeArguments(
-    _In_ size_t sccsLen,
-    _In_ StronglyConnectedComponent* sccs,
-    _In_ ComponentCrossReference* ccrs)
+void Interop::FinishCrossReferenceProcessing(
+    _In_ MarkCrossReferences *crossReferences,
+    _In_ int length,
+    _In_ void* unreachableObjectHandles)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(g_GCBridgeActive);
@@ -276,7 +276,7 @@ void Interop::ReleaseGCBridgeArguments(
         g_bridgeFinished->Set();
     }
 
-    ReleaseGCBridgeArgumentsWorker(sccsLen, sccs, ccrs);
+    ReleaseGCBridgeArgumentsWorker(crossReferences->ComponentsLen, crossReferences->Components, crossReferences->CrossReferences);
 }
 
 #endif // FEATURE_GCBRIDGE
