@@ -1130,6 +1130,14 @@ namespace System.Data
                         // we found the reserved word..
                         _token = s_reservedwords[i]._token;
                         _op = s_reservedwords[i]._op;
+                        
+                        // Special case for NOT followed by =
+                        if (_op == Operators.Not && _pos < text.Length && text[_pos] == '=')
+                        {
+                            _token = Tokens.BinaryOp;
+                            _op = Operators.NotEqual;
+                            _pos++;
+                        }
                         return;
                     }
                     if (c < 0)
