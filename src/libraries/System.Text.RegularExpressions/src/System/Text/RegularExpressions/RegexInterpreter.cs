@@ -129,7 +129,15 @@ namespace System.Text.RegularExpressions
         {
             CheckTimeout(); // to ensure that any backtracking operation has a timeout check
 
-            int newpos = runtrack![runtrackpos];
+            // Check if we've exhausted the backtrack stack
+            if (runtrackpos >= runtrack!.Length)
+            {
+                // Match failed, so we should just return with no match
+                SetOperator(RegexOpcode.Stop);
+                return;
+            }
+
+            int newpos = runtrack[runtrackpos];
             runtrackpos++;
 
             int back = (int)RegexOpcode.Backtracking;
