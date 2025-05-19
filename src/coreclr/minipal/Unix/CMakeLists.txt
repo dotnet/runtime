@@ -1,7 +1,6 @@
 set(SOURCES
     doublemapping.cpp
     dn-u16.cpp
-    dn-critsec.cpp
 )
 
 add_library(coreclrminipal_objects
