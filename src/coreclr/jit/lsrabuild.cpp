@@ -3835,6 +3835,17 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
 // Notes:
 //    The operands must already have been processed by buildRefPositionsForNode, and their
 //    RefInfoListNodes placed in the defList.
+//    For TARGET_XARCH:
+//              Case 1: APX is not supported at all – We do not need to worry about it at all
+//                      since high GPR doesn’t come into play at all. So, in effect, candidates are
+//                      limited to lowGPRs
+//              Case 2: APX is supported but EVEX support is not there – In this case, we need
+//                      to restrict candidates to just lowGPRs
+//              Case 3: APX support exists with EVEX support. – In this case, we do not need
+//                      to do anything. Can give LSRA access to all registers for this node
+//              Case 4: APX support without Evex support - candidates can possibly include
+//                      eGPR but it should not be used since the node might use an instruction
+//                      that does not have eEVEX support
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
@@ -3867,9 +3878,17 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
-        if (op1->isContainedIndir() && (candidates == RBM_NONE) && !getCanUseApxRegs())
+        if (op1->isContainedIndir() && !getEvexIsSupported())
         {
-            srcCount += BuildOperandUses(op1, lowGprRegs);
+            if (candidates == RBM_NONE)
+            {
+                srcCount += BuildOperandUses(op1, lowGprRegs);
+            }
+            else
+            {
+                assert((candidates & lowGprRegs) != RBM_NONE);
+                srcCount += BuildOperandUses(op1, candidates & lowGprRegs);
+            }
         }
         else
 #endif
@@ -3879,11 +3898,18 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     }
     if (op2 != nullptr)
     {
-
 #ifdef TARGET_XARCH
-        if (op2->isContainedIndir() && (candidates == RBM_NONE) && !getCanUseApxRegs())
+        if (op2->isContainedIndir() && !getEvexIsSupported())
         {
-            candidates = lowGprRegs;
+            if (candidates == RBM_NONE)
+            {
+                candidates = lowGprRegs;
+            }
+            else
+            {
+                assert((candidates & lowGprRegs) != RBM_NONE);
+                srcCount += BuildOperandUses(op1, candidates & lowGprRegs);
+            }
         }
 #endif
         srcCount += BuildOperandUses(op2, candidates);

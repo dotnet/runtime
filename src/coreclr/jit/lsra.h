@@ -1973,12 +1973,12 @@ private:
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree*         tree,
-                                                        SingleTypeRegSet candidates = RBM_NONE,
-                                                        bool             isGPR      = false);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMaskIfNeeded(GenTree*         tree,
-                                                                SingleTypeRegSet candidates = RBM_NONE,
-                                                                bool             UseApxRegs = false);
+    inline SingleTypeRegSet ForceLowGprForApx(GenTree*         tree,
+                                              SingleTypeRegSet candidates = RBM_NONE,
+                                              bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApxIfNeeded(GenTree*         tree,
+                                                      SingleTypeRegSet candidates = RBM_NONE,
+                                                      bool             UseApxRegs = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -2095,7 +2095,7 @@ private:
     regMaskTP rbmAllInt;
     regMaskTP rbmIntCalleeTrash;
     regNumber regIntLast;
-    bool      isApxSupported;
+    bool      apxIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2117,9 +2117,9 @@ private:
     {
         return this->regIntLast;
     }
-    FORCEINLINE bool getIsApxSupported() const
+    FORCEINLINE bool getApxIsSupported() const
     {
-        return this->isApxSupported;
+        return this->apxIsSupported;
     }
 #else
     FORCEINLINE regNumber get_REG_INT_LAST() const

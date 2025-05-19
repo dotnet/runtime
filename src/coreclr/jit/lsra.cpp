@@ -832,7 +832,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
 #if defined(TARGET_XARCH)
     evexIsSupported = compiler->canUseEvexEncoding();
-#endif
 
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
@@ -840,10 +839,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmAllInt         = compiler->rbmAllInt;
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
     regIntLast        = compiler->regIntLast;
-    isApxSupported    = compiler->canUseApxEncoding();
-    canUseApxRegs     = isApxSupported && evexIsSupported;
+    apxIsSupported    = compiler->canUseApxEncoding();
+    canUseApxRegs     = apxIsSupported && evexIsSupported;
 
-    if (isApxSupported)
+    if (apxIsSupported)
     {
         int size   = (int)ACTUAL_REG_COUNT + 1;
         regIndices = theCompiler->getAllocator(CMK_LSRA).allocate<regNumber>(size);
@@ -864,13 +863,10 @@ LinearScan::LinearScan(Compiler* theCompiler)
                             REG_K0,    REG_K1,    REG_K2,    REG_K3,    REG_K4,    REG_K5,    REG_K6,    REG_K7,
                             REG_COUNT};
     }
+#else  // !TARGET_AMD64
+    canUseApxRegs = false;
 #endif // TARGET_AMD64
 
-#if defined(TARGET_X86)
-    canUseApxRegs = false;
-#endif
-
-#if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
     memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);

@@ -1607,8 +1607,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     }
     else if (dstAddr->OperIsAddrMode())
     {
-        useCount +=
-            BuildAddrUses(dstAddr, BuildApxIncompatibleGPRMaskIfNeeded(dstAddr, RBM_NONE, getEvexIsSupported()));
+        useCount += BuildAddrUses(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, RBM_NONE, getEvexIsSupported()));
     }
 
     if (srcAddrOrFill != nullptr)
@@ -1616,13 +1615,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         if (!srcAddrOrFill->isContained())
         {
             useCount++;
-            BuildUse(srcAddrOrFill,
-                     BuildApxIncompatibleGPRMaskIfNeeded(srcAddrOrFill, srcRegMask, getEvexIsSupported()));
+            BuildUse(srcAddrOrFill, ForceLowGprForApxIfNeeded(srcAddrOrFill, srcRegMask, getEvexIsSupported()));
         }
         else if (srcAddrOrFill->OperIsAddrMode())
         {
-            useCount += BuildAddrUses(srcAddrOrFill, BuildApxIncompatibleGPRMaskIfNeeded(srcAddrOrFill, RBM_NONE,
-                                                                                         getEvexIsSupported()));
+            useCount +=
+                BuildAddrUses(srcAddrOrFill, ForceLowGprForApxIfNeeded(srcAddrOrFill, RBM_NONE, getEvexIsSupported()));
         }
     }
 
@@ -1998,7 +1996,6 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     {
         SingleTypeRegSet op1RegCandidates = RBM_NONE;
 
-        // op1RegCandidates = BuildApxIncompatibleGPRMask(op1, op1RegCandidates);
         switch (tree->AsIntrinsic()->gtIntrinsicName)
         {
             case NI_System_Math_Ceiling:
@@ -2007,13 +2004,12 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             case NI_System_Math_Round:
             case NI_System_Math_Sqrt:
             {
-                op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
+                op1RegCandidates = ForceLowGprForApx(op1);
                 break;
             }
             case NI_System_Math_Abs:
             {
-                op1RegCandidates = BuildApxIncompatibleGPRMaskIfNeeded(op1, RBM_NONE, getCanUseApxRegs());
-                // getCanUseApxRegs() ? op1RegCandidates : BuildApxIncompatibleGPRMask(op1);
+                op1RegCandidates = ForceLowGprForApxIfNeeded(op1, RBM_NONE, getCanUseApxRegs());
                 break;
             }
             default:
@@ -2245,7 +2241,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     if (op1->isContained())
                     {
                         SingleTypeRegSet apxAwareRegCandidates =
-                            BuildApxIncompatibleGPRMaskIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+                            ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
                         srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
                     }
                     else
@@ -2316,7 +2312,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 1);
                 SingleTypeRegSet apxAwareRegCandidates =
-                    BuildApxIncompatibleGPRMaskIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
                 if (op1->isContained())
                 {
                     srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
@@ -2363,7 +2359,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                     srcCount += 1;
 
-                    SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2);
+                    SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
                     if (op2RegCandidates == RBM_NONE)
                     {
                         op2RegCandidates = BuildEvexIncompatibleMask(op2);
@@ -2439,7 +2435,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 else
                 {
                     SingleTypeRegSet apxAwareRegCandidates =
-                        BuildApxIncompatibleGPRMaskIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
+                        ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
                     srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
                 }
 
@@ -2457,7 +2453,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
                 SingleTypeRegSet apxAwareRegCandidates =
-                    BuildApxIncompatibleGPRMaskIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
                 srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
                 if (numArgs == 3)
                 {
@@ -2605,7 +2601,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     else if (op == emitOp3)
                     {
                         SingleTypeRegSet apxAwareRegCandidates =
-                            BuildApxIncompatibleGPRMaskIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
+                            ForceLowGprForApxIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
                         srcCount += op->isContained() ? BuildOperandUses(op, apxAwareRegCandidates)
                                                       : BuildDelayFreeUses(op, emitOp1);
                     }
@@ -2725,11 +2721,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         }
                         else if (op == emitOp2)
                         {
-                            srcCount += BuildDelayFreeUses(op, emitOp1, BuildApxIncompatibleGPRMask(op));
+                            srcCount += BuildDelayFreeUses(op, emitOp1, ForceLowGprForApx(op));
                         }
                         else if (op == emitOp3)
                         {
-                            srcCount += op->isContained() ? BuildOperandUses(op, BuildApxIncompatibleGPRMask(op))
+                            srcCount += op->isContained() ? BuildOperandUses(op, ForceLowGprForApx(op))
                                                           : BuildDelayFreeUses(op, emitOp1);
                         }
                     }
@@ -2746,8 +2742,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 tgtPrefUse = BuildUse(op1);
                 srcCount += 1;
                 srcCount += BuildDelayFreeUses(op2, op1);
-                srcCount += op3->isContained() ? BuildOperandUses(op3, BuildApxIncompatibleGPRMask(op3))
-                                               : BuildDelayFreeUses(op3, op1);
+                srcCount +=
+                    op3->isContained() ? BuildOperandUses(op3, ForceLowGprForApx(op3)) : BuildDelayFreeUses(op3, op1);
 
                 buildUses = false;
                 break;
@@ -2760,14 +2756,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(!isRMW);
 
                 // Any pair of the index, mask, or destination registers should be different
-                SingleTypeRegSet op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
+                SingleTypeRegSet op1RegCandidates = ForceLowGprForApx(op1);
                 if (op1RegCandidates == RBM_NONE)
                 {
                     op1RegCandidates = BuildEvexIncompatibleMask(op1);
                 }
                 srcCount += BuildOperandUses(op1, op1RegCandidates);
 
-                SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2);
+                SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
                 if (op2RegCandidates == RBM_NONE)
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
@@ -2790,13 +2786,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(!isRMW);
                 // Any pair of the index, mask, or destination registers should be different
-                SingleTypeRegSet op1RegCandidates = BuildApxIncompatibleGPRMask(op1);
+                SingleTypeRegSet op1RegCandidates = ForceLowGprForApx(op1);
                 if (op1RegCandidates == RBM_NONE)
                 {
                     op1RegCandidates = BuildEvexIncompatibleMask(op2);
                 }
                 srcCount += BuildOperandUses(op1, op1RegCandidates);
-                SingleTypeRegSet op2RegCandidates = BuildApxIncompatibleGPRMask(op2);
+                SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
                 if (op2RegCandidates == RBM_NONE)
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
@@ -2851,7 +2847,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 op1RegCandidates = BuildEvexIncompatibleMask(op1);
             }
-            op1RegCandidates = BuildApxIncompatibleGPRMaskIfNeeded(op1, op1RegCandidates, canHWIntrinsicUseApxRegs);
+            op1RegCandidates = ForceLowGprForApxIfNeeded(op1, op1RegCandidates, canHWIntrinsicUseApxRegs);
 #endif // TARGET_AMD64
 
             if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -2880,7 +2876,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 if (!isEvexCompatible || !getEvexIsSupported())
                 {
-                    op2RegCandidates = BuildApxIncompatibleGPRMask(op2, op2RegCandidates);
+                    op2RegCandidates = ForceLowGprForApx(op2, op2RegCandidates);
                 }
 #endif // TARGET_AMD64
 
@@ -2929,7 +2925,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     if (!isEvexCompatible || !getEvexIsSupported())
                     {
-                        op3RegCandidates = BuildApxIncompatibleGPRMask(op3, op3RegCandidates);
+                        op3RegCandidates = ForceLowGprForApx(op3, op3RegCandidates);
                     }
 #endif // TARGET_AMD64
 
@@ -2968,7 +2964,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // TODO-xarch-apx: revisit this part to check if we can merge this 2 checks.
         if (!isEvexCompatible || !getEvexIsSupported())
         {
-            dstCandidates = BuildApxIncompatibleGPRMask(intrinsicTree, dstCandidates);
+            dstCandidates = ForceLowGprForApx(intrinsicTree, dstCandidates);
         }
 #endif
 
@@ -3009,7 +3005,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
         // if we don't have EVEX unsigned conversions available.
         // We need to reserve one APXIncompatible register for
         // cvtt* instruction. Second temp can use EGPR.
-        buildInternalIntRegisterDefForNode(cast, BuildApxIncompatibleGPRMask(cast, availableIntRegs, true));
+        buildInternalIntRegisterDefForNode(cast, ForceLowGprForApx(cast, availableIntRegs, true));
         buildInternalIntRegisterDefForNode(cast);
     }
 
@@ -3035,7 +3031,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     // skipping eGPR use for cvt*
     if ((varTypeUsesIntReg(src) || src->isContainedIndir()) && varTypeUsesFloatReg(cast) && !getEvexIsSupported())
     {
-        candidates = BuildApxIncompatibleGPRMask(cast, candidates, true);
+        candidates = ForceLowGprForApx(cast, candidates, true);
     }
 #endif
     int srcCount = BuildCastUses(cast, candidates);
@@ -3076,7 +3072,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 #ifdef TARGET_AMD64
     if (varTypeUsesIntReg(indirTree->Addr()))
     {
-        useCandidates = BuildApxIncompatibleGPRMaskIfNeeded(indirTree->Addr(), useCandidates, getCanUseApxRegs());
+        useCandidates = ForceLowGprForApxIfNeeded(indirTree->Addr(), useCandidates, getCanUseApxRegs());
     }
 #endif // TARGET_AMD64
     int srcCount = BuildIndirUses(indirTree, useCandidates);
@@ -3362,7 +3358,7 @@ inline bool LinearScan::DoesThisUseGPR(GenTree* op)
 }
 
 //------------------------------------------------------------------------------
-// BuildApxIncompatibleGPRMask: Returns candidates or a mask representing the
+// ForceLowGprForApx: Returns candidates or a mask representing the
 // lower GPR registers for a node that lowers to an instruction that does not
 // have APX support(via REX2 or eEVEX) currently (thus cannot use the eGPR registers).
 // The caller invokes this function when it knows the node is APX incompatible.
@@ -3375,13 +3371,11 @@ inline bool LinearScan::DoesThisUseGPR(GenTree* op)
 //
 // Return Value:
 //    updated register mask.
-inline SingleTypeRegSet LinearScan::BuildApxIncompatibleGPRMask(GenTree*         tree,
-                                                                SingleTypeRegSet candidates,
-                                                                bool             forceLowGpr)
+inline SingleTypeRegSet LinearScan::ForceLowGprForApx(GenTree* tree, SingleTypeRegSet candidates, bool forceLowGpr)
 {
 #if defined(TARGET_AMD64)
 
-    if (!getIsApxSupported())
+    if (!getApxIsSupported())
     {
         return candidates;
     }
@@ -3405,7 +3399,7 @@ inline SingleTypeRegSet LinearScan::BuildApxIncompatibleGPRMask(GenTree*        
 }
 
 //------------------------------------------------------------------------------
-// BuildApxIncompatibleGPRMaskIfNeeded: Returns candidates or a mask representing the
+// ForceLowGprForApxIfNeeded: Returns candidates or a mask representing the
 // lower GPR registers for a node that lowers to an instruction that does not
 // have EGPR supports via EVEX.
 //
@@ -3417,14 +3411,14 @@ inline SingleTypeRegSet LinearScan::BuildApxIncompatibleGPRMask(GenTree*        
 //
 // Return Value:
 //    updated register mask.
-inline SingleTypeRegSet LinearScan::BuildApxIncompatibleGPRMaskIfNeeded(GenTree*         tree,
-                                                                        SingleTypeRegSet candidates,
-                                                                        bool             UseApxRegs)
+inline SingleTypeRegSet LinearScan::ForceLowGprForApxIfNeeded(GenTree*         tree,
+                                                              SingleTypeRegSet candidates,
+                                                              bool             UseApxRegs)
 {
     // All the HWIntrinsics cannot access EGPRs when EVEX is disabled.
     if (!UseApxRegs)
     {
-        return BuildApxIncompatibleGPRMask(tree, candidates);
+        return ForceLowGprForApx(tree, candidates);
     }
     else
     {
