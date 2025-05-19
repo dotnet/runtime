@@ -100,6 +100,56 @@ namespace System.Net.Http.Functional.Tests
             }, NoAutoPingResponseHttp2Options);
         }
 
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task KeepAlivePing_ZeroConnectionLifetime_NoPingConfig_NoPingsSent()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                // Don't configure KeepAlivePing settings
+                handler.PooledConnectionLifetime = TimeSpan.Zero; // Zero lifetime
+
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+
+                // Warmup request to create connection:
+                HttpResponseMessage response0 = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, response0.StatusCode);
+
+                // Actual request:
+                HttpResponseMessage response1 = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+
+                // Let connection live until server finishes:
+                await _serverFinished.Task.WaitAsync(TestTimeout);
+            },
+            async server =>
+            {
+                await EstablishConnectionAsync(server);
+
+                // Warmup the connection.
+                int streamId1 = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId1));
+
+                // Request under the test scope.
+                int streamId2 = await ReadRequestHeaderAsync();
+                Interlocked.Exchange(ref _pingCounter, 0); // reset the PING counter
+
+                // Simulate inactive period:
+                await Task.Delay(5_000);
+
+                // With zero lifetime and no ping config, we should not receive keep alive pings
+                // We may have received one RTT PING in response to HEADERS, but should receive no KeepAlive PING
+                Assert.True(_pingCounter <= 1);
+
+                // Finish the response:
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(streamId2));
+                
+                await TerminateLoopbackConnectionAsync();
+            }, NoAutoPingResponseHttp2Options);
+        }
+
         private async Task ProcessIncomingFramesAsync(CancellationToken cancellationToken)
         {
             try
