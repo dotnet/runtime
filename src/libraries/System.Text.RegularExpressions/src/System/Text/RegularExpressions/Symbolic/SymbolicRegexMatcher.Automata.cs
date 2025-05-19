@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private int[] _nfaCoreIdArray = [];
 
         /// <summary>
-        /// Maps the id of a MatchingState to the NFA state id that it is being identifed with in the NFA.
+        /// Maps the id of a MatchingState to the NFA state id that it is being identified with in the NFA.
         /// It is the inverse of used entries in _nfaStateArray.
         /// The range of this map is 0 to its size - 1.
         /// </summary>

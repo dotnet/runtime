@@ -686,6 +686,7 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationA
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAllocationTrackFields", 1)
 CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
+CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
