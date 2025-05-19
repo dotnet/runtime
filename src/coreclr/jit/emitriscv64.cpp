@@ -5383,7 +5383,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             // Use base instructions where possible:
             // "bexti rd, rs, 0" is equivalent to "andi rd, rs, 1"
             // "bseti/bclri/binvi rd, rs, imm" are equivalent to "ori/andi/xori rd, rs, (~)(1 << imm)" for imm < 11
-            int minBitIndex = (ins == INS_bexti) ? 0 : 11;
+            int minBitIndex = (ins == INS_bexti) ? 1 : 11;
             assert(imm >= minBitIndex);
             assert(imm < emitActualTypeSize(src1) * 8);
         }

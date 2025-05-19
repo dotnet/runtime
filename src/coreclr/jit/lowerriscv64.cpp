@@ -231,7 +231,13 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 GenTreeIntConCommon* shiftAmount = op1->gtGetOp2()->AsIntConCommon();
                 int                  size        = emitActualTypeSize(op1) * 8;
                 log2 += shiftAmount->IntegralValue();
-                if (log2 < size)
+                if (log2 == 0)
+                {
+                    BlockRange().Remove(op1->gtGetOp2());
+                    BlockRange().Remove(op1);
+                    op1 = op1->gtGetOp1();
+                }
+                else if (log2 < size)
                 {
                     // (a >> N) & bit  =>  (a >> N + log2(bit)) & 1
                     shiftAmount->SetIntegralValue(log2);
