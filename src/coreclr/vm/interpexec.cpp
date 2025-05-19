@@ -1267,11 +1267,10 @@ do {                                                                           \
         assert(0);                                                             \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
-    size_t elemSize = (size_t)ip[4];                                           \
-    etype* pElem = reinterpret_cast<etype*>(pData + idx * elemSize);           \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
                                                                                \
     LOCAL_VAR(ip[1], dtype) = *pElem;                                          \
-    ip += 5;                                                                   \
+    ip += 4;                                                                   \
 } while (0)
                 case INTOP_LDELEM_I1:
                 {
@@ -1326,11 +1325,10 @@ do {                                                                           \
         assert(0);                                                             \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
-    size_t elemSize = (size_t)ip[4];                                           \
-    etype* pElem = reinterpret_cast<etype*>(pData + idx * elemSize);           \
+    etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
                                                                                \
     *pElem = (etype)LOCAL_VAR(ip[3], dtype);                                   \
-    ip += 5;                                                                   \
+    ip += 4;                                                                   \
 } while (0)
                 case INTOP_STELEM_I1:
                 {
