@@ -312,16 +312,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     op2 = op1->gtGetOp2();
                     BlockRange().Remove(op1);
                     op1 = op1->gtGetOp1();
-
-                    if (!op2->IsIntegralConst())
-                    {
-                        // Zbs instructions don't have *w variants: wrap the bit index to 0-31 manually
-                        GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
-                        mask->SetContained();
-                        BlockRange().InsertAfter(op2, mask);
-                        op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
-                        BlockRange().InsertAfter(mask, op2);
-                    }
                 }
                 bit = ~bit; // check below if it's single-bit clear
             }
@@ -367,20 +357,21 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                         std::swap(op1, op2);
 
                     op2 = shift->gtGetOp2();
-
-                    if (op2->TypeIs(TYP_INT, TYP_UINT))
-                    {
-                        // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
-                        GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
-                        mask->SetContained();
-                        BlockRange().InsertAfter(op2, mask);
-                        op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
-                        BlockRange().InsertAfter(mask, op2);
-                    }
                     BlockRange().Remove(shift->gtGetOp1());
                     BlockRange().Remove(shift);
                 }
             }
+        }
+
+        if (binOp->OperIs(GT_BIT_EXTRACT, GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR) && !op2->IsIntegralConst() &&
+            op1->TypeIs(TYP_INT, TYP_UINT))
+        {
+            // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
+            GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
+            mask->SetContained();
+            BlockRange().InsertAfter(op2, mask);
+            op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+            BlockRange().InsertAfter(mask, op2);
         }
     }
 
