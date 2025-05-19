@@ -13,9 +13,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Called from the class "StackTrace"
         /// </summary>
-        internal StackFrame(StackFrameHelper stackFrameHelper, int skipFrames, bool needFileInfo)
+        internal StackFrame(StackFrameHelper stackFrameHelper, MethodBase?[]? methodBases, int skipFrames, bool needFileInfo)
         {
-            _method = stackFrameHelper.GetMethodBase(skipFrames);
+            _method = methodBases != null ? methodBases[skipFrames] : stackFrameHelper.GetMethodBase(skipFrames);
             _nativeOffset = stackFrameHelper.GetOffset(skipFrames);
             _ilOffset = stackFrameHelper.GetILOffset(skipFrames);
             _isLastFrameFromForeignExceptionStackTrace = stackFrameHelper.IsLastFrameFromForeignExceptionStackTrace(skipFrames);

@@ -112,7 +112,7 @@ namespace System.Diagnostics
 
                 for (int i = 0; i < _numOfFrames; i++)
                 {
-                    stackFrames[i] = new StackFrame(_stackFrameHelper, i, _fNeedFileInfo);
+                    stackFrames[i] = new StackFrame(_stackFrameHelper, _methodBases, i, _fNeedFileInfo);
                 }
 
                 Interlocked.CompareExchange(ref _stackFrames, stackFrames, null);
