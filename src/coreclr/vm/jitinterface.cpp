@@ -11590,19 +11590,24 @@ void CEEJitInfo::allocUnwindInfo (
 
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
-#if !defined(TARGET_X86)
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64)
     pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
     ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-#else // TARGET_AMD64
+#elif defined(TARGET_ARM)
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
+#elif defined(TARGET_X86)
+    // Do nothing
+#else
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-#endif // TARGET_AMD64
-#endif // !TARGET_X86
+#endif
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS
