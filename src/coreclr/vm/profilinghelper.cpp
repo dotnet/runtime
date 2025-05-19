@@ -411,13 +411,6 @@ EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData);
 // Notes:
 //     This function (or one of its callees) will log an error to the event log
 //     if there is a failure
-//
-// Assumptions:
-//    InitializeProfiling is called during startup, AFTER the host has initialized its
-//    settings and the config variables have been read, but BEFORE the finalizer thread
-//    has entered its first wait state.  ASSERTs are placed in
-//    code:ProfilingAPIAttachDetach::Initialize (which is called by this function, and
-//    which depends on these assumptions) to verify.
 
 // static
 HRESULT ProfilingAPIUtility::InitializeProfiling()
