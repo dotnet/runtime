@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Tests
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 SubjectPublicKey = publicKey,
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 PrivateKey = writer.Encode(),
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    Algorithm = AlgorithmToOid(algorithm) ?? throw new XunitException("Cannot create PKCS#8 private key because algorithm is unknown."),
+                    Algorithm = AlgorithmToOid(algorithm),
                     Parameters = default(ReadOnlyMemory<byte>?),
                 },
                 PrivateKey = writer.Encode(),
