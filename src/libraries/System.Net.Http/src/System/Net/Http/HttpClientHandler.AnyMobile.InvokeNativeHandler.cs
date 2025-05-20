@@ -15,6 +15,7 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
+#pragma warning disable CA1823 // Unused field 'NativeHandlerType'. The field is used only in local functions. Tracked at https://github.com/dotnet/roslyn-analyzers/issues/7666
 #if TARGET_ANDROID
         private const string NativeHandlerType = "Xamarin.Android.Net.AndroidMessageHandler, Mono.Android";
         private const string GetHttpMessageHandlerType = "Android.Runtime.AndroidEnvironment, Mono.Android";
@@ -30,6 +31,7 @@ namespace System.Net.Http
 #else
 #error Unknown target
 #endif
+#pragma warning restore CA1823 // Unused field 'NativeHandlerType'
 
         // UnsafeAccessor declarations for all native handler properties/methods
         private ICredentials? GetDefaultProxyCredentials()
