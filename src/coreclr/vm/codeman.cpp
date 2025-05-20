@@ -1778,7 +1778,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
 #ifdef TARGET_WASM
 // we are statically linking the interpreter into the host
     HRESULT hr = S_OK;
-#elif
+#else
     HRESULT hr = E_FAIL;
 #endif
 
