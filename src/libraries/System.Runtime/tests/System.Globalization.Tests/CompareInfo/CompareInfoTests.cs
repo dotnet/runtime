@@ -170,6 +170,5 @@ namespace System.Globalization.Tests
             Assert.NotEqual(0, sv1.FullVersion);
             Assert.NotEqual(Guid.Empty, sv1.SortId);
         }
-        }
     }
 }

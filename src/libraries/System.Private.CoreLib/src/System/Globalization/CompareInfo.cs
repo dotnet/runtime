@@ -1597,13 +1597,15 @@ namespace System.Globalization
                     else
                     {
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
-                if (GlobalizationMode.Hybrid)
-                {
-                    m_SortVersion = GetAppleSortVersion();
-                }
-                else
+                        if (GlobalizationMode.Hybrid)
+                        {
+                            m_SortVersion = GetAppleSortVersion();
+                        }
+                        else
 #endif
-                        m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
+                        {
+                            m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
+                        }
                     }
                 }
 
