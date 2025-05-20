@@ -17,7 +17,9 @@
 
 #include <sal.h>
 #include <stdarg.h>
-#ifdef TARGET_UNIX
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
 #include <pthread.h>
 #endif
 
@@ -61,8 +63,7 @@
 #define DIRECTORY_SEPARATOR_CHAR '\\'
 #endif // TARGET_UNIX
 
-#ifndef _INC_WINDOWS
-
+#ifdef TARGET_UNIX
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
 // we have to (in which case these definitions will move to CommonTypes.h).
 typedef WCHAR *             LPWSTR;
@@ -73,15 +74,6 @@ typedef void *              HINSTANCE;
 
 typedef void *              LPSECURITY_ATTRIBUTES;
 typedef void *              LPOVERLAPPED;
-
-#ifdef TARGET_UNIX
-#define __stdcall
-typedef char TCHAR;
-#define _T(s) s
-#else
-typedef wchar_t TCHAR;
-#define _T(s) L##s
-#endif
 
 typedef union _LARGE_INTEGER {
     struct {
@@ -133,7 +125,7 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define STATUS_ACCESS_VIOLATION                        ((uint32_t   )0xC0000005L)
 #define STATUS_STACK_OVERFLOW                          ((uint32_t   )0xC00000FDL)
 
-#endif // !_INC_WINDOWS
+#endif // TARGET_UNIX
 
 #define STATUS_REDHAWK_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
 #define STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
@@ -144,9 +136,16 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define NULL_AREA_SIZE                   (64*1024)
 #endif
 
+#ifdef TARGET_UNIX
+#define _T(s) s
+typedef char TCHAR;
+#else
+// Avoid including tchar.h on Windows.
+#define _T(s) L ## s
+#endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
-#ifndef _INC_WINDOWS
+#ifdef TARGET_UNIX
 
 #ifndef TRUE
 #define TRUE                    1
@@ -178,7 +177,7 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define WAIT_TIMEOUT            258
 #define WAIT_FAILED             0xFFFFFFFF
 
-#endif // !_INC_WINDOWS
+#endif // TARGET_UNIX
 #endif // !DACCESS_COMPILE
 
 extern uint32_t g_RhNumberOfProcessors;
@@ -193,16 +192,7 @@ extern uint32_t g_RhNumberOfProcessors;
 #endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
-
-#ifdef _DEBUG
-#define CaptureStackBackTrace RtlCaptureStackBackTrace
-#endif
-
-#ifndef _INC_WINDOWS
-// Include the list of external functions we wish to access. If we do our job 100% then it will be
-// possible to link without any direct reference to any Win32 library.
 #include "PalRedhawkFunctions.h"
-#endif // !_INC_WINDOWS
 #endif // !DACCESS_COMPILE
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful

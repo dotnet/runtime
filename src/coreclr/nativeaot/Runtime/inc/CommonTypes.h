@@ -44,22 +44,18 @@ typedef uint32_t            UInt32_BOOL;    // windows 4-byte BOOL, 0 -> false, 
 #define UInt32_FALSE        0
 #define UInt32_TRUE         1
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(_INC_WINDOWS)
+#if defined(FEATURE_EVENT_TRACE) && defined(TARGET_UNIX)
 typedef int BOOL;
 typedef void* LPVOID;
 typedef uint32_t UINT;
 typedef void* PVOID;
 typedef uint64_t ULONGLONG;
 typedef uintptr_t ULONG_PTR;
-#ifdef _MSC_VER
-typedef unsigned long ULONG;
-#else
 typedef uint32_t ULONG;
-#endif
 typedef int64_t LONGLONG;
 typedef uint8_t BYTE;
 typedef uint16_t UINT16;
-#endif // FEATURE_EVENT_TRACE && !_INC_WINDOWS
+#endif // FEATURE_EVENT_TRACE && TARGET_UNIX
 
 // Hijack funcs are not called, they are "returned to". And when done, they return to the actual caller.
 // Thus they cannot have any parameters or return anything.

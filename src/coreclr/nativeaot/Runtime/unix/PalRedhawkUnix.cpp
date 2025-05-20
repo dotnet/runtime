@@ -68,8 +68,6 @@
 
 using std::nullptr_t;
 
-#define PalRaiseFailFastException RaiseFailFastException
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
 #define PAGE_NOACCESS           0x01

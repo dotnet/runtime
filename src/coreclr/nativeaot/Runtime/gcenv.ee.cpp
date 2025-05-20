@@ -574,7 +574,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     // Helper used to wrap the start routine of GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
@@ -618,7 +618,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
     // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
 
