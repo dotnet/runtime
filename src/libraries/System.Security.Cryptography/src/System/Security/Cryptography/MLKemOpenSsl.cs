@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
     ///     This algorithm is specified by FIPS-203.
     ///   </para>
     ///   <para>
-    ///     Developers are encouraged to program against the <c>MLKem</c> base class,
+    ///     Developers are encouraged to program against the <see cref="MLKem"/> base class,
     ///     rather than any specific derived class.
     ///     The derived classes are intended for interop with the underlying system
     ///     cryptographic libraries.
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
             out bool hasDecapsulationKey);
 
         /// <summary>
-        /// Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
+        ///   Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
         /// </summary>
         /// <returns>A <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>

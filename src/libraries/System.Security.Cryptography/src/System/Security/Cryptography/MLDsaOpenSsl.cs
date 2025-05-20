@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
     ///     This algorithm is specified by FIPS-204.
     ///   </para>
     ///   <para>
-    ///     Developers are encouraged to program against the <c>MLDsa</c> base class,
+    ///     Developers are encouraged to program against the <see cref="MLDsa"/> base class,
     ///     rather than any specific derived class.
     ///     The derived classes are intended for interop with the underlying system
     ///     cryptographic libraries.
