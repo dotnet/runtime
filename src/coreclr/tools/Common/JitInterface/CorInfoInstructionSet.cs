@@ -216,17 +216,18 @@ namespace Internal.JitInterface
         Rcpc = 14,
         VectorT128 = 15,
         Rcpc2 = 16,
-        Sve2 = 17,
-        ArmBase_Arm64 = 18,
-        AdvSimd_Arm64 = 19,
-        Aes_Arm64 = 20,
-        Crc32_Arm64 = 21,
-        Dp_Arm64 = 22,
-        Rdm_Arm64 = 23,
-        Sha1_Arm64 = 24,
-        Sha256_Arm64 = 25,
-        Sve_Arm64 = 26,
-        Sve2_Arm64 = 27,
+        Sve = 17,
+        Sve2 = 18,
+        ArmBase_Arm64 = 19,
+        AdvSimd_Arm64 = 20,
+        Aes_Arm64 = 21,
+        Crc32_Arm64 = 22,
+        Dp_Arm64 = 23,
+        Rdm_Arm64 = 24,
+        Sha1_Arm64 = 25,
+        Sha256_Arm64 = 26,
+        Sve_Arm64 = 27,
+        Sve2_Arm64 = 28,
     }
 
     public enum InstructionSet_RiscV64
@@ -620,6 +621,8 @@ namespace Internal.JitInterface
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve2))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Vector))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     break;
 
@@ -1065,6 +1068,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                     if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
                         resultflags.AddInstructionSet(InstructionSet.ARM64_Sve2);
+                    if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                        resultflags.AddInstructionSet(InstructionSet.ARM64_Vector);
                     break;
 
                 case TargetArchitecture.RiscV64:
