@@ -57,7 +57,7 @@ namespace System.Security.Cryptography
         private static partial SlhDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle);
 
         /// <summary>
-        /// Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
+        ///   Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.
         /// </summary>
         /// <returns>A <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.</returns>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>

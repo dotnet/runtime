@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
     ///   Represents an SLH-DSA key.
     /// </summary>
     /// <remarks>
-    ///   Developers are encouraged to program against the <c>SlhDsa</c> base class,
+    ///   Developers are encouraged to program against the <see cref="SlhDsa"/> base class,
     ///   rather than any specific derived class.
     ///   The derived classes are intended for interop with the underlying system
     ///   cryptographic libraries.
