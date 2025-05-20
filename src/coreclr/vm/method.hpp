@@ -22,7 +22,9 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-
+#ifdef FEATURE_INTERPRETER
+#include "callstubgenerator.h"
+#endif // FEATURE_INTERPRETER
 class Stub;
 class FCallMethodDesc;
 class FieldDesc;
@@ -231,6 +233,9 @@ struct MethodDescCodeData final
 {
     PTR_MethodDescVersioningState VersioningState;
     PCODE TemporaryEntryPoint;
+#ifdef FEATURE_INTERPRETER
+    CallStubHeader *CallStub;
+#endif // FEATURE_INTERPRETER
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -1815,6 +1820,11 @@ public:
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#ifdef FEATURE_INTERPRETER
+    bool SetCallStub(CallStubHeader *pHeader);
+    CallStubHeader *GetCallStub();
+#endif // FEATURE_INTERPRETER
+
 #endif //!DACCESS_COMPILE
 
     PTR_MethodDescVersioningState GetMethodDescVersionState();
@@ -2084,6 +2094,10 @@ public:
 
     friend struct ::cdac_data<MethodDesc>;
 };
+
+#ifndef DACCESS_COMPILE
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
+#endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>
 {

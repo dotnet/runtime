@@ -4153,6 +4153,14 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
 
     this->pRealCodeHeader.EnumMem();
 
+#ifdef FEATURE_EH_FUNCLETS
+    // UnwindInfos are stored in an array immediately following the RealCodeHeader structure in memory.
+    if (this->pRealCodeHeader->nUnwindInfos)
+    {
+        DacEnumMemoryRegion(PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos), this->pRealCodeHeader->nUnwindInfos * sizeof(T_RUNTIME_FUNCTION));
+    }
+#endif // FEATURE_EH_FUNCLETS
+
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     BOOL hasFlagByte = TRUE;
 #else
@@ -4169,7 +4177,7 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
 // Enumerate for minidumps.
 //-----------------------------------------------------------------------------
 template<typename TCodeHeader>
-void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -4180,15 +4188,14 @@ void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemo
     CONTRACTL_END;
 
     DebugInfoRequest request;
-    PCODE addrCode = pMD->GetNativeCode();
-    request.InitFromStartingAddr(pMD, addrCode);
+    request.InitFromStartingAddr(pCodeInfo->GetMethodDesc(), pCodeInfo->GetStartAddress());
 
     TCodeHeader * pHeader = GetCodeHeaderFromDebugInfoRequest<TCodeHeader>(request);
 
     pHeader->EnumMemoryRegions(flags, NULL);
 }
 
-void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -4198,7 +4205,7 @@ void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags fl
     }
     CONTRACTL_END;
 
-    EnumMemoryRegionsForMethodDebugInfoWorker<CodeHeader>(flags, pMD);
+    EnumMemoryRegionsForMethodDebugInfoWorker<CodeHeader>(flags, pCodeInfo);
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -4222,7 +4229,7 @@ void InterpreterCodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJit
     }
 }
 
-void InterpreterJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void InterpreterJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -4232,7 +4239,7 @@ void InterpreterJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemor
     }
     CONTRACTL_END;
 
-    EnumMemoryRegionsForMethodDebugInfoWorker<InterpreterCodeHeader>(flags, pMD);
+    EnumMemoryRegionsForMethodDebugInfoWorker<InterpreterCodeHeader>(flags, pCodeInfo);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -6319,16 +6326,15 @@ BOOL ReadyToRunJitManager::GetRichDebugInfo(
 //
 // Need to write out debug info
 //
-void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     SUPPORTS_DAC;
 
-    EECodeInfo codeInfo(pMD->GetNativeCode());
-    if (!codeInfo.IsValid())
+    if (!pCodeInfo->IsValid())
         return;
 
-    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
-    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(pCodeInfo->GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(pCodeInfo->GetMethodToken());
 
     PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
     if (pDebugInfo == NULL)

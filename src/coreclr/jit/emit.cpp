@@ -10597,7 +10597,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     return result;
 }
 
-#if !defined(JIT32_GCENCODER)
 //------------------------------------------------------------------------
 // emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
 //
@@ -10689,4 +10688,3 @@ void emitter::emitEnableGC()
         JITDUMP("Enable GC: still %u no-gc requests\n", emitNoGCRequestCount);
     }
 }
-#endif // !defined(JIT32_GCENCODER)
