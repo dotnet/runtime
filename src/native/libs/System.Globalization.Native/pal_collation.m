@@ -390,7 +390,10 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int3
         // - Byte 2: Milli version (for tailorings or collator-specific changes)
         // - Byte 3: Micro version (build number or additional distinction)
         
-        uint8_t collatorMajor = 0;
+        // Simple formula to calculate major version based on OS version
+        // The offset of 3 aligns with Apple's pattern of Unicode version support
+        // iOS/macOS 17 -> Unicode 14, iOS/macOS 16 -> Unicode 13, etc.
+        uint8_t collatorMajor = (uint8_t)(osVersion.majorVersion > 4 ? osVersion.majorVersion - 3 : 1);
         uint8_t collatorMinor = 0;
         uint8_t collatorMilli = 0;
         uint8_t collatorMicro = 0;
@@ -398,41 +401,6 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int3
         // Get the NSLocale from the provided locale name
         NSLocale *currentLocale = GetCurrentLocale(localeName, localeNameLength);
         NSString *localeIdentifier = [currentLocale localeIdentifier];
-        
-        // Known Unicode version mappings for specific iOS/macOS versions
-        // This approach ensures correct versioning for known OS releases
-        // and provides a reasonable estimate for future releases
-        if (osVersion.majorVersion >= 17) { // iOS 17+ / macOS 14+ (2023+)
-            collatorMajor = 14;  // Based on Unicode 15.1
-            collatorMinor = 0;
-            
-            // For future major OS versions beyond our known mappings (e.g., iOS 18+),
-            // increment the collator major version proportionally
-            // This pattern follows Apple's typical Unicode version updates
-            if (osVersion.majorVersion > 17) {
-                // Add the difference between the actual OS version and our last known version
-                // to the last known collator version
-                collatorMajor += (osVersion.majorVersion - 17);
-                
-                // Reset the minor version since this is an estimated mapping
-                collatorMinor = 0;
-            }
-        } else if (osVersion.majorVersion >= 16) { // iOS 16 / macOS 13 (2022)
-            collatorMajor = 13;  // Based on Unicode 15.0
-            collatorMinor = 0;
-        } else if (osVersion.majorVersion >= 15) { // iOS 15 / macOS 12 (2021)
-            collatorMajor = 12;  // Based on Unicode 14.0
-            collatorMinor = 0;
-        } else if (osVersion.majorVersion >= 14) { // iOS 14 / macOS 11 (2020)
-            collatorMajor = 11;  // Based on Unicode 13.0
-            collatorMinor = 0;
-        } else if (osVersion.majorVersion >= 13) { // iOS 13 / macOS 10.15 (2019)
-            collatorMajor = 10;  // Based on Unicode 12.1
-            collatorMinor = 1;
-        } else { // Older versions
-            collatorMajor = 10;  // Based on Unicode 12.0
-            collatorMinor = 0;
-        }
         
         // The milli version distinguishes Apple platform variations
         // This helps differentiate between different potential collation implementations
