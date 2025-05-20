@@ -24,7 +24,6 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER); // some headers have code with asserts, so do
 #include "pal/file.hpp"
 #include "pal/palinternal.h"
 #include "pal/module.h"
-#include "pal/cs.hpp"
 #include "pal/process.h"
 #include "pal/file.h"
 #include "pal/utils.h"
@@ -1010,7 +1009,7 @@ BOOL LOADInitializeModules()
 {
     _ASSERTE(exe_module.prev == nullptr);
 
-    InternalInitializeCriticalSection(&module_critsec);
+    minipal_critsect_init(&module_critsec);
 
     // Initialize module for main executable
     TRACE("Initializing module for main executable\n");
@@ -1864,7 +1863,7 @@ void LockModuleList()
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    InternalEnterCriticalSection(pThread, &module_critsec);
+    minipal_critsect_enter(&module_critsec);
 }
 
 /*++
@@ -1886,5 +1885,5 @@ void UnlockModuleList()
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    InternalLeaveCriticalSection(pThread, &module_critsec);
+    minipal_critsect_leave(&module_critsec);
 }

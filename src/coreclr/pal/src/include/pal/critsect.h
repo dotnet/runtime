@@ -25,8 +25,8 @@ extern "C"
 {
 #endif // __cplusplus
 
-VOID InternalInitializeCriticalSection(CRITICAL_SECTION *pcs);
-VOID InternalDeleteCriticalSection(CRITICAL_SECTION *pcs);
+VOID minipal_critsect_init(CRITICAL_SECTION *pcs);
+VOID minipal_critsect_destroy(CRITICAL_SECTION *pcs);
 
 #ifdef __cplusplus
 }

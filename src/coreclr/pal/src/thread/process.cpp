@@ -2787,14 +2787,14 @@ CorUnix::InitializeProcessData(
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
-    InternalInitializeCriticalSection(&g_csProcess);
+    minipal_critsect_init(&g_csProcess);
     fLockInitialized = TRUE;
 
     if (NO_ERROR != palError)
     {
         if (fLockInitialized)
         {
-            InternalDeleteCriticalSection(&g_csProcess);
+            minipal_critsect_destroy(&g_csProcess);
         }
     }
 
@@ -3011,7 +3011,7 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_critsect_enter(&g_csProcess);
 
     /* Free the application directory */
     free(g_lpwstrAppDir);
@@ -3019,7 +3019,7 @@ PROCCleanupInitialProcess(VOID)
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_critsect_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3047,7 +3047,7 @@ CorUnix::PROCAddThread(
 {
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_critsect_enter(&g_csProcess);
 
     pTargetThread->SetNext(pGThreadList);
     pGThreadList = pTargetThread;
@@ -3056,7 +3056,7 @@ CorUnix::PROCAddThread(
     TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
           pTargetThread, pTargetThread->GetThreadId());
 
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_critsect_leave(&g_csProcess);
 }
 
 
@@ -3082,7 +3082,7 @@ CorUnix::PROCRemoveThread(
 
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_critsect_enter(&g_csProcess);
 
     curThread = pGThreadList;
 
@@ -3123,7 +3123,7 @@ CorUnix::PROCRemoveThread(
     WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
 
 EXIT:
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_critsect_leave(&g_csProcess);
 }
 
 
@@ -3168,7 +3168,7 @@ PROCProcessLock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_critsect_enter(&g_csProcess);
 }
 
 
@@ -3192,7 +3192,7 @@ PROCProcessUnlock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_critsect_leave(&g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES

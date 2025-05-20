@@ -20,7 +20,6 @@ Abstract:
 #define _PAL_THREAD_HPP_
 
 #include "corunix.hpp"
-#include "cs.hpp"
 
 #include <pthread.h>
 #if HAVE_MACH_EXCEPTIONS
@@ -373,7 +372,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalEnterCriticalSection(pThread, &m_csLock);
+            minipal_critsect_enter(&m_csLock);
         };
 
         void
@@ -381,7 +380,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalLeaveCriticalSection(pThread, &m_csLock);
+            minipal_critsect_leave(&m_csLock);
         };
 
         //

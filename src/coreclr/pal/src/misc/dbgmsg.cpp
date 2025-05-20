@@ -361,7 +361,7 @@ BOOL DBG_init_channels(void)
         }
     }
 
-    InternalInitializeCriticalSection(&fprintf_crit_section);
+    minipal_critsect_init(&fprintf_crit_section);
 
     return TRUE;
 }
@@ -539,9 +539,9 @@ int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
        avoid holding a libc lock while another thread is calling
        SuspendThread on this one. */
 
-    InternalEnterCriticalSection(NULL, &fprintf_crit_section);
+    minipal_critsect_enter(&fprintf_crit_section);
     fprintf( output_file, "%s%s", indent, buffer );
-    InternalLeaveCriticalSection(NULL, &fprintf_crit_section);
+    minipal_critsect_leave(&fprintf_crit_section);
 
     /* flush the output to file */
     if ( fflush(output_file) != 0 )

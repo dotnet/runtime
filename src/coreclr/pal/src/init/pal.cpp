@@ -19,7 +19,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/thread.hpp"
 #include "pal/synchobjects.hpp"
 #include "pal/procobj.hpp"
-#include "pal/cs.hpp"
 #include "pal/file.hpp"
 #include "pal/map.hpp"
 #include "../objmgr/listedobjectmanager.hpp"
@@ -311,8 +310,6 @@ Initialize(
     /*Firstly initiate a lastError */
     SetLastError(ERROR_GEN_FAILURE);
 
-    CriticalSectionSubSysInitialize();
-
     if(nullptr == init_critsec)
     {
         pthread_mutex_lock(&init_critsec_mutex); // prevents race condition of two threads
@@ -322,20 +319,20 @@ Initialize(
             static DN_CRITSECT temp_critsec;
 
             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
-            InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
+            minipal_critsect_init(&temp_critsec);
 
             if(nullptr != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, nullptr))
             {
                 // Another thread got in before us! shouldn't happen, if the PAL
                 // isn't initialized there shouldn't be any other threads
                 WARN("Another thread initialized the critical section\n");
-                InternalDeleteCriticalSection(&temp_critsec);
+                minipal_critsect_destroy(&temp_critsec);
             }
         }
         pthread_mutex_unlock(&init_critsec_mutex);
     }
 
-    InternalEnterCriticalSection(pThread, init_critsec); // here pThread is always nullptr
+    minipal_critsect_enter(init_critsec); // here pThread is always nullptr
 
     if (init_count == 0)
     {
@@ -690,7 +687,7 @@ done:
     }
 #endif
 
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_critsect_leave(init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
     {
@@ -905,7 +902,7 @@ BOOL PALInitLock(void)
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    InternalEnterCriticalSection(pThread, init_critsec);
+    minipal_critsect_enter(init_critsec);
     return TRUE;
 }
 
@@ -927,7 +924,7 @@ void PALInitUnlock(void)
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    InternalLeaveCriticalSection(pThread, init_critsec);
+    minipal_critsect_leave(init_critsec);
 }
 
 /* Internal functions *********************************************************/

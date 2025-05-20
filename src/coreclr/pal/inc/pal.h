@@ -2615,11 +2615,6 @@ typedef struct _CRITICAL_SECTION {
     } csnds;
 } CRITICAL_SECTION;
 
-PALIMPORT VOID PALAPI EnterCriticalSection(IN OUT CRITICAL_SECTION* lpCriticalSection);
-PALIMPORT VOID PALAPI LeaveCriticalSection(IN OUT CRITICAL_SECTION* lpCriticalSection);
-PALIMPORT VOID PALAPI InitializeCriticalSection(OUT CRITICAL_SECTION* lpCriticalSection);
-PALIMPORT VOID PALAPI DeleteCriticalSection(IN OUT CRITICAL_SECTION* lpCriticalSection);
-
 #define PAGE_NOACCESS                   0x01
 #define PAGE_READONLY                   0x02
 #define PAGE_READWRITE                  0x04

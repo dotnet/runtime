@@ -38,9 +38,9 @@ namespace CorUnix
 #endif
 
         void Lock(CPalThread * pthrCurrent)
-            { InternalEnterCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_critsect_enter(&m_cs); }
         void Unlock(CPalThread * pthrCurrent)
-            { InternalLeaveCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_critsect_leave(&m_cs); }
 
      public:
         CSynchCache(int iMaxDepth = MaxDepth) :
@@ -51,7 +51,7 @@ namespace CorUnix
             ,m_iMaxTrackedDepth(0)
 #endif
         {
-            InternalInitializeCriticalSection(&m_cs);
+            minipal_critsect_init(&m_cs);
             if (m_iMaxDepth < 0)
             {
                 m_iMaxDepth = 0;
@@ -61,7 +61,7 @@ namespace CorUnix
         ~CSynchCache()
         {
             Flush(NULL, true);
-            InternalDeleteCriticalSection(&m_cs);
+            minipal_critsect_destroy(&m_cs);
         }
 
 #ifdef _DEBUG
@@ -213,9 +213,9 @@ namespace CorUnix
 #endif
 
         void Lock(CPalThread * pthrCurrent)
-            { InternalEnterCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_critsect_enter(&m_cs); }
         void Unlock(CPalThread * pthrCurrent)
-            { InternalLeaveCriticalSection(pthrCurrent, &m_cs); }
+            { minipal_critsect_leave(&m_cs); }
 
      public:
         CSHRSynchCache(int iMaxDepth = MaxDepth) :
@@ -226,7 +226,7 @@ namespace CorUnix
             ,m_iMaxTrackedDepth(0)
 #endif
         {
-            InternalInitializeCriticalSection(&m_cs);
+            minipal_critsect_init(&m_cs);
             if (m_iMaxDepth < 0)
             {
                 m_iMaxDepth = 0;
@@ -236,7 +236,7 @@ namespace CorUnix
         ~CSHRSynchCache()
         {
             Flush(NULL, true);
-            InternalDeleteCriticalSection(&m_cs);
+            minipal_critsect_destroy(&m_cs);
         }
 
 #ifdef _DEBUG

@@ -22,7 +22,6 @@ Abstract:
 
 
 #include "corunix.hpp"
-#include "cs.hpp"
 #include "pal/thread.hpp"
 #include <minipal/critsect.h>
 
@@ -95,7 +94,7 @@ namespace CorUnix
         {
             if (m_fLockInitialized)
             {
-                DeleteCriticalSection(&m_csLock);
+                minipal_critsect_destroy(&m_csLock);
             }
 
             if (NULL != m_rghteHandleTable)
@@ -138,7 +137,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalEnterCriticalSection(pThread, &m_csLock);
+            minipal_critsect_enter(&m_csLock);
         };
 
         void
@@ -146,7 +145,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            InternalLeaveCriticalSection(pThread, &m_csLock);
+            minipal_critsect_leave(&m_csLock);
         };
     };
 
