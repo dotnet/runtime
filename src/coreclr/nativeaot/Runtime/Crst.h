@@ -51,7 +51,7 @@ public:
 #endif // _DEBUG
 
 private:
-    CRITICAL_SECTION    m_sCritSec;
+    DN_CRIT_SEC         m_sCritSec;
 #if defined(_DEBUG)
     EEThreadId          m_uiOwnerId;
 #endif // _DEBUG

@@ -49,13 +49,8 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
 
-    {
-        SetOSCritSec ();
-    }
-
-    {
-        InitializeCriticalSection(&m_criticalsection);
-    }
+    bool suc = minipal_critsec_init(&m_criticalsection);
+    _ASSERTE(suc);
 
     SetFlags(flags);
     SetCrstInitialized();
@@ -89,7 +84,7 @@ void CrstBase::Destroy()
     GCPreemp __gcHolder((m_dwFlags & CRST_HOST_BREAKABLE) == CRST_HOST_BREAKABLE);
 
     {
-        DeleteCriticalSection(&m_criticalsection);
+        minipal_critsec_destroy(&m_criticalsection);
     }
 
     LOG((LF_SYNC, INFO3, "CrstBase::Destroy %p\n", this));
@@ -280,9 +275,6 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
     _ASSERTE(IsCrstInitialized());
 
-    // Is Critical Section entered?
-    // We could have perhaps used m_criticalsection.LockCount, but
-    // while spinning, we want to fire the ETW event only once
     BOOL fIsCriticalSectionEnteredAfterFailingOnce = FALSE;
 
     Thread * pThread;
@@ -319,7 +311,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         }
     }
 
-    EnterCriticalSection(&m_criticalsection);
+    minipal_critsec_enter(&m_criticalsection);
 
 #ifdef _DEBUG
     PostEnter();
@@ -350,7 +342,7 @@ void CrstBase::Leave()
     Thread * pThread = GetThreadNULLOk();
 #endif
 
-    LeaveCriticalSection(&m_criticalsection);
+    minipal_critsec_leave(&m_criticalsection);
 
     // Check for both rare case using one if-check
     if (m_dwFlags & (CRST_TAKEN_DURING_SHUTDOWN | CRST_DEBUGGER_THREAD))
@@ -608,7 +600,6 @@ void CrstBase::DebugInit(CrstType crstType, CrstFlags flags)
                           CRST_UNSAFE_ANYMODE |
                           CRST_DEBUGGER_THREAD |
                           CRST_HOST_BREAKABLE |
-                          CRST_OS_CRIT_SEC |
                           CRST_INITIALIZED |
                           CRST_TAKEN_DURING_SHUTDOWN |
                           CRST_GC_NOTRIGGER_WHEN_TAKEN |

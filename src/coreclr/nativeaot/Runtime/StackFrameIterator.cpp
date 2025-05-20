@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
+#include <minipal/critsec.h>
 #include "gcenv.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"

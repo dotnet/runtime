@@ -17,6 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <minipal/critsec.h>
 #include "gcinfotypes.h"
 #include "patchpointinfo.h"
 
@@ -375,7 +376,7 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
 static FILE*     logFile = NULL;
-CRITICAL_SECTION logFileLock;
+DN_CRIT_SEC      logFileLock;
 #endif
 
 #if REGEN_CALLPAT
@@ -398,12 +399,12 @@ static void regenLog(unsigned codeDelta,
     if (logFile == NULL)
     {
         logFile = fopen_utf8("regen.txt", "a");
-        InitializeCriticalSection(&logFileLock);
+        minipal_critsec_init(&logFileLock);
     }
 
     assert(((enSize > 0) && (enSize < 256)) && ((pat.val & 0xffffff) != 0xffffff));
 
-    EnterCriticalSection(&logFileLock);
+    minipal_critsec_enter(&logFileLock);
 
     fprintf(logFile, "CallSite( 0x%08x, 0x%02x%02x, 0x", pat.val, byrefArgMask, byrefRegMask);
 
@@ -415,7 +416,7 @@ static void regenLog(unsigned codeDelta,
     fprintf(logFile, "),\n");
     fflush(logFile);
 
-    LeaveCriticalSection(&logFileLock);
+    minipal_critsec_leave(&logFileLock);
 }
 #endif
 
@@ -425,10 +426,10 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
     if (logFile == NULL)
     {
         logFile = fopen_utf8("regen.txt", "a");
-        InitializeCriticalSection(&logFileLock);
+        minipal_critsec_init(&logFileLock);
     }
 
-    EnterCriticalSection(&logFileLock);
+    minipal_critsec_enter(&logFileLock);
 
     fprintf(logFile,
             "InfoHdr( %2d, %2d, %1d, %1d, %1d,"
@@ -451,7 +452,7 @@ static void regenLog(unsigned encoding, InfoHdr* header, InfoHdr* state)
 
     fflush(logFile);
 
-    LeaveCriticalSection(&logFileLock);
+    minipal_critsec_leave(&logFileLock);
 }
 #endif
 

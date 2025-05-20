@@ -87,6 +87,7 @@
 #include "util.hpp"
 #include "debugmacros.h"
 #include "log.h"
+#include <minipal/critsec.h>
 
 #define ShutDown_Start                          0x00000001
 #define ShutDown_Finalize1                      0x00000002
@@ -103,31 +104,23 @@ extern Volatile<LONG> g_ShutdownCrstUsageCount;
 // The CRST.
 class CrstBase
 {
-// The following classes and methods violate the requirement that Crst usage be
-// exception-safe, or they satisfy that requirement using techniques other than
-// Holder objects:
-friend class Thread;
-friend class ThreadStore;
-friend class ThreadSuspend;
-template <typename ELEMENT>
-friend class ListLockBase;
-template <typename ELEMENT>
-friend class ListLockEntryBase;
-friend struct SavedExceptionInfo;
-friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
-friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
-friend class CodeVersionManager;
+    // The following classes and methods violate the requirement that Crst usage be
+    // exception-safe, or they satisfy that requirement using techniques other than
+    // Holder objects:
+    friend class Thread;
+    friend class ThreadStore;
+    friend class ThreadSuspend;
+    template <typename ELEMENT>
+    friend class ListLockBase;
+    template <typename ELEMENT>
+    friend class ListLockEntryBase;
+    friend struct SavedExceptionInfo;
+    friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
+    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
+    friend class CodeVersionManager;
 
-friend class Debugger;
-friend class Crst;
-
-#ifdef FEATURE_DBGIPC_TRANSPORT_VM
-    // The debugger transport code uses a holder for its Crst, but it needs to share the holder implementation
-    // with its right side code as well (which can't see the Crst implementation and actually uses a
-    // CRITICAL_SECTION as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
-    // Leave() in order to build a shared holder class.
-    friend class DbgTransportLock;
-#endif // FEATURE_DBGIPC_TRANSPORT_VM
+    friend class Debugger;
+    friend class Crst;
 
     // PendingTypeLoadTable::Entry acquires the lock during construction before anybody has a chance to see it to avoid
     // level violations.
@@ -282,16 +275,14 @@ protected:
     void DebugDestroy();
 #endif
 
-    T_CRITICAL_SECTION m_criticalsection;
+    DN_CRIT_SEC m_criticalsection;
 
     typedef enum
     {
         // Mask to indicate reserved flags
-        CRST_RESERVED_FLAGS_MASK = 0xC0000000,
+        CRST_RESERVED_FLAGS_MASK = 0x80000000,
         // private flag to indicate initialized Crsts
-        CRST_INITIALIZED = 0x80000000,
-        // private flag to indicate Crst is OS Critical Section
-        CRST_OS_CRIT_SEC = 0x40000000,
+        CRST_INITIALIZED = 0x80000000
         // rest of the flags are CrstFlags
     } CrstReservedFlags;
     DWORD               m_dwFlags;            // Re-entrancy and same level
@@ -314,19 +305,6 @@ protected:
 #endif //_DEBUG
 
 private:
-
-    void SetOSCritSec ()
-    {
-        m_dwFlags |= CRST_OS_CRIT_SEC;
-    }
-    void ResetOSCritSec ()
-    {
-        m_dwFlags &= ~CRST_OS_CRIT_SEC;
-    }
-    BOOL IsOSCritSec ()
-    {
-        return m_dwFlags & CRST_OS_CRIT_SEC;
-    }
     void SetCrstInitialized()
     {
         m_dwFlags |= CRST_INITIALIZED;
