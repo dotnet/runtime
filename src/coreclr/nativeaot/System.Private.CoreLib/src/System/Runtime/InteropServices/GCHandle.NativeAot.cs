@@ -12,5 +12,10 @@ namespace System.Runtime.InteropServices
         internal static object? InternalGet(IntPtr handle) => RuntimeImports.RhHandleGet(handle);
 
         internal static void InternalSet(IntPtr handle, object? value) => RuntimeImports.RhHandleSet(handle, value);
+
+#if FEATURE_GCBRIDGE
+        // FIXME implement waiting for bridge processing
+        internal static object? InternalGetBridgeWait(IntPtr handle) => InternalGet(handle);
+#endif
     }
 }
