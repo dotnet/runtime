@@ -54,9 +54,9 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_trackObjectFields(false)
     , m_firstFieldIndex(BAD_VAR_NUM)
     , m_numFields(0)
+    , m_StoreAddressToIndexMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_FieldIndexToLocalIndexMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_LocalIndexToFieldIndexMap(comp->getAllocator(CMK_ObjectAllocator))
-    , m_StoreAddressToIndexMap(comp->getAllocator(CMK_ObjectAllocator))
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
@@ -1945,33 +1945,19 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 // Is this a store to a tracked resource?
                 //
                 unsigned dstIndex;
-                if (m_trackFields && m_StoreAddressToIndexMap.Lookup(addr, &dstIndex) && (dstIndex != BAD_VAR_NUM))
+                if (m_StoreAddressToIndexMap.Lookup(addr, &dstIndex) && (dstIndex != BAD_VAR_NUM))
                 {
                     JITDUMP("... local.field store\n");
 
-                    if (!isAddress)
+                    if (isAddress)
                     {
-                        AddConnGraphEdgeIndex(dstIndex, lclIndex);
-                                canLclVarEscapeViaParentStack = false;
-                            }
-                        }
-                        else if (m_trackObjectFields && base->OperIs(GT_LCL_VAR) && base->TypeIs(TYP_REF, TYP_BYREF))
-                        {
-                            unsigned const dstLclNum = base->AsLclVarCommon()->GetLclNum();
-
-                            if (IsTrackedLocal(dstLclNum))
-                            {
-                                unsigned const fieldIndex = GetFieldIndexFromLocal(dstLclNum);
-                                assert(fieldIndex != BAD_VAR_NUM);
-
-                                JITDUMP("... object V%02u.f store\n", dstLclNum);
-                                AddConnGraphEdgeIndex(fieldIndex, lclIndex);
-                        canLclVarEscapeViaParentStack = false;
-                        break;
+                        AddConnGraphEdgeIndex(dstIndex, m_unknownSourceIndex);
                     }
                     else
                     {
-                        AddConnGraphEdgeIndex(dstIndex, m_unknownSourceIndex);
+                        AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                        canLclVarEscapeViaParentStack = false;
+                        break;
                     }
                 }
 
