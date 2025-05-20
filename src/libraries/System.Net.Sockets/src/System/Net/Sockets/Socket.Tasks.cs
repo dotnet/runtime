@@ -1379,7 +1379,7 @@ namespace System.Net.Sockets
                 // On Windows, SendFileAsync will report ConnectionAborted.
                 // There's a race here anyway, so there's no harm in also checking for ConnectionAborted in all cases.
                 Exception exception = CreateException(error, forAsyncThrow: false);
-                
+
                 if (error is SocketError.OperationAborted or SocketError.ConnectionAborted)
                 {
                     // If the token was canceled, throw OperationCanceledException instead of SocketException
