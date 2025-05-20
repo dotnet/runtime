@@ -378,27 +378,32 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
 int32_t GlobalizationNative_GetUIUnicodeVersion(void)
 {
     @autoreleasepool {
-        // iOS/macOS Unicode version generally aligns with the major iOS/macOS version
-        // We can get the version from the NSProcessInfo class
+        // Return a version number that represents the collator implementation in Apple's APIs
+        // This mimics how ICU returns a version for its collator
+        // Format: UVersionInfo[4] which is a 4-byte array packed into an int32_t
+        // Byte 0 (most significant): Major version (using major OS version)
+        // Byte 1: Minor version (using minor OS version)
+        // Byte 2: Platform identifier (1 for iOS/tvOS, 2 for macOS/macCatalyst)
+        // Byte 3 (least significant): Build version (using patch version, limited to 0-255)
+        
         NSOperatingSystemVersion osVersion = [[NSProcessInfo processInfo] operatingSystemVersion];
         
-        // Map the OS version to an approximate Unicode version
-        // iOS/macOS generally tracks newer Unicode versions
-        // The version number is stored as 0x00000MMm where MM is the major version
-        // and m is the minor version, similar to how ICU does it
-        // For example, Unicode 14.0 would be represented as 0x000E00
+        // Get platform type for byte 2
+        uint8_t platformByte = 0;
+        #if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
+            platformByte = 1; // iOS/tvOS
+        #else
+            platformByte = 2; // macOS/macCatalyst
+        #endif
         
-        if (osVersion.majorVersion >= 16) { // iOS 16+ ~ Unicode 15.0
-            return 0x000F00;
-        } else if (osVersion.majorVersion >= 15) { // iOS 15 ~ Unicode 14.0
-            return 0x000E00;
-        } else if (osVersion.majorVersion >= 14) { // iOS 14 ~ Unicode 13.0
-            return 0x000D00;
-        } else if (osVersion.majorVersion >= 13) { // iOS 13 ~ Unicode 12.1
-            return 0x000C01;
-        } else { // Older iOS versions ~ Unicode 12.0 or earlier
-            return 0x000C00;
-        }
+        // Ensure values stay within byte range
+        uint8_t majorByte = (uint8_t)(osVersion.majorVersion > 255 ? 255 : osVersion.majorVersion);
+        uint8_t minorByte = (uint8_t)(osVersion.minorVersion > 255 ? 255 : osVersion.minorVersion);
+        uint8_t patchByte = (uint8_t)(osVersion.patchVersion > 255 ? 255 : osVersion.patchVersion);
+        
+        // Pack the bytes into a 32-bit integer in the same way ICU does
+        // This maintains compatibility with how ICU's version is structured
+        return (majorByte << 24) | (minorByte << 16) | (platformByte << 8) | patchByte;
     }
 }
 
