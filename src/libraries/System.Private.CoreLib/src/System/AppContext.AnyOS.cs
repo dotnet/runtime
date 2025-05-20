@@ -19,7 +19,7 @@ namespace System
         {
             // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
 #if NATIVEAOT
-            string? path = GetRuntimeModulePath();
+            string? path = Environment.ProcessPath;
 #else
             string? path = Assembly.GetEntryAssembly()?.Location;
 #endif
@@ -36,7 +36,7 @@ namespace System
         }
 #endif
 
-#if FEATURE_PERFTRACING
+#if FEATURE_PERFTRACING && !TARGET_BROWSER
         internal static void LogSwitchValues(RuntimeEventSource ev)
         {
             if (s_switches is not null)

@@ -69,7 +69,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `net48`
+- .NET Framework latest -> `net481`
 
 # Library project guidelines
 
@@ -172,6 +172,24 @@ Contains the files used to direct the trimming tool. See [ILLink files](../workf
 All src outputs are under
 
 `artifacts\bin\$(MSBuildProjectName)\$(TargetFramework)`
+
+### XML Documentation Files
+The `UseCompilerGeneratedDocXmlFile` property controls how XML documentation files are generated for a library project. XML documentation files are used for IntelliSense, API reference documentation, and code analysis.
+
+- When set to `true` (default), the compiler generates the XML documentation file based on XML comments in the source code.
+- When set to `false`, the build system attempts to use a pre-built XML documentation file from the Microsoft.Private.Intellisense package.
+
+```xml
+<PropertyGroup>
+  <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+</PropertyGroup>
+```
+
+Setting `UseCompilerGeneratedDocXmlFile` to `false` is typically done for stable APIs where manually curated documentation exists that should be preferred over compiler-generated documentation.
+
+If a project sets this to `false` but the Microsoft.Private.Intellisense package doesn't have documentation for the assembly, a warning is shown suggesting to remove the property to let the compiler generate the file.
+
+The implementation of this property can be found in `eng/intellisense.targets`.
 
 ## tests
 Similar to the src projects tests projects will define a `TargetFrameworks` property so they can list out the set of target frameworks they support.

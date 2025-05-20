@@ -340,7 +340,7 @@ namespace Microsoft.Extensions.FileProviders
 
         /// <summary>
         ///     <para>Creates a <see cref="IChangeToken" /> for the specified <paramref name="filter" />.</para>
-        ///     <para>Globbing patterns are interpreted by <seealso cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
+        ///     <para>Globbing patterns are interpreted by <see cref="Microsoft.Extensions.FileSystemGlobbing.Matcher" />.</para>
         /// </summary>
         /// <param name="filter">
         /// Filter string used to determine what files or folders to monitor. Example: **/*.cs, *.*,
@@ -350,7 +350,7 @@ namespace Microsoft.Extensions.FileProviders
         /// An <see cref="IChangeToken" /> that is notified when a file matching <paramref name="filter" /> is added,
         /// modified, or deleted. Returns a <see cref="NullChangeToken" /> if <paramref name="filter" /> has invalid filter
         /// characters or if <paramref name="filter" /> is an absolute path or outside the root directory specified in the
-        /// constructor <seealso cref="PhysicalFileProvider(string)" />.
+        /// constructor <see cref="PhysicalFileProvider(string)" />.
         /// </returns>
         public IChangeToken Watch(string filter)
         {

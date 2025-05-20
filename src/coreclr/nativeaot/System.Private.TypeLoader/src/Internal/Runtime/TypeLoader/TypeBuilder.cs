@@ -322,10 +322,6 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
-            // Ensure that if this method is non-shareable from a normal canonical perspective, then
-            // its template MUST be a universal canonical template method
-            Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
-
             NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
             var methodInfoParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
@@ -348,7 +344,7 @@ namespace Internal.Runtime.TypeLoader
                         break;
 
                     default:
-                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.Name + "! Only BagElementKind.DictionaryLayout should appear.");
+                        Debug.Fail("Unexpected BagElementKind for generic method with name " + method.NameAndSignature.GetName() + "! Only BagElementKind.DictionaryLayout should appear.");
                         throw new BadImageFormatException();
                 }
             }
@@ -360,12 +356,6 @@ namespace Internal.Runtime.TypeLoader
         internal void ParseNativeLayoutInfo(TypeBuilderState state, TypeDesc type)
         {
             TypeLoaderLogger.WriteLine("Parsing NativeLayoutInfo for type " + type.ToString() + " ...");
-
-            bool isTemplateUniversalCanon = false;
-            if (state.TemplateType != null)
-            {
-                isTemplateUniversalCanon = state.TemplateType.IsCanonicalSubtype(CanonicalFormKind.Universal);
-            }
 
             if (state.TemplateType == null)
             {
@@ -427,15 +417,8 @@ namespace Internal.Runtime.TypeLoader
                         state.ThreadStaticDesc = context.GetGCStaticInfo(typeInfoParser.GetUnsigned());
                         break;
 
-                    case BagElementKind.FieldLayout:
-                        TypeLoaderLogger.WriteLine("Found BagElementKind.FieldLayout");
-                        typeInfoParser.SkipInteger(); // Handled in type layout algorithm
-                        break;
-
                     case BagElementKind.DictionaryLayout:
                         TypeLoaderLogger.WriteLine("Found BagElementKind.DictionaryLayout");
-                        Debug.Assert(!isTemplateUniversalCanon, "Universal template nativelayout do not have DictionaryLayout");
-
                         Debug.Assert(state.Dictionary == null);
                         if (!state.TemplateType.RetrieveRuntimeTypeHandleIfPossible())
                         {

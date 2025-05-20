@@ -10,8 +10,6 @@
 #include "asmconstants.h"
 #endif
 
-//#define STUB_LOGGING
-
 #include <pshpack1.h>  // Since we are placing code, we want byte packing of the structs
 
 #define USES_LOOKUP_STUBS	1

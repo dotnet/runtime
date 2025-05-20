@@ -126,6 +126,11 @@ __forceinline int decodeSigned(PTR_CBYTE& src)
 #define fastSkipSigned(src) (decodeSigned(src))
 #endif
 
+unsigned int DecodeGCHdrInfoMethodSize(GCInfoToken gcInfoToken)
+{
+    PTR_CBYTE table = (PTR_CBYTE) gcInfoToken.Info;
+    return fastDecodeUnsigned(table);
+}
 
 /*****************************************************************************
  *
@@ -192,6 +197,17 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
         header.revPInvokeOffset = fastDecodeUnsigned(table);
     }
 
+    if (header.noGCRegionCnt == HAS_NOGCREGIONS)
+    {
+        hasArgTabOffset = TRUE;
+        header.noGCRegionCnt = fastDecodeUnsigned(table);
+    }
+    else if (header.noGCRegionCnt > 0)
+    {
+        hasArgTabOffset = TRUE;
+    }
+
+
     /* Some sanity checks on header */
 
     _ASSERTE( header.prologSize +
@@ -226,6 +242,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->syncStartOffset = header.syncStartOffset;
     infoPtr->syncEndOffset   = header.syncEndOffset;
     infoPtr->revPInvokeOffset = header.revPInvokeOffset;
+    infoPtr->noGCRegionCnt   = header.noGCRegionCnt;
 
     infoPtr->doubleAlign     = header.doubleAlign;
     infoPtr->handlers        = header.handlers;
@@ -663,6 +680,37 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 #endif // FEATURE_NATIVEAOT
 
 /*****************************************************************************/
+bool IsInNoGCRegion(hdrInfo   * infoPtr,
+                    PTR_CBYTE   table,
+                    unsigned    curOffset)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    if (infoPtr->noGCRegionCnt == 0)
+        return false;
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
+#endif
+
+    unsigned count = infoPtr->noGCRegionCnt;
+    while (count-- > 0) {
+        unsigned regionOffset = fastDecodeUnsigned(table);
+        if (curOffset < regionOffset)
+            return false;
+        unsigned regionSize = fastDecodeUnsigned(table);
+        if (curOffset - regionOffset < regionSize)
+            return true;
+    }
+
+    return false;
+}
+
+/*****************************************************************************/
 static
 PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 {
@@ -686,6 +734,13 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 #if VERIFY_GC_TABLES
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
+
+    /* Skip over the no GC regions table */
+
+    count = info.noGCRegionCnt;
+    while (count-- > 0) {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
 
     /* Skip over the untracked frame variable table */
 
@@ -798,11 +853,6 @@ RegMask     convertAllRegsMask(unsigned inMask) // EAX,ECX,EDX,EBX, EBP,ESI,EDI
          in the array, and argTabBytes specifies the total byte size of the
          array. [ Note this is an extremely rare case ]
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 static
 unsigned scanArgRegTable(PTR_CBYTE    table,
                          unsigned     curOffs,
@@ -1466,10 +1516,6 @@ FINISHED:
     _ASSERTE(int(stackDepth) < INT_MAX); // check that it did not underflow
     return (stackDepth * sizeof(unsigned));
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 /*****************************************************************************
  * scan the register argument table for the fully interruptible case.
@@ -2397,7 +2443,7 @@ void UnwindEspFrameEpilog(
 
         // We have already popped off the frame (excluding the callee-saved registers)
 
-        if (epilogBase[0] == X86_INSTR_POP_ECX)
+        if (epilogBase[offset] == X86_INSTR_POP_ECX)
         {
             // We may use "POP ecx" for doing "ADD ESP, 4",
             // or we may not (in the case of JMP epilogs)
@@ -2514,8 +2560,11 @@ void UnwindEbpDoubleAlignFrameEpilog(
         {
             // do nothing before popping the callee-saved registers
         }
-        else if (info->rawStkSize == sizeof(void*))
+        else if (info->rawStkSize == sizeof(void*) && epilogBase[offset] == X86_INSTR_POP_ECX)
         {
+            // We may use "POP ecx" for doing "ADD ESP, 4",
+            // or we may not (in the case of JMP epilogs)
+
             // "pop ecx" will make ESP point to the callee-saved registers
             if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
                 ESP += sizeof(void*);
@@ -2939,9 +2988,6 @@ bool UnwindEbpDoubleAlignFrame(
 #ifdef FEATURE_EH_FUNCLETS
         // Funclets' frame pointers(EBP) are always restored so they can access to main function's local variables.
         // Therefore the value of EBP is invalid for unwinder so we should use ESP instead.
-        // TODO If funclet frame layout is changed from CodeGen::genFuncletProlog() and genFuncletEpilog(),
-        //      we need to change here accordingly. It is likely to have changes when introducing PSPSym.
-        // TODO Currently we assume that ESP of funclet frames is always fixed but actually it could change.
         if (isFunclet)
         {
             baseSP = curESP;
@@ -3590,6 +3636,12 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     unsigned ptrAddr;
     unsigned lowBits;
 
+    /* Skip over no-GC region table */
+    count = info.noGCRegionCnt;
+    while (count-- > 0)
+    {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
 
     /* Process the untracked frame variable table */
 

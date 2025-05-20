@@ -15,7 +15,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -1096,7 +1095,10 @@ bool Thread::IsDetached()
 void Thread::SetDetached()
 {
     ASSERT(!IsStateSet(TSF_Detached));
+    ASSERT(IsStateSet(TSF_Attached));
+
     SetState(TSF_Detached);
+    ClearState(TSF_Attached);
 }
 
 bool Thread::IsActivationPending()

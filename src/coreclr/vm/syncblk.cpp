@@ -52,11 +52,6 @@ SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 #ifndef DACCESS_COMPILE
 
-#ifndef TARGET_UNIX
-// static
-SLIST_HEADER InteropSyncBlockInfo::s_InteropInfoStandbyList;
-#endif // !TARGET_UNIX
-
 InteropSyncBlockInfo::~InteropSyncBlockInfo()
 {
     CONTRACTL
@@ -69,35 +64,7 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
-
-#if defined(FEATURE_COMWRAPPERS)
-    delete m_managedObjectComWrapperMap;
-#endif // FEATURE_COMWRAPPERS
 }
-
-#ifndef TARGET_UNIX
-// Deletes all items in code:s_InteropInfoStandbyList.
-void InteropSyncBlockInfo::FlushStandbyList()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-
-        // make sure to use the global delete since the destructor has already run
-        ::delete (void *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
-#endif // !TARGET_UNIX
 
 void InteropSyncBlockInfo::FreeUMEntryThunk()
 {
@@ -660,10 +627,6 @@ void SyncBlockCache::Start()
     g_SyncBlockCacheInstance.Init();
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
-
-#ifndef TARGET_UNIX
-    InitializeSListHead(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-#endif // !TARGET_UNIX
 }
 
 
@@ -714,7 +677,7 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
             continue;
     }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
     if (psb->m_pInteropInfo)
     {
         // called during GC
@@ -976,23 +939,11 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     // clean up comdata
     if (psb->m_pInteropInfo)
     {
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
-#ifndef TARGET_UNIX
-        if (g_fEEShutDown)
-        {
-            delete psb->m_pInteropInfo;
-        }
-        else
-        {
-            psb->m_pInteropInfo->~InteropSyncBlockInfo();
-            InterlockedPushEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList, (PSLIST_ENTRY)psb->m_pInteropInfo);
-        }
-#else // !TARGET_UNIX
         delete psb->m_pInteropInfo;
-#endif // !TARGET_UNIX
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -1564,7 +1515,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
 
     if (g_SystemInfo.dwNumberOfProcessors == 1)
     {
-        return AwareLock::EnterHelperResult_Contention;
+        return AwareLock::EnterHelperResult::Contention;
     }
 
     YieldProcessorNormalizationInfo normalizationInfo;
@@ -1582,7 +1533,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             // If we have a hash code already, we need to create a sync block
             if (oldValue & BIT_SBLK_IS_HASHCODE)
             {
-                return AwareLock::EnterHelperResult_UseSlowPath;
+                return AwareLock::EnterHelperResult::UseSlowPath;
             }
 
             SyncBlock *syncBlock = g_pSyncTable[oldValue & MASK_SYNCBLOCKINDEX].m_SyncBlock;
@@ -1590,7 +1541,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             AwareLock *awareLock = &syncBlock->m_Monitor;
 
             AwareLock::EnterHelperResult result = awareLock->TryEnterBeforeSpinLoopHelper(pCurThread);
-            if (result != AwareLock::EnterHelperResult_Contention)
+            if (result != AwareLock::EnterHelperResult::Contention)
             {
                 return result;
             }
@@ -1610,11 +1561,11 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
                     }
 
                     result = awareLock->TryEnterInsideSpinLoopHelper(pCurThread);
-                    if (result == AwareLock::EnterHelperResult_Entered)
+                    if (result == AwareLock::EnterHelperResult::Entered)
                     {
-                        return AwareLock::EnterHelperResult_Entered;
+                        return AwareLock::EnterHelperResult::Entered;
                     }
-                    if (result == AwareLock::EnterHelperResult_UseSlowPath)
+                    if (result == AwareLock::EnterHelperResult::UseSlowPath)
                     {
                         break;
                     }
@@ -1623,7 +1574,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
 
             if (awareLock->TryEnterAfterSpinLoopHelper(pCurThread))
             {
-                return AwareLock::EnterHelperResult_Entered;
+                return AwareLock::EnterHelperResult::Entered;
             }
             break;
         }
@@ -1635,7 +1586,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
         {
             if (tid > SBLK_MASK_LOCK_THREADID)
             {
-                return AwareLock::EnterHelperResult_UseSlowPath;
+                return AwareLock::EnterHelperResult::UseSlowPath;
             }
 
             LONG newValue = oldValue | tid;
@@ -1645,7 +1596,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             if (InterlockedCompareExchangeAcquire((LONG*)&m_SyncBlockValue, newValue, oldValue) == oldValue)
 #endif
             {
-                return AwareLock::EnterHelperResult_Entered;
+                return AwareLock::EnterHelperResult::Entered;
             }
 
             continue;
@@ -1663,7 +1614,7 @@ AwareLock::EnterHelperResult ObjHeader::EnterObjMonitorHelperSpin(Thread* pCurTh
             tid != (DWORD)(oldValue & SBLK_MASK_LOCK_THREADID));
     }
 
-    return AwareLock::EnterHelperResult_Contention;
+    return AwareLock::EnterHelperResult::Contention;
 }
 
 BOOL ObjHeader::LeaveObjMonitor()
@@ -1687,10 +1638,10 @@ BOOL ObjHeader::LeaveObjMonitor()
 
         switch(action)
         {
-        case AwareLock::LeaveHelperAction_None:
+        case AwareLock::LeaveHelperAction::None:
             // We are done
             return TRUE;
-        case AwareLock::LeaveHelperAction_Signal:
+        case AwareLock::LeaveHelperAction::Signal:
             {
                 // Signal the event
                 SyncBlock *psb = thisObj->GetHeader ()->PassiveGetSyncBlock();
@@ -1698,10 +1649,10 @@ BOOL ObjHeader::LeaveObjMonitor()
                     psb->QuickGetMonitor()->Signal();
             }
             return TRUE;
-        case AwareLock::LeaveHelperAction_Yield:
+        case AwareLock::LeaveHelperAction::Yield:
             YieldProcessorNormalized();
             continue;
-        case AwareLock::LeaveHelperAction_Contention:
+        case AwareLock::LeaveHelperAction::Contention:
             // Some thread is updating the syncblock value.
             {
                 //protect the object before switching mode
@@ -1713,7 +1664,7 @@ BOOL ObjHeader::LeaveObjMonitor()
             continue;
         default:
             // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
             return FALSE;
         }
     }
@@ -1739,10 +1690,10 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
 
         switch(action)
         {
-        case AwareLock::LeaveHelperAction_None:
+        case AwareLock::LeaveHelperAction::None:
             // We are done
             return TRUE;
-        case AwareLock::LeaveHelperAction_Signal:
+        case AwareLock::LeaveHelperAction::Signal:
             {
                 // Signal the event
                 SyncBlock *psb = PassiveGetSyncBlock();
@@ -1750,10 +1701,10 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
                     psb->QuickGetMonitor()->Signal();
             }
             return TRUE;
-        case AwareLock::LeaveHelperAction_Yield:
+        case AwareLock::LeaveHelperAction::Yield:
             YieldProcessorNormalized();
             continue;
-        case AwareLock::LeaveHelperAction_Contention:
+        case AwareLock::LeaveHelperAction::Contention:
             // Some thread is updating the syncblock value.
             //
             // We never toggle GC mode while holding the spinlock (BeginNoTriggerGC/EndNoTriggerGC
@@ -1766,7 +1717,7 @@ BOOL ObjHeader::LeaveObjMonitorAtException()
             continue;
         default:
             // Must be an error otherwise - ignore it
-            _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+            _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
             return FALSE;
         }
     }
@@ -2755,16 +2706,16 @@ BOOL AwareLock::Leave()
 
     switch(action)
     {
-    case AwareLock::LeaveHelperAction_None:
+    case AwareLock::LeaveHelperAction::None:
         // We are done
         return TRUE;
-    case AwareLock::LeaveHelperAction_Signal:
+    case AwareLock::LeaveHelperAction::Signal:
         // Signal the event
         Signal();
         return TRUE;
     default:
         // Must be an error otherwise
-        _ASSERTE(action == AwareLock::LeaveHelperAction_Error);
+        _ASSERTE(action == AwareLock::LeaveHelperAction::Error);
         return FALSE;
     }
 }

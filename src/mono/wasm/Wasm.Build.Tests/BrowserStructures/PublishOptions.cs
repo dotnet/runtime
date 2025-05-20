@@ -26,12 +26,12 @@ public record PublishOptions : MSBuildOptions
         bool WarnAsError                                            = true,
         RuntimeVariant RuntimeType                                  = RuntimeVariant.SingleThreaded,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null,
-        string BootConfigFileName                                   = "dotnet.boot.js",
+        string? BootConfigFileName                                  = null,
         string NonDefaultFrameworkDir                               = "",
         string ExtraMSBuildArgs                                     = "",
         bool BuildOnlyAfterPublish                                  = true,
         bool ExpectRelinkDirWhenPublishing                          = false,
-        bool FeaturePerfTracing                                     = false
+        bool WasmPerfTracing                                     = false
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,
@@ -49,7 +49,7 @@ public record PublishOptions : MSBuildOptions
         BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        FeaturePerfTracing
+        WasmPerfTracing
     )
     {
         this.IsPublish = IsPublish;

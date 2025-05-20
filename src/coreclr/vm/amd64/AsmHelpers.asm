@@ -203,10 +203,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
         push                rax ; make room for the real return address (Rip)
         push                rdx
         PUSH_CALLEE_SAVED_REGISTERS
+        push_vol_reg        rcx
         push_vol_reg        rax
         mov                 rcx, rsp
 
-        alloc_stack         38h ; make extra room for xmm0, argument home slots and align the SP
+        alloc_stack         30h ; make extra room for xmm0 and argument home slots
         save_xmm128_postrsp xmm0, 20h
 
 
@@ -216,8 +217,9 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
 
         movdqa              xmm0, [rsp + 20h]
 
-        add                 rsp, 38h
+        add                 rsp, 30h
         pop                 rax
+        pop                 rcx
         POP_CALLEE_SAVED_REGISTERS
         pop                 rdx
         ret                 ; return to the correct place, adjusted by our caller
@@ -463,11 +465,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT
 NESTED_END JIT_Patchpoint, _TEXT
 
 ; first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
         mov rdx, rcx
         xor rcx, rcx
         jmp JIT_Patchpoint
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 endif ; FEATURE_TIERED_COMPILATION
 
@@ -480,7 +482,132 @@ JIT_PollGCRarePath:
     TAILJMP_RAX
 LEAF_END JIT_PollGC, _TEXT
 
+; rcx -This pointer
+; rdx -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    mov  METHODDESC_REGISTER, [METHODDESC_REGISTER + ThisPtrRetBufPrecodeData__Target]
+    mov r11, rcx
+    mov rcx, rdx
+    mov rdx, r11
+    jmp METHODDESC_REGISTER
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT
+
+;;
+;; Prologue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_PROLOGUE macro localsCount, alignStack
+        PUSH_CALLEE_SAVED_REGISTERS
+
+        arguments_scratch_area_size = 20h
+        xmm_save_area_size = 10 * 10h ;; xmm6..xmm15 save area
+        stack_alloc_size = arguments_scratch_area_size + localsCount * 8 + alignStack * 8 + xmm_save_area_size
+        rsp_offsetof_arguments = stack_alloc_size + 8*8h + 8h
+        rsp_offsetof_locals = arguments_scratch_area_size + xmm_save_area_size
+
+        alloc_stack     stack_alloc_size
+
+        save_xmm128_postrsp xmm6,  (arguments_scratch_area_size + 0 * 10h)
+        save_xmm128_postrsp xmm7,  (arguments_scratch_area_size + 1 * 10h)
+        save_xmm128_postrsp xmm8,  (arguments_scratch_area_size + 2 * 10h)
+        save_xmm128_postrsp xmm9,  (arguments_scratch_area_size + 3 * 10h)
+        save_xmm128_postrsp xmm10, (arguments_scratch_area_size + 4 * 10h)
+        save_xmm128_postrsp xmm11, (arguments_scratch_area_size + 5 * 10h)
+        save_xmm128_postrsp xmm12, (arguments_scratch_area_size + 6 * 10h)
+        save_xmm128_postrsp xmm13, (arguments_scratch_area_size + 7 * 10h)
+        save_xmm128_postrsp xmm14, (arguments_scratch_area_size + 8 * 10h)
+        save_xmm128_postrsp xmm15, (arguments_scratch_area_size + 9 * 10h)
+
+        END_PROLOGUE
+endm
+
+;;
+;; Epilogue of all funclet calling helpers (CallXXXXFunclet)
+;;
+FUNCLET_CALL_EPILOGUE macro
+        movdqa  xmm6,  [rsp + arguments_scratch_area_size + 0 * 10h]
+        movdqa  xmm7,  [rsp + arguments_scratch_area_size + 1 * 10h]
+        movdqa  xmm8,  [rsp + arguments_scratch_area_size + 2 * 10h]
+        movdqa  xmm9,  [rsp + arguments_scratch_area_size + 3 * 10h]
+        movdqa  xmm10, [rsp + arguments_scratch_area_size + 4 * 10h]
+        movdqa  xmm11, [rsp + arguments_scratch_area_size + 5 * 10h]
+        movdqa  xmm12, [rsp + arguments_scratch_area_size + 6 * 10h]
+        movdqa  xmm13, [rsp + arguments_scratch_area_size + 7 * 10h]
+        movdqa  xmm14, [rsp + arguments_scratch_area_size + 8 * 10h]
+        movdqa  xmm15, [rsp + arguments_scratch_area_size + 9 * 10h]
+
+        add     rsp, stack_alloc_size
+
+        POP_CALLEE_SAVED_REGISTERS
+endm
+
+; This helper enables us to call into a funclet after restoring Fp register
+NESTED_ENTRY CallEHFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = PC to invoke
+        ; R8 = address of RBX register in CONTEXT record; used to restore the non-volatile registers of CrawlFrame
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        FUNCLET_CALL_PROLOGUE 0, 1
+
+        ;  Restore RBX, RBP, RSI, RDI, R12, R13, R14, R15 from CONTEXT
+        mov     rbp, [r8 + OFFSETOF__CONTEXT__Rbp - OFFSETOF__CONTEXT__Rbx]
+        mov     rsi, [r8 + OFFSETOF__CONTEXT__Rsi - OFFSETOF__CONTEXT__Rbx]
+        mov     rdi, [r8 + OFFSETOF__CONTEXT__Rdi - OFFSETOF__CONTEXT__Rbx]
+        mov     r12, [r8 + OFFSETOF__CONTEXT__R12 - OFFSETOF__CONTEXT__Rbx]
+        mov     r13, [r8 + OFFSETOF__CONTEXT__R13 - OFFSETOF__CONTEXT__Rbx]
+        mov     r14, [r8 + OFFSETOF__CONTEXT__R14 - OFFSETOF__CONTEXT__Rbx]
+        mov     r15, [r8 + OFFSETOF__CONTEXT__R15 - OFFSETOF__CONTEXT__Rbx]
+
+        ; Restore XMM registers from CONTEXT
+        movdqa  xmm6, [r8 + OFFSETOF__CONTEXT__Xmm6 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm7, [r8 + OFFSETOF__CONTEXT__Xmm7 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm8, [r8 + OFFSETOF__CONTEXT__Xmm8 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm9, [r8 + OFFSETOF__CONTEXT__Xmm9 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm10, [r8 + OFFSETOF__CONTEXT__Xmm10 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm11, [r8 + OFFSETOF__CONTEXT__Xmm11 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm12, [r8 + OFFSETOF__CONTEXT__Xmm12 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm13, [r8 + OFFSETOF__CONTEXT__Xmm13 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm14, [r8 + OFFSETOF__CONTEXT__Xmm14 - OFFSETOF__CONTEXT__Rbx]
+        movdqa  xmm15, [r8 + OFFSETOF__CONTEXT__Xmm15 - OFFSETOF__CONTEXT__Rbx]
+
+         ; Save the SP of this function.
+        mov     [r9], rsp
+        ; Invoke the funclet
+        call    rdx
+
+        FUNCLET_CALL_EPILOGUE
+        ret
+NESTED_END CallEHFunclet, _TEXT
+
+; This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
+; frame pointer for accessing the locals in the parent method.
+NESTED_ENTRY CallEHFilterFunclet, _TEXT
+        ; On entry:
+        ;
+        ; RCX = throwable
+        ; RDX = RBP of main function
+        ; R8 = PC to invoke
+        ; R9 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
+        ;
+
+        FUNCLET_CALL_PROLOGUE 0, 1
+
+        ; Save the SP of this function
+        mov     [r9], rsp
+        ; Restore RBP to match main function RBP
+        mov     rbp, rdx
+        ; Invoke the filter funclet
+        call    r8
+
+        FUNCLET_CALL_EPILOGUE
+        ret
+NESTED_END CallEHFilterFunclet, _TEXT
+
 ifdef FEATURE_INTERPRETER
+
 NESTED_ENTRY InterpreterStub, _TEXT
 
         PROLOG_WITH_TRANSITION_BLOCK
@@ -495,6 +622,289 @@ NESTED_ENTRY InterpreterStub, _TEXT
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
 NESTED_END InterpreterStub, _TEXT
+
+; Copy arguments from the interpreter stack to the processor stack.
+; The CPU stack slots are aligned to pointer size.
+LEAF_ENTRY Load_Stack, _TEXT
+        push rdi
+        push rsi
+        push rcx
+        mov edi, dword ptr [r11 + 8]  ; SP offset
+        mov ecx, dword ptr [r11 + 12] ; number of stack slots
+        add edi, 20h ; the 3 pushes above plus return address
+        add rdi, rsp
+        mov rsi, r10
+        shr rcx, 3
+        rep movsq
+        mov r10, rsi
+        pop rcx
+        pop rsi
+        pop rdi
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Stack, _TEXT
+
+; Routines for passing value type arguments by reference in general purpose registers RCX, RDX, R8, R9
+
+LEAF_ENTRY Load_Ref_RCX, _TEXT
+        mov rcx, r10
+        add r10, [r11 + 8] ; size of the value type
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Ref_RCX, _TEXT
+
+LEAF_ENTRY Load_Ref_RDX, _TEXT
+        mov rdx, r10
+        add r10, [r11 + 8] ; size of the value type
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Ref_RDX, _TEXT
+
+LEAF_ENTRY Load_Ref_R8, _TEXT
+        mov r8, r10
+        add r10, [r11 + 8] ; size of the value type
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Ref_R8, _TEXT
+
+LEAF_ENTRY Load_Ref_R9, _TEXT
+        mov r9, r10
+        add r10, [r11 + 8] ; size of the value type
+        add r11, 16
+        jmp qword ptr [r11]
+LEAF_END Load_Ref_R9, _TEXT
+
+; Routines for passing arguments by value in general purpose registers RCX, RDX, R8, R9
+
+LEAF_ENTRY Load_RCX, _TEXT
+        mov rcx, [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RCX, _TEXT
+
+LEAF_ENTRY Load_RCX_RDX, _TEXT
+        mov rcx, [r10]
+        mov rdx, [r10 + 8]
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RCX_RDX, _TEXT
+
+LEAF_ENTRY Load_RCX_RDX_R8, _TEXT
+        mov rcx, [r10]
+        mov rdx, [r10 + 8]
+        mov r8, [r10 + 16]
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RCX_RDX_R8, _TEXT
+
+LEAF_ENTRY Load_RCX_RDX_R8_R9, _TEXT
+        mov rcx, [r10]
+        mov rdx, [r10 + 8]
+        mov r8, [r10 + 16]
+        mov r9, [r10 + 24]
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RCX_RDX_R8_R9, _TEXT
+
+LEAF_ENTRY Load_RDX, _TEXT
+        mov rdx, [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RDX, _TEXT
+
+LEAF_ENTRY Load_RDX_R8, _TEXT
+        mov rdx, [r10]
+        mov r8, [r10 + 8]
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RDX_R8, _TEXT
+
+LEAF_ENTRY Load_RDX_R8_R9, _TEXT
+        mov rdx, [r10]
+        mov r8, [r10 + 8]
+        mov r9, [r10 + 16]
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_RDX_R8_R9, _TEXT
+
+LEAF_ENTRY Load_R8, _TEXT
+        mov r8, [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_R8, _TEXT
+
+LEAF_ENTRY Load_R8_R9, _TEXT
+        mov r8, [r10]
+        mov r9, [r10 + 8]
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_R8_R9, _TEXT
+
+LEAF_ENTRY Load_R9, _TEXT
+        mov r9, [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_R9, _TEXT
+
+; Routines for passing arguments in floating point registers XMM0..XMM3
+
+LEAF_ENTRY Load_XMM0, _TEXT
+        movsd xmm0, real8 ptr [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM0, _TEXT
+
+LEAF_ENTRY Load_XMM0_XMM1, _TEXT
+        movsd xmm0, real8 ptr [r10]
+        movsd xmm1, real8 ptr [r10 + 8]
+        add r10, 10h
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM0_XMM1, _TEXT
+
+LEAF_ENTRY Load_XMM0_XMM1_XMM2, _TEXT
+        movsd xmm0, real8 ptr [r10]
+        movsd xmm1, real8 ptr [r10 + 8]
+        movsd xmm2, real8 ptr [r10 + 16]
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM0_XMM1_XMM2, _TEXT
+
+LEAF_ENTRY Load_XMM0_XMM1_XMM2_XMM3, _TEXT
+        movsd xmm0, real8 ptr [r10]
+        movsd xmm1, real8 ptr [r10 + 8]
+        movsd xmm2, real8 ptr [r10 + 16]
+        movsd xmm3, real8 ptr [r10 + 24]
+        add r10, 32
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM0_XMM1_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Load_XMM1, _TEXT
+        movsd xmm1, real8 ptr [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM1, _TEXT
+
+LEAF_ENTRY Load_XMM1_XMM2, _TEXT
+        movsd xmm1, real8 ptr [r10]
+        movsd xmm2, real8 ptr [r10 + 8]
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM1_XMM2, _TEXT
+
+LEAF_ENTRY Load_XMM1_XMM2_XMM3, _TEXT
+        movsd xmm1, real8 ptr [r10]
+        movsd xmm2, real8 ptr [r10 + 8]
+        movsd xmm3, real8 ptr [r10 + 16]
+        add r10, 24
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM1_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Load_XMM2, _TEXT
+        movsd xmm2, real8 ptr [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM2, _TEXT
+
+LEAF_ENTRY Load_XMM2_XMM3, _TEXT
+        movsd xmm2, real8 ptr [r10]
+        movsd xmm3, real8 ptr [r10 + 8]
+        add r10, 16
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM2_XMM3, _TEXT
+
+LEAF_ENTRY Load_XMM3, _TEXT
+        movsd xmm3, real8 ptr [r10]
+        add r10, 8
+        add r11, 8
+        jmp qword ptr [r11]
+LEAF_END Load_XMM3, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetVoid, _TEXT
+        push_vol_reg rbp
+        mov  rbp, rsp
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetVoid, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetBuff, _TEXT
+        push_vol_reg rbp
+        mov  rbp, rsp
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        mov rcx, r8  ; return buffer
+        call qword ptr [r11]
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetBuff, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetDouble, _TEXT
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        add rsp, 20h
+        mov r8, [rbp - 8]
+        movsd real8 ptr [r8], xmm0
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetDouble, _TEXT
+
+NESTED_ENTRY CallJittedMethodRetI8, _TEXT
+        push_nonvol_reg rbp
+        mov  rbp, rsp
+        push_vol_reg r8
+        push_vol_reg rax ; align
+END_PROLOGUE
+        add r9, 20h ; argument save area + alignment
+        sub rsp, r9 ; total stack space
+        mov r11, rcx ; The routines list
+        mov r10, rdx ; interpreter stack args
+        call qword ptr [r11]
+        add rsp, 20h
+        mov r8, [rbp - 8]
+        mov qword ptr [r8], rax
+        mov rsp, rbp
+        pop rbp
+        ret
+NESTED_END CallJittedMethodRetI8, _TEXT
+
 endif ; FEATURE_INTERPRETER
 
         end

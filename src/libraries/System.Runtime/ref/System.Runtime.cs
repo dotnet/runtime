@@ -2789,7 +2789,8 @@ namespace System
         public EventArgs() { }
     }
     public delegate void EventHandler(object? sender, System.EventArgs e);
-    public delegate void EventHandler<TEventArgs>(object? sender, TEventArgs e);
+    public delegate void EventHandler<in TEventArgs>(object? sender, TEventArgs e) where TEventArgs : allows ref struct;
+    public delegate void EventHandler<in TSender, in TEventArgs>(TSender sender, TEventArgs e) where TSender : allows ref struct where TEventArgs : allows ref struct;
     public partial class Exception : System.Runtime.Serialization.ISerializable
     {
         public Exception() { }
@@ -12369,6 +12370,7 @@ namespace System.Reflection
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
         InternalCall = 4096,
+        Async = 8192,
         MaxMethodImplVal = 65535,
     }
     public abstract partial class MethodInfo : System.Reflection.MethodBase
@@ -13490,6 +13492,81 @@ namespace System.Runtime.CompilerServices
     {
         public IndexerNameAttribute(string indexerName) { }
     }
+    [System.Runtime.CompilerServices.InlineArray(2)]
+    public struct InlineArray2<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(3)]
+    public struct InlineArray3<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(4)]
+    public struct InlineArray4<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(5)]
+    public struct InlineArray5<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(6)]
+    public struct InlineArray6<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(7)]
+    public struct InlineArray7<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(8)]
+    public struct InlineArray8<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(9)]
+    public struct InlineArray9<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(10)]
+    public struct InlineArray10<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(11)]
+    public struct InlineArray11<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(12)]
+    public struct InlineArray12<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(13)]
+    public struct InlineArray13<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(14)]
+    public struct InlineArray14<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(15)]
+    public struct InlineArray15<T>
+    {
+        private T t;
+    }
+    [System.Runtime.CompilerServices.InlineArray(16)]
+    public struct InlineArray16<T>
+    {
+        private T t;
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct, AllowMultiple=false)]
     public sealed partial class InlineArrayAttribute : System.Attribute
     {
@@ -13594,6 +13671,7 @@ namespace System.Runtime.CompilerServices
         PreserveSig = 128,
         AggressiveInlining = 256,
         AggressiveOptimization = 512,
+        Async = 8192,
         InternalCall = 4096,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
@@ -13751,6 +13829,31 @@ namespace System.Runtime.CompilerServices
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
     }
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    public static partial class AsyncHelpers
+    {
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static void UnsafeAwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : ICriticalNotifyCompletion { }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static void AwaitAwaiter<TAwaiter>(TAwaiter awaiter) where TAwaiter : INotifyCompletion { }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static void Await(System.Threading.Tasks.Task task) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static T Await<T>(System.Threading.Tasks.Task<T> task) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static void Await(System.Threading.Tasks.ValueTask task) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static T Await<T>(System.Threading.Tasks.ValueTask<T> task) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static void Await(System.Runtime.CompilerServices.ConfiguredTaskAwaitable configuredAwaitable) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static void Await(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable configuredAwaitable) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<T> configuredAwaitable) { throw null; }
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute]
+        public static T Await<T>(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<T> configuredAwaitable) { throw null; }
+    }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
         public RuntimeWrappedException(object thrownObject) { }
@@ -13863,7 +13966,7 @@ namespace System.Runtime.CompilerServices
         public static ref T Add<T>(ref T source, nuint elementOffset) where T : allows ref struct { throw null; }
         public static bool AreSame<T>([System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T left, [System.Diagnostics.CodeAnalysis.AllowNull] ref readonly T right) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static void* AsPointer<T>(ref T value) where T : allows ref struct { throw null; }
+        public unsafe static void* AsPointer<T>(ref readonly T value) where T : allows ref struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) where T : allows ref struct { throw null; }
         public static ref T AsRef<T>(scoped ref readonly T source) where T : allows ref struct { throw null; }
@@ -13933,6 +14036,12 @@ namespace System.Runtime.CompilerServices
         StaticMethod = 2,
         Field = 3,
         StaticField = 4,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple=false, Inherited=false)]
+    public sealed partial class UnsafeAccessorTypeAttribute : System.Attribute
+    {
+        public UnsafeAccessorTypeAttribute(string typeName) { }
+        public string TypeName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class UnsafeValueTypeAttribute : System.Attribute
@@ -14023,6 +14132,7 @@ namespace System.Runtime.ExceptionServices
     public static partial class ExceptionHandling
     {
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
+        public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {

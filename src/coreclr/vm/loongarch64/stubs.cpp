@@ -14,7 +14,9 @@
 #include "jitinterface.h"
 #include "ecall.h"
 
-
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -548,31 +550,6 @@ void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool update
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
 
-#ifndef DACCESS_COMPILE
-
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    //Initially
-    //a0 -This ptr
-    //a1 -ReturnBuffer
-    m_rgCode[0] = 0x18000055; //pcaddi  r21,2
-    m_rgCode[1] = 0x28c042b5; //ld.d  r21,16(r21)
-    m_rgCode[2] = 0x0380008f; //ori  r15,a0,0x0
-    m_rgCode[3] = 0x038000a4; //ori  a0,a1,0x0
-    m_rgCode[4] = 0x038001e5; //ori  a1,r15,0x0
-    m_rgCode[5] = 0x4c0002a0; //jirl  r0,r21,0
-
-    _ASSERTE((UINT32*)&m_pTarget == &m_rgCode[6]);
-    _ASSERTE(6 == ARRAY_SIZE(m_rgCode));
-
-    m_pTarget = GetPreStubEntryPoint();
-    m_pMethodDesc = (TADDR)pMD;
-}
-
-#endif // !DACCESS_COMPILE
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;
@@ -883,15 +860,18 @@ extern "C" void STDCALL JIT_PatchedCodeLast();
 
 static void UpdateWriteBarrierState(bool skipEphemeralCheck)
 {
-    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-    ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
     if (IsWriteBarrierCopyEnabled())
     {
-        writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+        BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
+        BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
+        ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
+        if (IsWriteBarrierCopyEnabled())
+        {
+            writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+            writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
+        }
+        JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
     }
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
 }
 
 void InitJITHelpers1()
@@ -914,7 +894,6 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }
@@ -1339,7 +1318,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1347,6 +1326,14 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

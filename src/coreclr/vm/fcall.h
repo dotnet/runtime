@@ -59,9 +59,6 @@
 // to do the poll at the end.   If somewhere in the middle is the best
 // place you can do that too with HELPER_METHOD_POLL()
 
-// You don't need to erect a helper method frame to do a poll.  FC_GC_POLL
-// can do this (remember all your GC refs will be trashed).
-
 // Finally if your method is VERY small, you can get away without a poll,
 // you have to use FC_GC_POLL_NOT_NEEDED to mark this.
 // Use sparingly!
@@ -88,11 +85,6 @@
 //      HELPER_METHOD_FRAME_BEGIN()         // Use if FCALL does not return a value
 //      COMPlusThrow(execpt);
 //      HELPER_METHOD_FRAME_END()
-
-// It is more efficient (in space) to use convenience macro FCTHROW that does
-// this for you (sets up a frame, and does the throw).
-
-//      FCTHROW(except)
 
 // Since FCALLS have to conform to the EE calling conventions and not to C
 // calling conventions, FCALLS, need to be declared using special macros (FCIMPL*)
@@ -126,16 +118,6 @@
 //    For similar reasons, use Object* rather than OBJECTREF as a return type.
 //    Consider either using ObjectToOBJECTREF or calling VALIDATEOBJECTREF
 //    to make sure your Object* is valid.
-//
-//  - FCThrow() must be called directly from your FCall impl function: it
-//    cannot be called from a subfunction. Calling from a subfunction breaks
-//    the VC code parsing workaround that lets us recover the callee saved registers.
-//    Fortunately, you'll get a compile error complaining about an
-//    unknown variable "__me".
-//
-//  - If your FCall returns VOID, you must use FCThrowVoid() rather than
-//    FCThrow(). This is because FCThrow() has to generate an unexecuted
-//    "return" statement for the code parser.
 //
 //  - On x86, if first and/or second argument of your FCall cannot be passed
 //    in either of the __fastcall registers (ECX/EDX), you must use "V" versions
@@ -175,43 +157,6 @@
 //   An FCall target uses __fastcall or some other calling convention to
 //   match the IL calling convention exactly. Thus, a call to FCall is a direct
 //   call to the target w/ no intervening stub or frame.
-//
-//   The tricky part is when FCThrow is called. FCThrow must generate
-//   a proper method frame before allocating and throwing the exception.
-//   To do this, it must recover several things:
-//
-//      - The location of the FCIMPL's return address (since that's
-//        where the frame will be based.)
-//
-//      - The on-entry values of the callee-saved regs; which must
-//        be recorded in the frame so that GC can update them.
-//        Depending on how VC compiles your FCIMPL, those values are still
-//        in the original registers or saved on the stack.
-//
-//        To figure out which, FCThrow() generates the code:
-//
-//              while (NULL == __FCThrow(__me, ...)) {};
-//              return 0;
-//
-//        The "return" statement will never execute; but its presence guarantees
-//        that VC will follow the __FCThrow() call with a VC epilog
-//        that restores the callee-saved registers using a pretty small
-//        and predictable set of Intel opcodes. __FCThrow() parses this
-//        epilog and simulates its execution to recover the callee saved
-//        registers.
-//
-//        The while loop is to prevent the compiler from doing tail call optimizations.
-//        The helper frame interpreter needs the frame to be present.
-//
-//      - The MethodDesc* that this FCall implements. This MethodDesc*
-//        is part of the frame and ensures that the FCall will appear
-//        in the exception's stack trace. To get this, FCDECL declares
-//        a static local __me, initialized to point to the FC target itself.
-//        This address is exactly what's stored in the ECall lookup tables;
-//        so __FCThrow() simply does a reverse lookup on that table to recover
-//        the MethodDesc*.
-//
-
 
 #ifndef __FCall_h__
 #define __FCall_h__
@@ -359,12 +304,6 @@ private:
 #define CHECK_HELPER_METHOD_FRAME_PERMITTED()
 
 #endif // unsupported processor
-
-//==============================================================================================
-// This is where FCThrow ultimately ends up. Never call this directly.
-// Use the FCThrow() macro.
-//==============================================================================================
-LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWSTR arg1, LPCWSTR arg2, LPCWSTR arg3);
 
 //==============================================================================================
 // FDECLn: A set of macros for generating header declarations for FC targets.
@@ -538,18 +477,8 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
 #define HelperMethodFrame_0OBJ      HelperMethodFrame
 #define HELPER_FRAME_ARGS(attribs)  __me, attribs
 #define FORLAZYMACHSTATE(x) x
-
-#if defined(_PREFAST_)
-  #define FORLAZYMACHSTATE_BEGINLOOP(x) x
-  #define FORLAZYMACHSTATE_ENDLOOP(x)
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END
-#else
-  #define FORLAZYMACHSTATE_BEGINLOOP(x) x do
-  #define FORLAZYMACHSTATE_ENDLOOP(x) while(x)
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN  DEBUG_OK_TO_RETURN_BEGIN(LAZYMACHSTATE)
-  #define FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END    DEBUG_OK_TO_RETURN_END(LAZYMACHSTATE)
-#endif
+#define FORLAZYMACHSTATE_BEGINLOOP(x) x do
+#define FORLAZYMACHSTATE_ENDLOOP(x) while(x)
 
 // BEGIN: before gcpoll
 //FCallGCCanTriggerNoDtor __fcallGcCanTrigger;
@@ -558,10 +487,6 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
 // END: after gcpoll
 //__fcallGcCanTrigger.Leave(__FUNCTION__, __FILE__, __LINE__);
 
-// We have to put DEBUG_OK_TO_RETURN_BEGIN around the FORLAZYMACHSTATE
-// to allow the HELPER_FRAME to be installed inside an SO_INTOLERANT region
-// which does not allow a return.  The return is used by FORLAZYMACHSTATE
-// to capture the state, but is not an actual return, so it is ok.
 #define HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)  \
         FORLAZYMACHSTATE_BEGINLOOP(int alwaysZero = 0;)         \
         {                                                       \
@@ -569,9 +494,7 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
             PERMIT_HELPER_METHOD_FRAME_BEGIN();                 \
             CHECK_HELPER_METHOD_FRAME_PERMITTED();              \
             helperFrame;                                        \
-            FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_BEGIN;          \
             FORLAZYMACHSTATE(CAPTURE_STATE(__helperframe.MachineState(), ret);) \
-            FORLAZYMACHSTATE_DEBUG_OK_TO_RETURN_END;            \
             INDEBUG(__helperframe.SetAddrOfHaveCheckedRestoreState(&__haveCheckedRestoreState)); \
             DEBUG_ASSURE_NO_RETURN_BEGIN(HELPER_METHOD_FRAME);  \
             INCONTRACT(FCallGCCanTrigger::Enter());
@@ -580,9 +503,8 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
         HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)    \
             /* <TODO>TODO TURN THIS ON!!!   </TODO> */                    \
             /* gcpoll; */                                                       \
-            if (g_isNewExceptionHandlingEnabled) __helperframe.Push();         \
+            __helperframe.Push();         \
             INSTALL_MANAGED_EXCEPTION_DISPATCHER;                               \
-            if (!g_isNewExceptionHandlingEnabled) __helperframe.Push();          \
             MAKE_CURRENT_THREAD_AVAILABLE_EX(__helperframe.GetThread()); \
             INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(&__helperframe);
 
@@ -615,9 +537,8 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
 
 #define HELPER_METHOD_FRAME_END_EX(gcpoll,allowGC)                          \
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;                          \
-            if (!g_isNewExceptionHandlingEnabled) __helperframe.Pop();      \
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;                         \
-            if (g_isNewExceptionHandlingEnabled) __helperframe.Pop();       \
+             __helperframe.Pop();                                           \
         HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC);
 
 #define HELPER_METHOD_FRAME_END_EX_NOTHROW(gcpoll,allowGC)                  \
@@ -801,35 +722,6 @@ LPVOID __FCThrow(LPVOID me, enum RuntimeExceptionKind reKind, UINT resID, LPCWST
     // don't need to poll the GC.  USE VERY SPARINGLY!!!
 #define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded())
 
-Object* FC_GCPoll(void* me, Object* objToProtect = NULL);
-
-#define FC_GC_POLL_EX(ret)                                  \
-    {                                                       \
-        INCONTRACT(Thread::TriggersGC(GetThread());)        \
-        INCONTRACT(__fCallCheck.SetDidPoll();)              \
-        if (g_TrapReturningThreads)    \
-        {                                                   \
-            if (FC_GCPoll(__me))                            \
-                return ret;                                 \
-            while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */  \
-        }                                                   \
-    }
-
-#define FC_GC_POLL()        FC_GC_POLL_EX(;)
-#define FC_GC_POLL_RET()    FC_GC_POLL_EX(0)
-
-#define FC_GC_POLL_AND_RETURN_OBJREF(obj)                   \
-    {                                                       \
-        INCONTRACT(__fCallCheck.SetDidPoll();)              \
-        Object* __temp = OBJECTREFToObject(obj);            \
-        if (g_TrapReturningThreads)    \
-        {                                                   \
-            __temp = FC_GCPoll(__me, __temp);               \
-            while (0 == FC_NO_TAILCALL) { }; /* side effect the compile can't remove */  \
-        }                                                   \
-        return __temp;                                      \
-    }
-
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()
 #define FC_CAN_TRIGGER_GC_END()     FCallGCCanTrigger::Leave(__FUNCTION__, __FILE__, __LINE__)
@@ -952,8 +844,7 @@ extern RAW_KEYWORD(volatile) int FC_NO_TAILCALL;
 // implementation (use FDECLN for header protos.)
 //
 // The hidden "__me" variable lets us recover the original MethodDesc*
-// so any thrown exceptions will have the correct stack trace. FCThrow()
-// passes this along to __FCThrowInternal().
+// so any thrown exceptions will have the correct stack trace.
 //==============================================================================================
 
 #define GetEEFuncEntryPointMacro(func)  ((LPVOID)(func))
@@ -1162,11 +1053,13 @@ public:
 #define HCCALL1(funcname, a1)           funcname(0, 0, a1)
 #define HCCALL1_V(funcname, a1)         funcname(0, 0, 0, a1)
 #define HCCALL2(funcname, a1, a2)       funcname(0, a2, a1)
+#define HCCALL2_VV(funcname, a1, a2)    funcname(0, 0, 0, a2, a1)
 #define HCCALL3(funcname, a1, a2, a3)   funcname(0, a2, a1, a3)
 #define HCCALL4(funcname, a1, a2, a3, a4)       funcname(0, a2, a1, a4, a3)
 #define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(0, a2, a1, a5, a4, a3)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * funcptr)(int /* EAX */, int /* EDX */, a1)
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * funcptr)(int /* EAX */, a2, a1)
+#define HCCALL2_VV_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * funcptr)(int /* EAX */, int /* EDX */, int /* ECX */, a2, a1)
 #else // SWIZZLE_REGARG_ORDER
 
 #define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
@@ -1186,11 +1079,13 @@ public:
 #define HCCALL1(funcname, a1)           funcname(a1)
 #define HCCALL1_V(funcname, a1)         funcname(a1)
 #define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
+#define HCCALL2_VV(funcname, a1, a2)    funcname(a1, a2)
 #define HCCALL3(funcname, a1, a2, a3)   funcname(a1, a2, a3)
 #define HCCALL4(funcname, a1, a2, a3, a4)       funcname(a1, a2, a4, a3)
 #define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(a1, a2, a5, a4, a3)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * (funcptr))(a1, a2)
+#define HCCALL2_VV_PTR(rettype, funcptr, a1, a2) rettype (F_CALL_CONV * (funcptr))(a1, a2)
 #endif // !SWIZZLE_REGARG_ORDER
 #else // SWIZZLE_STKARG_ORDER
 
@@ -1211,28 +1106,19 @@ public:
 #define HCCALL1(funcname, a1)           funcname(a1)
 #define HCCALL1_V(funcname, a1)         funcname(a1)
 #define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
+#define HCCALL2_VV(funcname, a1, a2)    funcname(a1, a2)
 #define HCCALL3(funcname, a1, a2, a3)   funcname(a1, a2, a3)
 #define HCCALL4(funcname, a1, a2, a3, a4)       funcname(a1, a2, a3, a4)
 #define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(a1, a2, a3, a4, a5)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
 #define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * (funcptr))(a1, a2)
+#define HCCALL2_VV_PTR(rettype, funcptr, a1, a2) rettype (F_CALL_CONV * (funcptr))(a1, a2)
 
 #endif // !SWIZZLE_STKARG_ORDER
 
 #define HCIMPLEND_RAW   }
 #define HCIMPLEND       FCALL_TRANSITION_END(); }
 
-
-//==============================================================================================
-// Throws an exception from an FCall. See rexcep.h for a list of valid
-// exception codes.
-//==============================================================================================
-#define FCThrow(reKind)                                         \
-    {                                                           \
-        while (NULL ==                                          \
-            __FCThrow(__me, reKind, 0, 0, 0, 0)) {};            \
-        return 0;                                               \
-    }
 
 // The managed calling convention expects returned small types (e.g. bool) to be
 // widened to 32-bit on return. The C/C++ calling convention does not guarantee returned
@@ -1253,24 +1139,10 @@ public:
 
 // This rule is verified in corelib.cpp if DOTNET_ConsistencyCheck is set.
 
-#ifdef _PREFAST_
-
-// Use prefast build to ensure that functions returning FC_BOOL_RET
-// are using FC_RETURN_BOOL to return it. Missing FC_RETURN_BOOL will
-// result into type mismatch error in prefast builds. This will also
-// catch misuses of FC_BOOL_RET for other places (e.g. in FCALL parameters).
-
-typedef LPVOID FC_BOOL_RET;
-#define FC_RETURN_BOOL(x) do { return (LPVOID)!!(x); } while(0)
-
-#else
-
 // The return value is artificially widened in managed calling convention
 typedef INT32 FC_BOOL_RET;
 
 #define FC_RETURN_BOOL(x)   do { return !!(x); } while(0)
-
-#endif
 
 
 // Small primitive return values are artificially widened in managed calling convention

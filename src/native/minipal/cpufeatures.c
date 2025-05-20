@@ -19,6 +19,10 @@
 #define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
 #endif
 
+#ifndef PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE (47)
+#endif
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -44,12 +48,23 @@
 #ifndef HWCAP_SVE
 #define HWCAP_SVE   (1 << 22)
 #endif
+#ifndef HWCAP2_SVE2
+#define HWCAP2_SVE2   (1 << 1)
+#endif
 
 #endif
 
 #if HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
 #endif
+
+#if HAVE_HWPROBE_H
+
+#include <asm/hwprobe.h>
+#include <asm/unistd.h>
+#include <unistd.h>
+
+#endif // HAVE_HWPROBE_H
 
 #endif // !HOST_WINDOWS
 
@@ -329,7 +344,7 @@ int minipal_getcpufeatures(void)
                                         {
                                             result |= XArchIntrinsicConstants_Apx;
                                         }
-                                    }                                    
+                                    }
 
                                     if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
                                     {
@@ -346,7 +361,7 @@ int minipal_getcpufeatures(void)
                                             {
                                                 result |= XArchIntrinsicConstants_Avx10v2;
                                             }
-                                            
+
                                             // We assume that the Avx10/V512 support can be inferred from
                                             // both Avx10v1 and Avx512 being present.
                                             assert(((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0) ==                 // Avx10/V512
@@ -435,6 +450,11 @@ int minipal_getcpufeatures(void)
 
     if (hwCap & HWCAP_SVE)
         result |= ARM64IntrinsicConstants_Sve;
+
+    unsigned long hwCap2 = getauxval(AT_HWCAP2);
+
+    if (hwCap2 & HWCAP2_SVE2)
+        result |= ARM64IntrinsicConstants_Sve2;
 
 #else // !HAVE_AUXV_HWCAP_H
 
@@ -526,9 +546,45 @@ int minipal_getcpufeatures(void)
         result |= ARM64IntrinsicConstants_Sve;
     }
 
+    if (IsProcessorFeaturePresent(PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sve2;
+    }
+
 #endif // HOST_WINDOWS
 
 #endif // HOST_ARM64
+
+#if defined(HOST_RISCV64)
+
+#if defined(HOST_UNIX)
+
+#if HAVE_HWPROBE_H
+
+    struct riscv_hwprobe pairs[1] = {{RISCV_HWPROBE_KEY_IMA_EXT_0, 0}};
+
+    if (syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0) == 0)
+    {
+        // Our baseline support is for RV64GC (see #73437)
+        assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
+        assert(pairs[0].value & RISCV_HWPROBE_IMA_C);
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZBA)
+        {
+            result |= RiscV64IntrinsicConstants_Zba;
+        }
+
+        if (pairs[0].value & RISCV_HWPROBE_EXT_ZBB)
+        {
+            result |= RiscV64IntrinsicConstants_Zbb;
+        }
+    }
+
+#endif // HAVE_HWPROBE_H
+
+#endif // HOST_UNIX
+
+#endif // HOST_RISCV64
 
     return result;
 }

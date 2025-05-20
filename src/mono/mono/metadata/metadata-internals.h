@@ -362,6 +362,7 @@ struct _MonoImage {
 	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;
+	guint32              raw_metadata_len;
 
 	MonoStreamHeader     heap_strings;
 	MonoStreamHeader     heap_us;

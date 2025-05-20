@@ -1588,7 +1588,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, int slot_num)
 						vt_slot ++;
 					continue;
 				}
-				if (mono_method_get_imt_slot (method) != slot_num) {
+				if (m_method_is_virtual (method) && mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
 				}
@@ -6805,6 +6805,8 @@ MonoObjectHandle
 mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *error)
 {
 	error_init (error);
+
+	g_assert (klass);
 
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);

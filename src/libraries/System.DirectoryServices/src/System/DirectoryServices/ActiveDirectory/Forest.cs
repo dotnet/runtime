@@ -239,10 +239,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return GlobalCatalog.FindOneInternal(_context, Name, siteName, 0);
         }
@@ -258,10 +255,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return GlobalCatalog.FindOneInternal(_context, Name, siteName, flag);
         }
@@ -277,10 +271,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             return GlobalCatalog.FindAllInternal(_context, siteName);
         }
@@ -299,10 +290,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
-            {
-                throw new ArgumentNullException(nameof(siteName));
-            }
+            ArgumentNullException.ThrowIfNull(siteName);
 
             if (siteName.Length == 0)
             {
