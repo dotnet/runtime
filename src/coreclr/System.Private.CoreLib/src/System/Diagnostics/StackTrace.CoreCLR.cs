@@ -91,7 +91,7 @@ namespace System.Diagnostics
 
             // Grab MethodBases for all frames eagerly to keep them alive, in case one of them
             // is from an unloadable ALC (or other collectable context)
-            _methodBases = new MethodBase?[_numOfFrames + _methodsToSkip];
+            _methodBases = new MethodBase?[StackF.GetNumberOfFrames()];
             for (int i = 0; i < _methodBases.Length; i++)
             {
                 _methodBases[i] = _stackFrameHelper.GetMethodBase(i);
@@ -109,7 +109,7 @@ namespace System.Diagnostics
                 Debug.Assert(_stackFrameHelper != null);
 
                 // the frame array should contain all frames (even skipped ones!)
-                StackFrame[] stackFrames = new StackFrame[_numOfFrames + _methodsToSkip];
+                StackFrame[] stackFrames = new StackFrame[_stackFrameHelper.GetNumberOfFrames()];
 
                 for (int i = 0; i < stackFrames.Length; i++)
                 {
