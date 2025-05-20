@@ -40,7 +40,7 @@ extern "C" DLL_EXPORT void InvokeCallbackCatchCallbackAndRethrow(PFNACTION1 call
 }
 
 #ifdef _WIN32
-extern "C" DLL_EXPORT void InvokeCallbackAndCatchNative(PFNACTION1 callback)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE InvokeCallbackAndCatchNative(PFNACTION1 callback)
 {
     try
     {
