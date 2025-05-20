@@ -4243,7 +4243,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
     return cndSelNode->gtNext;
 }
 
-
 GenTree* Lowering::LowerHWIntrinsicConvertVectorToMask(GenTreeHWIntrinsic* mask)
 {
     assert(mask->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
@@ -4251,7 +4250,7 @@ GenTree* Lowering::LowerHWIntrinsicConvertVectorToMask(GenTreeHWIntrinsic* mask)
     GenTree* op1 = mask->Op(1);
     GenTree* op2 = mask->Op(2);
 
-    if(op2->IsVectorZero())
+    if (op2->IsVectorZero())
     {
         // Transform ConvertVectorToMask(..., ConstVec(0)) to FalseMask
 
@@ -4266,7 +4265,6 @@ GenTree* Lowering::LowerHWIntrinsicConvertVectorToMask(GenTreeHWIntrinsic* mask)
 
     return mask->gtNext;
 }
-
 
 #if defined(TARGET_ARM64)
 //----------------------------------------------------------------------------------------------
