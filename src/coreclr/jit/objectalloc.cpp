@@ -56,6 +56,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_numFields(0)
     , m_FieldIndexToLocalIndexMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_LocalIndexToFieldIndexMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_StoreAddressToIndexMap(comp->getAllocator(CMK_ObjectAllocator))
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
@@ -626,6 +627,34 @@ void ObjectAllocator::DoAnalysis()
         ComputeEscapingNodes(&m_bitVecTraits, m_EscapingPointers);
     }
 
+#ifdef DEBUG
+    // Print the connection graph
+    //
+    if (JitConfig.JitObjectStackAllocationDumpConnGraph() > 0)
+    {
+        JITDUMP("digraph ConnectionGraph {\n");
+        for (unsigned int i = 0; i < m_bvCount; i++)
+        {
+            BitVecOps::Iter iterator(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i]);
+            unsigned int    lclIndex;
+            while (iterator.NextElem(&lclIndex))
+            {
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" -> ");
+                JITDUMPEXEC(DumpIndex(i));
+                JITDUMP(";\n");
+            }
+
+            if (CanIndexEscape(i))
+            {
+                JITDUMPEXEC(DumpIndex(i));
+                JITDUMP(" -> E;\n");
+            }
+        }
+        JITDUMP("}\n");
+    }
+#endif
+
     m_AnalysisDone = true;
 }
 
@@ -852,34 +881,6 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             buildConnGraphVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
-
-#ifdef DEBUG
-    // Print the connection graph
-
-    if (JitConfig.JitObjectStackAllocationDumpConnGraph() > 0)
-    {
-        JITDUMP("digraph ConnectionGraph {\n");
-        for (unsigned int i = 0; i < m_bvCount; i++)
-        {
-            BitVecOps::Iter iterator(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i]);
-            unsigned int    lclIndex;
-            while (iterator.NextElem(&lclIndex))
-            {
-                JITDUMPEXEC(DumpIndex(lclIndex));
-                JITDUMP(" -> ");
-                JITDUMPEXEC(DumpIndex(i));
-                JITDUMP(";\n");
-            }
-
-            if (CanIndexEscape(i))
-            {
-                JITDUMPEXEC(DumpIndex(i));
-                JITDUMP(" -> E;\n");
-            }
-        }
-        JITDUMP("}\n");
-    }
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1898,6 +1899,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 }
 
                 // Check whether the local escapes higher up
+                isAddress = false;
                 ++parentIndex;
                 keepChecking = true;
                 break;
@@ -1926,39 +1928,30 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 GenTree* const addr = parent->AsIndir()->Addr();
                 if (tree == addr)
                 {
-                    JITDUMP("... store address\n");
+                    if (isAddress)
+                    {
+                        // Remember the resource being stored to.
+                        //
+                        JITDUMP("... store address\n");
+                        m_StoreAddressToIndexMap.Set(tree, lclIndex);
+                    }
+
+                    // The address does not escape
+                    //
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
 
-                // If the value being stored is a local address, anything assigned to that local escapes
+                // Is this a store to a tracked resource?
                 //
-                if (isAddress)
+                unsigned dstIndex;
+                if (m_trackFields && m_StoreAddressToIndexMap.Lookup(addr, &dstIndex) && (dstIndex != BAD_VAR_NUM))
                 {
-                    break;
-                }
+                    JITDUMP("... local.field store\n");
 
-                // Is this a store to a field of a local struct...?
-                //
-                // if (parent->OperIs(GT_STOREIND))
-                {
-                    // Are we storing to a local field?
-                    //
-                    if (addr->OperIs(GT_FIELD_ADDR, GT_INDEX_ADDR, GT_ADD))
+                    if (!isAddress)
                     {
-                        // Simple check for which local.
-                        //
-                        GenTree* const base = addr->AsOp()->gtGetOp1();
-
-                        if (base->OperIs(GT_LCL_ADDR))
-                        {
-                            unsigned const dstLclNum = base->AsLclVarCommon()->GetLclNum();
-
-                            if (IsTrackedLocal(dstLclNum))
-                            {
-                                JITDUMP("... local V%02u.f store\n", dstLclNum);
-                                const unsigned dstIndex = LocalToIndex(dstLclNum);
-                                AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                        AddConnGraphEdgeIndex(dstIndex, lclIndex);
                                 canLclVarEscapeViaParentStack = false;
                             }
                         }
@@ -1973,14 +1966,16 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 
                                 JITDUMP("... object V%02u.f store\n", dstLclNum);
                                 AddConnGraphEdgeIndex(fieldIndex, lclIndex);
-                                canLclVarEscapeViaParentStack = false;
-                            }
-                        }
+                        canLclVarEscapeViaParentStack = false;
+                        break;
                     }
-
-                    // Else we're storing the value somewhere unknown.
-                    // Assume the worst.
+                    else
+                    {
+                        AddConnGraphEdgeIndex(dstIndex, m_unknownSourceIndex);
+                    }
                 }
+
+                // We're storing the value somewhere unknown. Assume the worst.
                 break;
             }
 
@@ -2030,7 +2025,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 // We only track through the first indir. Setting isField = true will block us trying to model
                 // through subsequent indirs.
                 //
-                if (m_trackStructFields && isAddress && addr->OperIs(GT_FIELD_ADDR, GT_ADD))
+                if (m_trackStructFields && isAddress)
                 {
                     JITDUMP("... load local.field\n");
                     ++parentIndex;
@@ -2354,7 +2349,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
 
             case GT_STOREIND:
             case GT_STORE_BLK:
-            case GT_BLK:
             {
                 if (tree == parent->AsIndir()->Addr())
                 {
@@ -2386,13 +2380,13 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
             }
 
             case GT_IND:
+            case GT_BLK:
             {
-                // If we are loading from a GC struct field or stack object field, we may need to retype the load
-                // (for loads we retype fields based on the address's field type).
+                // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if ((newFieldType != TYP_UNDEF) && tree->OperIs(GT_FIELD_ADDR) && varTypeIsGC(parent->TypeGet()))
+                if ((newFieldType != TYP_UNDEF) && varTypeIsGC(parent->TypeGet()))
                 {
-                    parent->ChangeType(newFieldType);
+                    parent->ChangeType(newType);
                     ++parentIndex;
                     keepChecking = true;
                     newType      = newFieldType;

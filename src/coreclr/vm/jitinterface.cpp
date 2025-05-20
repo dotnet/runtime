@@ -917,8 +917,18 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         }
         else
         {
-            if ((tkType != mdtTypeDef) && (tkType != mdtTypeRef))
+            if (tkType == mdtTypeSpec)
+            {
+                // We have a TypeSpec, so we need to verify the signature is non-NULL
+                // and the typehandle has been fully instantiated.
+                if (pResolvedToken->pTypeSpec == NULL || th.ContainsGenericVariables())
+                    ThrowBadTokenException(pResolvedToken);
+            }
+            else if ((tkType != mdtTypeDef) && (tkType != mdtTypeRef))
+            {
                 ThrowBadTokenException(pResolvedToken);
+            }
+
             if ((tokenType & CORINFO_TOKENKIND_Class) == 0)
                 ThrowBadTokenException(pResolvedToken);
             if (th.IsNull())
@@ -14543,7 +14553,8 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     sigBuilder.AppendByte(callConv);
     sigBuilder.AppendData(numArgs);
 
-    auto appendTypeHandle = [&](TypeHandle th) {
+    auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
+    {
         _ASSERTE(!th.IsByRef());
         CorElementType ty = th.GetSignatureCorElementType();
         if (CorTypeInfo::IsObjRef(ty))
@@ -14560,9 +14571,9 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
             sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
             sigBuilder.AppendPointer(th.AsPtr());
         }
-        };
+    };
 
-    appendTypeHandle(msig.GetRetTypeHandleThrowing()); // return type
+    appendTypeHandle(sigBuilder, msig.GetRetTypeHandleThrowing()); // return type
 #ifndef TARGET_X86
     if (msig.HasGenericContextArg())
     {
@@ -14577,7 +14588,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
     {
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
-        appendTypeHandle(tyHnd);
+        appendTypeHandle(sigBuilder, tyHnd);
     }
 
 #ifdef TARGET_X86

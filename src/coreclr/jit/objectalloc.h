@@ -110,6 +110,7 @@ struct CloneInfo : public GuardInfo
 };
 
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned>               NodeToIndexMap;
 
 class ObjectAllocator final : public Phase
 {
@@ -148,10 +149,12 @@ class ObjectAllocator final : public Phase
     unsigned        m_regionsToClone;
 
     // Fields
+
     bool            m_trackStructFields;
     bool            m_trackObjectFields;
     unsigned        m_firstFieldIndex;
     unsigned        m_numFields;
+	NodeToIndexMap  m_StoreAddressToIndexMap;
     LocalToLocalMap m_FieldIndexToLocalIndexMap;
     LocalToLocalMap m_LocalIndexToFieldIndexMap;
 

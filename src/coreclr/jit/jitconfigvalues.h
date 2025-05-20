@@ -658,6 +658,7 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // relies on PGO if it exists and generally is more aggressive.
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicy, "JitExtDefaultPolicy", 1)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, "JitExtDefaultPolicyMaxIL", 0x80)
+RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILRoot, "JitExtDefaultPolicyMaxILRoot", 0x100)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, "JitExtDefaultPolicyMaxILProf", 0x400)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, "JitExtDefaultPolicyMaxBB", 7)
 
@@ -809,6 +810,9 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
+
+// Enable postorder local assertion prop
+RELEASE_CONFIG_INTEGER(JitEnablePostorderLocalAssertionProp, "JitEnablePostorderLocalAssertionProp", 1)
 
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)

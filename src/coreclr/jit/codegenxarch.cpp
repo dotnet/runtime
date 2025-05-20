@@ -202,14 +202,10 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
         else
         {
-// TODO-Linux-x86: Do we need to handle the GC information for this NOP or JMP specially, as is done for other
-// architectures?
-#ifndef JIT32_GCENCODER
             // Because of the way the flowgraph is connected, the liveness info for this one instruction
             // after the call is not (can not be) correct in cases where a variable has a last use in the
             // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
             GetEmitter()->emitDisableGC();
-#endif // JIT32_GCENCODER
 
             GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
@@ -229,9 +225,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
                 inst_JMP(EJ_jmp, finallyContinuation);
             }
 
-#ifndef JIT32_GCENCODER
             GetEmitter()->emitEnableGC();
-#endif // JIT32_GCENCODER
         }
     }
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -1879,11 +1873,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
     switch (treeNode->gtOper)
     {
-#ifndef JIT32_GCENCODER
         case GT_START_NONGC:
             GetEmitter()->emitDisableGC();
             break;
-#endif // !defined(JIT32_GCENCODER)
 
         case GT_START_PREEMPTGC:
             // Kill callee saves GC registers, and create a label
@@ -3160,9 +3152,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
     {
         case GenTreeBlk::BlkOpKindCpObjRepInstr:
         case GenTreeBlk::BlkOpKindCpObjUnroll:
-#ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
             genCodeForCpObj(storeBlkNode->AsBlk());
             break;
 
@@ -3172,9 +3162,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
             break;
 
         case GenTreeBlk::BlkOpKindRepInstr:
-#ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
             if (isCopyBlk)
             {
                 genCodeForCpBlkRepMovs(storeBlkNode);
@@ -3188,12 +3176,10 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
             {
-#ifndef JIT32_GCENCODER
                 if (storeBlkNode->gtBlkOpGcUnsafe)
                 {
                     GetEmitter()->emitDisableGC();
                 }
-#endif
                 if (storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
                 {
                     genCodeForCpBlkUnroll(storeBlkNode);
@@ -3203,18 +3189,14 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                     assert(storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnrollMemmove);
                     genCodeForMemmove(storeBlkNode);
                 }
-#ifndef JIT32_GCENCODER
                 if (storeBlkNode->gtBlkOpGcUnsafe)
                 {
                     GetEmitter()->emitEnableGC();
                 }
-#endif
             }
             else
             {
-#ifndef JIT32_GCENCODER
                 assert(!storeBlkNode->gtBlkOpGcUnsafe);
-#endif
                 genCodeForInitBlkUnroll(storeBlkNode);
             }
             break;
@@ -4897,7 +4879,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             int shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
 
-            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+            if (tree->OperIsRotate() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+                !tree->gtSetFlags())
             {
                 // If we have a contained source operand, we must emit rorx.
                 // We may also use rorx for 64bit values when a mov would otherwise be required,
@@ -4924,7 +4907,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
             return;
         }
     }
-    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+             !tree->gtSetFlags())
     {
         // Emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
         switch (tree->OperGet())
@@ -10859,24 +10843,15 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      filter:               rax = non-zero if the handler should handle the exception, zero otherwise (see GT_RETFILT)
  *      finally/fault:        none
  *
- *  First parameter (rcx/rdi) is a placeholder for establisher frame which is no longer used.
- *
  *  The AMD64 funclet prolog sequence is:
  *
- *     push ebp
- *     push callee-saved regs
- *                      ; TODO-AMD64-CQ: We probably only need to save any callee-save registers that we actually use
- *                      ;         in the funclet. Currently, we save the same set of callee-saved regs calculated for
- *                      ;         the entire function.
- *     sub sp, XXX      ; Establish the rest of the frame.
+ *     sub sp, XXX      ; Establish the frame.
  *                      ;   XXX is determined by lvaOutgoingArgSpaceSize, aligned up to preserve stack alignment.
  *                      ;   If we push an odd number of registers, we also generate this, to keep the stack aligned.
  *
  *  The epilog sequence is then:
  *
  *     add rsp, XXX
- *     pop callee-saved regs    ; if necessary
- *     pop rbp
  *     ret
  *
  *  The funclet frame is thus:
@@ -10888,10 +10863,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      +=======================+ <---- Caller's SP
  *      |    Return address     |
  *      |-----------------------|
- *      |      Saved EBP        |
- *      |-----------------------|
- *      |Callee saved registers |
- *      |-----------------------|
  *      ~  possible 8 byte pad  ~
  *      ~     for alignment     ~
  *      |-----------------------|
@@ -10902,10 +10873,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      |       | downward      |
  *              V
  *
- * TODO-AMD64-Bug?: the frame pointer should really point to the PSP slot (the debugger seems to assume this
- * in DacDbiInterfaceImpl::InitParentFrameInfo()), or someplace above Initial-SP. There is an AMD64
- * UNWIND_INFO restriction that it must be within 240 bytes of Initial-SP. See jit64\amd64\inc\md.h
- * "FRAMEPTR OFFSETS" for details.
  */
 
 void CodeGen::genFuncletProlog(BasicBlock* block)
@@ -10928,18 +10895,10 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     compiler->unwindBegProlog();
 
-    // We need to push ebp, since it's callee-saved.
-    // We need to push the callee-saved registers. We only need to push the ones that we need, but we don't
-    // keep track of that on a per-funclet basis, so we push the same set as in the main function.
+    // We do not need to push callee-saved registers. The runtime takes care of preserving them.
     // We do not need to allocate fixed-size frame, since nothing else
     // is stored here (all temps are allocated in the parent frame).
     // We do need to allocate the outgoing argument space, in case there are calls here.
-
-    inst_RV(INS_push, REG_FPBASE, TYP_REF);
-    compiler->unwindPush(REG_FPBASE);
-
-    // Callee saved int registers are pushed to stack.
-    genPushCalleeSavedRegisters();
 
     regMaskTP maskArgRegsLiveIn;
     if ((block->bbCatchTyp == BBCT_FINALLY) || (block->bbCatchTyp == BBCT_FAULT))
@@ -10951,14 +10910,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         maskArgRegsLiveIn = RBM_ARG_0 | RBM_ARG_2;
     }
 
-    regNumber initReg       = REG_EBP; // We already saved EBP, so it can be trashed
-    bool      initRegZeroed = false;
-
-    genAllocLclFrame(genFuncletInfo.fiSpDelta, initReg, &initRegZeroed, maskArgRegsLiveIn);
-
-    // Callee saved float registers are copied to stack in their assigned stack slots
-    // after allocating space for them as part of funclet frame.
-    genPreserveCalleeSavedFltRegs(genFuncletInfo.fiSpDelta);
+    bool initRegZeroed = false;
+    genAllocLclFrame(genFuncletInfo.fiSpDelta, REG_NA, &initRegZeroed, maskArgRegsLiveIn);
 
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
@@ -10982,12 +10935,7 @@ void CodeGen::genFuncletEpilog()
 
     ScopedSetVariable<bool> _setGeneratingEpilog(&compiler->compGeneratingEpilog, true);
 
-    // Restore callee saved XMM regs from their stack slots before modifying SP
-    // to position at callee saved int regs.
-    genRestoreCalleeSavedFltRegs(genFuncletInfo.fiSpDelta);
     inst_RV_IV(INS_add, REG_SPBASE, genFuncletInfo.fiSpDelta, EA_PTRSIZE);
-    genPopCalleeSavedRegisters();
-    inst_RV(INS_pop, REG_EBP, TYP_I_IMPL);
     instGen_Return(0);
 }
 
@@ -11009,7 +10957,6 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     assert(isFramePointerUsed());
     assert(compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT); // The frame size and offsets must be
                                                                           // finalized
-    assert(compiler->compCalleeFPRegsSavedMask != (regMaskTP)-1); // The float registers to be preserved is finalized
 
     assert(compiler->lvaOutgoingArgSpaceSize % REGSIZE_BYTES == 0);
 #ifndef UNIX_AMD64_ABI
@@ -11023,29 +10970,12 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     // How much stack do we allocate in the funclet?
     // We need to 16-byte align the stack.
 
-    unsigned totalFrameSize =
-        REGSIZE_BYTES                                       // return address
-        + REGSIZE_BYTES                                     // pushed EBP
-        + (compiler->compCalleeRegsPushed * REGSIZE_BYTES); // pushed callee-saved int regs, not including EBP
-
-    // Entire 128-bits of XMM register is saved to stack due to ABI encoding requirement.
-    // Copying entire XMM register to/from memory will be performant if SP is aligned at XMM_REGSIZE_BYTES boundary.
-    unsigned calleeFPRegsSavedSize = genCountBits(compiler->compCalleeFPRegsSavedMask) * XMM_REGSIZE_BYTES;
-    unsigned FPRegsPad             = (calleeFPRegsSavedSize > 0) ? AlignmentPad(totalFrameSize, XMM_REGSIZE_BYTES) : 0;
-
-    totalFrameSize += FPRegsPad               // Padding before pushing entire xmm regs
-                      + calleeFPRegsSavedSize // pushed callee-saved float regs
-                      // below calculated 'pad' will go here
-                      + compiler->lvaOutgoingArgSpaceSize // outgoing arg space
-        ;
+    unsigned totalFrameSize = REGSIZE_BYTES // return address
+                              + compiler->lvaOutgoingArgSpaceSize;
 
     unsigned pad = AlignmentPad(totalFrameSize, 16);
 
-    genFuncletInfo.fiSpDelta = FPRegsPad                           // Padding to align SP on XMM_REGSIZE_BYTES boundary
-                               + calleeFPRegsSavedSize             // Callee saved xmm regs
-                               + pad                               // padding
-                               + compiler->lvaOutgoingArgSpaceSize // outgoing arg space
-        ;
+    genFuncletInfo.fiSpDelta = pad + compiler->lvaOutgoingArgSpaceSize;
 
 #ifdef DEBUG
     if (verbose)
