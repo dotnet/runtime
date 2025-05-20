@@ -22,6 +22,8 @@ namespace System.Net.Http
     /// </summary>
     internal static class WinHttpRequestCallback
     {
+        private static readonly Oid ServerAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+
         public static Interop.WinHttp.WINHTTP_STATUS_CALLBACK StaticCallbackDelegate =
             new Interop.WinHttp.WINHTTP_STATUS_CALLBACK(WinHttpCallback);
 
@@ -373,12 +375,10 @@ namespace System.Net.Http
                 {
                     // Create and configure the X509Chain
                     chain = new X509Chain();
-                    chain.ChainPolicy.RevocationMode = 
-                        state.CheckCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.RevocationMode = state.CheckCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
                     // Authenticate the remote party: (e.g. when operating in client mode, authenticate the server).
-                    var serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
-                    chain.ChainPolicy.ApplicationPolicy.Add(serverAuthOid);
+                    chain.ChainPolicy.ApplicationPolicy.Add(ServerAuthOid);
 
                     if (remoteCertificateStore.Count > 0)
                     {
@@ -396,11 +396,11 @@ namespace System.Net.Http
                     // Call the shared BuildChainAndVerifyProperties method
                     // isServer=false because WinHttpHandler is a client validating a server certificate
                     sslPolicyErrors = System.Net.CertificateValidation.BuildChainAndVerifyProperties(
-                        chain, 
-                        serverCertificate, 
-                        true, // Always check certificate name
-                        false, // Not a server
-                        state.RequestMessage.RequestUri.Host);
+                        chain,
+                        serverCertificate,
+                        checkCertName: true,
+                        isServer: false,
+                        hostName: state.RequestMessage.RequestUri.Host);
 
                     result = state.ServerCertificateValidationCallback(
                         state.RequestMessage,
