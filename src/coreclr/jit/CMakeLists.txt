@@ -245,7 +245,6 @@ set( JIT_ARM64_SOURCES
   unwindarm64.cpp
   hwintrinsicarm64.cpp
   hwintrinsiccodegenarm64.cpp
-  morpharm64.cpp
 )
 
 set( JIT_ARMV6_SOURCES
