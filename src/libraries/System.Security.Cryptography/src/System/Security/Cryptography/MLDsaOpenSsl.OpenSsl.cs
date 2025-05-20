@@ -16,7 +16,11 @@ namespace System.Security.Cryptography
             return _key.DuplicateHandle();
         }
 
-        private static partial MLDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle)
+        private static partial MLDsaAlgorithm AlgorithmFromHandle(
+            SafeEvpPKeyHandle pkeyHandle,
+            out SafeEvpPKeyHandle upRefHandle,
+            out bool hasSeed,
+            out bool hasSecretKey)
         {
             ArgumentNullException.ThrowIfNull(pkeyHandle);
 
@@ -29,7 +33,10 @@ namespace System.Security.Cryptography
 
             try
             {
-                Interop.Crypto.PalMLDsaAlgorithmId mldsaId = Interop.Crypto.MLDsaGetPalId(upRefHandle);
+                Interop.Crypto.PalMLDsaAlgorithmId mldsaId = Interop.Crypto.MLDsaGetPalId(
+                    upRefHandle,
+                    out hasSeed,
+                    out hasSecretKey);
 
                 switch (mldsaId)
                 {
@@ -80,5 +87,16 @@ namespace System.Security.Cryptography
         /// <inheritdoc />
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
             Interop.Crypto.MLDsaExportSeed(_key, destination);
+
+        /// <inheritdoc />
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            return MLDsaPkcs8.TryExportPkcs8PrivateKey(
+                this,
+                _hasSeed,
+                _hasSecretKey,
+                destination,
+                out bytesWritten);
+        }
     }
 }
