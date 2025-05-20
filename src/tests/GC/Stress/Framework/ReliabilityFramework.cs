@@ -325,7 +325,7 @@ public class ReliabilityFramework
     {
         StringBuilder sb = new();
         lock (_testRunCounterLock)
-        {            
+        {
             foreach(var item in _testRunCounter)
             {
                 sb.AppendLine($"{item.Key}: {item.Value}");
