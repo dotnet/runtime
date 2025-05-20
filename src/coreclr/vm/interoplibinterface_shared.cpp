@@ -187,28 +187,23 @@ namespace
     }
 }
 
-FCIMPL0(void, Interop::WaitForGCBridgeFinish)
+void Interop::WaitForGCBridgeFinish()
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
 
-    if (!g_GCBridgeActive)
-        return;
-
+    while (g_GCBridgeActive)
     {
         GCX_PREEMP();
         g_bridgeFinished->Wait(INFINITE, false);
+        // In theory, even though we waited for bridge to finish, because we are in preemptive mode
+        // the thread could have been suspended and another GC could have happened, triggering bridge
+        // processing again. In this case we would wait again for bridge processing.
     }
-
-    // FIXME
-    // If GC happens between this point and the moment we obtain the WeakReference target, then
-    // we would need to wait again, otherwise we fail to wait for the bridge to finish for the
-    // new GC.
-    //
-    // In order to fix this we would need to prevent any GC's in this time frame. Sounds like we should
-    // have an FCALL that also obtains the weak ref target, with checking for active bridge and deref of
-    // the gc handle to be done within COOPERATIVE gc state.
 }
-FCIMPLEND
 
 void Interop::TriggerGCBridge(
     _In_ size_t sccsLen,

@@ -44,6 +44,10 @@
 #include "interoputil.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_GCBRIDGE
+#include "interoplibinterface.h"
+#endif
+
 // Prelink
 // Does advance loading of an N/Direct library
 extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
@@ -397,6 +401,26 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
     return *((LPVOID*)&objRef);
 }
 FCIMPLEND
+
+#ifdef FEATURE_GCBRIDGE
+// Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
+// Used by WeakReference
+FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGetBridgeWait, OBJECTHANDLE handle)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF objRef;
+
+    Interop::WaitForGCBridgeFinish();
+    // No GC can happen between the wait and obtaining of the reference, so the
+    // bridge processing status can't change, guaranteeing the nulling of weak refs
+    // took place in the bridge processing finish stage.
+    objRef = ObjectFromHandle(handle);
+
+    return *((LPVOID*)&objRef);
+}
+FCIMPLEND
+#endif
 
 // Update the object referenced by a GC handle.
 FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)

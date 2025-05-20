@@ -251,12 +251,6 @@ FCFuncStart(gThreadFuncs)
     FCFuncElement("get_OptimalMaxSpinWaitsPerSpinIteration", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
-#ifdef FEATURE_GCBRIDGE
-FCFuncStart(gWeakReferenceFuncs)
-    FCFuncElement("WaitForGCBridgeFinish", Interop::WaitForGCBridgeFinish)
-FCFuncEnd()
-#endif
-
 FCFuncStart(gCastHelpers)
     FCFuncElement("WriteBarrier", ::WriteBarrier_Helper)
 FCFuncEnd()
@@ -370,6 +364,9 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("_InternalAlloc", MarshalNative::GCHandleInternalAlloc)
     FCFuncElement("_InternalFree", MarshalNative::GCHandleInternalFree)
     FCFuncElement("InternalGet", MarshalNative::GCHandleInternalGet)
+#ifdef FEATURE_GCBRIDGE
+    FCFuncElement("InternalGetBridgeWait", MarshalNative::GCHandleInternalGetBridgeWait)
+#endif
     FCFuncElement("InternalSet", MarshalNative::GCHandleInternalSet)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)
 FCFuncEnd()
@@ -414,9 +411,6 @@ FCClassElement("Signature", "System", gSignatureNative)
 FCClassElement("String", "System", gStringFuncs)
 FCClassElement("StubHelpers", "System.StubHelpers", gStubHelperFuncs)
 FCClassElement("Thread", "System.Threading", gThreadFuncs)
-#ifdef FEATURE_GCBRIDGE
-FCClassElement("WeakReference", "System", gWeakReferenceFuncs)
-#endif
 
 #undef FCFuncElement
 #undef FCFuncElementSig
