@@ -1167,7 +1167,6 @@ MethodTableBuilder::CopyParentVtable()
 // support.
 // If so:
 //   - Update the NumInstanceFieldBytes on the bmtFieldPlacement.
-//   - Update the ManagedSize if HasLayout() is true.
 // Return a BOOL result to indicate whether the size has been updated.
 //
 BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
@@ -8143,6 +8142,42 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     MethodTable* pParentMT = GetParentMethodTable();
     bool hasNonTrivialParent = pParentMT && !pParentMT->IsObjectClass() && !pParentMT->IsValueTypeClass();
 
+    if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Auto)
+    {
+        // Auto layout has been requested.
+        // We never switch away from auto layout, so just go use it right away.
+
+#if defined(FEATURE_64BIT_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
+        // Check for 8-byte alignment requirements for this type.
+        // We don't need to check any of the other nested field flags
+        // for auto layout, so only check this flag when targeting
+        // a platform that can have the align8 requirement for a type.
+        EEClassLayoutInfo::NestedFieldFlags nestedFieldFlags =
+            EEClassLayoutInfo::GetNestedFieldFlags(
+                GetModule(),
+                GetHalfBakedClass()->GetFieldDescList(),
+                bmtEnumFields->dwNumDeclaredFields,
+                bmtLayout->nlFlags,
+                pByValueClassCache);
+
+        bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
+#if defined(FEATURE_64BIT_ALIGNMENT)
+            || (pParentMT && pParentMT->RequiresAlign8())
+#endif // FEATURE_64BIT_ALIGNMENT
+        ;
+
+        if (isAlign8)
+        {
+            GetHalfBakedClass()->SetAlign8Candidate();
+        }
+#endif // FEATURE_64BIT_ALIGNMENT || FEATURE_DOUBLE_ALIGNMENT_HINT
+
+        HandleAutoLayout(pByValueClassCache);
+        return;
+    }
+
+    // We are not using auto layout, so we need to check all of the nested field flags.
+    // All other layouts need to consider these flags.
     EEClassLayoutInfo::NestedFieldFlags nestedFieldFlags =
         EEClassLayoutInfo::GetNestedFieldFlags(
             GetModule(),
@@ -8170,22 +8205,10 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
 
     bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
-#ifdef FEATURE_64BIT_ALIGNMENT
+#if defined(FEATURE_64BIT_ALIGNMENT)
         || (pParentMT && pParentMT->RequiresAlign8())
 #endif // FEATURE_64BIT_ALIGNMENT
         ;
-
-    if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Auto)
-    {
-        // Auto layout has been requested.
-        // We never switch away from auto layout, so just go use it right away.
-        if (isAlign8)
-        {
-            GetHalfBakedClass()->SetAlign8Candidate();
-        }
-        HandleAutoLayout(pByValueClassCache);
-        return;
-    }
 
     _ASSERTE(HasLayout());
 
