@@ -1155,6 +1155,12 @@ Algorithms
 Aspects of Date/Time processing based on algorithm described in "Euclidean Affine Functions and Applications to Calendar
 Algorithms", Cassio Neri and Lorenz Schneider. https://arxiv.org/pdf/2102.06959.pdf
 
+Notice for faster "Is leap year" algorithm
+-------------------------------
+
+Based on algorithm described in "A leap year check in three instructions", Falk Hüffner, 15 May 2025. 
+https://hueffner.de/falk/blog/a-leap-year-check-in-three-instructions.html
+
 License notice for amd/aocl-libm-ose
 -------------------------------
 

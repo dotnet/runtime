@@ -1567,9 +1567,10 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentOutOfRange_Year();
             }
-            if ((year & 3) != 0) return false;
-            if ((year & 15) == 0) return true;
-            return (uint)year % 25 != 0;
+
+            // Based on "A leap year check in three instructions" by Falk Hüffner 
+            // https://hueffner.de/falk/blog/a-leap-year-check-in-three-instructions.html
+            return ((y * 1073750999) & 3221352463) <= 126976;
         }
 
         // Constructs a DateTime from a string. The string must specify a
