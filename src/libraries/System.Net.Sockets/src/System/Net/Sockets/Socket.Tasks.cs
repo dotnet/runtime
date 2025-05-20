@@ -1378,12 +1378,18 @@ namespace System.Net.Sockets
                 // Most operations will report OperationAborted when canceled.
                 // On Windows, SendFileAsync will report ConnectionAborted.
                 // There's a race here anyway, so there's no harm in also checking for ConnectionAborted in all cases.
+                Exception exception = CreateException(error, forAsyncThrow: false);
+                
                 if (error is SocketError.OperationAborted or SocketError.ConnectionAborted)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
+                    // If the token was canceled, throw OperationCanceledException instead of SocketException
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException(cancellationToken);
+                    }
                 }
 
-                throw CreateException(error, forAsyncThrow: false);
+                throw exception;
             }
 
             private Exception CreateException(SocketError error, bool forAsyncThrow = true)
