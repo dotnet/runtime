@@ -15,11 +15,10 @@ namespace System.Resources
 {
     public partial class ResourceReader
     {
+        private const string BinaryFormatterTypeName = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters";
+
         private readonly bool _permitDeserialization;  // can deserialize BinaryFormatted resources
         private object? _binaryFormatter; // binary formatter instance to use for deserializing
-
-        // statics used to dynamically call into BinaryFormatter
-        private static Func<object, Stream, object>? s_deserializeMethod;
 
         // This is the constructor the RuntimeResourceSet calls,
         // passing in the stream to read from and the RuntimeResourceSet's
@@ -53,7 +52,43 @@ namespace System.Resources
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
 
+            // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
+            if (!EnableUnsafeBinaryFormatterSerialization)
+            {
+                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
+            }
+
+            if (_binaryFormatter is null)
+            {
+                InitializeBinaryFormatter();
+            }
+
+            Debug.Assert(_binaryFormatter is not null, "BinaryFormatter should be initialized or we should have thrown an exception!");
+
+            Type type = FindType(typeIndex);
+
+            object graph = DeserializeLocal(_store.BaseStream);
+
+            // guard against corrupted resources
+            if (graph.GetType() != type)
+                throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResType_SerBlobMismatch, type.FullName, graph.GetType().FullName));
+
+            return graph;
+
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            void InitializeBinaryFormatter()
+            {
+                _binaryFormatter = CreateBinaryFormatter();
+            }
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2121:RequiresUnreferencedCode",
                 Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
                 "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
                 "the user to only get one error.")]
@@ -61,69 +96,24 @@ namespace System.Resources
                 Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
                 "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
                 "the user to only get one error.")]
-            bool InitializeBinaryFormatterLocal() => InitializeBinaryFormatter();
-
-            if (Volatile.Read(ref _binaryFormatter) is null)
-            {
-                try
-                {
-                    if (!InitializeBinaryFormatterLocal())
-                    {
-                        // Trimming took away the BinaryFormatter implementation and we can't call into it.
-                        // We'll throw an exception with the same text that BinaryFormatter would have thrown
-                        // had we been able to call into it. Keep this resource string in sync with the same
-                        // resource from the Formatters assembly.
-                        throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
-                    }
-                }
-                catch (Exception ex) when (ex is TypeLoadException or MissingMethodException)
-                {
-                    throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed, ex);
-                }
-            }
-
-            Type type = FindType(typeIndex);
-
-            object graph;
-            try
-            {
-                graph = s_deserializeMethod!(_binaryFormatter!, _store.BaseStream);
-            }
-            catch (Exception ex) when (ex is TypeLoadException or MissingMethodException)
-            {
-                throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed, ex);
-            }
-
-            // guard against corrupted resources
-            if (graph.GetType() != type)
-                throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResType_SerBlobMismatch, type.FullName, graph.GetType().FullName));
-
-            return graph;
+            object DeserializeLocal(Stream stream) => Deserialize(_binaryFormatter, stream);
         }
 
-        // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
-        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
-        [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
-            "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
-        private bool InitializeBinaryFormatter()
-        {
-            const string BinaryFormatterTypeName = "System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters";
-            // If BinaryFormatter support is disabled for the app, the trimmer will replace this entire
-            // method body with "return false;", skipping the UnsafeAccessors below.
-            Volatile.Write(ref _binaryFormatter, CreateBinaryFormatter());
-            Volatile.Write(ref s_deserializeMethod, Deserialize);
+        [FeatureSwitchDefinition("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization")]
+        private static bool EnableUnsafeBinaryFormatterSerialization { get; } = AppContext.TryGetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", out bool value)
+            ? value
+            : false;
 
-            return true;
+        [RequiresUnreferencedCode("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Deserialize")]
+        private static extern object Deserialize(
+            [UnsafeAccessorType(BinaryFormatterTypeName)] object formatter,
+            Stream serializationStream);
 
-            [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-            [return: UnsafeAccessorType(BinaryFormatterTypeName)]
-            static extern object CreateBinaryFormatter();
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType(BinaryFormatterTypeName)]
+        private static extern object CreateBinaryFormatter();
 
-            [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Deserialize")]
-            static extern object Deserialize(
-                [UnsafeAccessorType(BinaryFormatterTypeName)] object formatter,
-                Stream serializationStream);
-        }
         private static bool ValidateReaderType(string readerType)
         {
             return ResourceManager.IsDefaultType(readerType, ResourceManager.ResReaderTypeName);
