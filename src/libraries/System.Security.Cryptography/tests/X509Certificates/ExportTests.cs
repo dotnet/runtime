@@ -391,6 +391,39 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.IetfMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportPkcs12_MLDsa_Generated_Roundtrip(MLDsaKeyInfo info)
+        {
+            string password = info.EncryptionPassword;
+            PbeParameters pbeParameters = info.EncryptionParameters;
+
+            using (X509Certificate2 cert = X509CertificateLoader.LoadPkcs12(info.Pfx_Seed, password))
+            {
+                byte[] pkcs12 = cert.ExportPkcs12(pbeParameters, password);
+                (int certs, int keys) = VerifyPkcs12(
+                    pkcs12,
+                    password,
+                    pbeParameters.IterationCount,
+                    pbeParameters.HashAlgorithm,
+                    pbeParameters.EncryptionAlgorithm);
+                Assert.Equal(1, certs);
+                Assert.Equal(1, keys);
+
+                using (X509Certificate2 reLoaded = X509CertificateLoader.LoadPkcs12(pkcs12, password))
+                using (MLDsa mldsa = reLoaded.GetMLDsaPrivateKey())
+                {
+                    Assert.NotNull(mldsa);
+                    Assert.Equal(info.Algorithm, mldsa.Algorithm);
+                    AssertExtensions.SequenceEqual(info.Certificate, reLoaded.RawData);
+
+                    byte[] actualSecretKey = new byte[info.SecretKey.Length];
+                    Assert.Equal(actualSecretKey.Length, mldsa.ExportMLDsaSecretKey(actualSecretKey));
+                    AssertExtensions.SequenceEqual(info.SecretKey, actualSecretKey);
+                }
+            }
+        }
+
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public static void ExportPkcs12_SlhDsa_Ietf_Roundtrip()
         {
