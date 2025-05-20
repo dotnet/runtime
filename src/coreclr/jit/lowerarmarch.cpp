@@ -3971,6 +3971,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     MakeSrcContained(node, op1);
+                    JITDUMP("Containing vector zero op1 inside ConditionalSelect\n");
+                    DISPTREERANGE(BlockRange(), op1);
                 }
 
                 // Handle op2
@@ -3988,6 +3990,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             // the operation
                             MakeSrcContained(node, op2);
                             op2->MakeEmbMaskOp();
+                            JITDUMP("Containing op2 inside ConditionalSelect\n");
+                            DISPTREERANGE(BlockRange(), op2);
                         }
                         else
                         {
@@ -4008,6 +4012,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             {
                                 MakeSrcContained(node, op2);
                                 op2->MakeEmbMaskOp();
+                                JITDUMP("Containing convert op2 inside ConditionalSelect\n");
+                                DISPTREERANGE(BlockRange(), op2);
                             }
                         }
                     }
@@ -4020,17 +4026,21 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (embOp->Op(2)->IsCnsIntOrI())
                         {
                             MakeSrcContained(op2, embOp->Op(2));
+                            JITDUMP("Containing ShiftRight op2 inside ConditionalSelect\n");
+                            DISPTREERANGE(BlockRange(), op2);
                         }
                     }
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
+                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet() && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     // Do this only if op1 was AllTrueMask
                     MakeSrcContained(node, op3);
+                    JITDUMP("Containing vector zero op3 inside ConditionalSelect\n");
+                    DISPTREERANGE(BlockRange(), op3);
                 }
 
                 break;
