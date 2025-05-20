@@ -1611,7 +1611,8 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
     {
         if ((intrin.category == HW_Category_SIMDByIndexedElement) ||
             (intrin.category == HW_Category_ShiftLeftByImmediate) ||
-            (intrin.category == HW_Category_ShiftRightByImmediate))
+            (intrin.category == HW_Category_ShiftRightByImmediate) ||
+            (intrin.category == HW_Category_RotateByImmediate))
         {
             switch (intrin.numOperands)
             {

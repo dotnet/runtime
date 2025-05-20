@@ -9837,5 +9837,20 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return op1 ^ (op2 & ~op3);
         }
+
+        public static T Xor<T>(params T[] ops) where T : IBitwiseOperators<T, T, T>
+        {
+            T result = ops[0];
+            for (int i = 1; i < ops.Length; i++)
+            {
+                result ^= ops[i];
+            }
+            return result;
+        }
+
+        public static T XorRotateRight<T>(T op1, T op2, int shift) where T : IBinaryInteger<T>
+        {
+            return T.RotateRight(Xor(op1, op2), shift);
+        }
     }
 }

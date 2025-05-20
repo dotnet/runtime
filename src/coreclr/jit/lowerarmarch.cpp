@@ -3758,7 +3758,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
     if ((intrin.category == HW_Category_ShiftLeftByImmediate) ||
-        (intrin.category == HW_Category_ShiftRightByImmediate) ||
+        (intrin.category == HW_Category_ShiftRightByImmediate) || (intrin.category == HW_Category_RotateByImmediate) ||
         ((intrin.category == HW_Category_SIMDByIndexedElement) && hasImmediateOperand))
     {
         switch (intrin.numOperands)
@@ -3828,6 +3828,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_AddRotateComplex:
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
             case NI_Sve2_ShiftLeftAndInsert:
+            case NI_Sve2_XorRotateRight:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())
