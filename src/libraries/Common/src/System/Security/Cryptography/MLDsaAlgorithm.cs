@@ -52,12 +52,12 @@ namespace System.Security.Cryptography
         public int SignatureSizeInBytes { get; }
 
         /// <summary>
-    ///  Gets the Object Identifier (OID) for this algorithm.
-    /// </summary>
-    /// <value>
-    ///  The Object Identifier (OID) for this algorithm.
-    /// </value>
-    internal string Oid { get; }
+        ///  Gets the Object Identifier (OID) for this algorithm.
+        /// </summary>
+        /// <value>
+        ///  The Object Identifier (OID) for this algorithm.
+        /// </value>
+        internal string Oid { get; }
 
         /// <summary>
         ///  Initializes a new instance of the <see cref="MLDsaAlgorithm" /> structure with a custom name.
@@ -86,9 +86,8 @@ namespace System.Security.Cryptography
             Oid = oid;
         }
 
-        // ML-DSA parameter sets, and the sizes associated with them,
-        // are defined in FIPS 204, "CRYSTALS-Dilithium: Digital Signature Algorithm
-        // Specification"
+        // TODO: Our algorithm names generally match CNG.  If they don't in this case, consider changing the values.
+        // TODO: These values match OpenSSL names, if changing this for CNG, we should make sure to do the right thing for OpenSSL.
 
         /// <summary>
         ///   Gets an ML-DSA algorithm identifier for the ML-DSA-44 algorithm.
