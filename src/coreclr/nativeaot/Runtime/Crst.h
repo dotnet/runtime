@@ -4,7 +4,7 @@
 //
 // -----------------------------------------------------------------------------------------------------------
 //
-// Minimal Crst implementation based on CRITICAL_SECTION. Doesn't support much except for the basic locking
+// Minimal Crst implementation. Doesn't support much except for the basic locking
 // functionality (in particular there is no rank violation checking).
 //
 
@@ -51,7 +51,7 @@ public:
 #endif // _DEBUG
 
 private:
-    DN_CRIT_SEC         m_sCritSec;
+    DN_CRIT_SECT         m_sCritSec;
 #if defined(_DEBUG)
     EEThreadId          m_uiOwnerId;
 #endif // _DEBUG

@@ -6,7 +6,6 @@
 //
 
 #include "common.h"
-#include <minipal/critsec.h>
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcheaputilities.h"

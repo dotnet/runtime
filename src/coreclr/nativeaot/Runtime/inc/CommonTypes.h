@@ -10,6 +10,12 @@
 #include <stdio.h>
 #include <new>
 
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#endif // HOST_WINDOWS
+
+#include <minipal/critsect.h>
+
 // Implement pure virtual for Unix (for -p:LinkStandardCPlusPlusLibrary=false the default),
 // to avoid linker requiring __cxa_pure_virtual.
 #ifdef TARGET_WINDOWS

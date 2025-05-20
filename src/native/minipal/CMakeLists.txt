@@ -2,7 +2,7 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
-    critsec.c
+    critsect.c
     guid.c
     random.c
     debugger.c

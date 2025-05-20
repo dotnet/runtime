@@ -20,7 +20,7 @@ bool             Logger::s_initialized = false;
 UINT32           Logger::s_logLevel    = LOGMASK_DEFAULT;
 HANDLE           Logger::s_logFile     = INVALID_HANDLE_VALUE;
 char*            Logger::s_logFilePath = nullptr;
-DN_CRIT_SEC      Logger::s_critSec;
+DN_CRIT_SECT      Logger::s_critSec;
 
 //
 // Initializes the logging subsystem. This must be called before invoking any of the logging functionality.

@@ -13,7 +13,7 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
-#include <minipal/critsec.h>
+#include <minipal/critsect.h>
 #include "gcinterface.dac.h"
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
@@ -27,7 +27,7 @@
 #include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
-extern DN_CRIT_SEC g_dacCritSec;
+extern DN_CRIT_SECT g_dacCritSec;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
 // Note that CLRDATA_ADDRESS is sign-extended (for compat with Windbg and OS conventions).  Converting

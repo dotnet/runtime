@@ -23,7 +23,7 @@
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "gcenv.structs.h" // CRITICAL_SECTION
+#include "gcenv.structs.h" // EEThreadId
 #include "PalRedhawkCommon.h"
 
 #ifndef PAL_REDHAWK_INCLUDED

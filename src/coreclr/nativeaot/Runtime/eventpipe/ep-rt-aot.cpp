@@ -17,6 +17,7 @@
 #include <unistd.h>
 #endif
 
+#include <minipal/critsect.h>
 #include <minipal/random.h>
 
 #include "gcenv.h"

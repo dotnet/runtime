@@ -13,18 +13,6 @@ inline UInt32_BOOL PalCloseHandle(HANDLE arg1)
     return CloseHandle(arg1);
 }
 
-extern "C" void __stdcall DeleteCriticalSection(CRITICAL_SECTION *);
-inline void PalDeleteCriticalSection(CRITICAL_SECTION * arg1)
-{
-    DeleteCriticalSection(arg1);
-}
-
-extern "C" void __stdcall EnterCriticalSection(CRITICAL_SECTION *);
-inline void PalEnterCriticalSection(CRITICAL_SECTION * arg1)
-{
-    EnterCriticalSection(arg1);
-}
-
 extern "C" void __stdcall FlushProcessWriteBuffers();
 inline void PalFlushProcessWriteBuffers()
 {
@@ -52,18 +40,6 @@ inline uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to
     return GetEnvironmentVariableA(lpName, lpBuffer, nSize);
 }
 #endif
-
-extern "C" UInt32_BOOL __stdcall InitializeCriticalSectionEx(CRITICAL_SECTION *, uint32_t, uint32_t);
-inline UInt32_BOOL PalInitializeCriticalSectionEx(CRITICAL_SECTION * arg1, uint32_t arg2, uint32_t arg3)
-{
-    return InitializeCriticalSectionEx(arg1, arg2, arg3);
-}
-
-extern "C" void __stdcall LeaveCriticalSection(CRITICAL_SECTION *);
-inline void PalLeaveCriticalSection(CRITICAL_SECTION * arg1)
-{
-    LeaveCriticalSection(arg1);
-}
 
 extern "C" UInt32_BOOL __stdcall ResetEvent(HANDLE);
 inline UInt32_BOOL PalResetEvent(HANDLE arg1)

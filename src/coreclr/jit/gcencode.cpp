@@ -17,7 +17,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#include <minipal/critsec.h>
+#include <minipal/critsect.h>
 #include "gcinfotypes.h"
 #include "patchpointinfo.h"
 
@@ -376,7 +376,7 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
 static FILE*     logFile = NULL;
-DN_CRIT_SEC      logFileLock;
+DN_CRIT_SECT      logFileLock;
 #endif
 
 #if REGEN_CALLPAT

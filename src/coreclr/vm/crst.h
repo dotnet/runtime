@@ -87,7 +87,7 @@
 #include "util.hpp"
 #include "debugmacros.h"
 #include "log.h"
-#include <minipal/critsec.h>
+#include <minipal/critsect.h>
 
 #define ShutDown_Start                          0x00000001
 #define ShutDown_Finalize1                      0x00000002
@@ -275,7 +275,7 @@ protected:
     void DebugDestroy();
 #endif
 
-    DN_CRIT_SEC m_criticalsection;
+    DN_CRIT_SECT m_criticalsection;
 
     typedef enum
     {

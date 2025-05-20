@@ -8,10 +8,10 @@
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
-typedef CRITICAL_SECTION DN_CRIT_IMPL;
+typedef CRITICAL_SECTION DN_CRIT_SECT_IMPL;
 #else // !HOST_WINDOWS
 #include <pthread.h>
-typedef pthread_mutex_t DN_CRIT_IMPL;
+typedef pthread_mutex_t DN_CRIT_SECT_IMPL;
 #endif // HOST_WINDOWS
 
 #ifdef __cplusplus
@@ -21,20 +21,20 @@ extern "C"
 
 typedef struct _DN_CRIT_SEC
 {
-    DN_CRIT_IMPL _impl;
-} DN_CRIT_SEC;
+    DN_CRIT_SECT_IMPL _impl;
+} DN_CRIT_SECT;
 
 // Initialize the critical section
-bool minipal_critsec_init(DN_CRIT_SEC* cs);
+bool minipal_critsec_init(DN_CRIT_SECT* cs);
 
 // Destroy the critical section
-void minipal_critsec_destroy(DN_CRIT_SEC* cs);
+void minipal_critsec_destroy(DN_CRIT_SECT* cs);
 
 // Enter the critical section. Blocks until the section can be entered.
-void minipal_critsec_enter(DN_CRIT_SEC* cs);
+void minipal_critsec_enter(DN_CRIT_SECT* cs);
 
 // Leave the critical section
-void minipal_critsec_leave(DN_CRIT_SEC* cs);
+void minipal_critsec_leave(DN_CRIT_SECT* cs);
 
 #ifdef __cplusplus
 }
@@ -43,10 +43,10 @@ void minipal_critsec_leave(DN_CRIT_SEC* cs);
 #ifdef __cplusplus
 class DnCritSecHolder final
 {
-    DN_CRIT_SEC* _cs;
+    DN_CRIT_SECT* _cs;
 
 public:
-    explicit DnCritSecHolder(DN_CRIT_SEC* cs)
+    explicit DnCritSecHolder(DN_CRIT_SECT* cs)
         : _cs{ cs }
     {
         minipal_critsec_enter(_cs);

@@ -10,7 +10,7 @@
 
 #endif // !RIGHT_SIDE_COMPILE
 
-#include <minipal/critsec.h>
+#include <minipal/critsect.h>
 #include <minipal/guid.h>
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -645,7 +645,7 @@ private:
     // multiple threads and that we never attempt to use a connection that is being deallocated on another
     // thread due to a state change. Receives don't need this since they're performed only on the transport
     // thread (which is also the only thread allowed to deallocate the connection).
-    DN_CRIT_SEC m_sStateLock;
+    DN_CRIT_SECT m_sStateLock;
 
     // Queue of messages that have been sent over the connection but not acknowledged yet or are waiting to be
     // sent (because another message is using the connection or we're in a SessionResync state). You must hold

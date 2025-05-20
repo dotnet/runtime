@@ -3,9 +3,9 @@
 
 #include <assert.h>
 #include <string.h>
-#include "critsec.h"
+#include "critsect.h"
 
-bool minipal_critsec_init(DN_CRIT_SEC* cs)
+bool minipal_critsec_init(DN_CRIT_SECT* cs)
 {
     assert(cs != NULL);
 #ifdef HOST_WINDOWS
@@ -27,7 +27,7 @@ bool minipal_critsec_init(DN_CRIT_SEC* cs)
 #endif // HOST_WINDOWS
 }
 
-void minipal_critsec_destroy(DN_CRIT_SEC* cs)
+void minipal_critsec_destroy(DN_CRIT_SECT* cs)
 {
     assert(cs != NULL);
 #ifdef HOST_WINDOWS
@@ -42,7 +42,7 @@ void minipal_critsec_destroy(DN_CRIT_SEC* cs)
 #endif // _DEBUG
 }
 
-void minipal_critsec_enter(DN_CRIT_SEC* cs)
+void minipal_critsec_enter(DN_CRIT_SECT* cs)
 {
     assert(cs != NULL);
 #ifdef HOST_WINDOWS
@@ -53,7 +53,7 @@ void minipal_critsec_enter(DN_CRIT_SEC* cs)
 #endif // HOST_WINDOWS
 }
 
-void minipal_critsec_leave(DN_CRIT_SEC* cs)
+void minipal_critsec_leave(DN_CRIT_SECT* cs)
 {
     assert(cs != NULL);
 #ifdef HOST_WINDOWS

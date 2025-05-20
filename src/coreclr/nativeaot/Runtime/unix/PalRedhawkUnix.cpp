@@ -882,47 +882,6 @@ extern "C" uint32_t GetCurrentProcessId()
     return getpid();
 }
 
-extern "C" UInt32_BOOL InitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-    {
-        return false;
-    }
-
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-    {
-        st = pthread_mutex_init(&lpCriticalSection->mutex, &mutexAttributes);
-    }
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    return (st == 0);
-}
-
-extern "C" UInt32_BOOL InitializeCriticalSectionEx(CRITICAL_SECTION * lpCriticalSection, uint32_t arg2, uint32_t arg3)
-{
-    return InitializeCriticalSection(lpCriticalSection);
-}
-
-
-extern "C" void DeleteCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutex_destroy(&lpCriticalSection->mutex);
-}
-
-extern "C" void EnterCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutex_lock(&lpCriticalSection->mutex);;
-}
-
-extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutex_unlock(&lpCriticalSection->mutex);
-}
-
 extern "C" UInt32_BOOL SetEvent(HANDLE event)
 {
     UnixEvent* unixEvent = (UnixEvent*)event;

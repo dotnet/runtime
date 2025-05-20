@@ -16,14 +16,14 @@ void CrstStatic::Init(CrstType eType, CrstFlags eFlags)
 #if defined(_DEBUG)
     m_uiOwnerId.Clear();
 #endif // _DEBUG
-    PalInitializeCriticalSectionEx(&m_sCritSec, 0, 0);
+    minipal_critsec_init(&m_sCritSec);
 #endif // !DACCESS_COMPILE
 }
 
 void CrstStatic::Destroy()
 {
 #ifndef DACCESS_COMPILE
-    PalDeleteCriticalSection(&m_sCritSec);
+    minipal_critsec_destroy(&m_sCritSec);
 #endif // !DACCESS_COMPILE
 }
 
@@ -31,7 +31,7 @@ void CrstStatic::Destroy()
 void CrstStatic::Enter(CrstStatic *pCrst)
 {
 #ifndef DACCESS_COMPILE
-    PalEnterCriticalSection(&pCrst->m_sCritSec);
+    minipal_critsec_enter(&pCrst->m_sCritSec);
 #if defined(_DEBUG)
     pCrst->m_uiOwnerId.SetToCurrentThread();
 #endif // _DEBUG
@@ -47,7 +47,7 @@ void CrstStatic::Leave(CrstStatic *pCrst)
 #if defined(_DEBUG)
     pCrst->m_uiOwnerId.Clear();
 #endif // _DEBUG
-    PalLeaveCriticalSection(&pCrst->m_sCritSec);
+    minipal_critsec_leave(&pCrst->m_sCritSec);
 #else
     UNREFERENCED_PARAMETER(pCrst);
 #endif // !DACCESS_COMPILE

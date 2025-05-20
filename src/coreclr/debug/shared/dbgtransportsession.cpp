@@ -55,7 +55,7 @@ DbgTransportSession::~DbgTransportSession()
 #endif // RIGHT_SIDE_COMPILE
 
     if (m_fInitStateLock)
-        m_sStateLock.Destroy();
+        minipal_critsec_destroy(&m_sStateLock);
 }
 
 // Allocates initial resources (including starting the transport thread). The session will start in the
@@ -114,7 +114,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_pADB = pADB;
 #endif // RIGHT_SIDE_COMPILE
 
-    m_sStateLock.Init();
+    minipal_critsec_init(&m_sStateLock);
     m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
@@ -890,7 +890,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 
     // We need the state lock to perform a state transition.
     if (!fCallerHoldsStateLock)
-        m_sStateLock.Enter();
+        minipal_critsec_enter(&m_sStateLock);
 
     switch (m_eState)
     {
@@ -930,7 +930,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
     }
 
     if (!fCallerHoldsStateLock)
-        m_sStateLock.Leave();
+        minipal_critsec_leave(&m_sStateLock);
 }
 
 // Scan the send queue and discard any messages which have been processed by the other side according to the

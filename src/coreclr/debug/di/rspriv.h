@@ -15,7 +15,7 @@
 #include <windows.h>
 
 #include <utilcode.h>
-#include <minipal/critsec.h>
+#include <minipal/critsect.h>
 
 #ifdef _DEBUG
 #define LOGGING
@@ -798,7 +798,7 @@ protected:
     }
 
 
-    DN_CRIT_SEC m_lock;
+    DN_CRIT_SECT m_lock;
 
 #ifdef _DEBUG
 public:
@@ -840,7 +840,7 @@ typedef RSLock::RSLockHolder RSLockHolder;
 typedef RSLock::RSInverseLockHolder RSInverseLockHolder;
 
 // In the RS, we should be using RSLocks instead of raw critical sections.
-#define DN_CRIT_SEC USE_RSLOCK_INSTEAD_OF_DN_CRIT_SEC
+#define DN_CRIT_SECT USE_RSLOCK_INSTEAD_OF_DN_CRIT_SEC
 
 /* ------------------------------------------------------------------------- *
  * Helper macros. Use the ATT_* macros below instead of these.
@@ -11199,7 +11199,7 @@ inline CordbEval * UnwrapCookieCordbEval(CordbProcess *pProc, UINT cookie)
 
 
 // We defined this at the top of the file - undef it now so that we don't pollute other files.
-#undef DN_CRIT_SEC
+#undef DN_CRIT_SECT
 
 
 #ifdef RSCONTRACTS

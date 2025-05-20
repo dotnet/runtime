@@ -7,7 +7,6 @@
 //
 
 #include "common.h"
-#include <minipal/critsec.h>
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
