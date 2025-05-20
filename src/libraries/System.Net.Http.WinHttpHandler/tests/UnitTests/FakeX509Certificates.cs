@@ -8,7 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Http
 {
-
+    // This class is intentionally left empty as we removed WinHttpCertificateHelper
+    // and now use System.Net.CertificateValidation instead
 }
 
 namespace System.Net
