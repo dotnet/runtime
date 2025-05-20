@@ -391,8 +391,8 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int3
         // - Byte 3: Micro version (build number or additional distinction)
         
         // Simple formula to calculate major version based on OS version
-        // The offset of 3 aligns with Apple's pattern of Unicode version support
-        // iOS/macOS 17 -> Unicode 14, iOS/macOS 16 -> Unicode 13, etc.
+        // The offset of 3 approximates Apple's pattern of Unicode version support
+        // iOS versions and macOS versions are not aligned (e.g., iOS 18 and macOS 15 can coexist)
         uint8_t collatorMajor = (uint8_t)(osVersion.majorVersion > 4 ? osVersion.majorVersion - 3 : 1);
         uint8_t collatorMinor = 0;
         uint8_t collatorMilli = 0;
