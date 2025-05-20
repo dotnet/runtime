@@ -714,37 +714,35 @@ public class InterpreterTest
     static object BoxedSubtraction (object lhs, object rhs) =>
         (int)lhs - (int)rhs;
 
-    [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr realloc(IntPtr p, IntPtr bytes);
-    [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void free(IntPtr p);
-    [DllImport("msvcrt", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern int puts(string s);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
 
     public static bool TestPInvoke()
     {
-        IntPtr buf = realloc(IntPtr.Zero, 4);
-        Console.WriteLine("TestPInvoke: realloc returned:");
-        Console.WriteLine(buf.ToInt64());
-        if (buf == IntPtr.Zero)
+        if (sumTwoInts(1, 2) != 3)
             return false;
 
-        IntPtr buf2 = realloc(buf, 1024);
-        Console.WriteLine("TestPInvoke: realloc returned:");
-        Console.WriteLine(buf2.ToInt64());
-        if (buf2 == buf)
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
             return false;
-        if (buf2 == IntPtr.Zero)
-            return false;
-
-        free(buf2);
 
         // This asserts at compile time because we do not have a way to get the IL stub for the marshaling
         //  in order to invoke it from the interpreter.
+        // writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+
+        // We don't currently have exception handling support so the DllNotFoundException from this will make everything explode
         /*
-        int putsResult = puts("Hello world from msvcrt.dll!puts\n");
-        if (putsResult < 0)
+        try {
+            missingPInvoke();
             return false;
+        } catch (DllNotFoundException) {
+        }
         */
 
         return true;

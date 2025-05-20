@@ -1113,7 +1113,9 @@ MAIN_LOOP:
                     ip += 5;
 
                     size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
+                    assert(targetMethod & INTERP_METHOD_HANDLE_TAG);
                     MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
+
                     PCODE actualCallTarget = (possiblyIndirectAddress & INTERP_PVALUE_TAG)
                         ? *(PCODE *)(possiblyIndirectAddress & ~INTERP_PVALUE_TAG)
                         : (PCODE)possiblyIndirectAddress;
@@ -1306,11 +1308,14 @@ CALL_TARGET_IP:
                     else
                         helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX)
+                    {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
                         void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
                         LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
-                    } else {
+                    }
+                    else
+                    {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);
                         void *unboxedData = helper(pMT, src);

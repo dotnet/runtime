@@ -1876,13 +1876,17 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
     }
     else if (isPInvoke)
     {
-        if (m_compHnd->pInvokeMarshalingRequired(targetMethod, &targetSignature)) {
+        if (m_compHnd->pInvokeMarshalingRequired(targetMethod, &targetSignature))
+        {
             assert(!"PInvoke with marshaling not implemented");
-        } else {
+        }
+        else
+        {
             void *addressOfAddress;
             CORINFO_CONST_LOOKUP lookup;
             m_compHnd->getAddressOfPInvokeTarget(targetMethod, &lookup);
-            switch (lookup.accessType) {
+            switch (lookup.accessType)
+            {
                 case IAT_VALUE:
                     addressOfAddress = lookup.addr;
                     assert(!((size_t)lookup.addr & INTERP_PVALUE_TAG));
