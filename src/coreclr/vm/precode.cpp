@@ -680,7 +680,7 @@ void FixupPrecode::StaticInitialize()
     _ASSERTE(IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCode));
     if (FixupPrecodeCodeTemplate != NULL)
     {
-        IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCodeTemplate));
+        IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCodeTemplate);
     }
     InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
 }
