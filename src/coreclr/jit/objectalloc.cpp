@@ -1930,10 +1930,17 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 {
                     if (isAddress)
                     {
-                        // Remember the resource being stored to.
-                        //
-                        JITDUMP("... store address\n");
+                        JITDUMP("... store address is local\n");
                         m_StoreAddressToIndexMap.Set(tree, lclIndex);
+                    }
+                    else
+                    {
+                        const unsigned fieldIndex = GetFieldIndexFromLocalIndex(lclIndex);
+                        if (fieldIndex != BAD_VAR_NUM)
+                        {
+                            JITDUMP("... store address is local field\n");
+                            m_StoreAddressToIndexMap.Set(tree, fieldIndex);
+                        }
                     }
 
                     // The address does not escape

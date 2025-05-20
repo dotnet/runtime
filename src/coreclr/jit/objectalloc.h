@@ -154,7 +154,7 @@ class ObjectAllocator final : public Phase
     bool            m_trackObjectFields;
     unsigned        m_firstFieldIndex;
     unsigned        m_numFields;
-	NodeToIndexMap  m_StoreAddressToIndexMap;
+    NodeToIndexMap  m_StoreAddressToIndexMap;
     LocalToLocalMap m_FieldIndexToLocalIndexMap;
     LocalToLocalMap m_LocalIndexToFieldIndexMap;
 
