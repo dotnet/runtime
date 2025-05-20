@@ -10,6 +10,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
@@ -370,13 +371,36 @@ namespace System.Net.Http
 
                 try
                 {
-                    WinHttpCertificateHelper.BuildChain(
-                        serverCertificate,
-                        remoteCertificateStore,
-                        state.RequestMessage.RequestUri.Host,
-                        state.CheckCertificateRevocationList,
-                        out chain,
-                        out sslPolicyErrors);
+                    // Create and configure the X509Chain
+                    chain = new X509Chain();
+                    chain.ChainPolicy.RevocationMode = 
+                        state.CheckCertificateRevocationList ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+                    // Authenticate the remote party: (e.g. when operating in client mode, authenticate the server).
+                    var serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+                    chain.ChainPolicy.ApplicationPolicy.Add(serverAuthOid);
+
+                    if (remoteCertificateStore.Count > 0)
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            foreach (X509Certificate cert in remoteCertificateStore)
+                            {
+                                NetEventSource.Info(remoteCertificateStore, $"Adding cert to ExtraStore: {cert.Subject}");
+                            }
+                        }
+
+                        chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
+                    }
+
+                    // Call the shared BuildChainAndVerifyProperties method
+                    // isServer=false because WinHttpHandler is a client validating a server certificate
+                    sslPolicyErrors = System.Net.CertificateValidation.BuildChainAndVerifyProperties(
+                        chain, 
+                        serverCertificate, 
+                        true, // Always check certificate name
+                        false, // Not a server
+                        state.RequestMessage.RequestUri.Host);
 
                     result = state.ServerCertificateValidationCallback(
                         state.RequestMessage,
