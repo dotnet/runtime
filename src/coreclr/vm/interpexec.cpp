@@ -152,7 +152,7 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_LDC_R8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                    memcpy(LOCAL_VAR_ADDR(ip[1], double), &ip[2], sizeof(double));
                     ip += 4;
                     break;
                 case INTOP_LDPTR:

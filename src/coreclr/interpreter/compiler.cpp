@@ -2405,12 +2405,10 @@ retry_emit:
             }
             case CEE_LDC_R8:
             {
-                int64_t val = getI8LittleEndian(m_ip + 1);
                 AddIns(INTOP_LDC_R8);
                 PushInterpType(InterpTypeR8, NULL);
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-                m_pLastNewIns->data[0] = (int32_t)val;
-                m_pLastNewIns->data[1] = (int32_t)(val >> 32);
+                memcpy(m_pLastNewIns->data, m_ip + 1, sizeof(double));
                 m_ip += 9;
                 break;
             }
