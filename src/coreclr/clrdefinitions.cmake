@@ -219,7 +219,7 @@ if (FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 endif()
 
 if (CLR_CMAKE_TARGET_APPLE)
-#  Re-enable when the dbgshim is fixed and generally available
+#  Re-enable when dbgshim containing https://github.com/dotnet/diagnostics/pull/5487 is generally available
 #  add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
 endif()
 
