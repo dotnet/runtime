@@ -6463,7 +6463,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
                         }
                         else
                         {
-                            fmt = useNDD ? emitInsModeFormat(ins, IF_RWR_RRD_ARD) : emitInsModeFormat(ins, IF_RRD_ARD);
+                            fmt = useNDD ? IF_RWR_RRD_ARD : emitInsModeFormat(ins, IF_RRD_ARD);
                         }
                     }
                     else
@@ -10618,7 +10618,7 @@ regNumber emitter::emitIns_BASE_R_R_RM(
     regNumber r                     = REG_NA;
     assert(regOp->isUsedFromReg());
 
-    if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg)
+    if (DoJitUseApxNDD(ins) && regOp->GetRegNum() != targetReg && !IsRedundantMov(INS_mov, IF_RWR_RRD, attr, targetReg, regOp->GetRegNum(), false))
     {
         r = emitInsBinary(ins, attr, regOp, rmOp, targetReg);
     }
