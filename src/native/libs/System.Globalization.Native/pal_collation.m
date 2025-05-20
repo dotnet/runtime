@@ -395,11 +395,24 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(void)
         uint8_t collatorMilli = 0;
         uint8_t collatorMicro = 0;
         
-        // Map OS version to an appropriate collator version that corresponds
-        // to the Unicode version likely used by Apple's collation implementation
+        // Known Unicode version mappings for specific iOS/macOS versions
+        // This approach ensures correct versioning for known OS releases
+        // and provides a reasonable estimate for future releases
         if (osVersion.majorVersion >= 17) { // iOS 17+ / macOS 14+ (2023+)
             collatorMajor = 14;  // Based on Unicode 15.1
             collatorMinor = 0;
+            
+            // For future major OS versions beyond our known mappings (e.g., iOS 18+),
+            // increment the collator major version proportionally
+            // This pattern follows Apple's typical Unicode version updates
+            if (osVersion.majorVersion > 17) {
+                // Add the difference between the actual OS version and our last known version
+                // to the last known collator version
+                collatorMajor += (osVersion.majorVersion - 17);
+                
+                // Reset the minor version since this is an estimated mapping
+                collatorMinor = 0;
+            }
         } else if (osVersion.majorVersion >= 16) { // iOS 16 / macOS 13 (2022)
             collatorMajor = 13;  // Based on Unicode 15.0
             collatorMinor = 0;
