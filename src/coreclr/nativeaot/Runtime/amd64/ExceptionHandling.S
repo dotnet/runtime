@@ -245,9 +245,6 @@ NESTED_END RhpRethrow, _TEXT
 
     alloc_stack     stack_alloc_size
 
-    // Mirror clearing of AVX state done by regular method prologs
-    vzeroupper
-
     END_PROLOGUE
 .endm
 
@@ -255,9 +252,6 @@ NESTED_END RhpRethrow, _TEXT
 // Epilogue of all funclet calling helpers (RhpCallXXXXFunclet)
 //
 .macro FUNCLET_CALL_EPILOGUE
-    // Mirror clearing of AVX state done by regular method epilogs
-    vzeroupper
-
     free_stack      stack_alloc_size
 
     pop_nonvol_reg rbp

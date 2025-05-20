@@ -1271,7 +1271,7 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     }
 
     // Copy call return value.
-    if (layout.ReturnSize > 0)
+    if ((layout.ReturnSize > 0) && (callDefInfo.DefinitionNode != nullptr))
     {
         CopyReturnValueOnResumption(call, callDefInfo, resumeByteArrLclNum, resumeObjectArrLclNum, layout,
                                     storeResultBB);
