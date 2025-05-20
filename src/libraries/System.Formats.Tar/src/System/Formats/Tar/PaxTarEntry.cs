@@ -53,6 +53,12 @@ namespace System.Formats.Tar
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
+        /// The specified <paramref name="extendedAttributes"/> are additional attributes to be used for the entry.
+        /// <para>It may include PAX attributes like:</para>
+        /// <list type="bullet">
+        /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
+        /// </list>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> or <paramref name="entryName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
@@ -104,7 +110,18 @@ namespace System.Formats.Tar
         /// <summary>
         /// Returns the extended attributes for this entry.
         /// </summary>
-        /// <remarks>The extended attributes are specified when constructing an entry and updated with additional attributes when the entry is written. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append custom extended attributes.</remarks>
+        /// <remarks>The extended attributes are specified when constructing an entry and updated with additional attributes when the entry is written. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append custom extended attributes.
+        /// <para>The following common PAX attributes may be included:</para>
+        /// <list type="bullet">
+        /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
+        /// <item>Path, under the name <c>path</c>, as a string.</item>
+        /// <item>Group name, under the name <c>gname</c>, as a string.</item>
+        /// <item>User name, under the name <c>uname</c>, as a string.</item>
+        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>.</item>
+        /// </list>
+        /// </remarks>
         public IReadOnlyDictionary<string, string> ExtendedAttributes => _readOnlyExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
