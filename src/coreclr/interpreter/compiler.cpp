@@ -1736,6 +1736,7 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     size_t data = !direct
         ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
         : (size_t)direct;
+    assert(data);
     return GetDataItemIndex((void*)data);
 }
 

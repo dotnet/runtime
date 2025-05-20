@@ -967,13 +967,19 @@ public class InterpreterTest
         return true;
     }
 
+    public static int LdtokenField = 7;
+
     public static bool TestLdtoken()
     {
         Type t = typeof(int);
         int i = 42;
         if (!ReferenceEquals(t, i.GetType()))
             return false;
-        // FIXME: Find a way to get roslyn to generate ldtoken for fields and methods, then test those here
+        // These generate field and method ldtoken opcodes, but the test fails because we are missing castclass and possibly also generics
+        /*
+        System.Linq.Expressions.Expression<Func<int>> f = () => LdtokenField;
+        System.Linq.Expressions.Expression<Action> a = () => TestLdtoken();
+        */
         return true;
     }
 
