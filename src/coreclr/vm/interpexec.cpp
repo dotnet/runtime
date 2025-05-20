@@ -1424,6 +1424,7 @@ do {                                                                           \
                 case INTOP_STELEM_R8:
                 {
                     STELEM(double, double);
+                    break;
                 }
                 case INTOP_LDTOKEN:
                 {
