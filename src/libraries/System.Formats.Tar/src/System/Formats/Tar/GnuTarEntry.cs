@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Formats.Tar
 {
     /// <summary>
@@ -47,7 +49,20 @@ namespace System.Formats.Tar
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the GNU format.</para></exception>
         public GnuTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Gnu)
-        { }
+        {
+            // Some tools don't accept GNU entries that have an atime/ctime.
+            // We only copy for round-tripping between GnuTarEntries.
+            if (other is GnuTarEntry gnuOther)
+            {
+                _header._aTime = gnuOther.AccessTime;
+                _header._cTime = gnuOther.ChangeTime;
+            }
+            else
+            {
+                Debug.Assert(_header._aTime == default);
+                Debug.Assert(_header._cTime == default);
+            }
+        }
 
         /// <summary>
         /// A timestamp that represents the last time the file represented by this entry was accessed. Setting a value for this property is not recommended because most TAR reading tools do not support it.

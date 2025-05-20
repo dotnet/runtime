@@ -106,8 +106,6 @@ namespace System.Formats.Tar
             _checksum = other._checksum;
             _linkName = other._linkName;
             _dataStream = other._dataStream;
-            _aTime = other._aTime;
-            _cTime = other._cTime;
         }
 
         internal void AddExtendedAttributes(IEnumerable<KeyValuePair<string, string>> existing)
