@@ -43,9 +43,13 @@ public:
     Bundle(LPCSTR bundlePath, BundleProbeFn *probe);
     BundleFileLocation Probe(const SString& path, bool pathIsBundleRelative = false) const;
 
+    // Paths do not change and should remain valid for the lifetime of the Bundle
     const SString& Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
-    const SString& BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath; }
-    const SString& ExtractionPath() const { LIMITED_METHOD_CONTRACT; return m_extractionPath; }
+    const UTF8* BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath.GetUTF8(); }
+
+    // Extraction path does not change and should remain valid for the lifetime of the Bundle
+    bool HasExtractedFiles() const { LIMITED_METHOD_CONTRACT; return !m_extractionPath.IsEmpty(); }
+    const WCHAR* ExtractionPath() const { LIMITED_METHOD_CONTRACT; return m_extractionPath.GetUnicode(); }
 
     static Bundle* AppBundle; // The BundleInfo for the current app, initialized by coreclr_initialize.
     static bool AppIsBundle() { LIMITED_METHOD_CONTRACT; return AppBundle != nullptr; }

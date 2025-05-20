@@ -858,7 +858,10 @@ namespace BINDER_SPACE
                     ProbeExtensionResult probeExtensionResult = AssemblyProbeExtension::Probe(assemblyFileName, /* pathIsBundleRelative */ true);
                     if (probeExtensionResult.IsValid())
                     {
-                        SString assemblyFilePath(Bundle::AppIsBundle() ? Bundle::AppBundle->BasePath() : SString::Empty());
+                        SString assemblyFilePath;
+                        if (Bundle::AppIsBundle())
+                           assemblyFilePath.SetUTF8(Bundle::AppBundle->BasePath());
+
                         assemblyFilePath.Append(assemblyFileName);
 
                         hr = GetAssembly(assemblyFilePath,
