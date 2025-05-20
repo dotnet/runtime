@@ -23,12 +23,12 @@ internal unsafe partial class MachObjectFile
         private static IncrementalHash GetDefaultIncrementalHash() => IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
         internal readonly long FileOffset;
-        private EmbeddedSignatureBlob _embeddedSignatureBlob;
+        internal EmbeddedSignatureBlob EmbeddedSignatureBlob;
 
         private CodeSignature(long fileOffset, EmbeddedSignatureBlob embeddedSignatureBlob)
         {
             FileOffset = fileOffset;
-            _embeddedSignatureBlob = embeddedSignatureBlob;
+            EmbeddedSignatureBlob = embeddedSignatureBlob;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ internal unsafe partial class MachObjectFile
         /// </summary>
         internal static CodeSignature CreateSignature(MachObjectFile machObject, MemoryMappedViewAccessor file, string identifier, CodeSignature? oldSignature)
         {
-            var oldSignatureBlob = oldSignature?._embeddedSignatureBlob;
+            var oldSignatureBlob = oldSignature?.EmbeddedSignatureBlob;
 
             uint signatureStart = machObject.GetSignatureStart();
             RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
@@ -70,7 +70,6 @@ internal unsafe partial class MachObjectFile
                 {
                     hasher.AppendData(derEntitlementsBlob.GetBytes());
                     hash = hasher.GetHashAndReset();
-                    Debug.Assert(hash.Length == DefaultHashSize);
                     hash.CopyTo(codeDirectoryHashes, hashSlotsOffset);
                     hashSlotsOffset += DefaultHashSize;
 
@@ -148,7 +147,7 @@ internal unsafe partial class MachObjectFile
 
         internal void WriteToFile(MemoryMappedViewAccessor file)
         {
-            _embeddedSignatureBlob.Write(file, FileOffset);
+            EmbeddedSignatureBlob.Write(file, FileOffset);
         }
 
         private static uint GetIdentifierLength(string identifier)
@@ -173,32 +172,43 @@ internal unsafe partial class MachObjectFile
             uint cmsBlobSize = CmsWrapperBlob.Empty.Size;
             uint entitlementsBlobSize = 0;
             uint derEntitlementsBlobSize = 0;
+            uint embeddedSignatureSubBlobCount = 3; // CodeDirectory, Requirements, CMS Wrapper
 
             if (existingSignature != null)
             {
                 // This isn't accurate when the existing signature doesn't have any special slots.
-                specialCodeSlotCount = Math.Max((uint)CodeDirectorySpecialSlot.Requirements, existingSignature._embeddedSignatureBlob.GetSpecialSlotCount());
-                requirementsBlobSize = existingSignature._embeddedSignatureBlob.RequirementsBlob?.Size ?? requirementsBlobSize;
-                cmsBlobSize = existingSignature._embeddedSignatureBlob.CmsWrapperBlob?.Size ?? cmsBlobSize;
-                entitlementsBlobSize = existingSignature._embeddedSignatureBlob.EntitlementsBlob?.Size ?? entitlementsBlobSize;
-                derEntitlementsBlobSize = existingSignature._embeddedSignatureBlob.DerEntitlementsBlob?.Size ?? derEntitlementsBlobSize;
+                specialCodeSlotCount = Math.Max((uint)CodeDirectorySpecialSlot.Requirements, existingSignature.EmbeddedSignatureBlob.GetSpecialSlotCount());
+                requirementsBlobSize = existingSignature.EmbeddedSignatureBlob.RequirementsBlob?.Size ?? requirementsBlobSize;
+                cmsBlobSize = existingSignature.EmbeddedSignatureBlob.CmsWrapperBlob?.Size ?? cmsBlobSize;
+                entitlementsBlobSize = existingSignature.EmbeddedSignatureBlob.EntitlementsBlob?.Size ?? entitlementsBlobSize;
+                derEntitlementsBlobSize = existingSignature.EmbeddedSignatureBlob.DerEntitlementsBlob?.Size ?? derEntitlementsBlobSize;
+                if (existingSignature.EmbeddedSignatureBlob.EntitlementsBlob is not null)
+                    embeddedSignatureSubBlobCount += 1;
+                if (existingSignature.EmbeddedSignatureBlob.DerEntitlementsBlob is not null)
+                    embeddedSignatureSubBlobCount += 1;
             }
 
             // Calculate the size of the new signature
             long size = 0;
+            // EmbeddedSignature
             size += sizeof(BlobMagic); // Signature blob Magic number
             size += sizeof(uint); // Size field
             size += sizeof(uint); // Blob count
-            size += sizeof(BlobIndex) * 3; // CodeDirectory, Requirements, and CMS blobs
+            size += sizeof(BlobIndex) * embeddedSignatureSubBlobCount; // EmbeddedSignature sub-blobs
             size += sizeof(BlobMagic); // CD Magic number
+            // CodeDirectory
             size += sizeof(uint); // CD Size field
             size += sizeof(CodeDirectoryBlob.CodeDirectoryHeader); // CodeDirectory header
             size += identifierLength; // Identifier
-            size += codeSlotCount * DefaultHashSize; // Code hashes
             size += specialCodeSlotCount * DefaultHashSize; // Special code hashes
-            size += requirementsBlobSize; // Requirements blob
-            size += entitlementsBlobSize; // Entitlements blob
-            size += derEntitlementsBlobSize; // DER Entitlements blob
+            size += codeSlotCount * DefaultHashSize; // Code hashes
+            // RequirementsBlob
+            size += requirementsBlobSize;
+            // EntitlementsBlob
+            size += entitlementsBlobSize;
+            // DER EntitlementsBlob
+            size += derEntitlementsBlobSize;
+            // CMSWrapperBlob
             size += cmsBlobSize; // CMS blob
 
             return size;

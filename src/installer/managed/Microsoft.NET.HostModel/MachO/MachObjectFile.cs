@@ -36,6 +36,8 @@ internal unsafe partial class MachObjectFile
     /// </summary>
     private readonly long _nextCommandPtr;
 
+    internal EmbeddedSignatureBlob? EmbeddedSignatureBlob => _codeSignatureBlob?.EmbeddedSignatureBlob;
+
     private MachObjectFile(
         MachHeader header,
         (LinkEditCommand Command, long FileOffset) codeSignatureLC,

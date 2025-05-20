@@ -243,6 +243,36 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             File.SetUnixFileMode(managedSignedPath, mode);
         }
 
+        public static bool HasDerEntitlementsBlob(string filePath)
+        {
+            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+                {
+                    var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                    return machObjectFile.EmbeddedSignatureBlob?.DerEntitlementsBlob != null;
+                }
+            }
+        }
+
+        public static bool HasEntitlementsBlob(string filePath)
+        {
+            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true))
+                using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
+                {
+                    var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
+                    if (machObjectFile.EmbeddedSignatureBlob.DerEntitlementsBlob == null)
+                    {
+                        return false;
+                    }
+                    return machObjectFile.EmbeddedSignatureBlob?.EntitlementsBlob != null;
+                }
+            }
+        }
+
         /// <summary>
         /// AdHoc sign a test file. This should look similar to HostWriter.CreateAppHost.
         /// </summary>
