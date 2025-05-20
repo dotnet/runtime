@@ -107,6 +107,6 @@ PALEXPORT int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeNam
                                                        int32_t cbSortKeyLength,
                                                        int32_t options);
 
-PALEXPORT int32_t GlobalizationNative_GetUIUnicodeVersion();
+PALEXPORT int32_t GlobalizationNative_GetUIUnicodeVersion(void);
 
 #endif

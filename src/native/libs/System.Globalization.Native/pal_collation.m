@@ -375,7 +375,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
     }
 }
 
-int32_t GlobalizationNative_GetUIUnicodeVersion()
+int32_t GlobalizationNative_GetUIUnicodeVersion(void)
 {
     @autoreleasepool {
         // iOS/macOS Unicode version generally aligns with the major iOS/macOS version
