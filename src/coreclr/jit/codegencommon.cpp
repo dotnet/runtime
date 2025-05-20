@@ -5045,7 +5045,7 @@ void CodeGen::genFnProlog()
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
 #if defined(TARGET_AMD64)
     // we'd require eEVEX present to enable EGPRs in HWIntrinsics.
-    if (!compiler->canUseEvexEncoding() || !compiler->canUseApxEncoding())
+    if (!compiler->canUseEvexEncoding())
     {
         excludeMask = excludeMask | RBM_HIGHINT;
     }

@@ -840,7 +840,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmIntCalleeTrash = compiler->rbmIntCalleeTrash;
     regIntLast        = compiler->regIntLast;
     apxIsSupported    = compiler->canUseApxEncoding();
-    canUseApxRegs     = apxIsSupported && evexIsSupported;
 
     if (apxIsSupported)
     {
@@ -863,8 +862,6 @@ LinearScan::LinearScan(Compiler* theCompiler)
                             REG_K0,    REG_K1,    REG_K2,    REG_K3,    REG_K4,    REG_K5,    REG_K6,    REG_K7,
                             REG_COUNT};
     }
-#else  // !TARGET_AMD64
-    canUseApxRegs = false;
 #endif // TARGET_AMD64
 
     rbmAllMask        = compiler->rbmAllMask;

@@ -3857,11 +3857,11 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
         assert(op2 != nullptr);
         if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
         {
-            if (op1->isContainedIndir() && !getCanUseApxRegs())
+            if (op1->isContainedIndir() && !getEvexIsSupported())
             {
                 return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
             }
-            else if (op2->isContainedIndir() && !getCanUseApxRegs())
+            else if (op2->isContainedIndir() && !getEvexIsSupported())
             {
                 return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
             }

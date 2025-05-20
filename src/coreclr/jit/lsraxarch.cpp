@@ -2009,7 +2009,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             }
             case NI_System_Math_Abs:
             {
-                op1RegCandidates = ForceLowGprForApxIfNeeded(op1, RBM_NONE, getCanUseApxRegs());
+                op1RegCandidates = ForceLowGprForApxIfNeeded(op1, RBM_NONE, getEvexIsSupported());
                 break;
             }
             default:
@@ -2192,7 +2192,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         const bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
 #ifdef TARGET_AMD64
-        const bool canHWIntrinsicUseApxRegs = isEvexCompatible && getCanUseApxRegs();
+        const bool canHWIntrinsicUseApxRegs = isEvexCompatible && getEvexIsSupported();
 #else
         // We can never use EGPRs on non-64-bit platforms.
         const bool canHWIntrinsicUseApxRegs = false;
@@ -3070,7 +3070,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 #ifdef TARGET_AMD64
     if (varTypeUsesIntReg(indirTree->Addr()))
     {
-        useCandidates = ForceLowGprForApxIfNeeded(indirTree->Addr(), useCandidates, getCanUseApxRegs());
+        useCandidates = ForceLowGprForApxIfNeeded(indirTree->Addr(), useCandidates, getEvexIsSupported());
     }
 #endif // TARGET_AMD64
     int srcCount = BuildIndirUses(indirTree, useCandidates);

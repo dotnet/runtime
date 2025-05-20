@@ -2132,7 +2132,6 @@ private:
     regMaskTP        rbmAllMask;
     regMaskTP        rbmMskCalleeTrash;
     SingleTypeRegSet lowGprRegs;
-    bool             canUseApxRegs;
     bool             evexIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
@@ -2142,10 +2141,6 @@ private:
     FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
-    }
-    FORCEINLINE bool getCanUseApxRegs() const
-    {
-        return this->canUseApxRegs;
     }
     FORCEINLINE bool getEvexIsSupported() const
     {
