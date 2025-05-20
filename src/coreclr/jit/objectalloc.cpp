@@ -842,21 +842,20 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
             if (m_trackObjectFields)
             {
+                // Parameter fields have unknown initial values.
+                // OSR local fields have unknown initial values.
+                //
                 const unsigned fieldIndex = GetFieldIndexFromLocal(lclNum);
 
                 if (fieldIndex != BAD_VAR_NUM)
                 {
+                    AddConnGraphEdgeIndex(fieldIndex, m_unknownSourceIndex);
+
                     if (lclDsc->lvIsParam)
                     {
                         // Param fields escape
                         //
                         MarkIndexAsEscaping(fieldIndex);
-                    }
-                    else
-                    {
-                        // OSR fields have unknown initial values.
-                        //
-                        AddConnGraphEdgeIndex(fieldIndex, m_unknownSourceIndex);
                     }
                 }
             }
@@ -1806,14 +1805,14 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 //
                 if (isAddress)
                 {
-                    // If destination is tracked, then connect source to destination's field
-                    // Vxx = &Vyy ==> *Vxx = Vyy
-
                     if (IsTrackedLocal(dstLclNum))
                     {
+                        // dst <- &src ==> dst.field <-> src
+                        //
                         const unsigned dstFieldIndex = GetFieldIndexFromLocal(dstLclNum);
                         if (dstFieldIndex != BAD_VAR_NUM)
                         {
+                            AddConnGraphEdgeIndex(dstFieldIndex, lclIndex);
                             AddConnGraphEdgeIndex(lclIndex, dstFieldIndex);
                         }
                     }
@@ -1841,10 +1840,22 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                 const unsigned dstFieldIndex = GetFieldIndexFromLocalIndex(dstIndex);
                 const unsigned srcFieldIndex = GetFieldIndexFromLocalIndex(lclIndex);
 
-                if ((dstFieldIndex != BAD_VAR_NUM) && (srcFieldIndex != BAD_VAR_NUM))
+                if (dstFieldIndex != BAD_VAR_NUM)
                 {
-                    AddConnGraphEdgeIndex(dstFieldIndex, srcFieldIndex);
-                    AddConnGraphEdgeIndex(srcFieldIndex, dstFieldIndex);
+                    // dst <- src w/fields ==> dst.field <-> src.field
+                    //
+                    if (srcFieldIndex != BAD_VAR_NUM)
+                    {
+                        AddConnGraphEdgeIndex(dstFieldIndex, srcFieldIndex);
+                        AddConnGraphEdgeIndex(srcFieldIndex, dstFieldIndex);
+                    }
+                    // dst <- src.field ==> dst.field <-> unknown
+                    //
+                    else
+                    {
+                        AddConnGraphEdgeIndex(dstFieldIndex, m_unknownSourceIndex);
+                        MarkIndexAsEscaping(dstFieldIndex);
+                    }
                 }
 
                 // If the source of this store is an enumerator local,
