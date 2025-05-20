@@ -4,9 +4,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+#nullable enable
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -36,20 +36,21 @@ internal unsafe partial class MachObjectFile
         /// The signature is composed of an Embedded Signature Superblob header, followed by a CodeDirectory blob, a Requirements blob, and a CMS blob.
         /// The codesign tool also adds an empty Requirements blob and an empty CMS blob, which are not strictly required but are added here for compatibility.
         /// </summary>
-        internal static CodeSignature CreateSignature(MachObjectFile machObject, MemoryMappedViewAccessor file, string identifier, CodeSignature oldSignature)
+        internal static CodeSignature CreateSignature(MachObjectFile machObject, MemoryMappedViewAccessor file, string identifier, CodeSignature? oldSignature)
         {
-            var oldSignatureBlob = oldSignature._embeddedSignatureBlob;
+            var oldSignatureBlob = oldSignature?._embeddedSignatureBlob;
 
             uint signatureStart = machObject.GetSignatureStart();
             RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
             CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
-            EntitlementsBlob entitlementsBlob = oldSignatureBlob?.EntitlementsBlob;
-            DerEntitlementsBlob derEntitlementsBlob = oldSignatureBlob?.DerEntitlementsBlob;
-            uint specialCodeSlotCount = (uint)(derEntitlementsBlob is not null ?
-                CodeDirectorySpecialSlot.DerEntitlements :
+            EntitlementsBlob? entitlementsBlob = oldSignatureBlob?.EntitlementsBlob;
+            DerEntitlementsBlob? derEntitlementsBlob = oldSignatureBlob?.DerEntitlementsBlob;
+            uint specialCodeSlotCount = (uint)(
+                derEntitlementsBlob is not null ?
+                    CodeDirectorySpecialSlot.DerEntitlements :
                 entitlementsBlob is not null ?
-                CodeDirectorySpecialSlot.Entitlements :
-                CodeDirectorySpecialSlot.Requirements);
+                    CodeDirectorySpecialSlot.Entitlements :
+                    CodeDirectorySpecialSlot.Requirements);
 
 
             byte[] identifierBytes = new byte[GetIdentifierLength(identifier)];
@@ -85,10 +86,13 @@ internal unsafe partial class MachObjectFile
                     hashSlotsOffset += DefaultHashSize;
                 }
 
-                // -4 is skipped
-                hashSlotsOffset += DefaultHashSize;
-                // -3 is skipped
-                hashSlotsOffset += DefaultHashSize;
+                if (entitlementsBlob != null || derEntitlementsBlob != null)
+                {
+                    // -4 is skipped
+                    hashSlotsOffset += DefaultHashSize;
+                    // -3 is skipped
+                    hashSlotsOffset += DefaultHashSize;
+                }
 
                 // -2 is the requirements blob hash
                 hasher.AppendData(requirementsBlob.GetBytes());
@@ -127,12 +131,11 @@ internal unsafe partial class MachObjectFile
                 hashType: DefaultHashType,
                 signatureStart: signatureStart,
                 execSegmentBase: machObject._textSegment64.Command.GetFileOffset(machObject._header),
-                execSegmentLimit: machObject._textSegment64.Command.GetFileSize(machObject._header),
+                execSegmentLimit: machObject._linkEditSegment64.Command.GetFileOffset(machObject._header),
                 execSegmentFlags: machObject._header.FileType == MachFileType.Execute ? ExecutableSegmentFlags.MainBinary : 0,
                 hashes: codeDirectoryHashes);
 
             var embeddedSignature = new EmbeddedSignatureBlob(codeDirectory, requirementsBlob, cmsWrapperBlob, entitlementsBlob, derEntitlementsBlob);
-
 
             return new CodeSignature(signatureStart, embeddedSignature);
         }
@@ -158,6 +161,52 @@ internal unsafe partial class MachObjectFile
             return (signatureStart + PageSize - 1) / PageSize;
         }
 
+        /// <summary>
+        /// Returns the size of a signature used to replace an existing one.
+        /// </summary>
+        internal static long GetSignatureSize(uint fileSize, string identifier, CodeSignature? existingSignature)
+        {
+            uint identifierLength = GetIdentifierLength(identifier);
+            uint codeSlotCount = GetCodeSlotCount(fileSize);
+            uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
+            uint requirementsBlobSize = RequirementsBlob.Empty.Size;
+            uint cmsBlobSize = CmsWrapperBlob.Empty.Size;
+            uint entitlementsBlobSize = 0;
+            uint derEntitlementsBlobSize = 0;
+
+            if (existingSignature != null)
+            {
+                // This isn't accurate when the existing signature doesn't have any special slots.
+                specialCodeSlotCount = Math.Max((uint)CodeDirectorySpecialSlot.Requirements, existingSignature._embeddedSignatureBlob.GetSpecialSlotCount());
+                requirementsBlobSize = existingSignature._embeddedSignatureBlob.RequirementsBlob?.Size ?? requirementsBlobSize;
+                cmsBlobSize = existingSignature._embeddedSignatureBlob.CmsWrapperBlob?.Size ?? cmsBlobSize;
+                entitlementsBlobSize = existingSignature._embeddedSignatureBlob.EntitlementsBlob?.Size ?? entitlementsBlobSize;
+                derEntitlementsBlobSize = existingSignature._embeddedSignatureBlob.DerEntitlementsBlob?.Size ?? derEntitlementsBlobSize;
+            }
+
+            // Calculate the size of the new signature
+            long size = 0;
+            size += sizeof(BlobMagic); // Signature blob Magic number
+            size += sizeof(uint); // Size field
+            size += sizeof(uint); // Blob count
+            size += sizeof(BlobIndex) * 3; // CodeDirectory, Requirements, and CMS blobs
+            size += sizeof(BlobMagic); // CD Magic number
+            size += sizeof(uint); // CD Size field
+            size += sizeof(CodeDirectoryBlob.CodeDirectoryHeader); // CodeDirectory header
+            size += identifierLength; // Identifier
+            size += codeSlotCount * DefaultHashSize; // Code hashes
+            size += specialCodeSlotCount * DefaultHashSize; // Special code hashes
+            size += requirementsBlobSize; // Requirements blob
+            size += entitlementsBlobSize; // Entitlements blob
+            size += derEntitlementsBlobSize; // DER Entitlements blob
+            size += cmsBlobSize; // CMS blob
+
+            return size;
+        }
+
+        /// <summary>
+        /// Gets the largest size estimate for a code signature.
+        /// </summary>
         public static long GetLargestSizeEstimate(uint fileSize, string identifier)
         {
             uint identifierLength = GetIdentifierLength(identifier);
@@ -172,7 +221,11 @@ internal unsafe partial class MachObjectFile
             size += identifierLength; // Identifier
             size += codeSlotCount * DefaultHashSize; // Code hashes
             size += specialCodeSlotCount * DefaultHashSize; // Special code hashes
-            return size;
+            size += RequirementsBlob.Empty.Size; // Requirements blob
+            size += CmsWrapperBlob.Empty.Size; // CMS blob
+            size += EntitlementsBlob.MaxSize;
+            size += DerEntitlementsBlob.MaxSize;
+            return size + 64;
         }
     }
 }

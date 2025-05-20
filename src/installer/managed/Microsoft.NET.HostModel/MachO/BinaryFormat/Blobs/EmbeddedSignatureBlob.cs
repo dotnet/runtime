@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-#nullable enable
 
 using System;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
-using System.Runtime.InteropServices;
+#nullable enable
 
 namespace Microsoft.NET.HostModel.MachO;
 
@@ -13,51 +11,91 @@ namespace Microsoft.NET.HostModel.MachO;
 /// Format based off of https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_codesigning/lib/cscdefs.h#L23
 /// Code Signature data is always big endian / network order.
 /// </summary>
-[StructLayout(LayoutKind.Sequential)]
 internal class EmbeddedSignatureBlob : SuperBlob
 {
     public CodeDirectoryBlob CodeDirectoryBlob
     {
-        get => (CodeDirectoryBlob)Blobs.Single(b => b.Magic == BlobMagic.CodeDirectory);
+        get
+        {
+            foreach (var b in Blobs)
+            {
+                if (b.Magic == BlobMagic.CodeDirectory)
+                    return (CodeDirectoryBlob)b;
+            }
+            throw new InvalidOperationException("CodeDirectoryBlob not found.");
+        }
         set
         {
             if (value is null)
             {
-                throw new ArgumentNullException(nameof(value), "CodeDirectoryBlob cannot be null");
+                throw new ArgumentNullException(nameof(value), "CodeDirectoryBlob cannot be set to null");
             }
             RemoveBlob(CodeDirectorySpecialSlot.CodeDirectory);
             AddBlob(value, CodeDirectorySpecialSlot.CodeDirectory);
         }
     }
 
-    public RequirementsBlob RequirementsBlob
+    /// <summary>
+    /// The RequirementsBlob. This may be null if the blob is not present in the read file, but will be present in newly created signatures
+    /// </summary>
+    public RequirementsBlob? RequirementsBlob
     {
-        get => (RequirementsBlob)Blobs.Single(b => b.Magic == BlobMagic.Requirements);
+        get
+        {
+            foreach (var b in Blobs)
+            {
+                if (b.Magic == BlobMagic.Requirements)
+                    return (RequirementsBlob)b;
+            }
+            return null;
+        }
         set
         {
             if (value is null)
             {
-                throw new ArgumentNullException(nameof(value), "RequirementsBlob cannot be null");
+                throw new ArgumentNullException(nameof(value), "RequirementsBlob cannot be set to null");
             }
             RemoveBlob(CodeDirectorySpecialSlot.Requirements);
             AddBlob(value, CodeDirectorySpecialSlot.Requirements);
         }
     }
-    public CmsWrapperBlob CmsWrapperBlob {
-        get => (CmsWrapperBlob) Blobs.Single(b => b.Magic == BlobMagic.CmsWrapper);
+
+    /// <summary>
+    /// The CmsWrapperBlob. This may be null if the blob is not present in the read file, but will be present in newly created signatures
+    /// </summary>
+    public CmsWrapperBlob? CmsWrapperBlob
+    {
+        get
+        {
+            foreach (var b in Blobs)
+            {
+                if (b.Magic == BlobMagic.CmsWrapper)
+                    return (CmsWrapperBlob)b;
+            }
+            return null;
+        }
         set
         {
             if (value is null)
             {
-                throw new ArgumentNullException(nameof(value), "CmsWrapperBlob cannot be null");
+                throw new ArgumentNullException(nameof(value), "CmsWrapperBlob cannot be set to null");
             }
             RemoveBlob(CodeDirectorySpecialSlot.CmsWrapper);
             AddBlob(value, CodeDirectorySpecialSlot.CmsWrapper);
         }
     }
+
     public EntitlementsBlob? EntitlementsBlob
     {
-        get => (EntitlementsBlob?)Blobs.SingleOrDefault(b => b.Magic == BlobMagic.Entitlements);
+        get
+        {
+            foreach (var b in Blobs)
+            {
+                if (b.Magic == BlobMagic.Entitlements)
+                    return (EntitlementsBlob)b;
+            }
+            return null;
+        }
         set
         {
             RemoveBlob(CodeDirectorySpecialSlot.Entitlements);
@@ -67,9 +105,18 @@ internal class EmbeddedSignatureBlob : SuperBlob
             }
         }
     }
+
     public DerEntitlementsBlob? DerEntitlementsBlob
     {
-        get => (DerEntitlementsBlob?)Blobs.SingleOrDefault(b => b.Magic == BlobMagic.DerEntitlements);
+        get
+        {
+            foreach (var b in Blobs)
+            {
+                if (b.Magic == BlobMagic.DerEntitlements)
+                    return (DerEntitlementsBlob)b;
+            }
+            return null;
+        }
         set
         {
             RemoveBlob(CodeDirectorySpecialSlot.DerEntitlements);
@@ -102,6 +149,15 @@ internal class EmbeddedSignatureBlob : SuperBlob
 
     public uint GetSpecialSlotCount()
     {
-        return BlobIndices.Max(b => 0xFF & (uint)b.Slot);
+        uint maxSlot = 0;
+        foreach (var b in BlobIndices)
+        {
+            uint slot = 0xFF & (uint)b.Slot;
+            if (slot > maxSlot)
+            {
+                maxSlot = slot;
+            }
+        }
+        return maxSlot;
     }
 }

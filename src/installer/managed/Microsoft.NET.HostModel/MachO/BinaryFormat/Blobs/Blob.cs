@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using Microsoft.NET.HostModel.AppHost;
@@ -42,10 +43,7 @@ internal abstract class Blob
     protected Blob(MemoryMappedViewAccessor accessor, long offset)
     {
         accessor.Read(offset, out uint magic);
-        if (this.Magic != (BlobMagic)magic.ConvertFromBigEndian())
-        {
-            throw new InvalidDataException($"Invalid magic number for {this.GetType().Name} Blob: {magic}");
-        }
+        Magic = (BlobMagic)magic.ConvertFromBigEndian();
     }
 
     public virtual void Write(MemoryMappedViewAccessor accessor, long offset)
@@ -54,17 +52,16 @@ internal abstract class Blob
         accessor.Write(offset + sizeof(uint), Size.ConvertToBigEndian());
     }
 
-    public virtual void Write(Stream stream)
+    public virtual void Write(Span<byte> stream)
     {
-        using var writer = new StreamWriter(stream);
-        writer.Write(((uint)Magic).ConvertToBigEndian());
-        writer.Write(Size.ConvertToBigEndian());
+        BinaryPrimitives.WriteUInt32BigEndian(stream, (uint)Magic);
+        BinaryPrimitives.WriteUInt32BigEndian(stream.Slice(sizeof(uint)), Size);
     }
 
     public virtual byte[] GetBytes()
     {
-        using var stream = new MemoryStream();
-        Write(stream);
-        return stream.ToArray();
+        var bytes = new byte[Size];
+        Write(bytes);
+        return bytes;
     }
 }

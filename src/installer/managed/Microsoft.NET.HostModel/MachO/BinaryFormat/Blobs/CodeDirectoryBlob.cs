@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Text;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -32,13 +30,11 @@ internal unsafe class CodeDirectoryBlob : Blob
             throw new InvalidDataException($"Invalid magic for CodeDirectoryBlob: {Magic}");
         }
         accessor.Read(offset + sizeof(uint), out uint size);
+        size = size.ConvertFromBigEndian();
         accessor.Read<CodeDirectoryHeader>(offset + sizeof(uint) + sizeof(uint), out _cddata);
-        _data = new byte[size - (sizeof(uint) * 2) - sizeof(CodeDirectoryHeader)];
+        var dataSize = size - (sizeof(uint) * 2 + sizeof(CodeDirectoryHeader));
+        _data = new byte[dataSize];
         accessor.ReadArray(offset + sizeof(uint) * 2 + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
-        if (Size != size)
-        {
-            throw new InvalidOperationException($"Invalid size for CodeDirectoryBlob: {size}");
-        }
     }
 
     public CodeDirectoryBlob(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags, byte[] hashes) : base(BlobMagic.CodeDirectory)
@@ -78,17 +74,18 @@ internal unsafe class CodeDirectoryBlob : Blob
         public CodeDirectoryHeader(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags)
         {
             uint identifierLength = (uint)(Encoding.UTF8.GetByteCount(identifier) + 1);
+            HashSize = hashSize;
             _version = (CodeDirectoryVersion)((uint)CodeDirectoryVersion.HighestVersion).ConvertToBigEndian();
             _flags = (CodeDirectoryFlags)((uint)CodeDirectoryFlags.Adhoc).ConvertToBigEndian();
-            _hashesOffset = ((uint)sizeof(CodeDirectoryHeader) + identifierLength + HashSize * specialCodeSlotCount).ConvertToBigEndian();
+            _identifierOffset = ((uint)sizeof(CodeDirectoryHeader) + sizeof(uint) * 2).ConvertToBigEndian();
+            _hashesOffset = (_identifierOffset.ConvertFromBigEndian() + identifierLength + HashSize * specialCodeSlotCount).ConvertToBigEndian();
             _codeSlotCount = codeSlotCount.ConvertToBigEndian();
             _specialSlotCount = specialCodeSlotCount.ConvertToBigEndian();
             _executableLength = executableLength.ConvertToBigEndian();
-            HashSize = hashSize;
             HashType = hashType;
             Platform = 0;
             Log2PageSize = 12; // 4K page size
-            _codeLimit64 = signatureStart >= uint.MaxValue ? signatureStart : 0;
+            _codeLimit64 = (signatureStart >= uint.MaxValue ? signatureStart : 0).ConvertToBigEndian();
             _execSegmentBase = execSegmentBase.ConvertToBigEndian();
             _execSegmentLimit = execSegmentLimit.ConvertToBigEndian();
             _execSegmentFlags = (ExecutableSegmentFlags)((uint)execSegmentFlags).ConvertToBigEndian();
@@ -166,9 +163,11 @@ internal unsafe class CodeDirectoryBlob : Blob
     {
         base.Write(accessor, offset);
         accessor.Write<CodeDirectoryHeader>(offset + sizeof(uint) + sizeof(uint), ref _cddata);
+        accessor.WriteArray(offset + sizeof(uint) * 2 + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
     }
-    public override void Write(Stream stream)
+
+    public override void Write(Span<byte> buffer)
     {
-        throw new NotImplementedException("Not done yet");
+        throw new NotImplementedException("Not implemented yet.");
     }
 }

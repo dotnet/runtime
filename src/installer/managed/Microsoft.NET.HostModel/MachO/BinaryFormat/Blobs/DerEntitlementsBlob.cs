@@ -8,6 +8,8 @@ using Microsoft.NET.HostModel.MachO;
 
 internal class DerEntitlementsBlob : SimpleBlob
 {
+    public static uint MaxSize => 256;
+
     public DerEntitlementsBlob(MemoryMappedViewAccessor accessor, long offset)
         : base(accessor, offset)
     {

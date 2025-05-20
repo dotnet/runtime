@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -14,8 +15,12 @@ internal class SimpleBlob : Blob
     public SimpleBlob(MemoryMappedViewAccessor accessor, long offset) : base(accessor, offset)
     {
         accessor.Read(offset + sizeof(uint), out uint size);
-        _data = new byte[size - (sizeof(uint) * 2)];
-        accessor.ReadArray(offset + sizeof(uint) * 2, _data, 0, _data.Length);
+        size = size.ConvertFromBigEndian();
+        _data = new byte[size - base.Size];
+        if (size != base.Size)
+        {
+            accessor.ReadArray(offset + sizeof(uint) * 2, _data, 0, _data.Length);
+        }
         Debug.Assert(size == Size, $"Invalid size for SimpleBlob: {size}");
     }
 
@@ -27,12 +32,15 @@ internal class SimpleBlob : Blob
     public override void Write(MemoryMappedViewAccessor accessor, long offset)
     {
         base.Write(accessor, offset);
-        accessor.WriteArray(offset + base.Size, _data, 0, _data.Length);
+        if (_data.Length != 0)
+        {
+            accessor.WriteArray(offset + base.Size, _data, 0, _data.Length);
+        }
     }
 
-    public override void Write(Stream stream)
+    public override void Write(Span<byte> buffer)
     {
-        base.Write(stream);
-        stream.Write(_data, 0, _data.Length);
+        base.Write(buffer);
+        _data.CopyTo(buffer.Slice((int)base.Size));
     }
 }
