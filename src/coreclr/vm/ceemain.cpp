@@ -846,9 +846,12 @@ void EEStartupHelper()
         IfFailGo(hr);
 #endif // PROFILING_SUPPORTED
 
-        // This isn't done as part of InitializeGarbageCollector() above because
-        // debugger must be initialized before creating EE thread objects
+#ifdef TARGET_WINDOWS
+        // Create the finalizer thread on windows earlier, as we will need to wait for
+        // the completion of its initialization part that initializes COM as that has to be done
+        // before the first Thread is attached. Thus we want to give the thread a bit more time.
         FinalizerThread::FinalizerThreadCreate();
+#endif
 
         InitPreStubManager();
 
@@ -890,7 +893,9 @@ void EEStartupHelper()
         // g_pGCHeap->Initialize() above could take nontrivial time, so by now the finalizer thread
         // should have initialized FLS slot for thread cleanup notifications.
         // And ensured that COM is initialized (must happen before allocating FLS slot).
-        // Make sure that this was done.
+        // Make sure that this was done before we start creating Thread objects
+        // Ex: The call to SetupThread below will create and attach a Thread object.
+        //     Event pipe might also do that.
         FinalizerThread::WaitForFinalizerThreadStart();
 #endif
 
@@ -904,6 +909,16 @@ void EEStartupHelper()
         {
             g_pDebugInterface->StartupPhase2(GetThread());
         }
+#endif
+
+#ifndef TARGET_WINDOWS
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects
+        FinalizerThread::FinalizerThreadCreate();
+#else
+        // On windows the finalizer thread is already partially created created and is waiting
+        // right before doing HasStarted(). We will release it now.
+        FinalizerThread::EnableFinalization();
 #endif
 
 #ifdef FEATURE_PERFTRACING
