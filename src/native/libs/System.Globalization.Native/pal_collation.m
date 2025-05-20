@@ -378,23 +378,25 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
 int32_t GlobalizationNative_GetUIUnicodeVersion(void)
 {
     @autoreleasepool {
-        // We need to return a value compatible with what ICU's ucol_getVersion returns
-        // ucol_getVersion returns a collation version, not just the Unicode version
+        // This function mimics ICU's ucol_getVersion which returns a collator version
+        // ucol_getVersion can return different versions for different locale collations
         // Format: UVersionInfo[4] which is a 4-byte array packed into an int32_t
-        // Apple doesn't expose a direct way to get this collation version so we
-        // need to map iOS/macOS versions to appropriate collation version values
         
         NSOperatingSystemVersion osVersion = [[NSProcessInfo processInfo] operatingSystemVersion];
         
-        // Bytes to construct the collation version
+        // In ICU, collator versions typically follow this format:
+        // - Byte 0: Major version (related to Unicode version)
+        // - Byte 1: Minor version (related to Unicode version)
+        // - Byte 2: Milli version (for tailorings or collator-specific changes)
+        // - Byte 3: Micro version (build number or additional distinction)
+        
         uint8_t collatorMajor = 0;
         uint8_t collatorMinor = 0;
-        uint8_t collatorPatch = 0;
-        uint8_t collatorBuild = 0;
+        uint8_t collatorMilli = 0;
+        uint8_t collatorMicro = 0;
         
-        // Map OS version to a reasonable collation version
-        // Apple typically updates its collation implementation with major iOS/macOS releases
-        // These values approximate ICU's collation versioning scheme
+        // Map OS version to an appropriate collator version that corresponds
+        // to the Unicode version likely used by Apple's collation implementation
         if (osVersion.majorVersion >= 17) { // iOS 17+ / macOS 14+ (2023+)
             collatorMajor = 14;  // Based on Unicode 15.1
             collatorMinor = 0;
@@ -415,18 +417,20 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(void)
             collatorMinor = 0;
         }
         
-        // Add the platform type as the patch version for distinction
+        // The milli version distinguishes Apple platform variations
+        // This helps differentiate between different potential collation implementations
         #if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
-            collatorPatch = 1;  // iOS/tvOS
+            collatorMilli = 1;  // iOS/tvOS
         #else
-            collatorPatch = 2;  // macOS/macCatalyst
+            collatorMilli = 2;  // macOS/macCatalyst
         #endif
         
-        // Add the OS minor version as the build number for finer granularity
-        collatorBuild = (uint8_t)(osVersion.minorVersion > 255 ? 255 : osVersion.minorVersion);
+        // Micro version provides additional granularity based on OS minor version
+        // This helps differentiate between different OS updates that might affect collation
+        collatorMicro = (uint8_t)(osVersion.minorVersion > 255 ? 255 : osVersion.minorVersion);
         
-        // Pack the bytes into a 32-bit integer in the same way ICU does with ucol_getVersion
-        return (collatorMajor << 24) | (collatorMinor << 16) | (collatorPatch << 8) | collatorBuild;
+        // Pack the bytes into a 32-bit integer in the same format as ICU's ucol_getVersion
+        return (collatorMajor << 24) | (collatorMinor << 16) | (collatorMilli << 8) | collatorMicro;
     }
 }
 
