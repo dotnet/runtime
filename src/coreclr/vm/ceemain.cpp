@@ -916,7 +916,7 @@ void EEStartupHelper()
         // debugger must be initialized before creating EE thread objects
         FinalizerThread::FinalizerThreadCreate();
 #else
-        // On windows the finalizer thread is already partially created created and is waiting
+        // On windows the finalizer thread is already partially created and is waiting
         // right before doing HasStarted(). We will release it now.
         FinalizerThread::EnableFinalization();
 #endif
