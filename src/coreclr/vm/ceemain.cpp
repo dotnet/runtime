@@ -839,7 +839,7 @@ void EEStartupHelper()
 
 #ifdef PROFILING_SUPPORTED
         // Initialize the profiling services.
-        // THis must happen before the finalizer thread is stopped on its first wait.
+        // This must happen before Thread::HasStarted() that fires profiler notifications is called on the finalizer thread.
         hr = ProfilingAPIUtility::InitializeProfiling();
 
         _ASSERTE(SUCCEEDED(hr));
