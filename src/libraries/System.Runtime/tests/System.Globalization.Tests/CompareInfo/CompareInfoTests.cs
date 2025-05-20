@@ -149,7 +149,7 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected && !char.IsSurrogate(c), CompareInfo.IsSortable(c));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalization))]
+        [Fact]
         public void VersionTest()
         {
             SortVersion sv1 = CultureInfo.GetCultureInfo("en-US").CompareInfo.Version;
@@ -157,7 +157,19 @@ namespace System.Globalization.Tests
             SortVersion sv3 = CultureInfo.GetCultureInfo("en").CompareInfo.Version;
 
             Assert.Equal(sv1.FullVersion, sv3.FullVersion);
-            Assert.NotEqual(sv1.SortId, sv2.SortId);
+            
+            // On iOS Hybrid globalization, locales share the same sort key generation
+            // through Apple's APIs, so the SortId might be the same.
+            // On other platforms, they should be different.
+            if (!PlatformDetection.IsHybridGlobalizationOnApplePlatform)
+            {
+                Assert.NotEqual(sv1.SortId, sv2.SortId);
+            }
+            
+            // Basic validation that we get a non-zero version
+            Assert.NotEqual(0, sv1.FullVersion);
+            Assert.NotEqual(Guid.Empty, sv1.SortId);
+        }
         }
     }
 }

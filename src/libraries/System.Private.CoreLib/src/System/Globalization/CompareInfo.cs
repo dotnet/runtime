@@ -1599,8 +1599,9 @@ namespace System.Globalization
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                 if (GlobalizationMode.Hybrid)
                 {
-                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                    m_SortVersion = GetAppleSortVersion();
                 }
+                else
 #endif
                         m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }

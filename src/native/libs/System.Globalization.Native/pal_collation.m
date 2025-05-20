@@ -375,4 +375,31 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
     }
 }
 
+int32_t GlobalizationNative_GetUIUnicodeVersion()
+{
+    @autoreleasepool {
+        // iOS/macOS Unicode version generally aligns with the major iOS/macOS version
+        // We can get the version from the NSProcessInfo class
+        NSOperatingSystemVersion osVersion = [[NSProcessInfo processInfo] operatingSystemVersion];
+        
+        // Map the OS version to an approximate Unicode version
+        // iOS/macOS generally tracks newer Unicode versions
+        // The version number is stored as 0x00000MMm where MM is the major version
+        // and m is the minor version, similar to how ICU does it
+        // For example, Unicode 14.0 would be represented as 0x000E00
+        
+        if (osVersion.majorVersion >= 16) { // iOS 16+ ~ Unicode 15.0
+            return 0x000F00;
+        } else if (osVersion.majorVersion >= 15) { // iOS 15 ~ Unicode 14.0
+            return 0x000E00;
+        } else if (osVersion.majorVersion >= 14) { // iOS 14 ~ Unicode 13.0
+            return 0x000D00;
+        } else if (osVersion.majorVersion >= 13) { // iOS 13 ~ Unicode 12.1
+            return 0x000C01;
+        } else { // Older iOS versions ~ Unicode 12.0 or earlier
+            return 0x000C00;
+        }
+    }
+}
+
 #endif

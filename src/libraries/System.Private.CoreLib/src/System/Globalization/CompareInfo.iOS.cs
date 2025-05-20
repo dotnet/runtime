@@ -82,6 +82,16 @@ namespace System.Globalization
         private const CompareOptions SupportedCompareOptions = CompareOptions.None | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace |
                                                                CompareOptions.IgnoreWidth | CompareOptions.StringSort | CompareOptions.IgnoreKanaType;
 
+        private SortVersion GetAppleSortVersion()
+        {
+            int unicodeVersion = Interop.Globalization.GetUIUnicodeVersion();
+            return new SortVersion(unicodeVersion, LCID, new Guid(unicodeVersion, 0, 0, 0, 0, 0, 0,
+                                                            (byte)(LCID >> 24),
+                                                            (byte)((LCID & 0x00FF0000) >> 16),
+                                                            (byte)((LCID & 0x0000FF00) >> 8),
+                                                            (byte)(LCID & 0xFF)));
+        }
+
         private static string GetPNSE(CompareOptions options) =>
             SR.Format(SR.PlatformNotSupported_HybridGlobalizationWithCompareOptions, options);
     }
