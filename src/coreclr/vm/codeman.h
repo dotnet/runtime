@@ -1781,7 +1781,7 @@ public:
     // DAC builds is compatible with the non-DAC one so that DAC virtual dispatch will work correctly.
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD) = 0;
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
@@ -1924,7 +1924,7 @@ protected:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 protected:
     template<typename TCodeHeader>
-    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif // !DACCESS_COMPILE
 
 private:
@@ -2085,7 +2085,7 @@ public:
     GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
 
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif // DACCESS_COMPILE
 
 #if !defined DACCESS_COMPILE
@@ -2671,7 +2671,7 @@ public:
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
@@ -2791,7 +2791,7 @@ public:
 
 #if defined(DACCESS_COMPILE)
 
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
@@ -2941,7 +2941,7 @@ public:
         {
             return DecodeGCHdrInfoHelper(infoPtr);
         }
-    
+
         *infoPtr = &m_hdrInfoBody;
         return m_hdrInfoTable;
     }

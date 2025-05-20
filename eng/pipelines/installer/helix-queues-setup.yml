@@ -1,0 +1,66 @@
+parameters:
+  jobTemplate: ''
+  variables: []
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  container: ''
+  pool: ''
+  platform: ''
+  shouldContinueOnError: false
+  jobParameters: {}
+
+jobs:
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    variables: ${{ parameters.variables }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    archType: ${{ parameters.archType }}
+    container: ${{ parameters.container }}
+    pool: ${{ parameters.pool }}
+    platform: ${{ parameters.platform }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    helixQueues:
+
+    # Linux arm
+    - ${{ if eq(parameters.platform, 'linux_arm') }}:
+      - (Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
+
+    # Linux arm64
+    - ${{ if eq(parameters.platform, 'linux_arm64') }}:
+      - (Ubuntu.2404.Arm64.Open)Ubuntu.2204.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-24.04-helix-arm64v8
+
+    # Linux musl x64
+    - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
+      - (Alpine.321.Amd64.Open)azurelinux.3.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-amd64
+
+    # Linux musl arm64
+    - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
+      - (Alpine.321.Arm64.Open)ubuntu.2204.armarch.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.21-helix-arm64v8
+
+    # Linux x64
+    - ${{ if eq(parameters.platform, 'linux_x64') }}:
+      - azurelinux.3.amd64.open
+
+    # OSX arm64
+    - ${{ if eq(parameters.platform, 'osx_arm64') }}:
+      - osx.13.arm64.open
+
+    # OSX x64
+    - ${{ if eq(parameters.platform, 'osx_x64') }}:
+      - OSX.1200.Amd64.Open
+
+    # windows x64
+    - ${{ if eq(parameters.platform, 'windows_x64') }}:
+      - Windows.11.Amd64.Client.Open
+
+    # windows x86
+    - ${{ if eq(parameters.platform, 'windows_x86') }}:
+      - Windows.11.Amd64.Client.Open
+
+    # windows arm64
+    - ${{ if eq(parameters.platform, 'windows_arm64') }}:
+      - Windows.11.Arm64.Open
+
+    ${{ insert }}: ${{ parameters.jobParameters }}

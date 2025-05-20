@@ -29,7 +29,7 @@ public class EnvVariablesTests : WasmTemplateTestsBase
         BuildProject(info, config, new BuildOptions(AssertAppBundle: false), isNativeBuild: false);
 
         var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "EnvVariablesTest"));
-        Assert.Contains("foo=bar", result.TestOutput);
-        Assert.Contains("baz=boo", result.TestOutput);
+        Assert.Contains(result.TestOutput, m => m.Contains("foo=bar"));
+        Assert.Contains(result.TestOutput, m => m.Contains("baz=boo"));
     }
 }
