@@ -811,6 +811,14 @@ struct PrecodeMachineDescriptor
     uint8_t ThisPointerRetBufPrecodeType;
 #endif
 
+#ifdef FEATURE_INTERPRETER
+    uint8_t InterpreterPrecodeType;
+#endif
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    uint8_t DynamicHelperPrecodeType;
+#endif
+    uint8_t UMEntryPrecodeType;
+
 public:
     PrecodeMachineDescriptor() = default;
     PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;

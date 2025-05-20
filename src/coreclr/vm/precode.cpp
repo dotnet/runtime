@@ -781,6 +781,14 @@ void PrecodeMachineDescriptor::Init(PrecodeMachineDescriptor *dest)
     dest->ThisPointerRetBufPrecodeType = PRECODE_THISPTR_RETBUF;
 #endif
 
+#ifdef FEATURE_INTERPRETER
+    dest->InterpreterPrecodeType = PRECODE_INTERPRETER;
+#endif
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+    dest->DynamicHelperPrecodeType = PRECODE_DYNAMIC_HELPERS;
+#endif
+    dest->UMEntryPrecodeType = PRECODE_UMENTRY_THUNK;
+
     dest->StubCodePageSize = GetStubCodePageSize();
 }
 

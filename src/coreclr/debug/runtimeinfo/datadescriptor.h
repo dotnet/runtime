@@ -545,6 +545,13 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*byte[]*/, StubIgnoredBytes, offsetof
 #ifdef HAS_THISPTR_RETBUF_PRECODE
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, ThisPointerRetBufPrecodeType, offsetof(PrecodeMachineDescriptor, ThisPointerRetBufPrecodeType))
 #endif
+#ifdef FEATURE_INTERPRETER
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, InterpreterPrecodeType, offsetof(PrecodeMachineDescriptor, InterpreterPrecodeType))
+#endif
+#ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, DynamicHelperPrecodeType, offsetof(PrecodeMachineDescriptor, DynamicHelperPrecodeType))
+#endif
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, UMEntryPrecodeType, offsetof(PrecodeMachineDescriptor, UMEntryPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
 
