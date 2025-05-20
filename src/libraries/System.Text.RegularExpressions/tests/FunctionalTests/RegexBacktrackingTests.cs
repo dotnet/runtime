@@ -18,24 +18,27 @@ namespace System.Text.RegularExpressions.Tests
             // Test with input that would previously throw
             Match match = regex.Match("test");
             
-            // No assertion on match result, just verifying it doesn't throw
-            Assert.True(true, "No exception was thrown");
+            // Verify it doesn't throw and correctly reports no match
+            Assert.False(match.Success, "When backtracking stack is exhausted, match should be unsuccessful");
         }
 
         [Theory]
-        [InlineData(@"(?>(-*)+?-*)$", "test")]
-        [InlineData(@"(?>(-*)+?-*)$", "abcdef")]
-        [InlineData(@"(?>(-+)+?-*)$", "test")]
-        [InlineData(@"(?>a*)+?", "aaaaaaaa")]
-        [InlineData(@"(?>(-{50000})+?-*)$", "test")]  // Large repeat count
-        [InlineData(@"((?>a+)+b)+c", "aababc")]      // Complex nesting
-        public void ComplexBacktrackingShouldNotThrow(string pattern, string input)
+        [InlineData(@"(?>(-*)+?-*)$", "test", false)]
+        [InlineData(@"(?>(-*)+?-*)$", "abcdef", false)]
+        [InlineData(@"(?>(-+)+?-*)$", "test", false)]
+        [InlineData(@"(?>a*)+?", "aaaaaaaa", true)]
+        [InlineData(@"(?>(-{50000})+?-*)$", "test", false)]  // Large repeat count
+        [InlineData(@"((?>a+)+b)+c", "aababc", true)]      // Complex nesting
+        public void ComplexBacktrackingShouldNotThrow(string pattern, string input, bool expectedMatch)
         {
             // Tests various patterns that might stress the backtracking system
             var regex = new Regex(pattern);
             
             // Act - should not throw
             Match match = regex.Match(input);
+            
+            // Verify expected match result
+            Assert.Equal(expectedMatch, match.Success);
         }
     }
 }

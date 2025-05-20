@@ -133,6 +133,7 @@ namespace System.Text.RegularExpressions
             if (runtrackpos >= runtrack!.Length)
             {
                 // Match failed, so we should just return with no match
+                runmatch!.FoundMatch = false;
                 SetOperator(RegexOpcode.Stop);
                 return;
             }
