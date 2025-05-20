@@ -51,7 +51,7 @@ jobs:
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
+          - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64
           - (Debian.13.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-13-helix-amd64
           - (Ubuntu.2504.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-25.04-helix-amd64
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
