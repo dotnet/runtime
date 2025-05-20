@@ -43,6 +43,8 @@ int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId, int32
 #endif
 
     (void)pKey;
+    (void)hasSeed;
+    (void)hasSecretKey;
     *mldsaId = PalMLDsaId_Unknown;
     return 0;
 }
