@@ -636,6 +636,57 @@ namespace System.Net.Sockets.Tests
                 Assert.True(readFailed);
             }
         }
+        
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        public async Task UnixDomainSocket_ReceiveAsync_CancellationRaceWithCompletion()
+        {
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                client.Connect(endPoint);
+                byte[] buffer = new byte[100];
+                using (Socket accepted = server.Accept())
+                {
+                    // We'll create a cancellation token source that we can use to cancel the receive
+                    using (var cts = new CancellationTokenSource())
+                    {
+                        // Start a task to send data after a short delay
+                        byte[] dataToSend = new byte[10];
+                        Task sendTask = Task.Run(async () =>
+                        {
+                            // Wait a short time before sending
+                            await Task.Delay(50);
+                            accepted.Send(dataToSend);
+                            
+                            // Wait a bit more before cancelling
+                            await Task.Delay(50);
+                            cts.Cancel();
+                        });
+
+                        try
+                        {
+                            // This should complete with data rather than be cancelled
+                            Memory<byte> receiveBuffer = new Memory<byte>(buffer);
+                            int bytesReceived = await client.ReceiveAsync(receiveBuffer, SocketFlags.None, cts.Token);
+                            Assert.Equal(dataToSend.Length, bytesReceived);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            Assert.False(true, "The operation should not be canceled as data was received first");
+                        }
+
+                        await sendTask;
+                    }
+                }
+            }
+        }
 
         internal static string GetRandomNonExistingFilePath()
         {
