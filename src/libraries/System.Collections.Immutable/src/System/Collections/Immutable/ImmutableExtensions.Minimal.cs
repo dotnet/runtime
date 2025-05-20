@@ -38,11 +38,13 @@ namespace System.Collections.Immutable
                 return true;
             }
 
+#if !NET9_0_OR_GREATER // ICollection<T> : IReadOnlyCollection<T> on .NET 9+
             if (sequence is ICollection<T> collectionOfT)
             {
                 count = collectionOfT.Count;
                 return true;
             }
+#endif
 
             if (sequence is IReadOnlyCollection<T> readOnlyCollection)
             {
