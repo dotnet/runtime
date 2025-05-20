@@ -5299,8 +5299,10 @@ void CodeGen::genFnProlog()
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_XARCH)
+    genClearAvxStateInProlog();
+
     // Preserve callee saved float regs to stack.
-    genPreserveCalleeSavedFltRegs(compiler->compLclFrameSize);
+    genPreserveCalleeSavedFltRegs();
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64

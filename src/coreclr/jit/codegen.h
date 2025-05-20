@@ -515,8 +515,12 @@ protected:
 #if defined(TARGET_XARCH)
 
     // Save/Restore callee saved float regs to stack
-    void genPreserveCalleeSavedFltRegs(unsigned lclFrameSize);
-    void genRestoreCalleeSavedFltRegs(unsigned lclFrameSize);
+    void genPreserveCalleeSavedFltRegs();
+    void genRestoreCalleeSavedFltRegs();
+
+    // Generate vzeroupper instruction to clear AVX state if necessary
+    void genClearAvxStateInProlog();
+    void genClearAvxStateInEpilog();
 
 #endif // TARGET_XARCH
 
