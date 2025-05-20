@@ -23,13 +23,12 @@ namespace System
         /// <summary>
         /// Removes LANG and any environment variable starting with DOTNET_SYSTEM_GLOBALIZATION from the given environment dictionary.
         /// </summary>
-        public static void ClearGlobalizationEnvironmentVars(System.Collections.IDictionary environment)
+        public static void ClearGlobalizationEnvironmentVars(IDictionary<string,string?> environment)
         {
             var keysToRemove = new List<string>();
-            foreach (System.Collections.DictionaryEntry entry in environment)
+            foreach (var key in environment.Keys)
             {
-                string key = entry.Key as string;
-                if (key == "LANG" || (key != null && key.StartsWith("DOTNET_SYSTEM_GLOBALIZATION", StringComparison.OrdinalIgnoreCase)))
+                if (key == "LANG" || (key.StartsWith("DOTNET_SYSTEM_GLOBALIZATION", StringComparison.OrdinalIgnoreCase)))
                 {
                     keysToRemove.Add(key);
                 }
