@@ -236,7 +236,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapBuild>$(WasmEmitSourceMap)</_WasmEmitSourceMapBuild>
       <_WasmEmitSourceMapBuild Condition="'$(_WasmEmitSourceMapBuild)' == ''">true</_WasmEmitSourceMapBuild>
     </PropertyGroup>
-
+    <Message Text="MRH_LOGGING_RUNTIME: ComputeWasmBuildAssets" Importance="High" />
     <ComputeWasmBuildAssets
       Candidates="@(ReferenceCopyLocalPaths->Distinct());@(WasmNativeAsset)"
       CustomIcuCandidate="$(_BlazorIcuDataFileName)"
