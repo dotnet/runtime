@@ -69,10 +69,8 @@ namespace System.Formats.Tar.Tests
             if (format is TarEntryFormat.Pax)
             {
                 PaxTarEntry paxEntry = firstEntry as PaxTarEntry;
-                Assert.Contains("atime", paxEntry.ExtendedAttributes);
-                Assert.Contains("ctime", paxEntry.ExtendedAttributes);
-                Assert.Equal(firstEntry.ModificationTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "atime"));
-                Assert.Equal(firstEntry.ModificationTime, GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, "ctime"));
+                Assert.DoesNotContain("atime", paxEntry.ExtendedAttributes);
+                Assert.DoesNotContain("ctime", paxEntry.ExtendedAttributes);
             }
             else if (format is TarEntryFormat.Gnu)
             {
@@ -115,98 +113,64 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(originalPosixTarEntry.DeviceMinor, convertedPosixTarEntry.DeviceMinor);
             }
 
+            // 'null' indicates the originalEntry did not include a timestamp.
+            DateTimeOffset? expectedATime = null, expectedCTime = null;
+            if (originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
+            {
+                GetExpectedTimestampsFromOriginalPaxOrGnu(originalEntry, formatToConvert, out expectedATime, out expectedCTime);
+            }
+
             if (formatToConvert is TarEntryFormat.Pax)
             {
                 PaxTarEntry paxEntry = convertedEntry as PaxTarEntry;
-                if (originalEntry.Format is TarEntryFormat.Gnu)
-                {
-                    GnuTarEntry gnuEntry = originalEntry as GnuTarEntry;
-
-                    DateTimeOffset expectedATime = gnuEntry.AccessTime;
-                    DateTimeOffset expectedCTime = gnuEntry.ChangeTime;
-
-                    DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
-                    DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
-
-                    if (expectedATime == default)
-                    {
-                        AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, paxEntry.ModificationTime);
-                    }
-                    else
-                    {
-                        expectedATime = expectedATime - _oneSecond;
-                        AssertExtensions.GreaterThanOrEqualTo(expectedATime, actualAccessTime);
-                    }
-
-                    if (expectedCTime == default)
-                    {
-                        AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, paxEntry.ModificationTime);
-                    }
-                    else
-                    {
-                        expectedCTime = expectedCTime - _oneSecond;
-                        AssertExtensions.GreaterThanOrEqualTo(expectedCTime, actualChangeTime);
-                    }
-                }
-                else if (originalEntry.Format is TarEntryFormat.Pax)
-                {
-                    PaxTarEntry originalPaxEntry = originalEntry as PaxTarEntry;
-
-                    DateTimeOffset expectedATime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, PaxEaATime) - _oneSecond;
-                    DateTimeOffset expectedCTime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, PaxEaCTime) - _oneSecond;
-
-                    DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
-                    DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
-
-                    AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, expectedATime);
-                    AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, expectedCTime);
-                }
-                else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
-                {
-                    DateTimeOffset actualAccessTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
-                    DateTimeOffset actualChangeTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
-
-                    AssertExtensions.GreaterThanOrEqualTo(actualAccessTime, initialNow);
-                    AssertExtensions.GreaterThanOrEqualTo(actualChangeTime, initialNow);
-                }
+                DateTimeOffset? actualAccessTime = TryGetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                DateTimeOffset? actualChangeTime = TryGetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+                Assert.Equal(expectedATime, actualAccessTime);
+                Assert.Equal(expectedCTime, actualChangeTime);
             }
-
-            if (formatToConvert is TarEntryFormat.Gnu)
+            else if (formatToConvert is TarEntryFormat.Gnu)
             {
                 GnuTarEntry gnuEntry = convertedEntry as GnuTarEntry;
-                if (originalEntry.Format is TarEntryFormat.Pax or TarEntryFormat.Gnu)
-                {
-                    GetExpectedTimestampsFromOriginalPaxOrGnu(originalEntry, formatToConvert, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime);
-                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.AccessTime, expectedATime);
-                    AssertExtensions.GreaterThanOrEqualTo(gnuEntry.ChangeTime, expectedCTime);
-                }
-                else if (originalEntry.Format is TarEntryFormat.Ustar or TarEntryFormat.V7)
-                {
-                    Assert.Equal(default, gnuEntry.AccessTime);
-                    Assert.Equal(default, gnuEntry.ChangeTime);
-                }
+                Assert.Equal(expectedATime ?? default, gnuEntry.AccessTime);
+                Assert.Equal(expectedCTime ?? default, gnuEntry.ChangeTime);
             }
 
             return convertedEntry;
         }
 
-        private void GetExpectedTimestampsFromOriginalPaxOrGnu(TarEntry originalEntry, TarEntryFormat formatToConvert, out DateTimeOffset expectedATime, out DateTimeOffset expectedCTime)
+        private void GetExpectedTimestampsFromOriginalPaxOrGnu(TarEntry originalEntry, TarEntryFormat formatToConvert, out DateTimeOffset? expectedATime, out DateTimeOffset? expectedCTime)
         {
             Assert.True(originalEntry.Format is TarEntryFormat.Gnu or TarEntryFormat.Pax);
             if (originalEntry.Format is TarEntryFormat.Pax)
             {
                 PaxTarEntry originalPaxEntry = originalEntry as PaxTarEntry;
-                Assert.Contains("atime", originalPaxEntry.ExtendedAttributes); //  We are verifying that the original had an atime and ctime set
-                Assert.Contains("ctime", originalPaxEntry.ExtendedAttributes); //  and that when converting to GNU we are _not_ preserving them
-                // And that instead, we are setting them to MinValue
-                expectedATime = formatToConvert is TarEntryFormat.Gnu ? default : GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "atime");
-                expectedCTime = formatToConvert is TarEntryFormat.Gnu ? default : GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "ctime");
+
+                expectedATime = null;
+                if (originalPaxEntry.ExtendedAttributes.ContainsKey("atime"))
+                {
+                    expectedATime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "atime");
+                }
+
+                expectedCTime = null;
+                if (originalPaxEntry.ExtendedAttributes.ContainsKey("ctime"))
+                {
+                    expectedCTime = GetDateTimeOffsetFromTimestampString(originalPaxEntry.ExtendedAttributes, "ctime");
+                }
             }
             else
             {
                 GnuTarEntry originalGnuEntry = originalEntry as GnuTarEntry;
                 expectedATime = originalGnuEntry.AccessTime;
+                // default means: no timestamp.
+                if (expectedATime == default(DateTimeOffset))
+                {
+                    expectedATime = null;
+                }
                 expectedCTime = originalGnuEntry.ChangeTime;
+                if (expectedCTime == default(DateTimeOffset))
+                {
+                    expectedCTime = null;
+                }
             }
 
         }

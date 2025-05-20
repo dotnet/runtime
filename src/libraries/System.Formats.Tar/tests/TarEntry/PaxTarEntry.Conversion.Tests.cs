@@ -92,8 +92,8 @@ namespace System.Formats.Tar.Tests
             dataStream.Position = 0;
             originalEntry.DataStream = dataStream;
 
-            DateTimeOffset expectedATime = default;
-            DateTimeOffset expectedCTime = default;
+            DateTimeOffset? expectedATime = null;
+            DateTimeOffset? expectedCTime = null;
 
             if (originalEntry is GnuTarEntry gnuEntry)
             {
@@ -108,11 +108,9 @@ namespace System.Formats.Tar.Tests
             }
             else if (originalEntry is PaxTarEntry paxEntry)
             {
-                expectedATime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
-                expectedCTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+                expectedATime = TryGetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                expectedCTime = TryGetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
 
-                Assert.Equal(paxEntry.ModificationTime, expectedATime);
-                Assert.Equal(paxEntry.ModificationTime, expectedCTime);
                 // Can't change them, it's a read-only dictionary
             }
 
@@ -140,19 +138,11 @@ namespace System.Formats.Tar.Tests
                     Assert.Equal(contents, streamReader.ReadLine());
                 }
 
-                // atime and ctime should've been added automatically in the conversion constructor
-                // and should not be equal to the value of mtime, which was set on the original entry constructor
+                DateTimeOffset? atime = TryGetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                DateTimeOffset? ctime = TryGetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
 
-                Assert.Contains(PaxEaATime, paxEntry.ExtendedAttributes);
-                Assert.Contains(PaxEaCTime, paxEntry.ExtendedAttributes);
-                DateTimeOffset atime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes[PaxEaATime]);
-                DateTimeOffset ctime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes[PaxEaCTime]);
-
-                if (originalEntryFormat is TarEntryFormat.Pax or TarEntryFormat.Gnu)
-                {
-                    Assert.Equal(expectedATime, atime);
-                    Assert.Equal(expectedCTime, ctime);
-                }
+                Assert.Equal(expectedATime, atime);
+                Assert.Equal(expectedCTime, ctime);
             }
         }
 

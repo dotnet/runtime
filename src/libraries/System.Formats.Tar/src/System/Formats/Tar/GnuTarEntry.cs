@@ -34,10 +34,7 @@ namespace System.Formats.Tar
         /// <para><paramref name="entryType"/> is not supported in the specified format.</para></exception>
         public GnuTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarEntryFormat.Gnu, isGea: false)
-        {
-            _header._aTime = default;
-            _header._cTime = default;
-        }
+        { }
 
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
@@ -50,24 +47,7 @@ namespace System.Formats.Tar
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the GNU format.</para></exception>
         public GnuTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Gnu)
-        {
-            if (other is GnuTarEntry gnuOther)
-            {
-                _header._aTime = gnuOther.AccessTime;
-                _header._cTime = gnuOther.ChangeTime;
-                _header._gnuUnusedBytes = other._header._gnuUnusedBytes;
-            }
-            else
-            {
-                // 'other' was V7, Ustar (those formats do not have atime or ctime),
-                // or even PAX (which could contain atime and ctime in the ExtendedAttributes), but
-                // to avoid creating a GNU entry that might be incompatible with other tools,
-                // we avoid setting the atime and ctime fields. The user would have to set them manually
-                // if they are really needed.
-                _header._aTime = default;
-                _header._cTime = default;
-            }
-        }
+        { }
 
         /// <summary>
         /// A timestamp that represents the last time the file represented by this entry was accessed. Setting a value for this property is not recommended because most TAR reading tools do not support it.

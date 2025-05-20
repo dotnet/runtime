@@ -90,6 +90,15 @@ namespace System.Formats.Tar.Tests
         private decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
             ((decimal)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
 
+        protected DateTimeOffset? TryGetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
+        {
+            if (!ea.ContainsKey(fieldName))
+            {
+                return default;
+            }
+            return GetDateTimeOffsetFromTimestampString(ea[fieldName]);
+        }
+
         protected DateTimeOffset GetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
             Assert.Contains(fieldName, ea);
@@ -117,11 +126,9 @@ namespace System.Formats.Tar.Tests
         protected void VerifyExtendedAttributeTimestamps(PaxTarEntry pax)
         {
             Assert.NotNull(pax.ExtendedAttributes);
-            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 3); // Expect to at least collect mtime, ctime and atime
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 1); // Expect to at least collect mtime
 
             VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
-            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
 
         public static IEnumerable<object[]> GetPaxExtendedAttributesRoundtripTestData()
