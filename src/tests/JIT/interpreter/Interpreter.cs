@@ -416,6 +416,9 @@ public class InterpreterTest
         if (!TestArray())
             Environment.FailFast(null);
 
+        if (!TestSizeof())
+            Environment.FailFast(null);
+
         System.GC.Collect();
     }
 
@@ -943,6 +946,17 @@ public class InterpreterTest
         if (values[length - 1] != value)
             return false;
 
+        return true;
+    }
+
+    public static unsafe bool TestSizeof()
+    {
+        if (sizeof(int) != 4)
+            return false;
+        if (sizeof(double) != 8)
+            return false;
+        if (sizeof(MyStruct) != 4)
+            return false;
         return true;
     }
 }
