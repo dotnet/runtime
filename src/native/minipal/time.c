@@ -66,7 +66,6 @@ inline static void YieldProcessor(void)
 #define tccSecondsToNanoSeconds 1000000000      // 10^9
 #define tccSecondsToMilliSeconds 1000           // 10^3
 #define tccMilliSecondsToNanoSeconds 1000000    // 10^6
-#define tccMilliSecondsToMicroSeconds 1000      // 10^3
 int64_t minipal_hires_tick_frequency(void)
 {
     return tccSecondsToNanoSeconds;
