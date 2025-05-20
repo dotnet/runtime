@@ -13393,7 +13393,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     {
         _ASSERTE(!"WASM cannot jit yet");
     }
-#elif // !TARGET_WASM
+#else // !TARGET_WASM
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
