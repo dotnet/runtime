@@ -411,6 +411,11 @@ namespace System
                             principal = (IPrincipal?)GetDefaultWindowsPrincipal(null);
                             break;
                         }
+                        catch (MissingMethodException ex)
+                        {
+                            // WindowsPrincipal is not available, throw PNSE
+                            throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal, ex);
+                        }
                         catch (TypeLoadException ex)
                         {
                             // WindowsPrincipal is not available, throw PNSE
