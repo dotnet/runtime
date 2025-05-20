@@ -25,7 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"

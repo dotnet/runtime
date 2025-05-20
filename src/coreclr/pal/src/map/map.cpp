@@ -21,7 +21,6 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/virtual.h"
 #include "pal/environ.h"
 #include "common.h"

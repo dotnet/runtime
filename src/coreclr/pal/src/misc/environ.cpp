@@ -20,7 +20,6 @@ Revision History:
 --*/
 
 #include "pal/palinternal.h"
-#include "pal/critsect.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
 
