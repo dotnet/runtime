@@ -3500,6 +3500,16 @@ retry_emit:
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                         m_ip++;
                         break;
+                    case CEE_SIZEOF:
+                    {
+                        CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                        AddIns(INTOP_LDC_I4);
+                        m_pLastNewIns->data[0] = m_compHnd->getClassSize(clsHnd);
+                        PushStackType(StackTypeI4, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip += 5;
+                        break;
+                    }
                     default:
                         assert(0);
                         break;
