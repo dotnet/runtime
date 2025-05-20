@@ -28,7 +28,7 @@ namespace System
             var keysToRemove = new List<string>();
             foreach (var key in environment.Keys)
             {
-                if (key == "LANG" || (key.StartsWith("DOTNET_SYSTEM_GLOBALIZATION", StringComparison.OrdinalIgnoreCase)))
+                if (key == "LANG" || key.StartsWith("DOTNET_SYSTEM_GLOBALIZATION", StringComparison.OrdinalIgnoreCase))
                 {
                     keysToRemove.Add(key);
                 }
