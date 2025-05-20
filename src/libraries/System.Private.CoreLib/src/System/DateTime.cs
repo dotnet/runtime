@@ -1570,7 +1570,7 @@ namespace System
 
             // Based on "A leap year check in three instructions" by Falk Hüffner 
             // https://hueffner.de/falk/blog/a-leap-year-check-in-three-instructions.html
-            return ((y * 1073750999) & 3221352463) <= 126976;
+            return ((year * 1073750999) & 3221352463) <= 126976;
         }
 
         // Constructs a DateTime from a string. The string must specify a
