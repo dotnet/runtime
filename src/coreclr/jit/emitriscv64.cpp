@@ -5384,8 +5384,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             // "bexti rd, rs, 0" is equivalent to "andi rd, rs, 1"
             // "bseti/bclri/binvi rd, rs, imm" are equivalent to "ori/andi/xori rd, rs, (~)(1 << imm)" for imm < 11
             int minBitIndex = (ins == INS_bexti) ? 1 : 11;
+            int maxBitIndex = EA_SIZE_IN_BYTES(attr) * 8;
+            if (ins != INS_bexti && attr == EA_4BYTE)
+                maxBitIndex--; // can't touch the sign bit alone, it affects sign extension
+
             assert(imm >= minBitIndex);
-            assert(imm < emitActualTypeSize(src1) * 8);
+            assert(imm < maxBitIndex);
         }
 
         assert(ins == INS_addi || ins == INS_addiw || ins == INS_andi || ins == INS_ori || ins == INS_xori ||

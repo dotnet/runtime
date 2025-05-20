@@ -19,6 +19,9 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Set11(int a) => a | (1 << 11);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Set31(int a) => a | (1 << 31);
+
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Clear(int a, int b) => a & ~(1 << b);
@@ -31,6 +34,9 @@ public static class SingleBit
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Clear11(int a) => a & ~(1 << 11);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Clear31(int a) => a & ~(1 << 31);
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -109,6 +115,9 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Invert11(int a) => a ^ (1 << 11);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Invert31(int a) => a ^ (1 << 31);
+
 
     [Fact]
     public static void Test()
@@ -119,6 +128,7 @@ public static class SingleBit
         Assert.Equal(0x12345878, SetSwap(0x12345078, 11 + 32));
         Assert.Equal(0x12345478, Set10(0x12345078));
         Assert.Equal(0x12345878, Set11(0x12345078));
+        Assert.Equal(int.MinValue, Set31(0));
 
         Assert.Equal(0x12345078, Clear(0x12345478, 10 + 32));
         Assert.Equal(0x12345078, Clear(0x12345878, 11 + 32));
@@ -126,6 +136,7 @@ public static class SingleBit
         Assert.Equal(0x12345078, ClearSwap(0x12345878, 11 + 32));
         Assert.Equal(0x12345078, Clear10(0x12345478));
         Assert.Equal(0x12345078, Clear11(0x12345878));
+        Assert.Equal(0, Clear31(int.MinValue));
 
         Assert.Equal(0, ExtractShift(0x12345878, 10 + 32));
         Assert.Equal(1, ExtractShift(0x12345878, 11 + 32));
@@ -171,5 +182,7 @@ public static class SingleBit
         Assert.Equal(0x12345078, Invert10(0x12345478));
         Assert.Equal(0x12345878, Invert11(0x12345078));
         Assert.Equal(0x12345078, Invert11(0x12345878));
+        Assert.Equal(0, Invert31(int.MinValue));
+        Assert.Equal(int.MinValue, Invert31(0));
     }
 }

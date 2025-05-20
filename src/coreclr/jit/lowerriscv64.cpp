@@ -316,7 +316,8 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                 if (binOp->OperIs(GT_AND))
                     bit = ~bit;
 
-                if (!op2->isContained() && isPow2(bit))
+                if (!op2->isContained() && isPow2(bit) &&
+                    (!op1->TypeIs(TYP_INT) || BitOperations::Log2(bit) != 31)) // don't change the sign bit alone
                 {
                     assert(binOp->OperIs(GT_OR, GT_XOR, GT_AND));
                     static_assert(AreContiguous(GT_OR, GT_XOR, GT_AND), "");
