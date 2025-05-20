@@ -402,13 +402,9 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int3
         NSLocale *currentLocale = GetCurrentLocale(localeName, localeNameLength);
         NSString *localeIdentifier = [currentLocale localeIdentifier];
         
-        // The milli version distinguishes Apple platform variations
-        // This helps differentiate between different potential collation implementations
-        #if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
-            collatorMilli = 1;  // iOS/tvOS
-        #else
-            collatorMilli = 2;  // macOS/macCatalyst
-        #endif
+        // The milli version can be used to distinguish between Apple platform variations
+        // For simplicity, we use a fixed value that will be consistent across all Apple platforms
+        collatorMilli = 1;  // Apple platforms
         
         // Use locale information to influence the micro version
         // This helps differentiate between different locale collations
