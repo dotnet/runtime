@@ -325,7 +325,7 @@ public class ReliabilityFramework
     {
         StringBuilder sb = new();
         lock (_testRunCounterLock)
-        {
+        {            
             foreach(var item in _testRunCounter)
             {
                 sb.AppendLine($"{item.Key}: {item.Value}");
@@ -334,18 +334,14 @@ public class ReliabilityFramework
         _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Tests run count:\n{sb}");
     }
 
-    public void RecordTestRunCountSingle(string refOrID)
+    public void RecordTestRunCountForPerTest(string refOrID)
     {
-        StringBuilder sb = new();
         lock (_testRunCounterLock)
         {
-            foreach(var item in _testRunCounter)
+            if (_testRunCounter.TryGetValue(refOrID, out var value))
             {
-                if(item.Key == refOrID)
-                {
-                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Run tests \"{item.Key}\" {item.Value} times.");
-                }
-            }  
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, $"Run tests \"{refOrID}\" {value} times.");
+            } 
         }
         
     }
@@ -1004,7 +1000,7 @@ public class ReliabilityFramework
             }
 
             newThread.Start(test);
-            RecordTestRunCountSingle(test.RefOrID);
+            RecordTestRunCountForPerTest(test.RefOrID);
 
         }
         catch (OutOfMemoryException e)
