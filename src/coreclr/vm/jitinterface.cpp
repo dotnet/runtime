@@ -13363,7 +13363,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     {
         LPWSTR interpreterConfig;
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
-        if ((interpreterConfig != NULL) && !interpreterMgr->LoadInterpreter())
+        if (
+#ifndef TARGET_WASM
+            (interpreterConfig != NULL) &&
+#endif
+            !interpreterMgr->LoadInterpreter())
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
         }
@@ -13384,6 +13388,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
+#ifdef TARGET_WASM
+    if (!ret)
+    {
+        _ASSERTE(!"WASM cannot jit yet");
+    }
+#elif // !TARGET_WASM
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13442,6 +13452,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
+#endif // !TARGET_WASM
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;

@@ -1734,6 +1734,13 @@ CORINFO_OS getClrVmOs();
     LOG((LF_JIT, LL_FATALERROR, __VA_ARGS__)); \
     LogErrorToHost(__VA_ARGS__);
 
+#ifdef TARGET_WASM
+#include "../interpreter/interpretershared.h"
+
+extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost);
+extern "C" INTERP_API ICorJitCompiler* getJit();
+#endif
+
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1768,7 +1775,12 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
     *phJit = NULL;
     *ppICorJitCompiler = NULL;
 
+#ifdef TARGET_WASM
+// we are statically linking the interpreter into the host
+    HRESULT hr = S_OK;
+#elif
     HRESULT hr = E_FAIL;
+#endif
 
 #ifdef _DEBUG
     if (pwzJitPath != NULL)
@@ -1827,7 +1839,11 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         EX_TRY
         {
             typedef void (* pjitStartup)(ICorJitHost*);
+#ifdef TARGET_WASM
+            pjitStartup jitStartupFn = jitStartup;
+#else
             pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
+#endif
 
             if (jitStartupFn)
             {
@@ -1839,7 +1855,11 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
             }
 
             typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
+#ifdef TARGET_WASM
+            pGetJitFn getJitFn = getJit;
+#else
             pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
+#endif
 
             if (getJitFn)
             {
