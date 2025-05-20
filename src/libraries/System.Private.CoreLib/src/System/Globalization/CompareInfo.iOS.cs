@@ -84,12 +84,12 @@ namespace System.Globalization
 
         private SortVersion GetAppleSortVersion()
         {
-            // Get the version of Apple's collation implementation
-            // The value is a 32-bit integer where:
-            // - Byte 0 (most significant): Major OS version
-            // - Byte 1: Minor OS version
-            // - Byte 2: Platform identifier (1=iOS/tvOS, 2=macOS/macCatalyst)
-            // - Byte 3 (least significant): OS patch version
+            // Get the version from the native collation implementation
+            // The value is a 32-bit integer structured to match ICU's collator version format:
+            // - Byte 0 (most significant): Major collator version (maps to Unicode version)
+            // - Byte 1: Minor collator version (maps to Unicode version)
+            // - Byte 2: Patch version (identifies platform: 1=iOS/tvOS, 2=macOS/macCatalyst)
+            // - Byte 3 (least significant): Build version (provides finer version info)
             int collatorVersion = Interop.Globalization.GetUIUnicodeVersion();
             return new SortVersion(collatorVersion, LCID, new Guid(collatorVersion, 0, 0, 0, 0, 0, 0,
                                                             (byte)(LCID >> 24),

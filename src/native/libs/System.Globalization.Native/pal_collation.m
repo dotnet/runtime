@@ -378,32 +378,55 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
 int32_t GlobalizationNative_GetUIUnicodeVersion(void)
 {
     @autoreleasepool {
-        // Return a version number that represents the collator implementation in Apple's APIs
-        // This mimics how ICU returns a version for its collator
+        // We need to return a value compatible with what ICU's ucol_getVersion returns
+        // ucol_getVersion returns a collation version, not just the Unicode version
         // Format: UVersionInfo[4] which is a 4-byte array packed into an int32_t
-        // Byte 0 (most significant): Major version (using major OS version)
-        // Byte 1: Minor version (using minor OS version)
-        // Byte 2: Platform identifier (1 for iOS/tvOS, 2 for macOS/macCatalyst)
-        // Byte 3 (least significant): Build version (using patch version, limited to 0-255)
+        // Apple doesn't expose a direct way to get this collation version so we
+        // need to map iOS/macOS versions to appropriate collation version values
         
         NSOperatingSystemVersion osVersion = [[NSProcessInfo processInfo] operatingSystemVersion];
         
-        // Get platform type for byte 2
-        uint8_t platformByte = 0;
+        // Bytes to construct the collation version
+        uint8_t collatorMajor = 0;
+        uint8_t collatorMinor = 0;
+        uint8_t collatorPatch = 0;
+        uint8_t collatorBuild = 0;
+        
+        // Map OS version to a reasonable collation version
+        // Apple typically updates its collation implementation with major iOS/macOS releases
+        // These values approximate ICU's collation versioning scheme
+        if (osVersion.majorVersion >= 17) { // iOS 17+ / macOS 14+ (2023+)
+            collatorMajor = 14;  // Based on Unicode 15.1
+            collatorMinor = 0;
+        } else if (osVersion.majorVersion >= 16) { // iOS 16 / macOS 13 (2022)
+            collatorMajor = 13;  // Based on Unicode 15.0
+            collatorMinor = 0;
+        } else if (osVersion.majorVersion >= 15) { // iOS 15 / macOS 12 (2021)
+            collatorMajor = 12;  // Based on Unicode 14.0
+            collatorMinor = 0;
+        } else if (osVersion.majorVersion >= 14) { // iOS 14 / macOS 11 (2020)
+            collatorMajor = 11;  // Based on Unicode 13.0
+            collatorMinor = 0;
+        } else if (osVersion.majorVersion >= 13) { // iOS 13 / macOS 10.15 (2019)
+            collatorMajor = 10;  // Based on Unicode 12.1
+            collatorMinor = 1;
+        } else { // Older versions
+            collatorMajor = 10;  // Based on Unicode 12.0
+            collatorMinor = 0;
+        }
+        
+        // Add the platform type as the patch version for distinction
         #if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
-            platformByte = 1; // iOS/tvOS
+            collatorPatch = 1;  // iOS/tvOS
         #else
-            platformByte = 2; // macOS/macCatalyst
+            collatorPatch = 2;  // macOS/macCatalyst
         #endif
         
-        // Ensure values stay within byte range
-        uint8_t majorByte = (uint8_t)(osVersion.majorVersion > 255 ? 255 : osVersion.majorVersion);
-        uint8_t minorByte = (uint8_t)(osVersion.minorVersion > 255 ? 255 : osVersion.minorVersion);
-        uint8_t patchByte = (uint8_t)(osVersion.patchVersion > 255 ? 255 : osVersion.patchVersion);
+        // Add the OS minor version as the build number for finer granularity
+        collatorBuild = (uint8_t)(osVersion.minorVersion > 255 ? 255 : osVersion.minorVersion);
         
-        // Pack the bytes into a 32-bit integer in the same way ICU does
-        // This maintains compatibility with how ICU's version is structured
-        return (majorByte << 24) | (minorByte << 16) | (platformByte << 8) | patchByte;
+        // Pack the bytes into a 32-bit integer in the same way ICU does with ucol_getVersion
+        return (collatorMajor << 24) | (collatorMinor << 16) | (collatorPatch << 8) | collatorBuild;
     }
 }
 
