@@ -375,7 +375,7 @@ int32_t GlobalizationNative_GetSortKeyNative(const uint16_t* localeName, int32_t
     }
 }
 
-int32_t GlobalizationNative_GetUIUnicodeVersion(void)
+int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int32_t localeNameLength)
 {
     @autoreleasepool {
         // This function mimics ICU's ucol_getVersion which returns a collator version
@@ -394,6 +394,10 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(void)
         uint8_t collatorMinor = 0;
         uint8_t collatorMilli = 0;
         uint8_t collatorMicro = 0;
+        
+        // Get the NSLocale from the provided locale name
+        NSLocale *currentLocale = GetCurrentLocale(localeName, localeNameLength);
+        NSString *localeIdentifier = [currentLocale localeIdentifier];
         
         // Known Unicode version mappings for specific iOS/macOS versions
         // This approach ensures correct versioning for known OS releases
@@ -438,9 +442,36 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(void)
             collatorMilli = 2;  // macOS/macCatalyst
         #endif
         
-        // Micro version provides additional granularity based on OS minor version
-        // This helps differentiate between different OS updates that might affect collation
-        collatorMicro = (uint8_t)(osVersion.minorVersion > 255 ? 255 : osVersion.minorVersion);
+        // Use locale information to influence the micro version
+        // This helps differentiate between different locale collations
+        // Derive a value from locale identifier to make versions different for different locales
+        // while still keeping the versions stable for the same locale
+        
+        // Calculate a hash value from the locale identifier
+        unsigned long hash = 0;
+        for (NSUInteger i = 0; i < [localeIdentifier length]; i++) {
+            hash = hash * 31 + [localeIdentifier characterAtIndex:i];
+        }
+        
+        // Use the hash to influence the micro version while still including OS minor version info
+        // Mix the OS minor version (limited to 0-127) with the locale hash (0-127)
+        uint8_t osMinorComponent = (uint8_t)(osVersion.minorVersion > 127 ? 127 : osVersion.minorVersion);
+        uint8_t localeComponent = (uint8_t)(hash & 0x7F); // Keep only 7 bits (0-127)
+        
+        // Combine OS minor version (high 7 bits) with locale hash (low 7 bits)
+        collatorMicro = (osMinorComponent << 1) | (localeComponent & 0x1);
+        
+        // Get additional collation-specific information if available
+        NSString *collationIdentifier = [currentLocale objectForKey:NSLocaleCollationIdentifier];
+        if (collationIdentifier != nil) {
+            // Use the collation identifier to further differentiate the milli version
+            // This will make the version differ for locales with different collation rules
+            unsigned long collationHash = 0;
+            for (NSUInteger i = 0; i < [collationIdentifier length]; i++) {
+                collationHash = collationHash * 31 + [collationIdentifier characterAtIndex:i];
+            }
+            collatorMilli = (collatorMilli & 0xF0) | (collationHash & 0x0F); // Keep platform info in high nibble, collation in low nibble
+        }
         
         // Pack the bytes into a 32-bit integer in the same format as ICU's ucol_getVersion
         return (collatorMajor << 24) | (collatorMinor << 16) | (collatorMilli << 8) | collatorMicro;

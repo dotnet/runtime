@@ -88,9 +88,9 @@ namespace System.Globalization
             // The value is a 32-bit integer structured to match ICU's collator version format:
             // - Byte 0 (most significant): Major collator version (maps to Unicode version)
             // - Byte 1: Minor collator version (maps to Unicode version)
-            // - Byte 2: Patch version (identifies platform: 1=iOS/tvOS, 2=macOS/macCatalyst)
+            // - Byte 2: Patch version (identifies platform & locale-specific collation rules)
             // - Byte 3 (least significant): Build version (provides finer version info)
-            int collatorVersion = Interop.Globalization.GetUIUnicodeVersion();
+            int collatorVersion = Interop.Globalization.GetUIUnicodeVersion(m_name, m_name.Length);
             return new SortVersion(collatorVersion, LCID, new Guid(collatorVersion, 0, 0, 0, 0, 0, 0,
                                                             (byte)(LCID >> 24),
                                                             (byte)((LCID & 0x00FF0000) >> 16),

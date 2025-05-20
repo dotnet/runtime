@@ -33,7 +33,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetSortKeyNative", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int GetSortKeyNative(string localeName, int lNameLen, char* str, int strLength, byte* sortKey, int sortKeyLength, CompareOptions options);
 
-        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetUIUnicodeVersion")]
-        internal static partial int GetUIUnicodeVersion();
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetUIUnicodeVersion", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetUIUnicodeVersion(string localeName, int localeNameLength);
     }
 }
