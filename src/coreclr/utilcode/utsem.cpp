@@ -184,7 +184,9 @@ UTSemReadWrite::Init()
     m_hWriteWaiterEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
     IfNullRet(m_hWriteWaiterEvent);
 #else // HOST_WINDOWS
-    pthread_rwlock_init(&m_rwLock, nullptr);
+    if (pthread_rwlock_init(&m_rwLock, nullptr))
+        return E_OUTOFMEMORY;
+
     m_initialized = true;
 #endif // HOST_WINDOWS
 
@@ -278,7 +280,8 @@ ReadLockAcquired:
     _ASSERTE ((m_dwFlag & READERS_MASK) != 0 && "reader count is zero after acquiring read lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == 0 && "writer count is nonzero after acquiring write lock");
 #else // HOST_WINDOWS
-    pthread_rwlock_rdlock(&m_rwLock);
+    if (pthread_rwlock_rdlock(&m_rwLock))
+        return E_FAIL;
 #endif // HOST_WINDOWS
 
     EE_LOCK_TAKEN(this);
@@ -372,7 +375,8 @@ WriteLockAcquired:
     _ASSERTE ((m_dwFlag & READERS_MASK) == 0 && "reader count is nonzero after acquiring write lock");
     _ASSERTE ((m_dwFlag & WRITERS_MASK) == WRITERS_INCR && "writer count is not 1 after acquiring write lock");
 #else // HOST_WINDOWS
-    pthread_rwlock_wrlock(&m_rwLock);
+    if (pthread_rwlock_wrlock(&m_rwLock))
+        return E_FAIL;
 #endif // HOST_WINDOWS
 
     EE_LOCK_TAKEN(this);
@@ -443,7 +447,8 @@ void UTSemReadWrite::UnlockRead()
         }
     }
 #else // HOST_WINDOWS
-    pthread_rwlock_unlock(&m_rwLock);
+    int ret = pthread_rwlock_unlock(&m_rwLock);
+    assert(!ret);
 #endif // HOST_WINDOWS
 
     DecCantStopCount();
@@ -511,7 +516,8 @@ void UTSemReadWrite::UnlockWrite()
         }
     }
 #else // HOST_WINDOWS
-    pthread_rwlock_unlock(&m_rwLock);
+    int ret = pthread_rwlock_unlock(&m_rwLock);
+    assert(!ret);
 #endif // HOST_WINDOWS
 
     DecCantStopCount();
