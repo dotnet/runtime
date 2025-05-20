@@ -2365,9 +2365,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 // Get a temp integer register to compute long address.
                                 regNumber            addrReg = internalRegisters.GetSingle(tree);
                                 CORINFO_FIELD_HANDLE hnd;
-                                simd32_t             constValue;
-                                memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd32_t));
-                                hnd = emit->emitSimd32Const(constValue);
+                                hnd = emit->emitSimdConst(&vecCon->gtSimdVal, emitTypeSize(tree->TypeGet()));
                                 emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
                                 //emit->emitIns_R_C(INS_adr, EA_8BYTE, addrReg, REG_NA, hnd, 0);
                                 //emit->emitIns_R_R_R_I(INS_sve_ld1b, EA_SCALABLE, targetReg, REG_P1, addrReg, 0, INS_OPTS_SCALABLE_B);
@@ -2399,7 +2397,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                                 CORINFO_FIELD_HANDLE hnd;
                                 simd64_t             constValue;
                                 memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd64_t));
-                                hnd = emit->emitSimd64Const(constValue);
+                                hnd = emit->emitSimdConst(&vecCon->gtSimdVal, emitTypeSize(tree->TypeGet()));
                                 emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
                             }
                         }
