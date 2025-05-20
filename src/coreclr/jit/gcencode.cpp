@@ -1582,7 +1582,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     {
         // While the sync start offset and end offset are not used by the stackwalker/EH system
         // in funclets mode, we do need to know if the code is synchronized if we are generating
-        // and edit and continue method, so that we can properly manage the stack during a Remap
+        // an edit and continue method, so that we can properly manage the stack during a Remap
         // operation. Instead of inventing a new encoding, just encode some non-0 offsets into these fields.
         header->syncStartOffset = 1;
         header->syncEndOffset   = 2;
