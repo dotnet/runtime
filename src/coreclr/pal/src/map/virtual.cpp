@@ -48,7 +48,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL); // some headers have code with asserts, so d
 
 using namespace CorUnix;
 
-CRITICAL_SECTION virtual_critsec;
+DN_CRITSECT virtual_critsec;
 
 // The first node in our list of allocated blocks.
 static PCMI pVirtualMemory;

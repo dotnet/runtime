@@ -29,7 +29,7 @@ namespace CorUnix
     {
     private:
 
-        CRITICAL_SECTION m_cs;
+        DN_CRITSECT m_cs;
         bool m_fInitialized;
 
     public:

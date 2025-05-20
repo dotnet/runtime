@@ -158,7 +158,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-CRITICAL_SECTION g_csProcess;
+DN_CRITSECT g_csProcess;
 
 //
 // List and count of active threads
@@ -2840,7 +2840,7 @@ CorUnix::InitializeProcessCommandLine(
             ERROR("Invalid full path\n");
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
-        }    
+        }
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 

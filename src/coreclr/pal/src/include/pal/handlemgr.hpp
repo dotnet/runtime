@@ -24,7 +24,7 @@ Abstract:
 #include "corunix.hpp"
 #include "cs.hpp"
 #include "pal/thread.hpp"
-
+#include <minipal/critsect.h>
 
 /* Pseudo handles constant for current thread and process */
 extern const HANDLE hPseudoCurrentProcess;
@@ -72,7 +72,7 @@ namespace CorUnix
         DWORD m_dwTableGrowthRate;
         HANDLE_TABLE_ENTRY* m_rghteHandleTable;
 
-        CRITICAL_SECTION m_csLock;
+        DN_CRITSECT m_csLock;
         bool m_fLockInitialized;
 
         bool ValidateHandle(HANDLE h);

@@ -126,7 +126,7 @@ static const char INDENT_CHAR = '.';
 static BOOL DBG_get_indent(DBG_LEVEL_ID level, const char *format,
                            char *indent_string);
 
-static CRITICAL_SECTION fprintf_crit_section;
+static DN_CRITSECT fprintf_crit_section;
 
 /* Function definitions */
 

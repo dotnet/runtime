@@ -32,6 +32,7 @@ Abstract:
 #include "synchobjects.hpp"
 #include <errno.h>
 #include <minipal/thread.h>
+#include <minipal/critsect.h>
 
 namespace CorUnix
 {
@@ -203,7 +204,7 @@ namespace CorUnix
         CPalThread *m_pNext;
         DWORD m_dwExitCode;
         BOOL m_fExitCodeSet;
-        CRITICAL_SECTION m_csLock;
+        DN_CRITSECT m_csLock;
         bool m_fLockInitialized;
         bool m_fIsDummy;
 

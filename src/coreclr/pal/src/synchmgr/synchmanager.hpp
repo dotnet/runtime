@@ -523,8 +523,8 @@ namespace CorUnix
         // static members
         static CPalSynchronizationManager * s_pObjSynchMgr;
         static Volatile<LONG>               s_lInitStatus;
-        static CRITICAL_SECTION             s_csSynchProcessLock;
-        static CRITICAL_SECTION             s_csMonitoredProcessesLock;
+        static DN_CRITSECT                  s_csSynchProcessLock;
+        static DN_CRITSECT                  s_csMonitoredProcessesLock;
 
         // members
         DWORD                           m_dwWorkerThreadTid;

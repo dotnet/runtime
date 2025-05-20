@@ -111,7 +111,7 @@ BOOL g_useDefaultBaseAddr = FALSE;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
-static CRITICAL_SECTION* init_critsec = NULL;
+static DN_CRITSECT* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
@@ -319,7 +319,7 @@ Initialize(
                                                  // initializing the critical section.
         if(nullptr == init_critsec)
         {
-            static CRITICAL_SECTION temp_critsec;
+            static DN_CRITSECT temp_critsec;
 
             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
             InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
