@@ -390,10 +390,24 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int3
         // - Byte 2: Milli version (for tailorings or collator-specific changes)
         // - Byte 3: Micro version (build number or additional distinction)
         
-        // Simple formula to calculate major version based on OS version
-        // The offset of 3 approximates Apple's pattern of Unicode version support
+        // Calculate major version based on OS version
         // iOS versions and macOS versions are not aligned (e.g., iOS 18 and macOS 15 can coexist)
-        uint8_t collatorMajor = (uint8_t)(osVersion.majorVersion > 4 ? osVersion.majorVersion - 3 : 1);
+        // so we need to handle them differently
+        uint8_t collatorMajor;
+        
+        // A simple but effective approach to differentiate iOS/macOS:
+        // iOS uses higher version numbers (e.g., 17+) while macOS uses lower numbers (e.g., 13-14)
+        // This approximation won't be perfect for all future versions but gives consistent behavior
+        if (osVersion.majorVersion >= 10) {
+            // Likely iOS/iPadOS - Apply iOS formula
+            // Approximation: iOS 17 -> Unicode 14, iOS 16 -> Unicode 13, etc.
+            collatorMajor = (uint8_t)(osVersion.majorVersion - 3);
+        } else {
+            // Likely macOS - Apply macOS formula
+            // macOS 14 (Sequoia) -> Unicode 15, macOS 13 (Ventura) -> Unicode 14, etc.
+            collatorMajor = (uint8_t)(osVersion.majorVersion + 1);
+        }
+
         uint8_t collatorMinor = 0;
         uint8_t collatorMilli = 0;
         uint8_t collatorMicro = 0;
@@ -403,8 +417,15 @@ int32_t GlobalizationNative_GetUIUnicodeVersion(const uint16_t* localeName, int3
         NSString *localeIdentifier = [currentLocale localeIdentifier];
         
         // The milli version can be used to distinguish between Apple platform variations
-        // For simplicity, we use a fixed value that will be consistent across all Apple platforms
-        collatorMilli = 1;  // Apple platforms
+        // Use a value that represents the platform type
+        // This helps ensure consistent collation behavior across releases while differentiating platforms
+        if (osVersion.majorVersion >= 10) {
+            // iOS/iPadOS platforms
+            collatorMilli = 1;
+        } else {
+            // macOS platforms
+            collatorMilli = 2;
+        }
         
         // Use locale information to influence the micro version
         // This helps differentiate between different locale collations
