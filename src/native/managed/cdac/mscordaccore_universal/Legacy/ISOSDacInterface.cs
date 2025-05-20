@@ -202,7 +202,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Assemblies
     [PreserveSig]
-    int GetAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] values, int* pNeeded);
+    int GetAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[]? values, int* pNeeded);
     [PreserveSig]
     int GetAssemblyData(ulong baseDomainPtr, ulong assembly, /*struct DacpAssemblyData*/ void* data);
     [PreserveSig]

@@ -435,18 +435,9 @@ public:
 
     static LsPointer<T> MakePtr(T* p)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         LsPointer<T> t;
         t.Set(p);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (void * p) { return m_ptr != p; }
@@ -536,18 +527,9 @@ public:
 
     static LsPointer<T> MakePtr(T * p)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         LsPointer<T> t;
         t.Set(p);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (void * p) { return m_ptr != p; }
@@ -734,18 +716,9 @@ public:
     // Convenience for converting TTargetPtr --> VMPTR
     static VMPTR_This MakePtr(TTargetPtr * ptr)
     {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         VMPTR_This t;
         t.SetRawPtr(ptr);
         return t;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
 
@@ -776,18 +749,9 @@ public:
     {
         SUPPORTS_DAC;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6001) // PREfast warning: Using uninitialize memory 't'
-#endif // _PREFAST_
-
         VMPTR_This dummy;
         dummy.m_addr = (TADDR)NULL;
         return dummy;
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
     }
 
     bool operator!= (VMPTR_This vmOther) const { SUPPORTS_DAC; return this->m_addr != vmOther.m_addr; }

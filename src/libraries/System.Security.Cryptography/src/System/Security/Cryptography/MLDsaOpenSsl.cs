@@ -20,10 +20,12 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class MLDsaOpenSsl : MLDsa
     {
         private SafeEvpPKeyHandle _key;
+        private bool _hasSeed;
+        private bool _hasSecretKey;
 
         /// <summary>
         ///   Initializes a new instance of the <see cref="MLDsaOpenSsl" /> class from an existing OpenSSL key
@@ -49,12 +51,19 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("osx")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public MLDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle) : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle))
+        public MLDsaOpenSsl(SafeEvpPKeyHandle pkeyHandle)
+            : base(AlgorithmFromHandle(pkeyHandle, out SafeEvpPKeyHandle upRefHandle, out bool hasSeed, out bool hasSecretKey))
         {
             _key = upRefHandle;
+            _hasSeed = hasSeed;
+            _hasSecretKey = hasSecretKey;
         }
 
-        private static partial MLDsaAlgorithm AlgorithmFromHandle(SafeEvpPKeyHandle pkeyHandle, out SafeEvpPKeyHandle upRefHandle);
+        private static partial MLDsaAlgorithm AlgorithmFromHandle(
+            SafeEvpPKeyHandle pkeyHandle,
+            out SafeEvpPKeyHandle upRefHandle,
+            out bool hasSeed,
+            out bool hasSecretKey);
 
         /// <summary>
         ///   Gets a <see cref="SafeEvpPKeyHandle" /> representation of the cryptographic key.

@@ -54,7 +54,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <!-- alpine's gcc toolchain needs alpine-linux, see https://github.com/llvm/llvm-project/issues/89146 -->
-    <Exec Command="grep -q ID=alpine &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(CrossCompileArch)' != '' and '$(SysRoot)' != ''">
+    <Exec Command="test -f &quot;$(SysRoot)/etc/os-release&quot; &amp;&amp; grep -q ID=alpine &quot;$(SysRoot)/etc/os-release&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(CrossCompileArch)' != '' and '$(SysRoot)' != ''">
       <Output TaskParameter="ExitCode" PropertyName="_IsAlpineExitCode" />
     </Exec>
 
@@ -223,7 +223,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="m" />
       <!-- See the comment in PalInterlockedCompareExchange128 for details. -->
-      <NativeSystemLibrary Include="atomic" Condition="'$(_targetArchitecture)' == 'riscv64'" />
+      <NativeSystemLibrary Include="atomic" Condition="'$(_targetArchitecture)' == 'riscv64' or '$(_targetArchitecture)' == 'loongarch64'" />
     </ItemGroup>
 
     <ItemGroup>

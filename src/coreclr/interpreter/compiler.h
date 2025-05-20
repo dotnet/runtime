@@ -264,6 +264,7 @@ class InterpIAllocator;
 class InterpCompiler
 {
     friend class InterpIAllocator;
+    friend class InterpGcSlotAllocator;
 
 private:
     CORINFO_METHOD_HANDLE m_methodHnd;
@@ -272,7 +273,7 @@ private:
     CORINFO_METHOD_INFO* m_methodInfo;
 #ifdef DEBUG
     const char *m_methodName;
-    bool m_verbose;
+    bool m_verbose = false;
 #endif
 
     static int32_t InterpGetMovForType(InterpType interpType, bool signExtend);
@@ -281,6 +282,7 @@ private:
     uint8_t* m_pILCode;
     int32_t m_ILCodeSize;
     int32_t m_currentILOffset;
+    InterpInst* m_pInitLocalsIns;
 
     // This represents a mapping from indexes to pointer sized data. During compilation, an
     // instruction can request an index for some data (like a MethodDesc pointer), that it
@@ -290,8 +292,10 @@ private:
     TArray<void*> m_dataItems;
     int32_t GetDataItemIndex(void* data);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
+    int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
@@ -356,7 +360,7 @@ private:
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
-    int32_t m_totalVarsStackSize;
+    int32_t m_totalVarsStackSize, m_globalVarsWithRefsStackTop;
     int32_t m_paramAreaOffset = 0;
     int32_t m_ILLocalsOffset, m_ILLocalsSize;
     void    AllocVarOffsetCB(int *pVar, void *pData);
@@ -391,6 +395,8 @@ private:
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);
+    void    EmitLdelem(int32_t opcode, InterpType type);
+    void    EmitStelem(InterpType type);
     void    EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     void    EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad);
     void    EmitLdLocA(int32_t var);
