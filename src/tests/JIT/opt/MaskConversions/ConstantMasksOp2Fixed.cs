@@ -278,8 +278,7 @@ public class ConstantMasks
         //ARMSVE-TODO: This could be optimised to remove both instructions #114433
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
         //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt64(), Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
@@ -302,8 +301,7 @@ public class ConstantMasks
         //ARMSVE-TODO: This could be optimised to remove both instructions #114433
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
         //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.Zero, Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
@@ -312,8 +310,7 @@ public class ConstantMasks
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionZeroZ(Vector<int> op1) {
         //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
-        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.s
+        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
         //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
@@ -325,8 +322,7 @@ public class ConstantMasks
     static void CndSelectEmbeddedReductionTrueMaskF(Vector<int> op1) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
         //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt64(), Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
@@ -344,10 +340,10 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionAllBitsF(Vector<int> op1) {
-        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
+        //ARM64-FULL-LINE: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
+        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: mov {{z[0-9]+}}.d, {{p[0-9]+}}/z, #1
+        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
         //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.AllBitsSet, Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
