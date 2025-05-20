@@ -11,7 +11,6 @@ namespace System.Diagnostics
     public partial class StackTrace
     {
         private StackFrameHelper? _stackFrameHelper;
-        private MethodBase?[]? _methodBases;
         private bool _fNeedFileInfo;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StackTrace_GetStackFramesInternal")]
@@ -88,14 +87,6 @@ namespace System.Diagnostics
             {
                 _numOfFrames = 0;
             }
-
-            // Grab MethodBases for all frames eagerly to keep them alive, in case one of them
-            // is from an unloadable ALC (or other collectable context)
-            _methodBases = new MethodBase?[StackF.GetNumberOfFrames()];
-            for (int i = 0; i < _methodBases.Length; i++)
-            {
-                _methodBases[i] = _stackFrameHelper.GetMethodBase(i);
-            }
         }
 
         /// <summary>
@@ -113,7 +104,7 @@ namespace System.Diagnostics
 
                 for (int i = 0; i < stackFrames.Length; i++)
                 {
-                    stackFrames[i] = new StackFrame(_stackFrameHelper, _methodBases, i, _fNeedFileInfo);
+                    stackFrames[i] = new StackFrame(_stackFrameHelper, i, _fNeedFileInfo);
                 }
 
                 Interlocked.CompareExchange(ref _stackFrames, stackFrames, null);
