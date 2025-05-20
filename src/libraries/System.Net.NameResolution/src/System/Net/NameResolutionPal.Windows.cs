@@ -439,9 +439,8 @@ namespace System.Net
                     }
                     catch (ObjectDisposedException)
                     {
-                        // The handle was already released, so we don't need to call DangerousRelease.
-                        // This can happen if the operation completed after we check for completion.
-                        // We can ignore this exception.
+                        // There is a race between checking @this._completed and @this.DangerousAddRef and disposing form another thread.
+                        // We lost the race. No further action needed.
                     }
                     finally
                     {
