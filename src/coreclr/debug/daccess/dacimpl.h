@@ -27,7 +27,7 @@
 #include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
-extern DN_CRIT_SECT g_dacCritSec;
+extern DN_CRITSECT g_dacCritSec;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
 // Note that CLRDATA_ADDRESS is sign-extended (for compat with Windbg and OS conventions).  Converting
@@ -3810,7 +3810,7 @@ public:
 //----------------------------------------------------------------------------
 
 #define DAC_ENTER() \
-    minipal_critsec_enter(&g_dacCritSec); \
+    minipal_critsect_enter(&g_dacCritSec); \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
     g_dacImpl = this;
 
@@ -3818,10 +3818,10 @@ public:
 // the process's host instance cache hasn't been flushed
 // since the child was created.
 #define DAC_ENTER_SUB(dac) \
-    minipal_critsec_enter(&g_dacCritSec); \
+    minipal_critsect_enter(&g_dacCritSec); \
     if (dac->m_instanceAge != m_instanceAge) \
     { \
-        minipal_critsec_leave(&g_dacCritSec); \
+        minipal_critsect_leave(&g_dacCritSec); \
         return E_INVALIDARG; \
     } \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
@@ -3829,7 +3829,7 @@ public:
 
 #define DAC_LEAVE() \
     g_dacImpl = __prevDacImpl; \
-    minipal_critsec_leave(&g_dacCritSec)
+    minipal_critsect_leave(&g_dacCritSec)
 
 
 #define SOSHelperEnter() \

@@ -14,28 +14,28 @@ thread_local size_t t_ThreadType;
 
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags)
 {
-    DN_CRIT_SECT *cs = (DN_CRIT_SECT*)malloc(sizeof(DN_CRIT_SECT));
-    minipal_critsec_init(cs);
+    DN_CRITSECT *cs = (DN_CRITSECT*)malloc(sizeof(DN_CRITSECT));
+    minipal_critsect_init(cs);
     return (CRITSEC_COOKIE)cs;
 }
 
 void ClrDeleteCriticalSection(CRITSEC_COOKIE cookie)
 {
     _ASSERTE(cookie);
-    minipal_critsec_destroy((DN_CRIT_SECT*)cookie);
+    minipal_critsect_destroy((DN_CRITSECT*)cookie);
     free(cookie);
 }
 
 void ClrEnterCriticalSection(CRITSEC_COOKIE cookie)
 {
     _ASSERTE(cookie);
-    minipal_critsec_enter((DN_CRIT_SECT*)cookie);
+    minipal_critsect_enter((DN_CRITSECT*)cookie);
 }
 
 void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
 {
     _ASSERTE(cookie);
-    minipal_critsec_leave((DN_CRIT_SECT*)cookie);
+    minipal_critsect_leave((DN_CRITSECT*)cookie);
 }
 
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)

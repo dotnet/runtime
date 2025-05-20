@@ -67,7 +67,7 @@ private:
     static UINT32           s_logLevel;
     static HANDLE           s_logFile;
     static char*            s_logFilePath;
-    static DN_CRIT_SECT      s_critSec;
+    static DN_CRITSECT      s_critSec;
 
 public:
     static void Initialize();

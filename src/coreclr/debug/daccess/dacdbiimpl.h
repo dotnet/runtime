@@ -1116,7 +1116,7 @@ class DDHolder
 public:
     DDHolder(DacDbiInterfaceImpl* pContainer, bool fAllowReentrant)
     {
-        minipal_critsec_enter(&g_dacCritSec);
+        minipal_critsect_enter(&g_dacCritSec);
 
         // If we're not re-entrant, then assert.
         if (!fAllowReentrant)
@@ -1139,7 +1139,7 @@ public:
         g_dacImpl    = m_pOldContainer;
         g_pAllocator = m_pOldAllocator;
 
-        minipal_critsec_leave(&g_dacCritSec);
+        minipal_critsect_leave(&g_dacCritSec);
     }
 
 protected:

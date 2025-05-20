@@ -55,7 +55,7 @@ DbgTransportSession::~DbgTransportSession()
 #endif // RIGHT_SIDE_COMPILE
 
     if (m_fInitStateLock)
-        minipal_critsec_destroy(&m_sStateLock);
+        minipal_critsect_destroy(&m_sStateLock);
 }
 
 // Allocates initial resources (including starting the transport thread). The session will start in the
@@ -114,7 +114,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_pADB = pADB;
 #endif // RIGHT_SIDE_COMPILE
 
-    minipal_critsec_init(&m_sStateLock);
+    minipal_critsect_init(&m_sStateLock);
     m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
@@ -187,7 +187,7 @@ void DbgTransportSession::Shutdown()
 
         // Must take the state lock to make a state transition.
         {
-            DnCritSecHolder sLockHolder(&m_sStateLock);
+            DnCritSectHolder sLockHolder(&m_sStateLock);
 
             // Remember previous state and transition to SS_Closed.
             SessionState ePreviousState = m_eState;
@@ -271,7 +271,7 @@ bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 
 bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 {
-    DnCritSecHolder sLockHolder(&m_sStateLock);
+    DnCritSectHolder sLockHolder(&m_sStateLock);
     if (m_fDebuggerAttached)
     {
         if (pTicket->IsValid())
@@ -309,7 +309,7 @@ bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 
 bool DbgTransportSession::StopUsingAsDebugger(DebugTicket * pTicket)
 {
-    DnCritSecHolder sLockHolder(&m_sStateLock);
+    DnCritSectHolder sLockHolder(&m_sStateLock);
     if (m_fDebuggerAttached && pTicket->IsValid())
     {
         // The caller is indeed the owner of the debug ticket.
@@ -365,7 +365,7 @@ void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
 
     // Must acquire the state lock to synchronize us wrt to the transport thread (clients already guarantee
     // they serialize calls to this and waiting on m_rghEventReadyEvent).
-    DnCritSecHolder sLockHolder(&m_sStateLock);
+    DnCritSectHolder sLockHolder(&m_sStateLock);
 
     // There must be at least one valid event waiting (this call does not block).
     _ASSERTE(m_cValidEventBuffers);
@@ -607,7 +607,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
     // and while determining whether to send immediately or not depending on the session state (to avoid
     // posting a send on a closed and possibly recycled socket).
     {
-        DnCritSecHolder sLockHolder(&m_sStateLock);
+        DnCritSectHolder sLockHolder(&m_sStateLock);
 
         // Perform any last updates to the header or data block here since we might be about to encrypt them.
 
@@ -890,7 +890,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 
     // We need the state lock to perform a state transition.
     if (!fCallerHoldsStateLock)
-        minipal_critsec_enter(&m_sStateLock);
+        minipal_critsect_enter(&m_sStateLock);
 
     switch (m_eState)
     {
@@ -930,7 +930,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
     }
 
     if (!fCallerHoldsStateLock)
-        minipal_critsec_leave(&m_sStateLock);
+        minipal_critsect_leave(&m_sStateLock);
 }
 
 // Scan the send queue and discard any messages which have been processed by the other side according to the
@@ -939,7 +939,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
 {
     // Must access the send queue under the state lock.
-    DnCritSecHolder sLockHolder(&m_sStateLock);
+    DnCritSectHolder sLockHolder(&m_sStateLock);
 
     // Note that message headers (and data blocks) may be encrypted. Use the cached fields in the Message
     // structure to compare message IDs and types.
@@ -1030,7 +1030,7 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
             // we don't need to put it on the queue in order (it will never be resent). Easiest just to put it
             // on the head.
             {
-                DnCritSecHolder sLockHolder(&m_sStateLock);
+                DnCritSectHolder sLockHolder(&m_sStateLock);
                 pMsg->m_pNext = m_pSendQueueFirst;
                 m_pSendQueueFirst = pMsg;
                 if (m_pSendQueueLast == NULL)
@@ -1101,7 +1101,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
     // Locate original message on the send queue.
     Message *pMsg = NULL;
     {
-        DnCritSecHolder sLockHolder(&m_sStateLock);
+        DnCritSectHolder sLockHolder(&m_sStateLock);
 
         pMsg = m_pSendQueueFirst;
         Message *pLastMsg = NULL;
@@ -1340,7 +1340,7 @@ void DbgTransportSession::TransportWorker()
         // blocked on a Receive() on the newly formed connection (important if they want to transition the state
         // to SS_Closed).
         {
-            DnCritSecHolder sLockHolder(&m_sStateLock);
+            DnCritSectHolder sLockHolder(&m_sStateLock);
 
             if (m_eState == SS_Closed)
                 break;
@@ -1481,7 +1481,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                DnCritSecHolder sLockHolder(&m_sStateLock);
+                DnCritSectHolder sLockHolder(&m_sStateLock);
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
                 {
@@ -1500,7 +1500,7 @@ void DbgTransportSession::TransportWorker()
 
             // Finally we can transition to SS_Open.
             {
-                DnCritSecHolder sLockHolder(&m_sStateLock);
+                DnCritSectHolder sLockHolder(&m_sStateLock);
                 if (m_eState == SS_Closed)
                     break;
                 else if (m_eState == SS_Opening)
@@ -1617,7 +1617,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                DnCritSecHolder sLockHolder(&m_sStateLock);
+                DnCritSectHolder sLockHolder(&m_sStateLock);
 
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
@@ -1766,7 +1766,7 @@ void DbgTransportSession::TransportWorker()
                 // We need to do some state cleanup here, since when we reform a connection (if ever, it will
                 // be with a new session).
                 {
-                    DnCritSecHolder sLockHolder(&m_sStateLock);
+                    DnCritSectHolder sLockHolder(&m_sStateLock);
 
                     // Check we're still in a good state before a clean restart.
                     if (m_eState != SS_Open)
@@ -1815,7 +1815,7 @@ void DbgTransportSession::TransportWorker()
                     // that can expand the array, a client thread may be in GetNextEvent() reading from the
                     // old version.
                     {
-                        DnCritSecHolder sLockHolder(&m_sStateLock);
+                        DnCritSectHolder sLockHolder(&m_sStateLock);
 
                         // When we copy old array contents over we place the head of the list at the start of
                         // the new array for simplicity. If the head happened to be at the start of the old
@@ -1868,7 +1868,7 @@ void DbgTransportSession::TransportWorker()
 
                     // We must take the lock to update the count of valid entries though, since clients can
                     // touch this field as well.
-                    DnCritSecHolder sLockHolder(&m_sStateLock);
+                    DnCritSectHolder sLockHolder(&m_sStateLock);
 
                     m_cValidEventBuffers++;
                     DWORD idxCurrentEvent = m_idxEventBufferTail;
@@ -2091,7 +2091,7 @@ void DbgTransportSession::TransportWorker()
 
     // Drain any remaining entries in the send queue (aborting them when they need completions).
     {
-        DnCritSecHolder sLockHolder(&m_sStateLock);
+        DnCritSectHolder sLockHolder(&m_sStateLock);
 
         Message *pMsg;
         while ((pMsg = m_pSendQueueFirst) != NULL)

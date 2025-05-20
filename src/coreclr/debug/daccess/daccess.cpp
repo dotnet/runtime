@@ -42,7 +42,7 @@ extern TADDR g_ClrModuleBase;
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
-DN_CRIT_SECT g_dacCritSec;
+DN_CRITSECT g_dacCritSec;
 ClrDataAccess* g_dacImpl;
 
 EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
@@ -72,7 +72,7 @@ EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
             return FALSE;
         }
 #endif
-        minipal_critsec_init(&g_dacCritSec);
+        minipal_critsect_init(&g_dacCritSec);
 
         g_procInitialized = true;
         break;
@@ -82,7 +82,7 @@ EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
         // It's possible for this to be called without ATTACH completing (eg. if it failed)
         if (g_procInitialized)
         {
-            minipal_critsec_destroy(&g_dacCritSec);
+            minipal_critsect_destroy(&g_dacCritSec);
         }
         g_procInitialized = false;
         break;
