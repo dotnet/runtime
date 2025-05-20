@@ -35,7 +35,7 @@ using std::intptr_t;
 typedef wchar_t             WCHAR;
 #define W(str) L##str
 #else
-typedef char16_t             WCHAR;
+typedef char16_t            WCHAR;
 #define W(str) u##str
 #endif
 typedef void *              HANDLE;

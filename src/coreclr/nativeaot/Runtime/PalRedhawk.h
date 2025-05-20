@@ -52,6 +52,7 @@
 #else   // !defined(__i386__)
 
 #define __cdecl
+#define __stdcall
 
 #endif  // !defined(__i386__)
 
@@ -66,6 +67,8 @@
 #ifdef TARGET_UNIX
 // There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
 // we have to (in which case these definitions will move to CommonTypes.h).
+typedef int32_t             HRESULT;
+
 typedef WCHAR *             LPWSTR;
 typedef const WCHAR *       LPCWSTR;
 typedef char *              LPSTR;
@@ -74,6 +77,8 @@ typedef void *              HINSTANCE;
 
 typedef void *              LPSECURITY_ATTRIBUTES;
 typedef void *              LPOVERLAPPED;
+
+#define UNREFERENCED_PARAMETER(P)          (void)(P)
 
 typedef union _LARGE_INTEGER {
     struct {

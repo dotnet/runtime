@@ -1067,7 +1067,7 @@ void PalFlushProcessWriteBuffers()
 
 uint32_t PalGetCurrentProcessId()
 {
-    return ::GetCurrentProcessId();
+    return static_cast<uint32_t>(::GetCurrentProcessId());
 }
 
 #ifdef UNICODE

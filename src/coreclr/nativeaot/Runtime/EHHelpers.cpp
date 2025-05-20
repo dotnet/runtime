@@ -487,7 +487,7 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
 
             // Do not use ASSERT_UNCONDITIONALLY here. It will crash because of it consumes too much stack.
             PalPrintFatalError("\nProcess is terminating due to StackOverflowException.\n");
-            RaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
+            PalRaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
         }
 
         translateToManagedException = true;
@@ -552,7 +552,7 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         if (((uint8_t*)faultingIP >= s_pbRuntimeModuleLower) && ((uint8_t*)faultingIP < s_pbRuntimeModuleUpper))
         {
             ASSERT_UNCONDITIONALLY("Hardware exception raised inside the runtime.");
-            RaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
+            PalRaiseFailFastException(pExPtrs->ExceptionRecord, pExPtrs->ContextRecord, 0);
         }
     }
 

@@ -86,7 +86,7 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
-extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
+void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
 {
     // Causes creation of a crash dump if enabled
     PalCreateCrashDumpIfEnabled();
@@ -1144,7 +1144,7 @@ REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOu
 #endif // defined(HOST_WASM)
 }
 
-extern "C" void FlushProcessWriteBuffers()
+void PalFlushProcessWriteBuffers()
 {
     GCToOSInterface::FlushProcessWriteBuffers();
 }
@@ -1152,7 +1152,7 @@ extern "C" void FlushProcessWriteBuffers()
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
 static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
 
-extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
+void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
 {
     struct timeval time = { 0 };
     gettimeofday(&time, NULL);
