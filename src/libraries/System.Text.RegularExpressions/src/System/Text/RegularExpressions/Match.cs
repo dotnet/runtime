@@ -368,11 +368,11 @@ namespace System.Text.RegularExpressions
                 }
 
                 // If we had captures before (limit > 0) but now have none after removing balancing references (j <= 0),
-                // then preserve at least one capture to maintain consistency with conditional evaluation
+                // preserve a zero-length capture at position 0 for all groups that had balancing captures
+                // This ensures consistent behavior between conditional evaluation and group success reporting
                 if (j <= 0)
                 {
-                    // Create a dummy capture at position 0 with length 0 to ensure Group.Success is true
-                    // This maintains consistency with IsMatched behavior used during conditional evaluation
+                    // Create a dummy zero-length capture at position 0
                     matcharray[0] = 0;
                     matcharray[1] = 0;
                     matchcount[cap] = 1;

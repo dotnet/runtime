@@ -1053,7 +1053,7 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
-        public void BalancingGroup_CaptureCountConsistentWithConditional(RegexOptions options)
+        public void BalancingGroup_ConditionalEvaluationConsistency(RegexOptions options)
         {
             string input = "00123xzacvb1";
             string pattern = @"\d+((?'x'[a-z-[b]]+)).(?<=(?'2-1'(?'x1'..)).{6})b(?(2)(?'Group2Captured'.)|(?'Group2NotCaptured'.))";
@@ -1064,9 +1064,40 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(match.Groups["Group2Captured"].Success);
             Assert.False(match.Groups["Group2NotCaptured"].Success);
 
-            // Group2 should have capture count consistent with conditional evaluation
+            // Group2 should correctly report success to maintain consistency with conditional evaluation
             Assert.True(match.Groups[2].Success);
+            
+            // After our fix, the balancing group should always have one capture (the dummy one we added)
             Assert.Equal(1, match.Groups[2].Captures.Count);
+            
+            // The capture should be zero-length at position 0
+            Assert.Equal(0, match.Groups[2].Captures[0].Index);
+            Assert.Equal(0, match.Groups[2].Captures[0].Length);
+        }
+
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void BalancingGroup_SimpleExample(RegexOptions options)
+        {
+            // Simple example with balancing group
+            string pattern = @"(?'open'a+)(?'close-open'b+)(?(open)no|yes)";
+            string input = "aaabbb";
+            
+            Match match = new Regex(pattern, options).Match(input);
+            
+            // The "yes" branch should be matched because all "open" captures were balanced
+            Assert.Equal("aaabbbyes", match.Value);
+            
+            // The "open" group should report success and have a zero-length capture after tidying
+            Assert.True(match.Groups["open"].Success);
+            Assert.Equal(1, match.Groups["open"].Captures.Count);
+            Assert.Equal(0, match.Groups["open"].Captures[0].Length);
+            
+            // The "close" group should have real captures
+            Assert.True(match.Groups["close"].Success);
+            Assert.Equal(1, match.Groups["close"].Captures.Count);
+            Assert.Equal("bbb", match.Groups["close"].Captures[0].Value);
         }
 
         [Theory]
