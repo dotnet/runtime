@@ -12,6 +12,9 @@ namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
 /// See https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/SecurityTool/sharedTool/codesign.c#L61
+/// This is the base class for a super blob, which is a blob containing other blobs.
+/// This class handles reading and writing of all the sub-blobs.
+/// The blob contains the following structure:
 /// </summary>
 internal abstract unsafe class SuperBlob : Blob
 {
@@ -78,6 +81,9 @@ internal abstract unsafe class SuperBlob : Blob
         }
     }
 
+    /// <summary>
+    /// Reads the SuperBlob from the <paramref name="accessor"/> at the specified <paramref name="offset"/>.
+    /// </summary>
     protected SuperBlob(MemoryMappedViewAccessor accessor, long offset) : base(accessor, offset)
     {
         // accessor.Read(offset + sizeof(uint), out uint size);

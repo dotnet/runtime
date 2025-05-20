@@ -8,10 +8,10 @@ namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
 /// See https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_codesigning/lib/requirement.h#L211
-/// Code signature data is always big endian / network order.
 /// Requirements is a SuperBlob.
+/// It should be empty but present for all created or written signatures.
 /// </summary>
-internal class RequirementsBlob : SuperBlob
+internal sealed class RequirementsBlob : SuperBlob
 {
     public RequirementsBlob(MemoryMappedViewAccessor accessor, long offset)
         : base(accessor, offset)

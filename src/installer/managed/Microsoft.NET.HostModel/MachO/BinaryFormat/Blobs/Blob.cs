@@ -3,20 +3,26 @@
 
 using System;
 using System.Buffers.Binary;
-using System.IO;
 using System.IO.MemoryMappedFiles;
-using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// A base class for blobs in a Mach-O file.
+/// Derived classes should implement specific blob types. If the blob has additional data or fields, the derived class
+/// should override the Size property to include the size of their data, and implement the Write method to write their data.
+/// This class implements the basic functionality of reading and writing the magic number and size of the blob.
+/// All blobs are expected to be in big-endian format.
+/// </summary>
 internal abstract class Blob
 {
     /// <summary>
     /// The magic number for this blob to identify the type of blob.
     /// </summary>
     public BlobMagic Magic { get; }
+
     /// <summary>
-    /// The size of the entire blob. Derived blobs that contain additional data should override this property
-    /// to include the size of their data.
+    /// The size of the entire blob.
+    /// Derived blobs that contain additional data should override this property to include the size of their data.
     /// </summary>
     public virtual uint Size => sizeof(uint) + sizeof(uint);
 
@@ -40,24 +46,39 @@ internal abstract class Blob
         Magic = magic;
     }
 
+    /// <summary>
+    /// Reads the Magic number from the <paramref name="accessor"/> at the specified <paramref name="offset"/>.
+    /// Does not read or set the size of the blob.
+    /// </summary>
     protected Blob(MemoryMappedViewAccessor accessor, long offset)
     {
         accessor.Read(offset, out uint magic);
         Magic = (BlobMagic)magic.ConvertFromBigEndian();
     }
 
-    public virtual void Write(MemoryMappedViewAccessor accessor, long offset)
+    /// <summary>
+    /// Writes the blob to the <paramref name="accessor"/> at the specified <paramref name="offset"/>.
+    /// </summary>
+    /// <param name="accessor">The <see cref="MemoryMappedViewAccessor"/> to write the blob to.</param>
+    /// <param name="offset">The base offset of the start of the blob. The Magic number should go here.</param>
+    public virtual unsafe void Write(MemoryMappedViewAccessor accessor, long offset)
     {
         accessor.Write(offset, ((uint)Magic).ConvertToBigEndian());
         accessor.Write(offset + sizeof(uint), Size.ConvertToBigEndian());
     }
 
-    public virtual void Write(Span<byte> stream)
+    /// <summary>
+    /// Writes the blob at the beginning of the <paramref name="buffer"/>.
+    /// </summary>
+    public virtual void Write(Span<byte> buffer)
     {
-        BinaryPrimitives.WriteUInt32BigEndian(stream, (uint)Magic);
-        BinaryPrimitives.WriteUInt32BigEndian(stream.Slice(sizeof(uint)), Size);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer, (uint)Magic);
+        BinaryPrimitives.WriteUInt32BigEndian(buffer.Slice(sizeof(uint)), Size);
     }
 
+    /// <summary>
+    /// Returns the byte array representation of the blob.
+    /// </summary>
     public virtual byte[] GetBytes()
     {
         var bytes = new byte[Size];

@@ -10,7 +10,7 @@ namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
 /// See https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_utilities/lib/blob.h
-/// Code signature data is always big endian / network order.
+/// The CMS wrapper blob is a simple blob. It should be empty, but present for all created / written signatures.
 /// </summary>
 internal sealed class CmsWrapperBlob : SimpleBlob
 {

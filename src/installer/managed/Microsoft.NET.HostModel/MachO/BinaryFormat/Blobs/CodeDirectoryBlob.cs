@@ -11,15 +11,15 @@ using System.Text;
 namespace Microsoft.NET.HostModel.MachO;
 
 /// <summary>
-/// For code signature version 0x20400 only. Code signature headers/blobs are all big endian / network order.
+/// A code signature blob for version 0x20400 only.
 /// </summary>
 /// <remarks>
 /// Format based off of https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_codesigning/lib/codedirectory.h#L193
 /// </remarks>
-internal unsafe class CodeDirectoryBlob : Blob
+internal sealed unsafe class CodeDirectoryBlob : Blob
 {
     public override uint Size => (uint)(base.Size + sizeof(CodeDirectoryHeader) + _data.Length);
-    private CodeDirectoryHeader _cddata;
+    private CodeDirectoryHeader _cdHeader;
     private byte[] _data;
 
     public CodeDirectoryBlob(MemoryMappedViewAccessor accessor, long offset)
@@ -31,15 +31,15 @@ internal unsafe class CodeDirectoryBlob : Blob
         }
         accessor.Read(offset + sizeof(uint), out uint size);
         size = size.ConvertFromBigEndian();
-        accessor.Read<CodeDirectoryHeader>(offset + sizeof(uint) + sizeof(uint), out _cddata);
-        var dataSize = size - (sizeof(uint) * 2 + sizeof(CodeDirectoryHeader));
+        accessor.Read(offset + base.Size, out _cdHeader);
+        var dataSize = size - (base.Size + sizeof(CodeDirectoryHeader));
         _data = new byte[dataSize];
-        accessor.ReadArray(offset + sizeof(uint) * 2 + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
+        accessor.ReadArray(offset + base.Size + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
     }
 
     public CodeDirectoryBlob(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags, byte[] hashes) : base(BlobMagic.CodeDirectory)
     {
-        _cddata = new CodeDirectoryHeader(identifier, codeSlotCount, specialCodeSlotCount, executableLength, hashSize, hashType, signatureStart, execSegmentBase, execSegmentLimit, execSegmentFlags);
+        _cdHeader = new CodeDirectoryHeader(identifier, codeSlotCount, specialCodeSlotCount, executableLength, hashSize, hashType, signatureStart, execSegmentBase, execSegmentLimit, execSegmentFlags);
         Debug.Assert(hashes.Length == hashSize * (specialCodeSlotCount + codeSlotCount));
         _data = new byte[hashes.Length + Encoding.UTF8.GetByteCount(identifier) + 1];
         int count = Encoding.UTF8.GetBytes(identifier, 0, identifier.Length, _data, 0);
@@ -94,76 +94,65 @@ internal unsafe class CodeDirectoryBlob : Blob
 
     public CodeDirectoryVersion Version
     {
-        get => (CodeDirectoryVersion)((uint)_cddata._version).ConvertFromBigEndian();
-        set => _cddata._version = (CodeDirectoryVersion)((uint)value).ConvertToBigEndian();
+        get => (CodeDirectoryVersion)((uint)_cdHeader._version).ConvertFromBigEndian();
+        set => _cdHeader._version = (CodeDirectoryVersion)((uint)value).ConvertToBigEndian();
     }
     public CodeDirectoryFlags Flags
     {
-        get => (CodeDirectoryFlags)((uint)_cddata._flags).ConvertFromBigEndian();
-        set => _cddata._flags = (CodeDirectoryFlags)((uint)value).ConvertToBigEndian();
+        get => (CodeDirectoryFlags)((uint)_cdHeader._flags).ConvertFromBigEndian();
+        set => _cdHeader._flags = (CodeDirectoryFlags)((uint)value).ConvertToBigEndian();
     }
     public uint HashesOffset
     {
-        get => _cddata._hashesOffset.ConvertFromBigEndian();
-        set => _cddata._hashesOffset = value.ConvertToBigEndian();
+        get => _cdHeader._hashesOffset.ConvertFromBigEndian();
+        set => _cdHeader._hashesOffset = value.ConvertToBigEndian();
     }
     public uint IdentifierOffset
     {
-        get => _cddata._identifierOffset.ConvertFromBigEndian();
-        set => _cddata._identifierOffset = value.ConvertToBigEndian();
+        get => _cdHeader._identifierOffset.ConvertFromBigEndian();
+        set => _cdHeader._identifierOffset = value.ConvertToBigEndian();
     }
     public uint SpecialSlotCount
     {
-        get => _cddata._specialSlotCount.ConvertFromBigEndian();
-        set => _cddata._specialSlotCount = value.ConvertToBigEndian();
+        get => _cdHeader._specialSlotCount.ConvertFromBigEndian();
+        set => _cdHeader._specialSlotCount = value.ConvertToBigEndian();
     }
     public uint CodeSlotCount
     {
-        get => _cddata._codeSlotCount.ConvertFromBigEndian();
-        set => _cddata._codeSlotCount = value.ConvertToBigEndian();
+        get => _cdHeader._codeSlotCount.ConvertFromBigEndian();
+        set => _cdHeader._codeSlotCount = value.ConvertToBigEndian();
     }
     public uint ExecutableLength
     {
-        get => _cddata._executableLength.ConvertFromBigEndian();
-        set => _cddata._executableLength = value.ConvertToBigEndian();
+        get => _cdHeader._executableLength.ConvertFromBigEndian();
+        set => _cdHeader._executableLength = value.ConvertToBigEndian();
     }
     public ulong CodeLimit64
     {
-        get => _cddata._codeLimit64.ConvertFromBigEndian();
-        set => _cddata._codeLimit64 = value.ConvertToBigEndian();
+        get => _cdHeader._codeLimit64.ConvertFromBigEndian();
+        set => _cdHeader._codeLimit64 = value.ConvertToBigEndian();
     }
     public ulong ExecSegmentBase
     {
-        get => _cddata._execSegmentBase.ConvertFromBigEndian();
-        set => _cddata._execSegmentBase = value.ConvertToBigEndian();
+        get => _cdHeader._execSegmentBase.ConvertFromBigEndian();
+        set => _cdHeader._execSegmentBase = value.ConvertToBigEndian();
     }
     public ulong ExecSegmentLimit
     {
-        get => _cddata._execSegmentLimit.ConvertFromBigEndian();
-        set => _cddata._execSegmentLimit = value.ConvertToBigEndian();
+        get => _cdHeader._execSegmentLimit.ConvertFromBigEndian();
+        set => _cdHeader._execSegmentLimit = value.ConvertToBigEndian();
     }
     public ExecutableSegmentFlags ExecSegmentFlags
     {
-        get => (ExecutableSegmentFlags)((ulong)_cddata._execSegmentFlags).ConvertFromBigEndian();
-        set => _cddata._execSegmentFlags = (ExecutableSegmentFlags)((ulong)value).ConvertToBigEndian();
-    }
-
-    public string Identifier
-    {
-        get
-        {
-            fixed (byte* dataPtr = _data)
-            {
-                return UTF8Encoding.UTF8.GetString(dataPtr, (int)IdentifierOffset - (sizeof(uint) * 2 + sizeof(CodeDirectoryHeader)));
-            }
-        }
+        get => (ExecutableSegmentFlags)((ulong)_cdHeader._execSegmentFlags).ConvertFromBigEndian();
+        set => _cdHeader._execSegmentFlags = (ExecutableSegmentFlags)((ulong)value).ConvertToBigEndian();
     }
 
     public override void Write(MemoryMappedViewAccessor accessor, long offset)
     {
         base.Write(accessor, offset);
-        accessor.Write<CodeDirectoryHeader>(offset + sizeof(uint) + sizeof(uint), ref _cddata);
-        accessor.WriteArray(offset + sizeof(uint) * 2 + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
+        accessor.Write<CodeDirectoryHeader>(offset + sizeof(uint) + sizeof(uint), ref _cdHeader);
+        accessor.WriteArray(offset + base.Size + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
     }
 
     public override void Write(Span<byte> buffer)

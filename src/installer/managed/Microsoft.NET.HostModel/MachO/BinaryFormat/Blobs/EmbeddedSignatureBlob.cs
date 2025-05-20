@@ -10,8 +10,12 @@ namespace Microsoft.NET.HostModel.MachO;
 /// <summary>
 /// Format based off of https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_codesigning/lib/cscdefs.h#L23
 /// Code Signature data is always big endian / network order.
+/// The EmbeddedSignatureBlob is a SuperBlob that usually contains the CodeDirectoryBlob, RequirementsBlob, and CmsWrapperBlob.
+/// The RequirementsBlob and CmsWrapperBlob may be null if the blob is not present in the read file (usually linker signed MachO files),
+/// but will be present in newly created signatures.
+/// Optionally, it may also contain the EntitlementsBlob and DerEntitlementsBlob.
 /// </summary>
-internal class EmbeddedSignatureBlob : SuperBlob
+internal sealed class EmbeddedSignatureBlob : SuperBlob
 {
     public CodeDirectoryBlob CodeDirectoryBlob
     {
@@ -127,10 +131,14 @@ internal class EmbeddedSignatureBlob : SuperBlob
         }
     }
 
+    /// <Inheritdoc/>
     public EmbeddedSignatureBlob(MemoryMappedViewAccessor accessor, long offset) : base(accessor, offset)
     {
     }
 
+    /// <summary>
+    /// Creates a new EmbeddedSignatureBlob with the specified blobs.
+    /// </summary>
     public EmbeddedSignatureBlob(CodeDirectoryBlob codeDirectoryBlob, RequirementsBlob requirementsBlob, CmsWrapperBlob cmsWrapperBlob, EntitlementsBlob? entitlementsBlob, DerEntitlementsBlob? derEntitlementsBlob)
         : base(BlobMagic.EmbeddedSignature)
     {

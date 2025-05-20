@@ -10,7 +10,7 @@ namespace Microsoft.NET.HostModel.MachO;
 /// See https://github.com/apple-oss-distributions/Security/blob/3dab46a11f45f2ffdbd70e2127cc5a8ce4a1f222/OSX/libsecurity_utilities/lib/blob.h
 /// Code signature data is always big endian / network order.
 /// </summary>
-internal class EntitlementsBlob : SimpleBlob
+internal sealed class EntitlementsBlob : SimpleBlob
 {
     public EntitlementsBlob(MemoryMappedViewAccessor accessor, long offset)
         : base(accessor, offset)

@@ -6,7 +6,7 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using Microsoft.NET.HostModel.MachO;
 
-internal class DerEntitlementsBlob : SimpleBlob
+internal sealed class DerEntitlementsBlob : SimpleBlob
 {
     public static uint MaxSize => 256;
 

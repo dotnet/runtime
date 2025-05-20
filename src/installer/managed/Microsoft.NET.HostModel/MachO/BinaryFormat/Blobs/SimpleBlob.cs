@@ -7,6 +7,9 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using Microsoft.NET.HostModel.MachO;
 
+/// <summary>
+/// This class represents a simple blob with a byte array data.
+/// </summary>
 internal class SimpleBlob : Blob
 {
     public override uint Size => base.Size + (uint)_data.Length;
