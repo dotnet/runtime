@@ -2,7 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .intel_syntax noprefix
-#include <unixasmmacros.inc>
+#include "AsmMacros_Shared.h"
+
+#if defined(__APPLE__)
+    // Currently the build is failing without this due to an issue if the first method in the assembly file has an alternate entry at the start of the file.
+    // Fix, but adding an empty, unused method
+    LEAF_ENTRY RhpWriteBarriersDoNotFailToBuild, _TEXT
+       ret
+    LEAF_END RhpWriteBarriersDoNotFailToBuild, _TEXT
+#endif
 
 #ifdef WRITE_BARRIER_CHECK
 
@@ -261,7 +269,15 @@ LEAF_END RhpCheckedXchg, _TEXT
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
 ALTERNATE_ENTRY RhpByRefAssignRefAVLocation1
     mov     rcx, [rsi]
+#ifdef TARGET_APPLE
+// Apple's linker has issues which break unwind info if
+// an ALTERNATE_ENTRY is present in the middle of a function see https://github.com/dotnet/runtime/pull/114982#discussion_r2083272768
+.cfi_endproc
+#endif
 ALTERNATE_ENTRY RhpByRefAssignRefAVLocation2
+#ifdef TARGET_APPLE
+.cfi_startproc
+#endif
     mov     [rdi], rcx
 
     // Check whether the writes were even into the heap. If not there's no card update required.

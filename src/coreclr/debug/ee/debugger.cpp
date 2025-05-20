@@ -5903,8 +5903,7 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
     LOG((LF_CORDB, LL_INFO10000, "D::SDB: breakpoint BP:0x%x\n", breakpoint));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
-        !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-        g_fInControlC);
+        !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -5951,8 +5950,7 @@ void Debugger::SendBreakpoint(Thread *thread, CONTEXT *context,
     LOG((LF_CORDB, LL_INFO10000, "D::SB: breakpoint BP:0x%x\n", breakpoint));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
-             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-             g_fInControlC);
+             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -6095,8 +6093,7 @@ void Debugger::SendStep(Thread *thread, CONTEXT *context,
         stepper, reason));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
-             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-             g_fInControlC);
+             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -6423,8 +6420,7 @@ void Debugger::SyncAllThreads(DebuggerLockHolder *dbgLockHolder)
     Thread *pThread = g_pEEInterface->GetThread();
     (void)pThread; //prevent "unused variable" error from GCC
     _ASSERTE((pThread &&
-             !pThread->m_fPreemptiveGCDisabled) ||
-              g_fInControlC);
+             !pThread->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -9007,8 +9003,7 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     //
 
         _ASSERTE((g_pEEInterface->GetThread() &&
-                 !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-                 g_fInControlC);
+                 !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
         _ASSERTE(ThreadHoldsLock());
 
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -9145,7 +9140,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
     // We can't throw here (we're in the middle of the runtime suspension logic).
     // But things below us throw. So we catch the exception, but then what state are we in?
 
-    if (!isEESuspendedForGC) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC); }
+    if (!isEESuspendedForGC) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled)); }
     if (!isEESuspendedForGC) { _ASSERTE(ThisIsHelperThreadWorker()); }
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::SC: suspension complete\n");
@@ -9982,7 +9977,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
 
 
     _ASSERTE(pDE->m_completed);
-    _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC);
+    _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
     _ASSERTE(ThreadHoldsLock());
 
     //

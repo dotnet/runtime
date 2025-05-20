@@ -149,27 +149,27 @@
     <SystemTextEncodingsWebToolsetVersion>8.0.0</SystemTextEncodingsWebToolsetVersion>
     <SystemThreadingTasksExtensionsToolsetVersion>4.5.4</SystemThreadingTasksExtensionsToolsetVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.25255.1</SystemRuntimeNumericsTestDataVersion>
-    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.25255.1</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDataCommonTestDataVersion>10.0.0-beta.25255.1</SystemDataCommonTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>10.0.0-beta.25255.1</SystemDrawingCommonTestDataVersion>
-    <SystemFormatsTarTestDataVersion>10.0.0-beta.25255.1</SystemFormatsTarTestDataVersion>
-    <SystemIOCompressionTestDataVersion>10.0.0-beta.25255.1</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>10.0.0-beta.25255.1</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>10.0.0-beta.25255.1</SystemNetTestDataVersion>
-    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.25255.1</SystemPrivateRuntimeUnicodeDataVersion>
-    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.25255.1</SystemRuntimeTimeZoneDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.25255.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.25255.1</SystemTextRegularExpressionsTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.25255.1</SystemWindowsExtensionsTestDataVersion>
-    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25255.1</MicrosoftDotNetCilStripSourcesVersion>
-    <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25255.1</MicrosoftNETHostModelTestDataVersion>
+    <SystemRuntimeNumericsTestDataVersion>10.0.0-beta.25262.1</SystemRuntimeNumericsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>10.0.0-beta.25262.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDataCommonTestDataVersion>10.0.0-beta.25262.1</SystemDataCommonTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>10.0.0-beta.25262.1</SystemDrawingCommonTestDataVersion>
+    <SystemFormatsTarTestDataVersion>10.0.0-beta.25262.1</SystemFormatsTarTestDataVersion>
+    <SystemIOCompressionTestDataVersion>10.0.0-beta.25262.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>10.0.0-beta.25262.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>10.0.0-beta.25262.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>10.0.0-beta.25262.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemRuntimeTimeZoneDataVersion>10.0.0-beta.25262.1</SystemRuntimeTimeZoneDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>10.0.0-beta.25262.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemTextRegularExpressionsTestDataVersion>10.0.0-beta.25262.1</SystemTextRegularExpressionsTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>10.0.0-beta.25262.1</SystemWindowsExtensionsTestDataVersion>
+    <MicrosoftDotNetCilStripSourcesVersion>10.0.0-beta.25262.1</MicrosoftDotNetCilStripSourcesVersion>
+    <MicrosoftNETHostModelTestDataVersion>10.0.0-beta.25262.1</MicrosoftNETHostModelTestDataVersion>
     <!-- xharness dependencies -->
     <MicrosoftDotNetXHarnessTestRunnersCommonVersion>10.0.0-prerelease.25255.1</MicrosoftDotNetXHarnessTestRunnersCommonVersion>
     <MicrosoftDotNetXHarnessTestRunnersXunitVersion>10.0.0-prerelease.25255.1</MicrosoftDotNetXHarnessTestRunnersXunitVersion>
     <MicrosoftDotNetXHarnessCLIVersion>10.0.0-prerelease.25255.1</MicrosoftDotNetXHarnessCLIVersion>
     <!-- hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25222.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>10.0.0-alpha.0.25255.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64MIBCRuntimeVersion>1.0.0-prerelease.25217.3</optimizationwindows_ntx64MIBCRuntimeVersion>
     <optimizationwindows_ntx86MIBCRuntimeVersion>1.0.0-prerelease.25217.3</optimizationwindows_ntx86MIBCRuntimeVersion>
@@ -228,7 +228,7 @@
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.5-alpha.25260.104</MicrosoftDotNetCecilVersion>
     <!-- ICU -->
-    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.5.25255.1</MicrosoftNETCoreRuntimeICUTransportVersion>
+    <MicrosoftNETCoreRuntimeICUTransportVersion>10.0.0-preview.5.25261.1</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
     <MicrosoftNativeQuicMsQuicSchannelVersion>2.4.8</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
