@@ -437,6 +437,14 @@ namespace System.Net
                             NetEventSource.Info(@this, $"GetAddrInfoExCancel returned error {cancelResult}");
                         }
                     }
+                    catch (ObjectDisposedException)
+                    {
+                        // Previously, there was a lock on this codepath, but it has been removed since .NET 7.0.
+                        // https://github.com/dotnet/runtime/pull/63904
+                        // The handle was already released, so we don't need to call DangerousRelease.
+                        // This can happen if the operation completed after we check for completion.
+                        // We can ignore this exception.
+                    }
                     finally
                     {
                         if (needRelease)
