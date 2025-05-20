@@ -34,6 +34,7 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         public void SigningAppHostPreservesEntitlements()
         {
             using var testDirectory = TestArtifact.Create(nameof(SignedAppHostRuns));
