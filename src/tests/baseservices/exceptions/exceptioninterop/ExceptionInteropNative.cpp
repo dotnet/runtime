@@ -52,7 +52,7 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE InvokeCallbackAndCatchNative(PFNACT
     }
 }
 
-extern "C" DLL_EXPORT void InvokeCallbackOnNewThread(PFNACTION1 callback)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE InvokeCallbackOnNewThread(PFNACTION1 callback)
 {
     std::thread t1(InvokeCallbackAndCatchNative, callback);
     t1.join();
