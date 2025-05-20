@@ -302,14 +302,17 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             UINT64               bit      = (UINT64)constant->IntegralValue();
             if (binOp->OperIs(GT_AND) && op1->OperIs(GT_RSZ, GT_RSH) && bit == 1)
             {
-                // (a >> N) & 1   =>   BIT_EXTRACT(a, N)
-                binOp->ChangeOper(GT_BIT_EXTRACT);
-                binOp->gtType = TYP_INT;
+                if (op1->gtGetOp1()->TypeIs(TYP_LONG) || op1->gtGetOp2()->IsIntegralConst())
+                {
+                    // (a >> b) & 1   =>   BIT_EXTRACT(a, b)
+                    binOp->ChangeOper(GT_BIT_EXTRACT);
+                    binOp->gtType = TYP_INT;
 
-                BlockRange().Remove(op2);
-                op2 = op1->gtGetOp2();
-                BlockRange().Remove(op1);
-                op1 = op1->gtGetOp1();
+                    BlockRange().Remove(op2);
+                    op2 = op1->gtGetOp2();
+                    BlockRange().Remove(op1);
+                    op1 = op1->gtGetOp1();
+                }
             }
             else
             {
@@ -337,8 +340,9 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
             if ((opp1->OperIs(GT_LSH) && opp1->gtGetOp1()->IsIntegralConst(1)) ||
                 (opp2->OperIs(GT_LSH) && opp2->gtGetOp1()->IsIntegralConst(1)))
             {
-                GenTree* shift          = opp1->OperIs(GT_LSH) ? opp1 : opp2;
-                bool     isShiftNegated = opp1->OperIs(GT_LSH) ? isOp1Negated : isOp2Negated;
+                GenTree* shift = opp1->OperIs(GT_LSH) ? opp1 : opp2;
+                assert(!shift->gtGetOp2()->IsIntegralConst());
+                bool isShiftNegated = opp1->OperIs(GT_LSH) ? isOp1Negated : isOp2Negated;
 
                 // a | (1 << b),  a ^ (1 << b),  a & ~(1 << b)
                 if (!binOp->OperIs(GT_AND) || isShiftNegated)
@@ -360,19 +364,19 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                     op2 = shift->gtGetOp2();
                     BlockRange().Remove(shift->gtGetOp1());
                     BlockRange().Remove(shift);
+
+                    assert(op1->TypeIs(TYP_INT, TYP_LONG));
+                    if (!op2->IsIntegralConst() && op1->TypeIs(TYP_INT))
+                    {
+                        // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
+                        GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
+                        mask->SetContained();
+                        BlockRange().InsertAfter(op2, mask);
+                        op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
+                        BlockRange().InsertAfter(mask, op2);
+                    }
                 }
             }
-        }
-
-        if (binOp->OperIs(GT_BIT_EXTRACT, GT_BIT_SET, GT_BIT_INVERT, GT_BIT_CLEAR) && !op2->IsIntegralConst() &&
-            op1->TypeIs(TYP_INT, TYP_UINT))
-        {
-            // Zbs instructions don't have *w variants so wrap the bit index / shift amount to 0-31 manually
-            GenTreeIntCon* mask = comp->gtNewIconNode(0x1F);
-            mask->SetContained();
-            BlockRange().InsertAfter(op2, mask);
-            op2 = comp->gtNewOperNode(GT_AND, op2->TypeGet(), op2, mask);
-            BlockRange().InsertAfter(mask, op2);
         }
     }
 

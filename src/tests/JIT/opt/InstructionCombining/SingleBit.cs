@@ -37,7 +37,13 @@ public static class SingleBit
     static int ExtractShift(int a, int b) => (a >> b) & 1;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    static long ExtractShiftLong(long a, int b) => (a >> b) & 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static int ExtractPow2Shift(int a, int b) => ((a >> b) & 0b100) == 0b100 ? 1 : 0;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int ExtractPow2ShiftUlong(ulong a, int b) => ((a >> b) & 0b100ul) == 0b100ul ? 1 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Extract10Shift(int a) => ((a >> 10) & 1) != 0 ? 1 : 0;
@@ -123,8 +129,12 @@ public static class SingleBit
 
         Assert.Equal(0, ExtractShift(0x12345878, 10 + 32));
         Assert.Equal(1, ExtractShift(0x12345878, 11 + 32));
+        Assert.Equal(0, ExtractShiftLong(0x12345878l, 10 + 64));
+        Assert.Equal(1, ExtractShiftLong(0x12345878l, 11 + 64));
         Assert.Equal(0, ExtractPow2Shift(0x12345878, 8 + 32));
         Assert.Equal(1, ExtractPow2Shift(0x12345878, 9 + 32));
+        Assert.Equal(0, ExtractPow2ShiftUlong(0x12345878ul, 8 + 64));
+        Assert.Equal(1, ExtractPow2ShiftUlong(0x12345878ul, 9 + 64));
         Assert.Equal(0, Extract10Shift(0x12345878));
         Assert.Equal(1, Extract11Shift(0x12345878));
         Assert.Equal(0, Extract10Pow2Shift(0x12345878));
