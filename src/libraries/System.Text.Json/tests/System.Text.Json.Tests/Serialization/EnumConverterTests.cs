@@ -1007,6 +1007,53 @@ namespace System.Text.Json.Serialization.Tests
             Value4 = 8,
             Value5 = 16,
         }
+        
+        /// <summary>
+        /// Flag enum used to test serialization of flags where all bits have defined values.
+        /// </summary>
+        [Flags]
+        public enum MyFlagsEnum1
+        {
+            UNKNOWN = 0,
+            BIT0 = 1,
+            BIT1 = 2,
+            BIT2 = 4,
+            BIT3 = 8,
+            BITS01 = 3,
+        }
+
+        /// <summary>
+        /// Flag enum used to test serialization of flags where not all bits have defined values.
+        /// This is the regression case for the issue fixed in this PR.
+        /// </summary>
+        [Flags]
+        public enum MyFlagsEnum2
+        {
+            UNKNOWN = 0,
+            BIT0 = 1,
+            // direct option for bit 1 missing
+            BIT2 = 4,
+            BIT3 = 8,
+            BITS01 = 3,
+        }
+        
+        /// <summary>
+        /// Complex flag enum with various combinations and missing definitions for certain combinations.
+        /// </summary>
+        [Flags]
+        public enum ComplexFlagsEnum
+        {
+            None = 0,
+            Flag1 = 1,
+            Flag2 = 2,
+            Flag4 = 4,
+            Flag8 = 8,
+            Flag16 = 16,
+            Flag32 = 32,
+            Combo1And2 = Flag1 | Flag2,
+            Combo4And8And16 = Flag4 | Flag8 | Flag16,
+            // No definition for Flag32 combinations
+        }
 
         [Theory]
         [InlineData(EnumWithConflictingMemberAttributes.Value1)]
@@ -1256,6 +1303,81 @@ namespace System.Text.Json.Serialization.Tests
             PascalCase,
             A,
             b,
+        }
+
+        /// <summary>
+        /// Test for the flags enum regression fix where flag enums with missing bit definitions 
+        /// would be serialized as numbers instead of strings in .NET 9 but not in .NET 8.
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesFlagsEnumWithMissingBits()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            // Test that our standard enum with all bits defined serializes correctly
+            var e1 = MyFlagsEnum1.BITS01 | MyFlagsEnum1.BIT3;
+            string json1 = JsonSerializer.Serialize(e1, options);
+            Assert.Equal("\"BITS01, BIT3\"", json1);
+            
+            // Verify the enum with missing bit definition produces the same result
+            // This is the key regression test
+            var e2 = MyFlagsEnum2.BITS01 | MyFlagsEnum2.BIT3;
+            string json2 = JsonSerializer.Serialize(e2, options);
+            Assert.Equal("\"BITS01, BIT3\"", json2);
+        }
+        
+        /// <summary>
+        /// Test for complex flags enum serialization with the JsonStringEnumConverter.
+        /// Ensures combinations that include bits without direct field definitions are
+        /// still serialized as strings rather than falling back to numeric representation.
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesComplexFlagsCombinations()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+            
+            // Test a complex combination including a flag that doesn't have
+            // a direct field definition but can be represented by other fields
+            var value = ComplexFlagsEnum.Combo1And2 | ComplexFlagsEnum.Combo4And8And16 | ComplexFlagsEnum.Flag32;
+            string json = JsonSerializer.Serialize(value, options);
+            
+            // Verify we get the exact expected JSON string
+            Assert.Equal("\"Combo1And2, Combo4And8And16, Flag32\"", json);
+        }
+
+        /// <summary>
+        /// Test flag enum serialization with JsonStringEnumConverter 
+        /// for values that include flags with overlapping or missing definitions.
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesFlagEnumsWithOverlappingAndMissingDefinitions()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+            
+            // Test AttributeTargets which is a [Flags] enum in the BCL
+            Assert.Equal("\"Class, Delegate\"", JsonSerializer.Serialize(
+                AttributeTargets.Class | AttributeTargets.Delegate,
+                options));
+            
+            // Test with more flags
+            Assert.Equal("\"Class, Delegate, Interface\"", JsonSerializer.Serialize(
+                AttributeTargets.Class | AttributeTargets.Delegate | AttributeTargets.Interface,
+                options));
+            
+            // Test All value
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(AttributeTargets.All, options));
         }
     }
 }
