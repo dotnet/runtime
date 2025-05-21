@@ -12975,6 +12975,11 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 disp();
             }
 
+            if (call->IsAsync())
+            {
+                printf(" (async)");
+            }
+
             if ((call->gtFlags & GTF_CALL_UNMANAGED) && (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
             {
                 printf(" (FramesRoot last use)");
@@ -20009,7 +20014,7 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
     {
         return true;
     }
