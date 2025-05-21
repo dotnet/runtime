@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Http
             _disposed = true;
             StopTimer();
 
-            // When this entry is converted to an expired entry, we don't dispose anything 
+            // When this entry is converted to an expired entry, we don't dispose anything
             // to avoid a race with active clients. Let the ExpiredHandlerTrackingEntry handle disposal.
             
             if (Handler != null)
