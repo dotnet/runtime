@@ -3715,7 +3715,7 @@ retry_emit:
             {
                 AddIns(INTOP_LDTOKEN);
 
-                CORINFO_RESOLVED_TOKEN resolvedToken = { 0 };
+                CORINFO_RESOLVED_TOKEN resolvedToken;
                 ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
 
                 CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
@@ -3724,16 +3724,23 @@ retry_emit:
 
                 // see jit/importer.cpp CEE_LDTOKEN
                 CorInfoHelpFunc helper;
-                if (resolvedToken.hClass) {
+                if (resolvedToken.hClass)
+                {
                     helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
                     m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
-                } else if (resolvedToken.hMethod) {
+                }
+                else if (resolvedToken.hMethod)
+                {
                     helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
                     m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
-                } else if (resolvedToken.hField) {
+                }
+                else if (resolvedToken.hField)
+                {
                     helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
                     m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
-                } else {
+                }
+                else
+                {
                     helper = CORINFO_HELP_FAIL_FAST;
                     assert(!"Token not resolved or resolved to unexpected type");
                 }
