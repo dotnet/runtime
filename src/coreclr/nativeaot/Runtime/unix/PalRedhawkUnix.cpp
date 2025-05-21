@@ -673,6 +673,13 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
 
     int st = pthread_attr_init(&attrs);
     ASSERT(st == 0);
+    
+    size_t stacksize = GetDefaultStackSizeSetting();
+    if (stacksize != 0)
+    {
+        st = pthread_attr_setstacksize(&attrs, stacksize);
+        ASSERT(st == 0);
+    }
 
     static const int NormalPriority = 0;
     static const int HighestPriority = -20;
