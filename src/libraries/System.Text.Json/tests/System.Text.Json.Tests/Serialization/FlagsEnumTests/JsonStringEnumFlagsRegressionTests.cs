@@ -62,9 +62,11 @@ namespace System.Text.Json.Tests.Serialization.FlagsEnumTests
             string json2 = JsonSerializer.Serialize(e2, options);
             // Should be: "BITS01, BIT3" (as in .NET8)
 
-            // Test that we get the exact expected JSON string
+            // Test that our standard enum with all bits defined serializes correctly
             Assert.Equal("\"BITS01, BIT3\"", json1);
-            Assert.Equal("\"BITS01, BIT3\"", json2);
+            
+            // Verify the enum with missing bit definition produces the same result
+            Assert.Equal(json1, json2);
         }
         
         [Fact]
