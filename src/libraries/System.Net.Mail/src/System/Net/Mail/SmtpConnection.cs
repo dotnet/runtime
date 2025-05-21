@@ -14,6 +14,7 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mail
 {
@@ -105,19 +106,26 @@ namespace System.Net.Mail
 
         internal IAsyncResult BeginFlush(AsyncCallback? callback, object? state)
         {
-            return _stream!.BeginWrite(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length, callback, state);
+            return TaskToAsyncResult.Begin(FlushAsync<AsyncReadWriteAdapter>(CancellationToken.None), callback, state);
         }
 
-        internal void EndFlush(IAsyncResult result)
+        internal static void EndFlush(IAsyncResult result)
         {
-            _stream!.EndWrite(result);
+            TaskToAsyncResult.End(result);
+        }
+
+        internal async Task FlushAsync<TIOAdapter>(CancellationToken cancellationToken = default) where TIOAdapter : IReadWriteAdapter
+        {
+            await TIOAdapter.WriteAsync(_stream!, _bufferBuilder.GetBuffer().AsMemory(0, _bufferBuilder.Length), cancellationToken).ConfigureAwait(false);
             _bufferBuilder.Reset();
         }
+
 
         internal void Flush()
         {
-            _stream!.Write(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length);
-            _bufferBuilder.Reset();
+            Task task = FlushAsync<SyncReadWriteAdapter>(CancellationToken.None);
+            Debug.Assert(task.IsCompleted, "FlushAsync should be completed synchronously.");
+            task.GetAwaiter().GetResult();
         }
 
         private void ShutdownConnection(bool isAbort)
