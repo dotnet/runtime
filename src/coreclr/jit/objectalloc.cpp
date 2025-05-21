@@ -1906,6 +1906,19 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     break;
                 }
 
+                // For structs we need to check the layout as well
+                //
+                if (parent->OperIs(GT_BLK))
+                {
+                    ClassLayout* const layout = parent->AsBlk()->GetLayout();
+
+                    if (!layout->HasGCPtr())
+                    {
+                        canLclVarEscapeViaParentStack = false;
+                        break;
+                    }
+                }
+
                 GenTree* const addr = parent->AsIndir()->Addr();
 
                 // For loads from local structs we may be tracking the underlying fields.
