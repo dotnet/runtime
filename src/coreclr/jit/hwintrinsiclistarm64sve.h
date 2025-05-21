@@ -356,6 +356,15 @@ HARDWARE_INTRINSIC(Sve,           TransposeEven_Predicates,                     
 HARDWARE_INTRINSIC(Sve,           TransposeOdd_Predicates,                                          -1,      2,     {INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2,       INS_sve_trn2},    HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_ReturnsPerElementMask)
 HARDWARE_INTRINSIC(Sve,           ReverseElement_Predicates,                                        -1,      1,     {INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev,        INS_sve_rev},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_ReturnsPerElementMask)
 
+
+#define FIRST_NI_Sve2             NI_Sve2_AbsoluteDifferenceAdd
+HARDWARE_INTRINSIC(Sve2,          AbsoluteDifferenceAdd,                                            -1,      3,     {INS_sve_saba,       INS_sve_uaba,       INS_sve_saba,       INS_sve_uaba,       INS_sve_saba,       INS_sve_uaba,       INS_sve_saba,       INS_sve_uaba,       INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_HasRMWSemantics)
+HARDWARE_INTRINSIC(Sve2,          AbsoluteDifferenceAddWideningLower,                               -1,      3,     {INS_invalid,        INS_invalid,        INS_sve_sabalb,     INS_sve_uabalb,     INS_sve_sabalb,     INS_sve_uabalb,     INS_sve_sabalb,     INS_sve_uabalb,     INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_BaseTypeFromFirstArg|HW_Flag_HasRMWSemantics)
+HARDWARE_INTRINSIC(Sve2,          AbsoluteDifferenceAddWideningUpper,                               -1,      3,     {INS_invalid,        INS_invalid,        INS_sve_sabalt,     INS_sve_uabalt,     INS_sve_sabalt,     INS_sve_uabalt,     INS_sve_sabalt,     INS_sve_uabalt,     INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_BaseTypeFromFirstArg|HW_Flag_HasRMWSemantics)
+HARDWARE_INTRINSIC(Sve2,          AbsoluteDifferenceWideningLower,                                  -1,      2,     {INS_invalid,        INS_invalid,        INS_sve_sabdlb,     INS_sve_uabdlb,     INS_sve_sabdlb,     INS_sve_uabdlb,     INS_sve_sabdlb,     INS_sve_uabdlb,     INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable)
+HARDWARE_INTRINSIC(Sve2,          BitwiseClearXor,                                                  -1,      3,     {INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_sve_bcax,       INS_invalid,        INS_invalid},     HW_Category_SIMD,                  HW_Flag_Scalable|HW_Flag_SpecialCodeGen|HW_Flag_HasRMWSemantics)
+#define LAST_NI_Sve2              NI_Sve2_BitwiseClearXor
+
 #endif // FEATURE_HW_INTRINSIC
 
 #undef HARDWARE_INTRINSIC
