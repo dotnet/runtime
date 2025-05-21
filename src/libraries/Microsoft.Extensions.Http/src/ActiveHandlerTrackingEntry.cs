@@ -100,11 +100,8 @@ namespace Microsoft.Extensions.Http
         {
             lock (_lock)
             {
-                if (_timer != null)
-                {
-                    _timer.Dispose();
-                    _timer = null;
-                }
+                _timer?.Dispose();
+                _timer = null;
             }
         }
 
