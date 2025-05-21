@@ -20,6 +20,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandlerStage? _handler;
+        private Task<HttpMessageHandlerStage>? _handlerChainSetupTask;
         private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
 
@@ -598,13 +599,13 @@ namespace System.Net.Http
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
-
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 throw error;
             }
+
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             return handler.Send(request, cancellationToken);
         }
@@ -620,15 +621,25 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
-
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)
             {
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            return handler.SendAsync(request, cancellationToken);
+            return _handler is { } handler
+                ? handler.SendAsync(request, cancellationToken)
+                : CreateHandlerAndSendAsync(request, cancellationToken);
+
+            // SetupHandlerChain may block for a few seconds in some environments.
+            // E.g. during the first access of HttpClient.DefaultProxy - https://github.com/dotnet/runtime/issues/115301.
+            // The setup procedure is enqueued to thread pool to prevent the caller from blocking.
+            async Task<HttpResponseMessage> CreateHandlerAndSendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                _handlerChainSetupTask ??= Task.Run(SetupHandlerChain);
+                HttpMessageHandlerStage handler = await _handlerChainSetupTask.ConfigureAwait(false);
+                return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
