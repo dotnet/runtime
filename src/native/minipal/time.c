@@ -12,16 +12,18 @@
 int64_t minipal_hires_ticks()
 {
     LARGE_INTEGER ts;
-    BOOL ret = QueryPerformanceCounter(&ts);
-    assert(ret); // The function is documented as never fail on Windows XP+.
+    BOOL ret;
+    ret = QueryPerformanceCounter(&ts);
+    assert(ret); // The function is documented to never fail on Windows XP+.
     return ts.QuadPart;
 }
 
 int64_t minipal_hires_tick_frequency()
 {
     LARGE_INTEGER ts;
-    BOOL ret = QueryPerformanceFrequency(&ts);
-    assert(ret); // The function is documented as never fail on Windows XP+.
+    BOOL ret;
+    ret = QueryPerformanceFrequency(&ts);
+    assert(ret); // The function is documented to never fail on Windows XP+.
     return ts.QuadPart;
 }
 
