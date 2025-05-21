@@ -33,7 +33,7 @@ Data descriptors used:
 | PrecodeMachineDescriptor | StubIgnoredBytes | Bytes to ignore of when comparing `StubBytes` to an actual block of memory in the target process. (Version 3 only) |
 | PrecodeMachineDescriptor | FixupCodeOffset | Offset of second entrypoint into a `FixupStub` (Present in data for Version 3 and above only.) |
 | PrecodeMachineDescriptor | InterpreterPrecodeType | precode sort byte for the entrypoint into the interpreter (Version 3 only) |
-| PrecodeMachineDescriptor | UMEntryPrecodeType | precode sort byte for the entrypoint into the interpreter (Version 3 only) |
+| PrecodeMachineDescriptor | UMEntryPrecodeType | precode sort byte for the entrypoint into the UMEntry thunk (Version 3 only) |
 | PrecodeMachineDescriptor | DynamicHelperPrecodeType | precode sort byte for the entrypoint into a dynamic helper (Version 3 only) |
 | StubPrecodeData | MethodDesc | pointer to the MethodDesc associated with this stub precode (Version 1 only) |
 | StubPrecodeData | SecretParam | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types (Version 2 only) |

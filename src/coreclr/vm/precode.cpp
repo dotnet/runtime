@@ -705,10 +705,12 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)FixupPrecodeCode), FixupPrecode::CodeSize, pageSize);
 #endif // TARGET_X86
+#ifdef _DEBUG
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
         FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBase + i));
     }
+#endif // _DEBUG
 }
 
 BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)
