@@ -1064,7 +1064,7 @@ namespace System.Threading.Tasks.Tests
                 .Select(x => new object[] { $"T{x}" })
                 .ToArray();
 
-            for (int attempt = 1; attempt <= 100000; attempt++)
+            for (int attempt = 1; attempt <= 50000; attempt++)
             {
                 CancellationTokenSource cts = new CancellationTokenSource();
                 Exception? threadException = null;
@@ -1090,7 +1090,7 @@ namespace System.Threading.Tasks.Tests
                 cts.Cancel();
                 thread.Join();
 
-                if (threadException is AggregateException || threadException is ThreadInterruptedException || threadException is OperationCanceledException)
+                if (threadException is AggregateException && threadException.InnerException is ThreadInterruptedException)
                 {
                     // The expected exception was thrown
                     return;
