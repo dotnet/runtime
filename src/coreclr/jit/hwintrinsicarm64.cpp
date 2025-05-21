@@ -2768,7 +2768,39 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateFalseMaskUInt32:
         case NI_Sve_CreateFalseMaskUInt64:
         {
+            // Import as a constant vector 0
             retNode = gtNewZeroConNode(TYP_SIMD16);
+            break;
+        }
+
+        case NI_Sve_CreateTrueMaskByte:
+        case NI_Sve_CreateTrueMaskDouble:
+        case NI_Sve_CreateTrueMaskInt16:
+        case NI_Sve_CreateTrueMaskInt32:
+        case NI_Sve_CreateTrueMaskInt64:
+        case NI_Sve_CreateTrueMaskSByte:
+        case NI_Sve_CreateTrueMaskSingle:
+        case NI_Sve_CreateTrueMaskUInt16:
+        case NI_Sve_CreateTrueMaskUInt32:
+        case NI_Sve_CreateTrueMaskUInt64:
+        {
+            assert(sig->numArgs == 1);
+            op1 = impPopStack().val;
+
+            if (op1->IsIntegralConst(31))
+            {
+                // This is considered to be an all true mask. Import as a constant vector all bits set.
+                // TODO: Depending on the vector length, we may be able to consider other patterns
+                // as all true mask.
+                retNode = gtNewAllBitsSetConNode(TYP_SIMD16);
+            }
+            else
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+
+                // Do the convert to vector here (as the instrinsic is not marked with HW_Flag_ReturnsPerElementMask)
+                retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode->AsHWIntrinsic(), simdBaseJitType, simdSize);
+            }
             break;
         }
 
