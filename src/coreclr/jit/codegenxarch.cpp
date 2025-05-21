@@ -6302,7 +6302,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 // REG_INTRET and secondRetSize to REG_INTRET_1, so fix up the
                 // situation here.
                 assert(!EA_IS_GCREF_OR_BYREF(params.retSize));
-                params.retSize = params.secondRetSize;
+                params.retSize       = params.secondRetSize;
                 params.secondRetSize = EA_UNKNOWN;
             }
         }
