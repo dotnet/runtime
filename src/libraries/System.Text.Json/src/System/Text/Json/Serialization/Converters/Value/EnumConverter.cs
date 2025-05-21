@@ -454,8 +454,17 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (s_isFlagsEnum)
             {
-                ulong remainingBits = key;
+                // First try to match exact field (for performance)
+                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+                {
+                    if (fieldInfo.Key == key)
+                    {
+                        return true;
+                    }
+                }
 
+                // Try the standard bit-by-bit matching
+                ulong remainingBits = key;
                 foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
                 {
                     ulong fieldKey = fieldInfo.Key;
@@ -468,6 +477,35 @@ namespace System.Text.Json.Serialization.Converters
                             return true;
                         }
                     }
+                }
+
+                // If the above failed, try matching by analyzing field combinations
+                // This ensures backwards compatibility with .NET 8 behavior for flags enums with combination values
+                if (remainingBits != 0)
+                {
+                    // Check if there are fields that can represent this value
+                    bool canFormatAsString = false;
+                    using ValueStringBuilder sb = new(stackalloc char[JsonConstants.StackallocCharThreshold]);
+                    ulong unmatchedBits = key;
+
+                    foreach (EnumFieldInfo enumField in _enumFieldInfo)
+                    {
+                        ulong fieldKey = enumField.Key;
+                        if (fieldKey == 0 ? key == 0 : (unmatchedBits & fieldKey) == fieldKey)
+                        {
+                            unmatchedBits &= ~fieldKey;
+
+                            if (sb.Length > 0)
+                            {
+                                sb.Append(", ");
+                            }
+
+                            sb.Append(enumField.JsonName);
+                            canFormatAsString = true;
+                        }
+                    }
+
+                    return canFormatAsString;
                 }
 
                 return false;
