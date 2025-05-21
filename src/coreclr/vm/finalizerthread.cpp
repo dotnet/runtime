@@ -386,6 +386,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
     hEventFinalizerDone->Set();
+    WaitForFinalizerEvent (hEventFinalizer);
 #endif
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();

@@ -239,7 +239,7 @@ namespace System.Threading
         /// <summary>
         /// Synchronizes memory access as follows:
         /// The processor that executes the current thread cannot reorder instructions in such a way that memory writes after
-        /// the call to <see cref="WriteBarrier"/> execute before memory accesses that follow the call to <see cref="WriteBarrier"/>.
+        /// the call to <see cref="WriteBarrier"/> execute before memory accesses that precede the call to <see cref="WriteBarrier"/>.
         /// </summary>
         [Intrinsic]
         public static void WriteBarrier() => WriteBarrier();

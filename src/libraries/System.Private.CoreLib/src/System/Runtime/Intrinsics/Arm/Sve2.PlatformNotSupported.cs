@@ -77,5 +77,55 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BCAX Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
         public static unsafe Vector<ulong> BitwiseClearXor(Vector<ulong> xor, Vector<ulong> value, Vector<ulong> mask) { throw new PlatformNotSupportedException(); }
+
+        // Shift left and insert
+
+        /// <summary>
+        /// svuint8_t svsli[_n_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   SLI Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<byte> ShiftLeftAndInsert(Vector<byte> left, Vector<byte> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svsli[_n_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   SLI Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<short> ShiftLeftAndInsert(Vector<short> left, Vector<short> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svsli[_n_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   SLI Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<int> ShiftLeftAndInsert(Vector<int> left, Vector<int> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svsli[_n_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   SLI Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<long> ShiftLeftAndInsert(Vector<long> left, Vector<long> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svsli[_n_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   SLI Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<sbyte> ShiftLeftAndInsert(Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svsli[_n_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   SLI Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<ushort> ShiftLeftAndInsert(Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svsli[_n_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   SLI Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<uint> ShiftLeftAndInsert(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svsli[_n_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   SLI Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<ulong> ShiftLeftAndInsert(Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte shift) { throw new PlatformNotSupportedException(); }
     }
 }
