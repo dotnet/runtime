@@ -189,7 +189,12 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
         header.syncEndOffset = decodeUnsigned(table);
 
         _ASSERTE(header.syncStartOffset != INVALID_SYNC_OFFSET && header.syncEndOffset != INVALID_SYNC_OFFSET);
+#ifdef FEATURE_EH_FUNCLETS
+        _ASSERTE(header.syncStartOffset == 1);
+        _ASSERTE(header.syncEndOffset == 1);
+#else
         _ASSERTE(header.syncStartOffset < header.syncEndOffset);
+#endif
     }
 
     if (header.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
@@ -366,6 +371,9 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     _ASSERTE(info->localloc && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
+#ifdef FEATURE_EH_FUNCLETS
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+#endif
                         1;
     return position * sizeof(TADDR);
 }
@@ -377,12 +385,20 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
 
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
 
+#ifdef FEATURE_EH_FUNCLETS
+    unsigned position = info->savedRegsCountExclFP +
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+                        info->localloc +
+                        1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+#else
     unsigned position = info->savedRegsCountExclFP +
                         info->localloc +
                         1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+#endif
     return position * sizeof(TADDR);
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 inline size_t GetStartShadowSPSlotsOffset(hdrInfo * info)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -425,6 +441,7 @@ inline size_t GetEndShadowSPSlotsOffset(hdrInfo * info, unsigned maxHandlerNesti
     return GetStartShadowSPSlotsOffset(info) +
            (numberOfShadowSPSlots * sizeof(TADDR));
 }
+#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *    returns the base frame pointer corresponding to the target nesting level.
@@ -524,7 +541,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
             _ASSERTE(condition);                        \
         }
 
-    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
     TADDR  baseSP            = GetOutermostBaseFP(frameEBP, info);
     bool    nonLocalHandlers = false; // Are the funclets invoked by EE (instead of managed code itself)
     bool    hasInnerFilter   = false;
@@ -539,6 +555,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // expected to be in decreasing order.
     size_t lvl = 0;
 #ifndef FEATURE_EH_FUNCLETS
+    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
     PTR_TADDR pSlot;
     for(lvl = 0, pSlot = pFirstBaseSPslot;
         *pSlot && lvl < unwindLevel;
