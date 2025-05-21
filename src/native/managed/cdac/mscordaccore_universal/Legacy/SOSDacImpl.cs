@@ -11,6 +11,7 @@ using System.Text;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -803,6 +804,16 @@ internal sealed unsafe partial class SOSDacImpl
             if (handle is CodeBlockHandle codeHandle)
             {
                 TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
+
+                TargetCodePointer funcletStart = executionManager.GetFuncletStartAddress(codeHandle);
+                bool isFunclet = executionManager.IsFunclet(codeHandle);
+                TargetPointer unwindInfo = executionManager.GetUnwindInfo(codeHandle);
+                executionManager.GetGCInfo(codeHandle, out TargetPointer gcInfoPtr, out uint gcVersion);
+                TargetNUInt relOffset = executionManager.GetRelativeOffset(codeHandle);
+                GCInfo gcInfo = new(_target, gcInfoPtr, (uint)relOffset.Value);
+                Console.WriteLine(gcInfo.Transitions);
+                Console.WriteLine($"IP: {ip:x}, MethodDesc: {methodDescAddr.Value:x}, FuncletStart: {funcletStart.Value:x}, IsFunclet: {isFunclet}, UnwindInfo: {unwindInfo.Value:x}");
+                Console.WriteLine($"GCInfo: {gcInfoPtr.Value:x}, GCVersion: {gcVersion}");
 
                 try
                 {
