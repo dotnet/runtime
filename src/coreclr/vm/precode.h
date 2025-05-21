@@ -805,7 +805,7 @@ struct PrecodeMachineDescriptor
     uint8_t StubPrecodeType;
 
     BYTE StubBytes[StubPrecode::CodeSize];
-    BYTE StubIgnoredBytes[FixupPrecode::CodeSize];
+    BYTE StubIgnoredBytes[StubPrecode::CodeSize];
 
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     uint8_t ThisPointerRetBufPrecodeType;
