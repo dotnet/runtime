@@ -62,14 +62,9 @@ namespace System.Text.Json.Tests.Serialization.FlagsEnumTests
             string json2 = JsonSerializer.Serialize(e2, options);
             // Should be: "BITS01, BIT3" (as in .NET8)
 
-            // Test that we get the combined fields rather than individual bits
-            Assert.Contains("BITS01", json1);
-            Assert.Contains("BIT3", json1);
-            Assert.Contains("BITS01", json2);
-            Assert.Contains("BIT3", json2);
-            
-            // Ensure we don't get numeric values
-            Assert.DoesNotContain("11", json2);
+            // Test that we get the exact expected JSON string
+            Assert.Equal("\"BITS01, BIT3\"", json1);
+            Assert.Equal("\"BITS01, BIT3\"", json2);
         }
         
         [Fact]
@@ -86,11 +81,8 @@ namespace System.Text.Json.Tests.Serialization.FlagsEnumTests
             var value = ComplexFlagsEnum.Combo1And2 | ComplexFlagsEnum.Combo4And8And16 | ComplexFlagsEnum.Flag32;
             string json = JsonSerializer.Serialize(value, options);
             
-            // Verify we get string names and not numbers
-            Assert.Contains("Combo1And2", json);
-            Assert.Contains("Combo4And8And16", json);
-            Assert.Contains("Flag32", json);
-            Assert.DoesNotContain("63", json); // Numeric value of the combination
+            // Verify we get the exact expected JSON string
+            Assert.Equal("\"Combo1And2, Combo4And8And16, Flag32\"", json);
         }
     }
 }
