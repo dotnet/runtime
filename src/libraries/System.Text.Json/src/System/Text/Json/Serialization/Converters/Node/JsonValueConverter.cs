@@ -27,6 +27,18 @@ namespace System.Text.Json.Serialization.Converters
                 return null;
             }
 
+            // For Object or Array types, return a JsonObject or JsonArray instance
+            // when deserializing a JsonValue. This maintains compatibility with .NET 8.0.
+            if (reader.TokenType is JsonTokenType.StartObject)
+            {
+                return (JsonValue)JsonNodeConverter.ObjectConverter.Read(ref reader, typeof(JsonObject), options)!;
+            }
+            
+            if (reader.TokenType is JsonTokenType.StartArray)
+            {
+                return (JsonValue)JsonNodeConverter.ArrayConverter.Read(ref reader, typeof(JsonArray), options)!;
+            }
+
             JsonElement element = JsonElement.ParseValue(ref reader);
             return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
         }
