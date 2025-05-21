@@ -4093,7 +4093,6 @@ public:
 
 typedef BOOL (*PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
 typedef BOOL (*PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION)(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-typedef VOID (*PTERMINATION_REQUEST_HANDLER)(int terminationExitCode);
 typedef DWORD (*PGET_GCMARKER_EXCEPTION_CODE)(LPVOID ip);
 
 PALIMPORT
@@ -4115,12 +4114,6 @@ PALAPI
 PAL_ThrowExceptionFromContext(
     IN CONTEXT* context,
     IN PAL_SEHException* ex);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
 
 PALIMPORT
 VOID
