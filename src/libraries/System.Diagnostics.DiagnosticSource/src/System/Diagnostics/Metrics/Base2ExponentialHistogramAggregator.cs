@@ -195,7 +195,7 @@ namespace System.Diagnostics.Metrics
 
                 _sum += measurement;
 
-                var index = MapToIndex(c > 0 ? measurement : -measurement);
+                var index = MapToIndex(measurement);
                 var n = PositiveBuckets.TryIncrement(index);
 
                 if (n == 0)
