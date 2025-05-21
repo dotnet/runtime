@@ -195,11 +195,8 @@ public partial class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
-        if (StripDebugSymbols)
-        {
-            extensionsToIgnore.Add(".pdb");
-            extensionsToIgnore.Add(".dbg");
-        }
+        extensionsToIgnore.Add(".pdb");
+        extensionsToIgnore.Add(".dbg");
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
@@ -388,8 +385,8 @@ public partial class ApkBuilder
         File.WriteAllText(Path.Combine(OutputDir, monodroidSource), Utils.GetEmbeddedResource(monodroidSource));
 
         AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
-        project.GenerateCMake(OutputDir, MinApiLevel);
-        project.BuildCMake(OutputDir);
+        project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
+        project.BuildCMake(OutputDir, StripDebugSymbols);
 
         // TODO: https://github.com/dotnet/runtime/issues/115717
 

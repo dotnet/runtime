@@ -13,7 +13,6 @@
 
     <_IsLibraryMode Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(NativeLib)' != ''">true</_IsLibraryMode>
     <_ReadRuntimeComponentsManifestTargetName Condition="'$(UseMonoRuntime)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_MonoReadAvailableComponentsManifest</_ReadRuntimeComponentsManifestTargetName>
-    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == '' and '$(Configuration)' == 'Release'">true</StripDebugSymbols>
 
     <StaticLinkedRuntime Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(StaticLinkedRuntime)' == ''">false</StaticLinkedRuntime>
 

@@ -50,26 +50,43 @@ namespace Microsoft.Android.Build
             Utils.RunProcess(logger, tools.ClangPath, workingDir: workingDir, args: clangArgs);
         }
 
-        public void GenerateCMake(string workingDir)
+        public void GenerateCMake(string workingDir, bool stripDebugSymbols)
         {
-            GenerateCMake(workingDir, DefaultMinApiLevel);
+            GenerateCMake(workingDir, DefaultMinApiLevel, stripDebugSymbols);
         }
 
-        public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel)
+        public void GenerateCMake(string workingDir, string apiLevel = DefaultMinApiLevel, bool stripDebugSymbols = false)
         {
             // force ninja generator on Windows, the VS generator causes issues with the built-in Android support in VS
             var generator = Utils.IsWindows() ? "-G Ninja" : "";
             string cmakeGenArgs = $"{generator} -DCMAKE_TOOLCHAIN_FILE={androidToolchainPath} -DANDROID_ABI=\"{Abi}\" -DANDROID_STL=none -DTARGETS_ANDROID=1 " +
-                $"-DANDROID_PLATFORM=android-{apiLevel} -B {projectName} -DCMAKE_BUILD_TYPE=Debug";
+                $"-DANDROID_PLATFORM=android-{apiLevel} -B {projectName}";
+
+            if (stripDebugSymbols)
+            {
+                // Use "-s" to strip debug symbols, it complains it's unused but it works
+                cmakeGenArgs += " -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_C_FLAGS=\"-s -Wno-unused-command-line-argument\"";
+            }
+            else
+            {
+                cmakeGenArgs += " -DCMAKE_BUILD_TYPE=Debug";
+            }
 
             Utils.RunProcess(logger, Cmake, workingDir: workingDir, args: cmakeGenArgs);
         }
 
-        public string BuildCMake(string workingDir)
+        public string BuildCMake(string workingDir, bool stripDebugSymbols = false)
         {
-            // Use Debug config to ensure android:debuggable=true,
-            // which is required for `adb shell run-as` to access result logs from internal storage.
-            string cmakeBuildArgs = $"--build {projectName} --config Debug";
+            string cmakeBuildArgs = $"--build {projectName}";
+
+            if (stripDebugSymbols)
+            {
+                cmakeBuildArgs += " --config MinSizeRel";
+            }
+            else
+            {
+                cmakeBuildArgs += " --config Debug";
+            }
 
             Utils.RunProcess(logger, Cmake, workingDir: workingDir, args: cmakeBuildArgs);
 
