@@ -8235,7 +8235,7 @@ public:
         assert(type != TYP_STRUCT);
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
         // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (varTypeIsSIMDVL(type)));
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12) || (UseSveForType(type)));
     }
 #else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_PARTIAL_SIMD_CALLEE_SAVE")
@@ -8917,7 +8917,7 @@ private:
 private:
 
     static unsigned compVectorTLength;
-    static unsigned compMinVectorTLengthForSve;
+    //static unsigned compMinVectorTLengthForSve;
     static bool compUseSveForVectorT;
 
 public:
@@ -8929,10 +8929,15 @@ public:
     {
         return compUseSveForVectorT;
     }
-    FORCEINLINE static bool UseSveForSimdSize(unsigned simdSize)
+    FORCEINLINE static bool UseSveForType(var_types type)
     {
-        return compUseSveForVectorT && (simdSize >= compMinVectorTLengthForSve);
+        return UseSveForVectorT() && varTypeIsSIMD(type);
     }
+
+    //FORCEINLINE static bool UseSveForSimdSize(unsigned simdSize)
+    //{
+    //    return compUseSveForVectorT && (simdSize >= compMinVectorTLengthForSve);
+    //}
     FORCEINLINE static bool SizeMatchesVectorTLength(unsigned simdSize)
     {
         return simdSize == compVectorTLength;

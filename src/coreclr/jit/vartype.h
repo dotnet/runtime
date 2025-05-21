@@ -64,19 +64,6 @@ inline var_types TypeGet(var_types v)
     return v;
 }
 
-#ifdef TARGET_ARM64
-inline bool varTypeIsSIMDVL(var_types vt)
-{
-#ifdef FEATURE_SIMD
-    return (vt == TYP_SIMD32) || (vt == TYP_SIMD64);
-#else
-    // Always return false if FEATURE_SIMD is not enabled
-    return false;
-#endif
-}
-#endif // TARGET_ARM64
-
-
 template <class T>
 inline bool varTypeIsSIMD(T vt)
 {

@@ -386,8 +386,7 @@ CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 #endif
 
 #if defined(TARGET_ARM64)
-RELEASE_CONFIG_INTEGER(MinVectorLengthForSve,     "MinVectorLengthForSve",   0x20) // The preferred decimal bytes for VL
-CONFIG_INTEGER(FakeVectorLengthForSve,     "FakeVectorLengthForSve",   0x10) // The fake decimal bytes for VL (for testing purposes)
+CONFIG_INTEGER(UseSveForVectorT,     "UseSveForVectorT",   0) // Prefer SVE instructions for VectorT
 #endif
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h

@@ -680,7 +680,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
         if (SizeMatchesVectorTLength(structSize))
         {
             var_types hfaType = GetHfaType(clsHnd);
-            return varTypeIsSIMDVL(hfaType) ? hfaType : TYP_UNKNOWN;
+            return UseSveForType(hfaType) ? hfaType : TYP_UNKNOWN;
         }
 #endif
     }
@@ -2162,7 +2162,7 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 #ifdef TARGET_ARM64
 unsigned Compiler::compVectorTLength = 0;
-unsigned Compiler::compMinVectorTLengthForSve = 0;
+//unsigned Compiler::compMinVectorTLengthForSve = 0;
 bool Compiler::compUseSveForVectorT = false;
 #endif
 
@@ -2608,22 +2608,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 
 #if defined(TARGET_ARM64)
-
-    compMinVectorTLengthForSve = ReinterpretHexAsDecimal(JitConfig.MinVectorLengthForSve());
-    bool isInvalidMinVectorTLength = false;
-    // Should be at least 16B or 128b
-    isInvalidMinVectorTLength |= (compMinVectorTLengthForSve < 16);
-    // Should be at most 256B or 2048b
-    isInvalidMinVectorTLength |= (compMinVectorTLengthForSve > 256);
-    // Should be power of 2
-    isInvalidMinVectorTLength |= ((compMinVectorTLengthForSve & (compMinVectorTLengthForSve - 1)) != 0);
-
-    if (isInvalidMinVectorTLength)
-    {
-        // In that case, default it to 32B.
-        compMinVectorTLengthForSve = 32;
-    }
-
     if (info.compMatchedVM)
     {
         compVectorTLength = info.compCompHnd->getTargetVectorLength();
@@ -2631,18 +2615,20 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
         if (!instructionSetFlags.HasInstructionSet(InstructionSet_Sve) && !instructionSetFlags.HasInstructionSet(InstructionSet_Sve_Arm64))
         {
-            compMinVectorTLengthForSve = UINT_MAX;
+            compVectorTLength = UINT_MAX;
+            compUseSveForVectorT = false;
+        }
+        else
+        {
+            compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
         }
     }
     else
     {
-        // For altjit, just use the default 16B
-        // To use SVE: Set DOTNET_SimulatedVLForSve >= DOTNET_MinVectorLengthForSve
-        // To use NEON: Set DOTNET_SimulatedVLForSve < DOTNET_MinVectorLengthForSve
-        compVectorTLength = ReinterpretHexAsDecimal(JitConfig.FakeVectorLengthForSve());
+        // For altjit, use the 32B if we want to test SVE for VectorT, otherwise 16B
+        compUseSveForVectorT = JitConfig.UseSveForVectorT();
+        compVectorTLength = compUseSveForVectorT ? 32 : 16;
     }
-
-    compUseSveForVectorT = (compVectorTLength >= compMinVectorTLengthForSve);
 
     //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
     //emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;

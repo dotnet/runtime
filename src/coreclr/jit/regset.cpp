@@ -606,7 +606,7 @@ var_types RegSet::tmpNormalizeType(var_types type)
     }
 
 #if defined(TARGET_ARM64)
-    if (varTypeIsSIMDVL(type))
+    if (Compiler::UseSveForType(type))
     {
         //TODO-VL: temporary work around to allow scalable registers
         type = TYP_SIMD16;
@@ -693,7 +693,7 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
     unsigned size = genTypeSize(type);
 
 #ifdef TARGET_ARM64
-    if (varTypeIsSIMDVL(type))
+    if (Compiler::UseSveForType(type))
     {
         size = 16; // SIMD registers overlap with SVE registers
     }

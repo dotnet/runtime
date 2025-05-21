@@ -2069,7 +2069,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpVL(GenTreeHWIntrinsic* node, genTreeOps 
     var_types      simdBaseType    = node->GetSimdBaseType();
     unsigned       simdSize        = node->GetSimdSize();
     var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
-    assert(varTypeIsSIMDVL(simdType));
+    assert(Compiler::UseSveForType(simdType));
 
     assert((intrinsicId == NI_Vector_op_Equality) || (intrinsicId == NI_Vector_op_Inequality));
 

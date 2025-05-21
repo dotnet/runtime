@@ -1885,7 +1885,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (varTypeIsSIMDVL(srcType))
+    else if (Compiler::UseSveForType(srcType))
     {
         return INS_sve_ldr;
     }
@@ -1979,7 +1979,7 @@ instruction CodeGen::ins_Copy(var_types dstType)
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (varTypeIsSIMDVL(dstType))
+    else if (Compiler::UseSveForType(dstType))
     {
         return INS_sve_mov;
     }
@@ -2106,7 +2106,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (varTypeIsSIMDVL(dstType))
+    else if (Compiler::UseSveForType(dstType))
     {
         return INS_sve_mov;
     }
@@ -2223,7 +2223,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #endif
     }
 #ifdef TARGET_ARM64
-    else if (varTypeIsSIMDVL(dstType))
+    else if (Compiler::UseSveForType(dstType))
     {
         return INS_sve_str;
     }

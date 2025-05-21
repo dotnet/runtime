@@ -1672,7 +1672,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_CreateSequence:
         {
-            assert(Compiler::UseSveForSimdSize(simdSize));
+            assert(Compiler::UseSveForVectorT());
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -1682,7 +1682,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_ToScalar:
         {
-            if (UseSveForSimdSize(simdSize))
+            if (UseSveForVectorT())
             {
                 op1 = impSIMDPopStack();
 
