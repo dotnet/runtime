@@ -12919,6 +12919,9 @@ static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
         comp->MethodCompileComplete(methodInfo->ftn);
     }
 
+    // Verify that we are still in preemptive mode when we return
+    // from the JIT
+    _ASSERTE(GetThread()->PreemptiveGCDisabled() == FALSE);
     return ret;
 }
 
@@ -13104,7 +13107,7 @@ static TADDR UnsafeJitFunctionWorker(
         }
     }
 
-    CorJitResult res = CORJIT_SKIPPED;
+    CorJitResult res;
     PBYTE nativeEntry = NULL;
     uint32_t sizeOfCode = 0;
 
@@ -13113,22 +13116,18 @@ static TADDR UnsafeJitFunctionWorker(
         //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
         LARGE_INTEGER methodJitTimeStart = {0};
         QueryPerformanceCounter(&methodJitTimeStart);
+#endif // PERF_TRACK_METHOD_JITTIMES
 
-#endif
         LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
         res = invokeCompileMethod(pJitMgr,
                                   pJitInfo,
                                   &nativeEntry,
                                   &sizeOfCode);
 
-        // Verify that we are still in preemptive mode when we return
-        // from the JIT
-        _ASSERTE(GetThread()->PreemptiveGCDisabled() == FALSE);
-
 #if FEATURE_PERFMAP
         // Save the code size so that it can be reported to the perfmap.
         *pSizeOfCode = sizeOfCode;
-#endif
+#endif // FEATURE_PERFMAP
 
 #ifdef PERF_TRACK_METHOD_JITTIMES
         //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
