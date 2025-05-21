@@ -51,12 +51,6 @@ public class ConstantMasks
             CndSelectOptionalEmbeddedAllBitsF(op1, op2);
             CndSelectOptionalEmbeddedAllBitsZ(op1, op2);
 
-            // CndSelectEmbeddedOneOp(op1, op2);
-            // CndSelectEmbeddedOneOpFalseMask(op1);
-            // CndSelectEmbeddedOneOpZero(op1);
-            // CndSelectEmbeddedOneOpTrueMask(op1);
-            // CndSelectEmbeddedOneOpAllBits(op1);
-
             CndSelectEmbeddedReductionF(opl1, op2);
             CndSelectEmbeddedReductionZ(opl1, op2);
             CndSelectEmbeddedReductionFalseMaskF(op1);

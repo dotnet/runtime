@@ -2796,7 +2796,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
 
                 // Do the convert to vector here (as the instrinsic is not marked with HW_Flag_ReturnsPerElementMask)
                 retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode->AsHWIntrinsic(), simdBaseJitType, simdSize);
