@@ -136,7 +136,7 @@ namespace System.Net.Http
         private static extern object GetContent([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_StatusCode")]
-        private static extern int GetStatusCode([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
+        private static extern HttpStatusCode GetStatusCode([UnsafeAccessorType(HttpResponseMessageTypeName)] object responseMessage);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Headers")]
         [return: UnsafeAccessorType(HttpResponseHeadersTypeName)]
@@ -208,7 +208,7 @@ namespace System.Net.Http
                     bool hasRedirect;
                     while (true)
                     {
-                        int statusCode = GetStatusCode(responseMessage);
+                        int statusCode = (int)GetStatusCode(responseMessage);
                         object responseHeaders = GetHeaders(responseMessage);
                         Uri? location = GetLocation(responseHeaders);
                         redirectUri = GetUriForRedirect(GetRequestUri(requestMessage)!, statusCode, location, out hasRedirect);
