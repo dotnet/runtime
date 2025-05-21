@@ -785,11 +785,11 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
         jitinterfacegen.cpp
+        writebarriermanager.cpp
     )
 
     set(VM_HEADERS_WKS_ARCH
@@ -856,6 +856,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
         gcinfodecoder.cpp
+        writebarriermanager.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)
