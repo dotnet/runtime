@@ -92,8 +92,7 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedAllBits(Vector<int> op1, Vector<int> op2) {
-        //ARM64-FULL-LINE: mvni {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
+        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         Vector<int> result = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.AbsoluteDifference(op1, op2), op1);
         Consume(result);
@@ -136,7 +135,7 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedAllBits(Vector<int> op1, Vector<int> op2) {
-        //ARM64-FULL-LINE: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE: add {{z[0-9]+}}.s, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         Vector<int> result = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.Add(op1, op2), op1);
         Consume(result);
     }
@@ -179,9 +178,8 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedOneOpAllBits(Vector<int> op1) {
-        //ARM64-FULL-LINE: mvni {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
-        //ARM64-FULL-LINE-NEXT: abs {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s
+        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
+        //ARM64-FULL-LINE: abs {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s
         Vector<int> result = Sve.ConditionalSelect(Vector<int>.AllBitsSet, Sve.Abs(op1), op1);
         Consume(result);
     }
@@ -232,8 +230,7 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionAllBits(Vector<int> op1, Vector<long> opf) {
-        //ARM64-FULL-LINE: cmpne {{p[0-9]+}}.d, {{p[0-9]+}}/z, {{z[0-9]+}}.d, #0
-        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.s
+        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.AllBitsSet, Sve.AddAcross(op1), opf);
