@@ -3418,10 +3418,10 @@ inline SingleTypeRegSet LinearScan::ForceLowGprForApx(GenTree* tree, SingleTypeR
 //    updated register mask.
 inline SingleTypeRegSet LinearScan::ForceLowGprForApxIfNeeded(GenTree*         tree,
                                                               SingleTypeRegSet candidates,
-                                                              bool             UseApxRegs)
+                                                              bool             useApxRegs)
 {
     // All the HWIntrinsics cannot access EGPRs when EVEX is disabled.
-    if (!UseApxRegs)
+    if (!useApxRegs)
     {
         return ForceLowGprForApx(tree, candidates);
     }

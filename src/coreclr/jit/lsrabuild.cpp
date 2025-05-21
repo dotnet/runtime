@@ -3843,9 +3843,6 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
 //                      to restrict candidates to just lowGPRs
 //              Case 3: APX support exists with EVEX support. – In this case, we do not need
 //                      to do anything. Can give LSRA access to all registers for this node
-//              Case 4: APX support without Evex support - candidates can possibly include
-//                      eGPR but it should not be used since the node might use an instruction
-//                      that does not have eEVEX support
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
