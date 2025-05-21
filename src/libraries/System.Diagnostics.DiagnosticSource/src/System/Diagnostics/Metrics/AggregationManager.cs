@@ -11,6 +11,37 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
+    internal enum HistogramAggregationType
+    {
+        Default, // default exponential aggregation with quantiles
+        Base2Exponential, // Base 2 exponential histogram aggregation
+    }
+
+    /// <summary>
+    /// Configuration options for histogram aggregation.
+    /// </summary>
+    /// <remarks>
+    /// Currently this class support Bae 2 Exponential Histogram aggregation configuration. In the future this can be extended to support more aggregation types.
+    /// </remarks>
+    internal sealed class HistogramAggregation
+    {
+        internal HistogramAggregation(int scale, int maxBuckets, bool reportDeltas)
+        {
+            Scale = scale;
+            MaxBuckets = maxBuckets;
+            ReportDeltas = reportDeltas;
+            Type = HistogramAggregationType.Base2Exponential;
+        }
+
+        internal HistogramAggregationType Type { get; }
+
+        internal int Scale { get; set; }
+
+        internal int MaxBuckets { get; set; }
+
+        internal bool ReportDeltas { get; set; }
+    }
+
     [SecuritySafeCritical]
     internal sealed class AggregationManager
     {
@@ -48,6 +79,7 @@ namespace System.Diagnostics.Metrics
         private DateTime _startTime;
         private DateTime _intervalStartTime;
         private DateTime _nextIntervalStartTime;
+        private HistogramAggregation? _histogramAggregation;
 
         public AggregationManager(
             int maxTimeSeries,
@@ -117,6 +149,14 @@ namespace System.Diagnostics.Metrics
             lock (this)
             {
                 _instrumentConfigFuncs.Add(instrumentFilter);
+            }
+        }
+
+        public void SetHistogramAggregation(HistogramAggregation histogramAggregation)
+        {
+            lock (this)
+            {
+                _histogramAggregation = histogramAggregation;
             }
         }
 
@@ -419,6 +459,8 @@ namespace System.Diagnostics.Metrics
                         // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
                         return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
                             null :
+                            _histogramAggregation is { Type: HistogramAggregationType.Base2Exponential } ?
+                            new Base2ExponentialHistogramAggregator(_histogramAggregation.Scale, _histogramAggregation.MaxBuckets, _histogramAggregation.ReportDeltas) :
                             new ExponentialHistogramAggregator(s_defaultHistogramConfig);
                     }
                 };

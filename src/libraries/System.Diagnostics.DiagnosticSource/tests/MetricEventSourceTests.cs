@@ -84,12 +84,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             using Meter meter2 = new Meter(new MeterOptions("TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
             EventWrittenEventArgs[] events, events2;
@@ -132,12 +132,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             using Meter meter2 = new Meter(new MeterOptions("TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2", null, null, new TagList() { { "cCk1", "cCv1" }, { "cCk2", "cCv2" } });
 
             EventWrittenEventArgs[] events, events2;
@@ -183,12 +183,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             using Meter meter2 = new Meter(new MeterOptions("TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }},
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2", null, null, new TagList() { { "cCk1", "cCv1" }, { "cCk2", "cCv2" } });
 
             EventWrittenEventArgs[] events, events2;
@@ -237,12 +237,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1");
 
             using Meter meter2 = new Meter(new MeterOptions("TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
             using Meter meter3 = new Meter("TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
@@ -297,12 +297,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1");
 
             using Meter meter2 = new Meter(new MeterOptions("Test.TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
             using Meter meter3 = new Meter("Test.TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
@@ -340,12 +340,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1");
 
             using Meter meter2 = new Meter(new MeterOptions("Company1.TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2");
 
             using Meter meter3 = new Meter("Company2.TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
@@ -377,12 +377,12 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1", null, null, new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             using Meter meter2 = new Meter(new MeterOptions("TestMeter2")
-                                            {
-                                              Version =  null,
-                                              Tags = null,
-                                              Scope = null,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = null,
+                Scope = null,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c2 = meter2.CreateCounter<int>("counter2", null, null, new TagList() { { "cCk1", "cCv1" }, { "cCk2", "cCv2" } });
 
             EventWrittenEventArgs[] events, events2;
@@ -419,12 +419,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_UnsharedSessionRejectsUnsharedListener()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "ock1", "ocv1" }, { "ock2", "ocv2" } });
@@ -473,12 +473,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_UnsharedSessionRejectsSharedListener()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
@@ -530,12 +530,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_SharedSessionRejectsUnsharedListener()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe");
@@ -586,12 +586,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_SharedSessionRejectsListenerWithDifferentArgs()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = null,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = null,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
 
             EventWrittenEventArgs[] events, events2;
@@ -626,12 +626,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_SharedSessionWithoutClientIdRejectsSharedListenerWithDifferentArgsAfterListenerDisposed()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
-                                            {
-                                              Version =  null,
-                                              Tags = null,
-                                              Scope = null,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = null,
+                Scope = null,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
 
             EventWrittenEventArgs[] events, events2;
@@ -664,12 +664,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_SharedSessionRejectsListenerWithDifferentInterval()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter7")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", null }, { "Mk2", null } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", null }, { "Mk2", null } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
             ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "Ck1", null }, { "Ck2", "" } });
@@ -724,12 +724,12 @@ namespace System.Diagnostics.Metrics.Tests
         {
             using Meter meterA = new Meter("TestMeter8", null, null, new object());
             using Meter meterB = new Meter(new MeterOptions("TestMeter9")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = null,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = null,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
             int counterState = 3;
             ObservableCounter<int> oc = meterA.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
@@ -790,12 +790,12 @@ namespace System.Diagnostics.Metrics.Tests
         {
             using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "1Mk1", "1Mv1" }, { "1Mk2", "Mv2" } });
             using Meter meterB = new Meter(new MeterOptions("TestMeter9")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "2Mk1", "2Mv1" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "2Mk1", "2Mv1" } },
+                Scope = new object(),
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" } });
             Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
@@ -860,12 +860,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task MultipleListeners_PublishingInstruments()
         {
             using Meter meterA = new Meter(new MeterOptions("TestMeter10")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2"}, { "Mk3", null }},
-                                              Scope = null,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" }, { "Mk3", null } },
+                Scope = null,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             using Meter meterB = new Meter("TestMeter11", null, null, new object());
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" } });
             Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" } });
@@ -905,12 +905,12 @@ namespace System.Diagnostics.Metrics.Tests
                 CultureInfo.DefaultThreadCurrentCulture = new CultureInfo("fi-FI");
 
                 using Meter meter = new Meter(new MeterOptions("TestMeter1")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = new object(),
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+                {
+                    Version = null,
+                    Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                    Scope = new object(),
+                    TelemetrySchemaUrl = "https://example.com"
+                });
                 Counter<int> c = meter.CreateCounter<int>("counter1");
                 Gauge<int> g = meter.CreateGauge<int>("gauge1");
                 int counterState = 3;
@@ -967,7 +967,7 @@ namespace System.Diagnostics.Metrics.Tests
             Counter<int> c = meter.CreateCounter<int>("counter1", "hat", "Fooz!!", new TagList() { { "Ck1", "Cv1" }, { "Ck2", "Cv2" } });
             Gauge<int> g = meter.CreateGauge<int>("gauge1", "C", "Temperature", new TagList() { { "Ck1", "Cv1" } });
             int counterState = 3;
-            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; } , "MB", "Size of universe", new TagList() { { "oCk1", "oCv1" } });
+            ObservableCounter<int> oc = meter.CreateObservableCounter<int>("observableCounter1", () => { counterState += 7; return counterState; }, "MB", "Size of universe", new TagList() { { "oCk1", "oCv1" } });
             int gaugeState = 0;
             ObservableGauge<int> og = meter.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!", new TagList() { { "ogk1", null } });
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", "a unit", "the description");
@@ -1171,7 +1171,7 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
 
-                c.Add(5, new KeyValuePair<string,object?>("Color", "red"));
+                c.Add(5, new KeyValuePair<string, object?>("Color", "red"));
                 c.Add(6, new KeyValuePair<string, object?>("Color", "blue"));
                 h.Record(19, new KeyValuePair<string, object?>("Size", 123));
                 h.Record(20, new KeyValuePair<string, object?>("Size", 124));
@@ -1221,12 +1221,12 @@ namespace System.Diagnostics.Metrics.Tests
             object scope = new object();
             using Meter meterA = new Meter("TestMeterA", null, new TagList() { { "1Mk1", null } }, scope);
             using Meter meterB = new Meter(new MeterOptions("TestMeterB")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "2Mk1", "" }},
-                                              Scope = scope,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "2Mk1", "" } },
+                Scope = scope,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             using Meter meterC = new Meter("TestMeterC", null, new TagList() { { "3Mk1", "Mv1" }, { "3Mk2", "Mv2" } }, scope);
             Counter<int> c1a = meterA.CreateCounter<int>("counter1");
             Counter<int> c2a = meterA.CreateCounter<int>("counter2");
@@ -1366,7 +1366,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertInitialEnumerationCompleteEventPresent(events);
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("0", "5"), ("12", "17"));
             AssertGaugeEventsPresent(events, meter.Name, g.Name, "", "", "-123", "-123", "123", "123");
-            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("",  "17"), ("0", "17"), ("14", "31"), ("0", "31"));
+            AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "17"), ("0", "17"), ("14", "31"), ("0", "31"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
             AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("", "0", "0"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("", "0", "0"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("0", "33"), ("40", "73"));
@@ -1381,12 +1381,12 @@ namespace System.Diagnostics.Metrics.Tests
             object scope = new object();
             using Meter meterA = new Meter("TestMeter8", null, new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } }, scope);
             using Meter meterB = new Meter(new MeterOptions("TestMeter9")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", null }, { "Mk2", "Mv2" } },
-                                              Scope = scope,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", null }, { "Mk2", "Mv2" } },
+                Scope = scope,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
             Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
             int counterState = 3;
@@ -1445,12 +1445,12 @@ namespace System.Diagnostics.Metrics.Tests
 
                 using Meter meterA = new Meter("TestMeter10", null, null, scope);
                 using Meter meterB = new Meter(new MeterOptions("TestMeter11")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } },
-                                              Scope = scope,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+                {
+                    Version = null,
+                    Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", null } },
+                    Scope = scope,
+                    TelemetrySchemaUrl = "https://example.com"
+                });
                 Counter<int> c = meterA.CreateCounter<int>("counter1", "hat", "Fooz!!");
                 Gauge<int> g = meterA.CreateGauge<int>("gauge1", "C", "Temperature");
                 int counterState = 3;
@@ -1459,7 +1459,7 @@ namespace System.Diagnostics.Metrics.Tests
                 int gaugeState = 0;
                 ObservableGauge<int> og = meterA.CreateObservableGauge<int>("observableGauge1", () => { gaugeState += 9; return gaugeState; }, "12394923 asd [],;/", "junk!",
                                                 new TagList() { { "ogk1", "ogv1" } });
-                Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "" }, {"hk3", null } });
+                Histogram<int> h = meterB.CreateHistogram<int>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "" }, { "hk3", null } });
                 UpDownCounter<int> udc = meterA.CreateUpDownCounter<int>("upDownCounter1", "udc unit", "udc description", new TagList() { { "udk1", "udv1" } });
                 int upDownCounterState = 0;
                 ObservableUpDownCounter<int> oudc = meterA.CreateObservableUpDownCounter<int>("observableUpDownCounter1", () => { upDownCounterState += 11; return upDownCounterState; }, "oudc unit", "oudc description");
@@ -1722,12 +1722,12 @@ namespace System.Diagnostics.Metrics.Tests
         public async Task EventSourceEnforcesHistogramLimitAndNotMaxTimeSeries()
         {
             using Meter meter = new Meter(new MeterOptions("TestMeter17")
-                                            {
-                                              Version =  null,
-                                              Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
-                                              Scope = null,
-                                              TelemetrySchemaUrl = "https://example.com"
-                                            });
+            {
+                Version = null,
+                Tags = new TagList() { { "Mk1", "Mv1" }, { "Mk2", "Mv2" } },
+                Scope = null,
+                TelemetrySchemaUrl = "https://example.com"
+            });
             Histogram<int> h = meter.CreateHistogram<int>("histogram1", null, null, new TagList() { { "hk1", "hv1" }, { "hk2", "hv2" } });
 
             EventWrittenEventArgs[] events;
@@ -1764,7 +1764,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         public static IEnumerable<object[]> DifferentMetersAndInstrumentsData()
         {
-            yield return new object[] { new Meter("M1").CreateCounter<int>("C1"), new Meter("M2").CreateCounter<int>("C2"), false};
+            yield return new object[] { new Meter("M1").CreateCounter<int>("C1"), new Meter("M2").CreateCounter<int>("C2"), false };
 
             var counter = new Meter("M2").CreateCounter<int>("C3");
             yield return new object[] { counter, counter.Meter.CreateCounter<int>("C4"), false };
@@ -1782,7 +1782,7 @@ namespace System.Diagnostics.Metrics.Tests
             };
 
             Meter meter = new Meter("M6", "v1", new TagList { { "k1", "v1" } }, scope);
-            yield return new object[] { meter.CreateCounter<int>("C8", "u1", "d1", new TagList { { "k2", "v2" } } ), meter.CreateCounter<int>("C9", "u1", "d1", new TagList { { "k2", "v2" } } ), false };
+            yield return new object[] { meter.CreateCounter<int>("C8", "u1", "d1", new TagList { { "k2", "v2" } }), meter.CreateCounter<int>("C9", "u1", "d1", new TagList { { "k2", "v2" } }), false };
         }
 
         [Theory]
@@ -1826,6 +1826,109 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop("Slow and has lots of console spew")]
+        public async Task HistogramBase2AggregationTest()
+        {
+            using Meter meter = new Meter("TestMeter20");
+            Histogram<double> h = meter.CreateHistogram<double>("histogram1", "a unit", "the description", new TagList() { { "hk1", "hv1" }, { "hk2", "hv2" }, { "hk3", "hv3" } });
+            var labels = new KeyValuePair<string, object?>("Color", "red");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, new HistogramConfig(scale: 10, maxBuckets: 20, reportDeltas: false), "TestMeter20"))
+            {
+                // positive value
+                h.Record(5.0, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
+                // small value
+                h.Record(0.1, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+
+                // large value
+                h.Record(123456789.99, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+
+                // zero value
+                h.Record(0, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 4);
+
+                // another zero value
+                h.Record(0, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 5);
+
+                // negative value
+                h.Record(-5.0, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 6);
+
+                h.Record(double.PositiveInfinity, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 7);
+
+                h.Record(double.NegativeInfinity, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 8);
+
+                h.Record(double.NaN, labels);
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 9);
+
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, h);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 9);
+
+            AssertBase2HistogramEventsPresent(events, meter.Name, h.Name, "Color=red", h.Unit,
+                        // (int Scale, double Sum, int Count, long ZeroCount, double Minimum, double Maximum, string Buckets)
+                        [
+                            (20, 5, 1, 0, 5, 5, "1"), // Record(5)
+                            (0, 5.1, 2, 0, 0.1, 5, "1, 0, 0, 0, 0, 0, 1"), // Record(0.1)
+                            (-2, 5.1 + 123456789.99, 3, 0, 0.1, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(123456789.99)
+                            (-2, 5.1 + 123456789.99, 4, 1, 0, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(0)
+                            (-2, 5.1 + 123456789.99, 5, 2, 0, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(0)
+                            (-2, 5.1 + 123456789.99, 5, 2, 0, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(-5.0)
+                            (-2, 5.1 + 123456789.99, 5, 2, 0, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(PositiveInfinity)
+                            (-2, 5.1 + 123456789.99, 5, 2, 0, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(NegativeInfinity)
+                            (-2, 5.1 + 123456789.99, 5, 2, 0, 123456789.99, "1, 1, 0, 0, 0, 0, 0, 1"), // Record(NaN)
+                        ]);
+
+            // Report Deltas = true
+            using (MetricsEventListener listener1 = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, new HistogramConfig(scale: 10, maxBuckets: 10, reportDeltas: true), "TestMeter20"))
+            {
+                h.Record(1.0, labels);
+                h.Record(2.0, labels);
+                h.Record(3.0, labels);
+                h.Record(0, labels);
+                h.Record(1234.5678, labels);
+                h.Record(double.PositiveInfinity, labels);
+                h.Record(double.NegativeInfinity, labels);
+                h.Record(double.NaN, labels);
+                await listener1.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
+                h.Record(1.0, labels);
+                h.Record(2.0, labels);
+                h.Record(3.0, labels);
+                h.Record(0, labels);
+                h.Record(1234.5678, labels);
+                h.Record(double.PositiveInfinity, labels);
+                h.Record(double.NegativeInfinity, labels);
+                h.Record(double.NaN, labels);
+                await listener1.WaitForCollectionStop(s_waitForEventTimeout, 2);
+
+                events = listener1.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, h);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
+
+            AssertBase2HistogramEventsPresent(events, meter.Name, h.Name, "Color=red", h.Unit,
+                        // (int Scale, double Sum, int Count, long ZeroCount, double Minimum, double Maximum, string Buckets)
+                        [
+                            (-1, 1240.5678, 5, 1, 0, 1234.5678, "1, 2, 0, 0, 0, 0, 1"), // Record(1.0, 2.0, 3.0, 0, 1234.5678, PositiveInfinity, NegativeInfinity, NaN)
+                            (-1, 1240.5678, 5, 1, 0, 1234.5678, "1, 2, 0, 0, 0, 0, 1"), // Record(1.0, 2.0, 3.0, 0, 1234.5678, PositiveInfinity, NegativeInfinity, NaN)
+                        ]);
+        }
+
         private static void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
         {
             var beginReportEvents = events.Where(e => e.EventName == "BeginInstrumentReporting").Select(e =>
@@ -1844,7 +1947,7 @@ namespace System.Diagnostics.Metrics.Tests
                     TelemetrySchemaUrl = e.Payload[11].ToString(),
                 }).ToArray();
 
-            foreach(Instrument i in expectedInstruments)
+            foreach (Instrument i in expectedInstruments)
             {
                 var e = beginReportEvents.Where(ev => ev.InstrumentName == i.Name && ev.MeterName == i.Meter.Name).FirstOrDefault();
                 Assert.True(e != null, "Expected to find a BeginInstrumentReporting event for " + i.Meter.Name + "\\" + i.Name);
@@ -2061,6 +2164,50 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
+        private static void AssertBase2HistogramEventsPresent(
+                                EventWrittenEventArgs[] events,
+                                string meterName,
+                                string instrumentName,
+                                string tags,
+                                string expectedUnit,
+                                params (int Scale, double Sum, long Count, long ZeroCount, double Minimum, double Maximum, string Buckets)[] expected)
+        {
+            var counterEvents = events.Where(e => e.EventName == "Base2ExponentialHistogramValuePublished").Select(e =>
+                new
+                {
+                    MeterName = e.Payload[1].ToString(),
+                    MeterVersion = e.Payload[2].ToString(),
+                    InstrumentName = e.Payload[3].ToString(),
+                    InstrumentId = (int)(e.Payload[4]),
+                    Unit = e.Payload[5].ToString(),
+                    Tags = e.Payload[6].ToString(),
+                    Scale = (int)e.Payload[7],
+                    Sum = (double)e.Payload[8],
+                    Count = (long)e.Payload[9],
+                    ZeroCount = (long)e.Payload[10],
+                    Minimum = (double)e.Payload[11],
+                    Maximum = (double)e.Payload[12],
+                    Buckets = e.Payload[13].ToString()
+                }).ToArray();
+
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
+
+            Assert.True(filteredEvents.Length >= expected.Length);
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Assert.Equal(filteredEvents[i].Unit, expectedUnit);
+                Assert.Equal(expected[i].Scale, filteredEvents[i].Scale);
+                Assert.Equal(expected[i].Sum, filteredEvents[i].Sum);
+                Assert.Equal(expected[i].Count, filteredEvents[i].Count);
+                Assert.Equal(expected[i].ZeroCount, filteredEvents[i].ZeroCount);
+                Assert.Equal(expected[i].Minimum, filteredEvents[i].Minimum);
+                Assert.Equal(expected[i].Maximum, filteredEvents[i].Maximum);
+                Assert.Equal(expected[i].Buckets, filteredEvents[i].Buckets);
+                Assert.True(filteredEvents[i].InstrumentId > 0);
+            }
+        }
+
         private static void AssertHistogramEventsNotPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags)
         {
             var counterEvents = events.Where(e => e.EventName == "HistogramValuePublished").Select(e =>
@@ -2074,19 +2221,20 @@ namespace System.Diagnostics.Metrics.Tests
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.Equal(0, filteredEvents.Length);
         }
+
         private static void AssertCollectStartStopEventsPresent(EventWrittenEventArgs[] events, double expectedIntervalSecs, int expectedPairs)
         {
             int startEventsSeen = 0;
             int stopEventsSeen = 0;
-            for(int i = 0; i < events.Length; i++)
+            for (int i = 0; i < events.Length; i++)
             {
                 EventWrittenEventArgs e = events[i];
-                if(e.EventName == "CollectionStart")
+                if (e.EventName == "CollectionStart")
                 {
                     Assert.True(startEventsSeen == stopEventsSeen, "Unbalanced CollectionStart event");
                     startEventsSeen++;
                 }
-                else if(e.EventName == "CollectionStop")
+                else if (e.EventName == "CollectionStop")
                 {
                     Assert.True(startEventsSeen == stopEventsSeen + 1, "Unbalanced CollectionStop event");
                     stopEventsSeen++;
@@ -2154,6 +2302,12 @@ namespace System.Diagnostics.Metrics.Tests
         {
         }
 
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval, HistogramConfig? histogramConfig, params string[]? instruments) :
+            this(output, keywords, refreshInterval, TimeSeriesLimit, HistogramLimit, histogramConfig, instruments)
+        {
+        }
+
+
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, bool isShared, double? refreshInterval, params string[]? instruments) :
             this(output, keywords, isShared, refreshInterval, TimeSeriesLimit, HistogramLimit, instruments)
         {
@@ -2165,6 +2319,18 @@ namespace System.Diagnostics.Metrics.Tests
         {
         }
 
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, double? refreshInterval,
+            int timeSeriesLimit, int histogramLimit, HistogramConfig? histogramConfig, params string[]? instruments) :
+            this(output, keywords, false, refreshInterval, timeSeriesLimit, histogramLimit, histogramConfig, instruments)
+        {
+        }
+
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, bool isShared, double? refreshInterval,
+            int timeSeriesLimit, int histogramLimit, HistogramConfig? histogramConfig, params string[]? instruments) :
+            this(output, keywords, Guid.NewGuid().ToString(), isShared, refreshInterval, timeSeriesLimit, histogramLimit, histogramConfig, instruments)
+        {
+        }
+
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, bool isShared, double? refreshInterval,
             int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
             this(output, keywords, Guid.NewGuid().ToString(), isShared, refreshInterval, timeSeriesLimit, histogramLimit, instruments)
@@ -2173,23 +2339,32 @@ namespace System.Diagnostics.Metrics.Tests
 
         public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, bool isShared, double? refreshInterval,
             int timeSeriesLimit, int histogramLimit, params string[]? instruments) :
-            this(output, keywords, sessionId, isShared,
-            FormatArgDictionary(refreshInterval,timeSeriesLimit, histogramLimit, instruments, sessionId, isShared))
+            this(output, keywords, sessionId, isShared, refreshInterval, timeSeriesLimit, histogramLimit, histogramConfig: null, instruments)
         {
         }
 
-        private static Dictionary<string,string> FormatArgDictionary(double? refreshInterval, int? timeSeriesLimit, int? histogramLimit, string?[]? instruments, string? sessionId, bool shared)
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, bool isShared, double? refreshInterval,
+            int timeSeriesLimit, int histogramLimit, HistogramConfig? histogramConfig, params string[]? instruments) :
+            this(output, keywords, sessionId, isShared,
+            FormatArgDictionary(refreshInterval, timeSeriesLimit, histogramLimit, instruments, sessionId, isShared, histogramConfig))
+        {
+        }
+
+        private static Dictionary<string, string> FormatArgDictionary(double? refreshInterval, int? timeSeriesLimit, int? histogramLimit, string?[]? instruments, string? sessionId, bool shared, HistogramConfig? histogramConfig)
         {
             Dictionary<string, string> d = new Dictionary<string, string>();
-            if(instruments != null)
+
+            if (instruments is not null)
             {
                 d.Add("Metrics", string.Join(",", instruments));
             }
-            if(refreshInterval.HasValue)
+
+            if (refreshInterval.HasValue)
             {
                 d.Add("RefreshInterval", refreshInterval.ToString());
             }
-            if(sessionId != null)
+
+            if (sessionId is not null)
             {
                 if (shared)
                 {
@@ -2201,19 +2376,26 @@ namespace System.Diagnostics.Metrics.Tests
                     d.Add("SessionId", sessionId);
                 }
             }
-            if(timeSeriesLimit != null)
+
+            if (timeSeriesLimit is not null)
             {
                 d.Add("MaxTimeSeries", timeSeriesLimit.ToString());
             }
-            if (histogramLimit != null)
+
+            if (histogramLimit is not null)
             {
                 d.Add("MaxHistograms", histogramLimit.ToString());
+            }
+
+            if (histogramConfig is not null)
+            {
+                d.Add("HistogramAggregation", $"type=Base2Exponential; scale={histogramConfig.Scale}; maxBuckets={histogramConfig.MaxBuckets}; reportDeltas={histogramConfig.ReportDeltas}");
             }
 
             return d;
         }
 
-        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, bool shared, Dictionary<string,string> arguments)
+        public MetricsEventListener(ITestOutputHelper output, EventKeywords keywords, string sessionId, bool shared, Dictionary<string, string> arguments)
         {
             _output = output;
             _keywords = keywords;
@@ -2229,7 +2411,7 @@ namespace System.Diagnostics.Metrics.Tests
         ITestOutputHelper _output;
         EventKeywords _keywords;
         string _sessionId;
-        Dictionary<string,string> _arguments;
+        Dictionary<string, string> _arguments;
         EventSource _source;
         AutoResetEvent _autoResetEvent = new AutoResetEvent(false);
         public List<EventWrittenEventArgs> Events { get; } = new List<EventWrittenEventArgs>();
@@ -2241,7 +2423,7 @@ namespace System.Diagnostics.Metrics.Tests
             if (eventSource.Name == "System.Diagnostics.Metrics")
             {
                 _source = eventSource;
-                if(_keywords != 0)
+                if (_keywords != 0)
                 {
                     _output.WriteLine($"[{DateTime.Now:hh:mm:ss:fffff}] Enabling EventSource");
                     EnableEvents(_source, EventLevel.Informational, _keywords, _arguments);
@@ -2277,7 +2459,7 @@ namespace System.Diagnostics.Metrics.Tests
             _output.WriteLine($"[{DateTime.Now:hh:mm:ss:fffff}] Event {eventData.EventName}");
             for (int i = 0; i < eventData.Payload.Count; i++)
             {
-                if(eventData.Payload[i] is DateTime)
+                if (eventData.Payload[i] is DateTime)
                 {
                     _output.WriteLine($"  {eventData.PayloadNames[i]}: {((DateTime)eventData.Payload[i]).ToLocalTime():hh:mm:ss:fffff}");
                 }
@@ -2356,5 +2538,19 @@ namespace System.Diagnostics.Metrics.Tests
                 return Events.Where(e => e.EventName == eventName).Count();
             }
         }
+    }
+
+    public sealed class HistogramConfig
+    {
+        public HistogramConfig(int scale, int maxBuckets, bool reportDeltas)
+        {
+            Scale = scale;
+            MaxBuckets = maxBuckets;
+            ReportDeltas = reportDeltas;
+        }
+
+        public int Scale { get; }
+        public int MaxBuckets { get; }
+        public bool ReportDeltas { get; }
     }
 }
