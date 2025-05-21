@@ -6047,6 +6047,14 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> BitwiseClearXor(System.Numerics.Vector<ushort> xor, System.Numerics.Vector<ushort> value, System.Numerics.Vector<ushort> mask) { throw null; }
         public static System.Numerics.Vector<uint> BitwiseClearXor(System.Numerics.Vector<uint> xor, System.Numerics.Vector<uint> value, System.Numerics.Vector<uint> mask) { throw null; }
         public static System.Numerics.Vector<ulong> BitwiseClearXor(System.Numerics.Vector<ulong> xor, System.Numerics.Vector<ulong> value, System.Numerics.Vector<ulong> mask) { throw null; }
+        public static System.Numerics.Vector<byte> ShiftLeftAndInsert(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<short> ShiftLeftAndInsert(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<int> ShiftLeftAndInsert(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<long> ShiftLeftAndInsert(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftLeftAndInsert(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<ushort> ShiftLeftAndInsert(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<uint> ShiftLeftAndInsert(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<ulong> ShiftLeftAndInsert(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte shift) { throw null; }
     }
 
     public enum SveMaskPattern : byte
