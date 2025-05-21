@@ -2322,6 +2322,20 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 #endif // DEBUG
 
+    // Removing flow into 'bTest' may have made it possible to compact it.
+    // Compact 'bTest' now so we don't pessimize pattern-based IV analysis.
+    BasicBlock* const uniquePred = bTest->GetUniquePred(this);
+    if ((uniquePred != nullptr) && fgCanCompactBlock(uniquePred))
+    {
+        JITDUMP(FMT_BB " can now be compacted into its remaining predecessor.\n", bTest->bbNum);
+        fgCompactBlock(uniquePred);
+    }
+    // If we redirected all flow into 'bTest', remove it.
+    else if (bTest->bbPreds == nullptr)
+    {
+        fgRemoveBlock(bTest, /* unreachable */ true);
+    }
+
     Metrics.LoopsInverted++;
     return true;
 }
@@ -2368,6 +2382,14 @@ PhaseStatus Compiler::optInvertLoops()
                 madeChanges = true;
             }
         }
+    }
+
+    if (Metrics.LoopsInverted > 0)
+    {
+        assert(madeChanges);
+        fgInvalidateDfsTree();
+        m_dfsTree = fgComputeDfs();
+        optFindLoops();
     }
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
