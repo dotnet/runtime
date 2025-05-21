@@ -373,7 +373,6 @@ namespace Microsoft.Extensions.Http
                         }
                     }
                 }
-                
                 // Clear the collections
                 _activeHandlers.Clear();
             }
