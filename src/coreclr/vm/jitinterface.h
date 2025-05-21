@@ -69,8 +69,8 @@ void InitJITHelpers1();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS* pJitFlags,
-                        ULONG* pSizeOfCode);
+                        _Out_ bool* isTier0,
+                        _Out_ ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
@@ -356,17 +356,16 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL) :
-        m_pJitHandles(nullptr),
-        m_pMethodBeingCompiled(fd),
-        m_transientDetails(NULL),
-        m_pThread(GetThreadNULLOk()),
-        m_hMethodForSecurity_Key(NULL),
-        m_pMethodForSecurity_Value(NULL),
+    CEEInfo(MethodDesc * fd = NULL)
+        : m_pJitHandles(nullptr)
+        , m_pMethodBeingCompiled(fd)
+        , m_transientDetails(NULL)
+        , m_pThread(GetThreadNULLOk())
+        , m_hMethodForSecurity_Key(NULL)
+        , m_pMethodForSecurity_Value(NULL)
 #if defined(FEATURE_GDBJIT)
-        m_pCalledMethods(NULL),
+        , m_pCalledMethods(NULL)
 #endif
-        m_allowInlining(true)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -394,8 +393,6 @@ public:
 
     // Performs any work JIT-related work that should be performed at process shutdown.
     void JitProcessShutdownWork();
-
-    void setJitFlags(const CORJIT_FLAGS& jitFlags);
 
 public:
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
@@ -448,8 +445,6 @@ protected:
 #if defined(FEATURE_GDBJIT)
     CalledMethod *          m_pCalledMethods;
 #endif
-
-    bool                    m_allowInlining;
 
     void EnsureActive(TypeHandle th, MethodDesc * pMD = NULL);
 };

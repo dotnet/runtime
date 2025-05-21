@@ -7919,7 +7919,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         // Currently the rejit path is the only path which sets this.
         // If we get more reasons to set this then we may need to change
         // the failure reason message or disambiguate them.
-        if (!m_allowInlining)
+        if (m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING))
         {
             result = INLINE_FAIL;
             szFailReason = "ReJIT request disabled inlining from caller";
@@ -10520,14 +10520,6 @@ CORINFO_METHOD_HANDLE CEEInfo::embedMethodHandle(CORINFO_METHOD_HANDLE handle,
 }
 
 /*********************************************************************/
-void CEEInfo::setJitFlags(const CORJIT_FLAGS& jitFlags)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_jitFlags = jitFlags;
-}
-
-/*********************************************************************/
 uint32_t CEEInfo::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
 {
     CONTRACTL {
@@ -10849,9 +10841,6 @@ CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_IL
     m_ILHeader = ilHeader;
 
     m_jitFlags = GetCompileFlags(config, m_pMethodBeingCompiled, &m_MethodInfo);
-
-    // Negate the check for no inlining so the logic is easier to follow
-    m_allowInlining = !m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING);
 }
 
 void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
@@ -12434,13 +12423,13 @@ void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 
 CORINFO_METHOD_INFO* CEECodeGenInfo::getMethodInfoInternal()
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
     return &m_MethodInfo;
 }
 
 CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
 {
-    STANDARD_VM_CONTRACT;
+    LIMITED_METHOD_CONTRACT;
     return &m_jitFlags;
 }
 
@@ -12866,29 +12855,26 @@ void CEECodeGenInfo::getEHinfo(
     EE_TO_JIT_TRANSITION();
 }
 
-static CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
+static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
                                        CEECodeGenInfo *comp,
-                                       struct CORINFO_METHOD_INFO *info,
                                        BYTE **nativeEntry,
                                        uint32_t *nativeSizeOfCode)
 {
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
+    STANDARD_VM_CONTRACT;
 
+    ICorJitCompiler* jitCompiler;
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
+    CORINFO_METHOD_INFO* methodInfo = comp->getMethodInfoInternal();
 
 #if defined(ALLOW_SXS_JIT)
-    ICorJitCompiler *jitCompiler = jitMgr->GetAltCompiler();
+    jitCompiler = jitMgr->GetAltCompiler();
     if (jitCompiler != NULL)
     {
-        CORJIT_FLAGS jitFlags = *comp->getJitFlagsInternal();
-        CORJIT_FLAGS altJitFlags = jitFlags;
-        altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
-        comp->setJitFlags(altJitFlags);
+        CORJIT_FLAGS* jitFlags = comp->getJitFlagsInternal();
+        jitFlags->Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
 
         ret = jitCompiler->compileMethod(comp,
-                                         info,
+                                         methodInfo,
                                          CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                          nativeEntry,
                                          nativeSizeOfCode);
@@ -12901,7 +12887,7 @@ static CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
         }
 
         // Restore the original JIT flags
-        comp->setJitFlags(jitFlags);
+        jitFlags->Clear(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
     }
 #endif // defined(ALLOW_SXS_JIT)
 
@@ -12910,7 +12896,7 @@ static CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
     {
         jitCompiler = jitMgr->GetCompiler();
         ret = jitCompiler->compileMethod(comp,
-                                         info,
+                                         methodInfo,
                                          CORJIT_FLAGS::CORJIT_FLAG_CALL_GETJITFLAGS,
                                          nativeEntry,
                                          nativeSizeOfCode);
@@ -12930,38 +12916,8 @@ static CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
     if (SUCCEEDED(ret) && !comp->JitAgain())
     {
         comp->CompressDebugInfo((PCODE)*nativeEntry);
-        comp->MethodCompileComplete(info->ftn);
+        comp->MethodCompileComplete(methodInfo->ftn);
     }
-
-    return ret;
-}
-
-/*********************************************************************/
-static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
-                                 CEECodeGenInfo *comp,
-                                 struct CORINFO_METHOD_INFO *info,
-                                 BYTE **nativeEntry,
-                                 uint32_t *nativeSizeOfCode)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-    //
-    // The JIT runs in preemptive mode
-    //
-
-    GCX_PREEMP();
-
-    CorJitResult ret = invokeCompileMethodHelper(jitMgr, comp, info, nativeEntry, nativeSizeOfCode);
-
-    //
-    // Verify that we are still in preemptive mode when we return
-    // from the JIT
-    //
-
-    _ASSERTE(GetThread()->PreemptiveGCDisabled() == FALSE);
 
     return ret;
 }
@@ -13101,8 +13057,7 @@ static TADDR UnsafeJitFunctionWorker(
     EECodeGenManager *pJitMgr,
     CEECodeGenInfo *pJitInfo,
     NativeCodeVersion nativeCodeVersion,
-    _Out_ ULONG* pSizeOfCode,
-    _Out_ ULONG* sizeOfILCode)
+    _Out_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
 
@@ -13154,34 +13109,31 @@ static TADDR UnsafeJitFunctionWorker(
     uint32_t sizeOfCode = 0;
 
     {
-        GCX_COOP();
-
-        /* There is a double indirection to call compileMethod  - can we
-        improve this with the new structure? */
+        //
+        // The JIT runs in preemptive mode
+        //
+        GCX_PREEMP();
 
 #ifdef PERF_TRACK_METHOD_JITTIMES
         //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
         LARGE_INTEGER methodJitTimeStart = {0};
-        QueryPerformanceCounter (&methodJitTimeStart);
+        QueryPerformanceCounter(&methodJitTimeStart);
 
 #endif
         LOG((LF_CORDB, LL_EVERYTHING, "Calling invokeCompileMethod...\n"));
-
         res = invokeCompileMethod(pJitMgr,
                                   pJitInfo,
-                                  methodInfo,
                                   &nativeEntry,
                                   &sizeOfCode);
 
+        // Verify that we are still in preemptive mode when we return
+        // from the JIT
+        _ASSERTE(GetThread()->PreemptiveGCDisabled() == FALSE);
+
 #if FEATURE_PERFMAP
         // Save the code size so that it can be reported to the perfmap.
-        if (pSizeOfCode != NULL)
-        {
-            *pSizeOfCode = sizeOfCode;
-        }
+        *pSizeOfCode = sizeOfCode;
 #endif
-
-        *sizeOfILCode = methodInfo->ILCodeSize;
 
 #ifdef PERF_TRACK_METHOD_JITTIMES
         //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
@@ -13203,7 +13155,6 @@ static TADDR UnsafeJitFunctionWorker(
             OutputDebugStringUtf8(codeBase.GetUTF8());
         }
 #endif // PERF_TRACK_METHOD_JITTIMES
-
     }
 
     if (res == CORJIT_SKIPPED)
@@ -13384,20 +13335,14 @@ static void LogJitMethodEnd(MethodDesc* ftn)
 // The reason that this is named UnsafeJitFunction is that this helper
 // method is not thread safe!  When multiple threads get in here for
 // the same pMD, ALL of them MUST return the SAME value.
-// To ensure that this happens you must call MakeJitWorker.
-// It creates a DeadlockAware list of methods being jitted and prevents us
-// from trying to jit the same method more that once.
-//
-// Calls to this method that occur to check if inlining can occur on x86,
-// are OK since they discard the return value of this method.
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         _In_opt_ COR_ILMETHOD_DECODER* ILHeader,
-                        _Out_ CORJIT_FLAGS* pJitFlags,
+                        _Out_ bool* isTier0,
                         _Out_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
-    _ASSERTE(pJitFlags != NULL);
+    _ASSERTE(isTier0 != NULL);
 
     NativeCodeVersion nativeCodeVersion = config->GetCodeVersion();
     MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
@@ -13433,11 +13378,14 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     if (interpreterMgr->IsInterpreterLoaded())
     {
         CInterpreterJitInfo interpreterJitInfo{ config, ftn, ILHeader, interpreterMgr };
-        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, nativeCodeVersion, pSizeOfCode, &sizeOfILCode);
+        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, nativeCodeVersion, pSizeOfCode);
 
-        // Collect the JIT flags for the interpreter
+        // If successful, record data.
         if (ret)
-            *pJitFlags = *interpreterJitInfo.getJitFlagsInternal();
+        {
+            sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
+            *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
+        }
     }
 #endif // FEATURE_INTERPRETER
 
@@ -13481,7 +13429,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, nativeCodeVersion, pSizeOfCode, &sizeOfILCode);
+            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, nativeCodeVersion, pSizeOfCode);
             if (!retMaybe)
                 COMPlusThrow(kInvalidProgramException);
 
@@ -13491,7 +13439,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
             ret = PINSTRToPCODE(retMaybe);
             jitInfo.PublishFinalCodeAddress(ret);
-            *pJitFlags = *jitInfo.getJitFlagsInternal();
+
+            sizeOfILCode = jitInfo.getMethodInfoInternal()->ILCodeSize;
+            *isTier0 = jitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
 
             // We are done
             break;
