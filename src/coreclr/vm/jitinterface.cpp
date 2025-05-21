@@ -6671,16 +6671,6 @@ public:
         Header = details.Header;
         TransientResolver = details.Scope != NULL ? GetDynamicResolver(details.Scope) : NULL;
     }
-
-    void TakeOwnership(TransientMethodDetails details)
-    {
-        LIMITED_METHOD_CONTRACT;
-        UpdateWith(details);
-
-        // Default initialize local instance since we are
-        // taking ownership of the transient method details.
-        details = {};
-    }
 };
 
 void getMethodInfoILMethodHeaderHelper(
@@ -7507,19 +7497,22 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
     methInfo->ftn        = (CORINFO_METHOD_HANDLE)ftn;
     methInfo->regionKind = CORINFO_REGION_JIT;
 
-    MethodInfoWorkerContext cxt{ ftn, header };
-
-    TransientMethodDetails* detailsMaybe = NULL;
-    if (FindTransientMethodDetails(ftn, &detailsMaybe))
-        cxt.UpdateWith(*detailsMaybe);
-
     CORINFO_MODULE_HANDLE scopeHnd = NULL;
 
     /* Grab information from the IL header */
     SigPointer localSig{};
 
-    // Having a header means there is backing IL for the method.
-    if (NULL != cxt.Header)
+    MethodInfoWorkerContext cxt{ ftn, header };
+
+    TransientMethodDetails* detailsMaybe = NULL;
+    if (FindTransientMethodDetails(ftn, &detailsMaybe))
+    {
+        cxt.UpdateWith(*detailsMaybe);
+        scopeHnd = cxt.CreateScopeHandle();
+        getMethodInfoILMethodHeaderHelper(cxt.Header, methInfo);
+        localSig = SigPointer{ cxt.Header->LocalVarSig, cxt.Header->cbLocalVarSig };
+    }
+    else if (NULL != cxt.Header) // Having a header means there is backing IL for the method.
     {
         bool fILIntrinsic = false;
         MethodTable* pMT = ftn->GetMethodTable();
@@ -7702,8 +7695,7 @@ CEEInfo::getMethodInfo(
     JIT_TO_EE_TRANSITION();
 
     MethodDesc* ftn = GetMethod(ftnHnd);
-    if (ftn->IsDynamicMethod()
-        || (ftn->IsIL() && ftn->GetRVA() == 0)) // IL methods with no RVA indicate there is no implementation defined in metadata.
+    if (ftn->IsDynamicMethod())
     {
         getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
@@ -7713,6 +7705,11 @@ CEEInfo::getMethodInfo(
         // Get the IL header and set it.
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(), ftn->GetMDImport(), NULL);
         getMethodInfoWorker(ftn, &header, methInfo, context);
+        result = true;
+    }
+    else if (ftn->IsIL() && ftn->GetRVA() == 0) // IL methods with no RVA indicate there is no implementation defined in metadata.
+    {
+        getMethodInfoWorker(ftn, NULL, methInfo, context);
         result = true;
     }
 
@@ -10716,8 +10713,146 @@ bool CEEInfo::logMsg(unsigned level, const char* fmt, va_list args)
     return result;
 }
 
-
 /*********************************************************************/
+static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc* ftn, CORINFO_METHOD_INFO* methodInfo)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(prepareConfig != NULL);
+    _ASSERTE(ftn != NULL);
+    _ASSERTE(methodInfo->regionKind ==  CORINFO_REGION_JIT);
+
+    CORJIT_FLAGS flags = prepareConfig->GetJitCompilationFlags();
+
+    //
+    // Get the compile flags that are shared between JIT and NGen
+    //
+    flags.Add(CEEInfo::GetBaseCompileFlags(ftn));
+
+    if (ftn->IsAsyncMethod())
+        flags.Add(CORJIT_FLAGS::CORJIT_FLAG_ASYNC);
+
+    //
+    // Get CPU specific flags
+    //
+    flags.Add(ExecutionManager::GetEEJitManager()->GetCPUCompileFlags());
+
+    //
+    // Find the debugger and profiler related flags
+    //
+
+#ifdef DEBUGGING_SUPPORTED
+    flags.Add(GetDebuggerCompileFlags(ftn->GetModule(), flags));
+#endif
+
+#ifdef PROFILING_SUPPORTED
+    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata())
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
+
+    if (CORProfilerTrackTransitions())
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
+#endif // PROFILING_SUPPORTED
+
+    // Don't allow allocations on FOH from collectible contexts to avoid memory leaks
+    if (!ftn->GetLoaderAllocator()->CanUnload())
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
+    }
+
+    // Set optimization flags
+    if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT))
+    {
+        unsigned optType = g_pConfig->GenOptimizeType();
+        _ASSERTE(optType <= OPT_RANDOM);
+
+        if (optType == OPT_RANDOM)
+            optType = methodInfo->ILCodeSize % OPT_RANDOM;
+
+        if (g_pConfig->JitMinOpts())
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
+        }
+        else
+        {
+            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+        }
+
+        if (optType == OPT_SIZE)
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SIZE_OPT);
+        }
+        else if (optType == OPT_SPEED)
+        {
+            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT);
+        }
+    }
+
+    if (IsDynamicScope(methodInfo->scope))
+    {
+        // no debug info available for IL stubs
+        if (!g_pConfig->GetTrackDynamicMethodDebugInfo())
+            flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
+
+        DynamicResolver* pResolver = GetDynamicResolver(methodInfo->scope);
+        flags.Add(pResolver->GetJitFlags());
+    }
+
+#ifdef ARM_SOFTFP
+    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI);
+#endif // ARM_SOFTFP
+
+#ifdef FEATURE_PGO
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+    }
+    else if (g_pConfig->TieredPGO() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
+    {
+        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
+    }
+
+#endif
+
+    return flags;
+}
+
+CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm)
+    : CEEInfo(fd)
+    , m_jitManager(jm)
+    , m_CodeHeader(NULL)
+    , m_CodeHeaderRW(NULL)
+    , m_codeWriteBufferSize(0)
+    , m_pRealCodeHeader(NULL)
+    , m_pCodeHeap(NULL)
+    , m_ILHeader(header)
+    , m_MethodInfo()
+    , m_GCinfo_len(0)
+    , m_EHinfo_len(0)
+    , m_iOffsetMapping(0)
+    , m_pOffsetMapping(NULL)
+    , m_iNativeVarInfo(0)
+    , m_pNativeVarInfo(NULL)
+    , m_inlineTreeNodes(NULL)
+    , m_numInlineTreeNodes(0)
+    , m_richOffsetMappings(NULL)
+    , m_numRichOffsetMappings(0)
+    , m_gphCache()
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(config != NULL);
+    COR_ILMETHOD_DECODER* ilHeader = getMethodInfoWorker(m_pMethodBeingCompiled, m_ILHeader, &m_MethodInfo);
+
+    // The header maybe replaced during the call to getMethodInfoWorker. This is most probable
+    // when the input is null (that is, no metadata), but we can also examine the method and generate
+    // an entirely new IL body (for example, intrinsic methods).
+    m_ILHeader = ilHeader;
+
+    m_jitFlags = GetCompileFlags(config, m_pMethodBeingCompiled, &m_MethodInfo);
+
+    // Negate the check for no inlining so the logic is easier to follow
+    m_allowInlining = !m_jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING);
+}
 
 void* CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,         /* IN  */
                                    void **            ppIndirection)  /* OUT */
@@ -12297,10 +12432,16 @@ void* CEECodeGenInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     return result;
 }
 
-CORINFO_METHOD_INFO CEECodeGenInfo::getMethodInfoInternal() const
+CORINFO_METHOD_INFO* CEECodeGenInfo::getMethodInfoInternal()
 {
     STANDARD_VM_CONTRACT;
-    return m_MethodInfo;
+    return &m_MethodInfo;
+}
+
+CORJIT_FLAGS* CEECodeGenInfo::getJitFlagsInternal()
+{
+    STANDARD_VM_CONTRACT;
+    return &m_jitFlags;
 }
 
 /*********************************************************************/
@@ -12725,10 +12866,9 @@ void CEECodeGenInfo::getEHinfo(
     EE_TO_JIT_TRANSITION();
 }
 
-CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
+static CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
                                        CEECodeGenInfo *comp,
                                        struct CORINFO_METHOD_INFO *info,
-                                       CORJIT_FLAGS jitFlags,
                                        BYTE **nativeEntry,
                                        uint32_t *nativeSizeOfCode)
 {
@@ -12738,12 +12878,11 @@ CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
 
     CorJitResult ret = CORJIT_SKIPPED;   // Note that CORJIT_SKIPPED is an error exit status code
 
-    comp->setJitFlags(jitFlags);
-
 #if defined(ALLOW_SXS_JIT)
     ICorJitCompiler *jitCompiler = jitMgr->GetAltCompiler();
     if (jitCompiler != NULL)
     {
+        CORJIT_FLAGS jitFlags = *comp->getJitFlagsInternal();
         CORJIT_FLAGS altJitFlags = jitFlags;
         altJitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT);
         comp->setJitFlags(altJitFlags);
@@ -12760,10 +12899,11 @@ CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
             comp->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }
+
+        // Restore the original JIT flags
+        comp->setJitFlags(jitFlags);
     }
 #endif // defined(ALLOW_SXS_JIT)
-
-    comp->setJitFlags(jitFlags);
 
     // CORJIT_SKIPPED also evaluates as "FAILED"
     if (FAILED(ret))
@@ -12796,12 +12936,10 @@ CorJitResult invokeCompileMethodHelper(EECodeGenManager *jitMgr,
     return ret;
 }
 
-
 /*********************************************************************/
-CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
+static CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
                                  CEECodeGenInfo *comp,
                                  struct CORINFO_METHOD_INFO *info,
-                                 CORJIT_FLAGS jitFlags,
                                  BYTE **nativeEntry,
                                  uint32_t *nativeSizeOfCode)
 {
@@ -12816,7 +12954,7 @@ CorJitResult invokeCompileMethod(EECodeGenManager *jitMgr,
 
     GCX_PREEMP();
 
-    CorJitResult ret = invokeCompileMethodHelper(jitMgr, comp, info, jitFlags, nativeEntry, nativeSizeOfCode);
+    CorJitResult ret = invokeCompileMethodHelper(jitMgr, comp, info, nativeEntry, nativeSizeOfCode);
 
     //
     // Verify that we are still in preemptive mode when we return
@@ -12925,109 +13063,6 @@ CORJIT_FLAGS GetDebuggerCompileFlags(Module* pModule, CORJIT_FLAGS flags)
     return flags;
 }
 
-static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc* ftn, CORINFO_METHOD_INFO* methodInfo)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(prepareConfig != NULL);
-    _ASSERTE(ftn != NULL);
-    _ASSERTE(methodInfo->regionKind ==  CORINFO_REGION_JIT);
-
-    CORJIT_FLAGS flags = prepareConfig->GetJitCompilationFlags();
-
-    //
-    // Get the compile flags that are shared between JIT and NGen
-    //
-    flags.Add(CEEInfo::GetBaseCompileFlags(ftn));
-
-    if (ftn->IsAsyncMethod())
-        flags.Add(CORJIT_FLAGS::CORJIT_FLAG_ASYNC);
-
-    //
-    // Get CPU specific flags
-    //
-    flags.Add(ExecutionManager::GetEEJitManager()->GetCPUCompileFlags());
-
-    //
-    // Find the debugger and profiler related flags
-    //
-
-#ifdef DEBUGGING_SUPPORTED
-    flags.Add(GetDebuggerCompileFlags(ftn->GetModule(), flags));
-#endif
-
-#ifdef PROFILING_SUPPORTED
-    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata())
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
-
-    if (CORProfilerTrackTransitions())
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE);
-#endif // PROFILING_SUPPORTED
-
-    // Don't allow allocations on FOH from collectible contexts to avoid memory leaks
-    if (!ftn->GetLoaderAllocator()->CanUnload())
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
-    }
-
-    // Set optimization flags
-    if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT))
-    {
-        unsigned optType = g_pConfig->GenOptimizeType();
-        _ASSERTE(optType <= OPT_RANDOM);
-
-        if (optType == OPT_RANDOM)
-            optType = methodInfo->ILCodeSize % OPT_RANDOM;
-
-        if (g_pConfig->JitMinOpts())
-        {
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
-        }
-        else
-        {
-            if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-                flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
-        }
-
-        if (optType == OPT_SIZE)
-        {
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SIZE_OPT);
-        }
-        else if (optType == OPT_SPEED)
-        {
-            flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT);
-        }
-    }
-
-    if (IsDynamicScope(methodInfo->scope))
-    {
-        // no debug info available for IL stubs
-        if (!g_pConfig->GetTrackDynamicMethodDebugInfo())
-            flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
-
-        DynamicResolver* pResolver = GetDynamicResolver(methodInfo->scope);
-        flags.Add(pResolver->GetJitFlags());
-    }
-
-#ifdef ARM_SOFTFP
-    flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI);
-#endif // ARM_SOFTFP
-
-#ifdef FEATURE_PGO
-
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ReadPGOData) > 0)
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
-    }
-    else if (g_pConfig->TieredPGO() && flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER1))
-    {
-        flags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBOPT);
-    }
-
-#endif
-
-    return flags;
-}
-
 // ********************************************************************
 
 // Throw the right type of exception for the given JIT result
@@ -13065,15 +13100,15 @@ void ThrowExceptionForJit(HRESULT res)
 static TADDR UnsafeJitFunctionWorker(
     EECodeGenManager *pJitMgr,
     CEECodeGenInfo *pJitInfo,
-    CORJIT_FLAGS jitFlags,
-    CORINFO_METHOD_INFO methodInfo,
     NativeCodeVersion nativeCodeVersion,
-    ULONG* pSizeOfCode)
+    _Out_ ULONG* pSizeOfCode,
+    _Out_ ULONG* sizeOfILCode)
 {
     STANDARD_VM_CONTRACT;
 
-    MethodDesc * pMethodForSecurity = pJitInfo->GetMethodForSecurity(methodInfo.ftn);
-    MethodDesc * ftn = nativeCodeVersion.GetMethodDesc();
+    CORINFO_METHOD_INFO* methodInfo = pJitInfo->getMethodInfoInternal();
+    MethodDesc* pMethodForSecurity = pJitInfo->GetMethodForSecurity(methodInfo->ftn);
+    MethodDesc* ftn = nativeCodeVersion.GetMethodDesc();
 
     //Since the check could trigger a demand, we have to do this every time.
     //This is actually an overly complicated way to make sure that a method can access all its arguments
@@ -13134,8 +13169,7 @@ static TADDR UnsafeJitFunctionWorker(
 
         res = invokeCompileMethod(pJitMgr,
                                   pJitInfo,
-                                  &methodInfo,
-                                  jitFlags,
+                                  methodInfo,
                                   &nativeEntry,
                                   &sizeOfCode);
 
@@ -13146,6 +13180,8 @@ static TADDR UnsafeJitFunctionWorker(
             *pSizeOfCode = sizeOfCode;
         }
 #endif
+
+        *sizeOfILCode = methodInfo->ILCodeSize;
 
 #ifdef PERF_TRACK_METHOD_JITTIMES
         //store the time in the string buffer.  Module name and token are unique enough.  Also, do not
@@ -13356,8 +13392,8 @@ static void LogJitMethodEnd(MethodDesc* ftn)
 // are OK since they discard the return value of this method.
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         _In_opt_ COR_ILMETHOD_DECODER* ILHeader,
-                        _In_ CORJIT_FLAGS* pJitFlags,
-                        _In_ ULONG* pSizeOfCode)
+                        _Out_ CORJIT_FLAGS* pJitFlags,
+                        _Out_ ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(config != NULL);
@@ -13379,10 +13415,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
     timer.Start();
 
-    // Negate the check for no inlining so the logic is easier to follow
-    bool enableInlining = !config->GetJitCompilationFlags().IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING);
-
-    CORINFO_METHOD_INFO methodInfo{};
+    ULONG sizeOfILCode = 0;
 
 #ifdef FEATURE_INTERPRETER
     InterpreterJitManager* interpreterMgr = ExecutionManager::GetInterpreterJitManager();
@@ -13399,11 +13432,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     // If the interpreter was loaded, use it.
     if (interpreterMgr->IsInterpreterLoaded())
     {
-        CInterpreterJitInfo interpreterJitInfo{ ftn, ILHeader, interpreterMgr, enableInlining };
-        methodInfo = interpreterJitInfo.getMethodInfoInternal();
-        *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
+        CInterpreterJitInfo interpreterJitInfo{ config, ftn, ILHeader, interpreterMgr };
+        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, nativeCodeVersion, pSizeOfCode, &sizeOfILCode);
 
-        ret = UnsafeJitFunctionWorker(interpreterMgr, &interpreterJitInfo, *pJitFlags, methodInfo, nativeCodeVersion, pSizeOfCode);
+        // Collect the JIT flags for the interpreter
+        if (ret)
+            *pJitFlags = *interpreterJitInfo.getJitFlagsInternal();
     }
 #endif // FEATURE_INTERPRETER
 
@@ -13432,16 +13466,14 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         JumpStubOverflowCheck jsoCheck{};
         while (true)
         {
-            CEEJitInfo jitInfo{ ftn, ILHeader, jitMgr, enableInlining };
-            methodInfo = jitInfo.getMethodInfoInternal();
-            *pJitFlags = GetCompileFlags(config, ftn, &methodInfo);
+            CEEJitInfo jitInfo{ config, ftn, ILHeader, jitMgr };
 
             // Enable the jump stub overflow check
             jsoCheck.Enable(jitInfo);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
             // If this is an OSR jit request, grab the OSR info so we can pass it to the jit
-            if (pJitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
+            if (jitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_OSR))
             {
                 unsigned ilOffset = 0;
                 PatchpointInfo* patchpointInfo = nativeCodeVersion.GetOSRInfo(&ilOffset);
@@ -13449,7 +13481,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
 #endif // FEATURE_ON_STACK_REPLACEMENT
 
-            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, *pJitFlags, methodInfo, nativeCodeVersion, pSizeOfCode);
+            TADDR retMaybe = UnsafeJitFunctionWorker(jitMgr, &jitInfo, nativeCodeVersion, pSizeOfCode, &sizeOfILCode);
             if (!retMaybe)
                 COMPlusThrow(kInvalidProgramException);
 
@@ -13459,6 +13491,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
             ret = PINSTRToPCODE(retMaybe);
             jitInfo.PublishFinalCodeAddress(ret);
+            *pJitFlags = *jitInfo.getJitFlagsInternal();
 
             // We are done
             break;
@@ -13481,8 +13514,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     InterlockedExchangeAdd64((LONG64*)&g_c100nsTicksInJit, c100nsTicksInJit);
     t_c100nsTicksInJitForThread += c100nsTicksInJit;
 
-    InterlockedExchangeAdd64((LONG64*)&g_cbILJitted, methodInfo.ILCodeSize);
-    t_cbILJittedForThread += methodInfo.ILCodeSize;
+    InterlockedExchangeAdd64((LONG64*)&g_cbILJitted, sizeOfILCode);
+    t_cbILJittedForThread += sizeOfILCode;
 
     InterlockedIncrement64((LONG64*)&g_cMethodsJitted);
     t_cMethodsJittedForThread++;
