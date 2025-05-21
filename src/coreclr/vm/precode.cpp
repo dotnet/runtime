@@ -537,7 +537,7 @@ void StubPrecode::StaticInitialize()
     _ASSERTE(IsStubPrecodeByASM_DAC((PCODE)StubPrecodeCode));
     if (StubPrecodeCodeTemplate != NULL)
     {
-        IsStubPrecodeByASM_DAC((PCODE)StubPrecodeCodeTemplate);
+        _ASSERTE(IsStubPrecodeByASM_DAC((PCODE)StubPrecodeCodeTemplate));
     }
 
     InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage);
@@ -680,7 +680,7 @@ void FixupPrecode::StaticInitialize()
     _ASSERTE(IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCode));
     if (FixupPrecodeCodeTemplate != NULL)
     {
-        IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCodeTemplate);
+        _ASSERTE(IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCodeTemplate));
     }
     InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
 }
@@ -708,7 +708,7 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
 #ifdef _DEBUG
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
-        FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBase + i));
+        _ASSERTE(FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBase + i)));
     }
 #endif // _DEBUG
 }
