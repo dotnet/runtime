@@ -521,10 +521,8 @@ namespace System.Data
                                 _token = Tokens.BinaryOp;
                                 _op = Operators.NotEqual;
                                 _prevOperand = Empty;
-                                
                                 /* Force out to appropriate precedence; push operator. */
                                 BuildExpression(Operators.Priority(_op));
-                                
                                 // PushOperator descriptor
                                 _ops[_topOperator++] = new OperatorInfo(Nodes.Binop, _op, Operators.Priority(_op));
                                 goto loop;
@@ -538,10 +536,9 @@ namespace System.Data
                                 _start = savedStart;
                             }
                         }
-                        
+
                         /* Must be no operand. Push it. */
-                        _ops[_topOperator++] = new OperatorInfo(Nodes.Unop, _op, Operators.Priority(_op));
-                        goto loop;
+                        _ops[_topOperator++] = new OperatorInfo(Nodes.Unop, _op, Operators.Priority(_op));goto loop;
 
                     case Tokens.ZeroOp:
                         // check the we have operator on the stack
@@ -1164,7 +1161,7 @@ namespace System.Data
                         // we found the reserved word..
                         _token = s_reservedwords[i]._token;
                         _op = s_reservedwords[i]._op;
-                        
+
                         // Special case for NOT followed by =
                         if (_op == Operators.Not && _pos < text.Length && text[_pos] == '=')
                         {
