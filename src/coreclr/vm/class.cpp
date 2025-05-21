@@ -1751,7 +1751,7 @@ CorInfoHFAElemType MethodTable::GetHFAType()
             }
             else
             {
-                assert ("Invalid vectorSize");
+                _ASSERTE("Invalid vectorSize");
                 return CORINFO_HFA_ELEM_VECTOR128;
             }
         }
@@ -1878,7 +1878,7 @@ EEClass::CheckForHFA()
 #endif // TARGET_ARM64
                     else
                     {
-                        assert ("Invalid element size %u", thisElemSize);
+                        _ASSERTE ("Invalid element size");
                         fieldHFAType = CORINFO_HFA_ELEM_VECTOR128;
                     }
                 }

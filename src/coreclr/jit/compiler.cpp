@@ -909,11 +909,12 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
     if (canReturnInRegister && (useType == TYP_UNKNOWN) &&
-        (structSize <= MAX_PASS_SINGLEREG_BYTES)
+        ((structSize <= MAX_PASS_SINGLEREG_BYTES)
 #ifdef TARGET_ARM64
          || SizeMatchesVectorTLength(structSize)
 #endif
         )
+       )
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -2626,7 +2627,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     else
     {
         // For altjit, use the 32B if we want to test SVE for VectorT, otherwise 16B
+#ifdef DEBUG
         compUseSveForVectorT = JitConfig.UseSveForVectorT();
+#else
+        compUseSveForVectorT = false;
+#endif
         compVectorTLength = compUseSveForVectorT ? 32 : 16;
     }
 
