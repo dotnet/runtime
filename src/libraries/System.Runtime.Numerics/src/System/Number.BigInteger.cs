@@ -263,6 +263,12 @@ namespace System
                 {
                     // For negative values with all-zero trailing digits,
                     // It requires additional leading 1.
+                    if (bits.Length + 1 > BigInteger.MaxLength)
+                    {
+                        result = default;
+                        return ParsingStatus.Overflow;
+                    }
+
                     bits = new uint[bits.Length + 1];
                     bits[^1] = 1;
                 }
