@@ -258,7 +258,6 @@ namespace Microsoft.Extensions.Http
             {
                 return;
             }
-            
             // Stop any pending timers, we'll restart the timer if there's anything left to process after cleanup.
             //
             // With the scheme we're using it's possible we could end up with some redundant cleanup operations.
