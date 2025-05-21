@@ -13109,11 +13109,6 @@ static TADDR UnsafeJitFunctionWorker(
     uint32_t sizeOfCode = 0;
 
     {
-        //
-        // The JIT runs in preemptive mode
-        //
-        GCX_PREEMP();
-
 #ifdef PERF_TRACK_METHOD_JITTIMES
         //Because we're not calling QPC enough.  I'm not going to track times if we're just importing.
         LARGE_INTEGER methodJitTimeStart = {0};
