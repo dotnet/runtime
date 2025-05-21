@@ -29,7 +29,7 @@ Data descriptors used:
 | PrecodeMachineDescriptor | FixupBytes | Assembly code of a FixupStub (Version 3 only) |
 | PrecodeMachineDescriptor | FixupIgnoredBytes | Bytes to ignore of when comparing `FixupBytes` to an actual block of memory in the target process. (Version 3 only) |
 | PrecodeMachineDescriptor | StubPrecodeSize | Byte size of `StubBytes` and `StubIgnoredBytes` (Version 3 only) |
-| PrecodeMachineDescriptor | StubBytes | Assembly code of a FixupStub (Version 3 only) |
+| PrecodeMachineDescriptor | StubBytes | Assembly code of a StubPrecode (Version 3 only) |
 | PrecodeMachineDescriptor | StubIgnoredBytes | Bytes to ignore of when comparing `StubBytes` to an actual block of memory in the target process. (Version 3 only) |
 | PrecodeMachineDescriptor | FixupCodeOffset | Offset of second entrypoint into a `FixupStub` (Present in data for Version 3 and above only.) |
 | PrecodeMachineDescriptor | InterpreterPrecodeType | precode sort byte for the entrypoint into the interpreter (Version 3 only) |
