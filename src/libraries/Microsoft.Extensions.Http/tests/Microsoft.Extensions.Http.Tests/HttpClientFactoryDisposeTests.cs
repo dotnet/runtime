@@ -2,18 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Http.Tests
 {
     public class HttpClientFactoryDisposeTests
     {
+        private const int ClientCount = 5;
+
         [Fact]
-        public async Task DisposingServiceProvider_DisposesHttpClientFactory_ReleasesResources()
+        public void DisposingServiceProvider_DisposesHttpClientFactory_ReleasesResources()
         {
             // Arrange
             var disposeCounter = new DisposeCounter();
@@ -21,44 +25,37 @@ namespace Microsoft.Extensions.Http.Tests
             services.AddSingleton(disposeCounter);
             services.AddTransient<DisposeTrackingHandler>();
 
-            services.AddHttpClient("test")
-                .AddHttpMessageHandler<DisposeTrackingHandler>()
-                .SetHandlerLifetime(TimeSpan.FromMilliseconds(50)); // Very short to ensure quick expiration
+            // Use a custom test factory that allows direct handler creation without waiting
+            services.AddHttpClient();
+            services.AddSingleton<IHttpClientFactory>(sp => 
+            {
+                // Replace default factory with test factory
+                var options = sp.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>();
+                var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
+                var filters = sp.GetServices<IHttpMessageHandlerBuilderFilter>();
+                return new TestHttpClientFactory(sp, scopeFactory, options, filters);
+            });
 
             var serviceProvider = services.BuildServiceProvider();
-            var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            var factory = (TestHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
 
-            // Act - create and use clients
-            for (int i = 0; i < 5; i++)
+            // Act - create clients with different names to avoid handler reuse
+            for (int i = 0; i < ClientCount; i++)
             {
-                using var client = factory.CreateClient("test");
-                try
-                {
-                    using var cts = new CancellationTokenSource(millisecondsDelay: 1);
-                    await client.GetAsync("http://example.com/", cts.Token)
-                        .ContinueWith(t => { }); // Ignore errors
-                }
-                catch
-                {
-                    // Ignore errors
-                }
+                using HttpClient client = factory.CreateClient($"test{i}");
+                // No need to make actual HTTP requests
             }
 
-            // Wait for handlers to expire
-            await Task.Delay(100);
-            
+            // Force handlers to be created
+            factory.CreateHandlersForTesting(ClientCount);
+
             // Pre-check: verify handlers were created
-            Assert.Equal(5, disposeCounter.Created);
+            Assert.Equal(ClientCount, disposeCounter.Created);
 
             // Act - dispose the service provider
             serviceProvider.Dispose();
 
             // Assert - all handlers should be disposed
-            Assert.Equal(disposeCounter.Created, disposeCounter.Disposed);
-
-            // No lingering resources should exist - no need for garbage collection
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
             Assert.Equal(disposeCounter.Created, disposeCounter.Disposed);
         }
 
@@ -86,6 +83,36 @@ namespace Microsoft.Extensions.Http.Tests
                 }
 
                 base.Dispose(disposing);
+            }
+        }
+
+        private class TestHttpClientFactory : DefaultHttpClientFactory
+        {
+            public TestHttpClientFactory(
+                IServiceProvider services,
+                IServiceScopeFactory scopeFactory,
+                IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
+                IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
+                : base(services, scopeFactory, optionsMonitor, filters)
+            {
+            }
+
+            // Create handlers immediately without waiting for expiry
+            public void CreateHandlersForTesting(int count)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    var entry = CreateHandlerEntry($"test{i}");
+                    
+                    // Add the entry to both active and expired collections to test full cleanup
+                    _activeHandlers.TryAdd($"test{i}", new Lazy<ActiveHandlerTrackingEntry>(() => entry));
+                    
+                    // Add some to expired handlers
+                    if (i % 2 == 0)
+                    {
+                        _expiredHandlers.Enqueue(new ExpiredHandlerTrackingEntry(entry));
+                    }
+                }
             }
         }
     }

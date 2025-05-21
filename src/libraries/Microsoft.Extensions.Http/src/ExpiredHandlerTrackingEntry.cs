@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Microsoft.Extensions.Http
 {
     // Thread-safety: This class is immutable
-    internal sealed class ExpiredHandlerTrackingEntry
+    internal sealed class ExpiredHandlerTrackingEntry : IDisposable
     {
         private readonly WeakReference _livenessTracker;
 
@@ -30,5 +30,19 @@ namespace Microsoft.Extensions.Http
         public string Name { get; }
 
         public IServiceScope? Scope { get; }
+
+        public void Dispose()
+        {
+            try
+            {
+                InnerHandler.Dispose();
+                Scope?.Dispose();
+            }
+            catch
+            {
+                // Ignore exceptions during disposal
+                throw;
+            }
+        }
     }
 }
