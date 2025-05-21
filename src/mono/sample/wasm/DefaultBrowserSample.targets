@@ -11,7 +11,8 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <TestArchiveTestsRoot>$(TestArchiveRoot)chromeonly/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-    <EmccFlags>$(EmccFlags) -sUSE_CLOSURE_COMPILER=1</EmccFlags>
+    <EmccFlags>$(EmccFlags) -sUSE_CLOSURE_COMPILER=1 -sMEMORY64</EmccFlags>
+    <WasmEnableMemory64>true</WasmEnableMemory64>
   </PropertyGroup>
 
   <ItemGroup>
