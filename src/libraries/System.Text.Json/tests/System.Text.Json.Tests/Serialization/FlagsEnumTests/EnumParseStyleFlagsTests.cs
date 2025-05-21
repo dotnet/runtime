@@ -12,6 +12,110 @@ namespace System.Text.Json.Tests.Serialization.FlagsEnumTests
     /// </summary>
     public class EnumParseStyleFlagsTests
     {
+        [Flags]
+        public enum SimpleEnum
+        {
+            Red = 0x1,
+            Blue = 0x2,
+            Green = 0x3,
+            Green_a = 0x3,
+            Green_b = 0x3,
+            B = 0x4
+        }
+
+        [Flags]
+        public enum SByteEnum : sbyte
+        {
+            Min = sbyte.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = sbyte.MaxValue
+        }
+
+        [Flags]
+        public enum ByteEnum : byte
+        {
+            Min = byte.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = byte.MaxValue
+        }
+
+        [Flags]
+        public enum Int16Enum : short
+        {
+            Min = short.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = short.MaxValue
+        }
+
+        [Flags]
+        public enum UInt16Enum : ushort
+        {
+            Min = ushort.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = ushort.MaxValue
+        }
+
+        [Flags]
+        public enum Int32Enum
+        {
+            Min = int.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = int.MaxValue
+        }
+
+        [Flags]
+        public enum UInt32Enum : uint
+        {
+            Min = uint.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = uint.MaxValue
+        }
+
+        [Flags]
+        public enum Int64Enum : long
+        {
+            Min = long.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = long.MaxValue
+        }
+
+        [Flags]
+        public enum UInt64Enum : ulong
+        {
+            Min = ulong.MinValue,
+            One = 0x1,
+            Two = 0x2,
+            Max = ulong.MaxValue
+        }
+
+        [Flags]
+        public enum FlagsSByteEnumWithNegativeValues : sbyte
+        {
+            A = 0x01,
+            B = 0x02,
+            C = 0x04,
+            D = 0x08,
+            E = 0x10,
+            F = 0x20,
+            G = 0x40,
+            H = -0x80,
+            I = -1
+        }
+
+        [Flags]
+        public enum FlagsInt32EnumWithOverlappingNegativeValues
+        {
+            A = 0,
+            B = -2,
+            C = -3
+        }
         // Create a JsonSerializerOptions instance with JsonStringEnumConverter
         private static readonly JsonSerializerOptions s_enumStringOptions = new()
         {
