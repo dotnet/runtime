@@ -1190,7 +1190,6 @@ CorInfoHFAElemType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
 #ifdef TARGET_ARM64
     case CORINFO_HFA_ELEM_VECTOR64: elemSize = 8; break;
     case CORINFO_HFA_ELEM_VECTOR128: elemSize = 16; break;
-    case CORINFO_HFA_ELEM_VECTOR_VL: elemSize = g_sve_length; break; //TODO-VL: Need to cache this
 #endif
     default: _ASSERTE(!"Invalid HFA Type");
     }

@@ -2368,6 +2368,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             //emit->emitIns_R_R_R_I(INS_sve_ld1b, EA_SCALABLE, targetReg, REG_P1, addrReg, 0, INS_OPTS_SCALABLE_B);
                         }
                     }
+                    break;
                 }
                 case TYP_SIMD64:
                 {

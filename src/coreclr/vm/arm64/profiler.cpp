@@ -282,7 +282,7 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
         {
             CorInfoHFAElemType hfaElemType = thReturnValueType.GetHFAType();
 
-            if ((hfaElemType == CORINFO_HFA_ELEM_VECTOR128) || (hfaElemType == CORINFO_HFA_ELEM_VECTOR_VL))
+            if (hfaElemType == CORINFO_HFA_ELEM_VECTOR128)
             {
                 return &pData->floatArgumentRegisters.q[0];
             }

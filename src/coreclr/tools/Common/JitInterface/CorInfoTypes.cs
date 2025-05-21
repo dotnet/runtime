@@ -719,7 +719,6 @@ namespace Internal.JitInterface
         CORINFO_HFA_ELEM_DOUBLE,
         CORINFO_HFA_ELEM_VECTOR64,
         CORINFO_HFA_ELEM_VECTOR128,
-        CORINFO_HFA_ELEM_VECTOR_VL,
     }
 
     /* data to optimize delegate construction */
