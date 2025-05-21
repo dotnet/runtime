@@ -205,6 +205,16 @@ namespace System.Diagnostics.Metrics
 
                 PositiveBuckets.ScaleDown(n);
                 Scale -= n;
+
+                if (Scale < MinScale)
+                {
+                    Scale = MinScale;
+                }
+                else if (Scale > MaxScale)
+                {
+                    Scale = MaxScale;
+                }
+
                 n = PositiveBuckets.TryIncrement(index >> n);
                 Debug.Assert(n == 0, "Increment should always succeed after scale down.");
             }
