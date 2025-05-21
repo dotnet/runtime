@@ -115,19 +115,9 @@ namespace Microsoft.Extensions.Http
             _disposed = true;
             StopTimer();
 
-            // When this entry is converted to an expired entry, we don't dispose anything
-            // to avoid a race with active clients. Let the ExpiredHandlerTrackingEntry handle disposal.
-            
-            if (Handler != null)
-            {
-                if (Handler.InnerHandler != null)
-                {
-                    Handler.InnerHandler.Dispose();
-                }
-                
-                Handler = null!;
-            }
-            
+            // When this entry is converted to an expired entry, we don't dispose the handlers
+            // to avoid a race with active clients. Let the ExpiredHandlerTrackingEntry handle handler disposal.
+            // We only dispose the scope if it exists.
             if (Scope != null)
             {
                 Scope.Dispose();
