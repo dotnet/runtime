@@ -6,6 +6,11 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
 	[SetupCSharpCompilerToUse ("csc")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
+
+	// Necessary to allow trimming the attribute instance from types in CoreLib.
+	[SetupLinkerTrimMode ("link")]
+	// When we allow trimming CoreLib, some well-known types expected by ILVerify are removed.
+	[SkipILVerify]
 	public class MethodWithUnmanagedConstraint
 	{
 		public static void Main ()
