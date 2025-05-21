@@ -3716,11 +3716,7 @@ retry_emit:
                 AddIns(INTOP_LDTOKEN);
 
                 CORINFO_RESOLVED_TOKEN resolvedToken = { 0 };
-                resolvedToken.tokenScope = m_compScopeHnd;
-                resolvedToken.tokenContext = METHOD_BEING_COMPILED_CONTEXT();
-                resolvedToken.token = getU4LittleEndian(m_ip + 1);
-                resolvedToken.tokenType = CORINFO_TOKENKIND_Ldtoken;
-                m_compHnd->resolveToken(&resolvedToken);
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
 
                 CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
                 PushStackType(StackTypeVT, clsHnd);

@@ -91,7 +91,7 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int8_t *stack;
 
     InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
-    assert(pMethod->self == pMethod);
+    assert(pMethod->CheckIntegrity());
 
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
@@ -1174,7 +1174,7 @@ CALL_TARGET_IP:
 
                     // Set execution state for the new frame
                     pMethod = *(InterpMethod**)pFrame->startIp;
-                    assert(pMethod->self == pMethod);
+                    assert(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
@@ -1474,7 +1474,7 @@ do {                                                                           \
 
         stack = pFrame->pStack;
         pMethod = *(InterpMethod**)pFrame->startIp;
-        assert(pMethod->self == pMethod);
+        assert(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
         goto MAIN_LOOP;
     }
@@ -1491,7 +1491,7 @@ EXIT_FRAME:
         ip = pFrame->ip;
         stack = pFrame->pStack;
         pMethod = *(InterpMethod**)pFrame->startIp;
-        assert(pMethod->self == pMethod);
+        assert(pMethod->CheckIntegrity());
         pFrame->ip = NULL;
 
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
