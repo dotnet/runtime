@@ -19,18 +19,16 @@ public struct S1 : I0
     }
 }
 
-public class Program
+public class Runtime_115667
 {
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         System.Runtime.Loader.AssemblyLoadContext alc = new CollectibleALC();
         System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
         System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });
-
-        return 100;
     }
 
     public static void MainInner(IRuntime rt)
