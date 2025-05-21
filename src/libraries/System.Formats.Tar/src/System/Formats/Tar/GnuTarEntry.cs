@@ -50,8 +50,8 @@ namespace System.Formats.Tar
         public GnuTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Gnu)
         {
-            // Some tools don't accept GNU entries that have an atime/ctime.
-            // We only copy for round-tripping between GnuTarEntries.
+            // Some tools don't accept Gnu entries that have an atime/ctime.
+            // We only copy atime/ctime for round-tripping between GnuTarEntries and clear it for other formats.
             if (other is GnuTarEntry gnuOther)
             {
                 _header._aTime = gnuOther.AccessTime;

@@ -87,9 +87,6 @@ namespace System.Formats.Tar.Tests
         private DateTimeOffset GetDateTimeOffsetFromSecondsSinceEpoch(decimal secondsSinceUnixEpoch) =>
             new DateTimeOffset((long)(secondsSinceUnixEpoch * TimeSpan.TicksPerSecond) + DateTime.UnixEpoch.Ticks, TimeSpan.Zero);
 
-        private decimal GetSecondsSinceEpochFromDateTimeOffset(DateTimeOffset value) =>
-            ((decimal)(value.UtcDateTime - DateTime.UnixEpoch).Ticks) / TimeSpan.TicksPerSecond;
-
         protected DateTimeOffset? TryGetDateTimeOffsetFromTimestampString(IReadOnlyDictionary<string, string> ea, string fieldName)
         {
             if (!ea.ContainsKey(fieldName))
@@ -109,12 +106,6 @@ namespace System.Formats.Tar.Tests
         {
             Assert.True(decimal.TryParse(strNumber, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal secondsSinceEpoch));
             return GetDateTimeOffsetFromSecondsSinceEpoch(secondsSinceEpoch);
-        }
-
-        protected string GetTimestampStringFromDateTimeOffset(DateTimeOffset timestamp)
-        {
-            decimal secondsSinceEpoch = GetSecondsSinceEpochFromDateTimeOffset(timestamp);
-            return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
         protected void VerifyExtendedAttributeTimestamp(PaxTarEntry paxEntry, string fieldName, DateTimeOffset minimumTime)

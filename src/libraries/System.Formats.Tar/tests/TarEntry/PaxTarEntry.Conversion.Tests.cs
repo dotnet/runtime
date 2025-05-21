@@ -13,6 +13,8 @@ namespace System.Formats.Tar.Tests
 {
     public class PaxTarEntry_Conversion_Tests : TarTestsConversionBase
     {
+        protected override TarEntryFormat FormatUnderTest => TarEntryFormat.Pax;
+
         [Fact]
         public void Constructor_ConversionFromV7_RegularFile() => TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Pax);
 
