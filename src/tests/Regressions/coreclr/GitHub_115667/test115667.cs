@@ -26,7 +26,7 @@ public class Runtime_115667
     {
         System.Runtime.Loader.AssemblyLoadContext alc = new CollectibleALC();
         System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        System.Reflection.MethodInfo mi = asm.GetType(typeof(Program).FullName).GetMethod(nameof(MainInner));
+        System.Reflection.MethodInfo mi = asm.GetType(typeof(Runtime_115667).FullName).GetMethod(nameof(MainInner));
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
         mi.Invoke(null, new object[] { System.Activator.CreateInstance(runtimeTy) });
     }
