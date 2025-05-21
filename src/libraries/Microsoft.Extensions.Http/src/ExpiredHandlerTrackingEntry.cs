@@ -36,12 +36,10 @@ namespace Microsoft.Extensions.Http
             try
             {
                 InnerHandler.Dispose();
-                Scope?.Dispose();
             }
-            catch
+            finally
             {
-                // Ignore exceptions during disposal
-                throw;
+                Scope?.Dispose();
             }
         }
     }
