@@ -2306,7 +2306,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, &nodeRetType,
                                       simdSize, mustExpand);
     }
 
@@ -2383,7 +2383,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (retType != nodeRetType)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        assert(HWIntrinsicInfo::ReturnsPerElementMask(intrinsic));
         assert(nodeRetType == TYP_MASK);
 
         GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();

@@ -639,7 +639,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
-//    retType         -- return type of the intrinsic.
+//    pRetType        -- return type of the intrinsic. May be updated.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
@@ -650,12 +650,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
-                                       var_types             retType,
+                                       var_types*            pRetType,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     const int                 numArgs  = sig->numArgs;
+    var_types                 retType  = *pRetType;
 
     // The vast majority of "special" intrinsics are Vector64/Vector128 methods.
     // The only exception is ArmBase.Yield which should be treated differently.
@@ -2769,7 +2770,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateFalseMaskUInt64:
         {
             // Import as a constant vector 0
-            retNode = gtNewZeroConNode(TYP_SIMD16);
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -2785,21 +2786,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateTrueMaskUInt64:
         {
             assert(sig->numArgs == 1);
+
             op1 = impPopStack().val;
 
             if (op1->IsIntegralConst(31))
             {
                 // This is considered to be an all true mask. Import as a constant vector all bits set.
                 // TODO: Depending on the vector length, we may be able to consider other patterns
-                // as all true mask.
-                retNode = gtNewAllBitsSetConNode(TYP_SIMD16);
+                // as all true mask, however these will not be commonly used.
+                retNode = gtNewAllBitsSetConNode(retType);
             }
             else
             {
-                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
-
-                // Do the convert to vector here (as the instrinsic is not marked with HW_Flag_ReturnsPerElementMask)
-                retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode->AsHWIntrinsic(), simdBaseJitType, simdSize);
+                // Create a node of TYP_MASK, making sure to update pRetType
+                retNode   = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
+                *pRetType = TYP_MASK;
             }
             break;
         }
