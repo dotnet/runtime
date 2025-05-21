@@ -917,8 +917,18 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         }
         else
         {
-            if ((tkType != mdtTypeDef) && (tkType != mdtTypeRef))
+            if (tkType == mdtTypeSpec)
+            {
+                // We have a TypeSpec, so we need to verify the signature is non-NULL
+                // and the typehandle has been fully instantiated.
+                if (pResolvedToken->pTypeSpec == NULL || th.ContainsGenericVariables())
+                    ThrowBadTokenException(pResolvedToken);
+            }
+            else if ((tkType != mdtTypeDef) && (tkType != mdtTypeRef))
+            {
                 ThrowBadTokenException(pResolvedToken);
+            }
+
             if ((tokenType & CORINFO_TOKENKIND_Class) == 0)
                 ThrowBadTokenException(pResolvedToken);
             if (th.IsNull())
@@ -11375,7 +11385,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
 
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
-#if defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
     // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
     // So the largest size could be 510 bytes, plus the header and language
     // specific stuff.  This can't overflow.
@@ -11387,10 +11397,10 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
 #endif // TARGET_AMD64
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#ifndef TARGET_X86
     // Add space for personality routine
     unwindSize += sizeof(ULONG);
-#endif //  !TARGET_X86 && TARGET_WINDOWS
+#endif //  !TARGET_X86
 }
 
 // Reserve memory for the method/funclet's unwind information.
@@ -11580,19 +11590,22 @@ void CEEJitInfo::allocUnwindInfo (
 
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64)
     pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
     ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-#else // TARGET_AMD64
+#elif defined(TARGET_64BIT)
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-#endif // TARGET_AMD64
-#endif // !TARGET_X86 && TARGET_WINDOWS
+#elif defined(TARGET_ARM)
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
+#endif
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS
@@ -14543,7 +14556,8 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     sigBuilder.AppendByte(callConv);
     sigBuilder.AppendData(numArgs);
 
-    auto appendTypeHandle = [&](TypeHandle th) {
+    auto appendTypeHandle = [](SigBuilder& sigBuilder, TypeHandle th)
+    {
         _ASSERTE(!th.IsByRef());
         CorElementType ty = th.GetSignatureCorElementType();
         if (CorTypeInfo::IsObjRef(ty))
@@ -14560,9 +14574,9 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
             sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
             sigBuilder.AppendPointer(th.AsPtr());
         }
-        };
+    };
 
-    appendTypeHandle(msig.GetRetTypeHandleThrowing()); // return type
+    appendTypeHandle(sigBuilder, msig.GetRetTypeHandleThrowing()); // return type
 #ifndef TARGET_X86
     if (msig.HasGenericContextArg())
     {
@@ -14577,7 +14591,7 @@ static Signature BuildResumptionStubCalliSignature(MetaSig& msig, MethodTable* m
     while ((ty = msig.NextArg()) != ELEMENT_TYPE_END)
     {
         TypeHandle tyHnd = msig.GetLastTypeHandleThrowing();
-        appendTypeHandle(tyHnd);
+        appendTypeHandle(sigBuilder, tyHnd);
     }
 
 #ifdef TARGET_X86

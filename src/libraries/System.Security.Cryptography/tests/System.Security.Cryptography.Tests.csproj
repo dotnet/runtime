@@ -135,6 +135,20 @@
       <Link>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml.cs</Link>
       <DependentUpon>Common\System\Security\Cryptography\Asn1\Pkcs7\EncryptedDataAsn.xml</DependentUpon>
     </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLDsaPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLDsaPrivateKeyBothAsn.xml</DependentUpon>
+    </Compile>
     <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\PrivateKeyInfoAsn.xml</Link>
     </AsnXml>
@@ -343,6 +357,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\ECDsa\ECDsaXml.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestImplementation.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestImplementation.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestHelpers.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaImplementationTests.cs"
@@ -351,6 +367,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsBase.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\MLDsa\MLDsaTestsData.Ietf.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherOneShotTests.cs"
@@ -423,6 +441,8 @@
              Link="CommonTest\System\Security\Cryptography\AsymmetricSignatureFormatter.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateCreation\PrivateKeyAssociationTests.Shared.cs"
+             Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateCreation\PrivateKeyAssociationTests.Shared.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\TempFileHolder.cs"

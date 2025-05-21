@@ -310,21 +310,23 @@ public partial class ApkBuilder
                 // due to circular dependency.
                 nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
-        }
 
-        if (StaticLinkedRuntime && IsCoreCLR)
-        {
-            string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
-                .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-
-            foreach (string lib in staticLibs)
+            if (StaticLinkedRuntime && IsCoreCLR)
             {
-                nativeLibraries += $"    {lib}{Environment.NewLine}";
-            }
+                string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
+                string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
+                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
 
-            nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
-            nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+                foreach (string lib in staticLibs)
+                {
+                    nativeLibraries += $"    {lib}{Environment.NewLine}";
+                }
+
+                nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+                nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+            }
         }
 
         StringBuilder extraLinkerArgs = new StringBuilder();

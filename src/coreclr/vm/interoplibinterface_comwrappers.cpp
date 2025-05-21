@@ -614,4 +614,23 @@ extern "C" CLR_BOOL QCALLTYPE TrackerObjectManager_IsGlobalPeggingEnabled()
     return InteropLibImports::GetGlobalPeggingState();
 }
 
+// Some of our "Untracked" COM objects may be owned by static globals
+// in client code. We need to ensure that we don't try executing a managed
+// method for the first time when the process is shutting down.
+// Therefore, we need to provide unmanaged implementations of AddRef and Release.
+namespace
+{
+    int STDMETHODCALLTYPE Untracked_AddRefRelease(void*)
+    {
+        return 1;
+    }
+}
+
+extern "C" void* QCALLTYPE ComWrappers_GetUntrackedAddRefRelease()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    return (void*)Untracked_AddRefRelease;
+}
+
 #endif // FEATURE_COMWRAPPERS
