@@ -11385,7 +11385,7 @@ void CEECodeGenInfo::CompressDebugInfo(PCODE nativeEntry)
 
 void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 {
-#if defined(TARGET_AMD64)
+#ifdef TARGET_AMD64
     // Note that the count of unwind codes (2 bytes each) is stored as a UBYTE
     // So the largest size could be 510 bytes, plus the header and language
     // specific stuff.  This can't overflow.
@@ -11397,10 +11397,10 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
     _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
 #endif // TARGET_AMD64
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
+#ifndef TARGET_X86
     // Add space for personality routine
     unwindSize += sizeof(ULONG);
-#endif //  !TARGET_X86 && TARGET_WINDOWS
+#endif //  !TARGET_X86
 }
 
 // Reserve memory for the method/funclet's unwind information.
@@ -11590,19 +11590,22 @@ void CEEJitInfo::allocUnwindInfo (
 
     memcpy(pUnwindInfoRW, pUnwindBlock, unwindSize);
 
-#if !defined(TARGET_X86) && defined(TARGET_WINDOWS)
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64)
     pUnwindInfoRW->Flags = UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER;
 
     ULONG * pPersonalityRoutineRW = (ULONG*)ALIGN_UP(&(pUnwindInfoRW->UnwindCode[pUnwindInfoRW->CountOfUnwindCodes]), sizeof(ULONG));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-#else // TARGET_AMD64
+#elif defined(TARGET_64BIT)
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
     *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
-#endif // TARGET_AMD64
-#endif // !TARGET_X86 && TARGET_WINDOWS
+#elif defined(TARGET_ARM)
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = (TADDR)ProcessCLRException - baseAddress;
+#endif
 
     EE_TO_JIT_TRANSITION();
 #else // FEATURE_EH_FUNCLETS

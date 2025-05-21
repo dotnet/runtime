@@ -145,6 +145,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void PrivateKey_FromCertificate_CanExportPrivate_MLDsa()
+        {
+            string pem = PemEncoding.WriteString("CERTIFICATE", MLDsaTestsData.IetfMLDsa44.Certificate);
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(pem))
+            using (MLDsa key = MLDsa.ImportPkcs8PrivateKey(MLDsaTestsData.IetfMLDsa44.Pkcs8PrivateKey_Seed))
+            using (X509Certificate2 certWithKey = cert.CopyWithPrivateKey(key))
+            using (MLDsa certKey = certWithKey.GetMLDsaPrivateKey())
+            {
+                Assert.NotNull(certKey);
+                byte[] expectedKey = MLDsaTestsData.IetfMLDsa44.SecretKey;
+                byte[] actualKey = new byte[MLDsaAlgorithm.MLDsa44.SecretKeySizeInBytes];
+                Assert.Equal(MLDsaAlgorithm.MLDsa44.SecretKeySizeInBytes, certKey.ExportMLDsaSecretKey(actualKey));
+                AssertExtensions.SequenceEqual(expectedKey, actualKey);
+            }
+        }
+
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public static void PrivateKey_FromCertificate_CanExportPrivate_SlhDsa()
         {
