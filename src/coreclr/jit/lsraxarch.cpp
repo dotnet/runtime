@@ -1083,6 +1083,13 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
         int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
         var_types targetType   = tree->TypeGet();
 
+        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+            tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
+        {
+            srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
+            dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());
+        }
+
 #endif
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
@@ -1090,9 +1097,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
-        srcCount += BuildOperandUses(source, srcCandidates);
-        srcCount += BuildOperandUses(shiftBy, dstCandidates);
-        BuildDef(tree, dstCandidates);
+        srcCount += BuildOperandUses(source, ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported()));
+        srcCount += BuildOperandUses(shiftBy, ForceLowGprForApxIfNeeded(shiftBy, dstCandidates, getEvexIsSupported()));
+        BuildDef(tree, ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported()));
         return srcCount;
     }
     else
@@ -1603,7 +1610,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (!dstAddr->isContained())
     {
         useCount++;
-        BuildUse(dstAddr, dstAddrRegMask);
+        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, dstAddrRegMask, getEvexIsSupported()));
     }
     else if (dstAddr->OperIsAddrMode())
     {
