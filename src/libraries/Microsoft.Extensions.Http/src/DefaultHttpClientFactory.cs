@@ -16,7 +16,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Http
 {
-    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory
+    internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory, IDisposable
     {
         private static readonly TimerCallback _cleanupCallback = (s) => ((DefaultHttpClientFactory)s!).CleanupTimer_Tick();
         private readonly IServiceProvider _services;
@@ -310,6 +310,76 @@ namespace Microsoft.Extensions.Http
             if (!_expiredHandlers.IsEmpty)
             {
                 StartCleanupTimer();
+            }
+        }
+
+        public void Dispose()
+        {
+            // Stop the cleanup timer first to prevent any more items from being processed
+            lock (_cleanupTimerLock)
+            {
+                if (_cleanupTimer != null)
+                {
+                    _cleanupTimer.Dispose();
+                    _cleanupTimer = null;
+                }
+            }
+
+            // Stop all active handler timers to prevent more entries being added to _expiredHandlers
+            foreach (var pair in _activeHandlers)
+            {
+                if (pair.Value.IsValueCreated)
+                {
+                    pair.Value.Value.StopTimer();
+                }
+            }
+
+            // Process all expired handlers immediately
+            if (!Monitor.TryEnter(_cleanupActiveLock))
+            {
+                return; // Another thread is already cleaning up
+            }
+
+            try
+            {
+                while (_expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry? entry))
+                {
+                    try
+                    {
+                        // Force dispose regardless of CanDispose
+                        entry.InnerHandler.Dispose();
+                        entry.Scope?.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.CleanupItemFailed(_logger, entry.Name, ex);
+                    }
+                }
+
+                // Dispose all active handlers
+                foreach (var pair in _activeHandlers)
+                {
+                    if (pair.Value.IsValueCreated)
+                    {
+                        var entry = pair.Value.Value;
+                        try
+                        {
+                            entry.Handler.InnerHandler!.Dispose();
+                            entry.Scope?.Dispose();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.CleanupItemFailed(_logger, entry.Name, ex);
+                        }
+                    }
+                }
+                
+                // Clear the collections
+                _activeHandlers.Clear();
+            }
+            finally
+            {
+                Monitor.Exit(_cleanupActiveLock);
             }
         }
 

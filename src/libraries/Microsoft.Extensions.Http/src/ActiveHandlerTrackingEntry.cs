@@ -89,5 +89,17 @@ namespace Microsoft.Extensions.Http
                 }
             }
         }
+
+        public void StopTimer()
+        {
+            lock (_lock)
+            {
+                if (_timer != null)
+                {
+                    _timer.Dispose();
+                    _timer = null;
+                }
+            }
+        }
     }
 }
