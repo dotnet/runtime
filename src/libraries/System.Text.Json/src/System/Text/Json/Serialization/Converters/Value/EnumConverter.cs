@@ -483,9 +483,10 @@ namespace System.Text.Json.Serialization.Converters
                 // This ensures backwards compatibility with .NET 8 behavior for flags enums with combination values
                 if (remainingBits != 0)
                 {
-                    // Check if there are fields that can represent this value
-                    bool canFormatAsString = false;
-                    using ValueStringBuilder sb = new(stackalloc char[JsonConstants.StackallocCharThreshold]);
+                    // Similar to the approach used by FormatEnumAsString, but we don't need to build the actual string.
+                    // We only need to know if any field matches at all - if it does, we'll format it as a string.
+                    // This mimics the .NET 8 behavior where any flags enum with at least one named field would
+                    // be formatted as a string rather than a number.
                     ulong unmatchedBits = key;
 
                     foreach (EnumFieldInfo enumField in _enumFieldInfo)
@@ -494,18 +495,9 @@ namespace System.Text.Json.Serialization.Converters
                         if (fieldKey == 0 ? key == 0 : (unmatchedBits & fieldKey) == fieldKey)
                         {
                             unmatchedBits &= ~fieldKey;
-
-                            if (sb.Length > 0)
-                            {
-                                sb.Append(", ");
-                            }
-
-                            sb.Append(enumField.JsonName);
-                            canFormatAsString = true;
+                            return true; // Found at least one field that matches part of the value
                         }
                     }
-
-                    return canFormatAsString;
                 }
 
                 return false;
