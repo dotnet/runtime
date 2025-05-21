@@ -13125,6 +13125,7 @@ static TADDR UnsafeJitFunctionWorker(
                                   &sizeOfCode);
 
 #if FEATURE_PERFMAP
+        _ASSERTE(pSizeOfCode != NULL);
         // Save the code size so that it can be reported to the perfmap.
         *pSizeOfCode = sizeOfCode;
 #endif // FEATURE_PERFMAP
@@ -13144,7 +13145,7 @@ static TADDR UnsafeJitFunctionWorker(
                             moduleName.GetUTF8(), //module name
                             ftn->GetMemberDef(), //method token
                             (unsigned)(methodJitTimeStop.QuadPart - methodJitTimeStart.QuadPart), //cycle count
-                            methodInfo.ILCodeSize //il size
+                            methodInfo->ILCodeSize // IL size
                             );
             OutputDebugStringUtf8(codeBase.GetUTF8());
         }
