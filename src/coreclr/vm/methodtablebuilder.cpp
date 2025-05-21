@@ -7148,29 +7148,12 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
             // and should not be used.  We should go to the effort of having proper constructors
             // in the MethodDesc class. </NICE>
 
-            memcpy(pUnboxedMD, pMD, pMD->GetBaseSize());
-
-            // Reset the chunk index
-            pUnboxedMD->SetChunkIndex(pChunk);
-
             if (bmtGenerics->GetNumGenericArgs() == 0)
             {
+                memcpy(pUnboxedMD, pMD, pMD->GetBaseSize());
+
                 // By settings HasNonVTableSlot, the following chunks of data have been shifted around.
                 // This is an example of the fragility noted in the memcpy comment above
-
-                if (pUnboxedMD->HasNativeCodeSlot())
-                {
-                    *pUnboxedMD->GetAddrOfNativeCodeSlot() = 0;
-                }
-                if (pUnboxedMD->HasMethodImplSlot())
-                {
-                    *pUnboxedMD->GetMethodImpl() = {};
-                }
-                if (pUnboxedMD->HasAsyncMethodData())
-                {
-                    *pUnboxedMD->GetAddrOfAsyncMethodData() = {};
-                }
-
                 pUnboxedMD->SetHasNonVtableSlot();
 
                 if (pUnboxedMD->HasNativeCodeSlot())
@@ -7186,6 +7169,13 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
                     *pUnboxedMD->GetAddrOfAsyncMethodData() = *pMD->GetAddrOfAsyncMethodData();
                 }
             }
+            else
+            {
+                memcpy(pUnboxedMD, pMD, pMD->SizeOf());
+            }
+
+            // Reset the chunk index
+            pUnboxedMD->SetChunkIndex(pChunk);
 
             //////////////////////////////////////////////////////////
             // Modify the original MethodDesc to be an unboxing stub
