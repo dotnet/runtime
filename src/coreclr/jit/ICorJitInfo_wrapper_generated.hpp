@@ -1318,16 +1318,6 @@ CorInfoHelpFunc WrapICorJitInfo::getLazyStringLiteralHelper(
     return temp;
 }
 
-CORINFO_MODULE_HANDLE WrapICorJitInfo::embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection)
-{
-    API_ENTER(embedModuleHandle);
-    CORINFO_MODULE_HANDLE temp = wrapHnd->embedModuleHandle(handle, ppIndirection);
-    API_LEAVE(embedModuleHandle);
-    return temp;
-}
-
 CORINFO_CLASS_HANDLE WrapICorJitInfo::embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection)
@@ -1345,16 +1335,6 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::embedMethodHandle(
     API_ENTER(embedMethodHandle);
     CORINFO_METHOD_HANDLE temp = wrapHnd->embedMethodHandle(handle, ppIndirection);
     API_LEAVE(embedMethodHandle);
-    return temp;
-}
-
-CORINFO_FIELD_HANDLE WrapICorJitInfo::embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
-          void** ppIndirection)
-{
-    API_ENTER(embedFieldHandle);
-    CORINFO_FIELD_HANDLE temp = wrapHnd->embedFieldHandle(handle, ppIndirection);
-    API_LEAVE(embedFieldHandle);
     return temp;
 }
 

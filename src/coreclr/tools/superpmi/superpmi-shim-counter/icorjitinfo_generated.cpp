@@ -1083,14 +1083,6 @@ CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
     return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection)
-{
-    mcs->AddCall("embedModuleHandle");
-    return original_ICorJitInfo->embedModuleHandle(handle, ppIndirection);
-}
-
 CORINFO_CLASS_HANDLE interceptor_ICJI::embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection)
@@ -1105,14 +1097,6 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::embedMethodHandle(
 {
     mcs->AddCall("embedMethodHandle");
     return original_ICorJitInfo->embedMethodHandle(handle, ppIndirection);
-}
-
-CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
-          void** ppIndirection)
-{
-    mcs->AddCall("embedFieldHandle");
-    return original_ICorJitInfo->embedFieldHandle(handle, ppIndirection);
 }
 
 void interceptor_ICJI::embedGenericHandle(
