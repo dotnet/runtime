@@ -194,20 +194,21 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     bool isOp2Negated = op2->OperIs(GT_NOT);
 
     LIR::Use use;
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) && BlockRange().TryGetUse(binOp, &use))
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND) &&
+        (op2->IsIntegralConstUnsignedPow2() || (op2->OperIs(GT_LSH) && op2->gtGetOp1()->IsIntegralConst(1))) &&
+        BlockRange().TryGetUse(binOp, &use))
     {
         GenTree* user = use.User();
         if (user->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst() &&
             user->gtGetOp2()->IsIntegralConst(op2->AsIntConCommon()->IntegralValue()))
         {
-            // (a & const) == const   =>   (a & const) != 0
-            // (a & const) != const   =>   (a & const) == 0
+            // (a & bit) == bit   =>   (a & bit) != 0
+            // (a & bit) != bit   =>   (a & bit) == 0
             user->ChangeOper(GenTree::ReverseRelop(user->OperGet()));
             user->gtGetOp2()->AsIntConCommon()->SetIntegralValue(0);
         }
 
-        if (user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0) &&
-            (op2->IsIntegralConstUnsignedPow2() || (op2->OperIs(GT_LSH) && op2->gtGetOp1()->IsIntegralConst(1))))
+        if (user->OperIs(GT_NE) && user->gtGetOp2()->IsIntegralConst(0))
         {
             // (a & bit) != 0   =>   (a >> log2(bit)) & 1
             use = LIR::Use();
