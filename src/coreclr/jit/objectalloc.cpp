@@ -778,7 +778,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                             m_allocator->AddConnGraphEdgeIndex(m_allocator->LocalToIndex(lclNum),
                                                                m_allocator->m_unknownSourceIndex);
 
-                            // If we're tracking fields, the fields also have unknown values.
+                            // If we're tracking fields, the fields also have unknown values and escape.
                             //
                             if (m_allocator->m_trackObjectFields)
                             {
@@ -786,6 +786,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                                 if (fieldIndex != BAD_VAR_NUM)
                                 {
                                     m_allocator->AddConnGraphEdgeIndex(fieldIndex, m_allocator->m_unknownSourceIndex);
+                                    m_allocator->MarkIndexAsEscaping(fieldIndex);
                                 }
                             }
                         }
@@ -2173,7 +2174,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
         }
     }
 
-    if (canLclVarEscapeViaParentStack)
+    if (canLclVarEscapeViaParentStack && !CanIndexEscape(lclIndex))
     {
         JITDUMPEXEC(DumpIndex(lclIndex));
         JITDUMP(" first escapes via [%06u]...[%06u]\n", comp->dspTreeID(parentStack->Top()),
