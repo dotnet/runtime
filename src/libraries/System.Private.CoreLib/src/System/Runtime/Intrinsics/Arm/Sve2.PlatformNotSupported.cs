@@ -128,5 +128,107 @@ namespace System.Runtime.Intrinsics.Arm
         ///   BSL Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
         /// </summary>
         public static unsafe Vector<ulong> BitwiseSelect(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Bitwise select with first input inverted
+
+        /// <summary>
+        /// svuint8_t svbsl1n[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<byte> BitwiseSelectLeftInverted(Vector<byte> select, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svbsl1n[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<short> BitwiseSelectLeftInverted(Vector<short> select, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svbsl1n[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<int> BitwiseSelectLeftInverted(Vector<int> select, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svbsl1n[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<long> BitwiseSelectLeftInverted(Vector<long> select, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svbsl1n[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<sbyte> BitwiseSelectLeftInverted(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svbsl1n[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ushort> BitwiseSelectLeftInverted(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svbsl1n[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<uint> BitwiseSelectLeftInverted(Vector<uint> select, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svbsl1n[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   BSL1N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ulong> BitwiseSelectLeftInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        // Bitwise select with second input inverted
+
+        /// <summary>
+        /// svuint8_t svbsl2n[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<byte> BitwiseSelectRightInverted(Vector<byte> select, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svbsl2n[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<short> BitwiseSelectRightInverted(Vector<short> select, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svbsl2n[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<int> BitwiseSelectRightInverted(Vector<int> select, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svbsl2n[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<long> BitwiseSelectRightInverted(Vector<long> select, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svbsl2n[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<sbyte> BitwiseSelectRightInverted(Vector<sbyte> select, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svbsl2n[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ushort> BitwiseSelectRightInverted(Vector<ushort> select, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svbsl2n[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<uint> BitwiseSelectRightInverted(Vector<uint> select, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svbsl2n[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   BSL2N Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ulong> BitwiseSelectRightInverted(Vector<ulong> select, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
     }
 }
