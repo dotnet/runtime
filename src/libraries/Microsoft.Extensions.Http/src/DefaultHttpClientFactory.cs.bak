@@ -105,7 +105,10 @@ namespace Microsoft.Extensions.Http
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            ObjectDisposedException.ThrowIf(_disposed, nameof(DefaultHttpClientFactory));
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(DefaultHttpClientFactory));
+            }
 
             HttpMessageHandler handler = CreateHandler(name);
             var client = new HttpClient(handler, disposeHandler: false);
@@ -123,7 +126,10 @@ namespace Microsoft.Extensions.Http
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            ObjectDisposedException.ThrowIf(_disposed, nameof(DefaultHttpClientFactory));
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(DefaultHttpClientFactory));
+            }
 
             ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
 
