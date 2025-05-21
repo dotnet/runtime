@@ -225,7 +225,7 @@ void VIRTUALCleanup()
     minipal_critsect_leave(&virtual_critsec);
 
     TRACE( "Deleting the Virtual Critical Sections. \n" );
-    DeleteCriticalSection( &virtual_critsec );
+    minipal_critsect_destroy( &virtual_critsec );
 }
 
 /***

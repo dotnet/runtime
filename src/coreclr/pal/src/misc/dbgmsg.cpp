@@ -386,7 +386,7 @@ void DBG_close_channels()
 
     output_file = NULL;
 
-    DeleteCriticalSection(&fprintf_crit_section);
+    minipal_critsect_destroy(&fprintf_crit_section);
 
     /* if necessary, release TLS key for entry nesting level */
     if(0 != max_entry_level)
