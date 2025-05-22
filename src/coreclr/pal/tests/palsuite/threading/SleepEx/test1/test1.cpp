@@ -39,8 +39,8 @@ PALTEST(threading_SleepEx_test1_paltest_sleepex_test1, "threading/SleepEx/test1/
         {2000, TRUE},
     };
 
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     DWORD MaxDelta;
     DWORD TimeDelta;
     DWORD i;
@@ -52,11 +52,11 @@ PALTEST(threading_SleepEx_test1_paltest_sleepex_test1, "threading/SleepEx/test1/
 
     for (i = 0; i<sizeof(testCases) / sizeof(testCases[0]); i++)
     {
-        OldTimeStamp = GetHighPrecisionTimeStamp();
+        OldTimeStamp = minipal_lowres_ticks();
 
         SleepEx(testCases[i].SleepTime, testCases[i].Alertable);
 
-        NewTimeStamp = GetHighPrecisionTimeStamp();
+        NewTimeStamp = minipal_lowres_ticks();
 
         TimeDelta = NewTimeStamp - OldTimeStamp;
 

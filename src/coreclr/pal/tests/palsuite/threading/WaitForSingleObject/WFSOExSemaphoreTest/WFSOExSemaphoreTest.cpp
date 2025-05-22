@@ -133,8 +133,8 @@ VOID PALAPI APCFunc_WFSOExSemaphoreTest(ULONG_PTR dwParam)
 DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 {
     HANDLE hSemaphore;
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
 
@@ -149,14 +149,14 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = GetHighPrecisionTimeStamp();
+    OldTimeStamp = minipal_lowres_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hSemaphore,
 								ChildThreadWaitTime,
         							Alertable);
 
-    NewTimeStamp = GetHighPrecisionTimeStamp();
+    NewTimeStamp = minipal_lowres_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)

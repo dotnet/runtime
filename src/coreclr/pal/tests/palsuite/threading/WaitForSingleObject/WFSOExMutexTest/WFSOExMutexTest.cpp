@@ -177,21 +177,21 @@ VOID PALAPI APCFunc_WFSOExMutexTest(ULONG_PTR dwParam)
 /* Entry Point for child thread. */
 DWORD PALAPI WaiterProc_WFSOExMutexTest(LPVOID lpParameter)
 {
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = GetHighPrecisionTimeStamp();
+    OldTimeStamp = minipal_lowres_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hMutex_WFSOExMutexTest,
 								ChildThreadWaitTime,
         							Alertable);
 
-    NewTimeStamp = GetHighPrecisionTimeStamp();
+    NewTimeStamp = minipal_lowres_ticks();
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
     {

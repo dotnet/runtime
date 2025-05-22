@@ -163,7 +163,6 @@ inline ULONG   VAL32(ULONG x)
 
 WCHAR* convert(const char * aString);
 char* convertC(const WCHAR * wString);
-UINT64 GetHighPrecisionTimeStamp();
 
 extern const char* szTextFile;
 

@@ -51,11 +51,6 @@ char* convertC(const WCHAR * wString)
     return MultiBuffer;
 }
 
-UINT64 GetHighPrecisionTimeStamp()
-{
-    return (UINT64)minipal_hires_ticks();
-}
-
 static const char* rgchPathDelim = "/";
 
 
