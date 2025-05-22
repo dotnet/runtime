@@ -3158,9 +3158,6 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         goto Statics;
 
     case READYTORUN_FIXUP_VirtualEntry:
-    // case READYTORUN_FIXUP_VirtualEntry_DefToken:
-    // case READYTORUN_FIXUP_VirtualEntry_RefToken:
-    // case READYTORUN_FIXUP_VirtualEntry_Slot:
         fReliable = true;
         FALLTHROUGH;
     case READYTORUN_FIXUP_DelegateCtor:

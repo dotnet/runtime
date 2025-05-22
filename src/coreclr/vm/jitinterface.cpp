@@ -13783,12 +13783,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             pMD->PrepareForUseAsADependencyOfANativeImage();
 
-            if (currentModule->IsReadyToRun())
-            {
-                // We do not emit activation fixups for version resilient references. Activate the target explicitly.
-                pMD->EnsureActive();
-            }
-
             goto MethodEntry;
         }
 
