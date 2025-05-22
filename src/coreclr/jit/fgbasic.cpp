@@ -4968,6 +4968,10 @@ BasicBlock* Compiler::fgSplitEdge(BasicBlock* curr, BasicBlock* succ)
     }
     newBlock->CopyFlags(curr, succ->GetFlagsRaw() & BBF_BACKWARD_JUMP);
 
+    // Async resumption stubs are permitted to branch into EH regions, so if we
+    // split such a branch we should also copy this flag.
+    newBlock->CopyFlags(curr, BBF_ASYNC_RESUMPTION);
+
     JITDUMP("Splitting edge from " FMT_BB " to " FMT_BB "; adding " FMT_BB "\n", curr->bbNum, succ->bbNum,
             newBlock->bbNum);
 
