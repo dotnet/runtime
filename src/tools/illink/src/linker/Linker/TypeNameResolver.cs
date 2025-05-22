@@ -10,7 +10,6 @@ using TypeName = System.Reflection.Metadata.TypeName;
 using TypeNameParseOptions = System.Reflection.Metadata.TypeNameParseOptions;
 using AssemblyNameInfo = System.Reflection.Metadata.AssemblyNameInfo;
 
-
 #nullable enable
 
 namespace Mono.Linker

@@ -190,7 +190,7 @@ namespace Internal.TypeSystem
                         return canonType;
                 }
 
-                return module.GetType(typeName.Namespace, typeName.Name, throwIfNotFound: false);
+                return module.GetType(TypeName.Unescape(typeName.Namespace), TypeName.Unescape(typeName.Name), throwIfNotFound: false);
             }
 
             private TypeDesc GetGenericType(TypeName typeName)
