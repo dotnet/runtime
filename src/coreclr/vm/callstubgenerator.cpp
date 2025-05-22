@@ -690,7 +690,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
         {
             assert(thReturnType == ELEMENT_TYPE_VOID);
             // FIXME: String?
-            thReturnType = ELEMENT_TYPE_OBJECT;
+            thReturnType = ELEMENT_TYPE_CLASS;
         }
 
         switch (thReturnType)
