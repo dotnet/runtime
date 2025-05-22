@@ -7,7 +7,7 @@ Your goal is to add a new JIT-VM API by modifying several C++ and C# files.
 The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
 If the new API signature is not provided, prompt the user for it with `src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference.
 
-For example, assume the following API signature is provided:
+The steps to add the new API signature are given below and use the following API signature as an example:
 ```
 CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
