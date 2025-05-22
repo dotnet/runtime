@@ -3258,9 +3258,6 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 break;
 
             case READYTORUN_FIXUP_VirtualEntry:
-            // case READYTORUN_FIXUP_VirtualEntry_DefToken:
-            // case READYTORUN_FIXUP_VirtualEntry_RefToken:
-            // case READYTORUN_FIXUP_VirtualEntry_Slot:
                 {
                    if (!pMD->IsVtableMethod())
                    {
@@ -3499,9 +3496,6 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
             result = (SIZE_T)pFD->GetCurrentStaticAddress();
             break;
         case READYTORUN_FIXUP_VirtualEntry:
-        // case READYTORUN_FIXUP_VirtualEntry_DefToken:
-        // case READYTORUN_FIXUP_VirtualEntry_RefToken:
-        // case READYTORUN_FIXUP_VirtualEntry_Slot:
             {
                 OBJECTREF objRef = ObjectToOBJECTREF(*(Object **)pArgument);
 
