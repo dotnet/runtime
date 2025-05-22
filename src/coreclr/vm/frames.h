@@ -3072,6 +3072,8 @@ private:
 
 #define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (Thread::IsAddressInCurrentStack (address));
 
+class GCRefMapBuilder;
+
 void ComputeCallRefMap(MethodDesc* pMD,
                        GCRefMapBuilder * pBuilder,
                        bool isDispatchCell);

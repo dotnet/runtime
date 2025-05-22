@@ -13685,8 +13685,6 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
     return result;
 }
 
-#endif // FEATURE_READYTORUN
-
 bool IsInstructionSetSupported(CORJIT_FLAGS jitFlags, ReadyToRunInstructionSet r2rInstructionSet)
 {
     CORINFO_InstructionSet instructionSet = InstructionSetFromR2RInstructionSet(r2rInstructionSet);
@@ -13706,25 +13704,18 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     ModuleBase * pInfoModule = currentModule;
 
-    if (kind & ReadyToRunFixupKind::ModuleOverride)
+    if (kind & READYTORUN_FIXUP_ModuleOverride)
     {
         pInfoModule = currentModule->GetModuleFromIndex(CorSigUncompressData(pBlob));
-        kind &= ~ReadyToRunFixupKind::ModuleOverride;
+        kind &= ~READYTORUN_FIXUP_ModuleOverride;
     }
 
     MethodDesc * pMD = NULL;
-
-    PCCOR_SIGNATURE pSig;
-    DWORD cSig;
 
     size_t result = 0;
 
     switch (kind)
     {
-    case READYTORUN_FIXUP_Module:
-        result = (size_t)pInfoModule;
-        break;
-
     case READYTORUN_FIXUP_TypeHandle:
     case READYTORUN_FIXUP_TypeDictionary:
         {
@@ -13784,46 +13775,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_VARARGS_SIG:
-        {
-            mdSignature token = TokenFromRid(
-                                    CorSigUncompressData(pBlob),
-                                    mdtSignature);
-
-            IfFailThrow(pInfoModule->GetMDImport()->GetSigFromToken(token, &cSig, &pSig));
-
-            goto VarArgs;
-        }
-        break;
-
-    case ENCODE_VARARGS_METHODREF:
-        {
-            mdSignature token = TokenFromRid(
-                                    CorSigUncompressData(pBlob),
-                                    mdtMemberRef);
-
-            LPCSTR szName_Ignore;
-            IfFailThrow(pInfoModule->GetMDImport()->GetNameAndSigOfMemberRef(token, &pSig, &cSig, &szName_Ignore));
-
-            goto VarArgs;
-        }
-        break;
-
-    case ENCODE_VARARGS_METHODDEF:
-        {
-            mdSignature token = TokenFromRid(
-                                    CorSigUncompressData(pBlob),
-                                    mdtMethodDef);
-
-            IfFailThrow(pInfoModule->GetMDImport()->GetSigOfMethodDef(token, &cSig, &pSig));
-        }
-        {
-        VarArgs:
-            SigTypeContext typeContext = SigTypeContext();
-            result = (size_t) CORINFO_VARARGS_HANDLE(currentModule->GetVASigCookie(Signature(pSig, cSig), &typeContext));
-        }
-        break;
-
     case READYTORUN_FIXUP_MethodEntry_DefToken:
         {
             mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
@@ -13877,14 +13828,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_SYNC_LOCK:
-        {
-            TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
-
-            result = (size_t) GetClassSync(th.AsMethodTable());
-        }
-        break;
-
     case READYTORUN_FIXUP_IndirectPInvokeTarget:
         {
             MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
@@ -13911,49 +13854,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-#if defined(PROFILING_SUPPORTED)
-    case ENCODE_PROFILING_HANDLE:
-        {
-            MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
-
-            // methods with no metadata behind cannot be exposed to tools expecting metadata (profiler, debugger...)
-            // they shouldnever come here as they are called out in GetCompileFlag
-            _ASSERTE(!pMethod->IsNoMetadata());
-
-            FunctionID funId = (FunctionID)pMethod;
-
-            BOOL bHookFunction = TRUE;
-            CORINFO_PROFILING_HANDLE profilerHandle = (CORINFO_PROFILING_HANDLE)funId;
-
-            {
-                BEGIN_PROFILER_CALLBACK(CORProfilerFunctionIDMapperEnabled());
-                profilerHandle = (CORINFO_PROFILING_HANDLE)(&g_profControlBlock)->EEFunctionIDMapper(funId, &bHookFunction);
-                END_PROFILER_CALLBACK();
-            }
-
-            // Profiling handle is opaque token. It does not have to be aligned thus we can not store it in the same location as token.
-            *(entry+kZapProfilingHandleImportValueIndexClientData) = (SIZE_T)profilerHandle;
-
-            if (bHookFunction)
-            {
-                // Confirm the helpers are non-null and don't require lazy loading.
-                _ASSERTE(hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER].pfnHelper != NULL);
-                _ASSERTE(hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE].pfnHelper != NULL);
-                _ASSERTE(hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL].pfnHelper != NULL);
-                *(entry+kZapProfilingHandleImportValueIndexEnterAddr) = (SIZE_T)(void *)hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_ENTER].pfnHelper;
-                *(entry+kZapProfilingHandleImportValueIndexLeaveAddr) = (SIZE_T)(void *)hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_LEAVE].pfnHelper;
-                *(entry+kZapProfilingHandleImportValueIndexTailcallAddr) = (SIZE_T)(void *)hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_PROF_FCN_TAILCALL].pfnHelper;
-            }
-            else
-            {
-                *(entry+kZapProfilingHandleImportValueIndexEnterAddr) = (SIZE_T)(void *)JIT_ProfilerEnterLeaveTailcallStub;
-                *(entry+kZapProfilingHandleImportValueIndexLeaveAddr) = (SIZE_T)(void *)JIT_ProfilerEnterLeaveTailcallStub;
-                *(entry+kZapProfilingHandleImportValueIndexTailcallAddr) = (SIZE_T)(void *)JIT_ProfilerEnterLeaveTailcallStub;
-            }
-        }
-        break;
-#endif // PROFILING_SUPPORTED
-
     case READYTORUN_FIXUP_FieldAddress:
         {
             FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
@@ -13967,8 +13867,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-#ifdef FEATURE_READYTORUN
-    case ENCODE_READYTORUN_HELPER:
+    case READYTORUN_FIXUP_Helper:
         {
             DWORD helperNum = CorSigUncompressData(pBlob);
 
@@ -14423,7 +14322,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
             break;
         }
-#endif // FEATURE_READYTORUN
     default:
         STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown ReadyToRunFixupKind %d\n", kind);
         _ASSERTE(!"Unknown ReadyToRunFixupKind");
@@ -14435,6 +14333,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     return TRUE;
 }
+#endif // FEATURE_READYTORUN
 
 bool CEEInfo::getTailCallHelpersInternal(CORINFO_RESOLVED_TOKEN* callToken,
                                          CORINFO_SIG_INFO* sig,

@@ -118,11 +118,6 @@ enum EncodeFieldSigFlags
     ENCODE_FIELD_SIG_OwnerType                  = 0x40,
 };
 
-class SBuffer;
-class SigBuilder;
-class PEDecoder;
-class GCRefMapBuilder;
-
 //REVIEW: include for ee exception info
 #include "eexcp.h"
 
@@ -157,17 +152,4 @@ struct CORCOMPILE_EXCEPTION_CLAUSE
     };
 };
 
-/*********************************************************************************/
-// When NGEN install /Profile is run, the ZapProfilingHandleImport fixup table contains
-// these 5 values per MethodDesc
-enum
-{
-    kZapProfilingHandleImportValueIndexFixup        = 0,
-    kZapProfilingHandleImportValueIndexEnterAddr    = 1,
-    kZapProfilingHandleImportValueIndexLeaveAddr    = 2,
-    kZapProfilingHandleImportValueIndexTailcallAddr = 3,
-    kZapProfilingHandleImportValueIndexClientData   = 4,
-
-    kZapProfilingHandleImportValueIndexCount
-};
 #endif /* COR_COMPILE_H_ */

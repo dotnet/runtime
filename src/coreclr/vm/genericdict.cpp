@@ -698,11 +698,11 @@ Dictionary::PopulateEntry(
         BYTE fixupKind = *pBlob++;
 
         ModuleBase * pInfoModule = pModule;
-        if (fixupKind & ReadyToRunFixupKind::ModuleOverride)
+        if (fixupKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-            fixupKind &= ~ReadyToRunFixupKind::ModuleOverride;
+            fixupKind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
         _ASSERTE(fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup ||
@@ -717,7 +717,7 @@ Dictionary::PopulateEntry(
         }
 
         BYTE signatureKind = *pBlob++;
-        if (signatureKind & ReadyToRunFixupKind::ModuleOverride)
+        if (signatureKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
@@ -726,7 +726,7 @@ Dictionary::PopulateEntry(
                 pInfoModule = pSignatureModule;
             }
             _ASSERTE(pInfoModule == pSignatureModule);
-            signatureKind &= ~ReadyToRunFixupKind::ModuleOverride;
+            signatureKind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
         switch ((ReadyToRunFixupKind) signatureKind)

@@ -2506,11 +2506,11 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
         BYTE kind = *pBlob++;
 
         ModuleBase * pInfoModule = pModule;
-        if (kind & ReadyToRunFixupKind::ModuleOverride)
+        if (kind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-            kind &= ~ReadyToRunFixupKind::ModuleOverride;
+            kind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
         TypeHandle th;
@@ -3107,11 +3107,11 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     BYTE kind = *pBlob++;
 
     ModuleBase * pInfoModule = pModule;
-    if (kind & ReadyToRunFixupKind::ModuleOverride)
+    if (kind & READYTORUN_FIXUP_ModuleOverride)
     {
         DWORD moduleIndex = CorSigUncompressData(pBlob);
         pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-        kind &= ~ReadyToRunFixupKind::ModuleOverride;
+        kind &= ~READYTORUN_FIXUP_ModuleOverride;
     }
 
     bool fReliable = false;
