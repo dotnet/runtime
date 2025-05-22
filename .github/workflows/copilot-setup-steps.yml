@@ -19,3 +19,5 @@ jobs:
 
       - name: Restore solution
         run: ./build.sh --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true
+      - name: Put dotnet on the path
+        run: export PATH=$PWD/.dotnet:$PATH
