@@ -1,0 +1,21 @@
+name: "Copilot Setup Steps"
+
+# Allow testing of the setup steps from your repository's "Actions" tab.
+on: workflow_dispatch
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
+  # See https://docs.github.com/en/copilot/customizing-copilot/customizing-the-development-environment-for-copilot-coding-agent
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    # You can define any steps you want, and they will run before the agent starts.
+    # If you do not check out your code, Copilot will do this for you.
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Restore solution
+        run: ./build.sh --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true

@@ -163,6 +163,7 @@
 #include "pgo.h"
 #include "pendingload.h"
 #include "cdacplatformmetadata.hpp"
+#include "minipal/time.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -484,10 +485,10 @@ void InitGSCookie()
     void * pf = &__security_check_cookie;
     pf = NULL;
 
-    GSCookie val = (GSCookie)(__security_cookie ^ GetTickCount());
+    GSCookie val = (GSCookie)(__security_cookie ^ minipal_lowres_ticks());
 #else // !TARGET_UNIX
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)GetTickCount();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG

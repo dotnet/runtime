@@ -59,7 +59,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  -vs                            Open the solution with Visual Studio using the locally acquired SDK."
   Write-Host "                                 Path or any project or solution name is accepted."
-  Write-Host "                                 (Example: -vs Microsoft.CSharp or -vs CoreCLR.sln)"
+  Write-Host "                                 (Example: -vs Microsoft.CSharp or -vs CoreCLR.slnx)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
@@ -175,10 +175,10 @@ if ($vs) {
     $configToOpen = $runtimeConfiguration
   }
 
-  if ($vs -ieq "coreclr.sln") {
-    # If someone passes in coreclr.sln (case-insensitive),
+  if ($vs -ieq "coreclr.slnx") {
+    # If someone passes in coreclr.slnx (case-insensitive),
     # launch the generated CMake solution.
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.slnx"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/coreclr/runtime.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true /p:ClrFullNativeBuild=true"
       if ($lastExitCode -ne 0) {
@@ -190,8 +190,8 @@ if ($vs) {
       }
     }
   }
-  elseif ($vs -ieq "corehost.sln") {
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+  elseif ($vs -ieq "corehost.slnx") {
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.slnx"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
       if ($lastExitCode -ne 0) {
@@ -208,24 +208,24 @@ if ($vs) {
 
     if ($runtimeFlavor -eq "Mono") {
       # Search for the solution in mono
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
     } else {
       # Search for the solution in coreclr
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
     }
 
     if (-Not (Test-Path $vs)) {
       $vs = $solution
 
       # Search for the solution in libraries
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
 
       if (-Not (Test-Path $vs)) {
         $vs = $solution
 
         # Search for the solution in installer
-        if (-Not ($vs.endswith(".sln"))) {
-          $vs = "$vs.sln"
+        if (-Not ($vs.endswith(".slnx"))) {
+          $vs = "$vs.slnx"
         }
 
         $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
