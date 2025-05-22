@@ -275,7 +275,7 @@ protected:
     void DebugDestroy();
 #endif
 
-    DN_CRITSECT m_criticalsection;
+    tgt_minipal_critsect m_criticalsection;
 
     typedef enum
     {

@@ -37,7 +37,7 @@ char **palEnvironment = nullptr;
 int palEnvironmentCount = 0;
 int palEnvironmentCapacity = 0;
 
-DN_CRITSECT gcsEnvironment;
+minipal_critsect gcsEnvironment;
 
 /*++
 Function:

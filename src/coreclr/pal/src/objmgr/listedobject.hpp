@@ -42,7 +42,7 @@ namespace CorUnix
         // The lock that guards access to that list
         //
 
-        DN_CRITSECT *m_pcsObjListLock;
+        minipal_critsect *m_pcsObjListLock;
 
         virtual
         void
@@ -67,7 +67,7 @@ namespace CorUnix
 
         CListedObject(
             CObjectType *pot,
-            DN_CRITSECT *pcsObjListLock
+            minipal_critsect *pcsObjListLock
             )
             :
             CPalObjectBase(pot),
@@ -144,7 +144,7 @@ namespace CorUnix
 
         CSharedMemoryWaitableObject(
             CObjectType *pot,
-            DN_CRITSECT *pcsObjListLock
+            minipal_critsect *pcsObjListLock
             )
             :
             CListedObject(pot, pcsObjListLock)

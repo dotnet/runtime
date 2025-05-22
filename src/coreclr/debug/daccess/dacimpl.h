@@ -27,7 +27,7 @@
 #include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
-extern DN_CRITSECT g_dacCritSec;
+extern minipal_critsect g_dacCritSec;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
 // Note that CLRDATA_ADDRESS is sign-extended (for compat with Windbg and OS conventions).  Converting

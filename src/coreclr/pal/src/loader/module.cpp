@@ -73,7 +73,7 @@ using namespace CorUnix;
 /* static variables ***********************************************************/
 
 /* critical section that regulates access to the module list */
-DN_CRITSECT module_critsec;
+minipal_critsect module_critsec;
 
 /* always the first, in the in-load-order list */
 MODSTRUCT exe_module;

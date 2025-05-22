@@ -30,7 +30,7 @@ namespace CorUnix
         static const int MaxDepth = 256;
 
         Volatile<USynchCacheStackNode*> m_pHead;
-        DN_CRITSECT m_cs;
+        minipal_critsect m_cs;
         Volatile<int> m_iDepth;
         int m_iMaxDepth;
 #ifdef _DEBUG
@@ -205,7 +205,7 @@ namespace CorUnix
                                               // cache before continuing
 
         Volatile<USHRSynchCacheStackNode*> m_pHead;
-        DN_CRITSECT m_cs;
+        minipal_critsect m_cs;
         Volatile<int> m_iDepth;
         int m_iMaxDepth;
 #ifdef _DEBUG

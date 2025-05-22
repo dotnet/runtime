@@ -259,7 +259,7 @@ public:
 class SharedMemoryManager
 {
 private:
-    static DN_CRITSECT s_creationDeletionProcessLock;
+    static minipal_critsect s_creationDeletionProcessLock;
     static int s_creationDeletionLockFileDescriptor;
 
     struct UserScopeUidAndFileDescriptor

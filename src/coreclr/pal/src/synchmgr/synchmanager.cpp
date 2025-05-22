@@ -141,8 +141,8 @@ namespace CorUnix
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
-    DN_CRITSECT CPalSynchronizationManager::s_csSynchProcessLock;
-    DN_CRITSECT CPalSynchronizationManager::s_csMonitoredProcessesLock;
+    minipal_critsect CPalSynchronizationManager::s_csSynchProcessLock;
+    minipal_critsect CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),

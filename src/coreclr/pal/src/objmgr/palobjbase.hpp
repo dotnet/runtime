@@ -28,7 +28,7 @@ namespace CorUnix
     {
     private:
 
-        DN_CRITSECT m_cs;
+        minipal_critsect m_cs;
         bool m_fInitialized;
 
     public:

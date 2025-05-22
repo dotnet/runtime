@@ -203,7 +203,7 @@ namespace CorUnix
         CPalThread *m_pNext;
         DWORD m_dwExitCode;
         BOOL m_fExitCodeSet;
-        DN_CRITSECT m_csLock;
+        minipal_critsect m_csLock;
         bool m_fLockInitialized;
         bool m_fIsDummy;
 

@@ -376,7 +376,7 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
 static FILE*     logFile = NULL;
-DN_CRITSECT      logFileLock;
+minipal_critsect      logFileLock;
 #endif
 
 #if REGEN_CALLPAT

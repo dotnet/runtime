@@ -1481,7 +1481,7 @@ void SharedMemoryProcessDataHeader::DecRefCount()
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SharedMemoryManager
 
-DN_CRITSECT SharedMemoryManager::s_creationDeletionProcessLock;
+minipal_critsect SharedMemoryManager::s_creationDeletionProcessLock;
 int SharedMemoryManager::s_creationDeletionLockFileDescriptor = -1;
 
 SharedMemoryManager::UserScopeUidAndFileDescriptor *SharedMemoryManager::s_userScopeUidToCreationDeletionLockFDs;

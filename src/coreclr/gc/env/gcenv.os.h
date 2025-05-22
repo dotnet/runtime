@@ -15,7 +15,7 @@ bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* 
 // Critical section used by the GC
 class CLRCriticalSection final
 {
-    DN_CRITSECT m_cs;
+    minipal_critsect m_cs;
 
 public:
     // Initialize the critical section

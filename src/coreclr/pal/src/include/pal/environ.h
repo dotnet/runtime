@@ -34,7 +34,7 @@ Variables :
     gcsEnvironment: critical section to synchronize access to palEnvironment
 --*/
 extern char **palEnvironment;
-extern DN_CRITSECT gcsEnvironment;
+extern minipal_critsect gcsEnvironment;
 
 /*++
 

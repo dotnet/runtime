@@ -71,7 +71,7 @@ namespace CorUnix
         DWORD m_dwTableGrowthRate;
         HANDLE_TABLE_ENTRY* m_rghteHandleTable;
 
-        DN_CRITSECT m_csLock;
+        minipal_critsect m_csLock;
         bool m_fLockInitialized;
 
         bool ValidateHandle(HANDLE h);

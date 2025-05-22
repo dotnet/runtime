@@ -54,7 +54,7 @@ SET_DEFAULT_DEBUG_CHANNEL(VIRTUAL);
 // this critical section.
 //
 
-DN_CRITSECT mapping_critsec;
+minipal_critsect mapping_critsec;
 LIST_ENTRY MappedViewList;
 
 #ifndef CORECLR

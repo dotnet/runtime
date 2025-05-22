@@ -157,7 +157,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-DN_CRITSECT g_csProcess;
+minipal_critsect g_csProcess;
 
 //
 // List and count of active threads

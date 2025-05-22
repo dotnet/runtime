@@ -42,7 +42,7 @@ extern TADDR g_ClrModuleBase;
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
-DN_CRITSECT g_dacCritSec;
+minipal_critsect g_dacCritSec;
 ClrDataAccess* g_dacImpl;
 
 EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
