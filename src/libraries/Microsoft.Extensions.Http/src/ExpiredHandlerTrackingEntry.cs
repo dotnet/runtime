@@ -35,6 +35,7 @@ namespace Microsoft.Extensions.Http
         {
             try
             {
+                // Always dispose the inner handler when explicitly disposing
                 InnerHandler.Dispose();
             }
             finally

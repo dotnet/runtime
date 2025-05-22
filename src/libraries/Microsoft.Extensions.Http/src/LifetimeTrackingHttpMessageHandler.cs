@@ -18,6 +18,11 @@ namespace Microsoft.Extensions.Http
         protected override void Dispose(bool disposing)
         {
             // The lifetime of this is tracked separately by ActiveHandlerTrackingEntry
+            // During explicit disposal, we need to dispose the inner handler
+            if (disposing)
+            {
+                base.Dispose(disposing);
+            }
         }
     }
 }

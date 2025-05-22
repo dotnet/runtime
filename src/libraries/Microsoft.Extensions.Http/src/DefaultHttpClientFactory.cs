@@ -361,6 +361,7 @@ namespace Microsoft.Extensions.Http
                 {
                     if (entry != null)
                     {
+                        // During explicit disposal, don't check if can dispose - just force disposal
                         disposables.Add(entry);
                     }
                 }
