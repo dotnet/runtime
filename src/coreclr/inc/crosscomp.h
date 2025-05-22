@@ -718,7 +718,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #if defined(TARGET_X86) || defined(TARGET_ARM)
 #define DAC_CS_MAX_SIZE 24
 #elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
-#define DAC_CS_MAX_SIZE 40
+#define DAC_CS_MAX_SIZE 48
 #else
 #error  DAC_CS_MAX_SIZE is not defined for this *nix architecture.
 #endif // defined(TARGET_X86) || defined(TARGET_ARM)
@@ -749,7 +749,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #if defined(HOST_X86) || defined(HOST_ARM)
 #define DAC_CS_MAX_SIZE 24
 #elif defined(HOST_AMD64) || defined(HOST_ARM64)
-#define DAC_CS_MAX_SIZE 40
+#define DAC_CS_MAX_SIZE 48
 #else
 #error  DAC_CS_MAX_SIZE is not defined for this *nix architecture.
 #endif // defined(HOST_X86) || defined(HOST_ARM)
