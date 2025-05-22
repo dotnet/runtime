@@ -2089,6 +2089,19 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     break;
                 }
 
+                // For structs we need to check the layout as well
+                //
+                if (parent->OperIs(GT_BLK))
+                {
+                    ClassLayout* const layout = parent->AsBlk()->GetLayout();
+
+                    if (!layout->HasGCPtr())
+                    {
+                        canLclVarEscapeViaParentStack = false;
+                        break;
+                    }
+                }
+
                 GenTree* const addr = parent->AsIndir()->Addr();
 
                 // For loads from local structs we may be tracking the underlying fields.
@@ -2263,6 +2276,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 //    tree            - Possibly-stack-pointing tree
 //    parentStack     - Parent stack of the possibly-stack-pointing tree
 //    newType         - New type of the possibly-stack-pointing tree
+//    newLayout       - Layout for a retyped local struct
 //    newFieldType    - Inspiring local is a retyped local struct or stack object; retype fields if this is not
 //    TYP_UNDEF
 //
@@ -2272,10 +2286,8 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 //                      In addition to updating types this method may set GTF_IND_TGT_NOT_HEAP on ancestor
 //                      indirections to help codegen with write barrier selection.
 //
-void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
-                                          ArrayStack<GenTree*>* parentStack,
-                                          var_types             newType,
-                                          var_types             newFieldType)
+void ObjectAllocator::UpdateAncestorTypes(
+    GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, var_types             newFieldType)
 {
     assert((newType == TYP_BYREF) || (newType == TYP_I_IMPL) || newType == (TYP_STRUCT));
     assert(parentStack != nullptr);
@@ -2445,9 +2457,16 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                     // If we are storing to a GC struct field, we may need to retype the store
                     // (note for stores we retype fields based on the data's type).
                     //
-                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && varTypeIsGC(parent->TypeGet()))
+                    if (parent->OperIs(GT_STOREIND) && varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
+                    }
+
+                    // If we are storing a struct, we may need to change the layout
+                    //
+                    if (retypeFields && parent->OperIs(GT_STORE_BLK))
+                    {
+                        parent->AsBlk()->SetLayout(newLayout);
                     }
                 }
                 break;
@@ -2461,6 +2480,12 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                 if ((newFieldType != TYP_UNDEF) && varTypeIsGC(parent->TypeGet()))
                 {
                     parent->ChangeType(newType);
+
+                    if (parent->OperIs(GT_BLK))
+                    {
+                        parent->AsBlk()->SetLayout(newLayout);
+                    }
+
                     ++parentIndex;
                     keepChecking = true;
                     newType      = newFieldType;
@@ -2537,6 +2562,7 @@ void ObjectAllocator::RewriteUses()
 
             unsigned int newLclNum = BAD_VAR_NUM;
             var_types    newType   = lclVarDsc->TypeGet();
+            ClassLayout* newLayout = nullptr;
 
             if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
             {
@@ -2567,12 +2593,16 @@ void ObjectAllocator::RewriteUses()
             }
             else if (newType == TYP_STRUCT)
             {
-                ClassLayout* const layout = lclVarDsc->GetLayout();
-                newType                   = layout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
+                newLayout    = lclVarDsc->GetLayout();
+                newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
                 newFieldType              = newType;
             }
+            else
+            {
+                tree->ChangeType(newType);
+            }
 
-            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, newFieldType);
+            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, newLayout, newFieldType);
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
