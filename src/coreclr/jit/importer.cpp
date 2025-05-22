@@ -1089,10 +1089,9 @@ bool Compiler::impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call)
             return false;
         }
 
+        // LCL_ADDR on an implicit byref will turn into LCL_VAR in morph.
         if (lvaIsImplicitByRefLocal(retBuf->AsLclVarCommon()->GetLclNum()))
         {
-            // LCL_ADDR on an implicit byref during import is actually an
-            // indirection.
             return false;
         }
 
