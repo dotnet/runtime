@@ -402,7 +402,7 @@ bool GCToEEInterface::RefCountedHandleCallbacks(Object * pObject)
     return false;
 }
 
-void GCToEEInterface::TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
+void GCToEEInterface::TriggerClientBridgeProcessing(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
 {
     CONTRACTL
     {
@@ -412,7 +412,7 @@ void GCToEEInterface::TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent
     CONTRACTL_END;
 
 #ifdef FEATURE_GCBRIDGE
-    Interop::TriggerGCBridge(sccsLen, sccs, ccrsLen, ccrs);
+    Interop::TriggerClientBridgeProcessing(sccsLen, sccs, ccrsLen, ccrs);
 #endif // FEATURE_GCBRIDGE
 }
 
@@ -1867,4 +1867,13 @@ void GCToEEInterface::LogErrorToHost(const char *message)
 uint64_t GCToEEInterface::GetThreadOSThreadId(Thread* thread)
 {
     return thread->GetOSThreadId64();
+}
+
+const char* GCToEEInterface::GetMethodTableDebugName(MethodTable* pMT)
+{
+#ifdef DEBUG
+    return pMT->GetDebugClassName();
+#else
+    return "";
+#endif
 }

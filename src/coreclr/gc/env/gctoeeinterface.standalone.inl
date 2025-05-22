@@ -49,9 +49,9 @@ namespace standalone
             return ::GCToEEInterface::RefCountedHandleCallbacks(pObject);
         }
 
-        void TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
+        void TriggerClientBridgeProcessing(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs)
         {
-            return ::GCToEEInterface::TriggerGCBridge(sccsLen, sccs, ccrsLen, ccrs);
+            return ::GCToEEInterface::TriggerClientBridgeProcessing(sccsLen, sccs, ccrsLen, ccrs);
         }
 
         void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -267,6 +267,11 @@ namespace standalone
         uint64_t GetThreadOSThreadId(Thread* thread)
         {
             return ::GCToEEInterface::GetThreadOSThreadId(thread);
+        }
+
+        const char* GetMethodTableDebugName(MethodTable* pMT)
+        {
+            return ::GCToEEInterface::GetMethodTableDebugName(pMT);
         }
     };
 }

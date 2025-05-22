@@ -827,7 +827,10 @@ public:
     virtual HRESULT Initialize() PURE_VIRTUAL
 
     // Returns whether nor this GC was promoted by the last GC.
-    virtual bool IsPromoted(Object* object, bool bVerifyNextHeader = true) PURE_VIRTUAL
+    virtual bool IsPromoted(Object* object) PURE_VIRTUAL
+
+    // Returns whether nor this GC was promoted by the last GC.
+    virtual bool IsPromoted(Object* object, bool bVerifyNextHeader) PURE_VIRTUAL
 
     // Returns true if this pointer points into a GC heap, false otherwise.
     virtual bool IsHeapPointer(void* object, bool small_heap_only = false) PURE_VIRTUAL

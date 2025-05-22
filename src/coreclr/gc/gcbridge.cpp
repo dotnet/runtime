@@ -53,7 +53,7 @@ static char* dyn_ptr_array_ensure_capacity_internal (DynPtrArray* da, int capaci
     while (capacity > da->capacity)
         da->capacity *= 2;
 
-    return (char*)malloc(sizeof(void*) * da->capacity);
+    return (char*)new (nothrow) void*[da->capacity];
 }
 
 static void dyn_ptr_array_ensure_capacity (DynPtrArray* da, int capacity)
@@ -67,6 +67,7 @@ static void dyn_ptr_array_ensure_capacity (DynPtrArray* da, int capacity)
         return;
 
     new_data = dyn_ptr_array_ensure_capacity_internal(da, capacity);
+    assert(new_data);
     memcpy(new_data, da->data, sizeof(void*) * da->size);
     if (old_capacity > 0)
         free(da->data);
@@ -282,14 +283,17 @@ static int object_data_count;
 // Arenas to allocate ScanData from
 static ObjectBucket* new_object_bucket ()
 {
-    ObjectBucket* res = (ObjectBucket*)calloc(1, BUCKET_SIZE);
+    ObjectBucket* res = new (nothrow) ObjectBucket;
+    assert(res);
+    res->next = NULL;
     res->next_data = &res->data[0];
     return res;
 }
 
 static void object_alloc_init ()
 {
-    root_object_bucket = cur_object_bucket = new_object_bucket();
+    if (!root_object_bucket)
+        root_object_bucket = cur_object_bucket = new_object_bucket();
 }
 
 static ScanData* alloc_object_data ()
@@ -301,17 +305,25 @@ retry:
     res = cur_object_bucket->next_data;
     if (res >= &cur_object_bucket->data[NUM_SCAN_ENTRIES])
     {
-        ObjectBucket* b = new_object_bucket ();
-        cur_object_bucket->next = b;
-        cur_object_bucket = b;
+        if (cur_object_bucket->next)
+        {
+            cur_object_bucket = cur_object_bucket->next;
+        }
+        else
+        {
+            ObjectBucket* b = new_object_bucket ();
+            cur_object_bucket->next = b;
+            cur_object_bucket = b;
+        }
         goto retry;
     }
     cur_object_bucket->next_data = res + 1;
     object_data_count++;
+    new (res) ScanData(); // zero memory
     return res;
 }
 
-static void free_object_buckets ()
+static void empty_object_buckets ()
 {
     ObjectBucket* cur = root_object_bucket;
 
@@ -319,12 +331,11 @@ static void free_object_buckets ()
 
     while (cur)
     {
-        ObjectBucket* tmp = cur->next;
-        free(cur);
-        cur = tmp;
+        cur->next_data = &cur->data[0];
+        cur = cur->next;
     }
 
-    root_object_bucket = cur_object_bucket = NULL;
+    cur_object_bucket = root_object_bucket;
 }
 
 //ColorData buckets
@@ -345,14 +356,17 @@ static int color_data_count;
 
 static ColorBucket* new_color_bucket ()
 {
-    ColorBucket* res = (ColorBucket*)calloc(1, BUCKET_SIZE);
+    ColorBucket* res = new (nothrow) ColorBucket;
+    assert(res);
+    res->next = NULL;
     res->next_data = &res->data[0];
     return res;
 }
 
 static void color_alloc_init ()
 {
-    root_color_bucket = cur_color_bucket = new_color_bucket();
+    if (!root_color_bucket)
+        root_color_bucket = cur_color_bucket = new_color_bucket();
 }
 
 static ColorData* alloc_color_data ()
@@ -364,24 +378,32 @@ retry:
     res = cur_color_bucket->next_data;
     if (res >= &cur_color_bucket->data[NUM_COLOR_ENTRIES])
     {
-        ColorBucket* b = new_color_bucket();
-        cur_color_bucket->next = b;
-        cur_color_bucket = b;
+        if (cur_color_bucket->next)
+        {
+            cur_color_bucket = cur_color_bucket->next;
+        }
+        else
+        {
+            ColorBucket* b = new_color_bucket();
+            cur_color_bucket->next = b;
+            cur_color_bucket = b;
+        }
         goto retry;
     }
     cur_color_bucket->next_data = res + 1;
     color_data_count++;
+    new (res) ColorData(); // zero memory
     return res;
 }
 
-static void free_color_buckets ()
+static void empty_color_buckets ()
 {
     ColorBucket* cur;
     ColorBucket* tmp;
 
     color_data_count = 0;
 
-    for (cur = root_color_bucket; cur; cur = tmp)
+    for (cur = root_color_bucket; cur; cur = cur->next)
     {
         ColorData* cd;
         for (cd = &cur->data[0]; cd < cur->next_data; cd++)
@@ -389,10 +411,11 @@ static void free_color_buckets ()
             dyn_ptr_array_uninit(&cd->other_colors);
             dyn_ptr_array_uninit(&cd->bridges);
         }
-        tmp = cur->next;
-        free(cur);
+
+        cur->next_data = &cur->data[0];
     }
-    root_color_bucket = cur_color_bucket = NULL;
+
+    cur_color_bucket = root_color_bucket;
 }
 
 
@@ -401,10 +424,8 @@ static ScanData* create_data (Object* obj)
     size_t* o = (size_t*)obj;
     ScanData* res = alloc_object_data();
     res->obj = obj;
-    res->color = NULL;
     res->index = res->low_index = -1;
     res->state = INITIAL;
-    res->is_bridge = false;
     res->header_word = o[-1];
 
     o[0] |= BRIDGE_MARKED_BIT;
@@ -440,8 +461,8 @@ static void reset_objects_header ()
 #ifdef DUMP_GRAPH
 static const char* safe_name_bridge (Object* obj)
 {
-    // FIXME obtain class name from object ?
-    return "";
+    MethodTable* pMT = obj->GetGCSafeMethodTable();
+    return GCToEEInterface::GetMethodTableDebugName(pMT);
 }
 #endif
 
@@ -811,7 +832,7 @@ static void create_scc (ScanData* data)
     printf("\tloop stack: ");
     for (i = 0; i < dyn_ptr_array_size(&loop_stack); i++)
     {
-        ScanData* other = dyn_ptr_array_get(&loop_stack, i);
+        ScanData* other = (ScanData*)dyn_ptr_array_get(&loop_stack, i);
         printf("(%d/%d)", other->index, other->low_index);
     }
     printf("\n");
@@ -999,7 +1020,7 @@ static void dump_color_table (const char* why, bool do_index)
                 printf(" bridges: ");
                 for (j = 0; j < dyn_ptr_array_size(&cd->bridges); j++)
                 {
-                    Object* obj = dyn_ptr_array_get(&cd->bridges, j);
+                    Object* obj = (Object*)dyn_ptr_array_get(&cd->bridges, j);
                     ScanData* data = find_data(obj);
                     if (!data)
                         printf("%p ", obj);
@@ -1073,8 +1094,8 @@ void BridgeResetData ()
     dyn_ptr_array_empty(&registered_bridges_context);
     dyn_ptr_array_empty(&scan_stack);
     dyn_ptr_array_empty(&loop_stack);
-    free_object_buckets();
-    free_color_buckets();
+    empty_object_buckets();
+    empty_color_buckets();
     reset_cache();
     object_index = 0;
     num_colors_with_bridges = 0;
@@ -1171,7 +1192,8 @@ static void build_scc_callback_data (BridgeProcessorResult *bp_res)
     }
 
     // This is a straightforward translation from colors to the bridge callback format.
-    StronglyConnectedComponent* api_sccs = (StronglyConnectedComponent*)malloc(sizeof(StronglyConnectedComponent) * num_sccs);
+    StronglyConnectedComponent* api_sccs = new (nothrow) StronglyConnectedComponent[num_sccs];
+    assert(api_sccs);
     int api_index = 0;
     xref_count = 0;
 
@@ -1186,12 +1208,14 @@ static void build_scc_callback_data (BridgeProcessorResult *bp_res)
                 continue;
 
             api_sccs[api_index].Count = bridges;
-            api_sccs[api_index].Context = (uintptr_t*)malloc(sizeof(uintptr_t) * bridges);
-
-            cd->api_index = api_index;
+            uintptr_t *contexts = new (nothrow) uintptr_t[bridges];
+            assert(contexts);
 
             for (j = 0; j < bridges; ++j)
-                api_sccs[api_index].Context[j] = find_data((Object*)dyn_ptr_array_get(&cd->bridges, j))->context;
+                contexts[j] = find_data((Object*)dyn_ptr_array_get(&cd->bridges, j))->context;
+
+            api_sccs[api_index].Context = contexts;
+            cd->api_index = api_index;
 
             assert(api_index < API_INDEX_MAX);
             api_index++;
@@ -1222,7 +1246,8 @@ static void build_scc_callback_data (BridgeProcessorResult *bp_res)
 #endif
 
     // Write out xrefs array
-    ComponentCrossReference* api_xrefs = (ComponentCrossReference*)malloc(sizeof(ComponentCrossReference) * xref_count);
+    ComponentCrossReference* api_xrefs = new (nothrow) ComponentCrossReference[xref_count];
+    assert(api_xrefs);
     int xref_index = 0;
     for (cur = root_color_bucket; cur; cur = cur->next)
     {
@@ -1251,7 +1276,7 @@ static void build_scc_callback_data (BridgeProcessorResult *bp_res)
 #if defined (DUMP_GRAPH)
     printf("---xrefs:\n");
     for (int i = 0; i < xref_count; i++)
-        printf("\t%d -> %d\n", api_xrefs[i].SourceGroupIndex, api_xrefs[i].DestinationGroupIndex);
+        printf("\t%ld -> %ld\n", api_xrefs[i].SourceGroupIndex, api_xrefs[i].DestinationGroupIndex);
 #endif
 
     bp_res->sccsLen = num_sccs;

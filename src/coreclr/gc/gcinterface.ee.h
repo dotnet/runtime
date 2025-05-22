@@ -240,7 +240,7 @@ public:
     bool RefCountedHandleCallbacks(Object * pObject) PURE_VIRTUAL
 
     virtual
-    void TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs) PURE_VIRTUAL
+    void TriggerClientBridgeProcessing(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs) PURE_VIRTUAL
 
     // Performs a weak pointer scan of the sync block cache.
     virtual
@@ -468,6 +468,9 @@ public:
 
     virtual
     uint64_t GetThreadOSThreadId(Thread* thread) PURE_VIRTUAL;
+
+    virtual
+    const char* GetMethodTableDebugName(MethodTable* pMT) PURE_VIRTUAL
 };
 
 #endif // _GCINTERFACE_EE_H_
