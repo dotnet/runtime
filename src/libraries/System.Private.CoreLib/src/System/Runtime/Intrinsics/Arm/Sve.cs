@@ -7413,22 +7413,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> PopCount(Vector<ulong> value) => PopCount(value);
 
 
-        // Prefetch bytes
-
-        /// <summary>
-        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
-        /// </summary>
-        public static unsafe void PrefetchBytes(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchBytes(mask, address, prefetchType);
-
-
         // Prefetch halfwords
 
         /// <summary>
         ///   <para>void svprfh(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFH op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt16(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt16(mask, address, prefetchType);
+        public static unsafe void Prefetch16Bit(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch16Bit(mask, address, prefetchType);
 
 
         // Prefetch words
@@ -7437,7 +7428,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfw(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFW op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt32(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt32(mask, address, prefetchType);
+        public static unsafe void Prefetch32Bit(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch32Bit(mask, address, prefetchType);
 
 
         // Prefetch doublewords
@@ -7446,7 +7437,16 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfd(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFD op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => PrefetchInt64(mask, address, prefetchType);
+        public static unsafe void Prefetch64Bit(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch64Bit(mask, address, prefetchType);
+
+
+        // Prefetch bytes
+
+        /// <summary>
+        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
+        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
+        /// </summary>
+        public static unsafe void Prefetch8Bit(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) => Prefetch8Bit(mask, address, prefetchType);
 
 
         // Reciprocal estimate
