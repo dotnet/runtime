@@ -36,7 +36,7 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
 
     _ASSERTE((flags & CRST_INITIALIZED) == 0);
 
-    bool suc = minipal_critsect_init(&m_criticalsection);
+    bool suc = minipal_critsect_init(&m_criticalsection._cs);
     _ASSERTE(suc);
 
     SetFlags(flags);
@@ -70,9 +70,7 @@ void CrstBase::Destroy()
     // deadlock detection is finished.
     GCPreemp __gcHolder((m_dwFlags & CRST_HOST_BREAKABLE) == CRST_HOST_BREAKABLE);
 
-    {
-        minipal_critsect_destroy(&m_criticalsection);
-    }
+    minipal_critsect_destroy(&m_criticalsection._cs);
 
     LOG((LF_SYNC, INFO3, "CrstBase::Destroy %p\n", this));
 #ifdef _DEBUG
@@ -298,7 +296,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         }
     }
 
-    minipal_critsect_enter(&m_criticalsection);
+    minipal_critsect_enter(&m_criticalsection._cs);
 
 #ifdef _DEBUG
     PostEnter();
@@ -329,7 +327,7 @@ void CrstBase::Leave()
     Thread * pThread = GetThreadNULLOk();
 #endif
 
-    minipal_critsect_leave(&m_criticalsection);
+    minipal_critsect_leave(&m_criticalsection._cs);
 
     // Check for both rare case using one if-check
     if (m_dwFlags & (CRST_TAKEN_DURING_SHUTDOWN | CRST_DEBUGGER_THREAD))
