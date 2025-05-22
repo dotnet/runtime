@@ -35,6 +35,7 @@ void minipal_critsect_destroy(minipal_critsect* cs)
 #else
     int st = pthread_mutex_destroy(&cs->_impl);
     assert(st == 0);
+    (void)st;
 #endif // HOST_WINDOWS
 
 #ifdef _DEBUG
@@ -50,6 +51,7 @@ void minipal_critsect_enter(minipal_critsect* cs)
 #else
     int st = pthread_mutex_lock(&cs->_impl);
     assert(st == 0);
+    (void)st;
 #endif // HOST_WINDOWS
 }
 
@@ -61,5 +63,6 @@ void minipal_critsect_leave(minipal_critsect* cs)
 #else
     int st = pthread_mutex_unlock(&cs->_impl);
     assert(st == 0);
+    (void)st;
 #endif // HOST_WINDOWS
 }
