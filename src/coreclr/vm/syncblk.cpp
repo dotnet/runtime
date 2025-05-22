@@ -237,6 +237,14 @@ inline WaitEventLink *ThreadQueue::DequeueThread(SyncBlock *psb)
 
     if (pLink)
     {
+        // Sometimes the SList is corrupted causing the EE to deadlock as referenced in /dotnet/runtime/issues/115794
+        // When that happens managed threads will remain in a suspended state causing the application to hang
+        // indefinitely.
+        // To mitigate this issue, when the next link points to itself, de-reference the next link 
+        // TODO : find which code is responsible for allowing the situation to happen
+        if ( psb->m_Link.m_pNext == pLink->m_pNext)
+            pLink->m_pNext = NULL;
+ 
         psb->m_Link.m_pNext = pLink->m_pNext;
 #ifdef _DEBUG
         pLink->m_pNext = (SLink *)POISONC;
