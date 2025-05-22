@@ -12,6 +12,8 @@ namespace Microsoft.Extensions.Http
     {
         private readonly WeakReference _livenessTracker;
 
+        internal bool _forceDispose;
+
         // IMPORTANT: don't cache a reference to `other` or `other.Handler` here.
         // We need to allow it to be GC'ed.
         public ExpiredHandlerTrackingEntry(ActiveHandlerTrackingEntry other)
@@ -23,6 +25,7 @@ namespace Microsoft.Extensions.Http
             InnerHandler = other.Handler.InnerHandler!;
         }
 
+        // Used during normal cleanup cycles
         public bool CanDispose => !_livenessTracker.IsAlive;
 
         public HttpMessageHandler InnerHandler { get; }
@@ -35,8 +38,11 @@ namespace Microsoft.Extensions.Http
         {
             try
             {
-                // Always dispose the inner handler when explicitly disposing
-                InnerHandler.Dispose();
+                // Always dispose the inner handler when explicitly disposing or when CanDispose is true
+                if (_forceDispose || !_livenessTracker.IsAlive)
+                {
+                    InnerHandler.Dispose();
+                }
             }
             finally
             {

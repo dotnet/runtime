@@ -97,10 +97,20 @@ namespace Microsoft.Extensions.Http.Tests
 
                 base.Dispose(disposing);
             }
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                // Just return a simple response for test purposes
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+            }
         }
 
         private class TestHttpClientFactory : DefaultHttpClientFactory
         {
+            private readonly IServiceProvider _services;
+            private readonly IServiceScopeFactory _scopeFactory;
+            private readonly DisposeCounter _counter;
+
             public TestHttpClientFactory(
                 IServiceProvider services,
                 IServiceScopeFactory scopeFactory,
@@ -108,6 +118,9 @@ namespace Microsoft.Extensions.Http.Tests
                 IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
                 : base(services, scopeFactory, optionsMonitor, filters)
             {
+                _services = services;
+                _scopeFactory = scopeFactory;
+                _counter = services.GetRequiredService<DisposeCounter>();
             }
 
             // Create handlers immediately without waiting for expiry
@@ -115,16 +128,29 @@ namespace Microsoft.Extensions.Http.Tests
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var entry = CreateHandlerEntry($"test{i}");
-                    
-                    // Add the entry to both active and expired collections to test full cleanup
-                    _activeHandlers.TryAdd($"test{i}", new Lazy<ActiveHandlerTrackingEntry>(() => entry));
-                    
-                    // Add some to expired handlers
-                    if (i % 2 == 0)
+                    // Create with direct handler creation to ensure we get our tracking handler
+                    var options = new HttpClientFactoryOptions
                     {
-                        _expiredHandlers.Enqueue(new ExpiredHandlerTrackingEntry(entry));
+                        HttpMessageHandlerBuilderActions =
+                        {
+                            builder => builder.AdditionalHandlers.Add(new DisposeTrackingHandler(_counter))
+                        }
+                    };
+
+                    var handlerBuilder = _services.GetRequiredService<HttpMessageHandlerBuilder>();
+                    handlerBuilder.Name = $"test{i}";
+
+                    foreach (var action in options.HttpMessageHandlerBuilderActions)
+                    {
+                        action(handlerBuilder);
                     }
+
+                    var handler = new LifetimeTrackingHttpMessageHandler(handlerBuilder.Build());
+                    var scope = _scopeFactory.CreateScope();
+                    var entry = new ActiveHandlerTrackingEntry($"test{i}", handler, scope, TimeSpan.FromSeconds(60));
+                    
+                    // Add the entry to the active handlers collection
+                    _activeHandlers.TryAdd($"test{i}", new Lazy<ActiveHandlerTrackingEntry>(() => entry));
                 }
             }
         }

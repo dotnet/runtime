@@ -239,8 +239,11 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                _cleanupTimer!.Dispose();
-                _cleanupTimer = null;
+                if (_cleanupTimer != null)
+                {
+                    _cleanupTimer.Dispose();
+                    _cleanupTimer = null;
+                }
             }
         }
 
@@ -292,6 +295,7 @@ namespace Microsoft.Extensions.Http
                     {
                         try
                         {
+                            // During normal cleanup, let the entry check CanDispose itself
                             entry.Dispose();
                             disposedCount++;
                         }
@@ -361,7 +365,8 @@ namespace Microsoft.Extensions.Http
                 {
                     if (entry != null)
                     {
-                        // During explicit disposal, don't check if can dispose - just force disposal
+                        // During explicit disposal, we should force disposal of all handlers regardless of CanDispose status
+                        entry._forceDispose = true;
                         disposables.Add(entry);
                     }
                 }
