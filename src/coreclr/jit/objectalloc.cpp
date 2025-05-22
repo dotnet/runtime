@@ -2582,7 +2582,13 @@ void ObjectAllocator::RewriteUses()
 
             // If we are tracking object fields, we may need to do field retyping
             //
-            if (m_allocator->m_trackObjectFields)
+            if (newType == TYP_STRUCT)
+            {
+                newLayout    = lclVarDsc->GetLayout();
+                newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
+                newFieldType = newType;
+            }
+            else if (m_allocator->m_trackObjectFields)
             {
                 const unsigned int fieldIndex = m_allocator->GetFieldIndexFromLocal(lclNum);
 
@@ -2590,16 +2596,6 @@ void ObjectAllocator::RewriteUses()
                 {
                     newFieldType = m_allocator->DoesIndexPointToStack(fieldIndex) ? TYP_I_IMPL : TYP_BYREF;
                 }
-            }
-            else if (newType == TYP_STRUCT)
-            {
-                newLayout    = lclVarDsc->GetLayout();
-                newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
-                newFieldType = newType;
-            }
-            else
-            {
-                tree->ChangeType(newType);
             }
 
             m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, newLayout, newFieldType);
