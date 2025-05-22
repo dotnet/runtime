@@ -25,7 +25,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [Fact]
         public static void {TestName}()
         {
-            var test = new LoadUnaryOpTest__{TestName}();
+            var test = new LoadNonFaultingUnaryOpTest__{TestName}();
 
             if (test.IsSupported)
             {
@@ -66,7 +66,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class LoadUnaryOpTest__{TestName}
+    public sealed unsafe class LoadNonFaultingUnaryOpTest__{TestName}
     {
         private struct DataTable
         {
@@ -134,7 +134,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(LoadUnaryOpTest__{TestName} testClass)
+            public void RunStructFldScenario(LoadNonFaultingUnaryOpTest__{TestName} testClass)
             {
                 var result = {Isa}.{Method}(({Op1BaseType}*)testClass._dataTable.inArray1Ptr);
 
@@ -158,7 +158,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        public LoadUnaryOpTest__{TestName}()
+        public LoadNonFaultingUnaryOpTest__{TestName}()
         {
             Succeeded = true;
 
