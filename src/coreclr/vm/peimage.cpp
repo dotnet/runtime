@@ -758,8 +758,6 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
 }
 #endif // !TARGET_UNIX
 
-#endif //DACCESS_COMPILE
-
 HANDLE PEImage::GetFileHandle()
 {
     CONTRACTL
@@ -776,11 +774,7 @@ HANDLE PEImage::GetFileHandle()
 
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
-#if !defined(DACCESS_COMPILE)
         EEFileLoadException::Throw(GetPathToLoad(), hr);
-#else // defined(DACCESS_COMPILE)
-        ThrowHR(hr);
-#endif // !defined(DACCESS_COMPILE)
     }
 
     return m_hFile;
@@ -819,6 +813,7 @@ HRESULT PEImage::TryOpenFile(bool takeLock)
     return HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
 }
 
+#endif // !DACCESS_COMPILE
 
 BOOL PEImage::IsPtrInImage(PTR_CVOID data)
 {
