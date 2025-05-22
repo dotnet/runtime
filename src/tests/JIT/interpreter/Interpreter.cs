@@ -845,10 +845,11 @@ public class InterpreterTest
         Console.WriteLine("TestLdtoken");
         if (!TestLdtoken())
             Environment.FailFast(null);
-        /*
+
+        Console.WriteLine("TestMdArray");
         if (!TestMdArray())
             Environment.FailFast(null);
-        */
+
         Console.WriteLine("TestExceptionHandling");
         TestExceptionHandling();
 
