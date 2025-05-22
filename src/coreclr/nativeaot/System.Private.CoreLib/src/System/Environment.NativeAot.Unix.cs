@@ -9,8 +9,6 @@ namespace System
 {
     public static partial class Environment
     {
-        public static long TickCount64 => (long)RuntimeImports.RhpGetTickCount64();
-
         [DoesNotReturn]
         private static void ExitRaw() => Interop.Sys.Exit(s_latchedExitCode);
     }
