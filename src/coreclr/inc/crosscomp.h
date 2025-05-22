@@ -706,69 +706,18 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 
 #endif
 
-#if defined(DACCESS_COMPILE)
-
 #if defined(TARGET_APPLE)
-#define DAC_CS_MAX_SIZE 128
-
+#define DAC_CS_MAX_SIZE 96
 #elif defined(TARGET_FREEBSD) || defined(TARGET_NETBSD)
 #define DAC_CS_MAX_SIZE 96
-
 #elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-#define DAC_CS_MAX_SIZE 24
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
 #define DAC_CS_MAX_SIZE 48
-#else
-#error  DAC_CS_MAX_SIZE is not defined for this *nix architecture.
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
-
 #elif defined(TARGET_WINDOWS)
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-#define DAC_CS_MAX_SIZE 24
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
-#define DAC_CS_MAX_SIZE 40
-#else
-#error  DAC_CS_MAX_SIZE is not defined for this Windows architecture.
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
-
+#define DAC_CS_MAX_SIZE 48
 #else
 // Fallback to a conservative default value
 #define DAC_CS_MAX_SIZE 128
 #endif
-
-#else // !DACCESS_COMPILE
-
-#if defined(__APPLE__)
-#define DAC_CS_MAX_SIZE 64
-
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
-#define DAC_CS_MAX_SIZE 96
-
-#elif defined(__linux__)
-#if defined(HOST_X86) || defined(HOST_ARM)
-#define DAC_CS_MAX_SIZE 24
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
-#define DAC_CS_MAX_SIZE 48
-#else
-#error  DAC_CS_MAX_SIZE is not defined for this *nix architecture.
-#endif // defined(HOST_X86) || defined(HOST_ARM)
-
-#elif defined(TARGET_WINDOWS)
-#if defined(HOST_X86) || defined(HOST_ARM)
-#define DAC_CS_MAX_SIZE 24
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
-#define DAC_CS_MAX_SIZE 40
-#else
-#error  DAC_CS_MAX_SIZE is not defined for this Windows architecture.
-#endif // defined(HOST_X86) || defined(HOST_ARM)
-
-#else
-// Fallback to a conservative default value
-#define DAC_CS_MAX_SIZE 128
-#endif
-
-#endif // DACCESS_COMPILE
 
 static_assert(DAC_CS_MAX_SIZE >= sizeof(minipal_critsect), "DAC_CS_MAX_SIZE must be greater than or equal to the size of minipal_critsect");
 
@@ -777,8 +726,16 @@ static_assert(DAC_CS_MAX_SIZE >= sizeof(minipal_critsect), "DAC_CS_MAX_SIZE must
 // We have this requirement for cross OS compiling the DAC.
 struct tgt_minipal_critsect final
 {
-    minipal_critsect _cs;
+    union
+    {
+        // DAC builds want to have the data layout of the target system.
+        // Make sure that the host minipal_critsect does not influence
+        // the target data layout
+#ifndef DACCESS_COMPILE
+        minipal_critsect _cs;
+#endif // !DACCESS_COMPILE
 
-    // This is unused padding to ensure struct size.
-    BYTE _dacPadding[DAC_CS_MAX_SIZE - sizeof(_cs)];
+        // This is unused padding to ensure struct size.
+        alignas(void*) BYTE _dacPadding[DAC_CS_MAX_SIZE];
+    };
 };
