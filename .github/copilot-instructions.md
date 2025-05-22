@@ -1,0 +1,169 @@
+# Building & Testing in dotnet/runtime
+
+## 1. Prerequisites
+
+These steps need to be done **before** applying any changes.
+
+### 1.1. Determine Affected Components
+
+Identify which components will be impacted by the changes. If in doubt, analyze the paths of the files to be updated:
+
+- **CoreCLR (CLR):** Changes in `src/coreclr/` or `src/tests/`
+- **Mono Runtime:** Changes in `src/mono/`
+- **Libraries:** Changes in `src/libraries/`
+- **WASM/WASI Libraries:** Changes in `src/libraries/` *and* the affected library targets WASM or WASI *and* the changes are included for the target (see below for details).
+- If none above apply, it is most possibly an infra-only or a docs-only change. Skip build and test steps.
+
+**WASM/WASI Library Change Detection**
+A change is considered WASM/WASI-relevant if:
+- The relevant `.csproj` contains explicit Browser/WASM or WASI targets (look for `<TargetFrameworks>`, `$(TargetPlatformIdentifier)`, or `Condition` attributes referencing `browser` or `wasi`, as well as `TARGET_BROWSER` or `TARGET_WASI` constants), **and**
+- The changed file is not excluded from the build for that platform in any way with a `Condition` attribute on `<ItemGroup>` or `<Compile>`.
+
+### 1.2. Baseline Setup
+
+Ensure you have a full successful build of the needed runtime+libraries as a baseline.
+
+1. Checkout `main` branch
+
+2. From the repository root, run the build depending on the affected component. If multiple components are affected, subsequently run and verify the builds for all of them.
+   - **CoreCLR (CLR):** `./build.sh clr+libs`
+   - **Mono Runtime:** `./build.sh mono+libs`
+   - **Libraries:** `./build.sh clr+libs -rc release`
+   - **WASM/WASI Libraries:** `./build.sh mono+libs -os browser`
+
+3. Verify the build completed without error.
+   - _If the build failed, report the failure and don't proceed with the changes._
+4. From the repository root:
+   - Configure PATH: `export PATH="$(pwd)/.dotnet:$PATH"`
+   - Verify SDK Version: `dotnet --version` should match `sdk.version` in `global.json`.
+5. Switch back to the working branch.
+
+---
+
+## 2. Iterative Build and Test Strategy
+
+1. Apply the intended changes
+2. **Attempt Build.** If the build fails, attempt to fix and retry the step (up to 5 attempts).
+3. **Attempt Test.**
+   * If a test _build_ fails, attempt to fix and retry the step (up to 5 attempts).
+   * If a test _run_ fails,
+      - Determine if the problem is in the test or in the source
+      - If the problem is in the test, attempt to fix and retry the step (up to 5 attempts).
+      - If the problem is in the source, reconsider the full changeset, attempt to fix and repeat the workflow.
+4. **Workflow Iteration:**
+   * Repeat build and test up to 5 cycles.
+   * If issues persist after 5 workflow cycles, report failure.
+   * If the same error persists after each fix attempt, do not repeat the same fix. Instead, escalate or report with full logs.
+
+When retrying, attempt different fixes and adjust based on the build/test results.
+
+### Success Criteria
+
+* **Build:**
+   - Completes without errors.
+   - Any non-zero exit code from build commands is considered a failure.
+* **Tests:**
+   - All tests must pass (zero failures).
+   - Any non-zero exit code from test commands is considered a failure.
+
+* **On success:** Report completion;
+  - Otherwise, report error(s) with logs for diagnostics.
+    - Collect logs from `artifacts/log/` and the console output for both build and test steps.
+    - Attach relevant log files or error snippets when reporting failures.
+
+---
+
+## 3. CoreCLR (CLR) Workflow
+
+From the repository root:
+
+- Build: `./build.sh -subset clr`
+- Run tests: `cd src/tests && ./build.sh`
+
+- More info:
+   - [Building CoreCLR Guide](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/coreclr/README.md)
+   - [Building and Running CoreCLR Tests](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/coreclr/testing.md)
+
+---
+
+## 4. Mono Runtime Workflow
+
+From the repository root:
+
+- Build: `./build.sh -subset mono+libs`
+
+- Run tests:
+
+  ```bash
+  ./build.sh clr.host
+  cd src/tests
+  ./build.sh mono debug /p:LibrariesConfiguration=debug
+  ```
+
+- More info:
+   - [Building Mono](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/mono/README.md)
+   - [Running test suites using Mono](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/mono/testing.md)
+
+---
+
+## 5. Libraries Workflow
+
+From the repository root:
+
+- Build: `./build.sh -subset libs -rc release`
+- Run tests: `./build.sh -subset libs.tests -test -rc release`
+
+- More info:
+   - [Build Libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md)
+   - [Testing Libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md)
+
+### HOW-TO: Identify Affected Libraries
+
+For each changed file under `src/libraries/`, find the matching library and its test project(s):
+
+* Most libraries use:
+
+  * Source: `src/libraries/<LibraryName>/src/<LibraryName>.csproj`
+  * Tests (single):
+
+    * `src/libraries/<LibraryName>/tests/<LibraryName>.Tests.csproj`
+    * OR `src/libraries/<LibraryName>/tests/<LibraryName>.Tests/<LibraryName>.Tests.csproj`
+  * Tests (multiple types):
+
+    * `src/libraries/<LibraryName>/tests/FunctionalTests/<LibraryName>.Functional.Tests.csproj`
+    * `src/libraries/<LibraryName>/tests/UnitTests/<LibraryName>.Unit.Tests.csproj`
+    * Or similar.
+
+### HOW-TO: Build and Test Specific Library
+
+If only one library is affected:
+
+1. **Navigate to the library directory:** `cd src/libraries/<LibraryName>`
+2. **Build the library:** `dotnet build`
+3. **Build and run all test projects:**
+   - For each discovered `*.Tests.csproj` in the `tests` subdirectory:
+
+     ```bash
+     dotnet build /t:test ./tests/<TestProject>.csproj
+     ```
+
+     *(Adjust path as needed. If in doubt, search with `find tests -name '*.csproj'`.)*
+
+## 6. WebAssembly (WASM) Libraries Workflow
+
+From the repository root:
+
+- Build: `./build.sh libs -os browser`
+- Run tests: `./build.sh libs.tests -test -os browser`
+
+- More info:
+   - [Build libraries for WebAssembly](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/webassembly-instructions.md)
+   - [Testing Libraries on WebAssembly](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-wasm.md)
+
+## 7. Additional Notes
+
+**Windows Command Equivalents**
+
+- Use `build.cmd` instead of `build.sh` on Windows.
+- Set PATH: `set PATH=%CD%\.dotnet;%PATH%`
+- All other commands are similar unless otherwise noted.
