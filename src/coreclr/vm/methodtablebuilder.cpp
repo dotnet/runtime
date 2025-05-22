@@ -1159,6 +1159,10 @@ MethodTableBuilder::CopyParentVtable()
      }
 }
 
+#ifdef TARGET_ARM64
+extern "C" uint64_t GetSveLengthFromOS();
+#endif
+
 //*******************************************************************************
 // Determine if this is the special SIMD type System.Numerics.Vector<T>, whose
 // size is determined dynamically based on the hardware and the presence of JIT
@@ -1203,10 +1207,17 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 #elif defined(TARGET_ARM64)
     if (CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64))
     {
-         // TODO-VL: This should use GetSveLengthFromOS()
-         // Probably use CLRConfig::XXX environment variable
-         // for testing
-        numInstanceFieldBytes = 32;
+#ifdef _DEBUG
+        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseSveForVectorT) != 0)
+        {
+            // For testing purpose, pretend the vector length is 32 bytes
+            numInstanceFieldBytes = 32;
+        }
+        else
+#endif
+        {
+            numInstanceFieldBytes = (uint32_t)GetSveLengthFromOS();
+        }
     }
 #endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
