@@ -844,8 +844,6 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
-            // Make sure we don't pass something other than a local address to the return buffer arg.
-            // It is allowed to pass current's method return buffer as it is a local too.
             if (!impIsLegalRetBuf(destAddr, srcCall))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
