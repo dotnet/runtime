@@ -4,6 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -54,6 +56,9 @@ public record GCInfo
     public NoGcRegionTable NoGCRegions { get; set; } = null!;
     public GcSlotTable SlotTable { get; set; } = null!;
     public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; } = [];
+
+    // Number of bytes of stack space that has been pushed for arguments at the current RelativeOffset.
+    public uint PushedArgStackDepth { get; set; }
 
     public GCInfo(Target target, TargetPointer gcInfoAddress, uint relativeOffset)
     {
@@ -126,7 +131,7 @@ public record GCInfo
         SlotTable = new GcSlotTable(target, Header, ref offset);
 
         // Verify the argument table offset is consistent
-        Debug.Assert(offset.Value == gcInfoAddress.Value + infoHdrSize + Header.ArgTabOffset);
+        Debug.Assert(!Header.HasArgTabOffset || offset.Value == gcInfoAddress.Value + infoHdrSize + Header.ArgTabOffset);
         Transitions = new Dictionary<int, List<BaseGcTransition>>();
         if (Header.Interruptible)
         {
@@ -140,6 +145,63 @@ public record GCInfo
         {
             GetTransitionsNoEbp(ref offset);
         }
+
+        CalculateDepth();
+    }
+
+    private void CalculateDepth()
+    {
+        using StreamWriter outputFile = new StreamWriter("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", true);
+
+        int depth = 0;
+        outputFile.WriteLine($"depth: {depth}");
+        foreach (int offset in Transitions.Keys.OrderBy(i => i))
+        {
+            if (offset > RelativeOffset)
+                break; // calculate only to current offset
+            outputFile.WriteLine($"CodeOffset: {offset:x8}");
+            foreach (BaseGcTransition gcTransition in Transitions[offset])
+            {
+                outputFile.WriteLine(gcTransition);
+
+                switch (gcTransition)
+                {
+                    case GcTransitionRegister gcTransitionRegister:
+                        if (gcTransitionRegister.IsLive == Action.PUSH)
+                        {
+                            depth += gcTransitionRegister.PushCountOrPopSize;
+                        }
+                        else if (gcTransitionRegister.IsLive == Action.POP)
+                        {
+                            depth -= gcTransitionRegister.PushCountOrPopSize;
+                        }
+                        break;
+                    case StackDepthTransition stackDepthTransition:
+                        depth += stackDepthTransition.StackDepthChange;
+                        break;
+                    case GcTransitionPointer gcTransitionPointer:
+                        if (gcTransitionPointer.Act == Action.PUSH)
+                        {
+                            // FEATURE_EH_FUNCLETS implies fullArgInfo
+                            // when there is fullArgInfo, the current depth is incremented by the number of pushed arguments
+                            depth++;
+                        }
+                        else if (gcTransitionPointer.Act == Action.POP)
+                        {
+                            depth -= (int)gcTransitionPointer.ArgOffset;
+                        }
+                        break;
+                    case IPtrMask:
+                    case GcTransitionCall:
+                        break;
+                    default:
+                        throw new InvalidOperationException("Unsupported gc transition type");
+                }
+            }
+            outputFile.WriteLine($"depth: {depth}");
+        }
+
+        PushedArgStackDepth = (uint)(depth * _target.PointerSize);
     }
 
     private void AddNewTransition(BaseGcTransition transition)
@@ -290,6 +352,7 @@ public record GCInfo
                     break;
                 case 0xF9:
                     argOffs = _target.GCDecodeUnsigned(ref offset);
+                    AddNewTransition(new StackDepthTransition((int)curOffs, (int)argOffs));
                     argCnt += argOffs;
                     break;
                 default:
@@ -559,6 +622,7 @@ public record GCInfo
                         CallPattern.DecodeCallPattern((val & 0x7f), out callArgCnt, out callRegMask, out callPndMask, out lastSkip);
                         curOffs += lastSkip;
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
                         break;
 
                     case 5:
@@ -573,6 +637,7 @@ public record GCInfo
                         lastSkip = CallPattern.callCommonDelta[val >> 6];
                         curOffs += lastSkip;
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
                         break;
                     case 6:
                         //
@@ -583,6 +648,7 @@ public record GCInfo
                         callArgCnt = _target.GCDecodeUnsigned(ref offset);
                         callPndMask = _target.GCDecodeUnsigned(ref offset);
                         SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                        AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
                         break;
                     case 7:
                         switch (val & 0x0C)
@@ -612,6 +678,7 @@ public record GCInfo
                                 offset += 4;
                                 callPndTab = true;
                                 SaveCallTransition(ref offset, val, curOffs, callRegMask, callPndTab, callPndTabCnt, callPndMask, lastSkip, ref imask);
+                                AddNewTransition(new StackDepthTransition((int)curOffs, (int)callArgCnt));
                                 break;
                             case 0x0C:
                                 return;

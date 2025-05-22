@@ -74,7 +74,7 @@ public class GcTransitionRegister : BaseGcTransition
 
     public GcTransitionRegister() { }
 
-    public GcTransitionRegister(int codeOffset, RegMask reg, Action isLive, bool isThis = false, bool iptr = false, int pushCountOrPopSize = -1)
+    public GcTransitionRegister(int codeOffset, RegMask reg, Action isLive, bool isThis = false, bool iptr = false, int pushCountOrPopSize = 1)
         : base(codeOffset)
     {
         Register = reg;
@@ -97,7 +97,7 @@ public class GcTransitionRegister : BaseGcTransition
         else
         {
             sb.Append((IsLive == Action.PUSH ? "push" : "pop") + $" {Register}");
-            if (PushCountOrPopSize != -1)
+            if (PushCountOrPopSize != 1)
                 sb.Append($" {PushCountOrPopSize}");
         }
 
@@ -287,5 +287,26 @@ public class GcTransitionCall : BaseGcTransition
         }
 
         return sb.ToString();
+    }
+}
+
+public class StackDepthTransition : BaseGcTransition
+{
+    public int StackDepthChange { get; set; }
+
+    public StackDepthTransition(int codeOffset)
+        : base(codeOffset)
+    {
+    }
+
+    public StackDepthTransition(int codeOffset, int stackDepthChange)
+        : base(codeOffset)
+    {
+        StackDepthChange = stackDepthChange;
+    }
+
+    public override string ToString()
+    {
+        return $"stack depth delta: {StackDepthChange}";
     }
 }
