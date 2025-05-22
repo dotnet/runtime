@@ -19,7 +19,6 @@ namespace Microsoft.Extensions.Http
         private Timer? _timer;
         private TimerCallback? _callback;
         // States for the handler tracking entry
-        private const int NotDisposed = 0;
         private const int Disposed = 1;
         private const int Expired = 2;
         private int _disposed;
@@ -48,7 +47,7 @@ namespace Microsoft.Extensions.Http
 
         public void StartExpiryTimer(TimerCallback callback)
         {
-            if (Interlocked.CompareExchange(ref _disposed, _disposed, _disposed) != NotDisposed)
+            if (_disposed > 0)
             {
                 return;
             }
@@ -73,7 +72,7 @@ namespace Microsoft.Extensions.Http
             lock (_lock)
             {
                 if (Volatile.Read(ref _timerInitialized) ||
-                    Interlocked.CompareExchange(ref _disposed, _disposed, _disposed) != NotDisposed)
+                    _disposed > 0)
                 {
                     return;
                 }
@@ -87,7 +86,7 @@ namespace Microsoft.Extensions.Http
         private void Timer_Tick()
         {
             Debug.Assert(_callback != null);
-            Debug.Assert(_timer != null || _disposed != NotDisposed);
+            Debug.Assert(_timer != null || _disposed > 0);
 
             lock (_lock)
             {
@@ -96,9 +95,9 @@ namespace Microsoft.Extensions.Http
                     _timer.Dispose();
                     _timer = null;
 
-                    // Only invoke the callback if we successfully transition from NotDisposed to Expired
+                    // Only invoke the callback if we successfully transition from 0 to Expired
                     // This ensures we don't convert to expired if already disposed
-                    if (Interlocked.CompareExchange(ref _disposed, Expired, NotDisposed) == NotDisposed)
+                    if (Interlocked.CompareExchange(ref _disposed, Expired, 0) == 0)
                     {
                         _callback(this);
                     }
@@ -117,10 +116,10 @@ namespace Microsoft.Extensions.Http
 
         public void Dispose()
         {
-            // Try to transition from NotDisposed to Disposed state
+            // Try to transition from 0 to Disposed state
             // If already in another state (Expired), do nothing further with handlers
-            int oldState = Interlocked.CompareExchange(ref _disposed, Disposed, NotDisposed);
-            if (oldState != NotDisposed)
+            int oldState = Interlocked.CompareExchange(ref _disposed, Disposed, 0);
+            if (oldState != 0)
             {
                 // If the entry was already disposed or expired, exit
                 // If it was expired, the timer has already stopped and
