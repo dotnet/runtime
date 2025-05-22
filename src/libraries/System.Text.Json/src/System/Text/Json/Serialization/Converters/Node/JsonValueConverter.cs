@@ -31,12 +31,12 @@ namespace System.Text.Json.Serialization.Converters
             // when deserializing a JsonValue. This maintains compatibility with .NET 8.0.
             if (reader.TokenType is JsonTokenType.StartObject)
             {
-                return (JsonValue)JsonNodeConverter.ObjectConverter.Read(ref reader, typeof(JsonObject), options)!;
+                return JsonNodeConverter.ObjectConverter.Read(ref reader, typeof(JsonObject), options) as JsonValue;
             }
             
             if (reader.TokenType is JsonTokenType.StartArray)
             {
-                return (JsonValue)JsonNodeConverter.ArrayConverter.Read(ref reader, typeof(JsonArray), options)!;
+                return JsonNodeConverter.ArrayConverter.Read(ref reader, typeof(JsonArray), options) as JsonValue;
             }
 
             JsonElement element = JsonElement.ParseValue(ref reader);
