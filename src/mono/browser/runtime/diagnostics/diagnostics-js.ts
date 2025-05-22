@@ -121,6 +121,9 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
         if (this.diagClient?.onClose) {
             this.diagClient.onClose(this.messagesToSend);
         }
+        if (this.diagClient?.onClosePromise) {
+            this.diagClient.onClosePromise.resolve(this.messagesToSend);
+        }
         if (this.messagesToSend.length === 0) {
             return 0;
         }

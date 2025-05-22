@@ -2427,6 +2427,25 @@ retry_emit:
                 m_ip++;
                 break;
 
+            case CEE_LDOBJ:
+            case CEE_STOBJ:
+            {
+                CHECK_STACK(*m_ip == CEE_LDOBJ ? 1 : 2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
+                InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
+                if (*m_ip == CEE_LDOBJ)
+                {
+                    EmitLdind(interpType, resolvedToken.hClass, 0);
+                }
+                else
+                {
+                    EmitStind(interpType, resolvedToken.hClass, 0, false);
+                }
+                m_ip += 5;
+                break;
+            }
+
             case CEE_RET:
             {
                 CORINFO_SIG_INFO sig = methodInfo->args;

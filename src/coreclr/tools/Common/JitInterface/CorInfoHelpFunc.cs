@@ -28,7 +28,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_LMOD,
         CORINFO_HELP_ULDIV,
         CORINFO_HELP_ULMOD,
+        CORINFO_HELP_LNG2FLT,               // Convert a signed int64 to a float
         CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
+        CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
         CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
         CORINFO_HELP_DBL2INT,
         CORINFO_HELP_DBL2INT_OVF,
