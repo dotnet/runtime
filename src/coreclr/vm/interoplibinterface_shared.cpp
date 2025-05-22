@@ -205,7 +205,7 @@ void Interop::WaitForGCBridgeFinish()
     }
 }
 
-void Interop::TriggerGCBridge(
+void Interop::TriggerClientBridgeProcessing(
     _In_ size_t sccsLen,
     _In_ StronglyConnectedComponent* sccs,
     _In_ size_t ccrsLen,
@@ -229,7 +229,7 @@ void Interop::TriggerGCBridge(
     bool gcBridgeTriggered;
 
 #ifdef FEATURE_JAVAMARSHAL
-    gcBridgeTriggered = JavaNative::TriggerGCBridge(sccsLen, sccs, ccrsLen, ccrs);
+    gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(sccsLen, sccs, ccrsLen, ccrs);
 #endif // FEATURE_JAVAMARSHAL
 
     if (!gcBridgeTriggered)

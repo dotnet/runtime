@@ -96,7 +96,7 @@ extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
     return TRUE;
 }
 
-bool JavaNative::TriggerGCBridge(
+bool JavaNative::TriggerClientBridgeProcessing(
     _In_ size_t sccsLen,
     _In_ StronglyConnectedComponent* sccs,
     _In_ size_t ccrsLen,

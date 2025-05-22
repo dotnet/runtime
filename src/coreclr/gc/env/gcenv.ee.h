@@ -39,7 +39,7 @@ public:
     // Promote refcounted handle callback
     static bool RefCountedHandleCallbacks(Object * pObject);
 
-    static void TriggerGCBridge(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs);
+    static void TriggerClientBridgeProcessing(size_t sccsLen, StronglyConnectedComponent* sccs, size_t ccrsLen, ComponentCrossReference* ccrs);
 
     // Sync block cache management
     static void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2);
@@ -100,6 +100,8 @@ public:
     static void LogErrorToHost(const char *message);
 
     static uint64_t GetThreadOSThreadId(Thread* thread);
+
+    static const char* GetMethodTableDebugName(MethodTable* pMT);
 };
 
 #endif // __GCENV_EE_H__
