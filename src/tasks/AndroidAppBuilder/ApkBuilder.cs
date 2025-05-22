@@ -120,11 +120,6 @@ public partial class ApkBuilder
             throw new ArgumentException($"Using DiagnosticPorts targeting Mono requires diagnostics_tracing runtime component, which was not included in 'RuntimeComponents' item group. @RuntimeComponents: '{string.Join(", ", RuntimeComponents)}'");
         }
 
-        if (IsCoreCLR && StaticLinkedRuntime)
-        {
-            throw new ArgumentException("Static linking is not supported for CoreCLR runtime");
-        }
-
         AndroidSdkHelper androidSdkHelper = new AndroidSdkHelper(AndroidSdk, BuildApiLevel, BuildToolsVersion);
 
         if (string.IsNullOrEmpty(MinApiLevel))
@@ -200,11 +195,8 @@ public partial class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
-        if (StripDebugSymbols)
-        {
-            extensionsToIgnore.Add(".pdb");
-            extensionsToIgnore.Add(".dbg");
-        }
+        extensionsToIgnore.Add(".pdb");
+        extensionsToIgnore.Add(".dbg");
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
@@ -263,6 +255,10 @@ public partial class ApkBuilder
             {
                 runtimeLib = Path.Combine(AppDir, "libmonosgen-2.0.so");
             }
+            else if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                runtimeLib = Path.Combine(AppDir, "libcoreclr_static.a");
+            }
             else if (IsCoreCLR)
             {
                 runtimeLib = Path.Combine(AppDir, "libcoreclr.so");
@@ -277,7 +273,7 @@ public partial class ApkBuilder
                 nativeLibraries += $"{runtimeLib}{Environment.NewLine}";
             }
 
-            if (StaticLinkedRuntime)
+            if (StaticLinkedRuntime && IsMono)
             {
                 string[] staticComponentStubLibs = Directory.GetFiles(AppDir, "libmono-component-*-stub-static.a");
 
@@ -311,12 +307,37 @@ public partial class ApkBuilder
                 // due to circular dependency.
                 nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
+
+            if (StaticLinkedRuntime && IsCoreCLR)
+            {
+                string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
+                string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
+                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
+
+                foreach (string lib in staticLibs)
+                {
+                    nativeLibraries += $"    {lib}{Environment.NewLine}";
+                }
+
+                nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+                nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+            }
         }
 
         StringBuilder extraLinkerArgs = new StringBuilder();
         foreach (ITaskItem item in ExtraLinkerArguments)
         {
             extraLinkerArgs.AppendLine($"    \"{item.ItemSpec}\"");
+        }
+
+        if (StaticLinkedRuntime && IsCoreCLR)
+        {
+            // Ensure global symbol references in the shared library are resolved to definitions in
+            // the same shared library. For the static linked runtime specifically, we need this for
+            // global functions in assembly for the linker to treat relative offsets to them as constant
+            extraLinkerArgs.AppendLine($"    \"-Wl,-Bsymbolic\"");
         }
 
         nativeLibraries += assemblerFilesToLink.ToString();
@@ -367,6 +388,8 @@ public partial class ApkBuilder
         project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
         project.BuildCMake(OutputDir, StripDebugSymbols);
 
+        // TODO: https://github.com/dotnet/runtime/issues/115717
+
         string abi = project.Abi;
 
         // 2. Compile Java files
@@ -401,7 +424,8 @@ public partial class ApkBuilder
             envVariables += $"\t\tsetEnv(\"{name}\", \"{value}\");\n";
         }
 
-        string jniLibraryName = (IsLibraryMode) ? ProjectName! : "System.Security.Cryptography.Native.Android";
+        string jniLibraryName = (IsLibraryMode) ? ProjectName! :
+            (StaticLinkedRuntime && IsCoreCLR) ? "monodroid" : "System.Security.Cryptography.Native.Android";
         string monoRunner = Utils.GetEmbeddedResource("MonoRunner.java")
             .Replace("%EntryPointLibName%", Path.GetFileName(mainLibraryFileName))
             .Replace("%JNI_LIBRARY_NAME%", jniLibraryName)
@@ -458,7 +482,8 @@ public partial class ApkBuilder
                     excludedLibs.Add("libmscordaccore.so");
                 }
             }
-            dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
+            if (!StaticLinkedRuntime)
+                dynamicLibs.AddRange(Directory.GetFiles(AppDir, "*.so").Where(file => !excludedLibs.Contains(Path.GetFileName(file))));
         }
 
         // add all *.so files to lib/%abi%/

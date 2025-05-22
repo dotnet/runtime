@@ -980,7 +980,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
-    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__), /* invalidateDFSTreeOnFGChange */ false);
+    fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__), /* allowFGChange */ true,
+                     /* invalidateDFSTreeOnFGChange */ false);
     Metrics.RedundantBranchesEliminated++;
     return true;
 }

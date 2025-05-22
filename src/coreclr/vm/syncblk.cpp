@@ -28,6 +28,7 @@
 #include "corhost.h"
 #include "comdelegate.h"
 #include "finalizerthread.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -52,11 +53,6 @@ SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 #ifndef DACCESS_COMPILE
 
-#ifndef TARGET_UNIX
-// static
-SLIST_HEADER InteropSyncBlockInfo::s_InteropInfoStandbyList;
-#endif // !TARGET_UNIX
-
 InteropSyncBlockInfo::~InteropSyncBlockInfo()
 {
     CONTRACTL
@@ -69,35 +65,7 @@ InteropSyncBlockInfo::~InteropSyncBlockInfo()
     CONTRACTL_END;
 
     FreeUMEntryThunk();
-
-#if defined(FEATURE_COMWRAPPERS)
-    delete m_managedObjectComWrapperMap;
-#endif // FEATURE_COMWRAPPERS
 }
-
-#ifndef TARGET_UNIX
-// Deletes all items in code:s_InteropInfoStandbyList.
-void InteropSyncBlockInfo::FlushStandbyList()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-
-        // make sure to use the global delete since the destructor has already run
-        ::delete (void *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
-#endif // !TARGET_UNIX
 
 void InteropSyncBlockInfo::FreeUMEntryThunk()
 {
@@ -626,13 +594,6 @@ void SyncBlockCache::CleanupSyncBlocks()
 
 // create the sync block cache
 /* static */
-void SyncBlockCache::Attach()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-// create the sync block cache
-/* static */
 void SyncBlockCache::Start()
 {
     CONTRACTL
@@ -660,10 +621,6 @@ void SyncBlockCache::Start()
     g_SyncBlockCacheInstance.Init();
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
-
-#ifndef TARGET_UNIX
-    InitializeSListHead(&InteropSyncBlockInfo::s_InteropInfoStandbyList);
-#endif // !TARGET_UNIX
 }
 
 
@@ -714,7 +671,7 @@ void    SyncBlockCache::InsertCleanupSyncBlock(SyncBlock* psb)
             continue;
     }
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
     if (psb->m_pInteropInfo)
     {
         // called during GC
@@ -976,23 +933,11 @@ void SyncBlockCache::DeleteSyncBlock(SyncBlock *psb)
     // clean up comdata
     if (psb->m_pInteropInfo)
     {
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
         CleanupSyncBlockComData(psb->m_pInteropInfo);
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
-#ifndef TARGET_UNIX
-        if (g_fEEShutDown)
-        {
-            delete psb->m_pInteropInfo;
-        }
-        else
-        {
-            psb->m_pInteropInfo->~InteropSyncBlockInfo();
-            InterlockedPushEntrySList(&InteropSyncBlockInfo::s_InteropInfoStandbyList, (PSLIST_ENTRY)psb->m_pInteropInfo);
-        }
-#else // !TARGET_UNIX
         delete psb->m_pInteropInfo;
-#endif // !TARGET_UNIX
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -2526,15 +2471,15 @@ inline void LogContention()
 #define LogContention()
 #endif
 
-double ComputeElapsedTimeInNanosecond(LARGE_INTEGER startTicks, LARGE_INTEGER endTicks)
+double ComputeElapsedTimeInNanosecond(int64_t startTicks, int64_t endTicks)
 {
-    static LARGE_INTEGER freq;
-    if (freq.QuadPart == 0)
-        QueryPerformanceFrequency(&freq);
+    static int64_t freq;
+    if (freq == 0)
+        freq = minipal_hires_tick_frequency();
 
     const double NsPerSecond = 1000 * 1000 * 1000;
-    LONGLONG elapsedTicks = endTicks.QuadPart - startTicks.QuadPart;
-    return (elapsedTicks * NsPerSecond) / freq.QuadPart;
+    LONGLONG elapsedTicks = endTicks - startTicks;
+    return (elapsedTicks * NsPerSecond) / freq;
 }
 
 BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
@@ -2559,12 +2504,12 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     OBJECTREF obj = GetOwningObject();
 
-    LARGE_INTEGER startTicks = { {0} };
+    int64_t startTicks = 0;
     bool isContentionKeywordEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_CONTENTION_KEYWORD);
 
     if (isContentionKeywordEnabled)
     {
-        QueryPerformanceCounter(&startTicks);
+        startTicks = minipal_hires_ticks();
 
         if (InterlockedCompareExchangeT(&m_emittedLockCreatedEvent, 1, 0) == 0)
         {
@@ -2599,7 +2544,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // Measure the time we wait so that, in the case where we wake up
             // and fail to acquire the mutex, we can adjust remaining timeout
             // accordingly.
-            ULONGLONG start = CLRGetTickCount64();
+            int64_t start = minipal_lowres_ticks();
 
             // It is likely the case that An APC threw an exception, for instance Thread.Interrupt(). The wait subsystem
             // guarantees that if a signal to the event being waited upon is observed by the woken thread, that thread's
@@ -2687,8 +2632,8 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
             // case is taken care of by 32-bit modulo arithmetic automatically.
             if (timeOut != (INT32)INFINITE)
             {
-                ULONGLONG end = CLRGetTickCount64();
-                ULONGLONG duration;
+                int64_t end = minipal_lowres_ticks();
+                int64_t duration;
                 if (end == start)
                 {
                     duration = 1;
@@ -2697,7 +2642,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
                 {
                     duration = end - start;
                 }
-                duration = min(duration, (ULONGLONG)timeOut);
+                duration = min(duration, (int64_t)timeOut);
                 timeOut -= (INT32)duration;
             }
         }
@@ -2709,8 +2654,7 @@ BOOL AwareLock::EnterEpilogHelper(Thread* pCurThread, INT32 timeOut)
 
     if (isContentionKeywordEnabled)
     {
-        LARGE_INTEGER endTicks;
-        QueryPerformanceCounter(&endTicks);
+        int64_t endTicks = minipal_hires_ticks();
 
         double elapsedTimeInNanosecond = ComputeElapsedTimeInNanosecond(startTicks, endTicks);
 

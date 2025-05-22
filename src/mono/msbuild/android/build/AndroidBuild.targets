@@ -22,7 +22,7 @@
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
       <TargetArchitecture Condition="'$(TargetArchitecture)' == ''">$(PlatformTarget)</TargetArchitecture>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
-      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -259,7 +259,8 @@
         ProjectName="$(AppName)"
         RuntimeComponents="@(RuntimeComponents)"
         RuntimeIdentifier="$(RuntimeIdentifier)"
-        StripDebugSymbols="$(StripDebugSymbols)">
+        StripDebugSymbols="$(StripDebugSymbols)"
+        StaticLinkedRuntime="$(StaticLinkedRuntime)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId"  PropertyName="ApkPackageId" />
     </AndroidAppBuilderTask>

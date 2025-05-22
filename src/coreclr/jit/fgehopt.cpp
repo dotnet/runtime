@@ -292,6 +292,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         return;
     }
 
+    JITDUMP("\nUpdating ACDs before removing EH#%u\n", XTnum);
+
     EHblkDsc* const      ebd = ehGetDsc(XTnum);
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
     for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
@@ -411,6 +413,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             JITDUMPEXEC(add->Dump());
         }
     }
+
+    JITDUMP("... done updating ACDs\n");
 }
 
 //------------------------------------------------------------------------
@@ -1885,9 +1889,12 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 
         // Remove the GT_END_LFIN from the continuation,
         // Note we only expect to see one such statement.
+        //
         bool foundEndLFin = false;
+        bool isEmpty      = true;
         for (Statement* const stmt : continuation->Statements())
         {
+            isEmpty       = false;
             GenTree* expr = stmt->GetRootNode();
             if (expr->gtOper == GT_END_LFIN)
             {
@@ -1896,6 +1903,16 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
                 foundEndLFin = true;
             }
         }
+
+        // If the continuation is unreachable, morph may
+        // have changed the continuation to an empty BBJ_THROW.
+        // Tolerate.
+        //
+        if (isEmpty && continuation->KindIs(BBJ_THROW))
+        {
+            return;
+        }
+
         assert(foundEndLFin);
     }
 #endif // FEATURE_EH_WINDOWS_X86

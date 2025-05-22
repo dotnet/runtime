@@ -1393,6 +1393,32 @@ namespace System.Threading.Tasks.Tests
             await t;
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task GitHubIssue_114262_Async()
+        {
+            var options = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = 5,
+                CancellationToken = new CancellationTokenSource().Token
+            };
+
+            var range = Enumerable.Range(1, 1000);
+
+            for (int i = 0; i < 100; i++)
+            {
+                await Parallel.ForEachAsync(range, options, async (data, token) =>
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        await Task.Yield();
+                        var buffer = new byte[10_000];
+                        await Task.Run(() => {var _ = buffer[0];} );
+                        await Task.Yield();
+                    }
+                });
+            }
+        }
+
         private static async IAsyncEnumerable<int> EnumerableRangeAsync(int start, int count, bool yield = true)
         {
             for (int i = start; i < start + count; i++)

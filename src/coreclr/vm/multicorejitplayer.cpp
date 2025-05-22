@@ -21,6 +21,7 @@
 #include "fstream.h"
 #include "hash.h"
 #include "clrex.h"
+#include "minipal/time.h"
 
 #include "appdomain.hpp"
 
@@ -382,7 +383,7 @@ MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AssemblyBinder * pBinder, L
     m_pFileBuffer        = NULL;
     m_nFileSize          = 0;
 
-    m_nStartTime         = GetTickCount();
+    m_nStartTime         = (unsigned int)minipal_lowres_ticks();
 }
 
 
@@ -733,7 +734,7 @@ bool MulticoreJitProfilePlayer::ShouldAbort(bool fast) const
         return false;
     }
 
-    if (GetTickCount() - m_nStartTime > MULTICOREJITLIFE)
+    if ((unsigned int)minipal_lowres_ticks() - m_nStartTime > MULTICOREJITLIFE)
     {
         MulticoreJitTrace(("MulticoreJitProfilePlayer::ShouldAbort time over"));
 
@@ -1117,7 +1118,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     HRESULT hr = S_OK;
 
-    DWORD start = GetTickCount();
+    DWORD start = (DWORD)minipal_lowres_ticks();
 
     Thread * pThread = GetThread();
 
@@ -1311,7 +1312,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
         }
     }
 
-    start = GetTickCount() - start;
+    start = (DWORD)minipal_lowres_ticks() - start;
 
     {
         FireEtwThreadTerminated((ULONGLONG) pThread, (ULONGLONG) GetAppDomain(), GetClrInstanceId());

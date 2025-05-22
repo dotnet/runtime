@@ -633,7 +633,7 @@ void CordbThread::RefreshHandle(HANDLE * phThread)
     HANDLE hThread = pDAC->GetThreadHandle(m_vmThreadToken);
 
     _ASSERTE(hThread != INVALID_HANDLE_VALUE);
-    PREFAST_ASSUME(hThread != NULL);
+    _ASSERTE(hThread != NULL);
 
     // need to dup handle here
     if (hThread == m_hCachedOutOfProcThread)
@@ -5901,7 +5901,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // This should never be null as long as regNum is a member of the RegNum enum.
         // If it is, an AV dereferencing a null-pointer in retail builds, or an assert in debug
         // builds is exactly the behavior we want.
-        PREFIX_ASSUME(pRegAddr != NULL);
+        _ASSERTE(pRegAddr != NULL);
 
         pRemoteValue = PTR_TO_CORDB_ADDRESS(*pRegAddr + offset);
     }
@@ -10568,7 +10568,7 @@ HRESULT CordbEval::GetResult(ICorDebugValue **ppResult)
         {
             pAppDomain = m_thread->GetAppDomain();
         }
-        PREFIX_ASSUME(pAppDomain != NULL);
+        _ASSERTE(pAppDomain != NULL);
 
         CordbType * pType = NULL;
         hr = CordbType::TypeDataToType(pAppDomain, &m_resultType, &pType);

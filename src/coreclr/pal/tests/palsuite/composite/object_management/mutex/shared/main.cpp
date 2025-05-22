@@ -132,7 +132,7 @@ PALTEST(composite_object_management_mutex_shared_paltest_mutex_shared, "composit
     }
 
          /* Register the start time */  
-    dwStartTime = GetTickCount();
+    dwStartTime = (DWORD)minipal_lowres_ticks();
     testStats.relationId   = RELATION_ID;
     testStats.processCount = PROCESS_COUNT;
     testStats.threadCount  = THREAD_COUNT;

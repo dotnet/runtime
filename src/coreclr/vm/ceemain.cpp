@@ -163,6 +163,7 @@
 #include "pgo.h"
 #include "pendingload.h"
 #include "cdacplatformmetadata.hpp"
+#include "minipal/time.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -372,13 +373,6 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT)
-        {
-            // Initiate shutdown so the ProcessExit handlers run
-            ForceEEShutdown(SCA_ReturnWhenShutdownComplete);
-        }
-
-        g_fInControlC = true;     // only for weakening assertions in checked build.
         return FALSE;             // keep looking for a real handler.
     }
 }
@@ -491,10 +485,10 @@ void InitGSCookie()
     void * pf = &__security_check_cookie;
     pf = NULL;
 
-    GSCookie val = (GSCookie)(__security_cookie ^ GetTickCount());
+    GSCookie val = (GSCookie)(__security_cookie ^ minipal_lowres_ticks());
 #else // !TARGET_UNIX
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)GetTickCount();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -659,6 +653,11 @@ void EEStartupHelper()
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
 
+        if (g_pConfig != NULL)
+        {
+            IfFailGoLog(g_pConfig->sync());
+        }
+
         Thread::StaticInitialize();
 
         JITInlineTrackingMap::StaticInitialize();
@@ -749,11 +748,6 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
         InitEventStore();
 
-        if (g_pConfig != NULL)
-        {
-            IfFailGoLog(g_pConfig->sync());
-        }
-
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -767,7 +761,7 @@ void EEStartupHelper()
         }
 
 #ifdef ENABLE_STARTUP_DELAY
-        PREFIX_ASSUME(NULL != g_pConfig);
+        _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
             ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
@@ -846,36 +840,19 @@ void EEStartupHelper()
 
 #ifdef PROFILING_SUPPORTED
         // Initialize the profiling services.
+        // This must happen before Thread::HasStarted() that fires profiler notifications is called on the finalizer thread.
         hr = ProfilingAPIUtility::InitializeProfiling();
 
         _ASSERTE(SUCCEEDED(hr));
         IfFailGo(hr);
 #endif // PROFILING_SUPPORTED
 
-        InitializeExceptionHandling();
-
-        //
-        // Install our global exception filter
-        //
-        if (!InstallUnhandledExceptionFilter())
-        {
-            IfFailGo(E_FAIL);
-        }
-
-        // throws on error
-        SetupThread();
-
-#ifdef DEBUGGING_SUPPORTED
-        // Notify debugger once the first thread is created to finish initialization.
-        if (g_pDebugInterface != NULL)
-        {
-            g_pDebugInterface->StartupPhase2(GetThread());
-        }
-#endif
-
-        // This isn't done as part of InitializeGarbageCollector() above because
-        // debugger must be initialized before creating EE thread objects
+#ifdef TARGET_WINDOWS
+        // Create the finalizer thread on windows earlier, as we will need to wait for
+        // the completion of its initialization part that initializes COM as that has to be done
+        // before the first Thread is attached. Thus we want to give the thread a bit more time.
         FinalizerThread::FinalizerThreadCreate();
+#endif
 
         InitPreStubManager();
 
@@ -888,8 +865,6 @@ void EEStartupHelper()
         // Before setting up the execution manager initialize the first part
         // of the JIT helpers.
         InitJITHelpers1();
-
-        SyncBlockCache::Attach();
 
         // Set up the sync block
         SyncBlockCache::Start();
@@ -904,6 +879,48 @@ void EEStartupHelper()
         }
 
         IfFailGo(hr);
+
+        InitializeExceptionHandling();
+
+        //
+        // Install our global exception filter
+        //
+        if (!InstallUnhandledExceptionFilter())
+        {
+            IfFailGo(E_FAIL);
+        }
+
+#ifdef TARGET_WINDOWS
+        // g_pGCHeap->Initialize() above could take nontrivial time, so by now the finalizer thread
+        // should have initialized FLS slot for thread cleanup notifications.
+        // And ensured that COM is initialized (must happen before allocating FLS slot).
+        // Make sure that this was done before we start creating Thread objects
+        // Ex: The call to SetupThread below will create and attach a Thread object.
+        //     Event pipe might also do that.
+        FinalizerThread::WaitForFinalizerThreadStart();
+#endif
+
+        // throws on error
+        _ASSERTE(GetThreadNULLOk() == NULL);
+        SetupThread();
+
+#ifdef DEBUGGING_SUPPORTED
+        // Notify debugger once the first thread is created to finish initialization.
+        if (g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->StartupPhase2(GetThread());
+        }
+#endif
+
+#ifndef TARGET_WINDOWS
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects
+        FinalizerThread::FinalizerThreadCreate();
+#else
+        // On windows the finalizer thread is already partially created and is waiting
+        // right before doing HasStarted(). We will release it now.
+        FinalizerThread::EnableFinalization();
+#endif
 
 #ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
@@ -964,12 +981,6 @@ void EEStartupHelper()
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-#ifdef TARGET_WINDOWS
-        // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
-        // And ensured that COM is initialized (must happen before allocating FLS slot).
-        // Make sure that this was done.
-        FinalizerThread::WaitForFinalizerThreadStart();
-#endif
         g_fEEStarted = TRUE;
         g_EEStartupStatus = S_OK;
         hr = S_OK;
@@ -1771,6 +1782,8 @@ void InitFlsSlot()
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
+    _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
+
     if (t_flsState == FLS_STATE_INVOKED)
     {
         _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");

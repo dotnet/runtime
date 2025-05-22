@@ -702,6 +702,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 break;
                             }
 
+                            case NI_Sve_And_Predicates:
+                            case NI_Sve_BitwiseClear_Predicates:
+                            case NI_Sve_Or_Predicates:
+                            case NI_Sve_Xor_Predicates:
+                                GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                              embMaskOp2Reg, INS_OPTS_SCALABLE_B);
+                                break;
+
                             default:
                             {
                                 GetEmitter()->emitIns_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg,
@@ -2478,6 +2486,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
+            case NI_Sve_ConditionalSelect_Predicates:
             {
                 GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_B);
                 break;
@@ -2648,6 +2657,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 break;
             }
+
+            case NI_Sve2_BitwiseClearXor:
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                }
+                // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, INS_OPTS_SCALABLE_D);
+                break;
 
             default:
                 unreached();

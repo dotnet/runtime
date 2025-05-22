@@ -19,6 +19,7 @@ Module Name:
 #include "syncclean.hpp"
 
 #include "threadsuspend.h"
+#include "minipal/time.h"
 
 //---------------------------------------------------------------------
 //  Array of primes, used by hash table to choose the number of buckets
@@ -262,7 +263,7 @@ void HashMap::Init(DWORD cbInitialSize, Compare* pCompare, BOOL fAsyncMode, Lock
 
     m_iPrimeIndex = GetNearestIndex(cbInitialSize);
     DWORD size = g_rgPrimes[m_iPrimeIndex];
-    PREFIX_ASSUME(size < 0x7fffffff);
+    _ASSERTE(size < 0x7fffffff);
 
     m_rgBuckets = new Bucket[size+1];
 
@@ -1184,7 +1185,7 @@ void HashMap::HashMapTest()
 
     LookupPerfTest(table, MinThreshold);
 
-    INT64 t0 = GetTickCount();
+    INT64 t0 = minipal_lowres_ticks();
     INT64 t1;
     for(int rep = 0; rep < 10000000; rep++) {
         for(unsigned int i=MinThreshold; i < MaxThreshold; i++) {
@@ -1199,7 +1200,7 @@ void HashMap::HashMapTest()
             table->InsertValue(i, i);
 
         if (rep % 500 == 0) {
-            t1 = GetTickCount();
+            t1 = minipal_lowres_ticks();
             minipal_log_print_info("Repetition %d, took %d ms\n", rep, (int) (t1-t0));
             t0 = t1;
             LookupPerfTest(table, MinThreshold);
@@ -1212,7 +1213,7 @@ void HashMap::HashMapTest()
 // For testing purposes only.
 void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
 {
-    INT64 t0 = GetTickCount();
+    INT64 t0 = minipal_lowres_ticks();
     for(int rep = 0; rep < 1000; rep++) {
         for(unsigned int i=2; i<MinThreshold; i++) {
             UPTR v = table->LookupValue(i, i);
@@ -1222,7 +1223,7 @@ void HashMap::LookupPerfTest(HashMap * table, const unsigned int MinThreshold)
             }
         }
     }
-    INT64 t1 = GetTickCount();
+    INT64 t1 = minipal_lowres_ticks();
     for(unsigned int i = MinThreshold * 80; i < MinThreshold * 80 + 1000; i++)
         table->LookupValue(i, i);
     //cout << "Lookup perf test (1000 * " << MinThreshold << ": " << (t1-t0) << " ms." << endl;
