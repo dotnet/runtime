@@ -1,11 +1,11 @@
 ---
 mode: 'agent'
-tools: ['githubRepo', 'codebase']
+tools: ['githubRepo', 'codebase', 'terminalLastCommand']
 description: 'Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.'
 ---
-Your goal is to add a new JIT-VM API by modifying several C++ and C# files. The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
-
-If the new API signature is not provided, prompt the user for it. For reference, examples are available in `src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt`
+Your goal is to add a new JIT-VM API by modifying several C++ and C# files. 
+The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
+If the new API signature is not provided, prompt the user for it with `src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference.
 
 For example, assume the following API signature is provided:
 ```
@@ -19,6 +19,7 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresI
 ```diff
 +CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
+
 Insert the new API definition without removing any existing entries, placing it near similar signatures.
 
 2. Invoke `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` (or `gen.bat` depending on the OS) to update auto-generated files.
@@ -73,15 +74,24 @@ to then replay them without the actual VM to speed up jit-diffs and other scenar
 values recorded/restored using special primitve types and helpers. We need to update the following files:
 
 * `src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
+* `src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
+* `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
+* `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
+
+Go through each of them one by one.
+
+* `src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
 Define two `Agnostic_*` types for input arguments and another one for output parameters (return value, output arguments).
  Do not create them if one of the generics ones can be re-used such as `DLD`, `DD`, `DLDL`, etc. Use `DWORD*` 
  like types for integers. Inspect the whole file to see how other APIs are defined.
 
 * `src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
 Add a new entry to the `LWM` list. Example:
+
 ```diff
 +LWM(GetUnboxedEntry, DWORDLONG, DLD);
 ```
+
 NOTE: Use upper-case for the first letter of the API name here.
 Add the new record after the very last LWM one.
 
@@ -89,10 +99,16 @@ Add the new record after the very last LWM one.
 Define 3 methods in this header file inside `class MethodContext` class (at the end of its definition).
 
 The methods are prefixed with `rec*` (record), `dmp*` (dump to console) and `rep*` (replay). Example
+
 ```diff
 +   void recGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg, CORINFO_METHOD_HANDLE result);
 +   void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
 +   CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
+```
+Now append a new element to `enum mcPackets` enum in the same file. Example:
+
+```diff
++   Packet_GetUnboxedEntry = <last value + 1>,
 ```
 
 * `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
