@@ -2391,20 +2391,6 @@ PhaseStatus Compiler::optOptimizeFlow()
         modified |= fgExpandRarelyRunBlocks();
     }
 
-    // Run branch optimizations for non-handler blocks.
-    assert(!fgFuncletsCreated);
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->hasHndIndex())
-        {
-            assert(bbIsHandlerBeg(block));
-            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
-            continue;
-        }
-
-        modified |= fgOptimizeBranch(block);
-    }
-
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 

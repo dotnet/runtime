@@ -361,7 +361,7 @@ public static class Program
     private static void WorkaroundOneFuzzTaskNotAcceptingMultipleJobs(IFuzzer[] fuzzers)
     {
         string yamlPath = Environment.CurrentDirectory;
-        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.sln")))
+        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.slnx")))
         {
             yamlPath = Path.GetDirectoryName(yamlPath) ?? throw new Exception("Couldn't find DotnetFuzzing.sln");
         }
