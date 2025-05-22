@@ -11897,7 +11897,7 @@ uint32_t CEEJitInfo::getTargetVectorLength()
      CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
      if (corjitFlags.IsSet(InstructionSet_Sve) || corjitFlags.IsSet(InstructionSet_Sve_Arm64))
      {
-         return GetSveLengthFromOS();
+         return (uint32_t)GetSveLengthFromOS();
      }
      else if (corjitFlags.IsSet(InstructionSet_AdvSimd) || corjitFlags.IsSet(InstructionSet_AdvSimd_Arm64))
      {
@@ -15051,7 +15051,7 @@ uint32_t CEEInfo::getTargetVectorLength()
      CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
      if (corjitFlags.IsSet(InstructionSet_Sve) || corjitFlags.IsSet(InstructionSet_Sve_Arm64))
      {
-         return GetSveLengthFromOS();
+         return (uint32_t)GetSveLengthFromOS();
      }
      else if (corjitFlags.IsSet(InstructionSet_AdvSimd) || corjitFlags.IsSet(InstructionSet_AdvSimd_Arm64))
      {

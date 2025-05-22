@@ -91,10 +91,6 @@ class EECodeInfo;
 #define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
 
-#ifdef TARGET_ARM64
-extern uint64_t g_sve_length;
-#endif
-
 enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,

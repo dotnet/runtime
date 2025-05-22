@@ -1519,7 +1519,6 @@ void EEJitManager::SetCpuInfo()
     {
         uint32_t maxVectorTLength = (maxVectorTBitWidth / 8);
         uint64_t sveLengthFromOS = GetSveLengthFromOS();
-        g_sve_length = sveLengthFromOS;
 
         // For now, enable SVE only when the system vector length is 16 bytes (128-bits)
         // TODO: https://github.com/dotnet/runtime/issues/101477
