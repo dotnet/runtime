@@ -52,6 +52,7 @@
     <Project Path="../System.ServiceProcess.ServiceController/ref/System.ServiceProcess.ServiceController.csproj" />
     <Project Path="../System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj" />
     <Project Path="../System.Text.Json/ref/System.Text.Json.csproj" />
+    <Project Path="../System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj" />
     <Project Path="ref/Microsoft.Extensions.Hosting.WindowsServices.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -90,6 +91,7 @@
     <Project Path="../System.ServiceProcess.ServiceController/src/System.ServiceProcess.ServiceController.csproj" />
     <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj" />
     <Project Path="../System.Text.Json/src/System.Text.Json.csproj" />
+    <Project Path="../System.Threading.AccessControl/src/System.Threading.AccessControl.csproj" />
     <Project Path="src/Microsoft.Extensions.Hosting.WindowsServices.csproj" />
   </Folder>
   <Folder Name="/tests/">

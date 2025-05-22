@@ -140,6 +140,14 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="../System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Threading/ref/System.Threading.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -262,6 +270,14 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="../System.Security.Permissions/src/System.Security.Permissions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../System.Threading.AccessControl/src/System.Threading.AccessControl.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />

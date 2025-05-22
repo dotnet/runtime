@@ -58,6 +58,7 @@
     <Project Path="../System.Runtime/ref/System.Runtime.csproj" />
     <Project Path="../System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj" />
     <Project Path="../System.Text.Json/ref/System.Text.Json.csproj" />
+    <Project Path="../System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj" />
     <Project Path="ref/Microsoft.Extensions.Options.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -96,6 +97,7 @@
     <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj" />
     <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj" />
     <Project Path="../System.Text.Json/src/System.Text.Json.csproj" />
+    <Project Path="../System.Threading.AccessControl/src/System.Threading.AccessControl.csproj" />
     <Project Path="src/Microsoft.Extensions.Options.csproj" />
   </Folder>
   <Folder Name="/tests/">

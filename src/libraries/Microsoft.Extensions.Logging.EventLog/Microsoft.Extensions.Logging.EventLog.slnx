@@ -19,6 +19,7 @@
     <Project Path="../System.Diagnostics.DiagnosticSource/ref/System.Diagnostics.DiagnosticSource.csproj" />
     <Project Path="../System.Diagnostics.EventLog/ref/System.Diagnostics.EventLog.csproj" />
     <Project Path="../System.Runtime/ref/System.Runtime.csproj" />
+    <Project Path="../System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj" />
     <Project Path="ref/Microsoft.Extensions.Logging.EventLog.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -32,6 +33,7 @@
     <Project Path="../System.Diagnostics.DiagnosticSource/src/System.Diagnostics.DiagnosticSource.csproj" />
     <Project Path="../System.Diagnostics.EventLog/src/Messages/System.Diagnostics.EventLog.Messages.csproj" />
     <Project Path="../System.Diagnostics.EventLog/src/System.Diagnostics.EventLog.csproj" />
+    <Project Path="../System.Threading.AccessControl/src/System.Threading.AccessControl.csproj" />
     <Project Path="src/Microsoft.Extensions.Logging.EventLog.csproj" />
   </Folder>
   <Folder Name="/tools/" />

@@ -34,7 +34,9 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <Project Path="../Microsoft.Bcl.Cryptography/src/Microsoft.Bcl.Cryptography.csproj" />
     <Project Path="../System.DirectoryServices.Protocols/src/System.DirectoryServices.Protocols.csproj" />
+    <Project Path="../System.Formats.Asn1/src/System.Formats.Asn1.csproj" />
     <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj" />
     <Project Path="../System.Net.Http.Json/src/System.Net.Http.Json.csproj" />
     <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj" />

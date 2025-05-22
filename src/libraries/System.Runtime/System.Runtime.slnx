@@ -52,6 +52,14 @@
     </Project>
   </Folder>
   <Folder Name="/ref/">
+    <Project Path="../System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Collections.Immutable/ref/System.Collections.Immutable.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -84,6 +92,14 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="../System.Diagnostics.Tracing/ref/System.Diagnostics.Tracing.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Formats.Nrbf/ref/System.Formats.Nrbf.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -93,14 +109,6 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="../System.IO.FileSystem.AccessControl/ref/System.IO.FileSystem.AccessControl.csproj">
-      <BuildType Solution="Checked|*" Project="Debug" />
-      <Build Solution="*|arm" Project="false" />
-      <Build Solution="*|arm64" Project="false" />
-      <Build Solution="Checked|Any CPU" Project="false" />
-      <Build Solution="Checked|x64" Project="false" />
-      <Build Solution="Checked|x86" Project="false" />
-    </Project>
-    <Project Path="../System.IO.Pipelines/ref/System.IO.Pipelines.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -133,6 +141,14 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="../System.Resources.Extensions/ref/System.Resources.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../System.Runtime.Serialization.Formatters/ref/System.Runtime.Serialization.Formatters.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -229,7 +245,23 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="../System.Collections.Concurrent/src/System.Collections.Concurrent.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Collections.Immutable/src/System.Collections.Immutable.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../System.Collections.NonGeneric/src/System.Collections.NonGeneric.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -261,6 +293,14 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
+    <Project Path="../System.Diagnostics.Tracing/src/System.Diagnostics.Tracing.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
     <Project Path="../System.Formats.Nrbf/src/System.Formats.Nrbf.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
@@ -277,7 +317,7 @@
       <Build Solution="Checked|x64" Project="false" />
       <Build Solution="Checked|x86" Project="false" />
     </Project>
-    <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj">
+    <Project Path="../System.Memory/src/System.Memory.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -302,6 +342,14 @@
       <Build Solution="Checked|x86" Project="false" />
     </Project>
     <Project Path="../System.Resources.Extensions/src/System.Resources.Extensions.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="../System.Runtime.Serialization.Formatters/src/System.Runtime.Serialization.Formatters.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />
@@ -854,6 +902,14 @@
   </Folder>
   <Folder Name="/tests/System.Runtime.Tests/">
     <Project Path="tests/System.Runtime.Tests/Hybrid/System.Runtime.IOS.Tests.csproj">
+      <BuildType Solution="Checked|*" Project="Debug" />
+      <Build Solution="*|arm" Project="false" />
+      <Build Solution="*|arm64" Project="false" />
+      <Build Solution="Checked|Any CPU" Project="false" />
+      <Build Solution="Checked|x64" Project="false" />
+      <Build Solution="Checked|x86" Project="false" />
+    </Project>
+    <Project Path="tests/System.Runtime.Tests/InvariantTimezone/System.Runtime.InvariantTimezone.Tests.csproj">
       <BuildType Solution="Checked|*" Project="Debug" />
       <Build Solution="*|arm" Project="false" />
       <Build Solution="*|arm64" Project="false" />

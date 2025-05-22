@@ -7,10 +7,15 @@
   </Folder>
   <Folder Name="/ref/">
     <Project Path="../System.Collections/ref/System.Collections.csproj" />
+    <Project Path="../System.Linq/ref/System.Linq.csproj" />
     <Project Path="../System.Runtime/ref/System.Runtime.csproj" />
+    <Project Path="../System.Threading.Channels/ref/System.Threading.Channels.csproj" />
     <Project Path="ref/System.Linq.AsyncEnumerable.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <Project Path="../Microsoft.Bcl.Memory/src/Microsoft.Bcl.Memory.csproj" />
+    <Project Path="../System.Threading.Channels/src/System.Threading.Channels.csproj" />
     <Project Path="src/System.Linq.AsyncEnumerable.csproj" />
   </Folder>
   <Folder Name="/tests/">

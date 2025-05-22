@@ -15,16 +15,28 @@
     <Project Path="../System.Collections.Immutable/ref/System.Collections.Immutable.csproj" />
     <Project Path="../System.Collections/ref/System.Collections.csproj" />
     <Project Path="../System.IO.Pipelines/ref/System.IO.Pipelines.csproj" />
+    <Project Path="../System.Linq.AsyncEnumerable/ref/System.Linq.AsyncEnumerable.csproj" />
+    <Project Path="../System.Linq/ref/System.Linq.csproj" />
     <Project Path="../System.Memory/ref/System.Memory.csproj" />
+    <Project Path="../System.Reflection.Metadata/ref/System.Reflection.Metadata.csproj" />
     <Project Path="../System.Runtime/ref/System.Runtime.csproj" />
     <Project Path="../System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj" />
     <Project Path="ref/System.Text.Json.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <Project Path="../Microsoft.Bcl.Memory/src/Microsoft.Bcl.Memory.csproj" />
     <Project Path="../Microsoft.Extensions.Primitives/src/Microsoft.Extensions.Primitives.csproj" />
     <Project Path="../System.Collections.Immutable/src/System.Collections.Immutable.csproj" />
+    <Project Path="../System.Composition.AttributedModel/src/System.Composition.AttributedModel.csproj" />
+    <Project Path="../System.Composition.Convention/src/System.Composition.Convention.csproj" />
+    <Project Path="../System.Composition.Hosting/src/System.Composition.Hosting.csproj" />
+    <Project Path="../System.Composition.Runtime/src/System.Composition.Runtime.csproj" />
+    <Project Path="../System.Composition.TypedParts/src/System.Composition.TypedParts.csproj" />
+    <Project Path="../System.Composition/src/System.Composition.csproj" />
     <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj" />
+    <Project Path="../System.Linq.AsyncEnumerable/src/System.Linq.AsyncEnumerable.csproj" />
+    <Project Path="../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
     <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj" />
     <Project Path="src/System.Text.Json.csproj" />
   </Folder>
