@@ -1055,6 +1055,171 @@ namespace System.Text.Json.Serialization.Tests
             // No definition for Flag32 combinations
         }
 
+        /// <summary>
+        /// Flag enum with negative values to test serialization behavior
+        /// </summary>
+        [Flags]
+        public enum FlagsWithNegativeValues
+        {
+            None = 0,
+            Negative = -2147483648, // int.MinValue
+            Max = 0x7FFFFFFF,       // int.MaxValue
+            All = -1                // All bits set to 1 (0xFFFFFFFF)
+        }
+        
+        /// <summary>
+        /// Flag enum with overlapping values to test serialization behavior
+        /// </summary>
+        [Flags]
+        public enum FlagsWithOverlappingValues
+        {
+            None = 0,
+            One = 1,
+            Two = 2,
+            Four = 4,
+            All = 7,
+            OneAndFour = 5,
+            // Both All and (One, Two, Four) represent value 7
+        }
+        
+        /// <summary>
+        /// Test for the flags enum regression fix where flag enums with missing bit definitions 
+        /// would be serialized as numbers instead of strings in .NET 9 but not in .NET 8.
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesFlagsEnumWithMissingBits()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+
+            // Test that our standard enum with all bits defined serializes correctly
+            var e1 = MyFlagsEnum1.BITS01 | MyFlagsEnum1.BIT3;
+            string json1 = JsonSerializer.Serialize(e1, options);
+            Assert.Equal("\"BITS01, BIT3\"", json1);
+            
+            // Verify the enum with missing bit definition produces the same result
+            // This is the key regression test
+            var e2 = MyFlagsEnum2.BITS01 | MyFlagsEnum2.BIT3;
+            string json2 = JsonSerializer.Serialize(e2, options);
+            Assert.Equal("\"BITS01, BIT3\"", json2);
+        }
+        
+        /// <summary>
+        /// Test for complex flags enum serialization with the JsonStringEnumConverter.
+        /// Ensures combinations that include bits without direct field definitions are
+        /// still serialized as strings rather than falling back to numeric representation.
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesComplexFlagsCombinations()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+            
+            // Test a complex combination including a flag that doesn't have
+            // a direct field definition but can be represented by other fields
+            var value = ComplexFlagsEnum.Combo1And2 | ComplexFlagsEnum.Combo4And8And16 | ComplexFlagsEnum.Flag32;
+            string json = JsonSerializer.Serialize(value, options);
+            
+            // Verify we get the exact expected JSON string
+            Assert.Equal("\"Combo1And2, Combo4And8And16, Flag32\"", json);
+        }
+
+        /// <summary>
+        /// Test flag enum serialization with JsonStringEnumConverter 
+        /// for values that include flags with overlapping or missing definitions.
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesFlagEnumsWithOverlappingAndMissingDefinitions()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+            
+            // Test AttributeTargets which is a [Flags] enum in the BCL
+            Assert.Equal("\"Class, Delegate\"", JsonSerializer.Serialize(
+                AttributeTargets.Class | AttributeTargets.Delegate,
+                options));
+            
+            // Test with more flags
+            Assert.Equal("\"Class, Delegate, Interface\"", JsonSerializer.Serialize(
+                AttributeTargets.Class | AttributeTargets.Delegate | AttributeTargets.Interface,
+                options));
+            
+            // Test All value
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(AttributeTargets.All, options));
+            
+            // Test with overlapping values
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(FlagsWithOverlappingValues.All, options));
+            Assert.Equal("\"One, Four\"", JsonSerializer.Serialize(FlagsWithOverlappingValues.OneAndFour, options));
+            
+            // Test One + Two + Four (equals All)
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(
+                FlagsWithOverlappingValues.One | FlagsWithOverlappingValues.Two | FlagsWithOverlappingValues.Four, 
+                options));
+        }
+        
+        /// <summary>
+        /// Test flag enum serialization for negative values and boundary conditions
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_SerializesFlagEnumsWithNegativeValues()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+            
+            // Test individual flags
+            Assert.Equal("\"Negative\"", JsonSerializer.Serialize(FlagsWithNegativeValues.Negative, options));
+            Assert.Equal("\"Max\"", JsonSerializer.Serialize(FlagsWithNegativeValues.Max, options));
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(FlagsWithNegativeValues.All, options));
+            
+            // Test combinations
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(
+                FlagsWithNegativeValues.Negative | FlagsWithNegativeValues.Max, 
+                options));
+        }
+        
+        /// <summary>
+        /// Test for round-trip serialization and deserialization of flag enums
+        /// </summary>
+        [Fact]
+        public static void JsonStringEnumConverter_RoundTripsFlagEnums()
+        {
+            JsonSerializerOptions options = new()
+            {
+                WriteIndented = false,
+                Converters = { new JsonStringEnumConverter() }
+            };
+            
+            // Round trip with enum that has all bits defined
+            var e1 = MyFlagsEnum1.BIT0 | MyFlagsEnum1.BIT2;
+            string json1 = JsonSerializer.Serialize(e1, options);
+            var e1Result = JsonSerializer.Deserialize<MyFlagsEnum1>(json1, options);
+            Assert.Equal(e1, e1Result);
+            
+            // Round trip with enum that has missing bit definitions
+            var e2 = MyFlagsEnum2.BIT0 | MyFlagsEnum2.BIT2;
+            string json2 = JsonSerializer.Serialize(e2, options);
+            var e2Result = JsonSerializer.Deserialize<MyFlagsEnum2>(json2, options);
+            Assert.Equal(e2, e2Result);
+            
+            // Round trip with complex combinations
+            var complex = ComplexFlagsEnum.Combo1And2 | ComplexFlagsEnum.Flag32;
+            string jsonComplex = JsonSerializer.Serialize(complex, options);
+            var complexResult = JsonSerializer.Deserialize<ComplexFlagsEnum>(jsonComplex, options);
+            Assert.Equal(complex, complexResult);
+        }
+
         [Theory]
         [InlineData(EnumWithConflictingMemberAttributes.Value1)]
         [InlineData(EnumWithConflictingMemberAttributes.Value2)]
@@ -1378,6 +1543,15 @@ namespace System.Text.Json.Serialization.Tests
             
             // Test All value
             Assert.Equal("\"All\"", JsonSerializer.Serialize(AttributeTargets.All, options));
+            
+            // Test with overlapping values
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(FlagsWithOverlappingValues.All, options));
+            Assert.Equal("\"One, Four\"", JsonSerializer.Serialize(FlagsWithOverlappingValues.OneAndFour, options));
+            
+            // Test One + Two + Four (equals All)
+            Assert.Equal("\"All\"", JsonSerializer.Serialize(
+                FlagsWithOverlappingValues.One | FlagsWithOverlappingValues.Two | FlagsWithOverlappingValues.Four, 
+                options));
         }
     }
 }
