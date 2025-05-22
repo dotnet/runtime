@@ -58,7 +58,12 @@ jobs:
           libnl-3-200 \
           libnl-route-3-200 \
           libnuma1 \
-          libxdp1 && \
+          libxdp1 \
+          libkrb5-dev \
+          liblttng-ust-dev \
+          cpio \
+          lld \
+          python-is-python3 && \
           curl -LO "https://packages.microsoft.com/ubuntu/24.04/prod/pool/main/libm/libmsquic/libmsquic_${LIBMSQUIC_VERSION}_amd64.deb" && \
           sudo dpkg -i libmsquic* && \
           rm libmsquic*
