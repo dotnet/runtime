@@ -319,6 +319,7 @@
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
       <_EmccCommonFlags Include="-v"                                       Condition="'$(EmccVerbose)' != 'false'" />
+      <_EmccCommonFlags Include="-g"                                       Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"          Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_EmccCommonFlags Include="-fwasm-exceptions"                        Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
       <_EmccCommonFlags Include="-s MAXIMUM_MEMORY=$(EmccMaximumHeapSize)" Condition="'$(EmccMaximumHeapSize)' != ''" />
@@ -346,7 +347,6 @@
       <_EmccCFlags Include="-emit-llvm" />
 
       <_EmccCFlags Include="&quot;-I%(_EmccIncludePaths.Identity)&quot;" />
-      <_EmccCFlags Include="-g"                                Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(WasmLinkOptimizationFlag)" />

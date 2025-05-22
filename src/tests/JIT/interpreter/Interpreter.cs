@@ -419,6 +419,13 @@ public class InterpreterTest
         if (!TestSizeof())
             Environment.FailFast(null);
 
+        if (!TestLdtoken())
+            Environment.FailFast(null);
+        /*
+        if (!TestMdArray())
+            Environment.FailFast(null);
+        */
+
         System.GC.Collect();
     }
 
@@ -958,5 +965,32 @@ public class InterpreterTest
         if (sizeof(MyStruct) != 4)
             return false;
         return true;
+    }
+
+    public static int LdtokenField = 7;
+
+    public static bool TestLdtoken()
+    {
+        Type t = typeof(int);
+        int i = 42;
+        if (!ReferenceEquals(t, i.GetType()))
+            return false;
+        // These generate field and method ldtoken opcodes, but the test fails because we are missing castclass and possibly also generics
+        /*
+        System.Linq.Expressions.Expression<Func<int>> f = () => LdtokenField;
+        System.Linq.Expressions.Expression<Action> a = () => TestLdtoken();
+        */
+        return true;
+    }
+
+    public static bool TestMdArray()
+    {
+        // FIXME: This generates roughly:
+        // newobj int[,].ctor
+        // ldtoken int[,]
+        // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
+        // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
+        int[,] a = {{1, 2}, {3, 4}};
+        return a[0, 1] == 2;
     }
 }
