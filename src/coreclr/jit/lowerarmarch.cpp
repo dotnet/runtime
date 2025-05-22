@@ -3982,16 +3982,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
+                        bool     contain  = false;
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
                         uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
                         if (maskSize == operSize)
                         {
                             // If the size of baseType of operation matches that of maskType, then contain
                             // the operation
-                            MakeSrcContained(node, op2);
-                            op2->MakeEmbMaskOp();
-                            JITDUMP("Containing op2 inside ConditionalSelect\n");
-                            DISPTREERANGE(BlockRange(), op2);
+                            contain = true;
                         }
                         else
                         {
@@ -4010,11 +4009,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
                             if (maskSize == auxSize)
                             {
-                                MakeSrcContained(node, op2);
-                                op2->MakeEmbMaskOp();
-                                JITDUMP("Containing convert op2 inside ConditionalSelect\n");
-                                DISPTREERANGE(BlockRange(), op2);
+                                contain = true;
                             }
+                        }
+
+                        if (contain)
+                        {
+                            MakeSrcContained(node, op2);
+                            op2->MakeEmbMaskOp();
+                            JITDUMP("Containing op2 inside ConditionalSelect\n");
+                            DISPTREERANGE(BlockRange(), node);
                         }
                     }
 
