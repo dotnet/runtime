@@ -60,7 +60,7 @@ function(create_standalone_jit)
   add_jit(${TARGETDETAILS_TARGET})
 
   set_target_definitions_to_custom_os_and_arch(${ARGN})
-  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
+  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_STATICALLY_LINKED TRUE)
 
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
   target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)

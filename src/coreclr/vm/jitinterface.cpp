@@ -13388,12 +13388,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
-#ifdef TARGET_WASM
+#ifndef FEATURE_JIT
     if (!ret)
     {
-        _ASSERTE(!"WASM cannot jit yet");
+        _ASSERTE(!"this platform does not support JIT compilation");
     }
-#else // !TARGET_WASM
+#else // !FEATURE_JIT
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13452,7 +13452,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
-#endif // !TARGET_WASM
+#endif // !FEATURE_JIT
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;

@@ -1721,6 +1721,13 @@ struct JIT_LOAD_DATA
                                         //   Otherwise, this will be S_OK (which is zero).
 };
 
+#ifdef FEATURE_STATICALLY_LINKED
+
+EXTERN_C void jitStartup(ICorJitHost* host);
+EXTERN_C ICorJitCompiler* getJit();
+
+#else // !FEATURE_STATICALLY_LINKED
+
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
 
@@ -1733,13 +1740,6 @@ CORINFO_OS getClrVmOs();
 #define LogJITInitializationError(...) \
     LOG((LF_JIT, LL_FATALERROR, __VA_ARGS__)); \
     LogErrorToHost(__VA_ARGS__);
-
-#ifdef TARGET_WASM
-#include "../interpreter/interpretershared.h"
-
-extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost);
-extern "C" INTERP_API ICorJitCompiler* getJit();
-#endif
 
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
@@ -1775,12 +1775,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
     *phJit = NULL;
     *ppICorJitCompiler = NULL;
 
-#ifdef TARGET_WASM
-// we are statically linking the interpreter into the host
-    HRESULT hr = S_OK;
-#else
     HRESULT hr = E_FAIL;
-#endif
 
 #ifdef _DEBUG
     if (pwzJitPath != NULL)
@@ -1839,11 +1834,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         EX_TRY
         {
             typedef void (* pjitStartup)(ICorJitHost*);
-#ifdef TARGET_WASM
-            pjitStartup jitStartupFn = jitStartup;
-#else
             pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
-#endif
 
             if (jitStartupFn)
             {
@@ -1855,11 +1846,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
             }
 
             typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
-#ifdef TARGET_WASM
-            pGetJitFn getJitFn = getJit;
-#else
             pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
-#endif
 
             if (getJitFn)
             {
@@ -1917,12 +1904,30 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
+#endif
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-EXTERN_C void jitStartup(ICorJitHost* host);
-EXTERN_C ICorJitCompiler* getJit();
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_STATICALLY_LINKED
+static ICorJitCompiler* InitializeStaticJIT()
+{
+    ICorJitCompiler* newJitCompiler = NULL;
+    EX_TRY
+    {
+        jitStartup(JitHost::getJitHost());
 
+        newJitCompiler = getJit();
+
+        // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+
+    return newJitCompiler;
+}
+#endif // FEATURE_STATICALLY_LINKED
+
+#ifdef FEATURE_JIT
 BOOL EEJitManager::LoadJIT()
 {
     STANDARD_VM_CONTRACT;
@@ -1942,22 +1947,9 @@ BOOL EEJitManager::LoadJIT()
 
     ICorJitCompiler* newJitCompiler = NULL;
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-
-    EX_TRY
-    {
-        jitStartup(JitHost::getJitHost());
-
-        newJitCompiler = getJit();
-
-        // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-
-#else // !FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_STATICALLY_LINKED
+    newJitCompiler = InitializeStaticJIT();
+#else // !FEATURE_STATICALLY_LINKED
 
     m_JITCompiler = NULL;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1970,7 +1962,7 @@ BOOL EEJitManager::LoadJIT()
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPath, &mainJitPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetJitName() DEBUGARG(mainJitPath), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_STATICALLY_LINKED
 
 #ifdef ALLOW_SXS_JIT
 
@@ -2068,6 +2060,7 @@ BOOL EEJitManager::LoadJIT()
     // In either failure case, we'll rip down the VM (so no need to clean up (unload) either JIT that did load successfully.
     return IsJitLoaded();
 }
+#endif // FEATURE_JIT
 
 //**************************************************************************
 
@@ -3760,12 +3753,17 @@ BOOL InterpreterJitManager::LoadInterpreter()
     ICorJitCompiler* newInterpreter = NULL;
     m_interpreter = NULL;
 
+#ifdef FEATURE_STATICALLY_LINKED
+    newInterpreter = InitializeStaticJIT();
+#else // !FEATURE_STATICALLY_LINKED
     g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
+
     LPWSTR interpreterPath = NULL;
 #ifdef _DEBUG
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetInterpreterName() DEBUGARG(interpreterPath), &m_interpreterHandle, &newInterpreter, &g_interpreterLoadData, getClrVmOs());
+#endif // !FEATURE_STATICALLY_LINKED
 
     // Publish the interpreter.
     m_interpreter = newInterpreter;
@@ -5169,7 +5167,7 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
     return FALSE;
 }
 
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
+#ifndef FEATURE_STATICALLY_LINKED
 /*********************************************************************/
 // This static method returns the name of the jit dll
 //
@@ -5190,7 +5188,7 @@ LPCWSTR ExecutionManager::GetJitName()
     return pwzJitName;
 }
 
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_STATICALLY_LINKED
 
 #ifdef FEATURE_INTERPRETER
 
