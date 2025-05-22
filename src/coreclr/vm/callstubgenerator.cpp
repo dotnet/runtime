@@ -547,7 +547,14 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
     _ASSERTE(pMD != NULL);
 
+    // Classes like System.String have special constructors that are fcalls. When invoking these, we need to override
+    //  HasThis (there's no thisref) and the return type (the return value is the new instance, not void).
+    bool isSpecialConstructor = pMD->IsCtor() && pMD->GetMethodTable()->HasComponentSize();
+
     MetaSig sig(pMD);
+    if (isSpecialConstructor)
+        sig.ClearHasThis();
+
     ArgIterator argIt(&sig);
 
     m_r1 = NoRange; // indicates that there is no active range of general purpose registers
@@ -679,6 +686,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
     {
         TypeHandle thReturnValueType;
         CorElementType thReturnType = sig.GetReturnTypeNormalized(&thReturnValueType);
+        if (isSpecialConstructor)
+        {
+            assert(thReturnType == ELEMENT_TYPE_VOID);
+            // FIXME: String?
+            thReturnType = ELEMENT_TYPE_OBJECT;
+        }
 
         switch (thReturnType)
         {
