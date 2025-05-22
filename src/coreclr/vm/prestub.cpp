@@ -3499,6 +3499,8 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
             {
                 OBJECTREF objRef = ObjectToOBJECTREF(*(Object **)pArgument);
 
+                GCPROTECT_BEGIN(objRef);
+
                 if (objRef == NULL)
                     COMPlusThrow(kNullReferenceException);
 
