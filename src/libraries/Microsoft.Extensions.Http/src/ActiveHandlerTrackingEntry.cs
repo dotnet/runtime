@@ -18,7 +18,6 @@ namespace Microsoft.Extensions.Http
         private bool _timerInitialized;
         private Timer? _timer;
         private TimerCallback? _callback;
-        
         // States for the handler tracking entry
         private const int NotDisposed = 0;
         private const int Disposed = 1;
@@ -73,7 +72,7 @@ namespace Microsoft.Extensions.Http
 
             lock (_lock)
             {
-                if (Volatile.Read(ref _timerInitialized) || 
+                if (Volatile.Read(ref _timerInitialized) ||
                     Interlocked.CompareExchange(ref _disposed, _disposed, _disposed) != NotDisposed)
                 {
                     return;
@@ -124,7 +123,7 @@ namespace Microsoft.Extensions.Http
             if (oldState != NotDisposed)
             {
                 // If the entry was already disposed or expired, exit
-                // If it was expired, the timer has already stopped and 
+                // If it was expired, the timer has already stopped and
                 // ExpiredHandlerTrackingEntry now owns both handler and scope
                 return;
             }
