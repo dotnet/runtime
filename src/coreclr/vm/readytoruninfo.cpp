@@ -515,12 +515,37 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
 static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER *pHeader)
 {
     READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
-    LPCUTF8 ownerCompositeExecutableName = NULL;
+    DWORD virtualAddress = UINT32_MAX;
     for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
     {
         if (pSections[i].Type == ReadyToRunSectionType::OwnerCompositeExecutable)
         {
-            ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + pSections[i].Section.VirtualAddress;
+            virtualAddress = pSections[i].Section.VirtualAddress;
+            break;
+        }
+    }
+
+    if (virtualAddress == UINT32_MAX)
+        return NULL;
+
+    LPCUTF8 ownerCompositeExecutableName = NULL;
+    if (pLayout->IsMapped())
+    {
+        ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + virtualAddress;
+    }
+    else
+    {
+        // Flat layout - find the data corresponding to the owner composite executable name
+        int numSections = pLayout->GetNumberOfSections();
+        IMAGE_SECTION_HEADER* sectionHeaders = pLayout->FindFirstSection();
+        for (int i = 0; i < numSections; i++)
+        {
+            IMAGE_SECTION_HEADER& header = sectionHeaders[i];
+            if (header.VirtualAddress > virtualAddress || header.VirtualAddress + header.SizeOfRawData < virtualAddress)
+                continue;
+
+            DWORD offset = virtualAddress - header.VirtualAddress;
+            ownerCompositeExecutableName = (LPCUTF8)pLayout->GetBase() + header.PointerToRawData + offset;
             break;
         }
     }
@@ -585,7 +610,8 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     // The file must have been loaded using LoadLibrary
-    if (!pLayout->IsRelocated())
+    bool isComponentAssembly = pLayout->IsComponentAssembly();
+    if (!isComponentAssembly && !pLayout->IsRelocated())
     {
         DoLog("Ready to Run disabled - module not loaded for execution");
         return NULL;
@@ -601,7 +627,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     }
 
     NativeImage *nativeImage = NULL;
-    if (pHeader->CoreHeader.Flags & READYTORUN_FLAG_COMPONENT)
+    if (isComponentAssembly)
     {
         nativeImage = AcquireCompositeImage(pModule, pLayout, pHeader);
         if (nativeImage == NULL)
