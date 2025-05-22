@@ -61,8 +61,21 @@ namespace Microsoft.Extensions.Http.Tests
 
         private class DisposeCounter
         {
-            public int Created { get; set; }
-            public int Disposed { get; set; }
+            private int _created;
+            private int _disposed;
+
+            public int Created => _created;
+            public int Disposed => _disposed;
+
+            public void IncrementCreated()
+            {
+                Interlocked.Increment(ref _created);
+            }
+
+            public void IncrementDisposed()
+            {
+                Interlocked.Increment(ref _disposed);
+            }
         }
 
         private class DisposeTrackingHandler : DelegatingHandler
@@ -72,14 +85,14 @@ namespace Microsoft.Extensions.Http.Tests
             public DisposeTrackingHandler(DisposeCounter counter)
             {
                 _counter = counter;
-                Interlocked.Increment(ref _counter.Created);
+                _counter.IncrementCreated();
             }
 
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
-                    Interlocked.Increment(ref _counter.Disposed);
+                    _counter.IncrementDisposed();
                 }
 
                 base.Dispose(disposing);
