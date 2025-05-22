@@ -2287,7 +2287,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
 //                      indirections to help codegen with write barrier selection.
 //
 void ObjectAllocator::UpdateAncestorTypes(
-    GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, var_types             newFieldType)
+    GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, var_types newFieldType)
 {
     assert((newType == TYP_BYREF) || (newType == TYP_I_IMPL) || newType == (TYP_STRUCT));
     assert(parentStack != nullptr);
@@ -2464,7 +2464,7 @@ void ObjectAllocator::UpdateAncestorTypes(
 
                     // If we are storing a struct, we may need to change the layout
                     //
-                    if (retypeFields && parent->OperIs(GT_STORE_BLK))
+                    if ((newFieldType != TYP_UNDEF) && parent->OperIs(GT_STORE_BLK))
                     {
                         parent->AsBlk()->SetLayout(newLayout);
                     }
@@ -2595,7 +2595,7 @@ void ObjectAllocator::RewriteUses()
             {
                 newLayout    = lclVarDsc->GetLayout();
                 newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
-                newFieldType              = newType;
+                newFieldType = newType;
             }
             else
             {
