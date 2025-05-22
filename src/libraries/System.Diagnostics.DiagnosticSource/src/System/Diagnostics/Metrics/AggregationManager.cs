@@ -156,6 +156,8 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
+                // While this operation is atomic, we use a lock to ensure thread safety when it's accessed by other parts of the code.
+                // Using lock(this) guarantees that no other thread is interacting with the field concurrently.
                 _histogramAggregation = histogramAggregation;
             }
         }

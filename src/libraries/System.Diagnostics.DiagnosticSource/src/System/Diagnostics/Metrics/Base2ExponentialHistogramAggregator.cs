@@ -1,6 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+// Adapted from OpenTelemetry .NET implementation:
+// https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/src/OpenTelemetry/Metrics/MetricPoint/Base2ExponentialBucketHistogram.cs
+// Licensed under the Apache 2.0 License. See LICENSE: https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/LICENSE.TXT
+// © OpenTelemetry Authors
+
 #if NET
 using System.Numerics;
 #endif
@@ -17,8 +22,6 @@ namespace System.Diagnostics.Metrics
     /// <remarks>
     /// - The implementation is based on the OpenTelemetry specification for exponential histograms.
     ///     https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#exponentialhistogram
-    /// - This implementation is ported from https://github.com/open-telemetry/opentelemetry-dotnet/blob/main/src/OpenTelemetry/Metrics/MetricPoint/Base2ExponentialBucketHistogram.cs.
-    ///     It is briefly updated to fit in the runtime design.
     /// </remarks>
     internal sealed class Base2ExponentialHistogramAggregator : Aggregator
     {
