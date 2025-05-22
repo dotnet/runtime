@@ -1397,7 +1397,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
-                                       var_types             pRetType,
+                                       var_types*            pRetType,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
