@@ -123,31 +123,22 @@ namespace Microsoft.Extensions.Http.Tests
                 _counter = services.GetRequiredService<DisposeCounter>();
             }
 
-            // Create handlers immediately without waiting for expiry
             public void CreateHandlersForTesting(int count)
             {
                 for (int i = 0; i < count; i++)
                 {
-                    // Create with direct handler creation to ensure we get our tracking handler
-                    var options = new HttpClientFactoryOptions
-                    {
-                        HttpMessageHandlerBuilderActions =
-                        {
-                            builder => builder.AdditionalHandlers.Add(new DisposeTrackingHandler(_counter))
-                        }
-                    };
-
+                    // Add a tracking handler directly
                     var handlerBuilder = _services.GetRequiredService<HttpMessageHandlerBuilder>();
                     handlerBuilder.Name = $"test{i}";
-
-                    foreach (var action in options.HttpMessageHandlerBuilderActions)
-                    {
-                        action(handlerBuilder);
-                    }
-
-                    var handler = new LifetimeTrackingHttpMessageHandler(handlerBuilder.Build());
+                    
+                    // Add our tracking handler to track disposals
+                    var trackingHandler = new DisposeTrackingHandler(_counter);
+                    handlerBuilder.PrimaryHandler = trackingHandler;
+                    
+                    var handler = handlerBuilder.Build();
+                    var wrappedHandler = new LifetimeTrackingHttpMessageHandler(handler);
                     var scope = _scopeFactory.CreateScope();
-                    var entry = new ActiveHandlerTrackingEntry($"test{i}", handler, scope, TimeSpan.FromSeconds(60));
+                    var entry = new ActiveHandlerTrackingEntry($"test{i}", wrappedHandler, scope, TimeSpan.FromSeconds(60));
                     
                     // Add the entry to the active handlers collection
                     _activeHandlers.TryAdd($"test{i}", new Lazy<ActiveHandlerTrackingEntry>(() => entry));
