@@ -182,19 +182,15 @@ namespace Internal.TypeSystem
                     return ((MetadataType)type).GetNestedType(TypeName.Unescape(typeName.Name));
                 }
 
-                string fullName = TypeName.Unescape(typeName.FullName);
-
                 if (_canonGenericResolver != null)
                 {
+                    string fullName = TypeName.Unescape(typeName.FullName);
                     TypeDesc canonType = _canonGenericResolver(module, fullName);
                     if (canonType != null)
                         return canonType;
                 }
 
-                string typeNamespace = typeName.Namespace;
-                string name = typeName.Name;
-
-                return module.GetType(typeNamespace, name, throwIfNotFound: false);
+                return module.GetType(typeName.Namespace, typeName.Name, throwIfNotFound: false);
             }
 
             private TypeDesc GetGenericType(TypeName typeName)
