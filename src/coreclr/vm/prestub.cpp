@@ -3499,8 +3499,6 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
             {
                 OBJECTREF objRef = ObjectToOBJECTREF(*(Object **)pArgument);
 
-                GCPROTECT_BEGIN(objRef);
-
                 if (objRef == NULL)
                     COMPlusThrow(kNullReferenceException);
 
@@ -3513,8 +3511,6 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 {
                     result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, th);
                 }
-
-                GCPROTECT_END();
             }
             break;
         default:
