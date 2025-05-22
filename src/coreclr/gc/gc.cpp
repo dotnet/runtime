@@ -23549,7 +23549,16 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
     // 4GB of RAM. Once Local GC code divergence is resolved and code is flowing
     // more freely between branches, it would be good to clean this up to use
     // total_physical_mem instead of SIZE_T_MAX.
-    assert(total_allowed_soh_allocation <= SIZE_T_MAX);
+
+    // Clamp total allowed SOH allocation to SIZE_T_MAX to prevent overflow in 32-bit adress spaces.
+    // On 32-bit architectures max_soh_allocated * num_heaps can exceed 32-bit address space,
+    // while on 64-bit architectures this prevents threoretical overflow when using an large
+    // number of heaps (num_heaps > 1). This ensures all size calculations remain within the maximum
+    // representable value for the platform's address space.
+    if(total_allowed_soh_allocation > SIZE_T_MAX)
+    {
+        total_allowed_soh_allocation = SIZE_T_MAX;
+    }
     uint64_t total_allowed_loh_allocation = SIZE_T_MAX;
     uint64_t total_allowed_soh_alloc_scaled = allocation_no_gc_soh > 0 ? static_cast<uint64_t>(total_allowed_soh_allocation / scale_factor) : 0;
     uint64_t total_allowed_loh_alloc_scaled = allocation_no_gc_loh > 0 ? static_cast<uint64_t>(total_allowed_loh_allocation / scale_factor) : 0;
