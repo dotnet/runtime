@@ -109,8 +109,6 @@ nativeStringResourceTable_mscorrc
 #OutputDebugStringW
 #OpenEventW
 #OutputDebugStringA
-#QueryPerformanceCounter
-#QueryPerformanceFrequency
 #RaiseException
 #RaiseFailFastException
 #ReadFile

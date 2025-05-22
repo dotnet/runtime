@@ -444,6 +444,133 @@ MII
             }
         }
 
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CreateFromPem_MLDsa_Pkcs8_Success()
+        {
+            (string CertificatePem, string PrivateKeyPem, string Thumbprint)[] cases =
+            [
+                (
+                    MLDsaTestsData.IetfMLDsa44.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa44.PrivateKeyPem_Seed,
+                    "9762DDD44288AF89BDE9213F63212E273815EBBE37F2CE918C496365B1382165"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa44.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa44.PrivateKeyPem_Expanded,
+                    "9762DDD44288AF89BDE9213F63212E273815EBBE37F2CE918C496365B1382165"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa44.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa44.PrivateKeyPem_Both,
+                    "9762DDD44288AF89BDE9213F63212E273815EBBE37F2CE918C496365B1382165"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa65.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa65.PrivateKeyPem_Seed,
+                    "7BF5DA6C6EE25C59ABB6B3561C27092872FEC9052BCB98A5AA94DFA806057BD2"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa65.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa65.PrivateKeyPem_Expanded,
+                    "7BF5DA6C6EE25C59ABB6B3561C27092872FEC9052BCB98A5AA94DFA806057BD2"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa65.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa65.PrivateKeyPem_Both,
+                    "7BF5DA6C6EE25C59ABB6B3561C27092872FEC9052BCB98A5AA94DFA806057BD2"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa87.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa87.PrivateKeyPem_Seed,
+                    "EE6DB12F8B68B814A9FF912F6BADB8299EA9BAEBF121FCEFFA60CF23D3B97E34"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa87.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa87.PrivateKeyPem_Expanded,
+                    "EE6DB12F8B68B814A9FF912F6BADB8299EA9BAEBF121FCEFFA60CF23D3B97E34"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa87.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa87.PrivateKeyPem_Both,
+                    "EE6DB12F8B68B814A9FF912F6BADB8299EA9BAEBF121FCEFFA60CF23D3B97E34"
+                ),
+            ];
+
+            foreach ((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            {
+                using (X509Certificate2 cert = X509Certificate2.CreateFromPem(CertificatePem, PrivateKeyPem))
+                {
+                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(PrivateKeyPem, cert.GetMLDsaPrivateKey);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void CreateFromEncryptedPem_MLDsa_Pkcs8_Success()
+        {
+            (string CertificatePem, string EncryptedPrivateKeyPem, string Thumbprint)[] cases =
+            [
+                (
+                    MLDsaTestsData.IetfMLDsa44.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa44.EncryptedPem_Seed,
+                    "9762DDD44288AF89BDE9213F63212E273815EBBE37F2CE918C496365B1382165"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa44.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa44.EncryptedPem_Expanded,
+                    "9762DDD44288AF89BDE9213F63212E273815EBBE37F2CE918C496365B1382165"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa44.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa44.EncryptedPem_Both,
+                    "9762DDD44288AF89BDE9213F63212E273815EBBE37F2CE918C496365B1382165"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa65.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa65.EncryptedPem_Seed,
+                    "7BF5DA6C6EE25C59ABB6B3561C27092872FEC9052BCB98A5AA94DFA806057BD2"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa65.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa65.EncryptedPem_Expanded,
+                    "7BF5DA6C6EE25C59ABB6B3561C27092872FEC9052BCB98A5AA94DFA806057BD2"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa65.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa65.EncryptedPem_Both,
+                    "7BF5DA6C6EE25C59ABB6B3561C27092872FEC9052BCB98A5AA94DFA806057BD2"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa87.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa87.EncryptedPem_Seed,
+                    "EE6DB12F8B68B814A9FF912F6BADB8299EA9BAEBF121FCEFFA60CF23D3B97E34"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa87.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa87.EncryptedPem_Expanded,
+                    "EE6DB12F8B68B814A9FF912F6BADB8299EA9BAEBF121FCEFFA60CF23D3B97E34"
+                ),
+                (
+                    MLDsaTestsData.IetfMLDsa87.CertificatePem,
+                    MLDsaTestsData.IetfMLDsa87.EncryptedPem_Both,
+                    "EE6DB12F8B68B814A9FF912F6BADB8299EA9BAEBF121FCEFFA60CF23D3B97E34"
+                ),
+            ];
+
+            foreach ((string CertificatePem, string PrivateKeyPem, string Thumbprint) in cases)
+            {
+                using (X509Certificate2 cert = X509Certificate2.CreateFromEncryptedPem(
+                    CertificatePem,
+                    PrivateKeyPem,
+                    "PLACEHOLDER"))
+                {
+                    Assert.Equal(Thumbprint, cert.GetCertHashString(HashAlgorithmName.SHA256));
+                    AssertKeysMatch(PrivateKeyPem, cert.GetMLDsaPrivateKey, "PLACEHOLDER");
+                }
+            }
+        }
+
         [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         public static void CreateFromPem_SlhDsa_Pkcs8_Ietf_Success()
         {
@@ -732,6 +859,10 @@ MII
             {
                 alg = password is null ? MLKem.ImportFromPem(keyPem) : MLKem.ImportFromEncryptedPem(keyPem, password);
             }
+            else if (key is MLDsa)
+            {
+                alg = password is null ? MLDsa.ImportFromPem(keyPem) : MLDsa.ImportFromEncryptedPem(keyPem, password);
+            }
             else if (key is SlhDsa)
             {
                 alg = password is null ? SlhDsa.ImportFromPem(keyPem) : SlhDsa.ImportFromEncryptedPem(keyPem, password);
@@ -784,6 +915,11 @@ MII
                         kemPem.Encapsulate(out ciphertext, out sharedSecret1);
                         sharedSecret2 = kem.Decapsulate(ciphertext);
                         AssertExtensions.SequenceEqual(sharedSecret1, sharedSecret2);
+                        break;
+                    case (MLDsa mldsa, MLDsa mldsaPem):
+                        byte[] mldsaSignature = new byte[mldsa.Algorithm.SignatureSizeInBytes];
+                        Assert.Equal(mldsaSignature.Length, mldsa.SignData(data, mldsaSignature));
+                        Assert.True(mldsaPem.VerifyData(data, mldsaSignature));
                         break;
                     case (SlhDsa slhDsa, SlhDsa slhDsaPem):
                         byte[] slhDsaSignature = slhDsa.SignData(data);
