@@ -11049,6 +11049,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+#else
+    if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Funclet prologs need to have at least 1 byte or the IL->Native mapping data will not
+        // include the first IL instruction in the funclet.
+        instGen(INS_nop);
+    }
 #endif
 
     genClearAvxStateInProlog();
