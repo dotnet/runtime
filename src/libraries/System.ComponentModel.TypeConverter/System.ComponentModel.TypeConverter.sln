@@ -57,6 +57,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "tools\ref", "{0507C9
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{4690D584-4BB0-4C37-9887-6ED204389F4D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnloadableTestTypes", "tests\UnloadableTestTypes\UnloadableTestTypes.csproj", "{E90D2C56-7790-C4B7-FF62-7D33707AC8E8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -147,6 +149,10 @@ Global
 		{C4C8D5AF-7402-4C82-BB99-B8EB18A52E8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4C8D5AF-7402-4C82-BB99-B8EB18A52E8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4C8D5AF-7402-4C82-BB99-B8EB18A52E8A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E90D2C56-7790-C4B7-FF62-7D33707AC8E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E90D2C56-7790-C4B7-FF62-7D33707AC8E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E90D2C56-7790-C4B7-FF62-7D33707AC8E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E90D2C56-7790-C4B7-FF62-7D33707AC8E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -176,6 +182,7 @@ Global
 		{82259970-A9FA-4264-A47F-7B697B317AE6} = {4690D584-4BB0-4C37-9887-6ED204389F4D}
 		{C4C8D5AF-7402-4C82-BB99-B8EB18A52E8A} = {0507C945-5BC2-4234-AF07-D766E2CCCDEC}
 		{0507C945-5BC2-4234-AF07-D766E2CCCDEC} = {4690D584-4BB0-4C37-9887-6ED204389F4D}
+		{E90D2C56-7790-C4B7-FF62-7D33707AC8E8} = {E80037BD-B4E3-43B7-A7C8-F6C3C6DA4EF8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1D4639D9-A4BD-410A-9491-E5F8D82DE8BF}
