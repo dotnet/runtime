@@ -181,6 +181,8 @@ namespace System.Reflection
             }
         }
 
+        public override bool IsCollectible => false;
+
         private string FormatNameAndSig()
         {
             // Serialization uses ToString to resolve MethodInfo overloads.
@@ -234,8 +236,6 @@ namespace System.Reflection
         {
             return ((RuntimeType)DeclaringType).GetRuntimeModule();
         }
-
-        public override bool IsCollectible => false;
 
         internal static MethodBase GetMethodFromHandleNoGenericCheck(RuntimeMethodHandle handle)
         {
@@ -748,6 +748,8 @@ namespace System.Reflection
                 return GetRuntimeModule();
             }
         }
+
+        public override bool IsCollectible => false;
 
         internal RuntimeModule GetRuntimeModule()
         {

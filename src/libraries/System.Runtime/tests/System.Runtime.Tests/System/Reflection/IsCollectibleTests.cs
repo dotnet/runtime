@@ -41,6 +41,13 @@ namespace System.Reflection.Tests
             Assert.False(typeof(DateTime).GetProperty("Now").IsCollectible);
             Assert.False(typeof(AppDomain).GetMethod("GetData").IsCollectible);
             Assert.False(typeof(AppDomain).GetMethod("ToString").IsCollectible);
+            Assert.False(typeof(string).GetConstructor(new[] { typeof(char[]), typeof(int), typeof(int) })!.IsCollectible);
+            Assert.False(typeof(string).GetConstructor(new[] { typeof(char), typeof(int) })!.IsCollectible);
+            Assert.False(typeof(TimeSpan).GetConstructor(new[] { typeof(int), typeof(int), typeof(int) })!.IsCollectible);
+            Assert.False(typeof(Uri).GetConstructor(new[] { typeof(string) })!.IsCollectible);
+            Assert.False(typeof(AppDomain).GetEvent("AssemblyLoad")!.IsCollectible);
+            Assert.False(typeof(AppDomain).GetEvent("ProcessExit")!.IsCollectible);
+
        }
     }
 
