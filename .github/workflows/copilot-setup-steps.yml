@@ -22,8 +22,8 @@ jobs:
         env:
           LIBMSQUIC_VERSION: '2.4.8'
         run: |
-          apt-get update && \
-          apt-get install -qq -y \
+          sudo apt-get update -y && \
+          sudo apt-get install -qq -y \
           autoconf \
           automake \
           build-essential \
@@ -59,9 +59,9 @@ jobs:
           libnl-route-3-200 \
           libnuma1 \
           libxdp1 && \
-          curl -LO "https://packages.microsoft.com/ubuntu/24.04/prod/pool/main/libm/libmsquic/libmsquic_${LIBMSQUIC_VERSION}_amd64.deb" \
-          && dpkg -i libmsquic* \
-          && rm libmsquic*
+          curl -LO "https://packages.microsoft.com/ubuntu/24.04/prod/pool/main/libm/libmsquic/libmsquic_${LIBMSQUIC_VERSION}_amd64.deb" && \
+          sudo dpkg -i libmsquic* && \
+          rm libmsquic*
 
       - name: Restore solution
         env:
