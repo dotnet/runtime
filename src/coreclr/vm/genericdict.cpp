@@ -716,7 +716,7 @@ Dictionary::PopulateEntry(
             pBlob = p.GetPtr();
         }
 
-        BYTE signatureKind = *pBlob++;
+        ReadyToRunFixupKind signatureKind = (ReadyToRunFixupKind)*pBlob++;
         if (signatureKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
@@ -726,10 +726,10 @@ Dictionary::PopulateEntry(
                 pInfoModule = pSignatureModule;
             }
             _ASSERTE(pInfoModule == pSignatureModule);
-            signatureKind &= ~READYTORUN_FIXUP_ModuleOverride;
+            signatureKind = (ReadyToRunFixupKind)(signatureKind & ~READYTORUN_FIXUP_ModuleOverride);
         }
 
-        switch ((ReadyToRunFixupKind) signatureKind)
+        switch (signatureKind)
         {
             case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleSlot; break;
             case READYTORUN_FIXUP_TypeHandle:            kind = TypeHandleSlot; break;
