@@ -119,6 +119,7 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool IsSecurityCritical => true;
         public sealed override bool IsSecuritySafeCritical => false;
         public sealed override bool IsSecurityTransparent => false;
+        public override bool IsCollectible => false;
     }
 }
 
@@ -145,6 +146,7 @@ namespace System.Reflection.Runtime.PropertyInfos
                 accessors[index++] = setter;
             return accessors;
         }
+        public override bool IsCollectible => false;
     }
 }
 
