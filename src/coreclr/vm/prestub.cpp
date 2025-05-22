@@ -3513,6 +3513,7 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
                 {
                     result = pMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, th);
                 }
+                GCPROTECT_END();
             }
             break;
         default:
