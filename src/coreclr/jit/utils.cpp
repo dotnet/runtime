@@ -1530,7 +1530,9 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_LMUL:
+            case CORINFO_HELP_LNG2FLT:
             case CORINFO_HELP_LNG2DBL:
+            case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
             case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
