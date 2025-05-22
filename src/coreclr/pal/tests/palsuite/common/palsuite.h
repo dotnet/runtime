@@ -163,7 +163,7 @@ inline ULONG   VAL32(ULONG x)
 
 WCHAR* convert(const char * aString);
 char* convertC(const WCHAR * wString);
-UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency);
+UINT64 GetHighPrecisionTimeStamp();
 
 extern const char* szTextFile;
 
@@ -184,7 +184,6 @@ BOOL Cleanup(HANDLE *hArray, DWORD dwIndex);
 #define NUM_TOKENS 3
 
 extern HANDLE hToken[NUM_TOKENS];
-extern CRITICAL_SECTION CriticalSection;
 
 /*
  * Take two wide strings representing file and directory names

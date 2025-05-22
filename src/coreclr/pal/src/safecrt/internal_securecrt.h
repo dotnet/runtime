@@ -71,8 +71,6 @@
 #define _TRUNCATE ((size_t)-1)
 #endif  /* !defined (_TRUNCATE) */
 
-/* #include <internal.h> */
-
 #define _VALIDATE_RETURN_VOID( expr, errorcode )                               \
     {                                                                          \
         int _Expr_val=!!(expr);                                                \

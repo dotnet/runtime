@@ -5,13 +5,13 @@
 **
 ** Source: Sleep.c
 **
-** Purpose: Test to establish whether the Sleep function stops the thread from 
+** Purpose: Test to establish whether the Sleep function stops the thread from
 ** executing for the specified times.
 **
 ** Dependencies: GetSystemTime
-**               Fail   
+**               Fail
 **               Trace
-** 
+**
 
 **
 **=========================================================*/
@@ -43,17 +43,11 @@ PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltes
         return ( FAIL );
     }
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        return FAIL;
-    }
-
     for( i = 0; i < sizeof(SleepTimes) / sizeof(DWORD); i++)
     {
-        OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+        OldTimeStamp = GetHighPrecisionTimeStamp();
         Sleep(SleepTimes[i]);
-        NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+        NewTimeStamp = GetHighPrecisionTimeStamp();
 
         TimeDelta = NewTimeStamp - OldTimeStamp;
 

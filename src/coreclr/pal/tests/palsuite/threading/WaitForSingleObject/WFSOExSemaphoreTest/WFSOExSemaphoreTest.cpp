@@ -138,12 +138,6 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
     BOOL Alertable;
     DWORD ret;
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        Fail("Failed to query performance frequency!");
-    }
-
     /* Create a semaphore that is not in the signalled state */
     hSemaphore = CreateSemaphoreExW(NULL, 0, 1, NULL, 0, 0);
 
@@ -155,14 +149,14 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    OldTimeStamp = GetHighPrecisionTimeStamp();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hSemaphore,
 								ChildThreadWaitTime,
         							Alertable);
 
-    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    NewTimeStamp = GetHighPrecisionTimeStamp();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
