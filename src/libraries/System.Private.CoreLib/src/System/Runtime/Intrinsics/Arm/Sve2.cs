@@ -192,6 +192,44 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AbsoluteDifferenceWideningLower(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningLower(left, right);
 
+        // Absolute difference long (top)
+
+        /// <summary>
+        /// svint16_t svabdlt[_s16](svint8_t op1, svint8_t op2)
+        ///   SABDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceWideningUpper(Vector<sbyte> left, Vector<sbyte> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// svint32_t svabdlt[_s32](svint16_t op1, svint16_t op2)
+        ///   SABDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceWideningUpper(Vector<short> left, Vector<short> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// svint64_t svabdlt[_s64](svint32_t op1, svint32_t op2)
+        ///   SABDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceWideningUpper(Vector<int> left, Vector<int> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// svuint16_t svabdlt[_u16](svuint8_t op1, svuint8_t op2)
+        ///   UABDLT Zresult.H, Zop1.B, Zop2.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceWideningUpper(Vector<byte> left, Vector<byte> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// svuint32_t svabdlt[_u32](svuint16_t op1, svuint16_t op2)
+        ///   UABDLT Zresult.S, Zop1.H, Zop2.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceWideningUpper(Vector<ushort> left, Vector<ushort> right) => AbsoluteDifferenceWideningUpper(left, right);
+
+        /// <summary>
+        /// svuint64_t svabdlt[_u64](svuint32_t op1, svuint32_t op2)
+        ///   UABDLT Zresult.D, Zop1.S, Zop2.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceWideningUpper(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningUpper(left, right);
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
