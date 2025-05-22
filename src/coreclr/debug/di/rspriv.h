@@ -2222,7 +2222,6 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-    static COM_METHOD CreateObjectV1(REFIID id, void **object);
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
@@ -11228,11 +11227,7 @@ public:
     DbgRSThread();
 
     // The TLS slot that we'll put this thread object in.
-#ifndef __GNUC__
-    static __declspec(thread) DbgRSThread* t_pCurrent;
-#else  // !__GNUC__
-    static __thread DbgRSThread* t_pCurrent;
-#endif // !__GNUC__
+    static thread_local DbgRSThread* t_pCurrent;
 
     static LONG s_Total; // Total count of thread objects
 

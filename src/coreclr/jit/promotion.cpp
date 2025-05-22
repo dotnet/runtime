@@ -1,6 +1,37 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// Physical promotion is an optimization where struct fields accessed as
+// LCL_FLD nodes are promoted to individual primitive-typed local variables
+// accessed as LCL_VAR, allowing register allocation and removing unnecessary
+// memory operations.
+//
+// Key components:
+//
+// 1. Candidate Identification:
+//    - Identifies struct locals that aren't already promoted and aren't address-exposed
+//    - Analyzes access patterns to determine which fields are good promotion candidates
+//    - Uses weighted cost models to balance performance and code size and to take PGO
+//      data into account
+//
+// 2. Field Promotion:
+//    - Creates primitive-typed replacement locals for selected fields
+//    - Records which parts of the struct remains unpromoted
+//
+// 3. Access Transformation:
+//    - Transforms local field accesses to use promoted field variables
+//    - Decomposes struct stores and copies to operate on the primitive fields
+//    - Handles call argument passing and returns with field lists where appropriate
+//    - Tracks when values in promoted fields vs. original struct are fresher
+//    - Inserts read-backs when the struct field is fresher than the promoted local
+//    - Inserts write-backs when the promoted local is fresher than the struct field
+//    - Ensures proper state across basic block boundaries and exception flow
+//
+// The transformation carefully handles OSR locals, parameters, and call arguments,
+// while maintaining correct behavior for exception handling and control flow.
+//
+
 #include "jitpch.h"
 #include "promotion.h"
 #include "jitstd/algorithm.h"

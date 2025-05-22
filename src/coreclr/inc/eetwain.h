@@ -259,7 +259,7 @@ virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
 virtual bool IsInPrologOrEpilog(DWORD  relPCOffset,
                                 GCInfoToken gcInfoToken,
                                 size_t* prologSize) = 0;
-
+#ifndef FEATURE_EH_FUNCLETS
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized methods only)
 */
@@ -267,6 +267,7 @@ virtual bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags) = 0;
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*
@@ -307,6 +308,10 @@ virtual void            LeaveCatch(GCInfoToken gcInfoToken,
                                    PCONTEXT pCtx)=0;
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter) = 0;
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted) = 0;
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD) = 0;
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -483,9 +488,9 @@ PTR_VOID GetExactGenericsToken(PREGDISPLAY     pContext,
                                EECodeInfo *    pCodeInfo);
 
 static
-PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
+PTR_VOID GetExactGenericsToken(TADDR           sp,
+                               TADDR           fp,
                                EECodeInfo *    pCodeInfo);
-
 
 #endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
 
@@ -509,6 +514,7 @@ bool IsInPrologOrEpilog(
                 GCInfoToken gcInfoToken,
                 size_t*     prologSize);
 
+#ifndef FEATURE_EH_FUNCLETS
 /*
   Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
 */
@@ -517,6 +523,7 @@ bool IsInSynchronizedRegion(
                 DWORD       relOffset,
                 GCInfoToken gcInfoToken,
                 unsigned    flags);
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*
@@ -553,6 +560,11 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
                          PCONTEXT pCtx);
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD);
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION
@@ -701,6 +713,7 @@ bool IsInPrologOrEpilog(
     return false;
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 virtual
 bool IsInSynchronizedRegion(
                 DWORD       relOffset,
@@ -711,6 +724,7 @@ bool IsInSynchronizedRegion(
     _ASSERTE(FALSE);
     return false;
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 virtual
@@ -762,6 +776,10 @@ virtual void LeaveCatch(GCInfoToken gcInfoToken,
 }
 #else // FEATURE_EH_FUNCLETS
 virtual DWORD_PTR CallFunclet(OBJECTREF throwable, void* pHandler, REGDISPLAY *pRD, ExInfo *pExInfo, bool isFilter);
+virtual void ResumeAfterCatch(CONTEXT *pContext, size_t targetSSP, bool fIntercepted);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+virtual void UpdateSSP(PREGDISPLAY pRD);
+#endif // HOST_AMD64 && HOST_WINDOWS
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_REMAP_FUNCTION

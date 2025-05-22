@@ -292,6 +292,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         return;
     }
 
+    JITDUMP("\nUpdating ACDs before removing EH#%u\n", XTnum);
+
     EHblkDsc* const      ebd = ehGetDsc(XTnum);
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
     for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
@@ -411,6 +413,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             JITDUMPEXEC(add->Dump());
         }
     }
+
+    JITDUMP("... done updating ACDs\n");
 }
 
 //------------------------------------------------------------------------
@@ -747,8 +751,10 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         assert(firstHandlerBlock->bbRefs >= 2);
         firstHandlerBlock->bbRefs -= 1;
 
-        // (8) The old try entry no longer needs special protection.
+        // (8) The old try/handler entries no longer need special protection.
         firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        assert(!bbIsHandlerBeg(firstHandlerBlock));
+        firstHandlerBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // Another one bites the dust...
         emptyCount++;
@@ -1472,9 +1478,6 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Mark the block as the start of the cloned finally.
                 newBlock->SetFlags(BBF_CLONED_FINALLY_BEGIN);
-
-                // Cloned finally entry block does not need any special protection.
-                newBlock->RemoveFlags(BBF_DONT_REMOVE);
             }
 
             if (block == lastBlock)
@@ -1483,6 +1486,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 newBlock->SetFlags(BBF_CLONED_FINALLY_END);
             }
 
+            // Cloned finally block does not need any special protection.
             newBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // Make sure clone block state hasn't munged the try region.
@@ -1885,9 +1889,12 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 
         // Remove the GT_END_LFIN from the continuation,
         // Note we only expect to see one such statement.
+        //
         bool foundEndLFin = false;
+        bool isEmpty      = true;
         for (Statement* const stmt : continuation->Statements())
         {
+            isEmpty       = false;
             GenTree* expr = stmt->GetRootNode();
             if (expr->gtOper == GT_END_LFIN)
             {
@@ -1896,6 +1903,16 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
                 foundEndLFin = true;
             }
         }
+
+        // If the continuation is unreachable, morph may
+        // have changed the continuation to an empty BBJ_THROW.
+        // Tolerate.
+        //
+        if (isEmpty && continuation->KindIs(BBJ_THROW))
+        {
+            return;
+        }
+
         assert(foundEndLFin);
     }
 #endif // FEATURE_EH_WINDOWS_X86

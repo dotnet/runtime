@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="OneFuzz.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="../System.Formats.Nrbf/src/System.Formats.Nrbf.csproj" />
+  <Project Path="DotnetFuzzing/DotnetFuzzing.csproj" />
+</Solution>

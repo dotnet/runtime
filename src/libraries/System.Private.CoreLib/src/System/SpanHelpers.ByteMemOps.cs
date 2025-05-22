@@ -239,7 +239,7 @@ namespace System
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
-            Buffer.Memmove(ref dest, ref src, len);
+            Buffer.MemmoveInternal(ref dest, ref src, len);
         }
 
         [Intrinsic] // Unrolled for small sizes
@@ -425,7 +425,7 @@ namespace System
         PInvoke:
             // Implicit nullchecks
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
-            Buffer.ZeroMemory(ref dest, len);
+            Buffer.ZeroMemoryInternal(ref dest, len);
         }
 
         internal static void Fill(ref byte dest, byte value, nuint len)

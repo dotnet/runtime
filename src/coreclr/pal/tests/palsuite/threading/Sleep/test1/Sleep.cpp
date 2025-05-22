@@ -32,8 +32,8 @@ PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltes
     /* Milliseconds of error which are acceptable Function execution time, etc. */
     DWORD AcceptableTimeError = 150;
 
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     DWORD MaxDelta;
     DWORD TimeDelta;
     DWORD i;
@@ -43,17 +43,11 @@ PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltes
         return ( FAIL );
     }
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        return FAIL;
-    }
-
     for( i = 0; i < sizeof(SleepTimes) / sizeof(DWORD); i++)
     {
-        OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+        OldTimeStamp = minipal_lowres_ticks();
         Sleep(SleepTimes[i]);
-        NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+        NewTimeStamp = minipal_lowres_ticks();
 
         TimeDelta = NewTimeStamp - OldTimeStamp;
 

@@ -13,6 +13,7 @@
 #include <eventpipe/ep-metadata-generator.h>
 #include <eventpipe/ep-event-payload.h>
 #include <eventpipe/ep-buffer-manager.h>
+#include "minipal/time.h"
 
 #ifdef FEATURE_PERFTRACING
 
@@ -246,7 +247,7 @@ EXTERN_C UInt32_BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(uint64_t session
         {
             pSessionInfo->StartTimeAsUTCFileTime = ep_session_get_session_start_time (pSession);
             pSessionInfo->StartTimeStamp = ep_session_get_session_start_timestamp(pSession);
-            pSessionInfo->TimeStampFrequency = PalQueryPerformanceFrequency();
+            pSessionInfo->TimeStampFrequency = minipal_hires_tick_frequency();
             retVal = true;
         }
     }

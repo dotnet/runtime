@@ -125,12 +125,10 @@
       _ReadWasmProps;
       _SetWasmBuildNativeDefaults;
       _GetDefaultWasmAssembliesToBundle;
-      _WasmGetRuntimeConfigPath;
     </PrepareInputsForWasmBuildDependsOn>
 
     <WasmGenerateAppBundleDependsOn>
       $(WasmGenerateAppBundleDependsOn);
-      _WasmGenerateRuntimeConfig;
     </WasmGenerateAppBundleDependsOn>
 
     <!-- FIXME: TMP: added _PrepareForWasmBuildNative as it used by emsdk cache as beforeTargets -->
@@ -152,7 +150,6 @@
       _WasmSelectRuntimeComponentsForLinking;
       _WasmCompileAssemblyBitCodeFilesForAOT;
       _WasmCalculateInitialHeapSizeFromBitcodeFiles;
-      _WasmGenerateRuntimeConfig;
       _WasmWriteRspForCompilingNativeSourceFiles;
       _WasmCompileNativeSourceFiles;
       _GenerateObjectFilesForSingleFileBundle;
@@ -350,14 +347,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_WasmGetRuntimeConfigPath">
-    <PropertyGroup>
-      <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == '$(AssemblyName)' and '%(WasmAssembliesToBundle.Extension)' == '.dll' and $(WasmGenerateAppBundle) == 'true'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
-      <_WasmRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' == '' and $(_MainAssemblyPath) != ''">$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</_WasmRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_WasmRuntimeConfigFilePath)' != ''">$([System.IO.Path]::GetDirectoryName($(_WasmRuntimeConfigFilePath)))\runtimeconfig.bin</_ParsedRuntimeConfigFilePath>
-    </PropertyGroup>
-  </Target>
-
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'" Returns="@(_WasmAssembliesInternal)">
     <WasmLoadAssembliesAndReferences
       Assemblies="@(_WasmAssembliesInternal)"
@@ -380,8 +369,8 @@
              Text="Could not find %24(AssemblyName)=$(AssemblyName).dll in the assemblies to be bundled."
              Importance="Low" />
 
-    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(_WasmRuntimeConfigFilePath) != '' and !Exists($(_WasmRuntimeConfigFilePath))"
-             Text="Could not find $(_WasmRuntimeConfigFilePath) for $(_MainAssemblyPath)."
+    <Message Condition="'$(WasmGenerateAppBundle)' == 'true' and $(ProjectRuntimeConfigFilePath) != '' and !Exists($(ProjectRuntimeConfigFilePath))"
+             Text="Could not find $(ProjectRuntimeConfigFilePath) for $(_MainAssemblyPath)."
              Importance="Low" />
 
     <ItemGroup>
@@ -427,26 +416,6 @@
 
   <Target Name="WasmGenerateAppBundle" DependsOnTargets="$(WasmGenerateAppBundleDependsOn)" Condition="'$(WasmGenerateAppBundle)' == 'true'" />
 
-  <Target Name="_WasmGenerateRuntimeConfig"
-          Inputs="$(_WasmRuntimeConfigFilePath)"
-          Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_WasmRuntimeConfigFilePath)')">
-    <ItemGroup>
-      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
-      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
-    </ItemGroup>
-
-    <RuntimeConfigParserTask
-        RuntimeConfigFile="$(_WasmRuntimeConfigFilePath)"
-        OutputFile="$(_ParsedRuntimeConfigFilePath)"
-        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
-    </RuntimeConfigParserTask>
-
-    <ItemGroup>
-      <WasmFilesToIncludeInFileSystem Condition="'$(WasmSingleFileBundle)' != 'true'" Include="$(_ParsedRuntimeConfigFilePath)" LoadingStage="Core" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="WasmTriggerPublishApp"
           AfterTargets="$(WasmTriggerPublishAppAfterThisTarget)"
           Condition="('$(IsBrowserWasmProject)' == 'true' or '$(IsWasiProject)' == 'true') and '$(WasmBuildingForNestedPublish)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
@@ -480,16 +449,6 @@
       <WasmAssembliesFinal OriginalItemName="WasmAssembliesFinal" />
       <FileWrites OriginalItemName="FileWrites" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="_PrepareForNestedPublish" DependsOnTargets="_GetDefaultWasmAssembliesToBundle" Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
-    <PropertyGroup>
-      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(_WasmRuntimeConfigFilePath)' == ''">
-      <_WasmRuntimeConfigFilePath Condition="$([System.String]::new(%(PublishItemsOutputGroupOutputs.Identity)).EndsWith('$(AssemblyName).runtimeconfig.json'))">@(PublishItemsOutputGroupOutputs)</_WasmRuntimeConfigFilePath>
-    </PropertyGroup>
   </Target>
 
   <Target Name="_EmitWasmAssembliesFinal" Returns="@(WasmAssembliesFinal)">
@@ -532,6 +491,10 @@
 
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
+
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfTracing)=$(WasmPerfTracing)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerfInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation)"/>
+    <Error Condition="'$(WasmPerfInstrumentation)' != '' and '$(WasmPerfTracing)' != 'true'" Text="%24(WasmPerfInstrumentation)=$(WasmPerfInstrumentation) is only supported together with %24(WasmPerfTracing)=true"/>
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>

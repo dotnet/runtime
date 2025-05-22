@@ -24,7 +24,7 @@ namespace System.Linq
             this IAsyncEnumerable<TSource> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source, cancellationToken);
 
@@ -67,8 +67,8 @@ namespace System.Linq
             Func<TSource, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 
@@ -120,8 +120,8 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<bool>> predicate,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, cancellationToken);
 
@@ -185,7 +185,7 @@ namespace System.Linq
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source, defaultValue, cancellationToken);
 
@@ -271,8 +271,8 @@ namespace System.Linq
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, defaultValue, cancellationToken);
 
@@ -321,8 +321,8 @@ namespace System.Linq
             TSource defaultValue,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(predicate);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(predicate);
 
             return Impl(source, predicate, defaultValue, cancellationToken);
 

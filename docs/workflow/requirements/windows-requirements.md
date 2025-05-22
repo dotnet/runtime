@@ -84,7 +84,7 @@ Alternatively, if you would rather avoid modifying your machine state, you can u
 .\build.cmd -vs System.Text.RegularExpressions
 ```
 
-This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the locally acquired SDK under the `.dotnet` directory found at the root of the repo for the duration of this terminal session. Then, it will launch the Visual Studio instance that is registered for the `.sln` extension, and open the solution you passed as argument to the command-line.
+This will set the `DOTNET_ROOT` and `PATH` environment variables to point to the locally acquired SDK under the `.dotnet` directory found at the root of the repo for the duration of this terminal session. Then, it will launch the Visual Studio instance that is registered for the `.slnx` extension, and open the solution you passed as argument to the command-line.
 
 ## Installing dependencies with winget
 

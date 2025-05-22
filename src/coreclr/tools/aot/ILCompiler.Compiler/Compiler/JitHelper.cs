@@ -182,6 +182,12 @@ namespace ILCompiler
                 case ReadyToRunHelper.ULng2Dbl:
                     mangledName = "RhpULng2Dbl";
                     break;
+                case ReadyToRunHelper.Lng2Flt:
+                    mangledName = "RhpLng2Flt";
+                    break;
+                case ReadyToRunHelper.ULng2Flt:
+                    mangledName = "RhpULng2Flt";
+                    break;
 
                 case ReadyToRunHelper.Dbl2Lng:
                     mangledName = "RhpDbl2Lng";

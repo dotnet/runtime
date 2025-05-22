@@ -615,10 +615,27 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
             }
 
-            // TODO: Use MLDsaOpenSsl when it is available.
-            return MLDsaImplementation.FromHandle(
-                MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(KeyAlgorithm)!,
-                _privateKey);
+            return new MLDsaOpenSsl(_privateKey);
+        }
+
+        public MLKem? GetMLKemPrivateKey()
+        {
+            if (_privateKey is null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new MLKemOpenSsl(_privateKey);
+        }
+
+        public SlhDsa? GetSlhDsaPrivateKey()
+        {
+            if (_privateKey == null || _privateKey.IsInvalid)
+            {
+                return null;
+            }
+
+            return new SlhDsaOpenSsl(_privateKey);
         }
 
         private OpenSslX509CertificateReader CopyWithPrivateKey(SafeEvpPKeyHandle privateKey)
@@ -697,9 +714,46 @@ namespace System.Security.Cryptography.X509Certificates
                 return CopyWithPrivateKey(impl.DuplicateHandle());
             }
 
-            // TODO: Special case MLDsaOpenSsl when it is available.
+            if (privateKey is MLDsaOpenSsl implOpenSsl)
+            {
+                return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+            }
 
             using (MLDsaImplementation clone = MLDsaImplementation.DuplicatePrivateKey(privateKey))
+            {
+                return CopyWithPrivateKey(clone.DuplicateHandle());
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(MLKem privateKey)
+        {
+            switch (privateKey)
+            {
+                case MLKemOpenSsl implOpenSsl:
+                    return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+                case MLKemImplementation impl:
+                    return CopyWithPrivateKey(impl.DuplicateHandle());
+                default:
+                    using (MLKemImplementation clone = MLKemImplementation.DuplicatePrivateKey(privateKey))
+                    {
+                        return CopyWithPrivateKey(clone.DuplicateHandle());
+                    }
+            }
+        }
+
+        public ICertificatePal CopyWithPrivateKey(SlhDsa privateKey)
+        {
+            if (privateKey is SlhDsaImplementation impl)
+            {
+                return CopyWithPrivateKey(impl.DuplicateHandle());
+            }
+
+            if (privateKey is SlhDsaOpenSsl implOpenSsl)
+            {
+                return CopyWithPrivateKey(implOpenSsl.DuplicateKeyHandle());
+            }
+
+            using (SlhDsaImplementation clone = SlhDsaImplementation.DuplicatePrivateKey(privateKey))
             {
                 return CopyWithPrivateKey(clone.DuplicateHandle());
             }

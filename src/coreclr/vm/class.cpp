@@ -246,11 +246,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         bmtEnumFields.dwNumInstanceFields = 1;
     }
 
-    // We shouldn't have to fill this in b/c we're not allowed to EnC value classes, or
-    // anything else with layout info associated with it.
-    // Provide 2, 1 placeholder and 1 for the actual field - see BuildMethodTableThrowing().
-    LayoutRawFieldInfo layoutRawFieldInfos[2];
-
     // If not NULL, it means there are some by-value fields, and this contains an entry for each instance or static field,
     // which is NULL if not a by value field, and points to the EEClass of the field if a by value field.  Instance fields
     // come first, statics come second.
@@ -288,7 +283,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         GCX_PREEMP();
         unsigned totalDeclaredFieldSize = 0;
         builder.InitializeFieldDescs(pFD,
-                                 layoutRawFieldInfos,
                                  &bmtInternal,
                                  &genericsInfo,
                                  &bmtMetaData,
@@ -661,6 +655,18 @@ HRESULT EEClass::AddMethodDesc(
     PCCOR_SIGNATURE sig;
     if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
         return hr;
+
+    SigParser sigParser(sig, sigLen);
+    ULONG offsetOfAsyncDetails;
+    bool isValueTask;
+    MethodReturnKind returnKind = ClassifyMethodReturnKind(sigParser, pModule, &offsetOfAsyncDetails, &isValueTask);
+    if (returnKind != MethodReturnKind::NormalMethod)
+    {
+        // TODO: (async) revisit and examine if this can be supported
+        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
+        return E_FAIL;
+    }
+
     uint32_t callConv = CorSigUncompressData(sig);
     DWORD classification = (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
         ? mcInstantiated
@@ -679,6 +685,7 @@ HRESULT EEClass::AddMethodDesc(
                                                             classification,
                                                             TRUE, // fNonVtableSlot
                                                             TRUE, // fNativeCodeSlot
+                                                            FALSE, /* HasAsyncMethodData */
                                                             pMT,
                                                             &dummyAmTracker);
 
@@ -726,7 +733,9 @@ HRESULT EEClass::AddMethodDesc(
                                 TRUE,   // fEnC
                                 0,      // RVA - non-zero only for NDirect
                                 pImport,
-                                NULL
+                                NULL,
+                                Signature(),
+                                AsyncMethodKind::NotAsync
                                 COMMA_INDEBUG(debug_szMethodName)
                                 COMMA_INDEBUG(pMT->GetDebugClassName())
                                 COMMA_INDEBUG(NULL)

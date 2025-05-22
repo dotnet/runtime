@@ -52,6 +52,7 @@
 #include "onstackreplacement.h"
 #include "pgo.h"
 #include "pgo_formatprocessing.h"
+#include "patchpointinfo.h"
 
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
@@ -164,10 +165,26 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
+HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
 {
     FCALL_CONTRACT;
     return (double)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(float, JIT_Lng2Flt, int64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
 }
 HCIMPLEND
 
@@ -329,9 +346,10 @@ HCIMPLEND
 
 // Define the t_ThreadStatics variable here, so that these helpers can use
 // the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function
+// GetThreadLocalStaticBaseIfExistsAndInitialized function.
+// Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
+__declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
 #else
 __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
@@ -941,101 +959,6 @@ HCIMPLEND
 //
 //========================================================================
 /*************************************************************/
-HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* unboxedData)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    if (unboxedData == nullptr)
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
-
-    TypeHandle typeHandle(type);
-    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
-    MethodTable *methodTable = typeHandle.AsMethodTable();
-    // The fast helper should never be called for nullable types.
-    _ASSERTE(!methodTable->IsNullable());
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (methodTable->RequiresAlign8())
-    {
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-#endif
-
-    SIZE_T size = methodTable->GetBaseSize();
-    _ASSERTE(size % DATA_ALIGNMENT == 0);
-
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (size > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-
-    allocContext->alloc_ptr = allocPtr + size;
-
-    _ASSERTE(allocPtr != nullptr);
-    Object *object = reinterpret_cast<Object *>(allocPtr);
-    _ASSERTE(object->HasEmptySyncBlockInfo());
-    object->SetMethodTable(methodTable);
-
-    // Copy the data into the object
-    CopyValueClass(object->UnBox(), unboxedData, methodTable);
-
-    return object;
-}
-HCIMPLEND_RAW
-
-/*************************************************************/
-HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newobj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();    // Set up a frame
-    GCPROTECT_BEGININTERIOR(unboxedData);
-    HELPER_METHOD_POLL();
-
-    // A null can be passed for boxing of a null ref.
-    if (unboxedData == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    TypeHandle clsHnd(type);
-
-    _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
-
-    MethodTable *pMT = clsHnd.AsMethodTable();
-
-    _ASSERTE(pMT->IsFullyLoaded());
-
-    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newobj = pMT->FastBox(&unboxedData);
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-    return(OBJECTREFToObject(newobj));
-}
-HCIMPLEND
-
-/*************************************************************/
 HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
@@ -1318,7 +1241,7 @@ HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
 EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
 #else
@@ -1334,10 +1257,8 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
-#ifdef FEATURE_EH_FUNCLETS
-
     Thread *pThread = GetThread();
-    
+
     SoftwareExceptionFrame exceptionFrame;
 #ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
@@ -1348,6 +1269,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     FC_CAN_TRIGGER_GC();
 
+#ifdef FEATURE_EH_FUNCLETS
     if (oref == 0)
         DispatchManagedException(kNullReferenceException);
     else
@@ -1375,15 +1297,12 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     }
 
     DispatchManagedException(oref, exceptionFrame.GetContext());
-    FC_CAN_TRIGGER_GC_END();
-    UNREACHABLE();
-#endif // FEATURE_EH_FUNCLETS
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.EnsureInit(NULL);
-    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
     if (oref == 0)
@@ -1414,13 +1333,20 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
 
-    HELPER_METHOD_FRAME_END();
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_Throw");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
 /*************************************************************/
 
-#if defined(TARGET_X86) && defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86)
 EXTERN_C FCDECL0(void, IL_Rethrow);
 EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
 #else
@@ -1431,7 +1357,6 @@ HCIMPL0(void, IL_Rethrow)
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-#ifdef FEATURE_EH_FUNCLETS
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
@@ -1442,11 +1367,12 @@ HCIMPL0(void, IL_Rethrow)
 #endif
     exceptionFrame.InitAndLink(pThread);
 
+    FC_CAN_TRIGGER_GC();
+
+#ifdef FEATURE_EH_FUNCLETS
     ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
     ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
-
-    FC_CAN_TRIGGER_GC();
 
     GCPROTECT_BEGIN(exInfo.m_exception);
     PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
@@ -1460,12 +1386,9 @@ HCIMPL0(void, IL_Rethrow)
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
     GCPROTECT_END();
-
-    FC_CAN_TRIGGER_GC_END();
-    UNREACHABLE();
-#endif
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -1479,7 +1402,66 @@ HCIMPL0(void, IL_Rethrow)
         RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
     }
 
-    HELPER_METHOD_FRAME_END();
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_Rethrow");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
+}
+HCIMPLEND
+
+#if defined(TARGET_X86)
+EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+#endif
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    OBJECTREF oref = ObjectToOBJECTREF(obj);
+    GetThread()->GetExceptionState()->SetRaisingForeignException();
+
+    Thread *pThread = GetThread();
+    
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+
+#ifdef FEATURE_EH_FUNCLETS
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+#if defined(_DEBUG) && defined(TARGET_X86)
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
+#endif // defined(_DEBUG) && defined(TARGET_X86)
+
+    RaiseTheExceptionInternalOnly(oref, FALSE);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_ThrowExact");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
@@ -2346,7 +2328,6 @@ extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransiti
     ::SetLastError(dwLastError);
 }
 
-
 #else
 
 HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
@@ -2359,7 +2340,7 @@ HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
 }
 HCIMPLEND
 
-HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
+HCIMPL1(VOID, JIT_PatchpointForced, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -2934,7 +2915,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else    
+#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif
@@ -2972,7 +2953,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
-#else    
+#else
     frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
     INSTALL_SEH_RECORD(&frame->m_ExReg);
 #endif

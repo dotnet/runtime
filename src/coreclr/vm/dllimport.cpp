@@ -105,6 +105,9 @@ StubSigDesc::StubSigDesc(MethodDesc *pMD)
     m_sig           = pMD->GetSignature();
     m_pModule       = pMD->GetModule();         // Used for token resolution.
 
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    _ASSERTE(!pMD->IsAsyncMethod());
+
     m_tkMethodDef = pMD->GetMemberDef();
     SigTypeContext::InitTypeContext(pMD, &m_typeContext);
     m_pMetadataModule = pMD->GetModule();
@@ -132,6 +135,7 @@ StubSigDesc::StubSigDesc(MethodDesc* pMD, const Signature& sig, Module* pModule,
 
     if (pMD != NULL)
     {
+        _ASSERTE(!pMD->IsAsyncMethod());
         m_tkMethodDef = pMD->GetMemberDef();
         SigTypeContext::InitTypeContext(pMD, &m_typeContext);
         m_pMetadataModule = pMD->GetModule();
@@ -1086,7 +1090,11 @@ public:
 
         DWORD dwToken = 0;
         if (pTargetMD)
+        {
+            // TODO: (async) revisit and examine if this needs to be supported somehow
+            _ASSERTE(!pTargetMD->IsAsyncVariantMethod());
             dwToken = pTargetMD->GetMemberDef();
+        }
 
 
         //
@@ -2710,6 +2718,10 @@ void PInvokeStaticSigInfo::DllImportInit(
     IMDInternalImport  *pInternalImport = pMD->GetMDImport();
     CorPinvokeMap mappingFlags = pmMaxValue;
     mdModuleRef modref = mdModuleRefNil;
+    // TODO: (async) revisit and examine if this needs to be supported somehow
+    if (pMD->IsAsyncMethod())
+        ThrowHR(COR_E_NOTSUPPORTED);
+
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
         InitCallConv(CallConvWinApiSentinel, pMD);
@@ -2987,6 +2999,10 @@ namespace
         CorInfoCallConvExtension callConvLocal;
         IMDInternalImport* pInternalImport = pMD->GetMDImport();
         CorPinvokeMap mappingFlags = pmMaxValue;
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+            ThrowHR(COR_E_NOTSUPPORTED);
+
         HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
         if (FAILED(hr))
             return false;
@@ -3229,7 +3245,7 @@ BOOL NDirect::MarshalingRequired(
 
     if (sigPointer.IsNull())
     {
-        PREFIX_ASSUME(pMD != NULL);
+        _ASSERTE(pMD != NULL);
 
         sigPointer = pMD->GetSigPointer();
         pModule = pMD->GetModule();
@@ -3247,6 +3263,10 @@ BOOL NDirect::MarshalingRequired(
     mdMethodDef methodToken = mdMethodDefNil;
     if (pMD != NULL)
     {
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+            ThrowHR(COR_E_NOTSUPPORTED);
+
         methodToken = pMD->GetMemberDef();
     }
     CollateParamTokens(pMDImport, methodToken, numArgs - 1, pParamTokenArray);
@@ -5763,9 +5783,11 @@ void CreateCLRToDispatchCOMStub(
                             iLCIDArg);
 
     _ASSERTE(pMD->IsCLRToCOMCall()); // no generic disp-calls
-    ((CLRToCOMCallMethodDesc *)pMD)->InitRetThunk();
-}
 
+#ifdef TARGET_X86
+    ((CLRToCOMCallMethodDesc *)pMD)->InitStackPop();
+#endif
+}
 
 #endif // FEATURE_COMINTEROP
 
@@ -6039,6 +6061,10 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     if (pMD != NULL)
     {
         PInvokeStaticSigInfo sigInfo(pMD);
+
+        // TODO: (async) revisit and examine if this needs to be supported somehow
+        if (pMD->IsAsyncMethod())
+            ThrowHR(COR_E_NOTSUPPORTED);
 
         md = pMD->GetMemberDef();
         nlFlags = sigInfo.GetLinkFlags();
@@ -6457,27 +6483,8 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT
-    {
-        UINT maxStack;
-        size_t cbCode = sl.Link(&maxStack);
-        DWORD cbSig = sl.GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-        sl.GenerateCode(pbBuffer, cbCode);
-        sl.GetLocalSig(pbLocalSig, cbSig);
-
-        // Store the token lookup map
-        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-        *ppResolver = (DynamicResolver*)ilResolver;
-        *ppHeader = pILHeader;
-    }
-
-    ilResolver.SuppressRelease();
+    *ppHeader = ilResolver->FinalizeILStub(&sl);
+    *ppResolver = ilResolver.Extract();
     return true;
 }
 
