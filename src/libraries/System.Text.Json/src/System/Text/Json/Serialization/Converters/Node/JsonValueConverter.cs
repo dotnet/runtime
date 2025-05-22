@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
                 return null;
             }
 
-            JsonElement element = JsonElement.ParseValue(ref reader);
+            JsonElement element = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
             return JsonValue.CreateFromElement(ref element, options.GetNodeOptions());
         }
 

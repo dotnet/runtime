@@ -3,8 +3,10 @@
 
 using System.Buffers;
 using System.Buffers.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -941,18 +943,20 @@ namespace System.Text.Json
         }
 
         private static void Parse(
-            ReadOnlySpan<byte> utf8JsonSpan,
+            ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
             ref MetadataDb database,
-            ref StackRowStack stack)
+            ref StackRowStack stack,
+            bool allowDuplicateProperties = true)
         {
             bool inArray = false;
             int arrayItemsOrPropertyCount = 0;
             int numberOfRowsForMembers = 0;
             int numberOfRowsForValues = 0;
+            PropertyNameSet propertyNameSet = default;
 
             Utf8JsonReader reader = new Utf8JsonReader(
-                utf8JsonSpan,
+                utf8Json.Span,
                 isFinalBlock: true,
                 new JsonReaderState(options: readerOptions));
 
@@ -974,10 +978,11 @@ namespace System.Text.Json
 
                     numberOfRowsForValues++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForMembers + 1);
+                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForMembers + 1, propertyNameSet);
                     stack.Push(row);
                     arrayItemsOrPropertyCount = 0;
                     numberOfRowsForMembers = 0;
+                    propertyNameSet = default;
                 }
                 else if (tokenType == JsonTokenType.EndObject)
                 {
@@ -995,6 +1000,7 @@ namespace System.Text.Json
                     StackRow row = stack.Pop();
                     arrayItemsOrPropertyCount = row.SizeOrLength;
                     numberOfRowsForMembers += row.NumberOfRows;
+                    propertyNameSet = row.PropertyNames;
                 }
                 else if (tokenType == JsonTokenType.StartArray)
                 {
@@ -1005,10 +1011,11 @@ namespace System.Text.Json
 
                     numberOfRowsForMembers++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1);
+                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1, propertyNameSet);
                     stack.Push(row);
                     arrayItemsOrPropertyCount = 0;
                     numberOfRowsForValues = 0;
+                    propertyNameSet = default;
                 }
                 else if (tokenType == JsonTokenType.EndArray)
                 {
@@ -1041,9 +1048,19 @@ namespace System.Text.Json
                     StackRow row = stack.Pop();
                     arrayItemsOrPropertyCount = row.SizeOrLength;
                     numberOfRowsForValues += row.NumberOfRows;
+                    propertyNameSet = row.PropertyNames;
                 }
                 else if (tokenType == JsonTokenType.PropertyName)
                 {
+                    // TODO this check can be deferred until after parsing has finished.
+                    // The tradeoff is that duplicate checking would be a little easier
+                    // (since the number of properties is known) but there is no early
+                    // parsing bailout for invalid JSON
+                    if (!allowDuplicateProperties)
+                    {
+                        propertyNameSet.AddPropertyName(utf8Json, ref reader, ref database, arrayItemsOrPropertyCount);
+                    }
+
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
                     arrayItemsOrPropertyCount++;
@@ -1092,7 +1109,7 @@ namespace System.Text.Json
                 inArray = reader.IsInArray;
             }
 
-            Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
+            Debug.Assert(reader.BytesConsumed == utf8Json.Length);
             database.CompleteAllocations();
         }
 

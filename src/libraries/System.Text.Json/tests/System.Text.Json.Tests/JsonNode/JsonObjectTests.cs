@@ -14,6 +14,8 @@ namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonObjectTests
     {
+        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
+
         [Fact]
         public static void KeyValuePair()
         {
@@ -1625,6 +1627,86 @@ namespace System.Text.Json.Nodes.Tests
             ClassWithObjectExtensionData result = JsonSerializer.Deserialize<ClassWithObjectExtensionData>(jsonPayload);
             Assert.Equal(size, result.ExtensionData.Count);
         }
+
+        [Theory]
+        [MemberData(nameof(DuplicatePropertyJsonPayloads))]
+        public static void JsonObject_DuplicatePropertyThrows(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicateProperty<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicateProperty<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(DuplicatePropertyJsonPayloads))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedInArray(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicateProperty<JsonArray>(jsonPayload, isValidJson);
+            AssertDuplicateProperty<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(DuplicatePropertyJsonPayloads))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedDeeply(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicateProperty<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicateProperty<T>(string jsonPayload, bool isValidJson)
+        {
+            if (isValidJson)
+            {
+                _ = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions); // Assert no throw
+            }
+            else
+            {
+                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions));
+            }
+
+            _ = JsonSerializer.Deserialize<T>(jsonPayload); // Assert no throw
+        }
+
+        public static IEnumerable<object[]> DuplicatePropertyJsonPayloads =>
+        [
+            new object[] { $$"""{"p0":0,"p0":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p1":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p2":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p3":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p4":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p5":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p6":42}""" },
+
+            new object[] { $$"""{"p0":0,"p1":1,"p0":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p0":42}""" },
+
+            // First occurrence escaped
+            new object[] { $$"""{"p0":0,"p\u0031":1,"p1":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p\u0036":6,"p6":42}""" },
+            new object[] { $$"""{"p\u0030":0,"p1":1,"p0":42}""" },
+            new object[] { $$"""{"p\u0030":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p0":42}""" },
+
+            // Last occurrence escaped
+            new object[] { $$"""{"p0":0,"p1":1,"p\u0031":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0036":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p\u0030":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0030":42}""" },
+
+            // Both occurrences escaped
+            new object[] { $$"""{"p0":0,"p\u0031":1,"p\u0031":42}""" },
+            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p\u0036":6,"p\u0036":42}""" },
+            new object[] { $$"""{"p\u0030":0,"p1":1,"p\u0030":42}""" },
+            new object[] { $$"""{"p\u0030":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0030":42}""" },
+
+            new object[] { $$"""{"A":[],"A":1}""" },
+            new object[] { $$"""{"A":{"A":1},"A":1}""" },
+            new object[] { $$"""{"A":{"B":1},"A":1}""" },
+
+            // No error
+            new object[] { $$"""{"A":{"A":1} }""", true }, 
+            new object[] { $$"""{"A":{"B":1},"B":1}""", true },
+        ];
 
         class ClassWithObjectExtensionData
         {

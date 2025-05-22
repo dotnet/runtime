@@ -937,5 +937,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             public SelfReference Me { get; set; }
         }
+
+        [Fact]
+        public static void SupportsDisallowDuplicateProperty()
+        {
+            JsonTypeInfo typeInfo =
+                ContextWithAllowDuplicateProperties.Default.GetTypeInfo(typeof(ClassWithDictionaryProperty));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize("""{"a":1,"a":2}""", typeInfo));
+        }
+
+        [JsonSourceGenerationOptions(AllowDuplicateProperties = false)]
+        [JsonSerializable(typeof(ClassWithDictionaryProperty))]
+        internal partial class ContextWithAllowDuplicateProperties : JsonSerializerContext
+        {
+        }
     }
 }

@@ -672,5 +672,33 @@ namespace System.Text.Json.Serialization.Tests
             object result = JsonSerializer.Deserialize<object>(@"{ ""key"" : ""42"" }", options);
             Assert.IsAssignableFrom(expectedType, result);
         }
+
+        [Theory]
+        [InlineData("""{ "MyInt32" : 42, "MyInt32" : 42 }""")]
+        [InlineData("""{ "MyInt32Array" : null, "MyInt32Array" : null }""")]
+        public static void ReadSimpleObjectWithDuplicateProperties(string payload)
+        {
+            var options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+            };
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            _ = JsonSerializer.Deserialize<SimpleTestClass>(payload); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{ "MyData" : null, "MyData" : null }""")]
+        [InlineData("""{ "MyData" : {}, "MyData" : {} }""")]
+        public static void ReadNestedObjectWithDuplicateProperties(string payload)
+        {
+            var options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+            };
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload, options));
+            _ = JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload); // Assert no throw
+        }
     }
 }

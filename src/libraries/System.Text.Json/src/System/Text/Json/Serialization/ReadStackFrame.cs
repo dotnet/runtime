@@ -82,6 +82,15 @@ namespace System.Text.Json
         // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
         public BitArray? RequiredPropertiesSet;
 
+        // Represents known (non-extension) properties which have value assigned.
+        // Each bit corresponds to a property.
+        // False means that property is not set (not yet occurred in the payload).
+        // Length of the BitArray is equal to number of non-extension properties.
+        // Every JsonPropertyInfo has PropertyIndex property which maps to an index in this BitArray.
+        public BitArray? AssignedProperties;
+
+        public readonly bool AllowDuplicateProperties => AssignedProperties == null;
+
         // Tracks state related to property population.
         public bool HasParentObject;
         public bool IsPopulating;
@@ -128,23 +137,40 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void MarkRequiredPropertyAsRead(JsonPropertyInfo propertyInfo)
+        public void MarkPropertyAsRead(JsonPropertyInfo propertyInfo)
         {
             if (propertyInfo.IsRequired)
             {
                 Debug.Assert(RequiredPropertiesSet != null);
                 RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
             }
+
+            if (AssignedProperties is { } assignedProperties)
+            {
+                if (assignedProperties[propertyInfo.PropertyIndex])
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyInfo);
+                }
+
+                assignedProperties[propertyInfo.PropertyIndex] = true;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
+        internal void InitializePropertiesValidationState(JsonTypeInfo typeInfo, JsonSerializerOptions options)
         {
             Debug.Assert(RequiredPropertiesSet == null);
+            Debug.Assert(AllowDuplicateProperties);
 
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
                 RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
+            }
+
+            if (!options.AllowDuplicateProperties)
+            {
+                // This may be slightly larger than required (e.g. if there's an extension property)
+                AssignedProperties = new BitArray(typeInfo.Properties.Count);
             }
         }
 

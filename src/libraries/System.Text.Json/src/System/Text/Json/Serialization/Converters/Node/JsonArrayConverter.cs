@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartArray:
-                    return ReadList(ref reader, options.GetNodeOptions());
+                    return ReadList(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -34,10 +34,10 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions? options = null)
+        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            JsonElement jElement = JsonElement.ParseValue(ref reader);
-            return new JsonArray(jElement, options);
+            JsonElement jElement = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
+            return new JsonArray(jElement, options.GetNodeOptions());
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };

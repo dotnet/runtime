@@ -324,6 +324,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(JsonPropertyInfo property)
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_JsonPropertyInfo, property.Name, property.DeclaringType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
             throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));

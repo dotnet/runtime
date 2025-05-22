@@ -1065,23 +1065,51 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeDictionaryWithDuplicateProperties()
         {
-            PocoDuplicate foo = await Serializer.DeserializeWrapper<PocoDuplicate>(@"{""BoolProperty"": false, ""BoolProperty"": true}");
+            PocoDictionaryAndOtherProperties foo = await Serializer.DeserializeWrapper<PocoDictionaryAndOtherProperties>(@"{""BoolProperty"": false, ""BoolProperty"": true}");
             Assert.True(foo.BoolProperty);
 
-            foo = await Serializer.DeserializeWrapper<PocoDuplicate>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}");
+            foo = await Serializer.DeserializeWrapper<PocoDictionaryAndOtherProperties>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}");
             Assert.True(foo.BoolProperty);
             Assert.Equal(2, foo.IntProperty);
 
-            foo = await Serializer.DeserializeWrapper<PocoDuplicate>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}");
+            foo = await Serializer.DeserializeWrapper<PocoDictionaryAndOtherProperties>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}");
             Assert.Equal(2, foo.DictProperty.Count); // We don't concat.
             Assert.Equal("e", foo.DictProperty["c"]);
         }
 
-        public class PocoDuplicate
+        [Fact]
+        public async Task DeserializeDictionaryWithDuplicatePropertiesThrow()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+
+            await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<PocoDictionaryAndOtherProperties>(@"{""BoolProperty"": false, ""BoolProperty"": true}", options));
+
+            await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<PocoDictionaryAndOtherProperties>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}", options));
+
+            await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<PocoDictionaryAndOtherProperties>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}", options));
+        }
+
+        public class PocoDictionaryAndOtherProperties
         {
             public bool BoolProperty { get; set; }
             public int IntProperty { get; set; }
             public Dictionary<string, string> DictProperty { get; set; }
+        }
+
+        // TODO this fails because the dictionary converters don't check for duplicates
+        [Fact]
+        public async Task DeserializeNestedDictionaryWithDuplicatePropertiesThrow()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+
+            await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""", options));
+
+            // Assert no throw
+            _ = Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""", JsonSerializerOptions.Default);
         }
 
         public class ClassWithPopulatedDictionaryAndNoSetter

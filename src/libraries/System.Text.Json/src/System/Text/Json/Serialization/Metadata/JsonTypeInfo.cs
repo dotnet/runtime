@@ -1076,8 +1076,9 @@ namespace System.Text.Json.Serialization.Metadata
             bool arePropertiesSorted = true;
             int previousPropertyOrder = int.MinValue;
 
-            foreach (JsonPropertyInfo property in properties)
+            for (int i = 0; i < properties.Count; i++)
             {
+                JsonPropertyInfo property = properties[i];
                 Debug.Assert(property.DeclaringTypeInfo == this);
 
                 if (property.IsExtensionData)
@@ -1096,6 +1097,8 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
+                    property.PropertyIndex = i;
+
                     if (property.IsRequired)
                     {
                         property.RequiredPropertyIndex = numberOfRequiredProperties++;

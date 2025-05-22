@@ -13,6 +13,7 @@ namespace System.Text.Json.Serialization.Tests
     public abstract partial class ConstructorTests : SerializerTests
     {
         private static readonly JsonSerializerOptions s_respectRequiredParamsOptions = new() { RespectRequiredConstructorParameters = true };
+        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
 
         public ConstructorTests(JsonSerializerWrapper stringSerializer)
             : base(stringSerializer)
@@ -1694,6 +1695,95 @@ namespace System.Text.Json.Serialization.Tests
                 From = from;
                 To = to;
             }
+        }
+
+        [Fact]
+        public async Task RespectAllowDuplicateProp_DuplicateCtorParam()
+        {
+            string json = """{"X":1,"Y":2,"X":3}""";
+            JsonSerializerOptions options = null;
+
+            Func<Task> test = () => Serializer.DeserializeWrapper<Point_3D>(json, options);
+
+            options = s_noDuplicateParamsOptions;
+            await Assert.ThrowsAsync<JsonException>(test);
+
+            options = JsonSerializerOptions.Default;
+            await test(); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{"X":1,"X":2}""", typeof(Point_2D))]
+        [InlineData("""{"Y":1,"Y":2}""", typeof(Point_2D))]
+        [InlineData("""{"X":1,"Y":2,"X":3}""", typeof(Point_2D))]
+        [InlineData("""{"X":1,"Y":2,"Y":3}""", typeof(Point_2D))]
+        [InlineData("""{"Y":1,"X":2,"X":3}""", typeof(Point_2D))]
+        [InlineData("""{"Y":1,"X":2,"Y":3}""", typeof(Point_2D))]
+        [InlineData("""{"X":1,"Y":2,"X":3}""", typeof(Point_3D))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"X":4}""", typeof(Class_ExtraProperty_ExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Y":4}""", typeof(Class_ExtraProperty_ExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Z":4}""", typeof(Class_ExtraProperty_ExtData))]
+        public async Task RespectAllowDuplicateProp_Small(string json, Type type)
+        {
+            JsonSerializerOptions options = s_noDuplicateParamsOptions;
+            Func<Task> test = () => Serializer.DeserializeWrapper(json, type, options);
+
+            await Assert.ThrowsAsync<JsonException>(test);
+
+            options = JsonSerializerOptions.Default;
+            await test(); // Assert no throw
+        }
+
+        class Class_ExtraProperty_ExtData
+        {
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; }
+
+            public Class_ExtraProperty_ExtData(int x)
+            {
+                X = x;
+            }
+        }
+
+        [Theory]
+        [InlineData("P0")]
+        [InlineData("Prop")]
+        [InlineData("ExtensionData")]
+        public async Task RespectAllowDuplicateProp_Large(string duplicatedProperty)
+        {
+            JsonSerializerOptions options = s_noDuplicateParamsOptions;
+            string json = $$"""
+                {
+                    "P0": 0,
+                    "P1": 1,
+                    "P2": 2,
+                    "P3": 3,
+                    "P4": 4,
+                    "P5": 5,
+                    "Prop": 6,
+                    "ExtensionData": 7,
+                    "{{duplicatedProperty}}": 42
+                }
+                """;
+
+            Func<Task> test = () => Serializer.DeserializeWrapper< Class_ManyParameters_ExtraProperty_ExtData>(json, options);
+
+            await Assert.ThrowsAsync<JsonException>(test);
+
+            options = JsonSerializerOptions.Default;
+            await test(); // Assert no throw
+        }
+
+        public record class Class_ManyParameters_ExtraProperty_ExtData(int P0, int P1, int P2, int P3, int P4, int P5)
+        {
+            public int Prop { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> ExtensionData { get; set; }
         }
     }
 }
