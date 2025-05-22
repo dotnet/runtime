@@ -2066,6 +2066,7 @@ public:
         assert(IsValue());
         gtFlags &= ~GTF_CONTAINED;
         ClearRegOptional();
+        assert(!IsEmbMaskOp());
     }
 
     bool CanCSE() const
