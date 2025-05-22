@@ -13721,12 +13721,12 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     switch (kind)
     {
-    case ENCODE_MODULE_HANDLE:
+    case READYTORUN_FIXUP_Module:
         result = (size_t)pInfoModule;
         break;
 
-    case ENCODE_TYPE_HANDLE:
-    case ENCODE_TYPE_DICTIONARY:
+    case READYTORUN_FIXUP_TypeHandle:
+    case READYTORUN_FIXUP_TypeDictionary:
         {
             TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
 
@@ -13743,8 +13743,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_METHOD_HANDLE:
-    case ENCODE_METHOD_DICTIONARY:
+    case READYTORUN_FIXUP_MethodHandle:
+    case READYTORUN_FIXUP_MethodDictionary:
         {
             MethodDesc * pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
@@ -13758,11 +13758,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_FIELD_HANDLE:
+    case READYTORUN_FIXUP_FieldHandle:
         result = (size_t) ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
         break;
 
-    case ENCODE_STRING_HANDLE:
+    case READYTORUN_FIXUP_StringHandle:
         {
             // We need to update strings atomically (due to NoStringInterning attribute). Note
             // that modules with string interning dont really need this, as the hash tables have
@@ -13824,7 +13824,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_METHOD_ENTRY_DEF_TOKEN:
+    case READYTORUN_FIXUP_MethodEntry_DefToken:
         {
             mdToken MethodDef = TokenFromRid(CorSigUncompressData(pBlob), mdtMethodDef);
             _ASSERTE(pInfoModule->IsFullModule());
@@ -13841,7 +13841,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             goto MethodEntry;
         }
 
-    case ENCODE_METHOD_ENTRY_REF_TOKEN:
+    case READYTORUN_FIXUP_MethodEntry_RefToken:
         {
             SigTypeContext typeContext;
             mdToken MemberRef = TokenFromRid(CorSigUncompressData(pBlob), mdtMemberRef);
@@ -13862,7 +13862,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             goto MethodEntry;
         }
 
-    case ENCODE_METHOD_ENTRY:
+    case READYTORUN_FIXUP_MethodEntry:
         {
             pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
@@ -13885,7 +13885,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_INDIRECT_PINVOKE_TARGET:
+    case READYTORUN_FIXUP_IndirectPInvokeTarget:
         {
             MethodDesc *pMethod = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
 
@@ -13895,7 +13895,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_PINVOKE_TARGET:
+    case READYTORUN_FIXUP_PInvokeTarget:
         {
             if (mayUsePrecompiledNDirectMethods)
             {
@@ -13954,7 +13954,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 #endif // PROFILING_SUPPORTED
 
-    case ENCODE_FIELD_ADDRESS:
+    case READYTORUN_FIXUP_FieldAddress:
         {
             FieldDesc *pField = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
 
@@ -14025,7 +14025,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_FIELD_OFFSET:
+    case READYTORUN_FIXUP_FieldOffset:
         {
             FieldDesc * pFD = ZapSig::DecodeField(currentModule, pInfoModule, pBlob);
             _ASSERTE(!pFD->IsStatic());
@@ -14039,7 +14039,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_FIELD_BASE_OFFSET:
+    case READYTORUN_FIXUP_FieldBaseOffset:
         {
             TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
 
@@ -14053,16 +14053,16 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_CHECK_TYPE_LAYOUT:
-    case ENCODE_VERIFY_TYPE_LAYOUT:
+    case READYTORUN_FIXUP_Check_TypeLayout:
+    case READYTORUN_FIXUP_Verify_TypeLayout:
         {
             TypeHandle th = ZapSig::DecodeType(currentModule, pInfoModule, pBlob);
             MethodTable * pMT = th.AsMethodTable();
             _ASSERTE(pMT->IsValueType());
 
-            if (!TypeLayoutCheck(pMT, pBlob, /* printDiff */ kind == ENCODE_VERIFY_TYPE_LAYOUT))
+            if (!TypeLayoutCheck(pMT, pBlob, /* printDiff */ kind == READYTORUN_FIXUP_Verify_TypeLayout))
             {
-                if (kind == ENCODE_CHECK_TYPE_LAYOUT)
+                if (kind == READYTORUN_FIXUP_Check_TypeLayout)
                 {
                     return FALSE;
                 }
@@ -14091,7 +14091,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_CHECK_FIELD_OFFSET:
+    case READYTORUN_FIXUP_Check_FieldOffset:
         {
             DWORD dwExpectedOffset = CorSigUncompressData(pBlob);
 
@@ -14109,7 +14109,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_VERIFY_FIELD_OFFSET:
+    case READYTORUN_FIXUP_Verify_FieldOffset:
         {
             DWORD baseOffset = CorSigUncompressData(pBlob);
             DWORD fieldOffset = CorSigUncompressData(pBlob);
@@ -14160,8 +14160,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_VERIFY_VIRTUAL_FUNCTION_OVERRIDE:
-    case ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE:
+    case READYTORUN_FIXUP_Verify_VirtualFunctionOverride:
+    case READYTORUN_FIXUP_Check_VirtualFunctionOverride:
         {
             PCCOR_SIGNATURE updatedSignature = pBlob;
 
@@ -14234,7 +14234,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             if (pImplMethodRuntime != pImplMethodCompiler)
             {
-                if (kind == ENCODE_CHECK_VIRTUAL_FUNCTION_OVERRIDE)
+                if (kind == READYTORUN_FIXUP_Check_VirtualFunctionOverride)
                 {
                     return FALSE;
                 }
@@ -14281,7 +14281,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         break;
 
 
-    case ENCODE_CHECK_INSTRUCTION_SET_SUPPORT:
+    case READYTORUN_FIXUP_Check_InstructionSetSupport:
         {
             DWORD dwInstructionSetCount = CorSigUncompressData(pBlob);
             CORJIT_FLAGS corjitFlags = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
@@ -14300,8 +14300,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
-    case ENCODE_CHECK_IL_BODY:
-    case ENCODE_VERIFY_IL_BODY:
+    case READYTORUN_FIXUP_Check_IL_Body:
+    case READYTORUN_FIXUP_Verify_IL_Body:
         {
             DWORD dwBlobSize = CorSigUncompressData(pBlob);
             const uint8_t *const pBlobStart = pBlob;
@@ -14312,7 +14312,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             for (DWORD iType = 0; iType < cTypes && !fail; iType++)
             {
-                if (kind == ENCODE_CHECK_IL_BODY)
+                if (kind == READYTORUN_FIXUP_Check_IL_Body)
                 {
                     EX_TRY
                     {
@@ -14335,7 +14335,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
             if (!fail)
             {
-                if (kind == ENCODE_CHECK_IL_BODY)
+                if (kind == READYTORUN_FIXUP_Check_IL_Body)
                 {
                     EX_TRY
                     {
@@ -14387,7 +14387,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             }
             else
             {
-                if (kind == ENCODE_CHECK_IL_BODY || (!fail && currentModule->GetReadyToRunInfo()->IsForbidProcessMoreILBodyFixups()))
+                if (kind == READYTORUN_FIXUP_Check_IL_Body || (!fail && currentModule->GetReadyToRunInfo()->IsForbidProcessMoreILBodyFixups()))
                 {
                     return FALSE;
                 }
@@ -14425,8 +14425,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
 #endif // FEATURE_READYTORUN
     default:
-        STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown FIXUP_BLOB_KIND %d\n", kind);
-        _ASSERTE(!"Unknown FIXUP_BLOB_KIND");
+        STRESS_LOG1(LF_ZAP, LL_WARNING, "Unknown ReadyToRunFixupKind %d\n", kind);
+        _ASSERTE(!"Unknown ReadyToRunFixupKind");
         return FALSE;
     }
 
