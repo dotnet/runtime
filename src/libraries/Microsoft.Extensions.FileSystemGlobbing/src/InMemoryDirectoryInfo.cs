@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             }
             else
             {
-                var fileList = new List<string>(files.Count());
+                List<string> fileList = [];
                 string normalizedRoot = Path.GetFullPath(rootDir.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
 
                 // normalize
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                     string name = file.Substring(0, endSegment);
                     if (!dict.TryGetValue(name, out List<string>? list))
                     {
-                        dict[name] = new List<string> { file };
+                        dict[name] = [file];
                     }
                     else
                     {
