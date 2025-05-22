@@ -235,6 +235,8 @@ namespace System.Reflection
             return ((RuntimeType)DeclaringType).GetRuntimeModule();
         }
 
+        public override bool IsCollectible => false;
+
         internal static MethodBase GetMethodFromHandleNoGenericCheck(RuntimeMethodHandle handle)
         {
             return GetMethodFromHandleInternalType_native(handle.Value, IntPtr.Zero, false);
