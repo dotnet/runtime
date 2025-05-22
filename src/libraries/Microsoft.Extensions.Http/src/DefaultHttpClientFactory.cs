@@ -335,15 +335,9 @@ namespace Microsoft.Extensions.Http
             StopCleanupTimer();
 
             // Stop all active handler timers to prevent more entries being added to _expiredHandlers
-            foreach (KeyValuePair<string, Lazy<ActiveHandlerTrackingEntry>> entry in _activeHandlers)
-            {
-                if (entry.Value.IsValueCreated)
-                {
-                    entry.Value.Value.StopTimer();
-                }
-            }
+            List<IDisposable> disposables = new List<IDisposable>();
 
-            // Process all expired handlers immediately
+            // Lock to safely collect handlers from active and expired collections
             if (!Monitor.TryEnter(_cleanupActiveLock))
             {
                 // Another thread is already cleaning up, wait for it to finish
@@ -352,59 +346,47 @@ namespace Microsoft.Extensions.Http
 
             try
             {
-                // Make a snapshot of the expired handlers queue so we can dispose them outside the lock
-                List<ExpiredHandlerTrackingEntry> expiredEntries = new List<ExpiredHandlerTrackingEntry>();
-                while (_expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry? entry))
-                {
-                    if (entry != null)
-                    {
-                        expiredEntries.Add(entry);
-                    }
-                }
-
-                // Dispose all expired handlers
-                foreach (ExpiredHandlerTrackingEntry entry in expiredEntries)
-                {
-                    try
-                    {
-                        // Force dispose regardless of CanDispose
-                        entry.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.CleanupItemFailed(_logger, entry.Name, ex);
-                    }
-                }
-
-                // Make a snapshot of the active handlers so we can dispose them outside the lock
-                List<ActiveHandlerTrackingEntry> activeEntries = new List<ActiveHandlerTrackingEntry>();
+                // Stop active handler timers and collect expired handlers
                 foreach (KeyValuePair<string, Lazy<ActiveHandlerTrackingEntry>> entry in _activeHandlers)
                 {
                     if (entry.Value.IsValueCreated)
                     {
-                        activeEntries.Add(entry.Value.Value);
+                        entry.Value.Value.StopTimer();
+                        disposables.Add(entry.Value.Value);
                     }
                 }
 
-                // Dispose all active handlers
-                foreach (ActiveHandlerTrackingEntry entry in activeEntries)
+                // Collect all expired handlers for disposal
+                while (_expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry? entry))
                 {
-                    try
+                    if (entry != null)
                     {
-                        entry.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.CleanupItemFailed(_logger, entry.Name, ex);
+                        disposables.Add(entry);
                     }
                 }
 
-                // Clear the collections
+                // Clear the collections to help with garbage collection
                 _activeHandlers.Clear();
             }
             finally
             {
                 Monitor.Exit(_cleanupActiveLock);
+            }
+
+            // Dispose all handlers outside the lock
+            foreach (IDisposable disposable in disposables)
+            {
+                try
+                {
+                    disposable.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    Log.CleanupItemFailed(_logger,
+                        disposable is ActiveHandlerTrackingEntry active ? active.Name :
+                        disposable is ExpiredHandlerTrackingEntry expired ? expired.Name :
+                        "Unknown", ex);
+                }
             }
         }
 
