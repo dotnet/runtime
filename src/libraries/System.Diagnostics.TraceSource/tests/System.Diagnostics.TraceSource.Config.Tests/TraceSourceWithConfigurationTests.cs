@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Configuration;
 using System.IO;
 using System.Reflection;
@@ -35,7 +36,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void RuntimeFilterChange()
         {
             CreateAndLoadConfigFile("testhost_ConfigWithRuntime.config");
@@ -96,7 +97,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void Refresh_RemoveSwitch()
         {
             // Use a SourceSwitch that logs Error.
@@ -137,7 +138,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void Refresh_ChangeSwitch()
         {
             // Use a SourceSwitch that logs Error.
@@ -163,7 +164,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void Refresh_RemoveSource()
         {
             // Use a SourceSwitch that logs Error.
@@ -197,7 +198,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void ConfigWithEvents_RuntimeListener()
         {
             CreateAndLoadConfigFile("testhost_ConfigWithRuntime.config");
@@ -264,7 +265,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void AllTypes()
         {
             CreateAndLoadConfigFile("testhost_AllTypes.config");
@@ -309,7 +310,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void Switch_MissingValue_Throws()
         {
             Exception e = Assert.Throws<ConfigurationErrorsException>(() =>
@@ -320,7 +321,7 @@ namespace System.Diagnostics.TraceSourceConfigTests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74244", TestPlatforms.tvOS | TestPlatforms.iOS | TestPlatforms.Android)]
         public void UnsupportedAttribute_Throws()
         {
             CreateAndLoadConfigFile("testhost_UnsupportedAttribute_Throws.config");

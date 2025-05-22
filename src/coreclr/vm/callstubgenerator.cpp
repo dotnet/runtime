@@ -47,7 +47,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_RCX_RDX,        // 01
     (PCODE)Load_RCX_RDX_R8,     // 02
     (PCODE)Load_RCX_RDX_R8_R9,  // 03
-    (PCODE)0,                   // 10    
+    (PCODE)0,                   // 10
     (PCODE)Load_RDX,            // 11
     (PCODE)Load_RDX_R8,         // 12
     (PCODE)Load_RDX_R8_R9,      // 13
@@ -75,7 +75,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_XMM0_XMM1,           // 01
     (PCODE)Load_XMM0_XMM1_XMM2,      // 02
     (PCODE)Load_XMM0_XMM1_XMM2_XMM3, // 03
-    (PCODE)0,                        // 10    
+    (PCODE)0,                        // 10
     (PCODE)Load_XMM1,                // 11
     (PCODE)Load_XMM1_XMM2,           // 12
     (PCODE)Load_XMM1_XMM2_XMM3,      // 13
@@ -121,7 +121,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_RDI_RSI_RDX_RCX,        // 03
     (PCODE)Load_RDI_RSI_RDX_RCX_R8,     // 04
     (PCODE)Load_RDI_RSI_RDX_RCX_R8_R9,  // 05
-    (PCODE)0,                           // 10    
+    (PCODE)0,                           // 10
     (PCODE)Load_RSI,                    // 11
     (PCODE)Load_RSI_RDX,                // 12
     (PCODE)Load_RSI_RDX_RCX,            // 13
@@ -200,7 +200,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5,          // 05
     (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6,     // 06
     (PCODE)Load_XMM0_XMM1_XMM2_XMM3_XMM4_XMM5_XMM6_XMM7,// 07
-    (PCODE)0,                                           // 10    
+    (PCODE)0,                                           // 10
     (PCODE)Load_XMM1,                                   // 11
     (PCODE)Load_XMM1_XMM2,                              // 12
     (PCODE)Load_XMM1_XMM2_XMM3,                         // 13
@@ -321,7 +321,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_X0_X1_X2_X3_X4_X5,          // 05
     (PCODE)Load_X0_X1_X2_X3_X4_X5_X6,       // 06
     (PCODE)Load_X0_X1_X2_X3_X4_X5_X6_X7,    // 07
-    (PCODE)0,                               // 10    
+    (PCODE)0,                               // 10
     (PCODE)Load_X1,                         // 11
     (PCODE)Load_X1_X2,                      // 12
     (PCODE)Load_X1_X2_X3,                   // 13
@@ -338,7 +338,7 @@ PCODE GPRegsRoutines[] =
     (PCODE)Load_X2_X3_X4_X5_X6,             // 26
     (PCODE)Load_X2_X3_X4_X5_X6_X7,          // 27
     (PCODE)0,                               // 30
-    (PCODE)0,                               // 31   
+    (PCODE)0,                               // 31
     (PCODE)0,                               // 32
     (PCODE)Load_X3,                          // 33
     (PCODE)Load_X3_X4,                      // 34
@@ -438,7 +438,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_D0_D1_D2_D3_D4_D5,          // 05
     (PCODE)Load_D0_D1_D2_D3_D4_D5_D6,       // 06
     (PCODE)Load_D0_D1_D2_D3_D4_D5_D6_D7,    // 07
-    (PCODE)0,                               // 10    
+    (PCODE)0,                               // 10
     (PCODE)Load_D1,                         // 11
     (PCODE)Load_D1_D2,                      // 12
     (PCODE)Load_D1_D2_D3,                   // 13
@@ -455,7 +455,7 @@ PCODE FPRegsRoutines[] =
     (PCODE)Load_D2_D3_D4_D5_D6,             // 26
     (PCODE)Load_D2_D3_D4_D5_D6_D7,          // 27
     (PCODE)0,                               // 30
-    (PCODE)0,                               // 31   
+    (PCODE)0,                               // 31
     (PCODE)0,                               // 32
     (PCODE)Load_D3,                         // 33
     (PCODE)Load_D3_D4,                      // 34
@@ -590,7 +590,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
         ArgLocDesc argLocDesc;
         argIt.GetArgLoc(ofs, &argLocDesc);
 
-#ifdef UNIX_AMD64_ABI        
+#ifdef UNIX_AMD64_ABI
         if (argIt.GetArgLocDescForStructInRegs() != NULL)
         {
             TypeHandle argTypeHandle;
@@ -604,33 +604,43 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
             {
                 ArgLocDesc argLocDescEightByte = {};
                 SystemVClassificationType eightByteType = pEEClass->GetEightByteClassification(i);
-                if (eightByteType == SystemVClassificationTypeInteger)
+                switch (eightByteType)
                 {
-                    if (argLocDesc.m_cGenReg != 0)
+                    case SystemVClassificationTypeInteger:
+                    case SystemVClassificationTypeIntegerReference:
+                    case SystemVClassificationTypeIntegerByRef:
                     {
-                        argLocDescEightByte.m_cGenReg = 1;
-                        argLocDescEightByte.m_idxGenReg = argLocDesc.m_idxGenReg++;
+                        if (argLocDesc.m_cGenReg != 0)
+                        {
+                            argLocDescEightByte.m_cGenReg = 1;
+                            argLocDescEightByte.m_idxGenReg = argLocDesc.m_idxGenReg++;
+                        }
+                        else
+                        {
+                            argLocDescEightByte.m_byteStackSize = 8;
+                            argLocDescEightByte.m_byteStackIndex = argLocDesc.m_byteStackIndex;
+                            argLocDesc.m_byteStackIndex += 8;
+                        }
+                        break;
                     }
-                    else
+                    case SystemVClassificationTypeSSE:
                     {
-                        argLocDescEightByte.m_byteStackSize = 8;
-                        argLocDescEightByte.m_byteStackIndex = argLocDesc.m_byteStackIndex;
-                        argLocDesc.m_byteStackIndex += 8;
+                        if (argLocDesc.m_cFloatReg != 0)
+                        {
+                            argLocDescEightByte.m_cFloatReg = 1;
+                            argLocDescEightByte.m_idxFloatReg = argLocDesc.m_idxFloatReg++;
+                        }
+                        else
+                        {
+                            argLocDescEightByte.m_byteStackSize = 8;
+                            argLocDescEightByte.m_byteStackIndex = argLocDesc.m_byteStackIndex;
+                            argLocDesc.m_byteStackIndex += 8;
+                        }
+                        break;
                     }
-                }
-                else if (eightByteType == SystemVClassificationTypeSSE)
-                {
-                    if (argLocDesc.m_cFloatReg != 0)
-                    {
-                        argLocDescEightByte.m_cFloatReg = 1;
-                        argLocDescEightByte.m_idxFloatReg = argLocDesc.m_idxFloatReg++;
-                    }
-                    else
-                    {
-                        argLocDescEightByte.m_byteStackSize = 8;
-                        argLocDescEightByte.m_byteStackIndex = argLocDesc.m_byteStackIndex;
-                        argLocDesc.m_byteStackIndex += 8;
-                    }
+                    default:
+                        assert(!"Unhandled systemv classification for argument in GenerateCallStub");
+                        break;
                 }
                 ProcessArgument(argIt, argLocDescEightByte, pRoutines);
             }
@@ -878,7 +888,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
     }
 
     if (argLocDesc.m_cGenReg != 0)
-    {                       
+    {
         if (m_r1 == NoRange) // No active range yet
         {
             // Start a new range
@@ -907,7 +917,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             // Start a new range
             m_x1 = argLocDesc.m_idxFloatReg;
             m_x2 = m_x1 + argLocDesc.m_cFloatReg - 1;
-        } 
+        }
         else if (argLocDesc.m_idxFloatReg == m_x2 + 1)
         {
             // Extend an existing range
@@ -929,7 +939,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             // Start a new range
             m_s1 = argLocDesc.m_byteStackIndex;
             m_s2 = m_s1 + argLocDesc.m_byteStackSize - 1;
-        } 
+        }
         else if ((argLocDesc.m_byteStackIndex == m_s2 + 1) && (argLocDesc.m_byteStackSize >= 8))
         {
             // Extend an existing range, but only if the argument is at least pointer size large.
