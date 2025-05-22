@@ -424,7 +424,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
         }
         else if ((intrin.category == HW_Category_ShiftLeftByImmediate) ||
-                 (intrin.category == HW_Category_ShiftRightByImmediate))
+                 (intrin.category == HW_Category_ShiftRightByImmediate) ||
+                 (intrin.category == HW_Category_RotateByImmediate))
         {
             assert(hasImmediateOperand);
 
@@ -2659,6 +2660,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve2_BitwiseClearXor:
+            case NI_Sve2_Xor:
                 if (targetReg != op1Reg)
                 {
                     assert(targetReg != op2Reg);
