@@ -41,28 +41,31 @@ void minipal_critsect_leave(minipal_critsect* cs);
 #endif // __cplusplus
 
 #ifdef __cplusplus
-class MinipalCritSectHolder final
+namespace minipal
 {
-    minipal_critsect* _cs;
-
-public:
-    explicit MinipalCritSectHolder(minipal_critsect* cs)
-        : _cs{ cs }
+    class CritSectHolder final
     {
-        minipal_critsect_enter(_cs);
-    }
+        minipal_critsect& _cs;
 
-    ~MinipalCritSectHolder() noexcept
-    {
-        minipal_critsect_leave(_cs);
-    }
+    public:
+        explicit CritSectHolder(minipal_critsect& cs)
+            : _cs{ cs }
+        {
+            minipal_critsect_enter(&_cs);
+        }
 
-    MinipalCritSectHolder(MinipalCritSectHolder const&) = delete;
-    MinipalCritSectHolder& operator=(MinipalCritSectHolder const&) = delete;
+        ~CritSectHolder() noexcept
+        {
+            minipal_critsect_leave(&_cs);
+        }
 
-    MinipalCritSectHolder(MinipalCritSectHolder&&) = delete;
-    MinipalCritSectHolder& operator=(MinipalCritSectHolder&&) = delete;
-};
+        CritSectHolder(CritSectHolder const&) = delete;
+        CritSectHolder& operator=(CritSectHolder const&) = delete;
+
+        CritSectHolder(CritSectHolder&&) = delete;
+        CritSectHolder& operator=(CritSectHolder&&) = delete;
+    };
+}
 #endif // __cplusplus
 
 #endif // HAVE_MINIPAL_CRITSECT_H
