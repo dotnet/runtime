@@ -3104,14 +3104,14 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     PCCOR_SIGNATURE pBlob = (BYTE *)pNativeImage->GetRvaData(pSignatures[index]);
     PCCOR_SIGNATURE pBlobStart = pBlob;
 
-    BYTE kind = *pBlob++;
+    ReadyToRunFixupKind kind = (ReadyToRunFixupKind)*pBlob++;
 
     ModuleBase * pInfoModule = pModule;
     if (kind & READYTORUN_FIXUP_ModuleOverride)
     {
         DWORD moduleIndex = CorSigUncompressData(pBlob);
         pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-        kind &= ~READYTORUN_FIXUP_ModuleOverride;
+        kind = (ReadyToRunFixupKind)(kind & ~READYTORUN_FIXUP_ModuleOverride);
     }
 
     bool fReliable = false;
