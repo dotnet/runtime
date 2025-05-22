@@ -58,7 +58,7 @@ public record GCInfo
     public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; } = [];
 
     // Number of bytes of stack space that has been pushed for arguments at the current RelativeOffset.
-    public uint PushedArgStackDepth { get; set; }
+    public uint PushedArgSize { get; set; }
 
     public GCInfo(Target target, TargetPointer gcInfoAddress, uint relativeOffset)
     {
@@ -201,7 +201,7 @@ public record GCInfo
             outputFile.WriteLine($"depth: {depth}");
         }
 
-        PushedArgStackDepth = (uint)(depth * _target.PointerSize);
+        PushedArgSize = (uint)(depth * _target.PointerSize);
     }
 
     private void AddNewTransition(BaseGcTransition transition)
