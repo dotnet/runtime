@@ -13706,10 +13706,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     ModuleBase * pInfoModule = currentModule;
 
-    if (kind & ENCODE_MODULE_OVERRIDE)
+    if (kind & ReadyToRunFixupKind::ModuleOverride)
     {
         pInfoModule = currentModule->GetModuleFromIndex(CorSigUncompressData(pBlob));
-        kind &= ~ENCODE_MODULE_OVERRIDE;
+        kind &= ~ReadyToRunFixupKind::ModuleOverride;
     }
 
     MethodDesc * pMD = NULL;
