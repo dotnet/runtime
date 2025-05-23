@@ -237,7 +237,8 @@ private:
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
+    void UpdateAncestorTypes(
+        GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support

@@ -12,6 +12,7 @@
 #include "log.h"
 #include "threadsuspend.h"
 #include "tieredcompilation.h"
+#include "minipal/time.h"
 
 // TieredCompilationManager determines which methods should be recompiled and
 // how they should be recompiled to best optimize the running code. It then
@@ -500,12 +501,10 @@ void TieredCompilationManager::BackgroundWorkerStart()
     int processorCount = GetCurrentProcessCpuCount();
     _ASSERTE(processorCount > 0);
 
-    LARGE_INTEGER li;
-    QueryPerformanceFrequency(&li);
-    UINT64 ticksPerS = li.QuadPart;
-    UINT64 maxWorkDurationTicks = ticksPerS * 50 / 1000; // 50 ms
-    UINT64 minWorkDurationTicks = min(ticksPerS * processorCount / 1000, maxWorkDurationTicks); // <proc count> ms (capped)
-    UINT64 workDurationTicks = minWorkDurationTicks;
+    int64_t ticksPerS = minipal_hires_tick_frequency();
+    int64_t maxWorkDurationTicks = ticksPerS * 50 / 1000; // 50 ms
+    int64_t minWorkDurationTicks = min(ticksPerS * processorCount / 1000, maxWorkDurationTicks); // <proc count> ms (capped)
+    int64_t workDurationTicks = minWorkDurationTicks;
 
     while (true)
     {
@@ -713,9 +712,9 @@ void TieredCompilationManager::AsyncCompleteCallCounting()
 // optimizations enabled and then installed as the active implementation
 // of the method entrypoint.
 bool TieredCompilationManager::DoBackgroundWork(
-    UINT64 *workDurationTicksRef,
-    UINT64 minWorkDurationTicks,
-    UINT64 maxWorkDurationTicks)
+    int64_t *workDurationTicksRef,
+    int64_t minWorkDurationTicks,
+    int64_t maxWorkDurationTicks)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(GetThread() == s_backgroundWorkerThread);
@@ -723,7 +722,7 @@ bool TieredCompilationManager::DoBackgroundWork(
     _ASSERTE(workDurationTicksRef != nullptr);
     _ASSERTE(minWorkDurationTicks <= maxWorkDurationTicks);
 
-    UINT64 workDurationTicks = *workDurationTicksRef;
+    int64_t workDurationTicks = *workDurationTicksRef;
     _ASSERTE(workDurationTicks >= minWorkDurationTicks);
     _ASSERTE(workDurationTicks <= maxWorkDurationTicks);
 
@@ -740,10 +739,8 @@ bool TieredCompilationManager::DoBackgroundWork(
     bool sendStopEvent = true;
     bool allMethodsJitted = false;
     UINT32 jittedMethodCount = 0;
-    LARGE_INTEGER li;
-    QueryPerformanceCounter(&li);
-    UINT64 startTicks = li.QuadPart;
-    UINT64 previousTicks = startTicks;
+    int64_t startTicks = minipal_hires_ticks();
+    int64_t previousTicks = startTicks;
 
     do
     {
@@ -822,8 +819,7 @@ bool TieredCompilationManager::DoBackgroundWork(
 
         // Yield the thread periodically to give preference to possibly more important work
 
-        QueryPerformanceCounter(&li);
-        UINT64 currentTicks = li.QuadPart;
+        int64_t currentTicks = minipal_hires_ticks();
         if (currentTicks - startTicks < workDurationTicks)
         {
             previousTicks = currentTicks;
@@ -849,11 +845,10 @@ bool TieredCompilationManager::DoBackgroundWork(
             ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(countOfMethodsToOptimize, jittedMethodCount);
         }
 
-        UINT64 beforeSleepTicks = currentTicks;
+        int64_t beforeSleepTicks = currentTicks;
         ClrSleepEx(0, false);
 
-        QueryPerformanceCounter(&li);
-        currentTicks = li.QuadPart;
+        currentTicks = minipal_hires_ticks();
 
         // Depending on how oversubscribed thread usage is on the system, the sleep may have caused this thread to not be
         // scheduled for a long time. Yielding the thread too frequently may significantly slow down the background work, which
@@ -864,8 +859,8 @@ bool TieredCompilationManager::DoBackgroundWork(
         // work duration is capped to a maximum and since a long sleep delay is likely to repeat, to avoid going back to
         // too-frequent yielding too quickly, the background work duration is decayed back to the minimum if the sleep duration
         // becomes consistently short.
-        UINT64 newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
-        UINT64 decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
+        int64_t newWorkDurationTicks = (currentTicks - beforeSleepTicks) / 4;
+        int64_t decayedWorkDurationTicks = (workDurationTicks + workDurationTicks / 2) / 2;
         workDurationTicks = newWorkDurationTicks < decayedWorkDurationTicks ? decayedWorkDurationTicks : newWorkDurationTicks;
         if (workDurationTicks < minWorkDurationTicks)
         {

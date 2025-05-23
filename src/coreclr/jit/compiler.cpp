@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
+#include "minipal/time.h"
 
 extern ICorJitHost* g_jitHost;
 
@@ -9259,12 +9260,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 void Compiler::RecordStateAtEndOfInlining()
 {
 #if defined(DEBUG)
-    LARGE_INTEGER lpCycles;
-    BOOL          result = QueryPerformanceCounter(&lpCycles);
-    if (result == TRUE)
-    {
-        m_compCyclesAtEndOfInlining = (int64_t)lpCycles.QuadPart;
-    }
+    m_compCyclesAtEndOfInlining = minipal_hires_ticks();
 #endif // defined(DEBUG)
 }
 
@@ -9277,21 +9273,13 @@ void Compiler::RecordStateAtEndOfCompilation()
 #if defined(DEBUG)
     m_compCycles = 0;
 
-    LARGE_INTEGER lpCycles;
-    BOOL          result = QueryPerformanceCounter(&lpCycles);
-    if (result == TRUE)
+    int64_t lpCycles = minipal_hires_ticks();
+    if (lpCycles > m_compCyclesAtEndOfInlining)
     {
-        if ((int64_t)lpCycles.QuadPart > m_compCyclesAtEndOfInlining)
-        {
-            LARGE_INTEGER lpFreq;
-            result = QueryPerformanceFrequency(&lpFreq);
-            if (result == TRUE)
-            {
-                m_compCycles = (int64_t)lpCycles.QuadPart - m_compCyclesAtEndOfInlining;
-                m_compCycles *= 1000000;
-                m_compCycles /= (int64_t)lpFreq.QuadPart;
-            }
-        }
+        int64_t lpFreq = minipal_hires_tick_frequency();
+        m_compCycles   = lpCycles - m_compCyclesAtEndOfInlining;
+        m_compCycles *= 1000000;
+        m_compCycles /= lpFreq;
     }
 #endif // defined(DEBUG)
 }

@@ -398,33 +398,6 @@ int main()
 {
   int ret;
   struct timespec ts;
-  ret = clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
-
-  exit(ret);
-}" HAVE_CLOCK_MONOTONIC_COARSE)
-set(CMAKE_REQUIRED_LIBRARIES)
-
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-
-int main()
-{
-  int ret;
-  ret = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-  exit((ret == 0) ? 1 : 0);
-}" HAVE_CLOCK_GETTIME_NSEC_NP)
-
-set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_RT_LIBS})
-check_cxx_source_runs("
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-
-int main()
-{
-  int ret;
-  struct timespec ts;
   ret = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
 
   exit(ret);

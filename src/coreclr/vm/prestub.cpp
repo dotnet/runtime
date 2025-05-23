@@ -743,11 +743,7 @@ namespace
             return NULL;
 
         COR_ILMETHOD_DECODER::DecoderStatus status = COR_ILMETHOD_DECODER::FORMAT_ERROR;
-        {
-            // Decoder ctor can AV on a malformed method header
-            AVInRuntimeImplOkayHolder AVOkay;
-            pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, pMD->GetMDImport(), &status);
-        }
+        pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, pMD->GetMDImport(), &status);
 
         if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
@@ -915,16 +911,18 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pEntry, ULONG* pSizeOfCode)
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(pConfig != NULL);
+    _ASSERTE(pEntry != NULL);
 
     PCODE pCode = (PCODE)NULL;
-    CORJIT_FLAGS jitFlags;
+    bool isTier0 = false;
     PCODE pOtherCode = (PCODE)NULL;
 
     EX_TRY
     {
         Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
 
-        pCode = UnsafeJitFunction(pConfig, pilHeader, &jitFlags, pSizeOfCode);
+        pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pSizeOfCode);
     }
     EX_CATCH
     {
@@ -983,7 +981,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Finalize the optimization tier before SetNativeCode() is called
-    bool shouldCountCalls = jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0) && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
+    bool shouldCountCalls = isTier0 && pConfig->FinalizeOptimizationTierForTier0LoadOrJit();
 #endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point

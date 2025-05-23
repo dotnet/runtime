@@ -4797,6 +4797,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
+    bool impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);

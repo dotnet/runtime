@@ -427,22 +427,16 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     // converts long/ulong --> float/double casts into helper calls.
     else if (varTypeIsFloating(dstType) && varTypeIsLong(srcType))
     {
+        CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
         if (dstType == TYP_FLOAT)
         {
-            // there is only a double helper, so we
-            // - change the dsttype to double
-            // - insert a cast from double to float
-            // - recurse into the resulting tree
-            tree->CastToType() = TYP_DOUBLE;
-            tree->gtType       = TYP_DOUBLE;
-
-            tree = gtNewCastNode(TYP_FLOAT, tree, false, TYP_FLOAT);
-
-            return fgMorphTree(tree);
+            helper = tree->IsUnsigned() ? CORINFO_HELP_ULNG2FLT : CORINFO_HELP_LNG2FLT;
         }
-        if (tree->gtFlags & GTF_UNSIGNED)
-            return fgMorphCastIntoHelper(tree, CORINFO_HELP_ULNG2DBL, oper);
-        return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+        else
+        {
+            helper = tree->IsUnsigned() ? CORINFO_HELP_ULNG2DBL : CORINFO_HELP_LNG2DBL;
+        }
+        return fgMorphCastIntoHelper(tree, helper, oper);
     }
 #endif // TARGET_ARM
 
@@ -482,41 +476,23 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 
         if (srcType == TYP_ULONG)
         {
-            return fgMorphCastIntoHelper(tree, CORINFO_HELP_ULNG2DBL, oper);
+            CorInfoHelpFunc helper = (dstType == TYP_FLOAT) ? CORINFO_HELP_ULNG2FLT : CORINFO_HELP_ULNG2DBL;
+            return fgMorphCastIntoHelper(tree, helper, oper);
         }
         else if (srcType == TYP_UINT && !canUseEvexEncoding())
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
             tree->ClearUnsigned();
-            return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
+
+            CorInfoHelpFunc helper = (dstType == TYP_FLOAT) ? CORINFO_HELP_LNG2FLT : CORINFO_HELP_LNG2DBL;
+            return fgMorphCastIntoHelper(tree, helper, oper);
         }
     }
     else if (!tree->IsUnsigned() && (srcType == TYP_LONG) && varTypeIsFloating(dstType))
     {
-        oper = fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
-
-        // Since we don't have a Jit Helper that converts to a TYP_FLOAT
-        // we just use the one that converts to a TYP_DOUBLE
-        // and then add a cast to TYP_FLOAT
-        //
-        if ((dstType == TYP_FLOAT) && oper->OperIs(GT_CALL))
-        {
-            // Fix the return type to be TYP_DOUBLE
-            //
-            oper->gtType = TYP_DOUBLE;
-            oper->SetMorphed(this);
-
-            // Add a Cast to TYP_FLOAT
-            //
-            tree = gtNewCastNode(TYP_FLOAT, oper, false, TYP_FLOAT);
-            tree->SetMorphed(this);
-            return tree;
-        }
-        else
-        {
-            return oper;
-        }
+        CorInfoHelpFunc helper = (dstType == TYP_FLOAT) ? CORINFO_HELP_LNG2FLT : CORINFO_HELP_LNG2DBL;
+        return fgMorphCastIntoHelper(tree, helper, oper);
     }
 #endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))

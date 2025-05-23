@@ -2661,11 +2661,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve2_BitwiseClearXor:
                 if (targetReg != op1Reg)
                 {
-                    assert(targetReg != op2Reg);
+                    assert(targetReg != op2Reg && targetReg != op3Reg);
                     GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
                 }
                 // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, INS_OPTS_SCALABLE_D);
+                break;
+
+            case NI_Sve2_BitwiseSelect:
+            case NI_Sve2_BitwiseSelectLeftInverted:
+            case NI_Sve2_BitwiseSelectRightInverted:
+                // op1: select, op2: left, op3: right
+                // Operation is destructive on the 'left' operand.
+                if (targetReg != op2Reg)
+                {
+                    assert(targetReg != op3Reg && targetReg != op1Reg);
+                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op2Reg);
+                }
+                // Always use the lane size D. It's a bitwise operation so this is fine for all integer vector types.
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op3Reg, op1Reg, INS_OPTS_SCALABLE_D);
                 break;
 
             default:

@@ -176,7 +176,7 @@ enterandleavecs( LPVOID lpParam )
 		}
 
 	//Collect operation start time
-	dwStart = GetTickCount();
+	dwStart = (DWORD)minipal_lowres_ticks();
 
 	//Operation starts loopcount times
 	for(i = 0; i < loopcount; i++)
@@ -193,7 +193,7 @@ enterandleavecs( LPVOID lpParam )
 		stats.operationsTotal++;
 	}
 	//collect operation end time
-	stats.operationTime = GetTickCount() - dwStart;
+	stats.operationTime = (DWORD)minipal_lowres_ticks() - dwStart;
 
 	/*Trace("\n\n\n\nOperation Time %d\n", stats.operationTime);
 	Trace("Operation Passed %d\n", stats.operationsPassed);
@@ -258,7 +258,7 @@ processStats.processId = USE_PROCESS_COUNT;
 processStats.relationId = RELATION_ID;  //Will change later
 
 //Start Process Time Capture
-dwStart = GetTickCount();
+dwStart = (DWORD)minipal_lowres_ticks();
 
 //setup file for thread result collection
 statisticsSize = sizeof(struct statistics);
@@ -322,7 +322,7 @@ if ( WAIT_OBJECT_0 != WaitForMultipleObjects (THREAD_COUNT,hThread,TRUE, INFINIT
 
 
 //Get the end time of the process
-processStats.operationTime = GetTickCount() - dwStart;
+processStats.operationTime = (DWORD)minipal_lowres_ticks() - dwStart;
 
 //Write Process Result Contents to File
 if(hProcessFile!= NULL)

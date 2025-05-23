@@ -1,0 +1,12 @@
+<Solution>
+  <Project Path="../../../libraries/Common/tests/WasmTestRunner/WasmTestRunner.csproj" />
+  <Project Path="../../../tasks/AotCompilerTask/MonoAOTCompiler.csproj" />
+  <Project Path="../../../tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+  <Project Path="../../../tasks/WasmAppBuilder/WasmAppBuilder.csproj" />
+  <Project Path="../../../tasks/WasmBuildTasks/WasmBuildTasks.csproj" />
+  <Project Path="../../../tasks/WorkloadBuildTasks/WorkloadBuildTasks.csproj" />
+  <Project Path="../../wasi/Wasi.Build.Tests/Wasi.Build.Tests.csproj" />
+  <Project Path="../host/WasmAppHost.csproj" />
+  <Project Path="../symbolicator/WasmSymbolicator.csproj" />
+  <Project Path="../Wasm.Build.Tests/Wasm.Build.Tests.csproj" />
+</Solution>
