@@ -332,7 +332,7 @@ Initialize(
         pthread_mutex_unlock(&init_critsec_mutex);
     }
 
-    minipal_critsect_enter(init_critsec); // here pThread is always nullptr
+    minipal_critsect_enter(init_critsec);
 
     if (init_count == 0)
     {
@@ -899,9 +899,6 @@ BOOL PALInitLock(void)
         return FALSE;
     }
 
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
-
     minipal_critsect_enter(init_critsec);
     return TRUE;
 }
@@ -920,9 +917,6 @@ void PALInitUnlock(void)
     {
         return;
     }
-
-    CPalThread * pThread =
-        (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
     minipal_critsect_leave(init_critsec);
 }

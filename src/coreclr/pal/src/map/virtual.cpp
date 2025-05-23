@@ -206,8 +206,6 @@ void VIRTUALCleanup()
 {
     PCMI pEntry;
     PCMI pTempEntry;
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-
     minipal_critsect_enter(&virtual_critsec);
 
     // Clean up the allocated memory.
@@ -343,8 +341,6 @@ static void VIRTUALDisplayList( void  )
     PCMI p;
     SIZE_T count;
     SIZE_T index;
-    CPalThread * pthrCurrent = InternalGetCurrentThread();
-
     minipal_critsect_enter(&virtual_critsec);
 
     p = pVirtualMemory;
@@ -816,7 +812,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done
     SIZE_T reservationSize = ALIGN_UP(dwSize, VIRTUAL_64KB);
 
-    minipal_critsect_leave(&virtual_critsec);
+    minipal_critsect_enter(&virtual_critsec);
 
     void *address = g_executableMemoryAllocator.AllocateMemoryWithinRange(lpBeginAddress, lpEndAddress, reservationSize);
     if (address != nullptr)
@@ -1183,14 +1179,12 @@ VirtualProtect(
     SIZE_T   Index = 0;
     SIZE_T   NumberOfPagesToChange = 0;
     SIZE_T   OffSet = 0;
-    CPalThread * pthrCurrent;
 
     PERF_ENTRY(VirtualProtect);
     ENTRY("VirtualProtect(lpAddress=%p, dwSize=%u, flNewProtect=%#x, "
           "flOldProtect=%p)\n",
           lpAddress, dwSize, flNewProtect, lpflOldProtect);
 
-    pthrCurrent = InternalGetCurrentThread();
     minipal_critsect_enter(&virtual_critsec);
 
     StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());

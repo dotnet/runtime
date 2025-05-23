@@ -1664,7 +1664,6 @@ BOOL MAPGetRegionInfo(LPVOID lpAddress,
                       PMEMORY_BASIC_INFORMATION lpBuffer)
 {
     BOOL fFound = FALSE;
-    CPalThread * pThread = InternalGetCurrentThread();
 
     minipal_critsect_enter(&mapping_critsec);
 
@@ -2554,7 +2553,6 @@ BOOL MAPMarkSectionAsNotNeeded(LPCVOID lpAddress)
     BOOL retval = TRUE;
 
 #ifndef TARGET_ANDROID
-    CPalThread * pThread = InternalGetCurrentThread();
     minipal_critsect_enter(&mapping_critsec);
     PLIST_ENTRY pLink, pLinkNext = NULL;
 
