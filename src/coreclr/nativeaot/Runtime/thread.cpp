@@ -39,6 +39,11 @@ static Thread* g_RuntimeInitializingThread;
 
 #endif //!DACCESS_COMPILE
 
+#if defined(TARGET_ARM64)
+extern "C" void* PacStripPtr(void* ptr);
+extern "C" void* PacSignPtr(void* ptr);
+#endif // TARGET_ARM64
+
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
     minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
@@ -805,7 +810,12 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
         // we only unhijack if we are going to install a new or better hijack.
         CrossThreadUnhijack();
 
+#if defined(TARGET_ARM64)
+        void* pvRetAddr = PacStripPtr(*ppvRetAddrLocation);
+#else
         void* pvRetAddr = *ppvRetAddrLocation;
+#endif // TARGET_ARM64
+
         ASSERT(pvRetAddr != NULL);
         ASSERT(StackFrameIterator::IsValidReturnAddress(pvRetAddr));
 
@@ -817,7 +827,11 @@ void Thread::HijackReturnAddressWorker(StackFrameIterator* frameIterator, Hijack
                                                                 frameIterator->GetRegisterSet()));
 #endif
 
-        *ppvRetAddrLocation = (void*)pfnHijackFunction;
+        void* pvHijacedkAddr = (void*)pfnHijackFunction;
+#if defined(TARGET_ARM64)
+        pvHijacedkAddr = PacSignPtr(pvHijacedkAddr);
+#endif // TARGET_ARM64
+        *ppvRetAddrLocation = pvHijacedkAddr;
 
         STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalHijack: TgtThread = %llx, IP = %p\n",
             GetPalThreadIdForLogging(), frameIterator->GetRegisterSet()->GetIP());
@@ -945,7 +959,12 @@ void Thread::UnhijackWorker()
 
     // Restore the original return address.
     ASSERT(m_ppvHijackedReturnAddressLocation != NULL);
-    *m_ppvHijackedReturnAddressLocation = m_pvHijackedReturnAddress;
+
+    void* pvHijackedRetAddr = m_pvHijackedReturnAddress;
+#if defined(TARGET_ARM64)
+    pvHijackedRetAddr = PacSignPtr(pvHijackedRetAddr);
+#endif // TARGET_ARM64
+    *m_ppvHijackedReturnAddressLocation = pvHijackedRetAddr;
 
     // Clear the hijack state.
     m_ppvHijackedReturnAddressLocation  = NULL;
