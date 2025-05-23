@@ -403,20 +403,15 @@ namespace System
                 switch (_principalPolicy)
                 {
                     case PrincipalPolicy.UnauthenticatedPrincipal:
-                        principal = (IPrincipal?)GetDefaultPrincipal(null);
+                        principal = (IPrincipal)GetDefaultPrincipal(null);
                         break;
                     case PrincipalPolicy.WindowsPrincipal:
                         try
                         {
-                            principal = (IPrincipal?)GetDefaultWindowsPrincipal(null);
+                            principal = (IPrincipal)GetDefaultWindowsPrincipal(null);
                             break;
                         }
                         catch (MissingMethodException ex)
-                        {
-                            // WindowsPrincipal is not available, throw PNSE
-                            throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal, ex);
-                        }
-                        catch (TypeLoadException ex)
                         {
                             // WindowsPrincipal is not available, throw PNSE
                             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal, ex);

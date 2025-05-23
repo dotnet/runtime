@@ -36,232 +36,307 @@ namespace System.Net.Http
         // UnsafeAccessor declarations for all native handler properties/methods
         private ICredentials? GetDefaultProxyCredentials()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_DefaultProxyCredentials")]
             static extern ICredentials? CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetDefaultProxyCredentials(ICredentials? value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_DefaultProxyCredentials")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, ICredentials? value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private int GetMaxConnectionsPerServer()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MaxConnectionsPerServer")]
             static extern int CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetMaxConnectionsPerServer(int value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_MaxConnectionsPerServer")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, int value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private int GetMaxResponseHeadersLength()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MaxResponseHeadersLength")]
             static extern int CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetMaxResponseHeadersLength(int value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_MaxResponseHeadersLength")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, int value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private ClientCertificateOption GetClientCertificateOptions()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ClientCertificateOptions")]
             static extern ClientCertificateOption CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetClientCertificateOptions(ClientCertificateOption value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_ClientCertificateOptions")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, ClientCertificateOption value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private X509CertificateCollection GetClientCertificates()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ClientCertificates")]
             static extern X509CertificateCollection CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> GetServerCertificateCustomValidationCallback()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_ServerCertificateCustomValidationCallback")]
             static extern Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetServerCertificateCustomValidationCallback(Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_ServerCertificateCustomValidationCallback")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private bool GetCheckCertificateRevocationList()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_CheckCertificateRevocationList")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetCheckCertificateRevocationList(bool value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_CheckCertificateRevocationList")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, bool value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private SslProtocols GetSslProtocols()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_SslProtocols")]
             static extern SslProtocols CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetSslProtocols(SslProtocols value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_SslProtocols")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, SslProtocols value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private IDictionary<string, object?> GetProperties()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Properties")]
             static extern IDictionary<string, object?> CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private bool GetSupportsAutomaticDecompression()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_SupportsAutomaticDecompression")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private bool GetSupportsProxy()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_SupportsProxy")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private bool GetSupportsRedirectConfiguration()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_SupportsRedirectConfiguration")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private DecompressionMethods GetAutomaticDecompression()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_AutomaticDecompression")]
             static extern DecompressionMethods CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetAutomaticDecompression(DecompressionMethods value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_AutomaticDecompression")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, DecompressionMethods value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private bool GetUseProxy()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_UseProxy")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetUseProxy(bool value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseProxy")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, bool value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private IWebProxy GetProxy()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Proxy")]
             static extern IWebProxy CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetProxy(IWebProxy value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_Proxy")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, IWebProxy value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private bool GetPreAuthenticate()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_PreAuthenticate")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetPreAuthenticate(bool value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_PreAuthenticate")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, bool value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private int GetMaxAutomaticRedirections()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_MaxAutomaticRedirections")]
             static extern int CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetMaxAutomaticRedirections(int value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_MaxAutomaticRedirections")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, int value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private bool GetUseCookies()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_UseCookies")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetUseCookies(bool value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_UseCookies")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, bool value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private CookieContainer GetCookieContainer()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_CookieContainer")]
             static extern CookieContainer CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetCookieContainer(CookieContainer value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_CookieContainer")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, CookieContainer value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private bool GetAllowAutoRedirect()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_AllowAutoRedirect")]
             static extern bool CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetAllowAutoRedirect(bool value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_AllowAutoRedirect")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, bool value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private ICredentials GetCredentials()
         {
+            return CallNative(_nativeUnderlyingHandler!);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Credentials")]
             static extern ICredentials CallNative([UnsafeAccessorType(NativeHandlerType)] object handler);
-            return CallNative(_nativeUnderlyingHandler!);
         }
+
         private void SetCredentials(ICredentials? value)
         {
+            CallNative(_nativeUnderlyingHandler!, value);
+
             [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_Credentials")]
             static extern void CallNative([UnsafeAccessorType(NativeHandlerType)] object handler, ICredentials? value);
-            CallNative(_nativeUnderlyingHandler!, value);
         }
+
         private static HttpMessageHandler CreateNativeHandler()
         {
+            return (HttpMessageHandler)CallNative();
+
             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "GetHttpMessageHandler")]
             [return: UnsafeAccessorType(NativeHandlerType)]
             static extern object CallNative();
-            return (HttpMessageHandler)CallNative();
         }
     }
 }

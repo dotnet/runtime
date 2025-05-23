@@ -52,7 +52,6 @@ namespace System.Resources
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
 
-            // Issue https://github.com/dotnet/runtime/issues/39290 tracks finding an alternative to BinaryFormatter
             if (!EnableUnsafeBinaryFormatterSerialization)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
