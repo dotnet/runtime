@@ -24,6 +24,19 @@ public class X
     public int y;
 }
 
+public class F
+{
+    public X x;
+    ~F()
+    {
+        if (x != null)
+        {
+            Console.WriteLine($"F destroyed: {x.y}");
+            x = null;
+        }
+    }
+}
+
 public class Fields
 {
     static bool GCStressEnabled()
@@ -352,7 +365,7 @@ public class Fields
     static X DoHeap5()
     {
         X[] x = new X[2];
-        x[0]= new X();
+        x[0] = new X();
         x[1] = s_x;
 
         x[0].y = 33;
@@ -459,5 +472,25 @@ public class Fields
     {
         RunHeap8();
         return CallTestAndVerifyAllocation(RunHeap8, 100, HeapAllocation());
+    }
+
+    // "non-escaping" finalizable object with GC fields
+    //
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int RunHeap9()
+    {
+        F f = new F();
+        f.x = new X();
+        f.x.y = 1;
+        return 100;
+    }
+
+    [Fact]
+    public static int Heap9()
+    {
+        int result = CallTestAndVerifyAllocation(RunHeap9, 100, HeapAllocation());
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        return result;
     }
 }

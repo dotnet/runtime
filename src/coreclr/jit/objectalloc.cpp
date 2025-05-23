@@ -772,8 +772,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         // add an edge to unknown source. This will ensure this local does
                         // not get retyped as TYP_I_IMPL.
                         //
-                        GenTree* const data = lclTree->Data();
-                        if (!data->IsIntegralConst(0) && (m_allocator->AllocationKind(data) == OAT_NONE))
+                        GenTree* const       data = lclTree->Data();
+                        ObjectAllocationType oat  = m_allocator->AllocationKind(data);
+                        if ((oat == OAT_NEWOBJ_HEAP) || (oat == OAT_NONE) && !data->IsIntegralConst(0))
                         {
                             // Add a connection to the unknown source.
                             //
@@ -781,7 +782,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                             m_allocator->AddConnGraphEdgeIndex(m_allocator->LocalToIndex(lclNum),
                                                                m_allocator->m_unknownSourceIndex);
 
-                            // If we're tracking fields, the fields also have unknown values and escape.
+                            // If we're tracking fields, the fields have unknown values and escape.
                             //
                             if (m_allocator->m_trackObjectFields)
                             {
@@ -1113,6 +1114,12 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
 
     unsigned classSize = 0;
 
+    if (allocType == OAT_NEWOBJ_HEAP)
+    {
+        *reason = "[runtime disallows]";
+        return false;
+    }
+
     if (allocType == OAT_NEWARR)
     {
         if (!enableArrays)
@@ -1150,12 +1157,7 @@ bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                 return false;
             }
 
-            if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
-            {
-                *reason = "[runtime disallows]";
-                return false;
-            }
-
+            assert(comp->info.compCompHnd->canAllocateOnStack(clsHnd));
             classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
         }
     }
@@ -1206,7 +1208,11 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
     ObjectAllocationType allocType = OAT_NONE;
     if (tree->OperGet() == GT_ALLOCOBJ)
     {
-        allocType = OAT_NEWOBJ;
+        GenTreeAllocObj* const allocObj = tree->AsAllocObj();
+        CORINFO_CLASS_HANDLE   clsHnd   = allocObj->gtAllocObjClsHnd;
+        assert(clsHnd != NO_CLASS_HANDLE);
+        bool const canBeOnStack = comp->info.compCompHnd->canAllocateOnStack(clsHnd);
+        allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
     }
     else if (!m_isR2R && tree->IsHelperCall())
     {
@@ -1346,7 +1352,7 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
     {
         assert(candidate.m_onHeapReason != nullptr);
         JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, candidate.m_onHeapReason);
-        if (candidate.m_allocType == OAT_NEWOBJ)
+        if ((candidate.m_allocType == OAT_NEWOBJ) || (candidate.m_allocType == OAT_NEWOBJ_HEAP))
         {
             GenTree* const stmtExpr      = candidate.m_tree;
             GenTree* const oldData       = stmtExpr->AsLclVar()->Data();
@@ -1394,6 +1400,9 @@ bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
             return MorphAllocObjNodeHelperArr(candidate);
         case OAT_NEWOBJ:
             return MorphAllocObjNodeHelperObj(candidate);
+        case OAT_NEWOBJ_HEAP:
+            candidate.m_onHeapReason = "[runtime disallows]";
+            return false;
         default:
             unreached();
     }
@@ -3433,7 +3442,8 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                 const char*          reason = nullptr;
                 unsigned             size   = 0;
                 unsigned             length = TARGET_POINTER_SIZE;
-                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, OAT_NEWOBJ, length, &size, &reason,
+                ObjectAllocationType oat    = AllocationKind(data);
+                if (CanAllocateLclVarOnStack(enumeratorLocal, clsHnd, oat, length, &size, &reason,
                                              /* preliminaryCheck */ true))
                 {
                     // We are going to conditionally track accesses to the enumerator local via a pseudo.
