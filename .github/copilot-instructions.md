@@ -1,3 +1,23 @@
+Important: **Ensure the code compiles and the tests pass.** Use the "Building & Testing in dotnet/runtime" instructions below.
+
+Additionally,
+
+* Don't leave trailling whitespaces.
+* Apply code-formatting style defined in `.editorconfig`.
+* Prefer file-scoped namespace declarations and single-line using directives.
+* Insert a newline before the opening curly brace of any code block (e.g., after `if`, `for`, `while`, `foreach`, `using`, `try`, etc.).
+* Ensure that the final return statement of a method is on its own line.
+* Use pattern matching and switch expressions wherever possible.
+* Use `nameof` instead of string literals when referring to member names.
+* Always use `is null` or `is not null` instead of `== null` or `!= null`.
+* Trust the C# null annotations and don't add null checks when the type system says a value cannot be null.
+* Prefer `?.` if applicable (e.g. `scope?.Dispose()`).
+* Use `ObjectDisposedException.ThrowIf` where applicable.
+* Use explicit types instead of `var`.
+* When writing tests, do not emit "Act", "Arrange" or "Assert" comments.
+
+---
+
 # Building & Testing in dotnet/runtime
 
 ## 1. Prerequisites
@@ -149,6 +169,8 @@ If only one library is affected:
 
      *(Adjust path as needed. If in doubt, search with `find tests -name '*.csproj'`.)*
 
+---
+
 ## 6. WebAssembly (WASM) Libraries Workflow
 
 From the repository root:
@@ -160,7 +182,13 @@ From the repository root:
    - [Build libraries for WebAssembly](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/webassembly-instructions.md)
    - [Testing Libraries on WebAssembly](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing-wasm.md)
 
+---
+
 ## 7. Additional Notes
+
+**Troubleshooting**
+
+If the build fails with an error "The shared framework must be built before the local targeting pack can be consumed.", build the runtime (clr or mono) first. E.g. (from the repo root) `./build.sh clr -c release`
 
 **Windows Command Equivalents**
 
