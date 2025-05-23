@@ -195,11 +195,8 @@ public partial class ApkBuilder
         Directory.CreateDirectory(Path.Combine(OutputDir, "assets"));
 
         var extensionsToIgnore = new List<string> { ".so", ".a", ".dex", ".jar" };
-        if (StripDebugSymbols)
-        {
-            extensionsToIgnore.Add(".pdb");
-            extensionsToIgnore.Add(".dbg");
-        }
+        extensionsToIgnore.Add(".pdb");
+        extensionsToIgnore.Add(".dbg");
 
         // Copy sourceDir to OutputDir/assets-tozip (ignore native files)
         // these files then will be zipped and copied to apk/assets/assets.zip
@@ -310,21 +307,23 @@ public partial class ApkBuilder
                 // due to circular dependency.
                 nativeLibraries += $"    {runtimeLib}{Environment.NewLine}";
             }
-        }
 
-        if (StaticLinkedRuntime && IsCoreCLR)
-        {
-            string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
-                .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-
-            foreach (string lib in staticLibs)
+            if (StaticLinkedRuntime && IsCoreCLR)
             {
-                nativeLibraries += $"    {lib}{Environment.NewLine}";
-            }
+                string[] staticMonoStubs = Directory.GetFiles(AppDir, "libmono*.a");
+                string[] staticLibs = Directory.GetFiles(AppDir, "*.a")
+                    .Where(lib => !Path.GetFileName(lib).Equals("libcoreclr_static.a", StringComparison.OrdinalIgnoreCase) &&
+                                  !staticMonoStubs.Contains(lib, StringComparer.OrdinalIgnoreCase))
+                    .ToArray();
 
-            nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
-            nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+                foreach (string lib in staticLibs)
+                {
+                    nativeLibraries += $"    {lib}{Environment.NewLine}";
+                }
+
+                nativeLibraries += $"    libc++abi.a{Environment.NewLine}";
+                nativeLibraries += $"    libc++_static.a{Environment.NewLine}";
+            }
         }
 
         StringBuilder extraLinkerArgs = new StringBuilder();
@@ -388,6 +387,8 @@ public partial class ApkBuilder
         AndroidProject project = new AndroidProject("monodroid", runtimeIdentifier, AndroidNdk, logger);
         project.GenerateCMake(OutputDir, MinApiLevel, StripDebugSymbols);
         project.BuildCMake(OutputDir, StripDebugSymbols);
+
+        // TODO: https://github.com/dotnet/runtime/issues/115717
 
         string abi = project.Abi;
 

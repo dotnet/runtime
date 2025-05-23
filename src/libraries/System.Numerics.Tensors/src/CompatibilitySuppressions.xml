@@ -338,6 +338,20 @@
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
   <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.ToDenseTensor</Target>
+    <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net8.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0006</DiagnosticId>
+    <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.ToDenseTensor</Target>
+    <Left>lib/net9.0/System.Numerics.Tensors.dll</Left>
+    <Right>lib/net9.0/System.Numerics.Tensors.dll</Right>
+    <IsBaselineSuppression>true</IsBaselineSuppression>
+  </Suppression>
+  <Suppression>
     <DiagnosticId>CP0017</DiagnosticId>
     <Target>M:System.Numerics.Tensors.IReadOnlyTensor`2.AsReadOnlyTensorSpan(System.ReadOnlySpan{System.Buffers.NIndex})$0</Target>
     <Left>lib/net8.0/System.Numerics.Tensors.dll</Left>

@@ -1,6 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+//
+// This file implements the transformation of C# async methods into state
+// machines. The transformation takes place late in the JIT pipeline, when most
+// optimizations have already been performed, right before lowering.
+//
+// The transformation performs the following key operations:
+//
+// 1. Each async call becomes a suspension point where execution can pause and
+//    return to the caller, accompanied by a resumption point where execution can
+//    continue when the awaited operation completes.
+//
+// 2. When suspending at a suspension point a continuation object is created that contains:
+//    - All live local variables
+//    - State number to identify which await is being resumed
+//    - Return value from the awaited operation (filled in by the callee later)
+//    - Exception information if an exception occurred
+//    - Resumption function pointer
+//    - Flags containing additional information
+//
+// 3. The method entry is modified to include dispatch logic that checks for an
+//    incoming continuation and jumps to the appropriate resumption point.
+//
+// 4. Special handling is included for:
+//    - Exception propagation across await boundaries
+//    - Return value management for different types (primitives, references, structs)
+//    - Tiered compilation and On-Stack Replacement (OSR)
+//    - Optimized state capture based on variable liveness analysis
+//
+// The transformation ensures that the semantics of the original async method are
+// preserved while enabling efficient suspension and resumption of execution.
+//
+
 #include "jitpch.h"
 #include "jitstd/algorithm.h"
 #include "async.h"
@@ -324,6 +356,7 @@ PhaseStatus AsyncTransformation::Run()
 
         m_comp->lvaComputeRefCounts(true, false);
         m_comp->fgLocalVarLiveness();
+        INDEBUG(m_comp->mostRecentlyActivePhase = PHASE_ASYNC);
         VarSetOps::AssignNoCopy(m_comp, m_comp->compCurLife, VarSetOps::MakeEmpty(m_comp));
     }
 
@@ -1091,7 +1124,7 @@ void AsyncTransformation::FillInDataOnSuspension(const jitstd::vector<LiveLocalI
         if (dsc->IsImplicitByRef())
         {
             GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-            value             = m_comp->gtNewBlkIndir(dsc->GetLayout(), baseAddr, GTF_IND_NONFAULTING);
+            value             = m_comp->gtNewLoadValueNode(dsc->GetLayout(), baseAddr, GTF_IND_NONFAULTING);
         }
         else
         {
@@ -1106,7 +1139,7 @@ void AsyncTransformation::FillInDataOnSuspension(const jitstd::vector<LiveLocalI
             // This is to heap, but all GC refs are nulled out already, so we can skip the write barrier.
             // TODO-CQ: Backend does not care about GTF_IND_TGT_NOT_HEAP for STORE_BLK.
             store =
-                m_comp->gtNewStoreBlkNode(dsc->GetLayout(), addr, value, GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+                m_comp->gtNewStoreValueNode(dsc->GetLayout(), addr, value, GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
         }
         else
         {
@@ -1239,7 +1272,7 @@ BasicBlock* AsyncTransformation::CreateResumption(BasicBlock*               bloc
     }
 
     // Copy call return value.
-    if (layout.ReturnSize > 0)
+    if ((layout.ReturnSize > 0) && (callDefInfo.DefinitionNode != nullptr))
     {
         CopyReturnValueOnResumption(call, callDefInfo, resumeByteArrLclNum, resumeObjectArrLclNum, layout,
                                     storeResultBB);
@@ -1280,7 +1313,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(unsigned                  
         GenTree* value;
         if ((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef())
         {
-            value = m_comp->gtNewBlkIndir(dsc->GetLayout(), addr, GTF_IND_NONFAULTING);
+            value = m_comp->gtNewLoadValueNode(dsc->GetLayout(), addr, GTF_IND_NONFAULTING);
         }
         else
         {
@@ -1291,8 +1324,8 @@ void AsyncTransformation::RestoreFromDataOnResumption(unsigned                  
         if (dsc->IsImplicitByRef())
         {
             GenTree* baseAddr = m_comp->gtNewLclvNode(inf.LclNum, dsc->TypeGet());
-            store             = m_comp->gtNewStoreBlkNode(dsc->GetLayout(), baseAddr, value,
-                                                          GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
+            store             = m_comp->gtNewStoreValueNode(dsc->GetLayout(), baseAddr, value,
+                                                            GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP);
         }
         else
         {
@@ -1505,7 +1538,6 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
 
     assert(callDefInfo.DefinitionNode != nullptr);
     LclVarDsc* resultLcl = m_comp->lvaGetDesc(callDefInfo.DefinitionNode);
-    assert((resultLcl->TypeGet() == TYP_STRUCT) == (call->gtReturnType == TYP_STRUCT));
 
     // TODO-TP: We can use liveness to avoid generating a lot of this IR.
     if (call->gtReturnType == TYP_STRUCT)
@@ -1514,7 +1546,7 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
         {
             GenTree* resultOffsetNode = m_comp->gtNewIconNode((ssize_t)resultOffset, TYP_I_IMPL);
             GenTree* resultAddr       = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, resultBase, resultOffsetNode);
-            GenTree* resultData       = m_comp->gtNewBlkIndir(layout.ReturnStructLayout, resultAddr, resultIndirFlags);
+            GenTree* resultData = m_comp->gtNewLoadValueNode(layout.ReturnStructLayout, resultAddr, resultIndirFlags);
             GenTree* storeResult;
             if ((callDefInfo.DefinitionNode->GetLclOffs() == 0) &&
                 ClassLayout::AreCompatible(resultLcl->GetLayout(), layout.ReturnStructLayout))

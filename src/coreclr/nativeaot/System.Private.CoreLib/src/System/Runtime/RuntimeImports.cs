@@ -41,10 +41,6 @@ namespace System.Runtime
         internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
 
         [LibraryImport(RuntimeLibrary)]
-        [SuppressGCTransition]
-        internal static partial ulong RhpGetTickCount64();
-
-        [LibraryImport(RuntimeLibrary)]
         internal static partial IntPtr RhpGetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -509,6 +505,16 @@ namespace System.Runtime
 #endif
         )]
         internal static extern uint RhIUnknown_AddRef(nint pThis);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary,
+#if TARGET_WINDOWS && TARGET_X86
+            "_RhUntracked_AddRefRelease@4"
+#else
+            "RhUntracked_AddRefRelease"
+#endif
+        )]
+        internal static extern uint RhUntracked_AddRefRelease(nint pThis);
 
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

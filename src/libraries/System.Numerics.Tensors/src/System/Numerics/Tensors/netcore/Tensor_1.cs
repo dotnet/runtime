@@ -144,7 +144,11 @@ namespace System.Numerics.Tensors
         /// <inheritdoc cref="IReadOnlyTensor.FlattenedLength" />
         public nint FlattenedLength => _shape.FlattenedLength;
 
-        internal bool IsContiguousAndDense => _shape.IsContiguousAndDense;
+        /// <inheritdoc cref="IReadOnlyTensor.HasAnyDenseDimensions" />
+        public bool HasAnyDenseDimensions => _shape.HasAnyDenseDimensions;
+
+        /// <inheritdoc cref="IReadOnlyTensor.IsDense" />
+        public bool IsDense => _shape.IsDense;
 
         /// <inheritdoc cref="IReadOnlyTensor.IsEmpty" />
         public bool IsEmpty => _shape.IsEmpty;
@@ -288,6 +292,20 @@ namespace System.Numerics.Tensors
                 in shape,
                 _isPinned
             );
+        }
+
+        /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.ToDenseTensor()" />
+        public Tensor<T> ToDenseTensor()
+        {
+            Tensor<T> result = this;
+
+            if (!IsDense)
+            {
+                result = Tensor.Create<T>(Lengths, IsPinned);
+                CopyTo(result);
+            }
+
+            return result;
         }
 
         /// <inheritdoc cref="IReadOnlyTensor{TSelf, T}.TryCopyTo(in TensorSpan{T})" />

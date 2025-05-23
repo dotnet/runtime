@@ -50,8 +50,7 @@ namespace AppHost.Bundle.Tests
                 .Should().Pass()
                 .And.CallPInvoke(null, true)
                 .And.CallPInvoke(DllImportSearchPath.AssemblyDirectory, true)
-                // Single-file always looks in application directory, even when only System32 is specified
-                .And.CallPInvoke(DllImportSearchPath.System32, true);
+                .And.CallPInvoke(DllImportSearchPath.System32, false);
         }
 
         [Fact]
@@ -84,8 +83,7 @@ namespace AppHost.Bundle.Tests
                 .Should().Pass()
                 .And.TryLoadLibrary(null, true)
                 .And.TryLoadLibrary(DllImportSearchPath.AssemblyDirectory, true)
-                // Single-file always looks in application directory, even when only System32 is specified
-                .And.TryLoadLibrary(DllImportSearchPath.System32, true);
+                .And.TryLoadLibrary(DllImportSearchPath.System32, false);
         }
 
         internal static string GetLibraryName(DllImportSearchPath? flags)

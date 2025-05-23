@@ -19,9 +19,26 @@ public readonly struct ModuleHandle
 [Flags]
 public enum ModuleFlags
 {
-    Tenured = 0x00000001,           // Set once we know for sure the Module will not be freed until the appdomain itself exits
-    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    ClassFreed = 0x4,
+    EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
+
+    ProfilerNotified = 0x10,
+    EtwNotified = 0x20,
+
+    ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+    ProfilerDisableOptimizations = 0x80,
+    ProfilerDisableInlining = 0x100,
+
+    DebuggerUserOverridePriv = 0x400,
+    DebuggerAllowJitOptsPriv = 0x800,
+    DebuggerTrackJitInfoPriv = 0x1000,
+    DebuggerEnCEnabledPriv = 0x2000,
+    DebuggerPDBsCopied = 0x4000,
+    DebuggerIgnorePDbs = 0x8000,
+
+    IJWFixedUp = 0x80000,
+    BeingUnloaded = 0x100000,
 }
 
 public record struct ModuleLookupTables(

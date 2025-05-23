@@ -27,6 +27,7 @@
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
+#include <minipal/time.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -208,7 +209,7 @@ bool InitGSCookie()
 #endif
 
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)PalGetTickCount64();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie

@@ -26,6 +26,15 @@ namespace System.Runtime.InteropServices
         [SuppressGCTransition]
         private static partial void GetIUnknownImplInternal(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
+        internal static unsafe void GetUntrackedIUnknownImpl(out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpAddRef, out delegate* unmanaged[MemberFunction]<IntPtr, uint> fpRelease)
+        {
+            fpAddRef = fpRelease = GetUntrackedAddRefRelease();
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetUntrackedAddRefRelease")]
+        [SuppressGCTransition]
+        private static unsafe partial delegate* unmanaged[MemberFunction]<IntPtr, uint> GetUntrackedAddRefRelease();
+
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
         internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();
         internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();

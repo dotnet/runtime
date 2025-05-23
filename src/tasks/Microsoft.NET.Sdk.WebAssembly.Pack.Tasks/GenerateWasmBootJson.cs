@@ -62,7 +62,7 @@ public class GenerateWasmBootJson : Task
 
     public string[]? Profilers { get; set; }
 
-    public string StartupMemoryCache { get; set; }
+    public string? RuntimeConfigJsonPath { get; set; }
 
     public string Jiterpreter { get; set; }
 
@@ -115,7 +115,6 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
 
         if (IsTargeting100OrLater())
@@ -435,6 +434,14 @@ public class GenerateWasmBootJson : Task
                 result.extensions[key] = config;
             }
         }
+
+        if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
+        {
+            using var fs = File.OpenRead(RuntimeConfigJsonPath);
+            var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+            result.runtimeConfig = runtimeConfig;
+        }
+
         Profilers ??= Array.Empty<string>();
         var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
         if (browserProfiler != null)
