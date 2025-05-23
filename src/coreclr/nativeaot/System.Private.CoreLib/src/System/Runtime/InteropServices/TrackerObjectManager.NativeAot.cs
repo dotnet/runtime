@@ -230,13 +230,20 @@ namespace System.Runtime.InteropServices
                 return HResults.E_INVALIDARG;
             }
 
-            if (TryGetObject(referenceTrackerTarget, out object? foundObject))
+            if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
-                // Notify the runtime a reference path was found.
-                return TrackerObjectManager.AddReferencePath(s_currentRootObjectHandle.Target, foundObject) ? HResults.S_OK : HResults.S_FALSE;
+                return HResults.S_FALSE;
             }
 
-            return HResults.S_OK;
+            object sourceObject = s_currentRootObjectHandle.Target;
+
+            if (sourceObject == targetObject)
+            {
+                return HResults.S_FALSE;
+            }
+
+            // Notify the runtime a reference path was found.
+            return TrackerObjectManager.AddReferencePath(sourceObject, foundObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
         internal struct ReferenceTargetsVftbl
