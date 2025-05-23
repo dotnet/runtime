@@ -26,7 +26,7 @@
     <TargetRid>$(OutputRID)</TargetRid>
 
     <!-- The final stage of the runtime official build should publish everything. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildOrchestrator)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
+    <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildFromVMR)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
   </PropertyGroup>

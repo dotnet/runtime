@@ -85,12 +85,14 @@ if(CLR_CMAKE_HOST_WIN32)
     advapi32.lib)
 endif(CLR_CMAKE_HOST_WIN32)
 
-set (GC_LINK_LIBRARIES ${GC_LINK_LIBRARIES} gc_pal)
+set (GC_LINK_LIBRARIES
+    ${GC_LINK_LIBRARIES}
+    gc_pal
+    minipal)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     list(APPEND GC_LINK_LIBRARIES
         gc_vxsort
-        minipal
     )
 endif(CLR_CMAKE_TARGET_ARCH_AMD64)
 
