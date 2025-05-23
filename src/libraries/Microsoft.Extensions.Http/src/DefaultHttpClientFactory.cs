@@ -344,11 +344,9 @@ namespace Microsoft.Extensions.Http
                 // Stop active handler timers and collect expired handlers
                 foreach (KeyValuePair<string, Lazy<ActiveHandlerTrackingEntry>> entry in _activeHandlers)
                 {
-                    if (entry.Value.IsValueCreated)
-                    {
-                        entry.Value.Value.StopTimer();
-                        disposables.Add(entry.Value.Value);
-                    }
+                    ActiveHandlerTrackingEntry activeEntry = entry.Value.Value;
+                    activeEntry.StopTimer();
+                    disposables.Add(activeEntry);
                 }
 
                 // Collect all expired handlers for disposal

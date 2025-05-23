@@ -118,8 +118,7 @@ namespace Microsoft.Extensions.Http
         {
             // Try to transition from 0 to Disposed state
             // If already in another state (Expired), do nothing further with handlers
-            int oldState = Interlocked.CompareExchange(ref _disposed, Disposed, 0);
-            if (oldState != 0)
+            if (Interlocked.CompareExchange(ref _disposed, Disposed, 0) != 0)
             {
                 // If the entry was already disposed or expired, exit
                 // If it was expired, the timer has already stopped and

@@ -36,15 +36,19 @@ namespace Microsoft.Extensions.Http
 
         public void Dispose()
         {
-            try
+            // Always dispose the inner handler when explicitly disposing or when CanDispose is true
+            if (_forceDispose || !_livenessTracker.IsAlive)
             {
-                // Always dispose the inner handler when explicitly disposing or when CanDispose is true
-                if (_forceDispose || !_livenessTracker.IsAlive)
+                try
                 {
                     InnerHandler.Dispose();
                 }
+                finally
+                {
+                    Scope?.Dispose();
+                }
             }
-            finally
+            else
             {
                 Scope?.Dispose();
             }
