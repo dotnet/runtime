@@ -1813,13 +1813,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_AdvSimd_FusedMultiplyAddScalar:
             LowerHWIntrinsicFusedMultiplyAddScalar(node);
             break;
+
         case NI_Sve_ConditionalSelect:
             return LowerHWIntrinsicCndSel(node);
+
+        case NI_Sve_ConvertVectorToMask:
+            return LowerHWIntrinsicConvertVectorToMask(node);
+
         case NI_Sve_SetFfr:
         {
             StoreFFRValue(node);
             break;
         }
+
         case NI_Sve_GetFfrByte:
         case NI_Sve_GetFfrInt16:
         case NI_Sve_GetFfrInt32:
@@ -3954,6 +3960,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     MakeSrcContained(node, op1);
+                    JITDUMP("Containing vector zero op1 inside ConditionalSelect\n");
+                    DISPTREERANGE(BlockRange(), op1);
                 }
 
                 // Handle op2
@@ -3963,14 +3971,15 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (IsInvariantInRange(op2, node) && op2->isEmbeddedMaskingCompatibleHWIntrinsic())
                     {
+                        bool     contain  = false;
                         uint32_t maskSize = genTypeSize(node->GetSimdBaseType());
                         uint32_t operSize = genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType());
+
                         if (maskSize == operSize)
                         {
                             // If the size of baseType of operation matches that of maskType, then contain
                             // the operation
-                            MakeSrcContained(node, op2);
-                            op2->MakeEmbMaskOp();
+                            contain = true;
                         }
                         else
                         {
@@ -3989,9 +3998,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             uint32_t auxSize = genTypeSize(embOp->GetAuxiliaryType());
                             if (maskSize == auxSize)
                             {
-                                MakeSrcContained(node, op2);
-                                op2->MakeEmbMaskOp();
+                                contain = true;
                             }
+                        }
+
+                        if (contain)
+                        {
+                            MakeSrcContained(node, op2);
+                            op2->MakeEmbMaskOp();
+                            JITDUMP("Containing op2 inside ConditionalSelect\n");
+                            DISPTREERANGE(BlockRange(), node);
                         }
                     }
 
@@ -4003,17 +4019,21 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (embOp->Op(2)->IsCnsIntOrI())
                         {
                             MakeSrcContained(op2, embOp->Op(2));
+                            JITDUMP("Containing ShiftRight op2 inside ConditionalSelect\n");
+                            DISPTREERANGE(BlockRange(), op2);
                         }
                     }
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet())
+                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet() && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
                     // Do this only if op1 was AllTrueMask
                     MakeSrcContained(node, op3);
+                    JITDUMP("Containing vector zero op3 inside ConditionalSelect\n");
+                    DISPTREERANGE(BlockRange(), op3);
                 }
 
                 break;
@@ -4200,6 +4220,43 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
     ContainCheckHWIntrinsic(cndSelNode);
     return cndSelNode->gtNext;
+}
+
+GenTree* Lowering::LowerHWIntrinsicConvertVectorToMask(GenTreeHWIntrinsic* mask)
+{
+    assert(mask->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
+
+    GenTree* op1 = mask->Op(1);
+    GenTree* op2 = mask->Op(2);
+
+    if (op2->IsVectorZero())
+    {
+        // Transform ConvertVectorToMask(..., ConstVec(0)) to FalseMask
+
+        assert(op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll));
+        BlockRange().Remove(op1);
+        BlockRange().Remove(op2);
+        mask->ResetHWIntrinsicId(NI_Sve_CreateFalseMaskAll, comp);
+
+        JITDUMP("lowering ConvertVectorToMask(ZeroVector) to FalseMask:\n");
+        DISPTREERANGE(BlockRange(), mask);
+        JITDUMP("\n");
+    }
+    if (op2->IsVectorAllBitsSet())
+    {
+        // Transform ConvertVectorToMask(..., ConstVec(11111...)) to TrueMask
+
+        assert(op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll));
+        BlockRange().Remove(op1);
+        BlockRange().Remove(op2);
+        mask->ResetHWIntrinsicId(NI_Sve_CreateTrueMaskAll, comp);
+
+        JITDUMP("lowering ConvertVectorToMask(ZeroVector) to TrueMask:\n");
+        DISPTREERANGE(BlockRange(), mask);
+        JITDUMP("\n");
+    }
+
+    return mask->gtNext;
 }
 
 #if defined(TARGET_ARM64)
