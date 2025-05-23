@@ -22,7 +22,7 @@ jobs:
           LIBMSQUIC_VERSION: '2.4.8'
         run: |
           sudo ./eng/common/native/install-dependencies.sh && \
-          apt-get install -qq -y \
+          sudo apt-get install -qq -y \
             curl \
             libbpf1 \
             libelf1t64 \
