@@ -17,5 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
+      - name: Install dependencies
+        run: sudo ./eng/common/native/install-dependencies.sh
       - name: Restore solution
         run: ./build.sh --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true
+      - name: Put dotnet on the path
+        run: echo "PATH=$PWD/.dotnet:$PATH" >> $GITHUB_ENV
+      - name: Run dotnet info
+        run: dotnet --info
