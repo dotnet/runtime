@@ -40,10 +40,9 @@ namespace System.Diagnostics.Metrics
     ///   - MaxHistograms - An integer that sets an upper bound on the number of histograms
     ///   this event source will track. This allows setting a tighter bound on histograms
     ///   than time series in general given that histograms use considerably more memory.
-    ///   - HistogramAggregation - The default aggregation configuration for histograms.
+    ///   - Base2ExponentialHistogram - Set the default aggregation configuration for histograms to base2 exponential.
     ///    If this is not specified, the default is to use the 'default' aggregation which is the exponential aggregation with the quantiles.
     ///    The value is a semicolon separated list of histogram aggregation specifications.
-    ///       o type - The type of histogram aggregation. The only supported value so far is 'Base2Exponential'.
     ///       o scale - Maximum scale factor for Base2Exponential aggregation type. The default value is 20.
     ///       o maxBuckets - The maximum number of buckets for Base2Exponential aggregation type in each of the positive ranges,
     ///         not counting the special zero bucket. The default value is 160.
@@ -420,9 +419,9 @@ namespace System.Diagnostics.Metrics
                                         _aggregationManager.Update();
                                     }
 
-                                    if (ParseHistogramAggregationSpecs(command.Arguments!, out string? histogramAggregationSpec))
+                                    if (ParseBase2ExponentialHistogramSpecs(command.Arguments!, out string? base2ExponentialHistogramSpec))
                                     {
-                                        ParseHistogramAggregation(histogramAggregationSpec);
+                                        ParseBase2ExponentialHistogram(base2ExponentialHistogramSpec);
                                     }
 
                                     return;
@@ -511,9 +510,9 @@ namespace System.Diagnostics.Metrics
                             ParseSpecs(metricsSpecs);
                         }
 
-                        if (ParseHistogramAggregationSpecs(command.Arguments!, out string? histogramAggregationSpec))
+                        if (ParseBase2ExponentialHistogramSpecs(command.Arguments!, out string? base2ExponentialHistogramSpec))
                         {
-                            ParseHistogramAggregation(histogramAggregationSpec);
+                            ParseBase2ExponentialHistogram(base2ExponentialHistogramSpec);
                         }
 
                         _aggregationManager.Start();
@@ -544,11 +543,11 @@ namespace System.Diagnostics.Metrics
                 return false;
             }
 
-            private bool ParseHistogramAggregationSpecs(IDictionary<string, string> arguments, out string? histogramAggregationSpec)
+            private bool ParseBase2ExponentialHistogramSpecs(IDictionary<string, string> arguments, out string? base2ExponentialHistogramSpec)
             {
-                if (arguments.TryGetValue("HistogramAggregation", out histogramAggregationSpec))
+                if (arguments.TryGetValue("Base2ExponentialHistogram", out base2ExponentialHistogramSpec))
                 {
-                    Parent.Message($"Histogram Aggregation argument received: {histogramAggregationSpec}");
+                    Parent.Message($"Histogram Aggregation argument received: {base2ExponentialHistogramSpec}");
                     return true;
                 }
 
@@ -705,7 +704,7 @@ namespace System.Diagnostics.Metrics
 
             private static readonly char[] s_instrumentSeparators = new char[] { '\r', '\n', ',', ';' };
 
-            private readonly char[] HistogramAggregationSpecSeparators = [';'];
+            private readonly char[] Base2ExponentialHistogramSpecSeparators = [';'];
             private const char HistogramPartSeparator = '=';
 
             private void ParseSpecs(string? metricsSpecs)
@@ -744,22 +743,20 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private void ParseHistogramAggregation(string? histogramAggregationSpec)
+            private void ParseBase2ExponentialHistogram(string? base2ExponentialHistogramSpec)
             {
-                if (histogramAggregationSpec == null)
+                if (base2ExponentialHistogramSpec == null)
                 {
                     return;
                 }
 
-                string[] specStrings = histogramAggregationSpec.Split(HistogramAggregationSpecSeparators, StringSplitOptions.RemoveEmptyEntries);
+                string[] specStrings = base2ExponentialHistogramSpec.Split(Base2ExponentialHistogramSpecSeparators, StringSplitOptions.RemoveEmptyEntries);
 
                 if (specStrings.Length == 0)
                 {
                     Parent.Message("No histogram aggregation spec is provided");
                     return;
                 }
-
-                HistogramAggregationType histogramAggregationType = HistogramAggregationType.Default;
 
                 // Default values for Base 2 exponential histogram
                 int scale = 20;
@@ -778,40 +775,36 @@ namespace System.Diagnostics.Metrics
                     ReadOnlySpan<char> spec = specString.AsSpan(0, index).Trim();
                     ReadOnlySpan<char> value = specString.AsSpan(index + 1).Trim();
 
-                    if (spec.Equals("type", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (value.Equals("Base2Exponential", StringComparison.OrdinalIgnoreCase))
-                        {
-                            histogramAggregationType = HistogramAggregationType.Base2Exponential;
-                        }
-                        else
-                        {
-                            Parent.Message($"Invalid histogram aggregation type: {specString}");
-                            continue;
-                        }
-                    }
-                    else if (spec.Equals("scale", StringComparison.OrdinalIgnoreCase))
+                    if (spec.Equals("scale", StringComparison.OrdinalIgnoreCase))
                     {
 #if NET
-                        if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out scale) || scale < -11 || scale > 20)
+                        if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
 #else
-                        if (!int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out scale) || scale < -11 || scale > 20)
+                        if (!int.TryParse(value.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out int s) || s < -11 || s > 20)
 #endif // NET
                         {
                             Parent.Message($"Invalid scale value: {specString}");
                             continue;
                         }
+                        else
+                        {
+                            scale = s;
+                        }
                     }
                     else if (spec.Equals("maxBuckets", StringComparison.OrdinalIgnoreCase))
                     {
 #if NET
-                        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out maxBuckets) || maxBuckets < 2)
+                        if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
 #else
-                        if (!int.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out maxBuckets) || maxBuckets < 2)
+                        if (!int.TryParse(value.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out int m) || m < 2)
 #endif // NET
                         {
                             Parent.Message($"Invalid maxBuckets value: {specString}");
                             continue;
+                        }
+                        else
+                        {
+                            maxBuckets = m;
                         }
                     }
                     else if (spec.Equals("reportDeltas", StringComparison.OrdinalIgnoreCase))
@@ -832,11 +825,7 @@ namespace System.Diagnostics.Metrics
                     }
                 }
 
-                if (histogramAggregationType == HistogramAggregationType.Base2Exponential)
-                {
-                    HistogramAggregation histogramAggregation = new HistogramAggregation(scale, maxBuckets, reportDeltas);
-                    _aggregationManager!.SetHistogramAggregation(histogramAggregation);
-                }
+                _aggregationManager!.SetHistogramAggregation(() => new Base2ExponentialHistogramAggregator(maxBuckets, scale, reportDeltas));
             }
 
             private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId, InstrumentState? instrumentState)

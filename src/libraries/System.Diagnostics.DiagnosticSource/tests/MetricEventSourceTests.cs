@@ -1835,7 +1835,7 @@ namespace System.Diagnostics.Metrics.Tests
             var labels = new KeyValuePair<string, object?>("Color", "red");
 
             EventWrittenEventArgs[] events;
-            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, new HistogramConfig(scale: 10, maxBuckets: 20, reportDeltas: false), "TestMeter20"))
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, new HistogramConfig(scale: 20, maxBuckets: 10, reportDeltas: false), "TestMeter20"))
             {
                 // positive value
                 h.Record(5.0, labels);
@@ -2389,7 +2389,7 @@ namespace System.Diagnostics.Metrics.Tests
 
             if (histogramConfig is not null)
             {
-                d.Add("HistogramAggregation", $"type=Base2Exponential; scale={histogramConfig.Scale}; maxBuckets={histogramConfig.MaxBuckets}; reportDeltas={histogramConfig.ReportDeltas}");
+                d.Add("Base2ExponentialHistogram", $"scale={histogramConfig.Scale}; maxBuckets={histogramConfig.MaxBuckets}; reportDeltas={histogramConfig.ReportDeltas}");
             }
 
             return d;

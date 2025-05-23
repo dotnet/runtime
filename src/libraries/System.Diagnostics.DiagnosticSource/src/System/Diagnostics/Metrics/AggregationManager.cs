@@ -11,37 +11,6 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Metrics
 {
-    internal enum HistogramAggregationType
-    {
-        Default, // default exponential aggregation with quantiles
-        Base2Exponential, // Base 2 exponential histogram aggregation
-    }
-
-    /// <summary>
-    /// Configuration options for histogram aggregation.
-    /// </summary>
-    /// <remarks>
-    /// Currently this class support Base2 Exponential Histogram aggregation configuration. In the future this can be extended to support more aggregation types.
-    /// </remarks>
-    internal sealed class HistogramAggregation
-    {
-        internal HistogramAggregation(int scale, int maxBuckets, bool reportDeltas)
-        {
-            Scale = scale;
-            MaxBuckets = maxBuckets;
-            ReportDeltas = reportDeltas;
-            Type = HistogramAggregationType.Base2Exponential;
-        }
-
-        internal HistogramAggregationType Type { get; }
-
-        internal int Scale { get; set; }
-
-        internal int MaxBuckets { get; set; }
-
-        internal bool ReportDeltas { get; set; }
-    }
-
     [SecuritySafeCritical]
     internal sealed class AggregationManager
     {
@@ -79,7 +48,7 @@ namespace System.Diagnostics.Metrics
         private DateTime _startTime;
         private DateTime _intervalStartTime;
         private DateTime _nextIntervalStartTime;
-        private HistogramAggregation? _histogramAggregation;
+        private Func<Aggregator?> _histogramAggregatorFactory = () => new ExponentialHistogramAggregator(s_defaultHistogramConfig);
 
         public AggregationManager(
             int maxTimeSeries,
@@ -152,13 +121,13 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        public void SetHistogramAggregation(HistogramAggregation histogramAggregation)
+        public void SetHistogramAggregation(Func<Aggregator?> histogramAggregatorFactory)
         {
             lock (this)
             {
                 // While this operation is atomic, we use a lock to ensure thread safety when it's accessed by other parts of the code.
                 // Using lock(this) guarantees that no other thread is interacting with the field concurrently.
-                _histogramAggregation = histogramAggregation;
+                _histogramAggregatorFactory = histogramAggregatorFactory;
             }
         }
 
@@ -454,18 +423,11 @@ namespace System.Diagnostics.Metrics
             }
             else if (genericDefType == typeof(Histogram<>))
             {
-                return () =>
+                lock (this)
                 {
-                    lock (this)
-                    {
-                        // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
-                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
-                            null :
-                            _histogramAggregation is { Type: HistogramAggregationType.Base2Exponential } ?
-                            new Base2ExponentialHistogramAggregator(_histogramAggregation.Scale, _histogramAggregation.MaxBuckets, _histogramAggregation.ReportDeltas) :
-                            new ExponentialHistogramAggregator(s_defaultHistogramConfig);
-                    }
-                };
+                    // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
+                    return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ? () => null : _histogramAggregatorFactory;
+                }
             }
             else if (genericDefType == typeof(UpDownCounter<>))
             {
