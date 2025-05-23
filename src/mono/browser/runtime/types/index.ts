@@ -619,7 +619,7 @@ export type DiagnosticsAPIType = {
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
-    collectPerfCounters: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    collectMetrics: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * creates diagnostic trace file.
      * It could be opened in PerfView as is.
