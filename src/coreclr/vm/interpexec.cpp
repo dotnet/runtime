@@ -1199,17 +1199,12 @@ CALL_TARGET_IP:
                     //  fcall that is basically a static method that returns the new instance.
                     if (pMD && pClass->HasComponentSize())
                     {
-                        // The compiler didn't know about this so it reserved space for a this-reference. We need to skip
-                        //  past that reserved space, since the callee doesn't expect it.
-                        LOCAL_VAR(callArgsOffset, void*) = nullptr; // and zero it too! it might get scanned by the GC.
-                        callArgsOffset += sizeof(StackVal);
-
                         // Get the address of the fcall that implements the ctor
                         PCODE code = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
                         assert(code);
 
-                        // callArgsOffset now only points to the ctor arguments, which are what the fcall expects.
-                        // returnOffset still points to where the new instance goes, and the fcall will write it there.
+                        // callArgsOffset points to the ctor arguments, which are what the fcall expects.
+                        // returnOffset points to where the new instance goes, and the fcall will write it there.
                         InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, code);
                         ip += 5;
                         break;
