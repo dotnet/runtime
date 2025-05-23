@@ -353,22 +353,15 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 // Do the chain verification to make sure the certificate is valid.
-                X509Chain chain = new X509Chain();
-                try
+                using X509Chain chain = new X509Chain();
+                chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
+                bool chainVerified = chain.Build(certificate);
+                SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
+            
+                if (!chainVerified)
                 {
-                    chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
-                    bool chainVerified = chain.Build(certificate);
-                    SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
-                
-                    if (!chainVerified)
-                    {
-                        SignedXmlDebugLog.LogVerificationFailure(this, SR.Log_VerificationFailed_X509Chain);
-                        return false;
-                    }
-                }
-                finally
-                {
-                    chain.Dispose();
+                    SignedXmlDebugLog.LogVerificationFailure(this, SR.Log_VerificationFailed_X509Chain);
+                    return false;
                 }
             }
 
