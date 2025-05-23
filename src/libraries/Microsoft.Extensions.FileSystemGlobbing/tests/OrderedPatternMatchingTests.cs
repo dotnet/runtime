@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 {
     public class OrderedPatternMatchingTests : PatternMatchingTests
     {
-        protected override bool IsOrdered => true;
+        protected override bool PreserveFilterOrder => true;
 
         [Fact]
         public void ComplexPatternSequence_SimpleFilters()
