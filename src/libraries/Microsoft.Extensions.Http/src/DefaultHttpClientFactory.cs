@@ -338,6 +338,9 @@ namespace Microsoft.Extensions.Http
             // Stop the cleanup timer
             StopCleanupTimer();
 
+            // Debug - log active handlers count
+            Console.WriteLine($"ActiveHandlers count: {_activeHandlers.Count}");
+
             // Stop all active handler timers to prevent more entries being added to _expiredHandlers
             List<IDisposable> disposables = new List<IDisposable>();
 
@@ -355,6 +358,7 @@ namespace Microsoft.Extensions.Http
                 {
                     if (entry.Value.IsValueCreated)
                     {
+                        Console.WriteLine($"Disposing active handler: {entry.Key}");
                         entry.Value.Value.StopTimer();
                         disposables.Add(entry.Value.Value);
                     }
@@ -365,6 +369,7 @@ namespace Microsoft.Extensions.Http
                 {
                     if (entry != null)
                     {
+                        Console.WriteLine($"Forcing disposal of expired handler: {entry.Name}");
                         // During explicit disposal, we should force disposal of all handlers regardless of CanDispose status
                         entry._forceDispose = true;
                         disposables.Add(entry);
@@ -380,6 +385,7 @@ namespace Microsoft.Extensions.Http
             }
 
             // Dispose all handlers outside the lock
+            Console.WriteLine($"Disposing {disposables.Count} handlers");
             foreach (IDisposable disposable in disposables)
             {
                 try

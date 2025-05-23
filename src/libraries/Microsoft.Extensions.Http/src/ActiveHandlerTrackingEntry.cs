@@ -130,8 +130,19 @@ namespace Microsoft.Extensions.Http
             StopTimer();
 
             // When we're directly disposed (not converted to an expired entry),
-            // we need to dispose both the handler's inner handler and the scope
-            Handler.InnerHandler?.Dispose();
+            // we need to dispose the inner handler (not the LifetimeTrackingHttpMessageHandler itself)
+            // and the scope
+            Console.WriteLine($"Disposing inner handler for {Name}");
+            var innerHandler = Handler.InnerHandler;
+            if (innerHandler != null)
+            {
+                innerHandler.Dispose();
+                Console.WriteLine($"Inner handler disposed for {Name}");
+            }
+            else
+            {
+                Console.WriteLine($"Warning: Inner handler was null for {Name}");
+            }
             Scope?.Dispose();
         }
     }

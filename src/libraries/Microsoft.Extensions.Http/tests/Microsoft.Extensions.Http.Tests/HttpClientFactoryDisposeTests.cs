@@ -50,12 +50,14 @@ namespace Microsoft.Extensions.Http.Tests
             factory.CreateHandlersForTesting(ClientCount);
 
             // Pre-check: verify handlers were created
+            Console.WriteLine($"Created handlers: {disposeCounter.Created}");
             Assert.Equal(ClientCount, disposeCounter.Created);
 
             // Act - dispose the service provider
             serviceProvider.Dispose();
 
             // Assert - all handlers should be disposed
+            Console.WriteLine($"Disposed handlers: {disposeCounter.Disposed}");
             Assert.Equal(disposeCounter.Created, disposeCounter.Disposed);
         }
 
@@ -64,8 +66,8 @@ namespace Microsoft.Extensions.Http.Tests
             private int _created;
             private int _disposed;
 
-            public int Created => _created;
-            public int Disposed => _disposed;
+            public int Created => Interlocked.CompareExchange(ref _created, 0, 0);
+            public int Disposed => Interlocked.CompareExchange(ref _disposed, 0, 0);
 
             public void IncrementCreated()
             {
@@ -78,7 +80,7 @@ namespace Microsoft.Extensions.Http.Tests
             }
         }
 
-        private class DisposeTrackingHandler : DelegatingHandler
+        private class DisposeTrackingHandler : HttpMessageHandler
         {
             private readonly DisposeCounter _counter;
 
@@ -86,12 +88,14 @@ namespace Microsoft.Extensions.Http.Tests
             {
                 _counter = counter;
                 _counter.IncrementCreated();
+                Console.WriteLine("Created tracking handler");
             }
 
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
+                    Console.WriteLine("Disposing tracking handler");
                     _counter.IncrementDisposed();
                 }
 
@@ -133,15 +137,20 @@ namespace Microsoft.Extensions.Http.Tests
                     
                     // Add our tracking handler to track disposals
                     var trackingHandler = new DisposeTrackingHandler(_counter);
+                    
+                    // Ensure the tracking handler is the innermost handler that will be disposed
                     handlerBuilder.PrimaryHandler = trackingHandler;
                     
                     var handler = handlerBuilder.Build();
+                    Console.WriteLine($"Built handler of type {handler.GetType().Name}");
+                    
                     var wrappedHandler = new LifetimeTrackingHttpMessageHandler(handler);
                     var scope = _scopeFactory.CreateScope();
                     var entry = new ActiveHandlerTrackingEntry($"test{i}", wrappedHandler, scope, TimeSpan.FromSeconds(60));
                     
                     // Add the entry to the active handlers collection
                     _activeHandlers.TryAdd($"test{i}", new Lazy<ActiveHandlerTrackingEntry>(() => entry));
+                    Console.WriteLine($"Added handler for test{i}");
                 }
             }
         }
