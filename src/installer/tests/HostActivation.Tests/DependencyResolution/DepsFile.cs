@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
@@ -45,6 +46,43 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .Execute()
                 .Should().Pass()
                 .And.HaveResolvedAssembly(dependencyPath);
+        }
+
+        [Fact]
+        public void DepsJsonWithUtf8Bom()
+        {
+            // Test that .deps.json files with UTF8 BOM are parsed correctly
+            TestApp app = sharedState.FrameworkReferenceApp;
+            
+            // Create a copy of the existing deps.json with UTF8 BOM
+            string originalDepsJson = app.DepsJson;
+            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(originalDepsJson), 
+                Path.GetFileNameWithoutExtension(originalDepsJson) + "_bom.deps.json");
+            
+            try
+            {
+                // Read the original deps.json content
+                string jsonContent = File.ReadAllText(originalDepsJson, Encoding.UTF8);
+                  // Write the content with UTF8 BOM
+                byte[] utf8Bom = { 0xEF, 0xBB, 0xBF };
+                byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonContent);
+                byte[] bomAndJson = new byte[utf8Bom.Length + jsonBytes.Length];
+                Array.Copy(utf8Bom, 0, bomAndJson, 0, utf8Bom.Length);
+                Array.Copy(jsonBytes, 0, bomAndJson, utf8Bom.Length, jsonBytes.Length);
+                File.WriteAllBytes(depsJsonWithBom, bomAndJson);
+                
+                // Test that the app can be executed with the BOM deps.json
+                sharedState.DotNetWithNetCoreApp.Exec("exec", Constants.DepsFile.CommandLineArgument, depsJsonWithBom, app.AppDll)
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveResolvedAssembly(Path.Combine(app.Location, $"{SharedTestState.DependencyName}.dll"));
+            }
+            finally
+            {
+                // Clean up
+                FileUtils.DeleteFileIfPossible(depsJsonWithBom);
+            }
         }
 
         public class SharedTestState : SharedTestStateBase

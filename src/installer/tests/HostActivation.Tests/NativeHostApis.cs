@@ -438,18 +438,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Hostfxr_resolve_frameworks_for_runtime_config(bool isMissing)
-        {
-            string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void Hostfxr_resolve_frameworks_for_runtime_config(bool isMissing, bool withUtf8Bom)
+        {            string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
             using (TestArtifact artifact = TestArtifact.Create(api))
             {
                 (string Name, string Version) requested = ("Framework", "1.2.3");
                 string configPath = Path.Combine(artifact.Location, "test.runtimeconfig.json");
                 RuntimeConfig.FromFile(configPath)
                     .WithFramework(requested.Name, requested.Version)
-                    .Save();
+                    .Save(withUtf8Bom);
 
                 var builder = new DotNetBuilder(artifact.Location, TestContext.BuiltDotNet.BinPath, "dotnet");
                 if (!isMissing)
