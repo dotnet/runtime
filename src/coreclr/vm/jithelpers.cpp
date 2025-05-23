@@ -165,10 +165,26 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
+HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
 {
     FCALL_CONTRACT;
     return (double)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(float, JIT_Lng2Flt, int64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
 }
 HCIMPLEND
 

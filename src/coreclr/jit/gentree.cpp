@@ -12975,6 +12975,11 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 disp();
             }
 
+            if (call->IsAsync())
+            {
+                printf(" (async)");
+            }
+
             if ((call->gtFlags & GTF_CALL_UNMANAGED) && (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
             {
                 printf(" (FramesRoot last use)");
@@ -15684,7 +15689,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             {
-#ifdef TARGET_64BIT
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
@@ -15693,20 +15697,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = (float)lval1;
                                 }
-#else
-                                // 32-bit currently does a 2-step conversion, which is incorrect
-                                // but which we are going to take a breaking change around early
-                                // in a release cycle.
-
-                                if (tree->IsUnsigned() && (lval1 < 0))
-                                {
-                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1));
-                                }
-                                else
-                                {
-                                    f1 = forceCastToFloat((double)lval1);
-                                }
-#endif
 
                                 d1 = f1;
                                 goto CNS_DOUBLE;

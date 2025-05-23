@@ -2435,7 +2435,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (!pInfo->IsInterpreted())
     {
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
@@ -2495,7 +2495,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
@@ -2503,6 +2503,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
+        // Set the personality routine. This is needed even outside Windows because IsIPInEpilog relies on it being set.
         pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMemForCode_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     }
 #else
@@ -2536,7 +2537,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
@@ -2665,7 +2666,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (!pInfo->IsInterpreted())
     {
         reserveSize += JUMP_ALLOCATE_SIZE;
