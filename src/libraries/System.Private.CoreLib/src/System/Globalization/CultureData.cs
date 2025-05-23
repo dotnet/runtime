@@ -817,6 +817,12 @@ namespace System.Globalization
 #if TARGET_BROWSER
             culture.JSInitLocaleInfo();
 #endif
+            if (string.IsNullOrEmpty(culture._sWindowsName))
+            {
+                // ICU can normalize some culture names into empty string.
+                // "und" is the name for the undermined culture which get normalized to empty string
+                return Invariant;
+            }
 
             // We need _sWindowsName to be initialized to know if we're using overrides.
             culture.InitUserOverride(useUserOverride);
