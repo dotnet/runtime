@@ -22,9 +22,9 @@
       - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
       - $(WasmDedup)              - Whether to dedup generic instances when using AOT. Defaults to true.
 
-      - $(WasmEnableEventPipe)              - Enables diagnostic server tracing. Defaults to false.
+      - $(WasmEnableEventPipe)          - Enables diagnostic server tracing. Defaults to false.
       - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
-      - $(WasmPerformanceInstrumentation)      - Enables CPU sampling instrumentation for diagnostic server. Defaults to false.
+      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server. Defaults to none.
       - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
       - $(WasmProfilers)                - Mono Profilers to use. Defaults to empty. Could be `log` and `browser`.
       - $(AOTProfilePath)               - profile data file to be used for profile-guided optimization

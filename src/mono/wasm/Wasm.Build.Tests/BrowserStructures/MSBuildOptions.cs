@@ -22,8 +22,8 @@ public abstract record MSBuildOptions
     bool                            WarnAsError                     = true,
     RuntimeVariant                  RuntimeType                     = RuntimeVariant.SingleThreaded,
     IDictionary<string, string>?    ExtraBuildEnvironmentVariables  = null,
-    string?                          BootConfigFileName              = null,
+    string?                         BootConfigFileName              = null,
     string                          NonDefaultFrameworkDir          = "",
     string                          ExtraMSBuildArgs                = "",
-    bool                            WasmEnableEventPipe              = false
+    bool                            WasmEnableEventPipe             = false
 );

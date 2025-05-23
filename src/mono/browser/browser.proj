@@ -339,7 +339,7 @@
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
-      { "identity": "WasmEnableEventPipe",                 "defaultValueInRuntimePack": "$(WasmEnableEventPipe)" },
+      { "identity": "WasmEnableEventPipe",          "defaultValueInRuntimePack": "$(WasmEnableEventPipe)" },
       { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
     ]
