@@ -668,7 +668,7 @@ namespace System.Globalization
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
             // First do a shortcut for Invariant
-            if (string.IsNullOrEmpty(cultureName))
+            if (string.IsNullOrEmpty(cultureName) || cultureName.Equals("und", StringComparison.OrdinalIgnoreCase))
             {
                 return Invariant;
             }
@@ -817,13 +817,6 @@ namespace System.Globalization
 #if TARGET_BROWSER
             culture.JSInitLocaleInfo();
 #endif
-            if (string.IsNullOrEmpty(culture._sWindowsName))
-            {
-                // ICU can normalize some culture names into empty string.
-                // "und" is the name for the undetermined culture which gets normalized to empty string
-                return Invariant;
-            }
-
             // We need _sWindowsName to be initialized to know if we're using overrides.
             culture.InitUserOverride(useUserOverride);
             return culture;
