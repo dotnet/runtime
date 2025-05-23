@@ -8,6 +8,7 @@ The JIT-VM interface defines the APIs through which the JIT compiler communicate
 If the new API signature is not provided, prompt the user for it with `src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference.
 
 The steps to add the new API signature are given below and use the following API signature as an example:
+
 ```
 CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
@@ -22,7 +23,7 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresI
 
 Insert the new API definition without removing any existing entries, placing it near similar signatures.
 
-2. Invoke `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` (or `gen.bat` depending on the OS) to update auto-generated files.
+2. Invoke `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` script (or `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` on Windows) to update auto-generated files.
 
 3. Open `src/coreclr/inc/corinfo.h` and append the new API in the end of `class ICorStaticInfo` class declaration. Example:
 
@@ -165,5 +166,33 @@ Consider other similar methods in the file for reference. Do not change implemen
 +       *requiresInstMethodTableArg = (value.B == 1);
 +   }
 +   return (CORINFO_METHOD_HANDLE)(value.A);
++}
+```
+
+7. Add a new function to `src\coreclr\tools\superpmi\superpmi\icorjitinfo.cpp` that calls the `rep*` method. Example:
+
+```diff
++CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
++{
++   jitInstance->mc->cr->AddCall("getUnboxedEntry");
++   CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
++   return result;
++}
+```
+
+8. Add a new function to `src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp` that calls the `rec*` method. Example:
+
+```diff
++CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
++{
++   mc->cr->AddCall("getUnboxedEntry");
++   bool                  localRequiresInstMethodTableArg = false;
++   CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getUnboxedEntry(ftn, &localRequiresInstMethodTableArg);
++   mc->recGetUnboxedEntry(ftn, &localRequiresInstMethodTableArg, result);
++   if (requiresInstMethodTableArg != nullptr)
++   {
++       *requiresInstMethodTableArg = localRequiresInstMethodTableArg;
++   }
++   return result;
 +}
 ```
