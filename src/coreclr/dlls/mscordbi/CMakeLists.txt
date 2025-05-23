@@ -75,7 +75,7 @@ set(COREDBI_LIBRARIES
     mdruntimerw-dbi
     mddatasource_dbi
     corguids
-    minipal_objects
+    minipal
 )
 
 if(CLR_CMAKE_HOST_WIN32)

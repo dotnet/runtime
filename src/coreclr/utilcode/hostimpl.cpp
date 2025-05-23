@@ -14,7 +14,7 @@ thread_local size_t t_ThreadType;
 
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags)
 {
-    minipal_critsect *cs = (minipal_critsect*)malloc(sizeof(minipal_critsect));
+    minipal_critsect* cs = (minipal_critsect*)malloc(sizeof(minipal_critsect));
     minipal_critsect_init(cs);
     return (CRITSEC_COOKIE)cs;
 }
