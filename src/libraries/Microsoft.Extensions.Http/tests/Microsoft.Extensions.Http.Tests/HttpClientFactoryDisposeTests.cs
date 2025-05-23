@@ -24,9 +24,13 @@ namespace Microsoft.Extensions.Http.Tests
             var services = new ServiceCollection();
             services.AddSingleton(disposeCounter);
             
-            // Add HttpClient services
-            services.AddHttpClient("test-client", client => { })
-                .ConfigurePrimaryHttpMessageHandler(() => new DisposeTrackingHandler(disposeCounter));
+            // Register handlers for multiple named clients
+            for (int i = 0; i < ClientCount; i++)
+            {
+                string clientName = $"test-client-{i}";
+                services.AddHttpClient(clientName, client => { })
+                    .ConfigurePrimaryHttpMessageHandler(() => new DisposeTrackingHandler(disposeCounter));
+            }
             
             // Build service provider
             var serviceProvider = services.BuildServiceProvider();
@@ -35,7 +39,8 @@ namespace Microsoft.Extensions.Http.Tests
             // Create clients to initialize handlers
             for (int i = 0; i < ClientCount; i++)
             {
-                var client = factory.CreateClient("test-client");
+                string clientName = $"test-client-{i}";
+                var client = factory.CreateClient(clientName);
                 
                 // Use the client to ensure the handler is created
                 var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://example.com"));
