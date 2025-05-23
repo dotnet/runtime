@@ -17,6 +17,12 @@
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
         .type \Name, %function
@@ -39,6 +45,16 @@ C_FUNC(\Name\()_End):
 
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     la.local  \HelperReg, \Name
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+        la.local  \HelperReg, \Name
+        ld.d  \HelperReg, \HelperReg, 0
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT_W Name, HelperReg
+        la.local  \HelperReg, \Name
+        ld.w  \HelperReg, \HelperReg, 0
 .endm
 
 .macro PROLOG_STACK_ALLOC Size

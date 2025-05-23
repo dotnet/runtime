@@ -37,6 +37,7 @@
 #if defined(FEATURE_JIT_PITCHING)
 
 #include "threadsuspend.h"
+#include "minipal/time.h"
 
 static PtrHashMap* s_pPitchingCandidateMethods = nullptr;
 static PtrHashMap* s_pPitchingCandidateSizes = nullptr;
@@ -234,7 +235,7 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
             const char* szClassName = className.GetUTF8();
             const char* szMethodSig = methodSig.GetUTF8();
 
-            printf("Candidate %lu %s :: %s %s\n",
+            minipal_log_print_info("Candidate %lu %s :: %s %s\n",
                    sizeOfCode, szClassName, pMD->GetName(), szMethodSig);
         }
 #endif
@@ -415,7 +416,7 @@ void MethodDesc::PitchNativeCode()
         const char* szClassName = className.GetUTF8();
         const char* szMethodSig = methodSig.GetUTF8();
 
-        printf("Pitched %lu %lu %s :: %s %s\n",
+        minipal_log_print_info("Pitched %lu %lu %s :: %s %s\n",
                s_PitchedMethodCounter, pitchedBytes, szClassName, GetName(), szMethodSig);
     }
 
@@ -427,7 +428,7 @@ EXTERN_C void CheckStacksAndPitch()
     if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchEnabled) != 0) &&
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMemThreshold) != 0) &&
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchTimeInterval) == 0 ||
-         ((::GetTickCount64() - s_JitPitchLastTick) > CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchTimeInterval))))
+         ((minipal_lowres_ticks() - s_JitPitchLastTick) > CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchTimeInterval))))
     {
         SimpleReadLockHolder srlh(s_totalNCSizeLock);
 
@@ -467,7 +468,7 @@ EXTERN_C void CheckStacksAndPitch()
                     s_pPitchingCandidateSizes->Compact();
                 }
 
-                s_JitPitchLastTick = ::GetTickCount64();
+                s_JitPitchLastTick = minipal_lowres_ticks();
 
                 ThreadSuspend::RestartEE(FALSE, TRUE);
             }
@@ -490,7 +491,7 @@ EXTERN_C void SavePitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
         SimpleWriteLockHolder swlh(s_totalNCSizeLock);
         s_totalNCSize += sizeOfCode;
         if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchPrintStat) != 0)
-            printf("jitted %lu (bytes) pitched %lu (bytes)\n", s_totalNCSize, s_jitPitchedBytes);
+            minipal_log_print_info("jitted %lu (bytes) pitched %lu (bytes)\n", s_totalNCSize, s_jitPitchedBytes);
     }
 }
 #endif

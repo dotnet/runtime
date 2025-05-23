@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
+#include "minipal/time.h"
 
 extern ICorJitHost* g_jitHost;
 
@@ -488,8 +489,9 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compILCodeSize   = methodInfo->ILCodeSize;
     info.compILImportSize = 0;
 
-    info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs          = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compIsVarArgs             = false;
+    info.compUsesAsyncContinuation = false;
 }
 
 //------------------------------------------------------------------------
@@ -3159,6 +3161,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: Jit invoked for AOT\n");
         }
+
+        if (compIsAsync())
+        {
+            printf("OPTIONS: compilation is an async state machine\n");
+        }
     }
 #endif
 
@@ -3200,7 +3207,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
-        regIntLast = REG_R23;
+        regIntLast = REG_R31;
     }
 #endif // TARGET_AMD64
 
@@ -4657,6 +4664,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
+        // Re-establish profile consistency, now that inlining and morph have run.
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, &Compiler::fgRepairProfile);
+
         // Scale block weights and mark run rarely blocks.
         //
         DoPhase(this, PHASE_SET_BLOCK_WEIGHTS, &Compiler::optSetBlockWeights);
@@ -4962,9 +4973,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
-        // Run profile repair
+        // Ensure profile is consistent before starting backend phases
         //
-        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
+        DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, &Compiler::fgRepairProfile);
     }
 
 #ifdef DEBUG
@@ -5001,6 +5012,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
 #endif // TARGET_ARM
+
+    if (compIsAsync())
+    {
+        DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
+    }
 
     // Assign registers to variables, etc.
 
@@ -6071,6 +6087,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Sve() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
+        }
+
+        if (JitConfig.EnableArm64Sve2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
         }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
@@ -7821,12 +7842,7 @@ START:
             pParam->pPrevComp = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
-#if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
-#else
             assert(pParam->pComp != nullptr);
-#endif
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
@@ -9244,16 +9260,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 void Compiler::RecordStateAtEndOfInlining()
 {
 #if defined(DEBUG)
-
-    m_compCyclesAtEndOfInlining    = 0;
-    m_compTickCountAtEndOfInlining = 0;
-    bool b                         = CycleTimer::GetThreadCyclesS(&m_compCyclesAtEndOfInlining);
-    if (!b)
-    {
-        return; // We don't have a thread cycle counter.
-    }
-    m_compTickCountAtEndOfInlining = GetTickCount();
-
+    m_compCyclesAtEndOfInlining = minipal_hires_ticks();
 #endif // defined(DEBUG)
 }
 
@@ -9264,19 +9271,16 @@ void Compiler::RecordStateAtEndOfInlining()
 void Compiler::RecordStateAtEndOfCompilation()
 {
 #if defined(DEBUG)
-
-    // Common portion
     m_compCycles = 0;
-    uint64_t compCyclesAtEnd;
-    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
-    if (!b)
+
+    int64_t lpCycles = minipal_hires_ticks();
+    if (lpCycles > m_compCyclesAtEndOfInlining)
     {
-        return; // We don't have a thread cycle counter.
+        int64_t lpFreq = minipal_hires_tick_frequency();
+        m_compCycles   = lpCycles - m_compCyclesAtEndOfInlining;
+        m_compCycles *= 1000000;
+        m_compCycles /= lpFreq;
     }
-    assert(compCyclesAtEnd >= m_compCyclesAtEndOfInlining);
-
-    m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
-
 #endif // defined(DEBUG)
 }
 

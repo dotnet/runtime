@@ -886,7 +886,7 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         state->returnKind = header.returnKind;
         codeSet           = 2; // Two byte encoding
         encoding          = header.returnKind;
-        _ASSERTE(encoding < SET_RET_KIND_MAX);
+        _ASSERTE(encoding <= SET_RET_KIND_MAX);
         goto DO_RETURN;
     }
 
@@ -950,6 +950,27 @@ BYTE FASTCALL encodeHeaderNext(const InfoHdr& header, InfoHdr* state, BYTE& code
         }
     }
 
+    if (state->noGCRegionCnt != header.noGCRegionCnt)
+    {
+        assert(state->noGCRegionCnt <= SET_NOGCREGIONS_MAX || state->noGCRegionCnt == HAS_NOGCREGIONS);
+
+        // We have two-byte encodings for 0..4
+        if (header.noGCRegionCnt <= SET_NOGCREGIONS_MAX)
+        {
+            state->noGCRegionCnt = header.noGCRegionCnt;
+            codeSet              = 2;
+            encoding             = (BYTE)(SET_NOGCREGIONS_CNT + header.noGCRegionCnt);
+            goto DO_RETURN;
+        }
+        else if (state->noGCRegionCnt != HAS_NOGCREGIONS)
+        {
+            state->noGCRegionCnt = HAS_NOGCREGIONS;
+            codeSet              = 2;
+            encoding             = FFFF_NOGCREGION_CNT;
+            goto DO_RETURN;
+        }
+    }
+
 DO_RETURN:
     _ASSERTE(encoding < MORE_BYTES_TO_FOLLOW);
     if (!state->isHeaderMatch(header))
@@ -964,7 +985,7 @@ static int measureDistance(const InfoHdr& header, const InfoHdrSmall* p, int clo
 
     if (p->untrackedCnt != header.untrackedCnt)
     {
-        if (header.untrackedCnt > 3)
+        if (header.untrackedCnt > SET_UNTRACKED_MAX)
         {
             if (p->untrackedCnt != HAS_UNTRACKED)
                 distance += 1;
@@ -1195,6 +1216,13 @@ static int measureDistance(const InfoHdr& header, const InfoHdrSmall* p, int clo
     if (header.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET)
     {
         distance += 1;
+        if (distance >= closeness)
+            return distance;
+    }
+
+    if (header.noGCRegionCnt > 0)
+    {
+        distance += 2;
         if (distance >= closeness)
             return distance;
     }
@@ -1546,7 +1574,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
     ReturnKind returnKind = getReturnKind();
     _ASSERTE(IsValidReturnKind(returnKind) && "Return Kind must be valid");
     _ASSERTE(!IsStructReturnKind(returnKind) && "Struct Return Kinds Unexpected for JIT32");
-    _ASSERTE(((int)returnKind < (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
+    _ASSERTE(((int)returnKind <= (int)SET_RET_KIND_MAX) && "ReturnKind has no legal encoding");
     header->returnKind = returnKind;
 
     header->gsCookieOffset = INVALID_GS_COOKIE_OFFSET;
@@ -1578,6 +1606,22 @@ size_t GCInfo::gcInfoBlockHdrSave(
         assert(header->epilogCount <= 1);
     }
 #endif
+    if (compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
+    {
+        // While the sync start offset and end offset are not used by the stackwalker/EH system
+        // in funclets mode, we do need to know if the code is synchronized if we are generating
+        // an edit and continue method, so that we can properly manage the stack during a Remap
+        // operation, for determining the ParamTypeArg for collectible generics purposes, and
+        // for determining the offset of the localloc variable in the stack frame.
+        // Instead of inventing a new encoding, just encode some non-0 offsets into these fields.
+        // to indicate that the method is synchronized.
+        //
+        // Use 1 for both offsets, since that doesn't actually make sense and implies that the
+        // sync region is 0 bytes long. The JIT will never emit a sync region of 0 bytes in non-
+        // funclet mode.
+        header->syncStartOffset = 1;
+        header->syncEndOffset   = 1;
+    }
 
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
     if (compiler->opts.IsReversePInvoke())
@@ -1599,7 +1643,8 @@ size_t GCInfo::gcInfoBlockHdrSave(
     if (mask == 0)
     {
         gcCountForHeader((UNALIGNED unsigned int*)&header->untrackedCnt,
-                         (UNALIGNED unsigned int*)&header->varPtrTableSize);
+                         (UNALIGNED unsigned int*)&header->varPtrTableSize,
+                         (UNALIGNED unsigned int*)&header->noGCRegionCnt);
     }
 
     //
@@ -1692,6 +1737,14 @@ size_t GCInfo::gcInfoBlockHdrSave(
         assert(mask == 0 || state.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET);
         unsigned offset = header->revPInvokeOffset;
         unsigned sz     = encodeUnsigned(mask ? dest : NULL, offset);
+        size += sz;
+        dest += (sz & mask);
+    }
+
+    if (header->noGCRegionCnt > SET_NOGCREGIONS_MAX)
+    {
+        unsigned count = header->noGCRegionCnt;
+        unsigned sz    = encodeUnsigned(mask ? dest : NULL, count);
         size += sz;
         dest += (sz & mask);
     }
@@ -2088,6 +2141,29 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
     return pasENUM_END;
 }
 
+// Small helper class to handle the No-GC-Interrupt callbacks
+// when reporting interruptible ranges.
+class NoGCRegionEncoder
+{
+    BYTE* dest;
+public:
+    size_t totalSize;
+
+    NoGCRegionEncoder(BYTE* dest)
+        : dest(dest)
+        , totalSize(0)
+    {
+    }
+
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
+    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
+    {
+        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igOffs);
+        totalSize += encodeUnsigned(dest == NULL ? NULL : dest + totalSize, igSize);
+        return true;
+    }
+};
+
 /*****************************************************************************
  *
  *  Generate the register pointer map, and return its total size in bytes. If
@@ -2095,11 +2171,6 @@ unsigned PendingArgsStack::pasEnumGCoffs(unsigned iter, unsigned* offs)
  *  entry, which is never more than 10 bytes), so this can be used to merely
  *  compute the size of the table.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset)
 {
     unsigned   varNum;
@@ -2114,7 +2185,8 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     /* Start computing the total size of the table */
 
-    bool emitArgTabOffset = (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX);
+    bool emitArgTabOffset =
+        (header.varPtrTableSize != 0 || header.untrackedCnt > SET_UNTRACKED_MAX || header.noGCRegionCnt != 0);
     if (mask != 0 && emitArgTabOffset)
     {
         assert(*pArgTabOffset <= MAX_UNSIGNED_SIZE_T);
@@ -2134,17 +2206,28 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
 /**************************************************************************
  *
- *                      Untracked ptr variables
+ *                Untracked ptr variables and no GC regions
  *
  **************************************************************************
  */
 #if DEBUG
     unsigned untrackedCount  = 0;
     unsigned varPtrTableSize = 0;
-    gcCountForHeader(&untrackedCount, &varPtrTableSize);
+    unsigned noGCRegionCount = 0;
+    gcCountForHeader(&untrackedCount, &varPtrTableSize, &noGCRegionCount);
     assert(untrackedCount == header.untrackedCnt);
     assert(varPtrTableSize == header.varPtrTableSize);
+    assert(noGCRegionCount == header.noGCRegionCnt);
 #endif // DEBUG
+
+    if (header.noGCRegionCnt != 0)
+    {
+        NoGCRegionEncoder encoder(mask != 0 ? dest : NULL);
+        compiler->GetEmitter()->emitGenNoGCLst(encoder, /* skipAllPrologsAndEpilogs = */ true);
+        totalSize += encoder.totalSize;
+        if (mask != 0)
+            dest += encoder.totalSize;
+    }
 
     if (header.untrackedCnt != 0)
     {
@@ -3547,9 +3630,6 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
     return totalSize;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /*****************************************************************************/
 #if DUMP_GC_TABLES
@@ -3590,7 +3670,14 @@ size_t GCInfo::gcInfoBlockHdrDump(const BYTE* table, InfoHdr* header, unsigned* 
 
 size_t GCInfo::gcDumpPtrTable(const BYTE* table, const InfoHdr& header, unsigned methodSize)
 {
-    printf("Pointer table:\n");
+    if (header.noGCRegionCnt > 0)
+    {
+        printf("No GC regions and pointer table:\n");
+    }
+    else
+    {
+        printf("Pointer table:\n");
+    }
 
     GCDump gcDump(GCINFO_VERSION);
 
@@ -3749,15 +3836,6 @@ public:
         }
     }
 
-    void SetPSPSymStackSlot(INT32 spOffsetPSPSym)
-    {
-        m_gcInfoEncoder->SetPSPSymStackSlot(spOffsetPSPSym);
-        if (m_doLogging)
-        {
-            printf("Set PSPSym stack slot to %d.\n", spOffsetPSPSym);
-        }
-    }
-
     void SetGenericsInstContextStackSlot(INT32 spOffsetGenericsContext, GENERIC_CONTEXTPARAM_TYPE type)
     {
         m_gcInfoEncoder->SetGenericsInstContextStackSlot(spOffsetGenericsContext, type);
@@ -3870,12 +3948,13 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
                 assert(false);
         }
 
-        const int offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
-                                                                 compiler->isFramePointerUsed());
+        const int offset = compiler->lvaCachedGenericContextArgOffset();
 
 #ifdef DEBUG
         if (compiler->opts.IsOSR())
         {
+            const int callerSpOffset = compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed());
+
             // Sanity check the offset vs saved patchpoint info.
             //
             const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
@@ -3884,12 +3963,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // subtract off 2 register slots (saved FP, saved RA).
             //
             const int osrOffset = ppInfo->GenericContextArgOffset() - 2 * REGSIZE_BYTES;
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->GenericContextArgOffset();
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #endif
         }
 #endif
@@ -3902,23 +3981,16 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     {
         assert(compiler->info.compThisArg != BAD_VAR_NUM);
 
-        // OSR can report the root method's frame slot, if that method reported context.
-        // If not, the OSR frame will have saved the needed context.
-        //
-        bool useRootFrameSlot = true;
-        if (compiler->opts.IsOSR())
-        {
-            const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
-
-            useRootFrameSlot = ppInfo->HasKeptAliveThis();
-        }
-
-        const int offset = compiler->lvaToCallerSPRelativeOffset(compiler->lvaCachedGenericContextArgOffset(),
-                                                                 compiler->isFramePointerUsed(), useRootFrameSlot);
+        const int offset = compiler->lvaCachedGenericContextArgOffset();
 
 #ifdef DEBUG
-        if (compiler->opts.IsOSR() && useRootFrameSlot)
+        // OSR can report the root method's frame slot, if that method reported context.
+        // If not, the OSR frame will have saved the needed context.
+        if (compiler->opts.IsOSR() && compiler->info.compPatchpointInfo->HasKeptAliveThis())
         {
+            const int callerSpOffset =
+                compiler->lvaToCallerSPRelativeOffset(offset, compiler->isFramePointerUsed(), true);
+
             // Sanity check the offset vs saved patchpoint info.
             //
             const PatchpointInfo* const ppInfo = compiler->info.compPatchpointInfo;
@@ -3927,12 +3999,12 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
             // subtract off 2 register slots (saved FP, saved RA).
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset() - 2 * REGSIZE_BYTES;
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             // PP info has virtual offset. This is also the caller SP offset.
             //
             const int osrOffset = ppInfo->KeptAliveThisOffset();
-            assert(offset == osrOffset);
+            assert(callerSpOffset == osrOffset);
 #endif
         }
 #endif
@@ -3955,16 +4027,6 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     else if (compiler->lvaReportParamTypeArg() || compiler->lvaKeepAliveAndReportThis())
     {
         gcInfoEncoderWithLog->SetPrologSize(prologSize);
-    }
-
-    if (compiler->lvaPSPSym != BAD_VAR_NUM)
-    {
-#ifdef TARGET_AMD64
-        // The PSPSym is relative to InitialSP on X64 and CallerSP on other platforms.
-        gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetInitialSPRelativeOffset(compiler->lvaPSPSym));
-#else  // !TARGET_AMD64
-        gcInfoEncoderWithLog->SetPSPSymStackSlot(compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym));
-#endif // !TARGET_AMD64
     }
 
 #ifdef TARGET_AMD64

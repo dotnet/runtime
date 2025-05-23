@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
     /// <summary>
     ///   Represents a specific algorithm within the ML-DSA family.
     /// </summary>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class MLDsaAlgorithm
     {
         /// <summary>
@@ -107,22 +107,15 @@ namespace System.Security.Cryptography
         /// </value>
         public static MLDsaAlgorithm MLDsa87 { get; } = new MLDsaAlgorithm("ML-DSA-87", 4896, 2592, 4627, Oids.MLDsa87);
 
-        internal static MLDsaAlgorithm GetMLDsaAlgorithmFromOid(string oid)
+        internal static MLDsaAlgorithm? GetMLDsaAlgorithmFromOid(string? oid)
         {
             return oid switch
             {
                 Oids.MLDsa44 => MLDsa44,
                 Oids.MLDsa65 => MLDsa65,
                 Oids.MLDsa87 => MLDsa87,
-                _ => ThrowAlgorithmUnknown(oid),
+                _ => null,
             };
-        }
-
-        [DoesNotReturn]
-        private static MLDsaAlgorithm ThrowAlgorithmUnknown(string algorithmId)
-        {
-            throw new CryptographicException(
-                SR.Format(SR.Cryptography_UnknownAlgorithmIdentifier, algorithmId));
         }
     }
 }

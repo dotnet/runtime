@@ -26,8 +26,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">The path to this section.</param>
         public ConfigurationSection(IConfigurationRoot root, string path)
         {
-            ThrowHelper.ThrowIfNull(root);
-            ThrowHelper.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(root);
+            ArgumentNullException.ThrowIfNull(path);
 
             _root = root;
             _path = path;

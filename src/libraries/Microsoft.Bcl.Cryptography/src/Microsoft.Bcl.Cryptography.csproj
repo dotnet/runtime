@@ -6,6 +6,7 @@
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides support for some cryptographic primitives for .NET Framework and .NET Standard.</PackageDescription>
     <NoWarn>$(NoWarn);SYSLIB5006</NoWarn>
+    <IncludeIndexRangeTypes>true</IncludeIndexRangeTypes>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -22,7 +23,11 @@
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildPqc)' == 'true' " />
 
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\Experimentals.cs" />
+
     <Compile Include="Microsoft.Bcl.Cryptography.Forwards.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateKeyAccessors.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -180,6 +185,8 @@
              Link="Common\System\Security\Cryptography\PasswordBasedEncryption.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Pkcs12Kdf.cs"
              Link="Common\System\Security\Cryptography\Pkcs12Kdf.cs" />
+
+    <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true'">
@@ -254,8 +261,6 @@
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs"
              Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs" />
-
-    <Compile Include="System\Security\Cryptography\Helpers.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX509Loader)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -331,29 +336,44 @@
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true' and !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs" />
+    <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildPqc)' == 'true'">
-    <Compile Include="$(CommonPath)System\Experimentals.cs"
-             Link="Common\Experimentals.cs" />
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyAsn.xml</DependentUpon>
+    </Compile>
+    <AsnXml Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</Link>
+    </AsnXml>
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs">
+      <Link>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml.cs</Link>
+      <DependentUpon>System\Security\Cryptography\Asn1\MLKemPrivateKeyBothAsn.xml</DependentUpon>
+    </Compile>
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKem.cs"
-            Link="Common\System\Security\Cryptography\MLKem.cs" />
+             Link="Common\System\Security\Cryptography\MLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemAlgorithm.cs"
-            Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
+             Link="Common\System\Security\Cryptography\MLKemAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemImplementation.NotSupported.cs"
-            Link="Common\System\Security\Cryptography\MLKemImplementation.NotSupported.cs" />
+             Link="Common\System\Security\Cryptography\MLKemImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PemKeyHelpers.Factory.cs"
+             Link="Common\System\Security\Cryptography\PemKeyHelpers.Factory.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
-            Link="Common\System\Security\Cryptography\PemLabels.cs" />
+             Link="Common\System\Security\Cryptography\PemLabels.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsa.cs"
-            Link="Common\System\Security\Cryptography\SlhDsa.cs" />
+             Link="Common\System\Security\Cryptography\SlhDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaAlgorithm.cs"
-            Link="Common\System\Security\Cryptography\SlhDsaAlgorithm.cs" />
+             Link="Common\System\Security\Cryptography\SlhDsaAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.cs"
-            Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs"
-            Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
+             Link="Common\System\Security\Cryptography\SlhDsaImplementation.NotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

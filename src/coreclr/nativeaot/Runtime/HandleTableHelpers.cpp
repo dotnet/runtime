@@ -129,14 +129,17 @@ static ManagedObjectWrapper* ToManagedObjectWrapper(void* dispatchPtr)
 // invokes AddRef while holding a lock that it *also* holds while a GC is in progress.  If AddRef was managed, we would have
 // to synchronize with the GC before entering AddRef, which would deadlock with the other thread holding Xaml's lock.
 //
-static uint32_t __stdcall IUnknown_AddRef(void* pComThis)
+EXTERN_C uint32_t __stdcall RhIUnknown_AddRef(void* pComThis)
 {
     ManagedObjectWrapper* wrapper = ToManagedObjectWrapper(pComThis);
     return wrapper->AddRef();
 }
 
-FCIMPL0(void*, RhGetIUnknownAddRef)
+//
+// Release is implemented in native code so that it does not need to synchronize with the GC. This is important because Xaml
+// can invoke this Release during shutdown, and we don't want to synchronize with the GC at that time.
+//
+EXTERN_C uint32_t __stdcall RhUntracked_AddRefRelease(void*)
 {
-    return (void*)&IUnknown_AddRef;
+    return 1;
 }
-FCIMPLEND

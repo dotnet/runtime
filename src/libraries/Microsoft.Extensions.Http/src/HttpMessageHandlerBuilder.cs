@@ -80,8 +80,8 @@ namespace Microsoft.Extensions.Http
         /// The <c>DelegatingHandler.InnerHandler</c> property must be <see langword="null"/>. <c>DelegatingHandler</c> instances provided to <c>HttpMessageHandlerBuilder</c> must not be reused or cached.</exception>
         protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler, IEnumerable<DelegatingHandler> additionalHandlers)
         {
-            ThrowHelper.ThrowIfNull(primaryHandler);
-            ThrowHelper.ThrowIfNull(additionalHandlers);
+            ArgumentNullException.ThrowIfNull(primaryHandler);
+            ArgumentNullException.ThrowIfNull(additionalHandlers);
 
             // This is similar to https://github.com/aspnet/AspNetWebStack/blob/master/src/System.Net.Http.Formatting/HttpClientFactory.cs#L58
             // but we don't want to take that package as a dependency.

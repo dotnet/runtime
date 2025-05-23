@@ -90,14 +90,14 @@ ValueNumFuncDef(ILogB, 1, false, false, false)
 ValueNumFuncDef(Log, 1, false, false, false)
 ValueNumFuncDef(Log2, 1, false, false, false)
 ValueNumFuncDef(Log10, 1, false, false, false)
-ValueNumFuncDef(Max, 2, false, false, false)
-ValueNumFuncDef(MaxMagnitude, 2, false, false, false)
-ValueNumFuncDef(MaxMagnitudeNumber, 2, false, false, false)
-ValueNumFuncDef(MaxNumber, 2, false, false, false)
-ValueNumFuncDef(Min, 2, false, false, false)
-ValueNumFuncDef(MinMagnitude, 2, false, false, false)
-ValueNumFuncDef(MinMagnitudeNumber, 2, false, false, false)
-ValueNumFuncDef(MinNumber, 2, false, false, false)
+ValueNumFuncDef(Max, 2, true, false, false)
+ValueNumFuncDef(MaxMagnitude, 2, true, false, false)
+ValueNumFuncDef(MaxMagnitudeNumber, 2, true, false, false)
+ValueNumFuncDef(MaxNumber, 2, true, false, false)
+ValueNumFuncDef(Min, 2, true, false, false)
+ValueNumFuncDef(MinMagnitude, 2, true, false, false)
+ValueNumFuncDef(MinMagnitudeNumber, 2, true, false, false)
+ValueNumFuncDef(MinNumber, 2, true, false, false)
 ValueNumFuncDef(Pow, 2, false, false, false)
 ValueNumFuncDef(RoundDouble, 1, false, false, false)
 ValueNumFuncDef(RoundInt32, 1, false, false, false)
@@ -108,6 +108,10 @@ ValueNumFuncDef(Sqrt, 1, false, false, false)
 ValueNumFuncDef(Tan, 1, false, false, false)
 ValueNumFuncDef(Tanh, 1, false, false, false)
 ValueNumFuncDef(Truncate, 1, false, false, false)
+
+ValueNumFuncDef(LeadingZeroCount, 1, false, false, false)
+ValueNumFuncDef(TrailingZeroCount, 1, false, false, false)
+ValueNumFuncDef(PopCount, 1, false, false, false)
 
 ValueNumFuncDef(ManagedThreadId, 0, false, false, false)
 
@@ -201,8 +205,8 @@ ValueNumFuncDef(HWI_##isa##_##name, ((argCount == -1) ? -1 : (argCount + 1)), ((
     //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
 
 #elif defined (TARGET_RISCV64)
-    //TODO-RISCV64-CQ: add RISCV64's Hardware Intrinsics Instructions if supported.
-
+    ValueNumFuncDef(Min_UN, 2, true, false, false)  // unsigned min/max intrinsics
+    ValueNumFuncDef(Max_UN, 2, true, false, false)
 #else
 #error Unsupported platform
 #endif

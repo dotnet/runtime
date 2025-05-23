@@ -781,6 +781,17 @@ PhaseStatus Compiler::fgInline()
         Metrics.ProfileConsistentBeforeInline++;
     }
 
+    if (!fgHaveProfileWeights())
+    {
+        JITDUMP("INLINER: no pgo data\n");
+    }
+    else
+    {
+        JITDUMP("INLINER: pgo source is %s; pgo data is %sconsistent; %strusted; %ssufficient\n",
+                compGetPgoSourceName(), fgPgoConsistent ? "" : "not ", fgHaveTrustedProfileWeights() ? "" : "not ",
+                fgHaveSufficientProfileWeights() ? "" : "not ");
+    }
+
     noway_assert(fgFirstBB != nullptr);
 
     BasicBlock*                                 block = fgFirstBB;
@@ -1069,6 +1080,14 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
         result->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
+        return;
+    }
+
+    if (call->IsAsync() && info.compUsesAsyncContinuation)
+    {
+        // Currently not supported. Could provide a nice perf benefit for
+        // Task -> runtime async thunks if we supported it.
+        result->NoteFatal(InlineObservation::CALLER_ASYNC_USED_CONTINUATION);
         return;
     }
 
@@ -1508,7 +1527,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     {
         // When fgBBCount is 1 we will always have a non-NULL fgFirstBB
         //
-        PREFAST_ASSUME(InlineeCompiler->fgFirstBB != nullptr);
+        assert(InlineeCompiler->fgFirstBB != nullptr);
 
         // DDB 91389: Don't throw away the (only) inlinee block
         // when its return type is not BBJ_RETURN.
@@ -2229,6 +2248,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         switch (arg.GetWellKnownArg())
         {
             case WellKnownArg::RetBuffer:
+            case WellKnownArg::AsyncContinuation:
                 continue;
             case WellKnownArg::InstParam:
                 argInfo = inlineInfo->inlInstParamArgInfo;

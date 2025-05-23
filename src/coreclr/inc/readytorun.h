@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 12
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MAJOR_VERSION 13
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 12
+#define MINIMUM_READYTORUN_MAJOR_VERSION 13
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -40,6 +40,9 @@
 // R2R Version 10.1 adds Unbox_TypeTest helper
 // R2R Version 11 uses GCInfo v4, which encodes safe points without -1 offset and does not track return kinds in GCInfo
 // R2R Version 12 requires all return buffers to be always on the stack
+// R2R Version 13 removes usage of PSPSym, changes ABI for funclets to match NativeAOT, changes register for
+//                exception parameter on AMD64, and redefines generics instance context stack slot in GCInfo v4
+//                to be SP/FP relative
 
 struct READYTORUN_CORE_HEADER
 {
@@ -405,6 +408,8 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
+    READYTORUN_HELPER_Lng2Flt                   = 0xD8,
+    READYTORUN_HELPER_ULng2Flt                  = 0xD9,
 
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,

@@ -55,7 +55,9 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
+    <Compile Include="System\Diagnostics\RateLimiter.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
+    <Compile Include="System\Diagnostics\W3CPropagator.cs" />
     <Compile Include="System\Diagnostics\Metrics\AggregationManager.cs" />
     <Compile Include="System\Diagnostics\Metrics\Aggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\AggregatorStore.cs" />
@@ -87,6 +89,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="$(CommonPath)Internal\Padding.cs" Link="Common\Internal\Padding.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Diagnostics\DiagnosticsHelper.cs" Link="Common\System\Diagnostics\DiagnosticsHelper.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="CoreLib\System\Text\ValueStringBuilder.cs" />
 
     <None Include="DiagnosticSourceUsersGuide.md" />
     <None Include="ActivityUserGuide.md" />
@@ -107,7 +110,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\TagList.netcore.cs" />
     <Compile Include="System\Diagnostics\System.Diagnostics.DiagnosticSource.Typeforwards.netcoreapp.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="Common\System\LocalAppContextSwitches.Common.cs" />
-    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -150,6 +152,7 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />

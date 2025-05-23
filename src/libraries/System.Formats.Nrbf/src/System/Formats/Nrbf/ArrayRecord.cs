@@ -71,14 +71,8 @@ public abstract class ArrayRecord : SerializationRecord
     [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
     public Array GetArray(Type expectedArrayType, bool allowNulls = true)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(expectedArrayType);
-#else
-        if (expectedArrayType is null)
-        {
-            throw new ArgumentNullException(nameof(expectedArrayType));
-        }
-#endif
+
         if (!TypeNameMatches(expectedArrayType))
         {
             throw new InvalidOperationException(SR.Format(SR.Serialization_TypeMismatch, expectedArrayType.AssemblyQualifiedName, TypeName.AssemblyQualifiedName));

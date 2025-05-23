@@ -28,15 +28,6 @@ namespace System.Speech.Internal
             }
         }
 
-        // Throws exception if the specified Rule does not have a valid Id.
-        internal static void ThrowIfNull(object value, string paramName)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
-        }
-
         internal static bool CompareInvariantCulture(CultureInfo culture1, CultureInfo culture2)
         {
             // If perfect match easy
