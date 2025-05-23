@@ -817,6 +817,7 @@ namespace System.Globalization
 #if TARGET_BROWSER
             culture.JSInitLocaleInfo();
 #endif
+
             // We need _sWindowsName to be initialized to know if we're using overrides.
             culture.InitUserOverride(useUserOverride);
             return culture;
