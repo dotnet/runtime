@@ -239,11 +239,8 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                if (_cleanupTimer != null)
-                {
-                    _cleanupTimer.Dispose();
-                    _cleanupTimer = null;
-                }
+                _cleanupTimer?.Dispose();
+                _cleanupTimer = null;
             }
         }
 
@@ -342,13 +339,7 @@ namespace Microsoft.Extensions.Http
             List<IDisposable> disposables = new List<IDisposable>();
 
             // Lock to safely collect handlers from active and expired collections
-            if (!Monitor.TryEnter(_cleanupActiveLock))
-            {
-                // Another thread is already cleaning up, wait for it to finish
-                Monitor.Enter(_cleanupActiveLock);
-            }
-
-            try
+            lock (_cleanupActiveLock)
             {
                 // Stop active handler timers and collect expired handlers
                 foreach (KeyValuePair<string, Lazy<ActiveHandlerTrackingEntry>> entry in _activeHandlers)
@@ -373,10 +364,6 @@ namespace Microsoft.Extensions.Http
 
                 // Clear the collections to help with garbage collection
                 _activeHandlers.Clear();
-            }
-            finally
-            {
-                Monitor.Exit(_cleanupActiveLock);
             }
 
             // Dispose all handlers outside the lock
