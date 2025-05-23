@@ -11,7 +11,7 @@ namespace System.ComponentModel.DataAnnotations
 {
     internal sealed class AssociatedMetadataTypeTypeDescriptor : CustomTypeDescriptor
     {
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)]
         private Type? AssociatedMetadataType { get; set; }
 
         private bool IsSelfAssociated { get; set; }
@@ -19,7 +19,7 @@ namespace System.ComponentModel.DataAnnotations
         public AssociatedMetadataTypeTypeDescriptor(
             ICustomTypeDescriptor? parent,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? associatedMetadataType)
+            [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)] Type? associatedMetadataType)
             : base(parent)
         {
             AssociatedMetadataType = associatedMetadataType ?? TypeDescriptorCache.GetAssociatedMetadataType(type);
@@ -113,7 +113,7 @@ namespace System.ComponentModel.DataAnnotations
                 }
             }
 
-            [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [return: DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)]
             public static Type? GetAssociatedMetadataType(Type type)
             {
                 if (TryGetAssociatedMetadataTypeFromCache(type, out Type? associatedMetadataType))
@@ -135,7 +135,7 @@ namespace System.ComponentModel.DataAnnotations
                                     "have annotation All (since we only ever add attribute.MetadataClassType which has All)." +
                                     "But the call to TryGetValue doesn't carry the annotation so this warns when trying" +
                                     "to assign to the out parameter.")]
-                static bool TryGetAssociatedMetadataTypeFromCache(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] out Type? associatedMetadataType)
+                static bool TryGetAssociatedMetadataTypeFromCache(Type type, [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)] out Type? associatedMetadataType)
                 {
                     return s_metadataTypeCache.TryGetValue(type, out associatedMetadataType);
                 }
@@ -166,7 +166,7 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             public static Attribute[] GetAssociatedMetadata(
-                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
+                [DynamicallyAccessedMembers(AssociatedMetadataTypeTypeDescriptionProvider.AllMembersAndInterfaces)] Type type,
                 string memberName)
             {
                 (Type, string) memberTuple = (type, memberName);
