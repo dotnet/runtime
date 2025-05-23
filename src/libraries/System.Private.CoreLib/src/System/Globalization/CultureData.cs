@@ -820,7 +820,7 @@ namespace System.Globalization
             if (string.IsNullOrEmpty(culture._sWindowsName))
             {
                 // ICU can normalize some culture names into empty string.
-                // "und" is the name for the undermined culture which get normalized to empty string
+                // "und" is the name for the undetermined culture which gets normalized to empty string
                 return Invariant;
             }
 
