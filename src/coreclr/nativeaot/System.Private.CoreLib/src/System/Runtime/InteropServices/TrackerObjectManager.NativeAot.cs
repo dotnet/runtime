@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices
                 return HResults.S_FALSE;
             }
 
-            object sourceObject = s_currentRootObjectHandle.Target;
+            object sourceObject = s_currentRootObjectHandle.Target!;
 
             if (sourceObject == targetObject)
             {
@@ -243,7 +243,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Notify the runtime a reference path was found.
-            return TrackerObjectManager.AddReferencePath(sourceObject, foundObject) ? HResults.S_OK : HResults.S_FALSE;
+            return TrackerObjectManager.AddReferencePath(sourceObject, targetObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
         internal struct ReferenceTargetsVftbl
