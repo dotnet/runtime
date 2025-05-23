@@ -363,7 +363,7 @@ struct FixupPrecode
     static const SIZE_T CodeSize = 24;
     static const int FixupCodeOffset = 8;
 #elif defined(TARGET_ARM)
-    static const SIZE_T CodeSize = 12;
+    static const SIZE_T CodeSize = 16;
     static const int FixupCodeOffset = 4 + THUMB_CODE;
 #elif defined(TARGET_LOONGARCH64)
     static const SIZE_T CodeSize = 32;
@@ -383,6 +383,7 @@ struct FixupPrecode
     static void StaticInitialize();
 
     static void GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
+    static void GenerateDataPage(uint8_t* pageBase, size_t size);
 
     PTR_FixupPrecodeData GetData() const
     {

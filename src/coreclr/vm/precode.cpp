@@ -540,7 +540,7 @@ void StubPrecode::StaticInitialize()
         _ASSERTE(IsStubPrecodeByASM_DAC((PCODE)StubPrecodeCodeTemplate));
     }
 
-    InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage);
+    InitializeLoaderHeapConfig(&s_stubPrecodeHeapConfig, StubPrecode::CodeSize, (void*)StubPrecodeCodeTemplate, StubPrecode::GenerateCodePage, NULL);
 }
 
 void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
@@ -617,8 +617,8 @@ void FixupPrecode::Init(FixupPrecode* pPrecodeRX, MethodDesc* pMD, LoaderAllocat
 
     _ASSERTE(GetMethodDesc() == (TADDR)pMD);
 
-    pData->Target = (PCODE)pPrecodeRX + FixupPrecode::FixupCodeOffset;
     pData->PrecodeFixupThunk = GetPreStubEntryPoint();
+    VolatileStore(&pData->Target, (PCODE)pPrecodeRX + FixupPrecode::FixupCodeOffset);
 }
 
 #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
@@ -682,7 +682,29 @@ void FixupPrecode::StaticInitialize()
     {
         _ASSERTE(IsFixupPrecodeByASM_DAC((PCODE)FixupPrecodeCodeTemplate));
     }
-    InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage);
+    InitializeLoaderHeapConfig(&s_fixupStubPrecodeHeapConfig, FixupPrecode::CodeSize, (void*)FixupPrecodeCodeTemplate, FixupPrecode::GenerateCodePage, FixupPrecode::GenerateDataPage);
+}
+
+void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
+{
+    // Fill in the data page such that the target of the fixup precode starts as initialized to point
+    // to the start of the precode itself, so that before the memory for the precode is initialized,
+    // the precode is in a state where it will loop forever.
+    // When initializing the precode to have the MethodDesc/Prestub target, the write to update the Target
+    // to go through the code which passes the extra MethodDesc argument, will be done with a VolatileStore
+    // such that both the MethodDesc and the PrecodeFixupThunk are updated before the Target is updated to
+    // make it possible to hit that code. Finally, the FixupPrecode assembly logic will have a load memory
+    // barrier, which will match up with that store.
+    //
+    // Finally, to make this all work, we ensure that this data page generation function is called
+    // BEFORE the code page is ever mapped into memory, so that it cannot be speculatively executed
+    // before this logic completes.
+    int totalCodeSize = (int)((pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize);
+    for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
+    {
+        PCODE* ppTargetSlot = (PCODE*)(pageBase + i + offsetof(FixupPrecodeData, Target));
+        *ppTargetSlot = ((Precode*)(pageBase - pageSize + i))->GetEntryPoint();
+    }
 }
 
 void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)

@@ -62,10 +62,10 @@ LEAF_END_MARKED StubPrecodeCodeTemplate, _TEXT
 
     ldr x11, DATA_SLOT(FixupPrecode, Target, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     br  x11
+    dmb ishld
     ldr x12, DATA_SLOT(FixupPrecode, MethodDesc, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk, FIXUP_PRECODE_CODESIZE, FixupPrecodeCodeTemplate)
     br  x11        
-    brk     0xf000      // Stubs need to be 24-byte in size to allow for the data to be 3 pointers
 
     IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
@@ -131,6 +131,7 @@ LEAF_END_MARKED CallCountingStubCodeTemplate, _TEXT
     LEAF_ENTRY FixupPrecodeCode\STUB_PAGE_SIZE
         ldr x11, DATA_SLOT(FixupPrecode, Target)
         br  x11
+        dmb ishld
         ldr x12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr x11, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
         br  x11        
