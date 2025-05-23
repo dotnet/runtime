@@ -212,7 +212,7 @@ Consider other similar methods in the file for reference. Do not change implemen
 
 #### 5 — Definition of Done (self-check list)
 
-* [ ] New API present in **all** five layers (Thunk → Native → Managed → Stub → SuperPMI).
+* [ ] New API present in **all** layers.
 * [ ] Each source file changed exactly once; no unrelated edits. The following files must be changed:
    * `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt`
    * `<repo_root>/src/coreclr/inc/corinfo.h`
