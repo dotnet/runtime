@@ -24,7 +24,7 @@
 
       - $(WasmEnableEventPipe)          - Enables diagnostic server tracing. Defaults to false.
       - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
-      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server. Defaults to none.
+      - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server. Values should be 'all', 'none', or a callspec pattern like 'N:Sample'. Defaults to none.
       - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
       - $(WasmProfilers)                - Mono Profilers to use. Defaults to empty. Could be `log` and `browser`.
       - $(AOTProfilePath)               - profile data file to be used for profile-guided optimization
@@ -256,7 +256,7 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
-    <WasmPerformanceInstrumentation Condition="'$(WasmPerformanceInstrumentation)' == 'true'">all</WasmPerformanceInstrumentation>
+    <!-- This property accepts string values like 'all', 'none', 'N:Sample', etc. for callspec patterns -->
     <_WasmProfilers Condition="'$(WasmPerformanceInstrumentation)' != ''">browser:eventpipe,callspec=$(WasmPerformanceInstrumentation)</_WasmProfilers>
     <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
