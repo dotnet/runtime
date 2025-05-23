@@ -330,6 +330,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed()
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
             throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));

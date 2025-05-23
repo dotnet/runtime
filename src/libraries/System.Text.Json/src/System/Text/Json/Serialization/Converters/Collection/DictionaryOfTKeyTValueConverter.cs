@@ -19,7 +19,19 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            TCollection dictionary = (TCollection)state.Current.ReturnValue!;
+
+            if (options.AllowDuplicateProperties)
+            {
+                dictionary[key] = value;
+            }
+            else
+            {
+                if (!dictionary.TryAdd(key, value))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                }
+            }
         }
 
         protected internal override bool OnWriteResume(

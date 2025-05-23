@@ -175,3 +175,11 @@ let ``Map async deserialization should be supported``() = async {
 
     Assert.Equal<Map<string, int>>(inputs, result)
 }
+
+[<Fact>]
+let ``Map deserialization should reject duplicate keys``() =
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<Map<string, int>>("""{ "1": "a", "1": "a" }""") |> ignore) |> ignore
+    JsonSerializer.Deserialize<Map<string, string>>("""{ "1": "a", "2": "a" }""") |> ignore // No throw
+
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<Map<int, int>>("""{ "1": "a", "1": "a" }""") |> ignore) |> ignore
+    JsonSerializer.Deserialize<Map<int, string>>("""{ "1": "a", "2": "a" }""") |> ignore // No throw

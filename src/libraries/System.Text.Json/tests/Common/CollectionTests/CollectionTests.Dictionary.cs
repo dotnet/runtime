@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 using Xunit;
@@ -1099,7 +1100,6 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, string> DictProperty { get; set; }
         }
 
-        // TODO this fails because the dictionary converters don't check for duplicates
         [Fact]
         public async Task DeserializeNestedDictionaryWithDuplicatePropertiesThrow()
         {
@@ -1110,6 +1110,28 @@ namespace System.Text.Json.Serialization.Tests
 
             // Assert no throw
             _ = Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""", JsonSerializerOptions.Default);
+        }
+
+        public static IEnumerable<object[]> TestDictionaryTypes =
+            CollectionTestTypes.DeserializableNonGenericDictionaryTypes()
+                .Concat(CollectionTestTypes.DeserializableDictionaryTypes<string, string>())
+                .Concat(CollectionTestTypes.DeserializableDictionaryTypes<int, string>())
+                .Select<object, object[]>(x => [x]);
+
+        [Theory]
+        [InlineData(typeof(ImmutableSortedDictionary<string, string>))]
+        [InlineData(typeof(ImmutableSortedDictionary<int, string>))]
+        [InlineData(typeof(DictionaryThatOnlyImplementsIDictionaryOfStringTValue<string>))]
+        [MemberData(nameof(TestDictionaryTypes))]
+        public async Task DeserializeBuiltInDictionaryWithDuplicatePropertiesThrow(Type t)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+            
+            await Assert.ThrowsAsync<JsonException>(() =>
+                Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t, options));
+
+            // Assert no throw
+            _ = Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t, JsonSerializerOptions.Default);
         }
 
         public class ClassWithPopulatedDictionaryAndNoSetter

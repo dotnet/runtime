@@ -507,7 +507,7 @@ namespace System.Text.Json
                     message = SR.Format(SR.InvalidLeadingZeroInNumber, character);
                     break;
                 case ExceptionResource.DuplicatePropertiesNotAllowed:
-                    message = SR.DuplicatePropertiesNotAllowed_Reader;
+                    message = SR.DuplicatePropertiesNotAllowed;
                     break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");

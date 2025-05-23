@@ -830,7 +830,7 @@
   <data name="DuplicatePropertiesNotAllowed_JsonPropertyInfo" xml:space="preserve">
     <value>Duplicate property '{0}' encountered during deserialization of type '{1}'.</value>
   </data>
-  <data name="DuplicatePropertiesNotAllowed_Reader" xml:space="preserve">
+  <data name="DuplicatePropertiesNotAllowed" xml:space="preserve">
     <value>Duplicate properties not allowed during deserialization.</value>
   </data>
 </root>
