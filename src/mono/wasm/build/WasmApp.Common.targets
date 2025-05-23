@@ -256,9 +256,7 @@
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == '' and '$(WasmBuildingForNestedPublish)' == 'true'">false</_WasmDebuggerSupport> <!-- publish -->
     <_WasmDebuggerSupport Condition="'$(_WasmDebuggerSupport)' == ''">true</_WasmDebuggerSupport>
-    <!-- This property accepts string values like 'all', 'none', 'N:Sample', etc. for callspec patterns -->
-    <_WasmProfilers Condition="'$(WasmPerformanceInstrumentation)' != ''">browser:eventpipe,callspec=$(WasmPerformanceInstrumentation)</_WasmProfilers>
-    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(_WasmProfilers);$(WasmProfilers)</_WasmProfilers>
+    <_WasmProfilers Condition="'$(WasmProfilers)' != ''">$(WasmProfilers)</_WasmProfilers>
   </PropertyGroup>
   <ItemGroup Condition="'$(_WasmDebuggerSupport)' == 'true'">
     <_MonoComponent Include="debugger" />
@@ -494,7 +492,7 @@
 
     <Error Condition="'$(WasmProfilers)' != '' and '$(WasmEnableEventPipe)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmEnableEventPipe)=$(WasmEnableEventPipe)"/>
     <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
-    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(WasmEnableEventPipe)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(WasmEnableEventPipe)=true"/>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(WasmEnableEventPipe)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(WasmEnableEventPipe)=true or "/>
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
