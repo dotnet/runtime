@@ -1906,7 +1906,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
-#endif // !FEATURE_STATICALLY_LINKED || defined(FEATURE_JIT)
+#endif // !FEATURE_STATICALLY_LINKED || FEATURE_JIT
 
 #ifdef FEATURE_STATICALLY_LINKED
 static ICorJitCompiler* InitializeStaticJIT()
