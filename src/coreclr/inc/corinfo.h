@@ -1204,8 +1204,7 @@ enum CorInfoAccessAllowedHelperArgType
     CORINFO_HELPER_ARG_TYPE_Field   = 1,
     CORINFO_HELPER_ARG_TYPE_Method  = 2,
     CORINFO_HELPER_ARG_TYPE_Class   = 3,
-    // CORINFO_HELPER_ARG_TYPE_Module  = 4,
-    CORINFO_HELPER_ARG_TYPE_Const   = 5,
+    CORINFO_HELPER_ARG_TYPE_Const   = 4,
 };
 struct CORINFO_HELPER_ARG
 {
