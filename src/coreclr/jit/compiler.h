@@ -4950,7 +4950,6 @@ private:
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillLclRefs(unsigned lclNum, unsigned chkLevel);
-    void impSpillAsyncCalls(unsigned chkLevel);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
@@ -6161,8 +6160,8 @@ public:
     PhaseStatus fgHeadTailMerge(bool early);
     bool fgHeadMerge(BasicBlock* block, bool early);
     bool fgTryOneHeadMerge(BasicBlock* block, bool early);
-    template<GenTreeFlags RequiredFlagsToDescendIntoNode, typename Predicate>
-    GenTree* gtFindNodeInTree(GenTree* tree, Predicate pred);
+    template<typename Predicate>
+    bool gtTreeContainsCall(GenTree* tree, Predicate pred);
     bool gtTreeContainsTailCall(GenTree* tree);
     bool gtTreeContainsAsyncCall(GenTree* tree);
     bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);

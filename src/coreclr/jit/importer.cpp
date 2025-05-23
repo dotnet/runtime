@@ -2049,39 +2049,6 @@ void Compiler::impSpillLclRefs(unsigned lclNum, unsigned chkLevel)
 }
 
 //------------------------------------------------------------------------
-// impSpillAsyncCalls: Spill all trees containing async calls
-//
-// Arguments:
-//    chkLevel - Height (exclusive) of the portion of the stack to check
-//
-void Compiler::impSpillAsyncCalls(unsigned chkLevel)
-{
-    if (chkLevel == CHECK_SPILL_ALL)
-    {
-        chkLevel = stackState.esStackDepth;
-    }
-
-    assert(chkLevel <= stackState.esStackDepth);
-
-    for (unsigned level = 0; level < chkLevel; level++)
-    {
-        GenTree* tree = stackState.esStack[level].val;
-
-        // Check if a node is an async call, or a RET_EXPR that might be
-        // replaced with a tree that has an async call in it.
-        auto hasAsyncCall = [=](GenTree* tree) {
-            return (tree->IsCall() && tree->AsCall()->IsAsync()) ||
-                   (tree->OperIs(GT_RET_EXPR) && gtTreeContainsAsyncCall(tree->AsRetExpr()->gtInlineCandidate));
-        };
-
-        if (gtFindNodeInTree<GTF_CALL>(tree, hasAsyncCall) != nullptr)
-        {
-            impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillAsyncCalls"));
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // impPushCatchArgOnStack: Push catch arg onto the stack.
 //
 // Arguments:
@@ -9700,7 +9667,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                         else if (compIsAsync() && op1->TypeIs(TYP_BYREF))
                         {
-                            impSpillAsyncCalls(CHECK_SPILL_ALL);
+                            // TODO-Async: We really only need to spill if
+                            // there is a possibility of an async call in op2.
+                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address in async method"));
                         }
                         break;
 

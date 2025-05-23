@@ -5605,6 +5605,63 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 }
 
 //------------------------------------------------------------------------
+// gtTreeContainsCall:
+//   Check if a tree contains a call node matching the given predicate.
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   True if a call node matching the predicate was found, false otherwise.
+//
+template <typename Predicate>
+bool Compiler::gtTreeContainsCall(GenTree* tree, Predicate pred)
+{
+    struct HasCallVisitor : GenTreeVisitor<HasCallVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        HasCallVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<HasCallVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_CALL) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->IsCall() && m_pred(node->AsCall()))
+            {
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & GTF_CALL) == 0)
+    {
+        return false;
+    }
+
+    HasCallVisitor hasCall(this, pred);
+    return hasCall.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------
 // gtTreeContainsTailCall: Check if a tree contains any tail call or tail call
 // candidate.
 //
@@ -5619,11 +5676,9 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 //
 bool Compiler::gtTreeContainsTailCall(GenTree* tree)
 {
-    auto isTailCall = [](GenTree* node) {
-        return node->IsCall() && (node->AsCall()->CanTailCall() || node->AsCall()->IsTailCall());
-    };
-
-    return gtFindNodeInTree<GTF_CALL>(tree, isTailCall) != nullptr;
+    return gtTreeContainsCall(tree, [](GenTreeCall* call) {
+        return call->CanTailCall() || call->IsTailCall();
+    });
 }
 
 //------------------------------------------------------------------------
@@ -5642,11 +5697,9 @@ bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
         return false;
     }
 
-    auto isAsyncCall = [](GenTree* node) {
-        return node->IsCall() && node->AsCall()->IsAsync();
-    };
-
-    return gtFindNodeInTree<GTF_CALL>(tree, isAsyncCall) != nullptr;
+    return gtTreeContainsCall(tree, [](GenTreeCall* call) {
+        return call->IsAsync();
+    });
 }
 
 //------------------------------------------------------------------------
