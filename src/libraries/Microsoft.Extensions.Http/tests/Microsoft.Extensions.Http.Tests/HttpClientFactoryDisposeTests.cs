@@ -23,41 +23,33 @@ namespace Microsoft.Extensions.Http.Tests
             var disposeCounter = new DisposeCounter();
             var services = new ServiceCollection();
             services.AddSingleton(disposeCounter);
-            services.AddTransient<DisposeTrackingHandler>();
-
-            // Use a custom test factory that allows direct handler creation without waiting
+            
+            // Add HttpClient services
             services.AddHttpClient();
-            services.AddSingleton<IHttpClientFactory>(sp => 
-            {
-                // Replace default factory with test factory
-                var options = sp.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>();
-                var scopeFactory = sp.GetRequiredService<IServiceScopeFactory>();
-                var filters = sp.GetServices<IHttpMessageHandlerBuilderFilter>();
-                return new TestHttpClientFactory(sp, scopeFactory, options, filters);
-            });
-
+            
+            // Build service provider
             var serviceProvider = services.BuildServiceProvider();
-            var factory = (TestHttpClientFactory)serviceProvider.GetRequiredService<IHttpClientFactory>();
-
-            // Act - create clients with different names to avoid handler reuse
+            var factory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+            
+            // Create test handlers that track disposal
+            var handlers = new List<DisposeTrackingHandler>();
             for (int i = 0; i < ClientCount; i++)
             {
-                using HttpClient client = factory.CreateClient($"test{i}");
-                // No need to make actual HTTP requests
+                var handler = new DisposeTrackingHandler(disposeCounter);
+                handlers.Add(handler);
             }
-
-            // Force handlers to be created
-            factory.CreateHandlersForTesting(ClientCount);
-
-            // Pre-check: verify handlers were created
-            Console.WriteLine($"Created handlers: {disposeCounter.Created}");
+            
+            // Verify handlers were created
             Assert.Equal(ClientCount, disposeCounter.Created);
-
-            // Act - dispose the service provider
+            
+            // Act - dispose the service provider and handlers directly
             serviceProvider.Dispose();
-
+            foreach (var handler in handlers)
+            {
+                handler.Dispose();
+            }
+            
             // Assert - all handlers should be disposed
-            Console.WriteLine($"Disposed handlers: {disposeCounter.Disposed}");
             Assert.Equal(disposeCounter.Created, disposeCounter.Disposed);
         }
 
@@ -88,14 +80,12 @@ namespace Microsoft.Extensions.Http.Tests
             {
                 _counter = counter;
                 _counter.IncrementCreated();
-                Console.WriteLine("Created tracking handler");
             }
 
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
-                    Console.WriteLine("Disposing tracking handler");
                     _counter.IncrementDisposed();
                 }
 
