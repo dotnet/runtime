@@ -1726,7 +1726,9 @@ struct JIT_LOAD_DATA
 EXTERN_C void jitStartup(ICorJitHost* host);
 EXTERN_C ICorJitCompiler* getJit();
 
-#else // !FEATURE_STATICALLY_LINKED
+#endif // FEATURE_STATICALLY_LINKED
+
+#if !defined(FEATURE_STATICALLY_LINKED) || defined(FEATURE_JIT)
 
 // Here's the global data for JIT load and initialization state.
 JIT_LOAD_DATA g_JitLoadData;
@@ -1904,7 +1906,7 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
-#endif
+#endif // !FEATURE_STATICALLY_LINKED || defined(FEATURE_JIT)
 
 #ifdef FEATURE_STATICALLY_LINKED
 static ICorJitCompiler* InitializeStaticJIT()
