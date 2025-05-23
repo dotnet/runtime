@@ -29,50 +29,9 @@ namespace ILCompiler.PEWriter
         const int RVABitsToMatchFilePos = 16;
 
         /// <summary>
-        /// This structure describes how a particular section moved between the original MSIL
-        /// and the output PE file. It holds beginning and end RVA of the input (MSIL) section
-        /// and a delta between the input and output starting RVA of the section.
-        /// </summary>
-        struct SectionRVADelta
-        {
-            /// <summary>
-            /// Starting RVA of the section in the input MSIL PE.
-            /// </summary>
-            public readonly int StartRVA;
-
-            /// <summary>
-            /// End RVA (one plus the last RVA in the section) of the section in the input MSIL PE.
-            /// </summary>
-            public readonly int EndRVA;
-
-            /// <summary>
-            /// Starting RVA of the section in the output PE minus its starting RVA in the input MSIL.
-            /// </summary>
-            public readonly int DeltaRVA;
-
-            /// <summary>
-            /// Initialize the section RVA delta information.
-            /// </summary>
-            /// <param name="startRVA">Starting RVA of the section in the input MSIL</param>
-            /// <param name="endRVA">End RVA of the section in the input MSIL</param>
-            /// <param name="deltaRVA">Output RVA of the section minus input RVA of the section</param>
-            public SectionRVADelta(int startRVA, int endRVA, int deltaRVA)
-            {
-                StartRVA = startRVA;
-                EndRVA = endRVA;
-                DeltaRVA = deltaRVA;
-            }
-        }
-
-        /// <summary>
         /// Name of the text section.
         /// </summary>
         public const string TextSectionName = ".text";
-
-        /// <summary>
-        /// Name of the initialized data section.
-        /// </summary>
-        public const string SDataSectionName = ".sdata";
 
         /// <summary>
         /// Name of the relocation section.
@@ -99,13 +58,6 @@ namespace ILCompiler.PEWriter
         /// ExceptionTable PE directory entry.
         /// </summary>
         private Func<RuntimeFunctionsTableNode> _getRuntimeFunctionsTable;
-
-        /// <summary>
-        /// For each copied section, we store its initial and end RVA in the source PE file
-        /// and the RVA difference between the old and new file. We use this table to relocate
-        /// directory entries in the PE file header.
-        /// </summary>
-        private List<SectionRVADelta> _sectionRvaDeltas;
 
         private class SerializedSectionData
         {
@@ -194,7 +146,6 @@ namespace ILCompiler.PEWriter
         {
             _target = target;
             _getRuntimeFunctionsTable = getRuntimeFunctionsTable;
-            _sectionRvaDeltas = new List<SectionRVADelta>();
 
             _sectionBuilder = new SectionBuilder(target);
 
@@ -210,16 +161,13 @@ namespace ILCompiler.PEWriter
                 _sectionBuilder.SetDllNameForExportDirectoryTable(outputFileSimpleName);
             }
 
-            if (_sectionBuilder.FindSection(R2RPEBuilder.RelocSectionName) == null)
-            {
-                // Always inject the relocation section to the end of section list
-                _sectionBuilder.AddSection(
-                    R2RPEBuilder.RelocSectionName,
-                    SectionCharacteristics.ContainsInitializedData |
-                    SectionCharacteristics.MemRead |
-                    SectionCharacteristics.MemDiscardable,
-                    PEHeaderConstants.SectionAlignment);
-            }
+            // Always inject the relocation section to the end of section list
+            _sectionBuilder.AddSection(
+                R2RPEBuilder.RelocSectionName,
+                SectionCharacteristics.ContainsInitializedData |
+                SectionCharacteristics.MemRead |
+                SectionCharacteristics.MemDiscardable,
+                PEHeaderConstants.SectionAlignment);
 
             List<SerializedSectionData> sectionData = new List<SerializedSectionData>();
             foreach (SectionInfo sectionInfo in _sectionBuilder.GetSections())
@@ -353,7 +301,7 @@ namespace ILCompiler.PEWriter
             sizeof(int) +   // SizeOfUninitializedData
             sizeof(int) +   // AddressOfEntryPoint
             sizeof(int) +   // BaseOfCode
-            sizeof(long);   // PE32:  BaseOfData (int), ImageBase (int) 
+            sizeof(long);   // PE32:  BaseOfData (int), ImageBase (int)
                             // PE32+: ImageBase (long)
         const int OffsetOfChecksum = OffsetOfSectionAlign +
             sizeof(int) +   // SectionAlignment
@@ -371,7 +319,7 @@ namespace ILCompiler.PEWriter
         const int OffsetOfSizeOfImage = OffsetOfChecksum - 2 * sizeof(int); // SizeOfHeaders, SizeOfImage
 
         const int SectionHeaderNameSize = 8;
-        const int SectionHeaderVirtualSize = SectionHeaderNameSize; // VirtualSize follows 
+        const int SectionHeaderVirtualSize = SectionHeaderNameSize; // VirtualSize follows
         const int SectionHeaderRVAOffset = SectionHeaderVirtualSize + sizeof(int); // RVA Offset follows VirtualSize + 4 bytes VirtualSize
         const int SectionHeaderSizeOfRawData = SectionHeaderRVAOffset + sizeof(int); // SizeOfRawData follows RVA
         const int SectionHeaderPointerToRawDataOffset = SectionHeaderSizeOfRawData + sizeof(int); // PointerToRawData immediately follows the SizeOfRawData
@@ -385,7 +333,7 @@ namespace ILCompiler.PEWriter
             sizeof(int) +   // PointerToRelocations
             sizeof(int) +   // PointerToLineNumbers
             sizeof(short) + // NumberOfRelocations
-            sizeof(short) + // NumberOfLineNumbers 
+            sizeof(short) + // NumberOfLineNumbers
             sizeof(int);    // SectionCharacteristics
 
         /// <summary>
@@ -538,42 +486,8 @@ namespace ILCompiler.PEWriter
                         size: runtimeFunctionsTable.TableSizeExcludingSentinel);
                 }
             }
-    
-            return builder;
-        }
 
-        /// <summary>
-        /// Relocate a single directory entry.
-        /// </summary>
-        /// <param name="entry">Directory entry to allocate</param>
-        /// <returns>Relocated directory entry</returns>
-        public DirectoryEntry RelocateDirectoryEntry(DirectoryEntry entry)
-        {
-            return new DirectoryEntry(RelocateRVA(entry.RelativeVirtualAddress), entry.Size);
-        }
-        
-        /// <summary>
-        /// Relocate a given RVA using the section offset table produced during section serialization.
-        /// </summary>
-        /// <param name="rva">RVA to relocate</param>
-        /// <returns>Relocated RVA</returns>
-        private int RelocateRVA(int rva)
-        {
-            if (rva == 0)
-            {
-                // Zero RVA is normally used as NULL
-                return rva;
-            }
-            foreach (SectionRVADelta sectionRvaDelta in _sectionRvaDeltas)
-            {
-                if (rva >= sectionRvaDelta.StartRVA && rva < sectionRvaDelta.EndRVA)
-                {
-                    // We found the input section holding the RVA, apply its specific delt (output RVA - input RVA).
-                    return rva + sectionRvaDelta.DeltaRVA;
-                }
-            }
-            Debug.Fail("RVA is not within any of the input sections - output PE may be inconsistent");
-            return rva;
+            return builder;
         }
 
         /// <summary>
