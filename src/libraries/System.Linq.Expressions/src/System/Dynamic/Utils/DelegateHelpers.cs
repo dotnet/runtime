@@ -23,11 +23,6 @@ namespace System.Dynamic.Utils
             Func<object?[], object?> invoker
         );
 
-        internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> invoker)
-        {
-            return CreateObjectArrayDelegate(null, delegateType, invoker);
-        }
-
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
         public static extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _ = null);
 
@@ -42,7 +37,7 @@ namespace System.Dynamic.Utils
             }
             else
             {
-                return CreateObjectArrayDelegate(delegateType, handler);
+                return CreateObjectArrayDelegate(null, delegateType, handler);
             }
         }
 
