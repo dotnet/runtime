@@ -12,7 +12,7 @@ The JIT-VM interface defines the APIs through which the JIT compiler communicate
 #### 2 — Prerequisites for the model
 
 * You have full repo access
-* You may run scripts (e.g., `gen.sh` or `gen.bat`) 
+* You may run scripts (e.g., `.sh` or `.bat`) 
 * Ask **clarifying questions** before the first code change if anything (signature, types, platform constraints) is unclear.
 
 #### 3 — Required user inputs
@@ -34,9 +34,11 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresI
 
 Insert the new API definition without removing any existing entries, placing it near similar signatures.
 
-2. Invoke `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` script (or `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` on Windows) to update auto-generated files.
+2. Invoke `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` script
+(or `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` on Windows) to update auto-generated files.
+Use the correct directory for the script to run.
 
-3. Open `src/coreclr/inc/corinfo.h` and add the new API inside `class ICorStaticInfo` class as the last member. Example:
+3. Open `<repo_root>/src/coreclr/inc/corinfo.h` and add the new API inside `class ICorStaticInfo` class as the last member. Example:
 
 ```diff
 +   virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
@@ -45,7 +47,7 @@ Insert the new API definition without removing any existing entries, placing it 
 +       ) = 0;
 ```
 
-4. Open `src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and add the new API in the end of `class CorInfoImpl` class declaration. Use `src/coreclr/tools/Common/JitInterface/CorInfoImpl_generated.cs` to inspect how type parameters look like for C# for the newly added API since it is expected to be auto-generated there by the gen.sh(bat) script. Example:
+4. Open `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and add the new API in the end of `class CorInfoImpl` class declaration. Use `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl_generated.cs` to inspect how type parameters look like for C# for the newly added API since it is expected to be auto-generated there by the gen.sh(bat) script. Example:
 
 ```diff
 +    private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
@@ -56,7 +58,7 @@ Insert the new API definition without removing any existing entries, placing it 
 +    }
 ```
 
-5. Open `src/coreclr/vm/jitinterface.cpp` and add a dummy implementation at the file's end. Example:
+5. Open `<repo_root>/src/coreclr/vm/jitinterface.cpp` and add a dummy implementation at the file's end. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
@@ -85,19 +87,19 @@ Insert the new API definition without removing any existing entries, placing it 
 to then replay them without the actual VM to speed up jit-diffs and other scenarios. All parameters and return 
 values recorded/restored using special primitve types and helpers. We need to update the following files:
 
-* `src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
-* `src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
-* `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
-* `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
 
 Go through each of them one by one.
 
-* `src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
 Define two `Agnostic_*` types for input arguments and another one for output parameters (return value, output arguments).
  Do not create them if one of the generics ones can be re-used such as `DLD`, `DD`, `DLDL`, etc. Use `DWORD*` 
  like types for integers. Inspect the whole file to see how other APIs are defined.
 
-* `src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
 Add a new entry to the `LWM` list. Example:
 
 ```diff
@@ -107,7 +109,7 @@ Add a new entry to the `LWM` list. Example:
 NOTE: Use upper-case for the first letter of the API name here.
 Add the new record after the very last LWM one.
 
-* `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
 Define 3 methods in this header file inside `class MethodContext` class (at the end of its definition).
 
 The methods are prefixed with `rec*` (record), `dmp*` (dump to console) and `rep*` (replay). Example
@@ -123,7 +125,7 @@ Now add a new element to `enum mcPackets` enum in the same file. Example:
 +   Packet_GetUnboxedEntry = <last value + 1>,
 ```
 
-* `src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
+* `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
 Add the implementation of the 3 methods to `methodcontext.cpp` at the end of it. 
 Consider other similar methods in the file for reference. Do not change implementations of other methods in the file. Example:
 
@@ -180,7 +182,7 @@ Consider other similar methods in the file for reference. Do not change implemen
 +}
 ```
 
-7. Add a new function to `src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp` that calls the `rep*` method. Example:
+7. Add a new function to `<repo_root>/src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp` that calls the `rep*` method. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
@@ -191,7 +193,7 @@ Consider other similar methods in the file for reference. Do not change implemen
 +}
 ```
 
-8. Add a new function to `src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp` that calls the `rec*` method. Example:
+8. Add a new function to `<repo_root>/src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp` that calls the `rec*` method. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
@@ -212,7 +214,7 @@ Consider other similar methods in the file for reference. Do not change implemen
 
 * [ ] New API present in **all** five layers (Thunk → Native → Managed → Stub → SuperPMI).
 * [ ] Each source file changed exactly once; no unrelated edits. The following files must be changed:
-   * `<repo_root>/<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt`
+   * `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt`
    * `<repo_root>/src/coreclr/inc/corinfo.h`
    * `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs`
    * `<repo_root>/src/coreclr/vm/jitinterface.cpp`
