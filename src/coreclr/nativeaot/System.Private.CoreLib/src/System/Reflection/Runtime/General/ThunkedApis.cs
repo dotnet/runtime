@@ -27,8 +27,6 @@ namespace System.Reflection.Runtime.Assemblies
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type[] GetTypes() => DefinedTypes.ToArray();
 
-        public override bool IsCollectible => false;
-
         // "copiedName" only affects whether CodeBase is set to the assembly location before or after the shadow-copy.
         // That concept is meaningless on .NET Native.
         public sealed override AssemblyName GetName(bool copiedName) => GetName();
