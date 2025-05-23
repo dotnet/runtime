@@ -64,8 +64,6 @@ public class GenerateWasmBootJson : Task
 
     public string? RuntimeConfigJsonPath { get; set; }
 
-    public string StartupMemoryCache { get; set; }
-
     public string Jiterpreter { get; set; }
 
     public string RuntimeOptions { get; set; }
@@ -117,7 +115,6 @@ public class GenerateWasmBootJson : Task
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache)
         };
 
         if (IsTargeting100OrLater())

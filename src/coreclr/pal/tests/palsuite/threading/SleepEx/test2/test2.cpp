@@ -155,25 +155,19 @@ VOID PALAPI APCFunc_SleepEx_test2(ULONG_PTR dwParam)
 /* Entry Point for child thread. */
 DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter)
 {
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        return FAIL;
-    }
-
-    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    OldTimeStamp = minipal_lowres_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = SleepEx(ChildThreadSleepTime, Alertable);
     
-    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    NewTimeStamp = minipal_lowres_ticks();
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
     {

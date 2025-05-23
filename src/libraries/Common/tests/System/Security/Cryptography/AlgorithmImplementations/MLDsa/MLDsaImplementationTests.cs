@@ -517,8 +517,8 @@ namespace System.Security.Cryptography.Tests
         {
             MLDsaTestHelpers.AssertImportFromPem(import =>
                 MLDsaTestHelpers.AssertExportToPrivateKeyPem(export =>
-                    WithDispose(import(info.PrivateKeyPem), mldsa =>
-                        Assert.Equal(info.PrivateKeyPem, export(mldsa)))));
+                    WithDispose(import(info.PrivateKeyPem_Seed), mldsa =>
+                        Assert.Equal(info.PrivateKeyPem_Seed, export(mldsa)))));
         }
 
         [Theory]
@@ -526,7 +526,7 @@ namespace System.Security.Cryptography.Tests
         public void RoundTrip_EncryptedPrivateKey(MLDsaKeyInfo info)
         {
             // Load key
-            using MLDsa mldsa = MLDsa.ImportEncryptedPkcs8PrivateKey(info.EncryptionPassword, info.Pkcs8EncryptedPrivateKey);
+            using MLDsa mldsa = MLDsa.ImportEncryptedPkcs8PrivateKey(info.EncryptionPassword, info.Pkcs8EncryptedPrivateKey_Seed);
 
             byte[] secretKey = new byte[mldsa.Algorithm.SecretKeySizeInBytes];
             mldsa.ExportMLDsaSecretKey(secretKey);

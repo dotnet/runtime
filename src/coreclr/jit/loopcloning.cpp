@@ -1885,6 +1885,12 @@ bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* 
 //
 bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
 {
+    if (loop->GetHeader()->isRunRarely())
+    {
+        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop is cold.\n", loop->GetIndex());
+        return false;
+    }
+
     const bool           requireIterable = !doesMethodHaveGuardedDevirtualization();
     NaturalLoopIterInfo* iterInfo        = context->GetLoopIterInfo(loop->GetIndex());
 

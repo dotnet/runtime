@@ -41,10 +41,6 @@ namespace System.Runtime
         internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
 
         [LibraryImport(RuntimeLibrary)]
-        [SuppressGCTransition]
-        internal static partial ulong RhpGetTickCount64();
-
-        [LibraryImport(RuntimeLibrary)]
         internal static partial IntPtr RhpGetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]

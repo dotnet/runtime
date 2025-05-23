@@ -1265,7 +1265,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
 
     FramePointer fpResult;
 
-#if defined(FEATURE_EH_FUNCLETS)
+#if !defined(TARGET_X86)
     if (pData->info.frame == NULL)
     {
         // This is a managed method frame.
@@ -1277,7 +1277,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
         fpResult = FramePointer::MakeFramePointer((LPVOID)(pData->info.frame));
     }
 
-#else  // !FEATURE_EH_FUNCLETS
+#else  // !TARGET_X86
     if ((pCF == NULL || !pCF->IsFrameless()) && pData->info.frame != NULL)
     {
         //
@@ -1299,7 +1299,7 @@ FramePointer GetFramePointerForDebugger(DebuggerFrameData* pData, CrawlFrame* pC
         fpResult = FramePointer::MakeFramePointer((LPVOID)GetRegdisplayStackMark(&(pData->regDisplay)));
     }
 
-#endif // !FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
 
     LOG((LF_CORDB, LL_INFO100000, "GFPFD: Frame pointer is 0x%p\n", fpResult.GetSPValue()));
 

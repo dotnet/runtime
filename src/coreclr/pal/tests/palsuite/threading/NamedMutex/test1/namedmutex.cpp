@@ -267,7 +267,7 @@ bool WaitForMutexToBeCreated(const char *testName, AutoCloseMutexHandle &m, cons
 {
     char eventName[MaxPathSize];
     BuildName(testName, eventName, eventNamePrefix);
-    DWORD startTime = GetTickCount();
+    DWORD startTime = (DWORD)minipal_lowres_ticks();
     while (true)
     {
         m = TestOpenMutex(eventName);
@@ -275,7 +275,7 @@ bool WaitForMutexToBeCreated(const char *testName, AutoCloseMutexHandle &m, cons
         {
             return true;
         }
-        if (GetTickCount() - startTime >= FailTimeoutMilliseconds)
+        if ((DWORD)minipal_lowres_ticks() - startTime >= FailTimeoutMilliseconds)
         {
             return false;
         }
@@ -785,7 +785,7 @@ bool AbandonTests_Parent()
     // Since the child abandons the mutex, and a child process may not release the file lock on the shared memory file before
     // indicating completion to the parent, make sure to delete the shared memory file by repeatedly opening/closing the mutex
     // until the parent process becomes the last process to reference the mutex and closing it deletes the file.
-    DWORD startTime = GetTickCount();
+    DWORD startTime = (DWORD)minipal_lowres_ticks();
     while (true)
     {
         m.Close();
@@ -794,7 +794,7 @@ bool AbandonTests_Parent()
             break;
         }
 
-        TestAssert(GetTickCount() - startTime < FailTimeoutMilliseconds);
+        TestAssert((DWORD)minipal_lowres_ticks() - startTime < FailTimeoutMilliseconds);
         m = TestOpenMutex(BuildName(testName, name, NamePrefix));
     }
 
@@ -1182,7 +1182,7 @@ DWORD PALAPI StressTest(void *arg)
 {
     // Run the specified test continuously for the stress duration
     SIZE_T testIndex = reinterpret_cast<SIZE_T>(arg);
-    DWORD startTime = GetTickCount();
+    DWORD startTime = (DWORD)minipal_lowres_ticks();
     do
     {
         ++g_stressTestCounts[testIndex];
@@ -1193,7 +1193,7 @@ DWORD PALAPI StressTest(void *arg)
         }
     } while (
         InterlockedCompareExchange(&g_stressResult, false, false) == true &&
-        GetTickCount() - startTime < g_stressDurationMilliseconds);
+        (DWORD)minipal_lowres_ticks() - startTime < g_stressDurationMilliseconds);
     return 0;
 }
 

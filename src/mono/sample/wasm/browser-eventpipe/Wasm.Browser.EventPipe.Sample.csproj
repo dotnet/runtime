@@ -2,14 +2,14 @@
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmPerfTracing>true</WasmPerfTracing>
-    <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+    <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
     <!--
     <RunAOTCompilation>true</RunAOTCompilation>
+    -->
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
-    -->
 
   </PropertyGroup>
   <ItemGroup>

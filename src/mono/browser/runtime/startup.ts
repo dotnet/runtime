@@ -34,7 +34,8 @@ import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
-const pid = (globalThis.performance?.timeOrigin ?? Date.now()) | 0;
+// make pid positive 31bit integer based on startup time
+const pid = ((globalThis.performance?.timeOrigin ?? Date.now()) | 0) & 0x7FFFFFFF;
 
 export function mono_wasm_process_current_pid ():number {
     return pid;

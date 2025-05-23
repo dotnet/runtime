@@ -203,8 +203,6 @@ HANDLES(ENV_1a, "FailFast", ves_icall_System_Environment_FailFast, void, 3, (Mon
 HANDLES(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLineArgs, MonoArray, 0, ())
 NOHANDLES(ICALL(ENV_4, "GetProcessorCount", ves_icall_System_Environment_get_ProcessorCount))
 NOHANDLES(ICALL(ENV_9, "get_ExitCode", mono_environment_exitcode_get))
-NOHANDLES(ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCount))
-NOHANDLES(ICALL(ENV_15a, "get_TickCount64", ves_icall_System_Environment_get_TickCount64))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
 ICALL_TYPE(GC, "System.GC", GC_4a)

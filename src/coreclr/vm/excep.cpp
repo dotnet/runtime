@@ -7063,7 +7063,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
     if (dwCode == EXCEPTION_BREAKPOINT || dwCode == EXCEPTION_SINGLE_STEP)
     {
         // For interop debugging, debugger bashes our managed exception handler.
@@ -11388,7 +11388,13 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
+#if defined(DACCESS_COMPILE) && defined(TARGET_X86)
+// X86 unwinding always works in terms of context pointers, so they need to be in the correct address space when debugging
+// This may work for other architectures as well, but that isn't tested.
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
+#else
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
+#endif
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 

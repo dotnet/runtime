@@ -134,7 +134,7 @@ if(hFile == NULL)
     }
 
 //Start Process Time Capture
-dwStart = GetTickCount();
+dwStart = (DWORD)minipal_lowres_ticks();
 
 for( i = 0; i < USE_PROCESS_COUNT; i++ )
     {
@@ -216,7 +216,7 @@ for( i = 0; i < USE_PROCESS_COUNT; i++ )
     }
 
 //Get the end time of the process
-appStats.operationTime = GetTickCount() - dwStart;
+appStats.operationTime = (DWORD)minipal_lowres_ticks() - dwStart;
 
 if( testReturnCode == PASS)
     {

@@ -427,6 +427,7 @@ namespace ILCompiler
                 "defaultsort" => MethodLayoutAlgorithm.DefaultSort,
                 "exclusiveweight" => MethodLayoutAlgorithm.ExclusiveWeight,
                 "hotcold" => MethodLayoutAlgorithm.HotCold,
+                "instrumentedhotcold" => MethodLayoutAlgorithm.InstrumentedHotCold,
                 "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
                 "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
                 "random" => MethodLayoutAlgorithm.Random,

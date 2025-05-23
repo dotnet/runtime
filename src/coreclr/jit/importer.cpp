@@ -844,10 +844,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
-            // Make sure we don't pass something other than a local address to the return buffer arg.
-            // It is allowed to pass current's method return buffer as it is a local too.
-            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd)) ||
-                (compIsAsync() && !destAddr->OperIs(GT_LCL_ADDR)))
+            if (!impIsLegalRetBuf(destAddr, srcCall))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
@@ -971,10 +968,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
-            // Make sure we don't pass something other than a local address to the return buffer arg.
-            // It is allowed to pass current's method return buffer as it is a local too.
-            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd)) ||
-                (compIsAsync() && !destAddr->OperIs(GT_LCL_ADDR)))
+            if (!impIsLegalRetBuf(destAddr, call))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
@@ -1066,6 +1060,46 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     }
 
     return store;
+}
+
+//------------------------------------------------------------------------
+// impIsLegalRetbuf:
+//   Check if a return buffer is of a legal shape.
+//
+// Arguments:
+//   retBuf - The return buffer
+//   call   - The call that is passed the return buffer
+//
+// Return Value:
+//   True if it is legal according to ABI and IR invariants.
+//
+// Notes:
+//   ABI requires all return buffers to point to stack. Also, we have an IR
+//   invariant for async calls that return buffers must be the address of a
+//   local.
+//
+bool Compiler::impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call)
+{
+    if (call->IsAsync())
+    {
+        // Async calls require LCL_ADDR shape for the retbuf to know where to
+        // save the value on resumption.
+        if (!retBuf->OperIs(GT_LCL_ADDR))
+        {
+            return false;
+        }
+
+        // LCL_ADDR on an implicit byref will turn into LCL_VAR in morph.
+        if (lvaIsImplicitByRefLocal(retBuf->AsLclVarCommon()->GetLclNum()))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    // The ABI requires the retbuffer to point to stack.
+    return !fgAddrCouldBeHeap(retBuf) || eeIsByrefLike(call->gtRetClsHnd);
 }
 
 //------------------------------------------------------------------------
@@ -8221,7 +8255,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto CONV;
 
             case CEE_CONV_R_UN:
-                lclTyp = TYP_DOUBLE;
+                // Because there is no IL instruction conv.r4.un, compilers consistently
+                // emit conv.r.un followed immediately by conv.r4 for unsigned->float casts.
+                // We recognize this pattern and create the intended cast.
+                // Otherwise, conv.r.un is treated as a cast to double.
+                lclTyp = ((OPCODE)getU1LittleEndian(codeAddr) == CEE_CONV_R4) ? TYP_FLOAT : TYP_DOUBLE;
                 goto CONV_UN;
 
             CONV_UN:
@@ -9592,8 +9630,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         bool isHoistable =
                             info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT;
-                        unsigned check_spill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
-                        impAppendTree(helperNode, check_spill, impCurStmtDI);
+                        unsigned checkSpill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
+                        impAppendTree(helperNode, checkSpill, impCurStmtDI);
                     }
                 }
 
@@ -9626,6 +9664,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (!isHoistable)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
+                        }
+                        else if (compIsAsync() && op1->TypeIs(TYP_BYREF))
+                        {
+                            // TODO-Async: We really only need to spill if
+                            // there is a possibility of an async call in op2.
+                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address in async method"));
                         }
                         break;
 

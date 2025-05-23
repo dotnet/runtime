@@ -2595,8 +2595,11 @@ namespace System.Net.Http.Functional.Tests
                 else
                 {
                     using (var c = new HttpMessageInvoker(handler, disposeHandler: false))
+                    {
                         await Assert.ThrowsAnyAsync<Exception>(() =>
-                            c.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri("/shouldquicklyfail", UriKind.Relative)), default));
+                            c.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri("http://www.some.example/shouldquicklyfail", UriKind.Absolute)), default));
+                    }
+
                     expectedExceptionType = typeof(InvalidOperationException);
                 }
 

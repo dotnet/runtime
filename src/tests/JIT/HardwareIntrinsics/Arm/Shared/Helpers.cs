@@ -9837,5 +9837,20 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return op1 ^ (op2 & ~op3);
         }
+
+        public static T BitwiseSelect<T>(T select, T left, T right) where T : IBitwiseOperators<T, T, T>
+        {
+            return (left & select) | (right & ~select);
+        }
+
+        public static T BitwiseSelectLeftInverted<T>(T select, T left, T right) where T : IBitwiseOperators<T, T, T>
+        {
+            return (~left & select) | (right & ~select);
+        }
+
+        public static T BitwiseSelectRightInverted<T>(T select, T left, T right) where T : IBitwiseOperators<T, T, T>
+        {
+            return (left & select) | (~right & ~select);
+        }
     }
 }

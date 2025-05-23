@@ -64,7 +64,7 @@ function Print-Usage() {
   Write-Host ""
 
   Write-Host "Advanced settings:"
-  Write-Host "  -projects <value>       Semi-colon delimited list of sln/proj's to build. Globbing is supported (*.sln)"
+  Write-Host "  -projects <value>       Semi-colon delimited list of slnx/proj's to build. Globbing is supported (*.slnx)"
   Write-Host "  -ci                     Set when running on CI server"
   Write-Host "  -excludeCIBinarylog     Don't output binary log (short: -nobl)"
   Write-Host "  -prepareMachine         Prepare machine for CI run, clean up processes after build"

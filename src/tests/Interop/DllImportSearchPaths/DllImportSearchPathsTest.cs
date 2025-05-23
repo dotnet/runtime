@@ -60,6 +60,19 @@ public class DllImportSearchPathsTest
         Assert.Equal(3, sum);
     }
 
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void DefaultFlagsAot_Found()
+    {
+        int sum = NativeLibraryPInvokeAot.Sum_DefaultFlags(1, 2);
+        Assert.Equal(3, sum);
+    }
+
+    [ConditionalFact(typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
+    public static void System32Aot_NotFound()
+    {
+        Assert.Throws<DllNotFoundException>(() => NativeLibraryPInvokeAot.Sum_System32(1, 2));
+    }
+
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void AssemblyDirectory_NoFallback_NotFound()
@@ -97,6 +110,23 @@ public class DllImportSearchPathsTest
         }
     }
 
+    [Fact]
+    public static void System32_NotFound()
+    {
+        string currentDirectory = Environment.CurrentDirectory;
+        try
+        {
+            Environment.CurrentDirectory = Subdirectory;
+
+            // Library should not be found in System32 (Windows) or default OS search (non-Windows)
+            Assert.Throws<DllNotFoundException>(() => NativeLibraryPInvoke.Sum_Copy(1, 2));
+        }
+        finally
+        {
+            Environment.CurrentDirectory = currentDirectory;
+        }
+    }
+
     [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void AssemblyDirectory_SearchFlags_WithDependency_Found()
@@ -116,6 +146,7 @@ public class NativeLibraryPInvoke
 {
     internal const string CopyName = $"{NativeLibraryToLoad.Name}-copy";
     internal const string DefaultFlagsName = $"{NativeLibraryToLoad.Name}-default-flags";
+    internal const string System32Name = $"{NativeLibraryToLoad.Name}-system32";
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum(int a, int b)
@@ -129,6 +160,10 @@ public class NativeLibraryPInvoke
     public static int Sum_DefaultFlags(int a, int b)
         => NativeSum_DefaultFlags(a, b);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Sum_System32(int a, int b)
+        => NativeSum_System32(a, b);
+
     [DllImport(NativeLibraryToLoad.Name)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
     static extern int NativeSum(int arg1, int arg2);
@@ -139,6 +174,9 @@ public class NativeLibraryPInvoke
 
     [DllImport(DefaultFlagsName, EntryPoint = nameof(NativeSum))]
     static extern int NativeSum_DefaultFlags(int arg1, int arg2);
+
+    [DllImport(System32Name, EntryPoint = nameof(NativeSum))]
+    static extern int NativeSum_System32(int arg1, int arg2);
 }
 
 public class NativeLibraryPInvokeAot
@@ -147,10 +185,25 @@ public class NativeLibraryPInvokeAot
     public static int Sum(int a, int b)
         => NativeSum(a, b);
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Sum_DefaultFlags(int a, int b)
+        => NativeSum_DefaultFlags(a, b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Sum_System32(int a, int b)
+        => NativeSum_System32(a, b);
+
     // For NativeAOT, validate the case where the native library is next to the AOT application.
     [DllImport(NativeLibraryToLoad.Name + "-in-native")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
     static extern int NativeSum(int arg1, int arg2);
+
+    [DllImport(NativeLibraryToLoad.Name + "-in-native-default-flags", EntryPoint = nameof(NativeSum))]
+    static extern int NativeSum_DefaultFlags(int arg1, int arg2);
+
+    [DllImport(NativeLibraryToLoad.Name + "-in-native-system32", EntryPoint = nameof(NativeSum))]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    static extern int NativeSum_System32(int arg1, int arg2);
 }
 
 public class NativeLibraryWithDependency

@@ -161,7 +161,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
  *  could easily duplicate what they do, which is why we're calling into them.
  */
 
-HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
+ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                                         EECodeInfo *     pOldCodeInfo,
                    const ICorDebugInfo::NativeVarInfo *  oldMethodVars,
                                         SIZE_T           oldMethodVarsCount,
@@ -206,6 +206,11 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         return E_FAIL; // stack should be empty - <TODO> @TODO : Barring localloc</TODO>
     }
 
+#ifdef FEATURE_EH_FUNCLETS
+    // EnC remap inside handlers is not supported
+    if (pOldCodeInfo->IsFunclet() || pNewCodeInfo->IsFunclet())
+        return CORDBG_E_ENC_IN_FUNCLET;
+#else
     if (oldInfo->handlers)
     {
         bool      hasInnerFilter;
@@ -229,13 +234,16 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             }
         }
     }
+#endif // FEATURE_EH_FUNCLETS
 
     /* @TODO: Check if we have grown out of space for locals, in the face of localloc */
     _ASSERTE(!oldInfo->localloc && !newInfo->localloc);
 
+#ifndef FEATURE_EH_FUNCLETS
     // @TODO: If nesting level grows above the MAX_EnC_HANDLER_NESTING_LEVEL,
     // we should return EnC_NESTED_HANLDERS
     _ASSERTE(oldInfo->handlers && newInfo->handlers);
+#endif
 
     LOG((LF_ENC, LL_INFO100, "EECM::FixContextForEnC: Checks out\n"));
 
@@ -1552,7 +1560,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 #endif
 
 #else // FEATURE_EH_FUNCLETS
-    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()) // Generic Context is "this"
+    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis() && (hdrInfoBody->genericsContext)) // Generic Context is "this"
     {
         // Untracked table must have at least one entry - this pointer
         _ASSERTE(hdrInfoBody->untrackedCnt > 0);
@@ -1807,6 +1815,7 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
             (info.epilogOffs != hdrInfo::NOT_IN_EPILOG));
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 /*****************************************************************************
  *
  *  Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
@@ -1837,6 +1846,7 @@ bool  EECodeManager::IsInSynchronizedRegion(DWORD       relOffset,
         // Everything after the epilog is also in synchronized region.
         (info.epilogCnt != 0 && info.syncEpilogStart + info.epilogSize <= relOffset);
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*****************************************************************************

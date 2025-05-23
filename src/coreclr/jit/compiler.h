@@ -3132,6 +3132,7 @@ public:
 
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdFalseMaskByteNode(unsigned simdSize);
 #endif
 
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,
@@ -4796,6 +4797,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
+    bool impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
@@ -6691,6 +6693,15 @@ private:
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_MASKED_HW_INTRINSICS
+#ifdef TARGET_ARM64
+    bool canMorphVectorOperandToMask(GenTree* node);
+    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
+    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
+    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);

@@ -1282,6 +1282,12 @@ namespace System.Security.Cryptography.X509Certificates
                             [PemLabels.Pkcs8PrivateKey],
                             MLKem.ImportFromPem,
                             certificate.CopyWithPrivateKey),
+                    Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87 =>
+                        ExtractKeyFromPem<MLDsa>(
+                            keyPem,
+                            [PemLabels.Pkcs8PrivateKey],
+                            MLDsa.ImportFromPem,
+                            certificate.CopyWithPrivateKey),
                     _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromPem<SlhDsa>(
                             keyPem,
@@ -1374,6 +1380,12 @@ namespace System.Security.Cryptography.X509Certificates
                             keyPem,
                             password,
                             MLKem.ImportFromEncryptedPem,
+                            certificate.CopyWithPrivateKey),
+                    Oids.MLDsa44 or Oids.MLDsa65 or Oids.MLDsa87 =>
+                        ExtractKeyFromEncryptedPem<MLDsa>(
+                            keyPem,
+                            password,
+                            MLDsa.ImportFromEncryptedPem,
                             certificate.CopyWithPrivateKey),
                     _ when Helpers.IsSlhDsaOid(keyAlgorithm) =>
                         ExtractKeyFromEncryptedPem<SlhDsa>(

@@ -733,6 +733,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.NotSame(spki1, spki2);
         }
 
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportSubjectPublicKeyInfo_MLDsa(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = MLDsa.GenerateKey(algorithm);
+            PublicKey key = new(mldsa);
+
+            AssertExportSubjectPublicKeyInfo(key, mldsa.ExportSubjectPublicKeyInfo());
+        }
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(MLDsaTestsData.AllMLDsaAlgorithms), MemberType = typeof(MLDsaTestsData))]
+        public static void ExportSubjectPublicKeyInfo_MLDsa_Independent(MLDsaAlgorithm algorithm)
+        {
+            using MLDsa mldsa = MLDsa.GenerateKey(algorithm);
+            PublicKey key = new(mldsa);
+
+            byte[] spki1 = mldsa.ExportSubjectPublicKeyInfo();
+            byte[] spki2 = mldsa.ExportSubjectPublicKeyInfo();
+            Assert.NotSame(spki1, spki2);
+        }
+
         [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
         [MemberData(nameof(SlhDsaTestData.AlgorithmsData), MemberType = typeof(SlhDsaTestData))]
         public static void ExportSubjectPublicKeyInfo_SlhDsa(SlhDsaAlgorithm algorithm)

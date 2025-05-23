@@ -644,22 +644,22 @@ typedef FIFO<MethodBody> MethodBodyList;
 
 struct Clockwork
 {
-    DWORD  cBegin;
-    DWORD  cEnd;
-    DWORD  cParsBegin;
-    DWORD  cParsEnd;
-    DWORD  cMDInitBegin;
-    DWORD  cMDInitEnd;
-    DWORD  cMDEmitBegin;
-    DWORD  cMDEmitEnd;
-    DWORD  cMDEmit1;
-    DWORD  cMDEmit2;
-    DWORD  cMDEmit3;
-    DWORD  cMDEmit4;
-    DWORD  cRef2DefBegin;
-    DWORD  cRef2DefEnd;
-    DWORD  cFilegenBegin;
-    DWORD  cFilegenEnd;
+    int64_t  cBegin;
+    int64_t  cEnd;
+    int64_t  cParsBegin;
+    int64_t  cParsEnd;
+    int64_t  cMDInitBegin;
+    int64_t  cMDInitEnd;
+    int64_t  cMDEmitBegin;
+    int64_t  cMDEmitEnd;
+    int64_t  cMDEmit1;
+    int64_t  cMDEmit2;
+    int64_t  cMDEmit3;
+    int64_t  cMDEmit4;
+    int64_t  cRef2DefBegin;
+    int64_t  cRef2DefEnd;
+    int64_t  cFilegenBegin;
+    int64_t  cFilegenEnd;
 };
 
 struct TypeDefDescr

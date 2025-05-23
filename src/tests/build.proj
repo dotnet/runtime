@@ -211,9 +211,8 @@
       <BuildDir>$(IntermediateOutputPath)\AndroidApps\$(Category)</BuildDir>
       <AppDir>$(BuildDir)\apk</AppDir>
       <FinalApkPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).apk</FinalApkPath>
-      <StripDebugSymbols>False</StripDebugSymbols>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == '' and '$(Configuration)' == 'Release'">true</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</AndroidAbi>

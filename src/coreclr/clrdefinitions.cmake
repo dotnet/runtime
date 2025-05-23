@@ -218,6 +218,11 @@ if (FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
   add_definitions(-DFEATURE_STUBPRECODE_DYNAMIC_HELPERS)
 endif()
 
+if (CLR_CMAKE_TARGET_APPLE)
+#  Re-enable when dbgshim containing https://github.com/dotnet/diagnostics/pull/5487 is generally available
+#  add_definitions(-DFEATURE_MAP_THUNKS_FROM_IMAGE)
+endif()
+
 # Use this function to enable building with a specific target OS and architecture set of defines
 # This is known to work for the set of defines used by the JIT and gcinfo, it is not likely correct for
 # other components of the runtime
