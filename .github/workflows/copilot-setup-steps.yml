@@ -17,44 +17,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
-      - name: Install dependencies
+      - name: Install Dependencies
         env:
           LIBMSQUIC_VERSION: '2.4.8'
         run: |
-          # Use the common dependencies script for Linux
-          eng/common/native/install-dependencies.sh linux
-          
-          # Install additional dependencies not covered by the common script
-          sudo apt-get install -qq -y \
-          autoconf \
-          automake \
-          gdb \
-          git \
-          gss-ntlmssp \
-          iputils-ping \
-          libcurl4 \
-          libffi-dev \
-          libtool \
-          locales-all \
-          python3-dev \
-          python3-pip \
-          python3-venv \
-          software-properties-common \
-          sudo \
-          tzdata \
-          unzip \
-          libbpf1 \
-          libelf1t64 \
-          libnl-3-200 \
-          libnl-route-3-200 \
-          libnuma1 \
-          libxdp1 \
-          python-is-python3 && \
+          sudo ./eng/common/native/install-dependencies.sh && \
+          apt-get install -qq -y \
+            curl \
+            libbpf1 \
+            libelf1t64 \
+            libnl-3-200 \
+            libnl-route-3-200 \
+            libnuma1 \
+            libxdp1 && \
           curl -LO "https://packages.microsoft.com/ubuntu/24.04/prod/pool/main/libm/libmsquic/libmsquic_${LIBMSQUIC_VERSION}_amd64.deb" && \
           sudo dpkg -i libmsquic* && \
           rm libmsquic*
 
-      - name: Restore solution
+      - name: Restore Solution
         env:
           RESTORE_ARGS: --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true
         # 'DefaultSubsets' don't include 'libs.tests', so restoring it explicitly
@@ -62,7 +42,8 @@ jobs:
           ./build.sh $RESTORE_ARGS && \
           ./build.sh libs.tests $RESTORE_ARGS
 
-      - name: Pre-build clr
-        run: |
-          ./build.sh clr -rc release
+      - name: Put dotnet on the path
+        run: echo "PATH=$PWD/.dotnet:$PATH" >> $GITHUB_ENV
 
+      - name: Run dotnet info
+        run: dotnet --info

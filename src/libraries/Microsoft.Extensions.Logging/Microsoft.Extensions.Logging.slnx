@@ -1,0 +1,96 @@
+<Solution>
+  <Folder Name="/gen/">
+    <Project Path="../Microsoft.Extensions.Configuration.Binder/gen/Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Abstractions/gen/Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Abstractions/gen/Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Abstractions/gen/Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj" />
+    <Project Path="../Microsoft.Extensions.Options/gen/Microsoft.Extensions.Options.SourceGeneration.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
+    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn3.11.csproj" />
+    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
+    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.4.csproj" />
+    <Project Path="../System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj" />
+  </Folder>
+  <Folder Name="/ref/">
+    <Project Path="../Microsoft.Extensions.Configuration.Abstractions/ref/Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.Binder/ref/Microsoft.Extensions.Configuration.Binder.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.FileExtensions/ref/Microsoft.Extensions.Configuration.FileExtensions.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.Json/ref/Microsoft.Extensions.Configuration.Json.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration/ref/Microsoft.Extensions.Configuration.csproj" />
+    <Project Path="../Microsoft.Extensions.DependencyInjection.Abstractions/ref/Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.DependencyInjection/ref/Microsoft.Extensions.DependencyInjection.csproj" />
+    <Project Path="../Microsoft.Extensions.FileProviders.Abstractions/ref/Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.FileProviders.Physical/ref/Microsoft.Extensions.FileProviders.Physical.csproj" />
+    <Project Path="../Microsoft.Extensions.FileSystemGlobbing/ref/Microsoft.Extensions.FileSystemGlobbing.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Abstractions/ref/Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Configuration/ref/Microsoft.Extensions.Logging.Configuration.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Console/ref/Microsoft.Extensions.Logging.Console.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Debug/ref/Microsoft.Extensions.Logging.Debug.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.EventLog/ref/Microsoft.Extensions.Logging.EventLog.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.TraceSource/ref/Microsoft.Extensions.Logging.TraceSource.csproj" />
+    <Project Path="../Microsoft.Extensions.Options.ConfigurationExtensions/ref/Microsoft.Extensions.Options.ConfigurationExtensions.csproj" />
+    <Project Path="../Microsoft.Extensions.Options/ref/Microsoft.Extensions.Options.csproj" />
+    <Project Path="../Microsoft.Extensions.Primitives/ref/Microsoft.Extensions.Primitives.csproj" />
+    <Project Path="../System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj" />
+    <Project Path="../System.Collections/ref/System.Collections.csproj" />
+    <Project Path="../System.Diagnostics.DiagnosticSource/ref/System.Diagnostics.DiagnosticSource.csproj" />
+    <Project Path="../System.Diagnostics.EventLog/ref/System.Diagnostics.EventLog.csproj" />
+    <Project Path="../System.IO.Pipelines/ref/System.IO.Pipelines.csproj" />
+    <Project Path="../System.Memory/ref/System.Memory.csproj" />
+    <Project Path="../System.Runtime/ref/System.Runtime.csproj" />
+    <Project Path="../System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj" />
+    <Project Path="../System.Text.Json/ref/System.Text.Json.csproj" />
+    <Project Path="../System.Threading.AccessControl/ref/System.Threading.AccessControl.csproj" />
+    <Project Path="ref/Microsoft.Extensions.Logging.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.Abstractions/src/Microsoft.Extensions.Configuration.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.Binder/src/Microsoft.Extensions.Configuration.Binder.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.FileExtensions/src/Microsoft.Extensions.Configuration.FileExtensions.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration.Json/src/Microsoft.Extensions.Configuration.Json.csproj" />
+    <Project Path="../Microsoft.Extensions.Configuration/src/Microsoft.Extensions.Configuration.csproj" />
+    <Project Path="../Microsoft.Extensions.DependencyInjection.Abstractions/src/Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.DependencyInjection/src/Microsoft.Extensions.DependencyInjection.csproj" />
+    <Project Path="../Microsoft.Extensions.FileProviders.Abstractions/src/Microsoft.Extensions.FileProviders.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.FileProviders.Physical/src/Microsoft.Extensions.FileProviders.Physical.csproj" />
+    <Project Path="../Microsoft.Extensions.FileSystemGlobbing/src/Microsoft.Extensions.FileSystemGlobbing.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Abstractions/src/Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Configuration/src/Microsoft.Extensions.Logging.Configuration.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Console/src/Microsoft.Extensions.Logging.Console.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.Debug/src/Microsoft.Extensions.Logging.Debug.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.EventLog/src/Microsoft.Extensions.Logging.EventLog.csproj" />
+    <Project Path="../Microsoft.Extensions.Logging.TraceSource/src/Microsoft.Extensions.Logging.TraceSource.csproj" />
+    <Project Path="../Microsoft.Extensions.Options.ConfigurationExtensions/src/Microsoft.Extensions.Options.ConfigurationExtensions.csproj" />
+    <Project Path="../Microsoft.Extensions.Options/src/Microsoft.Extensions.Options.csproj" />
+    <Project Path="../Microsoft.Extensions.Primitives/src/Microsoft.Extensions.Primitives.csproj" />
+    <Project Path="../System.Diagnostics.DiagnosticSource/src/System.Diagnostics.DiagnosticSource.csproj" />
+    <Project Path="../System.Diagnostics.EventLog/src/Messages/System.Diagnostics.EventLog.Messages.csproj" />
+    <Project Path="../System.Diagnostics.EventLog/src/System.Diagnostics.EventLog.csproj" />
+    <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj" />
+    <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj" />
+    <Project Path="../System.Text.Json/src/System.Text.Json.csproj" />
+    <Project Path="../System.Threading.AccessControl/src/System.Threading.AccessControl.csproj" />
+    <Project Path="src/Microsoft.Extensions.Logging.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../Common/tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="tests/Common/Microsoft.Extensions.Logging.Tests.csproj" />
+    <Project Path="tests/DI.Common/Common/tests/Microsoft.Extensions.Logging.Testing.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/" />
+  <Folder Name="/tools/gen/">
+    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/tools/ref/">
+    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj" />
+  </Folder>
+  <Folder Name="/tools/src/">
+    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj" />
+    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj" />
+  </Folder>
+</Solution>

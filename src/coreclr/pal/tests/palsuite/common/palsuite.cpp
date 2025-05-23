@@ -52,11 +52,6 @@ char* convertC(const WCHAR * wString)
     return MultiBuffer;
 }
 
-UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency)
-{
-    return (UINT64)minipal_hires_ticks();
-}
-
 static const char* rgchPathDelim = "/";
 
 

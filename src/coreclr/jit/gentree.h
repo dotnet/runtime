@@ -7867,6 +7867,13 @@ public:
         return m_layout;
     }
 
+    void SetLayout(ClassLayout* newLayout)
+    {
+        assert(newLayout != nullptr);
+        assert(newLayout->GetSize() == m_layout->GetSize());
+        m_layout = newLayout;
+    }
+
     // The data to be stored (null for GT_BLK)
     GenTree*& Data()
     {
