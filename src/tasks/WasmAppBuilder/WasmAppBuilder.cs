@@ -418,7 +418,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         if (browserProfiler != null)
         {
             bootConfig.environmentVariables ??= new();
-            bootConfig.environmentVariables["DOTNET_WasmPerfInstrumentation"] = browserProfiler.Substring("browser:".Length);
+            bootConfig.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
         }
 
         if (RuntimeConfigJsonPath != null && File.Exists(RuntimeConfigJsonPath))
