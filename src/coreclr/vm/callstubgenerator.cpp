@@ -547,11 +547,12 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
     _ASSERTE(pMD != NULL);
 
+    MetaSig sig(pMD);
+
     // Classes like System.String have special constructors that are fcalls. When invoking these, we need to override
     //  HasThis (there's no thisref) and the return type (the return value is the new instance, not void).
-    bool isSpecialConstructor = pMD->IsCtor() && pMD->GetMethodTable()->HasComponentSize();
+    bool isSpecialConstructor = sig.HasThis() && (pMD->GetMethodTable() == g_pStringClass) && pMD->IsCtor();
 
-    MetaSig sig(pMD);
     if (isSpecialConstructor)
         sig.ClearHasThis();
 
