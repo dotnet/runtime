@@ -1730,8 +1730,9 @@ EXTERN_C ICorJitCompiler* getJit();
 
 #if !defined(FEATURE_STATICALLY_LINKED) || defined(FEATURE_JIT)
 
-// Here's the global data for JIT load and initialization state.
+#ifdef FEATURE_JIT
 JIT_LOAD_DATA g_JitLoadData;
+#endif // FEATURE_JIT
 
 #ifdef FEATURE_INTERPRETER
 JIT_LOAD_DATA g_interpreterLoadData;
