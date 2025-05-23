@@ -21,7 +21,7 @@ namespace System.Diagnostics.Metrics
     /// Configuration options for histogram aggregation.
     /// </summary>
     /// <remarks>
-    /// Currently this class support Bae 2 Exponential Histogram aggregation configuration. In the future this can be extended to support more aggregation types.
+    /// Currently this class support Base2 Exponential Histogram aggregation configuration. In the future this can be extended to support more aggregation types.
     /// </remarks>
     internal sealed class HistogramAggregation
     {
