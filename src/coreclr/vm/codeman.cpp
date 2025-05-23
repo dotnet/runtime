@@ -3753,7 +3753,9 @@ BOOL InterpreterJitManager::LoadInterpreter()
     ICorJitCompiler* newInterpreter = NULL;
     m_interpreter = NULL;
 
-#ifdef FEATURE_STATICALLY_LINKED
+// If both JIT and interpret are available, statically link the JIT. Interpret can be loaded dynamically
+// via config switch for testing purposes. 
+#if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
     newInterpreter = InitializeStaticJIT();
 #else // !FEATURE_STATICALLY_LINKED
     g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
