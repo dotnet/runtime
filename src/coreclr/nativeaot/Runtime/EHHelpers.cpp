@@ -31,6 +31,8 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "NativeContext.h"
+#include <minipal/debugger.h>
+#include "corexcep.h"
 
 struct MethodRegionInfo
 {
@@ -84,6 +86,26 @@ FCIMPL0(void, RhpValidateExInfoStack)
     pThisThread->ValidateExInfoStack();
 }
 FCIMPLEND
+
+#ifdef TARGET_WINDOWS
+FCIMPL0(void, RhpFirstChanceExceptionNotification)
+{
+    // Throw an SEH exception and immediately catch it. This is used to notify debuggers and other tools
+    // that an exception has been thrown.
+    if (minipal_is_native_debugger_present())
+    {
+        __try
+        {
+            RaiseException(EXCEPTION_COMPLUS, 0, 0, NULL);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            // Do nothing, we just want to notify the debugger.
+        }
+    }
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
 
 FCIMPL0(void, RhpClearThreadDoNotTriggerGC)
 {
