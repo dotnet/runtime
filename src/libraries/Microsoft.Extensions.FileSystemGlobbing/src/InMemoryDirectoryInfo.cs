@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.FileSystemGlobbing.Internal;
 
@@ -14,7 +15,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     /// </summary>
     public class InMemoryDirectoryInfo : DirectoryInfoBase
     {
-        private static readonly char[] DirectorySeparators = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
+        private static readonly char[] DirectorySeparators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
         private readonly IEnumerable<string> _files;
 
         /// <summary>
@@ -34,7 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 throw new ArgumentNullException(nameof(rootDir));
             }
 
-            files ??= [];
+            files ??= new List<string>();
 
             Name = Path.GetFileName(rootDir);
             if (normalized)
@@ -44,7 +45,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             }
             else
             {
-                List<string> fileList = [];
+                var fileList = new List<string>(files.Count());
                 string normalizedRoot = Path.GetFullPath(rootDir.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar));
 
                 // normalize
@@ -101,7 +102,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                     string name = file.Substring(0, endSegment);
                     if (!dict.TryGetValue(name, out List<string>? list))
                     {
-                        dict[name] = [file];
+                        dict[name] = new List<string> { file };
                     }
                     else
                     {

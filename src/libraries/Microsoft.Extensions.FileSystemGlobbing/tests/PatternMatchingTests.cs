@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 {
     public class PatternMatchingTests
     {
-        protected bool IsOrdered = false;
+        protected virtual bool IsOrdered => true;
 
         [Fact]
         public void EmptyCollectionWhenNoFilesPresent()
@@ -434,6 +434,18 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 new FilePatternMatch(path: "../files/sub/one.txt", stem: "one.txt"),
                 new FilePatternMatch(path: "../files/sub/two.txt", stem: "two.txt")
             }, scenario.Result.Files.ToArray());
+        }
+
+        [Fact]
+        public void PreserveFilterOrderingFalse()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", false)
+                .Exclude("**/a.txt")
+                .Include("**/a.txt")
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact();
         }
 
         // exclude: **/.*/**

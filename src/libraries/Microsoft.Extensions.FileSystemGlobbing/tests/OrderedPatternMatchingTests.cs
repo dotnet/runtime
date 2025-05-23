@@ -10,12 +10,12 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
 {
     public class OrderedPatternMatchingTests : PatternMatchingTests
     {
-        public OrderedPatternMatchingTests() => IsOrdered = true;
+        protected override bool IsOrdered => true;
 
         [Fact]
         public void ComplexPatternSequence_SimpleFilters()
         {
-            var scenario = new FileSystemGlobbingTestContext(@"c:/project/", IsOrdered)
+            var scenario = new FileSystemGlobbingTestContext(@"c:/project/", true)
                 .Include("A/*")
                 .Exclude("A/B/*")
                 .Include("C/*")
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void ComplexPatternSequence_DeeplyNestedFilters()
         {
-            var scenario = new FileSystemGlobbingTestContext(@"c:/project/", IsOrdered)
+            var scenario = new FileSystemGlobbingTestContext(@"c:/project/", true)
                 .Include("**/*.cs")                                   // Include all .cs files
                 .Exclude("**/obj/**/*")                               // Exclude all in obj/
                 .Include("lib/generated/**/*.cs")                     // Re-include generated code
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void MixOfPatternsAcrossVariousFileTypes()
         {
-            var scenario = new FileSystemGlobbingTestContext(@"c:/assets/", IsOrdered)
+            var scenario = new FileSystemGlobbingTestContext(@"c:/assets/", true)
                 .Include("**/*")                                       // Include everything
                 .Exclude("**/*.tmp")                                  // Remove temp files
                 .Exclude("**/*.bak")                                  // Remove backups
@@ -92,7 +92,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         [Fact]
         public void ComplexIncludesThenGlobalExcludeOverrides()
         {
-            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", IsOrdered)
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
                 .Include("**/*.json")
                 .Include("**/*.csv")
                 .Include("metrics/*.xml")
@@ -115,6 +115,66 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 "metrics/stats.xml",
                 "raw/input/data.bin"
             );
+        }
+
+        [Fact]
+        public void DoubleExcludeExcludesFile()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
+                .Exclude("**/a.txt")
+                .Exclude("**/a.txt")
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact();
+        }
+
+        [Fact]
+        public void DoubleIncludeIncludesFile()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
+                .Include("**/a.txt")
+                .Include("**/a.txt")
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact("a.txt");
+        }
+
+        [Fact]
+        public void IncludeDoubleExcludeExcludesFile()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
+                .Include("**/a.txt")
+                .Exclude("**/a.txt")
+                .Exclude("**/a.txt")
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact();
+        }
+
+        [Fact]
+        public void ExcludeDoubleIncludeIncludesFile()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
+                .Exclude("**/a.txt")
+                .Include("**/a.txt")
+                .Include("**/a.txt")
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact("a.txt");
+        }
+
+        [Fact]
+        public void NoFilterExcludes()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact();
         }
     }
 }

@@ -96,9 +96,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     /// </remarks>
     public class Matcher
     {
-        private readonly List<IPattern> _includePatterns = [];
-        private readonly List<IPattern> _excludePatterns = [];
-        private readonly List<(bool IsInclude, IPattern Pattern)> _includeOrExcludePatterns = [];
+        private readonly List<IPattern>? _includePatterns;
+        private readonly List<IPattern>? _excludePatterns;
+        private readonly List<IncludeOrExcludeValue<IPattern>>? _includeOrExcludePatterns;
         private readonly PatternBuilder _builder;
         private readonly StringComparison _comparison;
         private readonly bool _preserveFilterOrder;
@@ -121,15 +121,28 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method specified
+        /// Initializes an instance of <see cref="Matcher" /> using the string comparison method and filter ordering specified
         /// </summary>
         /// <param name="comparisonType">The <see cref="StringComparison" /> to use</param>
-        /// <param name="preserveFilterOrder">A boolean value to determine whether the filter order should be preserved</param>
+        /// <param name="preserveFilterOrder">
+        /// <see langword="true" /> if the filters should be applied in the order they were added; <see langword="false" />
+        /// if the inclusion filters should be applied before the exclusion filters
+        /// </param>
         public Matcher(StringComparison comparisonType = StringComparison.OrdinalIgnoreCase, bool preserveFilterOrder = false)
         {
             _comparison = comparisonType;
             _builder = new PatternBuilder(comparisonType);
             _preserveFilterOrder = preserveFilterOrder;
+
+            if (preserveFilterOrder)
+            {
+                _includeOrExcludePatterns = [];
+            }
+            else
+            {
+                _includePatterns = [];
+                _excludePatterns = [];
+            }
         }
 
         /// <summary>
@@ -147,9 +160,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public virtual Matcher AddInclude(string pattern)
         {
             if (_preserveFilterOrder)
-                _includeOrExcludePatterns.Add((true, _builder.Build(pattern)));
+                _includeOrExcludePatterns!.Add(new IncludeOrExcludeValue<IPattern> { Value = _builder.Build(pattern), IsInclude = true });
             else
-                _includePatterns.Add(_builder.Build(pattern));
+                _includePatterns!.Add(_builder.Build(pattern));
 
             return this;
         }
@@ -169,9 +182,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public virtual Matcher AddExclude(string pattern)
         {
             if (_preserveFilterOrder)
-                _includeOrExcludePatterns.Add((false, _builder.Build(pattern)));
+                _includeOrExcludePatterns!.Add(new IncludeOrExcludeValue<IPattern> { Value = _builder.Build(pattern), IsInclude = false });
             else
-                _excludePatterns.Add(_builder.Build(pattern));
+                _excludePatterns!.Add(_builder.Build(pattern));
 
             return this;
         }
@@ -186,8 +199,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
             ArgumentNullException.ThrowIfNull(directoryInfo);
 
             return _preserveFilterOrder ?
-                new MatcherContext(_includeOrExcludePatterns, directoryInfo, _comparison).Execute() :
-                new MatcherContext(_includePatterns, _excludePatterns, directoryInfo, _comparison).Execute();
+                new MatcherContext(_includeOrExcludePatterns!, directoryInfo, _comparison).Execute() :
+                new MatcherContext(_includePatterns!, _excludePatterns!, directoryInfo, _comparison).Execute();
         }
     }
 }
