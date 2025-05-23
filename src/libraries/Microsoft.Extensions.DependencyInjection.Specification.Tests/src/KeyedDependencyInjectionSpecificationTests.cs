@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
@@ -286,6 +287,280 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Throws<InvalidOperationException>(() => provider2.GetKeyedService<IService>(KeyedService.AnyKey));
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        // Test ordering and slot assignments when DI calls the service's constructor
+        // across keyed services with different service types and keys.
+        public void ResolveWithAnyKeyQuery_Constructor(bool anyKeyQueryBeforeSingletonQueries)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // Interweave these to check that the slot \ ordering logic is correct.
+            // Each unique key + its service Type maintains their own slot in a AnyKey query.
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key1");
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key1");
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key2");
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key2");
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key3");
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key3");
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            TestServiceA[] allInstancesA = null;
+            TestServiceB[] allInstancesB = null;
+
+            if (anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            var serviceA1 = provider.GetKeyedService<TestServiceA>("key1");
+            var serviceB1 = provider.GetKeyedService<TestServiceB>("key1");
+            var serviceA2 = provider.GetKeyedService<TestServiceA>("key2");
+            var serviceB2 = provider.GetKeyedService<TestServiceB>("key2");
+            var serviceA3 = provider.GetKeyedService<TestServiceA>("key3");
+            var serviceB3 = provider.GetKeyedService<TestServiceB>("key3");
+
+            if (!anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            Assert.Equal(
+                new[] { serviceA1, serviceA2, serviceA3 },
+                allInstancesA);
+
+            Assert.Equal(
+                new[] { serviceB1, serviceB2, serviceB3 },
+                allInstancesB);
+
+            void DoAnyKeyQuery()
+            {
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
+
+                // Verify caching returns the same IEnumerable<> instance.
+                Assert.Same(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Same(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        // Test ordering and slot assignments when DI calls the service's constructor
+        // across keyed services with different service types with duplicate keys.
+        public void ResolveWithAnyKeyQuery_Constructor_Duplicates(bool anyKeyQueryBeforeSingletonQueries)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            // Interweave these to check that the slot \ ordering logic is correct.
+            // Each unique key + its service Type maintains their own slot in a AnyKey query.
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key");
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key");
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key");
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key");
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key");
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key");
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            TestServiceA[] allInstancesA = null;
+            TestServiceB[] allInstancesB = null;
+
+            if (anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            var serviceA = provider.GetKeyedService<TestServiceA>("key");
+            Assert.Same(serviceA, provider.GetKeyedService<TestServiceA>("key"));
+
+            var serviceB = provider.GetKeyedService<TestServiceB>("key");
+            Assert.Same(serviceB, provider.GetKeyedService<TestServiceB>("key"));
+
+            if (!anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            // An AnyKey query we get back the last registered service for duplicates.
+            // The first and second services are effectively hidden unless we query all.
+            Assert.Equal(3, allInstancesA.Length);
+            Assert.Same(serviceA, allInstancesA[2]);
+            Assert.NotSame(serviceA, allInstancesA[1]);
+            Assert.NotSame(serviceA, allInstancesA[0]);
+            Assert.NotSame(allInstancesA[0], allInstancesA[1]);
+
+            Assert.Equal(3, allInstancesB.Length);
+            Assert.Same(serviceB, allInstancesB[2]);
+            Assert.NotSame(serviceB, allInstancesB[1]);
+            Assert.NotSame(serviceB, allInstancesB[0]);
+            Assert.NotSame(allInstancesB[0], allInstancesB[1]);
+
+            void DoAnyKeyQuery()
+            {
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
+
+                // Verify caching returns the same IEnumerable<> instances.
+                Assert.Same(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Same(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        // Test ordering and slot assignments when service is provided
+        // across keyed services with different service types and keys.
+        public void ResolveWithAnyKeyQuery_InstanceProvided(bool anyKeyQueryBeforeSingletonQueries)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            TestServiceA serviceA1 = new();
+            TestServiceA serviceA2 = new();
+            TestServiceA serviceA3 = new();
+            TestServiceB serviceB1 = new();
+            TestServiceB serviceB2 = new();
+            TestServiceB serviceB3 = new();
+
+            // Interweave these to check that the slot \ ordering logic is correct.
+            // Each unique key + its service Type maintains their own slot in a AnyKey query.
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key1", serviceA1);
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key1", serviceB1);
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key2", serviceA2);
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key2", serviceB2);
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key3", serviceA3);
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key3", serviceB3);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            TestServiceA[] allInstancesA = null;
+            TestServiceB[] allInstancesB = null;
+
+            if (anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            var fromServiceA1 = provider.GetKeyedService<TestServiceA>("key1");
+            var fromServiceA2 = provider.GetKeyedService<TestServiceA>("key2");
+            var fromServiceA3 = provider.GetKeyedService<TestServiceA>("key3");
+            Assert.Same(serviceA1, fromServiceA1);
+            Assert.Same(serviceA2, fromServiceA2);
+            Assert.Same(serviceA3, fromServiceA3);
+
+            var fromServiceB1 = provider.GetKeyedService<TestServiceB>("key1");
+            var fromServiceB2 = provider.GetKeyedService<TestServiceB>("key2");
+            var fromServiceB3 = provider.GetKeyedService<TestServiceB>("key3");
+            Assert.Same(serviceB1, fromServiceB1);
+            Assert.Same(serviceB2, fromServiceB2);
+            Assert.Same(serviceB3, fromServiceB3);
+
+            if (!anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            Assert.Equal(
+                new[] { serviceA1, serviceA2, serviceA3 },
+                allInstancesA);
+
+            Assert.Equal(
+                new[] { serviceB1, serviceB2, serviceB3 },
+                allInstancesB);
+
+            void DoAnyKeyQuery()
+            {
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
+
+                // Verify caching returns the same items.
+                Assert.Equal(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Equal(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        // Test ordering and slot assignments when service is provided
+        // across keyed services with different service types with duplicate keys.
+        public void ResolveWithAnyKeyQuery_InstanceProvided_Duplicates(bool anyKeyQueryBeforeSingletonQueries)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            TestServiceA serviceA1 = new();
+            TestServiceA serviceA2 = new();
+            TestServiceA serviceA3 = new();
+            TestServiceB serviceB1 = new();
+            TestServiceB serviceB2 = new();
+            TestServiceB serviceB3 = new();
+
+            // Interweave these to check that the slot \ ordering logic is correct.
+            // Each unique key + its service Type maintains their own slot in a AnyKey query.
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key", serviceA1);
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key", serviceB1);
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key", serviceA2);
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key", serviceB2);
+            serviceCollection.AddKeyedSingleton<TestServiceA>("key", serviceA3);
+            serviceCollection.AddKeyedSingleton<TestServiceB>("key", serviceB3);
+
+            var provider = CreateServiceProvider(serviceCollection);
+
+            TestServiceA[] allInstancesA = null;
+            TestServiceB[] allInstancesB = null;
+
+            if (anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            // We get back the last registered service for duplicates.
+            Assert.Same(serviceA3, provider.GetKeyedService<TestServiceA>("key"));
+            Assert.Same(serviceB3, provider.GetKeyedService<TestServiceB>("key"));
+
+            if (!anyKeyQueryBeforeSingletonQueries)
+            {
+                DoAnyKeyQuery();
+            }
+
+            Assert.Equal(
+                new[] { serviceA1, serviceA2, serviceA3 },
+                allInstancesA);
+
+            Assert.Equal(
+                new[] { serviceB1, serviceB2, serviceB3 },
+                allInstancesB);
+
+            void DoAnyKeyQuery()
+            {
+                IEnumerable<TestServiceA> allA = provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey);
+                IEnumerable<TestServiceB> allB = provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey);
+
+                // Verify caching returns the same items.
+                Assert.Equal(allA, provider.GetKeyedServices<TestServiceA>(KeyedService.AnyKey));
+                Assert.Equal(allB, provider.GetKeyedServices<TestServiceB>(KeyedService.AnyKey));
+
+                allInstancesA = allA.ToArray();
+                allInstancesB = allB.ToArray();
+            }
+        }
+
+        private class TestServiceA { }
+        private class TestServiceB { }
+
         [Fact]
         public void ResolveKeyedServicesAnyKeyOrdering()
         {
@@ -518,7 +793,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             Assert.Null(provider.GetService<IService>());
 
-            for (int i=0; i<3; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var key = "service" + i;
                 var s1 = provider.GetKeyedService<IService>(key);
@@ -713,6 +988,28 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Fact]
+        public void ResolveRequiredKeyedServiceThrowsIfNotFound()
+        {
+            var serviceCollection = new ServiceCollection();
+            var provider = CreateServiceProvider(serviceCollection);
+            var serviceKey = new object();
+
+            InvalidOperationException e;
+
+            e = Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService<IService>(serviceKey));
+            VerifyException();
+
+            e = Assert.Throws<InvalidOperationException>(() => provider.GetRequiredKeyedService(typeof(IService), serviceKey));
+            VerifyException();
+
+            void VerifyException()
+            {
+                Assert.Contains(nameof(IService), e.Message);
+                Assert.Contains(serviceKey.GetType().FullName, e.Message);
+            }
+        }
+
+        [Fact]
         public void ResolveKeyedServiceThrowsIfNotSupported()
         {
             var provider = new NonKeyedServiceProvider();
@@ -801,23 +1098,23 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             public IServiceProvider ServiceProvider { get; }
         }
 
-            [Fact]
-            public void SimpleServiceKeyedResolution()
-            {
-                // Arrange
-                var services = new ServiceCollection();
-                services.AddKeyedTransient<ISimpleService, SimpleService>("simple");
-                services.AddKeyedTransient<ISimpleService, AnotherSimpleService>("another");
-                services.AddTransient<SimpleParentWithDynamicKeyedService>();
-                var provider = CreateServiceProvider(services);
-                var sut = provider.GetService<SimpleParentWithDynamicKeyedService>();
+        [Fact]
+        public void SimpleServiceKeyedResolution()
+        {
+            // Arrange
+            var services = new ServiceCollection();
+            services.AddKeyedTransient<ISimpleService, SimpleService>("simple");
+            services.AddKeyedTransient<ISimpleService, AnotherSimpleService>("another");
+            services.AddTransient<SimpleParentWithDynamicKeyedService>();
+            var provider = CreateServiceProvider(services);
+            var sut = provider.GetService<SimpleParentWithDynamicKeyedService>();
 
-                // Act
-                var result = sut!.GetService("simple");
+            // Act
+            var result = sut!.GetService("simple");
 
-                // Assert
-                Assert.True(result.GetType() == typeof(SimpleService));
-            }
+            // Assert
+            Assert.True(result.GetType() == typeof(SimpleService));
+        }
 
         public class SimpleParentWithDynamicKeyedService
         {
@@ -841,5 +1138,89 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         {
             public object GetService(Type serviceType) => throw new NotImplementedException();
         }
+
+#if NET10_0_OR_GREATER
+        [Fact]
+        public void ResolveKeyedServiceWithFromServiceKeyAttribute()
+        {
+            ServiceCollection services = new();
+            services.AddKeyedSingleton<ServiceUsingFromServiceKeyAttribute>("key");
+            services.AddKeyedSingleton<ServiceCreatedWithServiceKeyAttribute>("key");
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            ServiceUsingFromServiceKeyAttribute service = provider.GetRequiredKeyedService<ServiceUsingFromServiceKeyAttribute>("key");
+            Assert.Equal("key", service.OtherService.MyKey);
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithFromServiceKeyAttribute_NotFound()
+        {
+            ServiceCollection services = new();
+            services.AddKeyedSingleton<ServiceUsingFromServiceKeyAttribute>("key1");
+            services.AddKeyedSingleton<ServiceCreatedWithServiceKeyAttribute>("key2");
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<ServiceUsingFromServiceKeyAttribute>("key1"));
+        }
+
+        [Fact]
+        public void ResolveKeyedServiceWithFromServiceKeyAttribute_NotFound_WithUnkeyed()
+        {
+            ServiceCollection services = new();
+            services.AddKeyedSingleton<ServiceUsingFromServiceKeyAttribute>("key1");
+            services.AddSingleton<ServiceCreatedWithServiceKeyAttribute>();
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            Assert.Throws<InvalidOperationException>(() => provider.GetKeyedService<ServiceUsingFromServiceKeyAttribute>("key1"));
+        }
+
+        private class ServiceUsingFromServiceKeyAttribute : IService
+        {
+            public ServiceCreatedWithServiceKeyAttribute OtherService { get; }
+
+            public ServiceUsingFromServiceKeyAttribute([FromKeyedServices] ServiceCreatedWithServiceKeyAttribute otherService)
+            {
+                OtherService = otherService;
+            }
+        }
+
+        private class ServiceCreatedWithServiceKeyAttribute : IService
+        {
+            public string MyKey { get; }
+
+            public ServiceCreatedWithServiceKeyAttribute([ServiceKey] string myKey)
+            {
+                MyKey = myKey;
+            }
+        }
+
+        [Fact]
+        public void ResolveUnkeyedServiceWithFromServiceKeyAttributeWithNullKey()
+        {
+            ServiceCollection services = new();
+            services.AddSingleton<UnkeyedServiceWithFromServiceKeyAttributeWithNullKey>();
+            services.AddSingleton<Service>();
+
+            IServiceProvider provider = CreateServiceProvider(services);
+
+            UnkeyedServiceWithFromServiceKeyAttributeWithNullKey service =
+                provider.GetRequiredService<UnkeyedServiceWithFromServiceKeyAttributeWithNullKey>();
+
+            Assert.NotNull(service.OtherService);
+        }
+
+        private class UnkeyedServiceWithFromServiceKeyAttributeWithNullKey : IService
+        {
+            public Service OtherService { get; }
+
+            public UnkeyedServiceWithFromServiceKeyAttributeWithNullKey([FromKeyedServices(null)] Service otherService)
+            {
+                OtherService = otherService;
+            }
+        }
+#endif
     }
 }

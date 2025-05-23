@@ -43,7 +43,7 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <param name="cultureName">The name of a culture to be used for case sensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
     /// <remarks>
     /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
-    /// language/region names suported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
+    /// language/region names supported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
     /// starting with Windows 10, <paramref name="cultureName"/> can be any valid BCP-47 language tag.
     ///
     /// If <paramref name="cultureName"/> is <see cref="string.Empty"/>, the invariant culture will be used.
@@ -67,7 +67,7 @@ public sealed class GeneratedRegexAttribute : Attribute
     /// <param name="cultureName">The name of a culture to be used for case sensitive comparisons. <paramref name="cultureName"/> is not case-sensitive.</param>
     /// <remarks>
     /// For a list of predefined culture names on Windows systems, see the Language tag column in the <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-lcid/a9eac961-e77d-41a6-90a5-ce1a8b0cdb9c">list of
-    /// language/region names suported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
+    /// language/region names supported by Windows</see>. Culture names follow the standard defined by <see href="https://tools.ietf.org/html/bcp47">BCP 47</see>. In addition,
     /// starting with Windows 10, <paramref name="cultureName"/> can be any valid BCP-47 language tag.
     ///
     /// If <paramref name="cultureName"/> is <see cref="string.Empty"/>, the invariant culture will be used.

@@ -3,6 +3,7 @@
 
 #include "minipalconfig.h"
 #include "log.h"
+#include <stddef.h>
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
@@ -128,7 +129,10 @@ static size_t log_write_line(minipal_log_flags flags, const char* msg, size_t ms
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    assert(msg != NULL && msg[0] != '\0');
+    assert(msg != NULL);
+
+    if (msg[0] == '\0')
+        return 0;
 
     size_t msg_len = strlen(msg);
     const char* msg_end = msg + msg_len;
@@ -220,28 +224,48 @@ void minipal_log_flush_all(void)
 #ifdef HOST_WINDOWS
 #include <Windows.h>
 #include <io.h>
-static int sync_file(minipal_log_flags flags)
+
+typedef ptrdiff_t ssize_t;
+
+static HANDLE get_std_handle(minipal_log_flags flags)
 {
     switch(flags)
     {
     case minipal_log_flags_fatal:
     case minipal_log_flags_error:
-        FlushFileBuffers(GetStdHandle(STD_ERROR_HANDLE));
-        break;
+        return GetStdHandle(STD_ERROR_HANDLE);
     case minipal_log_flags_warning:
     case minipal_log_flags_info:
     case minipal_log_flags_debug:
     case minipal_log_flags_verbose:
-    default:
-        FlushFileBuffers(GetStdHandle(STD_OUTPUT_HANDLE));
-        break;
+        return GetStdHandle(STD_OUTPUT_HANDLE);
     }
 
+    return INVALID_HANDLE_VALUE;
+}
+
+
+static int sync_file(minipal_log_flags flags)
+{
+    FlushFileBuffers(get_std_handle(flags));
     return 0;
 }
-#define fileno _fileno
-#define write _write
-#elif defined(__APPLE__)
+
+static ssize_t write_file_binary(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
+{
+    assert(bytes_to_write < INT_MAX);
+
+    DWORD bytes_written = 0;
+    return WriteFile(get_std_handle(flags), msg, (DWORD)bytes_to_write, &bytes_written, NULL) ? (ssize_t)bytes_written : (ssize_t)-1;
+}
+
+static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
+{
+    assert(bytes_to_write < INT_MAX);
+    return _write(_fileno(get_std_file(flags)), msg, (unsigned int)bytes_to_write);
+}
+#else
+#if defined(__APPLE__)
 #include <fcntl.h>
 #include <unistd.h>
 static int sync_file(minipal_log_flags flags)
@@ -269,32 +293,54 @@ static int sync_file(minipal_log_flags flags)
 }
 #endif
 
-static int write_file(int fd, const char* msg, size_t bytes_to_write)
+static ssize_t write_file(minipal_log_flags flags, const char* msg, size_t bytes_to_write)
 {
-    if (fd == -1)
-        return 0;
-
-    assert(msg != NULL && msg[0] != '\0');
-    assert(bytes_to_write < INT_MAX);
-
-    return write(fd, msg, (int)bytes_to_write);
+    ssize_t ret = 0;
+    while ((ret = write(fileno(get_std_file(flags)), msg, bytes_to_write)) < 0 && errno == EINTR);
+    return ret;
 }
+#endif
+
+typedef ssize_t (*write_file_fnptr)(minipal_log_flags flags, const char* msg, size_t bytes_to_write);
 
 int minipal_log_write(minipal_log_flags flags, const char* msg)
 {
-    assert(msg != NULL && msg[0] != '\0');
+    assert(msg != NULL);
 
-    size_t bytes_to_write = strlen(msg);
+    if (msg[0] == '\0')
+        return 0;
+
+    size_t bytes_to_write = 0;
     size_t bytes_written = 0;
 
-    int fd = fileno(get_std_file(flags));
+    write_file_fnptr write_fnptr = write_file;
+
+#ifdef HOST_WINDOWS
+    const char* msg_char = msg;
+    while (*msg_char)
+    {   if (msg_char[0] == '\r' && msg_char[1] == '\n')
+        {
+            write_fnptr = write_file_binary;
+            break;
+        }
+        msg_char++;
+    }
+
+    while (*msg_char)
+        msg_char++;
+
+    bytes_to_write = msg_char - msg;
+#else
+    bytes_to_write = strlen(msg);
+#endif
+
     while (bytes_to_write > 0)
     {
-        size_t chunk_to_write = bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD;
-        size_t chunk_written = write_file(fd, msg, chunk_to_write);
-
-        if (chunk_written == 0)
+        ssize_t chunk_written = write_fnptr(flags, msg, bytes_to_write < MINIPAL_LOG_MAX_PAYLOAD ? bytes_to_write : MINIPAL_LOG_MAX_PAYLOAD);
+        if (chunk_written <= 0)
             break;
+
+        assert ((size_t)chunk_written <= bytes_to_write);
 
         msg = msg + chunk_written;
         bytes_to_write -= chunk_written;

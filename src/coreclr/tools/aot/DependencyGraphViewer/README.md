@@ -5,7 +5,7 @@ If you are developing with NativeAOT or using the IL linker, you might ask yours
 
 ## How to build and run
 1. Launch Visual Studio
-2. Load `DependencyGraphViewer.sln`
+2. Load `DependencyGraphViewer.slnx`
 3. Build and Run as normal
 ## Using ETW logs
 The DependencyGraphViewer must be run as an administrator if collecting ETW events when compiling with NativeAOT. One of the easiest ways of doing this is by running Visual Studio as an administrator and then building and running the program.

@@ -287,7 +287,7 @@ FlowEdge* Compiler::fgRemoveAllRefPreds(BasicBlock* block, BasicBlock* blockPred
 //
 void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
 {
-    PREFIX_ASSUME(block != nullptr);
+    assert(block != nullptr);
 
     switch (block->GetKind())
     {
