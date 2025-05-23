@@ -8934,10 +8934,6 @@ public:
         return UseSveForVectorT() && varTypeIsSIMD(type);
     }
 
-    //FORCEINLINE static bool UseSveForSimdSize(unsigned simdSize)
-    //{
-    //    return compUseSveForVectorT && (simdSize >= compMinVectorTLengthForSve);
-    //}
     FORCEINLINE static bool SizeMatchesVectorTLength(unsigned simdSize)
     {
         return simdSize == compVectorTLength;
@@ -9282,6 +9278,10 @@ public:
             return XMM_REGSIZE_BYTES;
         }
 #elif defined(TARGET_ARM64)
+        // TODO-VL: There are several optimizations that use this method
+        // to decide to use higher vector length. E.g. ReadUtf8, Memmove, etc.
+        // To make them functional, some of them need SVE2 intrinsics/instructions.
+        // We will incrementally enable them as we add support for SVE2 APIs.
         //if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
         //{
         //    return Compiler::compVectorTLength;
@@ -9667,7 +9667,7 @@ public:
     }
 
 private:
-    // Returns true if the TYP_SIMDVL locals on stack are aligned at their
+    // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
     //
     // As per the Intel manual, the preferred alignment for AVX vectors is
@@ -12678,9 +12678,9 @@ const instruction INS_BREAKPOINT = INS_ebreak;
 
 /*****************************************************************************/
 
-extern BYTE genTypeSizes[];
+extern const BYTE genTypeSizes[];
 extern const BYTE genTypeAlignments[];
-extern BYTE genTypeStSzs[];
+extern const BYTE genTypeStSzs[];
 extern const BYTE genActualTypes[];
 
 /*****************************************************************************/

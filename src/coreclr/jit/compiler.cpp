@@ -104,7 +104,7 @@ inline bool _our_GetThreadCycles(uint64_t* cycleOut)
 
 #endif // which host OS
 
-BYTE genTypeSizes[] = {
+const BYTE genTypeSizes[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
@@ -116,7 +116,7 @@ const BYTE genTypeAlignments[] = {
 #undef DEF_TP
 };
 
-BYTE genTypeStSzs[] = {
+const BYTE genTypeStSzs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) st,
 #include "typelist.h"
 #undef DEF_TP
@@ -2624,11 +2624,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         compVectorTLength = info.compCompHnd->getTargetVectorLength();
         compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
     }
-
-    //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
-    //emitTypeSizes[TYP_SIMDVL]     = (unsigned short)Compiler::compVectorTLength;
-    //emitTypeActSz[TYP_SIMDVL]     = EA_SCALABLE;
-    //genTypeStSzs[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength / sizeof(int);
 #endif // TARGET_ARM64
 
     bool enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;
