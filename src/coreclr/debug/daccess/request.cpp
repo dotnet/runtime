@@ -4440,7 +4440,7 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
 
     holder = (MOWHOLDERREF)ObjectFromHandle(handle);
 
-    *objRef = holder->_wrappedObject;
+    *objRef = holder->WrappedObject;
 
     return S_OK;
 
