@@ -5606,14 +5606,15 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 
 //------------------------------------------------------------------------
 // gtTreeContainsCall:
-//   Check if a tree contains a call node matching the given predicate.
+//   Check if a tree contains a call node or corresponding RET_EXPR with the
+//   call node matching the given predicate.
 //
 // Parameters:
 //   tree - The tree
 //   pred - Predicate that the call must match
 //
 // Returns:
-//   True if a call node matching the predicate was found, false otherwise.
+//   True if a call matching the predicate was found, false otherwise.
 //
 template <typename Predicate>
 bool Compiler::gtTreeContainsCall(GenTree* tree, Predicate pred)
@@ -5644,6 +5645,11 @@ bool Compiler::gtTreeContainsCall(GenTree* tree, Predicate pred)
             }
 
             if (node->IsCall() && m_pred(node->AsCall()))
+            {
+                return WALK_ABORT;
+            }
+
+            if (node->OperIs(GT_RET_EXPR) && m_pred(node->AsRetExpr()->gtInlineCandidate))
             {
                 return WALK_ABORT;
             }
