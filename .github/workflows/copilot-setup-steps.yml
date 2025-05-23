@@ -17,34 +17,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
 
-      # From https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/ubuntu/25.04/helix/Dockerfile
       - name: Install dependencies
         env:
           LIBMSQUIC_VERSION: '2.4.8'
         run: |
-          sudo apt-get update -y && \
+          # Use the common dependencies script for Linux
+          eng/common/native/install-dependencies.sh linux
+          
+          # Install additional dependencies not covered by the common script
           sudo apt-get install -qq -y \
           autoconf \
           automake \
-          build-essential \
-          cmake \
-          clang \
-          curl \
-          gcc \
           gdb \
           git \
           gss-ntlmssp \
           iputils-ping \
           libcurl4 \
           libffi-dev \
-          libicu-dev \
-          libssl-dev \
           libtool \
-          libunwind8 \
-          libunwind-dev \
-          lldb \
-          llvm \
-          locales \
           locales-all \
           python3-dev \
           python3-pip \
@@ -59,10 +49,6 @@ jobs:
           libnl-route-3-200 \
           libnuma1 \
           libxdp1 \
-          libkrb5-dev \
-          liblttng-ust-dev \
-          cpio \
-          lld \
           python-is-python3 && \
           curl -LO "https://packages.microsoft.com/ubuntu/24.04/prod/pool/main/libm/libmsquic/libmsquic_${LIBMSQUIC_VERSION}_amd64.deb" && \
           sudo dpkg -i libmsquic* && \
