@@ -3235,6 +3235,19 @@ void MethodDesc::ResetCodeEntryPointForEnC()
             ppCode, pCode));
         *ppCode = (PCODE)NULL;
     }
+
+    // update of a Task-returning method effectively updates both variants,
+    // so reset the entry for the other variant as well.
+    if (IsTaskReturningMethod())
+    {
+        // TODO: (async) revisit and examine if the following is sufficient for actual runtime async methods when EnC is supported.
+        //       for now we only expect to see ordinary Task-returning methods here (not thunks).
+        _ASSERTE(!IsAsyncThunkMethod());
+
+        MethodDesc *otherVariant =  GetAsyncOtherVariantNoCreate();
+        _ASSERTE(otherVariant != NULL);
+        otherVariant->ResetCodeEntryPointForEnC();
+    }
 }
 
 
