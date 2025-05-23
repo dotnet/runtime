@@ -166,7 +166,45 @@ internal sealed class WebServerStartup
                 context.Response.Redirect("index.html", permanent: false);
                 return Task.CompletedTask;
             });
-        });
+        });        // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
+        string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
+        if (!string.IsNullOrEmpty(fileUploadPath))
+        {
+            // General file upload endpoint
+            app.MapPost("/upload", async context =>
+            {
+                try
+                {
+                    if (!Directory.Exists(fileUploadPath))
+                    {
+                        Directory.CreateDirectory(fileUploadPath!);
+                    }
+
+                    // Get the filename from the "File-Name" header, or generate a unique one
+                    string fileName = context.Request.Headers["File-Name"].FirstOrDefault() ?? 
+                                        $"upload_{Guid.NewGuid():N}";
+                    
+                    // Clean the filename to prevent directory traversal
+                    fileName = Path.GetFileName(fileName);
+                    
+                    string filePath = Path.Combine(fileUploadPath!, fileName);
+
+                    using (var outputStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await context.Request.Body.CopyToAsync(outputStream);
+                    }
+                    
+                    _logger?.LogInformation("File uploaded to {FilePath}", filePath);
+                    await context.Response.WriteAsync($"File saved to {filePath}");
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Error processing file upload");
+                    context.Response.StatusCode = 500;
+                    await context.Response.WriteAsync($"Error processing upload: {ex.Message}");
+                }
+            });
+        }
 
         ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs);
     }
