@@ -129,9 +129,9 @@ namespace Microsoft.Extensions.Http
 
             StopTimer();
 
-            // When this entry is converted to an expired entry, we don't dispose the handlers
-            // to avoid a race with active clients. Let the ExpiredHandlerTrackingEntry handle handler disposal.
-            // We only dispose the scope if it exists.
+            // When we're directly disposed (not converted to an expired entry),
+            // we need to dispose both the handler and the scope
+            Handler.Dispose();
             Scope?.Dispose();
         }
     }
