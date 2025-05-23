@@ -25,7 +25,7 @@ Insert the new API definition without removing any existing entries, placing it 
 
 2. Invoke `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` script (or `src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` on Windows) to update auto-generated files.
 
-3. Open `src/coreclr/inc/corinfo.h` and append the new API in the end of `class ICorStaticInfo` class declaration. Example:
+3. Open `src/coreclr/inc/corinfo.h` and add the new API inside `class ICorStaticInfo` class as the last member. Example:
 
 ```diff
 +   virtual CORINFO_METHOD_HANDLE getUnboxedEntry(
@@ -34,7 +34,7 @@ Insert the new API definition without removing any existing entries, placing it 
 +       ) = 0;
 ```
 
-4. Open `src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and append the new API in the end of `class CorInfoImpl` class declaration. Use `src/coreclr/tools/Common/JitInterface/CorInfoImpl_generated.cs` to inspect how type parameters look like for C# for the newly added API since it is expected to be auto-generated there by the gen.sh(bat) script. Example:
+4. Open `src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs` and add the new API in the end of `class CorInfoImpl` class declaration. Use `src/coreclr/tools/Common/JitInterface/CorInfoImpl_generated.cs` to inspect how type parameters look like for C# for the newly added API since it is expected to be auto-generated there by the gen.sh(bat) script. Example:
 
 ```diff
 +    private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
@@ -45,7 +45,7 @@ Insert the new API definition without removing any existing entries, placing it 
 +    }
 ```
 
-5. Open `src/coreclr/vm/jitinterface.cpp` and append a dummy implementation at the file's end. Example:
+5. Open `src/coreclr/vm/jitinterface.cpp` and add a dummy implementation at the file's end. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE CEEInfo::getUnboxedEntry(
@@ -106,7 +106,7 @@ The methods are prefixed with `rec*` (record), `dmp*` (dump to console) and `rep
 +   void dmpGetUnboxedEntry(DWORDLONG key, DLD value);
 +   CORINFO_METHOD_HANDLE repGetUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
-Now append a new element to `enum mcPackets` enum in the same file. Example:
+Now add a new element to `enum mcPackets` enum in the same file. Example:
 
 ```diff
 +   Packet_GetUnboxedEntry = <last value + 1>,
