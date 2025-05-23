@@ -46136,7 +46136,10 @@ void gc_heap::generation_delete_heap_segment (generation* gen,
         // For doubly linked list we go forward for SOH
         heap_segment_next (prev_seg) = next_seg;
 #else //DOUBLY_LINKED_FL
-        heap_segment_next (next_seg) = prev_seg;
+        if (next_seg)
+        {
+            heap_segment_next (next_seg) = prev_seg;
+        }
 #endif //DOUBLY_LINKED_FL
 
         dprintf (3, ("Preparing empty small segment %zx for deletion", (size_t)seg));
