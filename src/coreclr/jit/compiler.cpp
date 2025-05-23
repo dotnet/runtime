@@ -2609,30 +2609,20 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 
 #if defined(TARGET_ARM64)
-    if (info.compMatchedVM)
-    {
-        compVectorTLength = info.compCompHnd->getTargetVectorLength();
-        CORINFO_InstructionSetFlags instructionSetFlags = jitFlags->GetInstructionSetFlags();
 
-        if (!instructionSetFlags.HasInstructionSet(InstructionSet_Sve) && !instructionSetFlags.HasInstructionSet(InstructionSet_Sve_Arm64))
-        {
-            compVectorTLength = UINT_MAX;
-            compUseSveForVectorT = false;
-        }
-        else
-        {
-            compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
-        }
+#ifdef DEBUG
+    compUseSveForVectorT = JitConfig.UseSveForVectorT();
+    if (compUseSveForVectorT)
+    {
+        // In test mode, if UseSveForVectorT=1, then mimic that
+        // we are generating for VL > 16B
+        compVectorTLength = 32;
     }
     else
+#endif // DEBUG
     {
-        // For altjit, use the 32B if we want to test SVE for VectorT, otherwise 16B
-#ifdef DEBUG
-        compUseSveForVectorT = JitConfig.UseSveForVectorT();
-#else
-        compUseSveForVectorT = false;
-#endif
-        compVectorTLength = compUseSveForVectorT ? 32 : 16;
+        compVectorTLength = info.compCompHnd->getTargetVectorLength();
+        compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
     }
 
     //genTypeSizes[TYP_SIMDVL]      = (BYTE)Compiler::compVectorTLength;
