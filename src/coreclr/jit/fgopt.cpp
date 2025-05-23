@@ -5630,7 +5630,7 @@ bool Compiler::gtTreeContainsCall(GenTree* tree, Predicate pred)
         };
 
         HasCallVisitor(Compiler* comp, Predicate& pred)
-            : GenTreeVisitor(comp)
+            : GenTreeVisitor<HasCallVisitor>(comp)
             , m_pred(pred)
         {
         }
