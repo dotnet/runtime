@@ -55,6 +55,7 @@ namespace System.Security.Cryptography
         /// </param>
         protected SlhDsa(SlhDsaAlgorithm algorithm)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             Algorithm = algorithm;
         }
 
