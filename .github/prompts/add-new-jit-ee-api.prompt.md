@@ -3,17 +3,28 @@ mode: 'agent'
 tools: ['githubRepo', 'codebase', 'terminalLastCommand']
 description: 'Add a new API to the JIT-VM (aka JIT-EE) interface in the codebase.'
 ---
-Your goal is to add a new JIT-VM API by modifying several C++ and C# files. 
-The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
-If the new API signature is not provided, prompt the user for it with `src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference.
 
-The steps to add the new API signature are given below and use the following API signature as an example:
+#### 1 — Goal
+
+Implement **one** new JIT-VM (also known as JIT-EE) API and all supporting glue. 
+The JIT-VM interface defines the APIs through which the JIT compiler communicates with the runtime (VM).
+
+#### 2 — Prerequisites for the model
+
+* You have full repo access
+* You may run scripts (e.g., `gen.sh` or `gen.bat`) 
+* Ask **clarifying questions** before the first code change if anything (signature, types, platform constraints) is unclear.
+
+#### 3 — Required user inputs
+
+Ask the user for a C-like signature of the new API if it's not provided. 
+Suggest `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt` file as a reference. Example:
 
 ```
 CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg);
 ```
 
-# Steps to add the new API:
+#### 4 — Implementation steps (must be completed in order)
 
 1. Update the `ThunkInput.txt` file with the new API definition. Example:
 
@@ -169,7 +180,7 @@ Consider other similar methods in the file for reference. Do not change implemen
 +}
 ```
 
-7. Add a new function to `src\coreclr\tools\superpmi\superpmi\icorjitinfo.cpp` that calls the `rep*` method. Example:
+7. Add a new function to `src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp` that calls the `rep*` method. Example:
 
 ```diff
 +CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
@@ -196,3 +207,21 @@ Consider other similar methods in the file for reference. Do not change implemen
 +   return result;
 +}
 ```
+
+#### 5 — Definition of Done (self-check list)
+
+* [ ] New API present in **all** five layers (Thunk → Native → Managed → Stub → SuperPMI).
+* [ ] Each source file changed exactly once; no unrelated edits. The following files must be changed:
+   * `<repo_root>/<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/ThunkInput.txt`
+   * `<repo_root>/src/coreclr/inc/corinfo.h`
+   * `<repo_root>/src/coreclr/tools/Common/JitInterface/CorInfoImpl.cs`
+   * `<repo_root>/src/coreclr/vm/jitinterface.cpp`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h`:
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`:
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.h`:
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/methodcontext.cpp`:
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/agnostic.h` [optional]
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shared/lwmlist.h`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi/icorjitinfo.cpp`
+   * `<repo_root>/src/coreclr/tools/superpmi/superpmi-shim-collector/icorjitinfo.cpp`
+* [ ] All TODO/UNREACHABLE markers remain for future functional implementation.
