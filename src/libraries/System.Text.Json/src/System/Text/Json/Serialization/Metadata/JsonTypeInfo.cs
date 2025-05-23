@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -30,9 +31,9 @@ namespace System.Text.Json.Serialization.Metadata
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0? arg0, TArg1? arg1, TArg2? arg2, TArg3? arg3);
 
         /// <summary>
-        /// Indices of required properties.
+        /// Negated bitmask of the required properties, indexed by <see cref="JsonPropertyInfo.PropertyIndex"/>.
         /// </summary>
-        internal int NumberOfRequiredProperties { get; private set; }
+        internal BitArray? NegatedRequiredPropertiesMask { get; private set; }
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -1072,9 +1073,9 @@ namespace System.Text.Json.Serialization.Metadata
             Dictionary<string, JsonPropertyInfo> propertyIndex = new(properties.Count, comparer);
             List<JsonPropertyInfo> propertyCache = new(properties.Count);
 
-            int numberOfRequiredProperties = 0;
             bool arePropertiesSorted = true;
             int previousPropertyOrder = int.MinValue;
+            BitArray? requiredPropertiesMask = null;
 
             for (int i = 0; i < properties.Count; i++)
             {
@@ -1101,7 +1102,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                     if (property.IsRequired)
                     {
-                        property.RequiredPropertyIndex = numberOfRequiredProperties++;
+                        (requiredPropertiesMask ??= new BitArray(properties.Count))[i] = true;
                     }
 
                     if (arePropertiesSorted)
@@ -1128,7 +1129,7 @@ namespace System.Text.Json.Serialization.Metadata
                 propertyCache.StableSortByKey(static propInfo => propInfo.Order);
             }
 
-            NumberOfRequiredProperties = numberOfRequiredProperties;
+            NegatedRequiredPropertiesMask = requiredPropertiesMask?.Not();
             _propertyCache = propertyCache.ToArray();
             _propertyIndex = propertyIndex;
 

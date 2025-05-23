@@ -1109,7 +1109,7 @@ namespace System.Text.Json.Serialization.Tests
                 Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""", options));
 
             // Assert no throw
-            _ = Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""", JsonSerializerOptions.Default);
+            _ = Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""");
         }
 
         public static IEnumerable<object[]> TestDictionaryTypes =
@@ -1131,7 +1131,7 @@ namespace System.Text.Json.Serialization.Tests
                 Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t, options));
 
             // Assert no throw
-            _ = Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t, JsonSerializerOptions.Default);
+            _ = Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t);
         }
 
         public class ClassWithPopulatedDictionaryAndNoSetter

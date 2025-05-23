@@ -168,7 +168,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     jsonTypeInfo.OnDeserializing?.Invoke(populatedObject);
                     state.Current.ObjectState = StackFrameObjectState.CreatedObject;
-                    state.Current.InitializePropertiesValidationState(jsonTypeInfo, options);
+                    state.Current.InitializePropertiesValidationState(jsonTypeInfo);
                     return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 }
 
@@ -581,7 +581,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type);
             }
 
-            state.Current.InitializePropertiesValidationState(jsonTypeInfo, options);
+            state.Current.InitializePropertiesValidationState(jsonTypeInfo);
 
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
             state.Current.JsonPropertyInfo = null;

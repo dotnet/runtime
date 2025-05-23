@@ -942,12 +942,12 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void SupportsDisallowDuplicateProperty()
         {
             JsonTypeInfo typeInfo =
-                ContextWithAllowDuplicateProperties.Default.GetTypeInfo(typeof(ClassWithDictionaryProperty));
+                ContextWithAllowDuplicateProperties.Default.GetTypeInfo(typeof(Dictionary<string, int>));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize("""{"a":1,"a":2}""", typeInfo));
         }
 
         [JsonSourceGenerationOptions(AllowDuplicateProperties = false)]
-        [JsonSerializable(typeof(ClassWithDictionaryProperty))]
+        [JsonSerializable(typeof(Dictionary<string, int>))]
         internal partial class ContextWithAllowDuplicateProperties : JsonSerializerContext
         {
         }

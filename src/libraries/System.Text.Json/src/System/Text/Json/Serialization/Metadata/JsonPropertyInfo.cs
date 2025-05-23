@@ -891,10 +891,10 @@ namespace System.Text.Json.Serialization.Metadata
                 return ((JsonTypeInfo<TValue>)dictionaryValueInfo).EffectiveConverter;
             }
 
-            static void AddProperty<TValue>(ref readonly ReadStackFrame current, IDictionary<string, TValue> d, TValue value)
+            void AddProperty<TValue>(ref readonly ReadStackFrame current, IDictionary<string, TValue> d, TValue value)
             {
                 string property = current.JsonPropertyNameAsString!;
-                if (current.AllowDuplicateProperties)
+                if (Options.AllowDuplicateProperties)
                 {
                     d[property] = value;
                 }
@@ -1067,29 +1067,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DefaultValue { get; }
 
         /// <summary>
-        /// Required property index on the list of JsonTypeInfo properties.
-        /// It is used as a unique identifier for required properties.
+        /// Property index on the list of JsonTypeInfo properties.
+        /// It is used as a unique identifier for properties.
         /// It is set just before property is configured and does not change afterward.
         /// It is not equivalent to index on the properties list
         /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        internal int RequiredPropertyIndex
-        {
-            get
-            {
-                Debug.Assert(IsConfigured);
-                Debug.Assert(IsRequired);
-                return _requiredIndex;
-            }
-            set
-            {
-                Debug.Assert(!IsConfigured);
-                _requiredIndex = value;
-            }
-        }
-
-        private int _requiredIndex;
-
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         internal int PropertyIndex
         {

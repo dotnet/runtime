@@ -288,7 +288,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray requiredPropertiesSet)
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray assignedOrNotRequiredPropertiesSet)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
@@ -298,7 +298,7 @@ namespace System.Text.Json
 
             foreach (JsonPropertyInfo property in parent.PropertyCache)
             {
-                if (!property.IsRequired || requiredPropertiesSet[property.RequiredPropertyIndex])
+                if (assignedOrNotRequiredPropertiesSet[property.PropertyIndex])
                 {
                     continue;
                 }

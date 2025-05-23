@@ -619,21 +619,24 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "1": null, "1": null }""")]
         [InlineData("""{ "1": "a" , "1": null }""")]
         [InlineData("""{ "1": null, "1": "b"  }""")]
-        public static void ExtensionProperty_DuplicatesThrow(string payload)
+        public async Task ExtensionProperty_DuplicatesThrow(string payload)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
                 AllowDuplicateProperties = false,
             };
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(payload, options));
-            _ = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options));
+            _ = Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(payload, options));
-            _ = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            _ = Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(payload, options));
-            _ = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options));
+            _ = Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
         }
 
         [Theory]

@@ -75,21 +75,12 @@ namespace System.Text.Json
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
 
-        // Represents required properties which have value assigned.
-        // Each bit corresponds to a required property.
-        // False means that property is not set (not yet occurred in the payload).
-        // Length of the BitArray is equal to number of required properties.
-        // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
-        public BitArray? RequiredPropertiesSet;
-
         // Represents known (non-extension) properties which have value assigned.
         // Each bit corresponds to a property.
         // False means that property is not set (not yet occurred in the payload).
         // Length of the BitArray is equal to number of non-extension properties.
         // Every JsonPropertyInfo has PropertyIndex property which maps to an index in this BitArray.
         public BitArray? AssignedProperties;
-
-        public readonly bool AllowDuplicateProperties => AssignedProperties == null;
 
         // Tracks state related to property population.
         public bool HasParentObject;
@@ -139,35 +130,27 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MarkPropertyAsRead(JsonPropertyInfo propertyInfo)
         {
-            if (propertyInfo.IsRequired)
+            if (AssignedProperties is { })
             {
-                Debug.Assert(RequiredPropertiesSet != null);
-                RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
-            }
-
-            if (AssignedProperties is { } assignedProperties)
-            {
-                if (assignedProperties[propertyInfo.PropertyIndex])
+                if (!propertyInfo.Options.AllowDuplicateProperties)
                 {
-                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyInfo);
+                    if (AssignedProperties[propertyInfo.PropertyIndex])
+                    {
+                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyInfo);
+                    }
                 }
 
-                assignedProperties[propertyInfo.PropertyIndex] = true;
+                AssignedProperties[propertyInfo.PropertyIndex] = true;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void InitializePropertiesValidationState(JsonTypeInfo typeInfo, JsonSerializerOptions options)
+        internal void InitializePropertiesValidationState(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(RequiredPropertiesSet == null);
-            Debug.Assert(AllowDuplicateProperties);
+            Debug.Assert(AssignedProperties is null);
 
-            if (typeInfo.NumberOfRequiredProperties > 0)
-            {
-                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
-            }
-
-            if (!options.AllowDuplicateProperties)
+            // Only track assigned properties if there are required properties or duplicate properties aren't allowed.
+            if (typeInfo.NegatedRequiredPropertiesMask is { } || !typeInfo.Options.AllowDuplicateProperties)
             {
                 // This may be slightly larger than required (e.g. if there's an extension property)
                 AssignedProperties = new BitArray(typeInfo.Properties.Count);
@@ -177,15 +160,20 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
         {
-            if (typeInfo.NumberOfRequiredProperties > 0)
+            if (typeInfo.NegatedRequiredPropertiesMask is { })
             {
-                Debug.Assert(RequiredPropertiesSet != null);
+                Debug.Assert(AssignedProperties is { });
 
-                if (!RequiredPropertiesSet.HasAllSet())
+                // All properties must be either assigned or not required
+                BitArray assignedOrNotRequiredPropertiesSet = AssignedProperties.Or(typeInfo.NegatedRequiredPropertiesMask);
+
+                if (!assignedOrNotRequiredPropertiesSet.HasAllSet())
                 {
-                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, assignedOrNotRequiredPropertiesSet);
                 }
             }
+
+            AssignedProperties = null;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

@@ -1701,15 +1701,11 @@ namespace System.Text.Json.Serialization.Tests
         public async Task RespectAllowDuplicateProp_DuplicateCtorParam()
         {
             string json = """{"X":1,"Y":2,"X":3}""";
-            JsonSerializerOptions options = null;
 
-            Func<Task> test = () => Serializer.DeserializeWrapper<Point_3D>(json, options);
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<Point_3D>(json, s_noDuplicateParamsOptions));
 
-            options = s_noDuplicateParamsOptions;
-            await Assert.ThrowsAsync<JsonException>(test);
-
-            options = JsonSerializerOptions.Default;
-            await test(); // Assert no throw
+            await Serializer.DeserializeWrapper<Point_3D>(json); // Assert no throw
         }
 
         [Theory]
@@ -1725,16 +1721,13 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"X":1,"Y":2,"Z":3,"Z":4}""", typeof(Class_ExtraProperty_ExtData))]
         public async Task RespectAllowDuplicateProp_Small(string json, Type type)
         {
-            JsonSerializerOptions options = s_noDuplicateParamsOptions;
-            Func<Task> test = () => Serializer.DeserializeWrapper(json, type, options);
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper(json, type, s_noDuplicateParamsOptions));
 
-            await Assert.ThrowsAsync<JsonException>(test);
-
-            options = JsonSerializerOptions.Default;
-            await test(); // Assert no throw
+            await Serializer.DeserializeWrapper(json, type); // Assert no throw
         }
 
-        class Class_ExtraProperty_ExtData
+        public class Class_ExtraProperty_ExtData
         {
             public int X { get; set; }
 
@@ -1755,7 +1748,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("ExtensionData")]
         public async Task RespectAllowDuplicateProp_Large(string duplicatedProperty)
         {
-            JsonSerializerOptions options = s_noDuplicateParamsOptions;
             string json = $$"""
                 {
                     "P0": 0,
@@ -1770,12 +1762,10 @@ namespace System.Text.Json.Serialization.Tests
                 }
                 """;
 
-            Func<Task> test = () => Serializer.DeserializeWrapper< Class_ManyParameters_ExtraProperty_ExtData>(json, options);
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper<Class_ManyParameters_ExtraProperty_ExtData>(json, s_noDuplicateParamsOptions));
 
-            await Assert.ThrowsAsync<JsonException>(test);
-
-            options = JsonSerializerOptions.Default;
-            await test(); // Assert no throw
+            await Serializer.DeserializeWrapper<Class_ManyParameters_ExtraProperty_ExtData>(json); // Assert no throw
         }
 
         public record class Class_ManyParameters_ExtraProperty_ExtData(int P0, int P1, int P2, int P3, int P4, int P5)
