@@ -130,8 +130,8 @@ namespace Microsoft.Extensions.Http
             StopTimer();
 
             // When we're directly disposed (not converted to an expired entry),
-            // we need to dispose both the handler and the scope
-            Handler.Dispose();
+            // we need to dispose both the handler's inner handler and the scope
+            Handler.InnerHandler?.Dispose();
             Scope?.Dispose();
         }
     }
