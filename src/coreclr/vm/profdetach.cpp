@@ -17,6 +17,7 @@
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 #include "eetoprofinterfaceimpl.inl"
+#include "minipal/time.h"
 
 // Class static member variables
 CQuickArrayList<ProfilerDetachInfo> ProfilingAPIDetach::s_profilerDetachInfos;
@@ -54,9 +55,6 @@ void ProfilerDetachInfo::Init()
     m_dwExpectedCompletionMilliseconds = 0;
 }
 
-
-// ----------------------------------------------------------------------------
-// Implementation of ProfilingAPIAttachDetach statics
 
 
 // ----------------------------------------------------------------------------
@@ -227,7 +225,7 @@ HRESULT ProfilingAPIDetach::RequestProfilerDetach(ProfilerInfo *pProfilerInfo, D
         {
             ProfilerDetachInfo detachInfo;
             detachInfo.m_pProfilerInfo = pProfilerInfo;
-            detachInfo.m_ui64DetachStartTime = CLRGetTickCount64();
+            detachInfo.m_ui64DetachStartTime = minipal_lowres_ticks();
             detachInfo.m_dwExpectedCompletionMilliseconds = dwExpectedCompletionMilliseconds;
             s_profilerDetachInfos.Push(detachInfo);
         }
@@ -425,7 +423,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates(ProfilerDetachInfo *pDetach
     //         (but not too soon)
     //     * Occasionally thereafter (steady state)
 
-    ULONGLONG ui64ElapsedMilliseconds = CLRGetTickCount64() - ui64DetachStartTime;
+    ULONGLONG ui64ElapsedMilliseconds = minipal_lowres_ticks() - ui64DetachStartTime;
     ULONGLONG ui64SleepMilliseconds;
     if (ui64ExpectedCompletionMilliseconds > ui64ElapsedMilliseconds)
     {

@@ -814,7 +814,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GetString                 = 0x50,
 
     // Used by /Tuning for Profile optimizations
-    READYTORUN_HELPER_LogMethodEnter            = 0x51,
+    READYTORUN_HELPER_LogMethodEnter            = 0x51, // Unused since READYTORUN_MAJOR_VERSION 10.0
 
     // Reflection helpers
     READYTORUN_HELPER_GetRuntimeTypeHandle      = 0x54,
@@ -870,12 +870,14 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Dbl2UIntOvf               = 0xD5,
     READYTORUN_HELPER_Dbl2ULng                  = 0xD6,
     READYTORUN_HELPER_Dbl2ULngOvf               = 0xD7,
+    READYTORUN_HELPER_Lng2Flt                   = 0xD8,
+    READYTORUN_HELPER_ULng2Flt                  = 0xD9,
 
     // Floating point ops
     READYTORUN_HELPER_DblRem                    = 0xE0,
     READYTORUN_HELPER_FltRem                    = 0xE1,
-    READYTORUN_HELPER_DblRound                  = 0xE2,
-    READYTORUN_HELPER_FltRound                  = 0xE3,
+    READYTORUN_HELPER_DblRound                  = 0xE2, // Unused since READYTORUN_MAJOR_VERSION 10.0
+    READYTORUN_HELPER_FltRound                  = 0xE3, // Unused since READYTORUN_MAJOR_VERSION 10.0
 
 #ifndef _TARGET_X86_
     // Personality routines

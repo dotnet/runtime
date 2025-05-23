@@ -37,6 +37,12 @@ C_FUNC(\Name\()_End):
     nop
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
     lla  \HelperReg, \Name
 .endm

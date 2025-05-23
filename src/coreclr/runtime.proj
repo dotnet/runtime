@@ -115,7 +115,7 @@
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->
-    <Message Text="Executing $(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
+    <Message Text="Executing $(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')" Importance="High" />
     <Exec Command="$(_CoreClrBuildPreSource)$(MSBuildThisFileDirectory)&quot;$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg->'%(Identity)',' ')"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>

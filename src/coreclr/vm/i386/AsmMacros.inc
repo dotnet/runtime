@@ -5,6 +5,24 @@
 ; Define macros to build unwind data for prologues.
 ;
 
+FASTCALL_FUNC macro FuncName,cbArgs
+    FuncNameReal EQU @&FuncName&@&cbArgs
+    FuncNameReal proc public
+    FuncName label proc
+    PUBLIC FuncName
+
+endm
+
+FASTCALL_ENDFUNC macro
+    FuncNameReal endp
+endm
+
+ALTERNATE_ENTRY macro Name
+
+Name label proc
+PUBLIC Name
+        endm
+
 __tls_array     equ 2Ch     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 t_CurrentThreadInfo  TEXTEQU <?t_CurrentThreadInfo@@3UThreadLocalInfo@@A>

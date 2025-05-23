@@ -3253,7 +3253,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
-                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
+                else if (isUnsigned && emitter::isValidUimm11(imm + 1) && (imm != (~0)))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
@@ -3270,7 +3270,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
-                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
+                else if (isUnsigned && emitter::isValidUimm11(imm + 1) && (imm != (~0)))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);

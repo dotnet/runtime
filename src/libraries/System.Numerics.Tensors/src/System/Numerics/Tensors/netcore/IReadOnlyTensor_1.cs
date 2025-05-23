@@ -21,9 +21,9 @@ namespace System.Numerics.Tensors
         /// <param name="indexes">The index of the element for which to get a reference.</param>
         /// <returns>A reference to the element that exists at <paramref name="indexes" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///   Thrown when one of the following conditions is met:
-        ///   * <paramref name="indexes" /> does not contain <see cref="IReadOnlyTensor.Rank" /> elements
-        ///   * <paramref name="indexes" /> contains an element that is negative or greater than or equal to the corresponding dimension length
+        ///   One of the following conditions is met:
+        ///   * <paramref name="indexes" /> does not contain <see cref="IReadOnlyTensor.Rank" /> elements.
+        ///   * <paramref name="indexes" /> contains an element that is negative or greater than or equal to the corresponding dimension length.
         /// </exception>
         new ref readonly T this[params scoped ReadOnlySpan<nint> indexes] { get; }
 
@@ -81,6 +81,14 @@ namespace System.Numerics.Tensors
         /// <returns>A tensor that consists of all elements of the current tensor in <paramref name="ranges" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="ranges" /> is larger than the tensor.</exception>
         TSelf Slice(params scoped ReadOnlySpan<NRange> ranges);
+
+        /// <summary>Creates a dense tensor from the elements of the current tensor.</summary>
+        /// <returns>The current tensor if it is already dense; otherwise, a new tensor that contains the elements of this tensor.</returns>
+        /// <remarks>
+        ///   <para>A dense tensor is one where the elements are ordered sequentially in memory and where no gaps exist between the elements.</para>
+        ///   <para>For a 2x2 Tensor, this would mean it has <c>FlattendLength: 4; Lengths: [2, 2]; Strides: [4, 1]</c>. The elements would be sequentially accessed via indexes: <c>[0, 0]; [0, 1]; [1, 0]; [1, 1]</c></para>
+        /// </remarks>
+        TSelf ToDenseTensor();
 
         /// <summary>Attempts to copy the contents of this tensor into a destination tensor span and returns a value to indicate whether or not the operation succeeded.</summary>
         /// <param name="destination">The target of the copy operation.</param>

@@ -69,8 +69,8 @@ void InitJITHelpers1();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS* pJitFlags,
-                        ULONG* pSizeOfCode);
+                        _Out_ bool* isTier0,
+                        _Out_ ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
@@ -171,7 +171,22 @@ extern "C" FCDECL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, Che
 #else
 // Regular checked write barrier.
 extern "C" FCDECL2(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref);
-#endif
+
+#ifdef TARGET_ARM64
+#define RhpCheckedAssignRef RhpCheckedAssignRefArm64
+#define RhpByRefAssignRef RhpByRefAssignRefArm64
+#define RhpAssignRef RhpAssignRefArm64
+#elif defined (TARGET_LOONGARCH64)
+#define RhpAssignRef RhpAssignRefLoongArch64
+#elif defined (TARGET_RISCV64)
+#define RhpAssignRef RhpAssignRefRiscV64
+#endif // TARGET_*
+
+#endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS && defined(FEATURE_COUNT_GC_WRITE_BARRIERS)
+
+extern "C" FCDECL2(VOID, RhpCheckedAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpByRefAssignRef, Object **dst, Object *ref);
+extern "C" FCDECL2(VOID, RhpAssignRef, Object **dst, Object *ref);
 
 extern "C" FCDECL2(VOID, JIT_WriteBarrier, Object **dst, Object *ref);
 extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref);
@@ -181,70 +196,6 @@ extern "C" FCDECL2(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Obje
 extern "C" FCDECL2(VOID, JIT_WriteBarrier_Callable, Object **dst, Object *ref);
 
 #define WriteBarrier_Helper JIT_WriteBarrier_Callable
-
-#ifdef TARGET_AMD64
-
-
-class WriteBarrierManager
-{
-public:
-    enum WriteBarrierType
-    {
-        WRITE_BARRIER_UNINITIALIZED,
-        WRITE_BARRIER_PREGROW64,
-        WRITE_BARRIER_POSTGROW64,
-#ifdef FEATURE_SVR_GC
-        WRITE_BARRIER_SVR64,
-#endif // FEATURE_SVR_GC
-        WRITE_BARRIER_BYTE_REGIONS64,
-        WRITE_BARRIER_BIT_REGIONS64,
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        WRITE_BARRIER_WRITE_WATCH_PREGROW64,
-        WRITE_BARRIER_WRITE_WATCH_POSTGROW64,
-#ifdef FEATURE_SVR_GC
-        WRITE_BARRIER_WRITE_WATCH_SVR64,
-#endif // FEATURE_SVR_GC
-        WRITE_BARRIER_WRITE_WATCH_BYTE_REGIONS64,
-        WRITE_BARRIER_WRITE_WATCH_BIT_REGIONS64,
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        WRITE_BARRIER_BUFFER
-    };
-
-    WriteBarrierManager();
-    void Initialize();
-
-    int UpdateEphemeralBounds(bool isRuntimeSuspended);
-    int UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck);
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    int SwitchToWriteWatchBarrier(bool isRuntimeSuspended);
-    int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended);
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    size_t GetCurrentWriteBarrierSize();
-
-protected:
-    size_t GetSpecificWriteBarrierSize(WriteBarrierType writeBarrier);
-    PBYTE  CalculatePatchLocation(LPVOID base, LPVOID label, int offset);
-    PCODE  GetCurrentWriteBarrierCode();
-    int ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier, bool isRuntimeSuspended);
-    bool   NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, bool bUseBitwiseWriteBarrier, WriteBarrierType* pNewWriteBarrierType);
-
-private:
-    void Validate();
-
-    WriteBarrierType    m_currentWriteBarrier;
-
-    PBYTE   m_pWriteWatchTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
-    PBYTE   m_pLowerBoundImmediate;         // PREGROW | POSTGROW |     | WRITE_WATCH | REGION
-    PBYTE   m_pCardTableImmediate;          // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
-    PBYTE   m_pCardBundleTableImmediate;    // PREGROW | POSTGROW | SVR | WRITE_WATCH | REGION
-    PBYTE   m_pUpperBoundImmediate;         //         | POSTGROW |     | WRITE_WATCH | REGION
-    PBYTE   m_pRegionToGenTableImmediate;   //         |          |     | WRITE_WATCH | REGION
-    PBYTE   m_pRegionShrDest;               //         |          |     | WRITE_WATCH | REGION
-    PBYTE   m_pRegionShrSrc;                //         |          |     | WRITE_WATCH | RETION
-};
-
-#endif // TARGET_AMD64
 
 EXTERN_C FCDECL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2);
 
@@ -276,9 +227,10 @@ extern "C"
 
 // JIThelp.asm/JIThelp.s
 #define X86_WRITE_BARRIER_REGISTER(reg) \
-    void STDCALL JIT_CheckedWriteBarrier##reg(); \
     void STDCALL JIT_DebugWriteBarrier##reg(); \
-    void STDCALL JIT_WriteBarrier##reg();
+    void STDCALL JIT_WriteBarrier##reg(); \
+    void FASTCALL RhpAssignRef##reg(Object**, Object*); \
+    void FASTCALL RhpCheckedAssignRef##reg(Object**, Object*);
 
     ENUM_X86_WRITE_BARRIER_REGISTERS()
 #undef X86_WRITE_BARRIER_REGISTER
@@ -404,17 +356,16 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
-        m_pJitHandles(nullptr),
-        m_pMethodBeingCompiled(fd),
-        m_transientDetails(NULL),
-        m_pThread(GetThreadNULLOk()),
-        m_hMethodForSecurity_Key(NULL),
-        m_pMethodForSecurity_Value(NULL),
+    CEEInfo(MethodDesc * fd = NULL)
+        : m_pJitHandles(nullptr)
+        , m_pMethodBeingCompiled(fd)
+        , m_transientDetails(NULL)
+        , m_pThread(GetThreadNULLOk())
+        , m_hMethodForSecurity_Key(NULL)
+        , m_pMethodForSecurity_Value(NULL)
 #if defined(FEATURE_GDBJIT)
-        m_pCalledMethods(NULL),
+        , m_pCalledMethods(NULL)
 #endif
-        m_allowInlining(fAllowInlining)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -443,14 +394,6 @@ public:
     // Performs any work JIT-related work that should be performed at process shutdown.
     void JitProcessShutdownWork();
 
-    void setJitFlags(const CORJIT_FLAGS& jitFlags);
-
-private:
-#ifdef _DEBUG
-    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
-    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
-#endif
-
 public:
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
@@ -472,8 +415,12 @@ public:
     TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
-    // Get method info for a transient method
-    void getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo);
+protected:
+    COR_ILMETHOD_DECODER* getMethodInfoWorker(
+        MethodDesc* ftn,
+        COR_ILMETHOD_DECODER* header,
+        CORINFO_METHOD_INFO* methInfo,
+        CORINFO_CONTEXT_HANDLE exactContext = NULL);
 
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
@@ -499,8 +446,6 @@ protected:
     CalledMethod *          m_pCalledMethods;
 #endif
 
-    bool                    m_allowInlining;
-
     void EnsureActive(TypeHandle th, MethodDesc * pMD = NULL);
 };
 
@@ -517,34 +462,7 @@ class CEECodeGenInfo : public CEEInfo
 {
 public:
     // ICorJitInfo stuff
-    CEECodeGenInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm, bool allowInlining = true)
-        : CEEInfo(fd, allowInlining),
-          m_jitManager(jm),
-          m_CodeHeader(NULL),
-          m_CodeHeaderRW(NULL),
-          m_codeWriteBufferSize(0),
-          m_pRealCodeHeader(NULL),
-          m_pCodeHeap(NULL),
-          m_ILHeader(header),
-          m_GCinfo_len(0),
-          m_EHinfo_len(0),
-          m_iOffsetMapping(0),
-          m_pOffsetMapping(NULL),
-          m_iNativeVarInfo(0),
-          m_pNativeVarInfo(NULL),
-          m_inlineTreeNodes(NULL),
-          m_numInlineTreeNodes(0),
-          m_richOffsetMappings(NULL),
-          m_numRichOffsetMappings(0),
-          m_gphCache()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        } CONTRACTL_END;
-    }
+    CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm);
 
     ~CEECodeGenInfo()
     {
@@ -643,6 +561,9 @@ public:
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
+    CORINFO_METHOD_INFO* getMethodInfoInternal();
+    CORJIT_FLAGS* getJitFlagsInternal();
+
 protected:
 
     template <typename TCodeHeader>
@@ -672,7 +593,8 @@ protected:
     size_t                  m_codeWriteBufferSize;
     BYTE*                   m_pRealCodeHeader;
     HeapList*               m_pCodeHeap;
-    COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
+    COR_ILMETHOD_DECODER*   m_ILHeader;     // the code header to use. This may have been generated due to dynamic IL generation.
+    CORINFO_METHOD_INFO     m_MethodInfo;
 
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
@@ -879,9 +801,9 @@ public:
 
     void PublishFinalCodeAddress(PCODE addr);
 
-    CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
-               EECodeGenManager* jm, bool allowInlining = true)
-        : CEECodeGenInfo(fd, header, jm, allowInlining)
+    CEEJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
+               EECodeGenManager* jm)
+        : CEECodeGenInfo(config, fd, header, jm)
 #ifdef FEATURE_EH_FUNCLETS
         , m_moduleBase(0),
           m_totalUnwindSize(0),
@@ -1009,9 +931,9 @@ class CInterpreterJitInfo final : public CEECodeGenInfo
 public:
     // ICorJitInfo stuff
 
-    CInterpreterJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
-                        EECodeGenManager* jm, bool allowInlining = true)
-        : CEECodeGenInfo(fd, header, jm, allowInlining)
+    CInterpreterJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
+                        EECodeGenManager* jm)
+        : CEECodeGenInfo(config, fd, header, jm)
     {
         CONTRACTL
         {
