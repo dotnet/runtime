@@ -48,8 +48,8 @@
 
     <_WasmGenerateAppBundleDependsOn>_GetWasmGenerateAppBundleDependencies;$(_WasmGenerateAppBundleDependsOn)</_WasmGenerateAppBundleDependsOn>
 
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml"</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'false'">$(_ExtraTrimmerArgs) --substitutions "$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml"</_ExtraTrimmerArgs>
 
     <WasmUseEMSDK_PATH Condition="'$(WasmUseEMSDK_PATH)' == '' and '$(EMSDK_PATH)' != '' and Exists('$(MSBuildThisFileDirectory)WasmApp.InTree.targets')">true</WasmUseEMSDK_PATH>
     <WasmClang>emcc</WasmClang>
