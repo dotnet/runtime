@@ -11,12 +11,12 @@ public class Runtime_115815
     [Fact]
     public static void TestEntryPoint()
     {
-        var destination = new KeyValuePair<Container, double>[1_000_000];
+        var destination = new KeyValuePair<Container, double>[1_000];
 
         // loop to make this method fully interruptible + to get into OSR version
-        for (int i = 0; i < destination.Length; i++)
+        for (int i = 0; i < destination.Length * 1000; i++)
         {
-            destination[i] = default;
+            destination[i / 1000] = default;
         }
 
         for (int i = 0; i < 5; i++)

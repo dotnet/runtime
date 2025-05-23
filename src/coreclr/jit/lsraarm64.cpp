@@ -2290,6 +2290,9 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             break;
 
         case NI_Sve_CreateBreakPropagateMask:
+        case NI_Sve2_BitwiseSelect:
+        case NI_Sve2_BitwiseSelectLeftInverted:
+        case NI_Sve2_BitwiseSelectRightInverted:
             // RMW operates on the second op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(2);
