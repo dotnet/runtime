@@ -13365,7 +13365,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
         if (
 #ifdef FEATURE_JIT
-            // If both JIT and interpret are available, load the interpreter only for testing purposes only if the config switch is set
+            // If both JIT and interpret are available, load the interpreter for testing purposes only if the config switch is set
             (interpreterConfig != NULL) &&
 #endif
             !interpreterMgr->LoadInterpreter())
