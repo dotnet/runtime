@@ -47,3 +47,9 @@ jobs:
 
       - name: Run dotnet info
         run: dotnet --info
+
+      - name: Build clr+libs
+        run: ./build.sh clr+libs -rc release
+
+      - name: Verify testhost exists
+        run: find ./artifacts/bin/testhost/ -type f -name dotnet
