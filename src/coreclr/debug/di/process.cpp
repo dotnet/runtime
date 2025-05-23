@@ -5078,6 +5078,23 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_LOAD_MODULE:
         {
+            LOG((LF_CORDB, LL_INFO100,
+                "RCET::HRCE: load assembly on thread %#x Asm:0x%08x AD:0x%08x \n",
+                dwVolatileThreadId,
+                VmPtrToCookie(pEvent->LoadModuleData.vmDomainAssembly),
+                VmPtrToCookie(pEvent->vmAppDomain)));
+
+            _ASSERTE (pAppDomain != NULL);
+
+            // Determine if this Assembly is cached.
+            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->LoadModuleData.vmDomainAssembly);
+            _ASSERTE(pAssembly != NULL); // throws on error
+
+            // If created, or have, an Assembly, notify callback.
+            {
+                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
+                hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
+            }
             _ASSERTE (pAppDomain != NULL);
             CordbModule * pModule = pAppDomain->LookupOrCreateModule(pEvent->LoadModuleData.vmDomainAssembly);
 
@@ -5401,29 +5418,6 @@ void CordbProcess::RawDispatchEvent(
             // to this AppDomain have been moved to the default AppDomain, no one should be
             // interested in looking this AppDomain up anymore.
             m_appDomains.RemoveBase(VmPtrToCookie(pEvent->vmAppDomain));
-        }
-
-        break;
-
-    case DB_IPCE_LOAD_ASSEMBLY:
-        {
-            LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load assembly on thread %#x Asm:0x%08x AD:0x%08x \n",
-                dwVolatileThreadId,
-                VmPtrToCookie(pEvent->AssemblyData.vmDomainAssembly),
-                VmPtrToCookie(pEvent->vmAppDomain)));
-
-            _ASSERTE (pAppDomain != NULL);
-
-            // Determine if this Assembly is cached.
-            CordbAssembly * pAssembly = pAppDomain->LookupOrCreateAssembly(pEvent->AssemblyData.vmDomainAssembly);
-            _ASSERTE(pAssembly != NULL); // throws on error
-
-            // If created, or have, an Assembly, notify callback.
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                hr = pCallback1->LoadAssembly(pAppDomain, pAssembly);
-            }
         }
 
         break;

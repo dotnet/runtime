@@ -2628,9 +2628,6 @@ public:
 
     void SendCreateAppDomainEvent(AppDomain * pAppDomain);
 
-    // Notify the debugger that an assembly has been loaded
-    void LoadAssembly(DomainAssembly * pDomainAssembly);
-
     // Notify the debugger that an assembly has been unloaded
     void UnloadAssembly(DomainAssembly * pDomainAssembly);
 
