@@ -19,6 +19,7 @@ namespace System.Net.Http
         private const int MessageAlreadySent = 1;
         private const int PropagatorStateInjectedByDiagnosticsHandler = 2;
         private const int MessageDisposed = 4;
+        private const int AuthDisabled = 8;
 
         // Track whether the message has been sent.
         // The message shouldn't be sent again if this field is equal to MessageAlreadySent.
@@ -176,6 +177,10 @@ namespace System.Net.Http
         internal void MarkPropagatorStateInjectedByDiagnosticsHandler() => _sendStatus |= PropagatorStateInjectedByDiagnosticsHandler;
 
         internal bool WasPropagatorStateInjectedByDiagnosticsHandler() => (_sendStatus & PropagatorStateInjectedByDiagnosticsHandler) != 0;
+
+        internal void DisableAuth() => _sendStatus |= AuthDisabled;
+
+        internal bool IsAuthDisabled() => (_sendStatus & AuthDisabled) != 0;
 
         private bool Disposed
         {

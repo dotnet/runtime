@@ -197,7 +197,6 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2StreamWindowManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthenticatedConnectionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnection.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpConnectionBase.cs" />
