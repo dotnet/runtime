@@ -383,7 +383,12 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
   <!-- enables diagnostic server -->
   <WasmEnableEventPipe>true</WasmEnableEventPipe>
 
-
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  Only when WasmPerfInstrumentation is true
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmPerformanceInstrumentation>N:Sample</WasmPerformanceInstrumentation>
+  <!-- alternatively all methods -->
   <WasmPerformanceInstrumentation>all</WasmPerformanceInstrumentation>
 
   <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
