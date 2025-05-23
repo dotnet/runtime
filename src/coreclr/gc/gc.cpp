@@ -46897,7 +46897,7 @@ void gc_heap::background_sweep()
             else
             {
                 // For SOH segments we go backwards.
-                next_seg = heap_segment_prev (start_seg, seg);
+                next_seg = heap_segment_prev (gen_start_seg, seg);
             }
 #endif //DOUBLY_LINKED_FL
 
