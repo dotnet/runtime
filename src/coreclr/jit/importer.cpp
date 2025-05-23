@@ -2067,7 +2067,14 @@ void Compiler::impSpillAsyncCalls(unsigned chkLevel)
     {
         GenTree* tree = stackState.esStack[level].val;
 
-        if (gtTreeContainsAsyncCall(tree))
+        // Check if a node is an async call, or a RET_EXPR that might be
+        // replaced with a tree that has an async call in it.
+        auto hasAsyncCall = [=](GenTree* tree) {
+            return (tree->IsCall() && tree->AsCall()->IsAsync()) ||
+                   (tree->OperIs(GT_RET_EXPR) && gtTreeContainsAsyncCall(tree->AsRetExpr()->gtInlineCandidate));
+        };
+
+        if (gtFindNodeInTree<GTF_CALL>(tree, hasAsyncCall) != nullptr)
         {
             impSpillStackEntry(level, BAD_VAR_NUM DEBUGARG(false) DEBUGARG("impSpillAsyncCalls"));
         }
