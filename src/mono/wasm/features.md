@@ -381,7 +381,7 @@ See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045
 ```xml
 <PropertyGroup>
   <!-- enables diagnostic server -->
-  <WasmEnableEventPipe>true</WasmEnableEventPipe>
+  <WasmEnablePerformanceTracing>true</WasmEnablePerformanceTracing>
 
   <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
   Only when WasmPerfInstrumentation is true

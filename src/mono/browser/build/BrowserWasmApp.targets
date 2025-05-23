@@ -3,8 +3,8 @@
     <!-- Post Wasm MVP features -->
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
-    <!-- we are not triggering WasmEnableEventPipe in Debug automatically, because it would trigger re-link, making dev-loop slow -->
-    <WasmEnableEventPipe Condition="'$(WasmEnableEventPipe)' == ''">false</WasmEnableEventPipe>
+    <!-- we are not triggering WasmEnablePerformanceTracing in Debug automatically, because it would trigger re-link, making dev-loop slow -->
+    <WasmEnablePerformanceTracing Condition="'$(WasmEnablePerformanceTracing)' == ''">false</WasmEnablePerformanceTracing>
   </PropertyGroup>
 
   <Import Project="$(WasmCommonTargetsPath)WasmApp.Common.targets" />
@@ -101,7 +101,7 @@
       <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(WasmEnableEventPipe)' == 'true'" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js" Condition="'$(WasmEnablePerformanceTracing)' == 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
@@ -114,7 +114,7 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js.map"
                        Condition="'$(WasmEmitSourceMap)' != 'false'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.diagnostics.js.map"
-                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(WasmEnableEventPipe)' == 'true'" />
+                       Condition="'$(WasmEmitSourceMap)' != 'false' and '$(WasmEnablePerformanceTracing)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
@@ -391,8 +391,8 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(WasmEnableEventPipe)' == 'true'" />
-      <EmscriptenEnvVars Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(WasmEnableEventPipe)' != 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_PERFORMANCE_TRACING=1" Condition="'$(WasmEnablePerformanceTracing)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_PERFORMANCE_TRACING=0" Condition="'$(WasmEnablePerformanceTracing)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
@@ -468,8 +468,8 @@
 
     <ItemGroup>
       <_MonoRuntimeComponentDontLink Include="wasm-bundled-timezones.a" Condition="'$(InvariantTimezone)' == 'true'"/>
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(WasmEnableEventPipe)' != 'true'" />
-      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(WasmEnableEventPipe)' == 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-static.a" Condition="'$(WasmEnablePerformanceTracing)' != 'true'" />
+      <_MonoRuntimeComponentDontLink Include="libmono-component-diagnostics_tracing-stub-static.lib" Condition="'$(WasmEnablePerformanceTracing)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>

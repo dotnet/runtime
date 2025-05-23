@@ -549,7 +549,7 @@ export async function start_runtime () {
         if (runtimeHelpers.config.runtimeOptions)
             mono_wasm_set_runtime_options(runtimeHelpers.config.runtimeOptions);
 
-        if (runtimeHelpers.emscriptenBuildOptions.enableEventPipe) {
+        if (runtimeHelpers.emscriptenBuildOptions.enablePerformanceTracing) {
             const diagnosticPorts = "DOTNET_DiagnosticPorts";
             // connect JS client by default
             const jsReady = "js://ready";

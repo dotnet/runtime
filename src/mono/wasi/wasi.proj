@@ -163,7 +163,7 @@
       { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
       { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
       { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
-      { "identity": "WasmEnableEventPipe",    "defaultValueInRuntimePack": "$(WasmEnableEventPipe)" },
+      { "identity": "WasmEnablePerformanceTracing",    "defaultValueInRuntimePack": "$(WasmEnablePerformanceTracing)" },
       { "identity": "WasmProfilers",          "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
     ]
