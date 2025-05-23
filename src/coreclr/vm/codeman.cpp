@@ -3759,7 +3759,7 @@ BOOL InterpreterJitManager::LoadInterpreter()
 // via config switch for testing purposes. 
 #if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
     newInterpreter = InitializeStaticJIT();
-#else // !FEATURE_STATICALLY_LINKED
+#else // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
     g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
 
     LPWSTR interpreterPath = NULL;
@@ -3767,7 +3767,7 @@ BOOL InterpreterJitManager::LoadInterpreter()
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetInterpreterName() DEBUGARG(interpreterPath), &m_interpreterHandle, &newInterpreter, &g_interpreterLoadData, getClrVmOs());
-#endif // !FEATURE_STATICALLY_LINKED
+#endif // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
 
     // Publish the interpreter.
     m_interpreter = newInterpreter;
