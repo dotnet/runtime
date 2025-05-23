@@ -48,10 +48,8 @@ namespace Microsoft.Extensions.Http
                     Scope?.Dispose();
                 }
             }
-            else
-            {
-                Scope?.Dispose();
-            }
+            // If IsAlive is true, it means the handler is still in use
+            // Don't dispose the scope as it's still being used with the handler
         }
     }
 }
