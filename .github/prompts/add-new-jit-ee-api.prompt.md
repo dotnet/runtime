@@ -35,7 +35,7 @@ CORINFO_METHOD_HANDLE getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresI
 Insert the new API definition without removing any existing entries, placing it near similar signatures.
 
 2. Invoke `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` script
-(or `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.sh` on Windows) to update auto-generated files.
+(or `<repo_root>/src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.bat` on Windows) to update auto-generated files.
 Use the correct directory for the script to run.
 
 3. Open `<repo_root>/src/coreclr/inc/corinfo.h` and add the new API inside `class ICorStaticInfo` class as the last member. Example:
