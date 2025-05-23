@@ -5696,7 +5696,7 @@ bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
     {
         return false;
     }
-    
+
     return gtTreeContainsCall(tree, [](GenTreeCall* call) {
         return call->IsAsync();
     });
