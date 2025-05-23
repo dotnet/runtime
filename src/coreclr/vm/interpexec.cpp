@@ -1187,40 +1187,15 @@ CALL_TARGET_IP:
                     methodSlot = ip[3];
 
                     MethodTable *pClass = (MethodTable*)pMethod->pDataItems[ip[4]];
-                    // FIXME: Duplicated code from CALL_INTERP_SLOT
-                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
-                    MethodDesc *pMD = nullptr;
-                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
-                    {
-                        pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
-                    }
+                    OBJECTREF objRef = AllocateObject(pClass);
 
-                    // If we are constructing a type with a component size (i.e. a string) its constructor is a special
-                    //  fcall that is basically a static method that returns the new instance.
-                    if (pMD && pClass->HasComponentSize())
-                    {
-                        // Get the address of the fcall that implements the ctor
-                        PCODE code = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
-                        assert(code);
+                    // This is return value
+                    LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
+                    // Set `this` arg for ctor call
+                    LOCAL_VAR(callArgsOffset, OBJECTREF) = objRef;
+                    ip += 5;
 
-                        // callArgsOffset points to the ctor arguments, which are what the fcall expects.
-                        // returnOffset points to where the new instance goes, and the fcall will write it there.
-                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, code);
-                        ip += 5;
-                        break;
-                    }
-                    else
-                    {
-                        OBJECTREF objRef = AllocateObject(pClass);
-
-                        // This is return value
-                        LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
-                        // Set `this` arg for ctor call
-                        LOCAL_VAR(callArgsOffset, OBJECTREF) = objRef;
-                        ip += 5;
-
-                        goto CALL_INTERP_SLOT;
-                    }
+                    goto CALL_INTERP_SLOT;
                 }
                 case INTOP_NEWOBJ_VT:
                 {
@@ -1238,6 +1213,32 @@ CALL_TARGET_IP:
 
                     ip += 5;
                     goto CALL_INTERP_SLOT;
+                }
+                case INTOP_NEWOBJ_VAROBJSIZE:
+                {
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+
+                    // FIXME: Duplicated code from CALL_INTERP_SLOT
+                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
+                    MethodDesc *pMD = nullptr;
+                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
+                    {
+                        pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
+                    }
+
+                    // If we are constructing a type with a component size (i.e. a string) its constructor is a special
+                    //  fcall that is basically a static method that returns the new instance.
+                    // Get the address of the fcall that implements the ctor
+                    PCODE code = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+                    assert(code);
+
+                    // callArgsOffset points to the ctor arguments, which are what the fcall expects.
+                    // returnOffset points to where the new instance goes, and the fcall will write it there.
+                    InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, code);
+                    ip += 5;
+                    break;
                 }
                 case INTOP_ZEROBLK_IMM:
                     memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);

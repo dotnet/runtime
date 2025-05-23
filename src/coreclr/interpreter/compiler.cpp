@@ -3062,7 +3062,7 @@ retry_emit:
                 }
                 else
                 {
-                    AddIns(INTOP_NEWOBJ);
+                    AddIns(isStringOrArray ? INTOP_NEWOBJ_VAROBJSIZE : INTOP_NEWOBJ);
                     m_pLastNewIns->data[1] = GetDataItemIndex(ctorClass);
                 }
 
