@@ -458,7 +458,7 @@ namespace InteropLibImports
 
         // Get the target of the external object's reference.
         ::OBJECTHANDLE tgtHandle = static_cast<::OBJECTHANDLE>(targetHandle);
-        MOWHOLDERREF holder = ObjectFromHandle(tgtHandle);
+        MOWHOLDERREF holder = (MOWHOLDERREF)ObjectFromHandle(tgtHandle);
 
         // Return if the holder has been collected
         if (holder == NULL)
