@@ -532,7 +532,7 @@ static void DispatchLongJmp(IN     PEXCEPTION_RECORD   pExceptionRecord,
     SetCurrentSEHRecord(((PEXCEPTION_REGISTRATION_RECORD)pEstablisherFrame)->Next);
 
 #pragma warning(push)
-#pragma warning(disable:4611)
+#pragma warning(disable:4611) // interaction between 'function' and C++ object destruction is non-portable
     jmp_buf jumpBuffer;
     if (setjmp(jumpBuffer))
     {
@@ -551,6 +551,7 @@ static void DispatchLongJmp(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
     OBJECTREF oref = ExInfo::CreateThrowable(&newExceptionRecord, FALSE);
     DispatchManagedException(oref, pContextRecord, &newExceptionRecord);
+    UNREACHABLE();
 }
 #endif
 
