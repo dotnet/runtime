@@ -4,7 +4,7 @@
 // Adapted from OpenTelemetry .NET implementation:
 // https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/src/OpenTelemetry/Metrics/CircularBufferBuckets.cs#L1
 // Licensed under the Apache 2.0 License. See LICENSE: https://github.com/open-telemetry/opentelemetry-dotnet/blob/805dd6b4abfa18ef2706d04c30d0ed28dbc2955e/LICENSE.TXT
-// © OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 
 using System.Runtime.CompilerServices;
 
