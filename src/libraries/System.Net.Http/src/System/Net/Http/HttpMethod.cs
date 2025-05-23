@@ -19,6 +19,7 @@ namespace System.Net.Http
         public static HttpMethod Options { get; } = new("OPTIONS", H3StaticTable.MethodOptions);
         public static HttpMethod Trace { get; } = new("TRACE", http3StaticTableIndex: -1);
         public static HttpMethod Patch { get; } = new("PATCH", http3StaticTableIndex: -1);
+        public static HttpMethod Query { get; } = new("QUERY", http3StaticTableIndex: -1);
 
         /// <summary>Gets the HTTP CONNECT protocol method.</summary>
         /// <value>The HTTP CONNECT method.</value>
@@ -106,6 +107,7 @@ namespace System.Net.Http
                         4 => Post,
                         _ => Patch,
                     },
+                    'q' => Query,
                     't' => Trace,
                     _ => null,
                 };
