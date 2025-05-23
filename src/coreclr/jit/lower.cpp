@@ -7322,6 +7322,11 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
         {
             return next;
         }
+
+        if (TryContainingGetActiveElementCount(node))
+        {
+            return next;
+        }
     }
 #endif // TARGET_ARM64
 
