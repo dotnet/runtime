@@ -76,3 +76,7 @@ jobs:
           ./build.sh $RESTORE_ARGS && \
           ./build.sh libs.tests $RESTORE_ARGS
 
+      - name: Pre-build clr
+        run: |
+          ./build.sh clr -rc release
+
