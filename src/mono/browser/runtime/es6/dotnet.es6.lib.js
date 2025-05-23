@@ -89,7 +89,7 @@ function injectDependencies() {
         `enableAotProfiler: ${ENABLE_AOT_PROFILER}, ` +
         `enableDevToolsProfiler: ${ENABLE_DEVTOOLS_PROFILER}, ` +
         `enableLogProfiler: ${ENABLE_LOG_PROFILER}, ` +
-        `enablePerfTracing: ${WASM_ENABLE_EVENTPIPE}, ` +
+        `enableEventPipe: ${WASM_ENABLE_EVENTPIPE}, ` +
         `runAOTCompilation: ${RUN_AOT_COMPILATION}, ` +
         `wasmEnableThreads: ${!!USE_PTHREADS}, ` +
         `gitHash: "${gitHash}", ` +
