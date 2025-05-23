@@ -13,6 +13,8 @@ namespace System.Formats.Tar.Tests
 {
     public class GnuTarEntry_Conversion_Tests : TarTestsConversionBase
     {
+        protected override TarEntryFormat FormatUnderTest => TarEntryFormat.Gnu;
+
         [Fact]
         public void Constructor_ConversionFromV7_RegularFile() => TestConstructionConversion(TarEntryType.RegularFile, TarEntryFormat.V7, TarEntryFormat.Gnu);
 
