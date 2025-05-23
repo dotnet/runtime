@@ -391,8 +391,8 @@
       <EmscriptenEnvVars Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <EmscriptenEnvVars Include="WASM_PERFTRACING=1" Condition="'$(WasmEnableEventPipe)' == 'true'" />
-      <EmscriptenEnvVars Include="WASM_PERFTRACING=0" Condition="'$(WasmEnableEventPipe)' != 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EP=1" Condition="'$(WasmEnableEventPipe)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EP=0" Condition="'$(WasmEnableEventPipe)' != 'true'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <EmscriptenEnvVars Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
