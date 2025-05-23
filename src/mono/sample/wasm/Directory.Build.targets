@@ -34,7 +34,7 @@
     <NestedBuildProperty Include="WasmEmitSourceMap" />
     <NestedBuildProperty Include="WasmEmitSymbolMap" />
     <NestedBuildProperty Include="WasmEnableThreads" />
-    <NestedBuildProperty Include="WasmEnablePerformanceTracing" />
+    <NestedBuildProperty Include="WasmEnableEventPipe" />
     <NestedBuildProperty Include="WasmPerformanceInstrumentation" />
   </ItemGroup>
 

@@ -27,7 +27,7 @@
     <EmccMaximumHeapSize Condition="'$(EmccMaximumHeapSize)' == ''">2147483648</EmccMaximumHeapSize>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == '' and '$(WasmEnableThreads)' == 'true'">true</WasmEnableJsInteropByValue>
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
-    <WasmEnablePerformanceTracing Condition="'$(WasmEnablePerformanceTracing)' == ''">false</WasmEnablePerformanceTracing>
+    <WasmEnableEventPipe Condition="'$(WasmEnableEventPipe)' == ''">false</WasmEnableEventPipe>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <EmccCmd>emcc</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
@@ -339,7 +339,7 @@
       { "identity": "WasmSingleFileBundle",         "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
       { "identity": "WasmEnableSIMD",               "defaultValueInRuntimePack": "$(WasmEnableSIMD)" },
       { "identity": "WasmEnableExceptionHandling",  "defaultValueInRuntimePack": "$(WasmEnableExceptionHandling)" },
-      { "identity": "WasmEnablePerformanceTracing", "defaultValueInRuntimePack": "$(WasmEnablePerformanceTracing)" },
+      { "identity": "WasmEnableEventPipe",          "defaultValueInRuntimePack": "$(WasmEnableEventPipe)" },
       { "identity": "WasmProfilers",                "defaultValueInRuntimePack": "$(WasmProfilers)" },
       { "identity": "EmccMaximumHeapSize",          "defaultValueInRuntimePack": "$(EmccMaximumHeapSize)" }
     ]
@@ -426,8 +426,8 @@
       <_CmakeEnvironmentVariable Include="ENABLE_JS_INTEROP_BY_VALUE=0" Condition="'$(WasmEnableJsInteropByValue)' == 'false'"/>
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=1" Condition="'$(WasmEnableSIMD)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_SIMD=0" Condition="'$(WasmEnableSIMD)' == 'false'" />
-      <_CmakeEnvironmentVariable Include="WASM_ENABLE_PERFORMANCE_TRACING=1" Condition="'$(WasmEnablePerformanceTracing)' == 'true'" />
-      <_CmakeEnvironmentVariable Include="WASM_ENABLE_PERFORMANCE_TRACING=0" Condition="'$(WasmEnablePerformanceTracing)' != 'true'" />
+      <_CmakeEnvironmentVariable Include="WASM_ENABLE_EVENTPIPE=1" Condition="'$(WasmEnableEventPipe)' == 'true'" />
+      <_CmakeEnvironmentVariable Include="WASM_ENABLE_EVENTPIPE=0" Condition="'$(WasmEnableEventPipe)' != 'true'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=1" Condition="'$(WasmEnableExceptionHandling)' != 'false'" />
       <_CmakeEnvironmentVariable Include="WASM_ENABLE_EH=0" Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
       <_CmakeEnvironmentVariable Include="RUN_AOT_COMPILATION=1" Condition="'$(RunAOTCompilation)' == 'true'" />

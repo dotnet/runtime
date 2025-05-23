@@ -31,7 +31,7 @@ public record PublishOptions : MSBuildOptions
         string ExtraMSBuildArgs                                     = "",
         bool BuildOnlyAfterPublish                                  = true,
         bool ExpectRelinkDirWhenPublishing                          = false,
-        bool WasmEnablePerformanceTracing                           = false
+        bool WasmEnableEventPipe                                     = false
     ) : base(
         IsPublish,
         TargetFramework ?? BuildTestBase.DefaultTargetFramework,
@@ -49,7 +49,7 @@ public record PublishOptions : MSBuildOptions
         BootConfigFileName,
         NonDefaultFrameworkDir,
         ExtraMSBuildArgs,
-        WasmEnablePerformanceTracing
+        WasmEnableEventPipe
     )
     {
         this.IsPublish = IsPublish;

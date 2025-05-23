@@ -22,7 +22,7 @@
       - $(WasmEmitSourceMap)      - Generates `dotnet.runtime.js.map` and `dotnet.js.map` files with a TypeScript source map.
       - $(WasmDedup)              - Whether to dedup generic instances when using AOT. Defaults to true.
 
-      - $(WasmEnablePerformanceTracing)          - Enables diagnostic server tracing. Defaults to false.
+      - $(WasmEnableEventPipe)          - Enables diagnostic server tracing. Defaults to false.
       - $(EventSourceSupport)           - Enables EventSource support. Defaults to false.
       - $(WasmPerformanceInstrumentation) - Enables CPU sampling instrumentation for diagnostic server. Values should be 'all', 'none', or a callspec pattern like 'N:Sample'. Defaults to none.
       - $(MetricsSupport)               - System.Diagnostics.Metrics support. Defaults to false.
@@ -262,7 +262,7 @@
     <_MonoComponent Include="debugger" />
     <_MonoComponent Include="hot_reload" />
   </ItemGroup>
-  <ItemGroup Condition="'$(WasmEnablePerformanceTracing)' == 'true'">
+  <ItemGroup Condition="'$(WasmEnableEventPipe)' == 'true'">
     <_MonoComponent Include="diagnostics_tracing" />
   </ItemGroup>
   <!-- PUBLISH -->
@@ -490,9 +490,9 @@
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_WasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_ChangedPropertiesThatTriggerRelinking.Identity)=$(%(_ChangedPropertiesThatTriggerRelinking.Identity)), but WasmBuildNative is already set to 'false'." />
 
-    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmEnablePerformanceTracing)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmEnablePerformanceTracing)=$(WasmEnablePerformanceTracing)"/>
+    <Error Condition="'$(WasmProfilers)' != '' and '$(WasmEnableEventPipe)' != 'false'" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmEnableEventPipe)=$(WasmEnableEventPipe)"/>
     <Error Condition="'$(WasmProfilers)' != '' and '$(WasmPerformanceInstrumentation)' != ''" Text="%24(WasmProfilers)=$(WasmProfilers) is not supported together with %24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation)"/>
-    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(WasmEnablePerformanceTracing)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(WasmEnablePerformanceTracing)=true"/>
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != '' and '$(WasmEnableEventPipe)' != 'true'" Text="%24(WasmPerformanceInstrumentation)=$(WasmPerformanceInstrumentation) is only supported together with %24(WasmEnableEventPipe)=true"/>
 
     <PropertyGroup>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(_WasmBuildNativeRequired)' == 'true'">true</WasmBuildNative>
