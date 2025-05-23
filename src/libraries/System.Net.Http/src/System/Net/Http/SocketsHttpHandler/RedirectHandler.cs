@@ -10,7 +10,7 @@ namespace System.Net.Http
 {
     internal sealed class RedirectHandler : HttpMessageHandlerStage
     {
-        private readonly HttpMessageHandlerStage _innerHandler;       // Used for initial request
+        private readonly HttpMessageHandlerStage _innerHandler;
         private readonly int _maxAutomaticRedirections;
         private readonly bool _disableAuthOnRedirect;
 
