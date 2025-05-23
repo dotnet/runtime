@@ -357,7 +357,7 @@ namespace System.Security.Cryptography.Xml
                 chain.ChainPolicy.ExtraStore.AddRange(BuildBagOfCerts());
                 bool chainVerified = chain.Build(certificate);
                 SignedXmlDebugLog.LogVerifyX509Chain(this, chain, certificate);
-            
+
                 if (!chainVerified)
                 {
                     SignedXmlDebugLog.LogVerificationFailure(this, SR.Log_VerificationFailed_X509Chain);
