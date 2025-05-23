@@ -10,8 +10,8 @@ namespace System.Transactions.DtcProxyShim;
 internal struct OletxXactTransInfo
 {
     internal Guid Uow;
-    internal OletxTransactionIsolationLevel IsoLevel;
-    internal OletxTransactionIsoFlags IsoFlags;
+    internal Interop.Xolehlp.OletxTransactionIsolationLevel IsoLevel;
+    internal Interop.Xolehlp.OletxTransactionIsoFlags IsoFlags;
     internal int GrfTCSupported;
     internal int GrfRMSupported;
     internal int GrfTCSupportedRetaining;
