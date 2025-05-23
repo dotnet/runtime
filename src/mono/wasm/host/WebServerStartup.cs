@@ -166,45 +166,60 @@ internal sealed class WebServerStartup
                 context.Response.Redirect("index.html", permanent: false);
                 return Task.CompletedTask;
             });
-        });        // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
-        string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
-        if (!string.IsNullOrEmpty(fileUploadPath))
-        {
-            // General file upload endpoint
-            app.MapPost("/upload", async context =>
+
+            // Add general-purpose file upload endpoint when DEVSERVER_UPLOAD_PATH is set
+            string? fileUploadPath = Environment.GetEnvironmentVariable("DEVSERVER_UPLOAD_PATH");
+            if (!string.IsNullOrEmpty(fileUploadPath))
             {
-                try
+                // Ensure the upload directory exists
+                if (!Directory.Exists(fileUploadPath))
                 {
-                    if (!Directory.Exists(fileUploadPath))
-                    {
-                        Directory.CreateDirectory(fileUploadPath!);
-                    }
-
-                    // Get the filename from the "File-Name" header, or generate a unique one
-                    string fileName = context.Request.Headers["File-Name"].FirstOrDefault() ?? 
-                                        $"upload_{Guid.NewGuid():N}";
-                    
-                    // Clean the filename to prevent directory traversal
-                    fileName = Path.GetFileName(fileName);
-                    
-                    string filePath = Path.Combine(fileUploadPath!, fileName);
-
-                    using (var outputStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await context.Request.Body.CopyToAsync(outputStream);
-                    }
-                    
-                    _logger?.LogInformation("File uploaded to {FilePath}", filePath);
-                    await context.Response.WriteAsync($"File saved to {filePath}");
+                    Directory.CreateDirectory(fileUploadPath!);
                 }
-                catch (Exception ex)
+
+                // Route with filename parameter
+                endpoints.MapPost("/upload/{filename}", async context =>
                 {
-                    _logger?.LogError(ex, "Error processing file upload");
-                    context.Response.StatusCode = 500;
-                    await context.Response.WriteAsync($"Error processing upload: {ex.Message}");
-                }
-            });
-        }
+                    try
+                    {
+                        // Get the filename from the route
+                        var routeValues = context.Request.RouteValues;
+                        string? rawFileName = routeValues["filename"]?.ToString();
+
+                        // Generate a unique name if none provided
+                        if (string.IsNullOrEmpty(rawFileName))
+                        {
+                            rawFileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        // Sanitize filename - IMPORTANT: Only use GetFileName to strip any path components
+                        // This prevents directory traversal attacks like "../../../etc/passwd"
+                        string fileName = Path.GetFileName(rawFileName);
+
+                        if (string.IsNullOrEmpty(fileName))
+                        {
+                            fileName = $"upload_{Guid.NewGuid():N}";
+                        }
+
+                        string filePath = Path.Combine(fileUploadPath!, fileName);
+
+                        using (var outputStream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await context.Request.Body.CopyToAsync(outputStream);
+                        }
+
+                        _logger?.LogInformation("File uploaded to {FilePath}", filePath);
+                        await context.Response.WriteAsync($"File saved to {filePath}");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError(ex, "Error processing file upload");
+                        context.Response.StatusCode = 500;
+                        await context.Response.WriteAsync($"Error processing upload: {ex.Message}");
+                    }
+                });
+            }
+        });
 
         ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs);
     }
