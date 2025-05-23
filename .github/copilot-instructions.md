@@ -2,7 +2,7 @@ Important: **Ensure the code compiles and the tests pass.** Use the "Building & 
 
 Additionally,
 
-* Don't leave trailling whitespaces.
+* Don't leave trailing whitespaces.
 * Apply code-formatting style defined in `.editorconfig`.
 * Prefer file-scoped namespace declarations and single-line using directives.
 * Insert a newline before the opening curly brace of any code block (e.g., after `if`, `for`, `while`, `foreach`, `using`, `try`, etc.).
