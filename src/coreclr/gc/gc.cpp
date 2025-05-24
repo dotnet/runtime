@@ -2452,9 +2452,9 @@ size_t      gc_heap::hc_change_cancelled_count_bgc = 0;
 #endif //BACKGROUND_GC
 #endif //DYNAMIC_HEAP_COUNT
 
-#if defined(HOST_64BIT)
 #define MAX_ALLOWED_MEM_LOAD 85
 
+#if defined(HOST_64BIT)
 // consider putting this in dynamic data -
 // we may want different values for workstation
 // and server GC.
@@ -3823,23 +3823,7 @@ size_t get_basic_region_index_for_address (uint8_t* address)
     return (skewed_basic_region_index - get_skewed_basic_region_index_for_address (g_gc_lowest_address));
 }
 
-// Go from a random address to its region info. The random address could be
-// in one of the basic regions of a larger region so we need to check for that.
-inline
-heap_segment* get_region_info_for_address (uint8_t* address)
-{
-    size_t basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
-    heap_segment* basic_region_info_entry = (heap_segment*)&seg_mapping_table[basic_region_index];
-    ptrdiff_t first_field = (ptrdiff_t)heap_segment_allocated (basic_region_info_entry);
-    if (first_field < 0)
-    {
-        basic_region_index += first_field;
-    }
-
-    return ((heap_segment*)(&seg_mapping_table[basic_region_index]));
-}
-
-// Go from the physical start of a region to its region info.
+// Go from region start to its region info.
 inline
 heap_segment* get_region_info (uint8_t* region_start)
 {
@@ -3856,6 +3840,18 @@ uint8_t* get_region_start (heap_segment* region_info)
 {
     uint8_t* obj_start = heap_segment_mem (region_info);
     return (obj_start - sizeof (aligned_plug_and_gap));
+}
+
+// Go from a random address to its region info. The random address could be
+// in one of the basic regions of a larger region so we need to check for that.
+inline
+heap_segment* get_region_info_for_address (uint8_t* address)
+{
+    size_t basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
+    heap_segment* basic_region_info_entry = (heap_segment*)&seg_mapping_table[basic_region_index];
+    uint8_t* region_start = get_region_start(basic_region_info_entry);
+
+    return get_region_info(region_start);
 }
 
 inline
@@ -4643,30 +4639,25 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
         return ro_segment_lookup (o);
 #endif //FEATURE_BASICFREEZE
 
-    size_t index = (size_t)o >> gc_heap::min_segment_size_shr;
-    seg_mapping* entry = &seg_mapping_table[index];
-
 #ifdef USE_REGIONS
     // REGIONS TODO: I think we could simplify this to having the same info for each
     // basic entry in a large region so we can get it right away instead of having to go
     // back some entries.
-    ptrdiff_t first_field = (ptrdiff_t)heap_segment_allocated ((heap_segment*)entry);
-    if (first_field == 0)
+    heap_segment* seg = get_region_info_for_address(o);
+
+    uint8_t* allocated = heap_segment_allocated (seg);
+    if (allocated == NULL)
     {
         dprintf (REGIONS_LOG, ("asked for seg for %p, in a freed region mem: %p, committed %p",
-            o, heap_segment_mem ((heap_segment*)entry),
-            heap_segment_committed ((heap_segment*)entry)));
+            o, heap_segment_mem (seg), heap_segment_committed (seg)));
         return 0;
     }
     // Regions are never going to intersect an ro seg, so this can never be ro_in_entry.
-    assert (first_field != 0);
-    assert (first_field != ro_in_entry);
-    if (first_field < 0)
-    {
-        index += first_field;
-    }
-    heap_segment* seg = (heap_segment*)&seg_mapping_table[index];
+    assert ((ptrdiff_t)allocated != ro_in_entry);
 #else //USE_REGIONS
+    size_t index = (size_t)o >> gc_heap::min_segment_size_shr;
+    seg_mapping* entry = &seg_mapping_table[index];
+
     dprintf (2, ("checking obj %p, index is %zd, entry: boundary: %p, seg0: %p, seg1: %p",
         o, index, (entry->boundary + 1),
         (uint8_t*)(entry->seg0), (uint8_t*)(entry->seg1)));
@@ -4865,11 +4856,7 @@ public:
     // Now we set more bits should actually only clear the mark bit
     void ClearMarked()
     {
-#ifdef DOUBLY_LINKED_FL
         RawSetMethodTable ((MethodTable *)(((size_t) RawGetMethodTable()) & (~GC_MARKED)));
-#else
-        RawSetMethodTable (GetMethodTable());
-#endif //DOUBLY_LINKED_FL
     }
 
 #ifdef DOUBLY_LINKED_FL
@@ -12483,19 +12470,20 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     set_region_gen_num (seg, gen_num_for_region);
     heap_segment_plan_gen_num (seg) = gen_num_for_region;
     heap_segment_swept_in_plan (seg) = false;
-#endif //USE_REGIONS
 
-#ifdef USE_REGIONS
     int num_basic_regions = (int)(size >> min_segment_size_shr);
+    assert(size == (size_t) num_basic_regions << min_segment_size_shr);
     size_t basic_region_size = (size_t)1 << min_segment_size_shr;
     dprintf (REGIONS_LOG, ("this region contains %d basic regions", num_basic_regions));
-    if (num_basic_regions > 1)
+    // For large region get_region_info(start) equals to seg only for first segment.
+    if (num_basic_regions > 1 && seg == get_region_info(start))
     {
         for (int i = 1; i < num_basic_regions; i++)
         {
             uint8_t* basic_region_start = start + (i * basic_region_size);
             heap_segment* basic_region = get_region_info (basic_region_start);
-            heap_segment_allocated (basic_region) = (uint8_t*)(ptrdiff_t)-i;
+            heap_segment_mem (basic_region) = heap_segment_mem (seg);
+
             dprintf (REGIONS_LOG, ("Initing basic region %p->%p(%zdmb) alloc to %p",
                 basic_region_start, (basic_region_start + basic_region_size),
                 (size_t)(basic_region_size / 1024 / 1024),
@@ -25395,7 +25383,14 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
 
 // check that the fields of a decommissioned heap have their expected values,
 // i.e. were not inadvertently modified
+#ifdef HOST_64BIT
 #define DECOMMISSIONED_VALUE 0xdec0dec0dec0dec0
+static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
+#else // HOST_32BIT
+#define DECOMMISSIONED_VALUE 0xdec0dec0
+static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaad;
+#endif // HOST_64BIT
+
 static const size_t DECOMMISSIONED_SIZE_T = DECOMMISSIONED_VALUE;
 static const ptrdiff_t DECOMMISSIONED_PTRDIFF_T = (ptrdiff_t)DECOMMISSIONED_VALUE;
 static const ptrdiff_t DECOMMISSIONED_UINT64_T = (uint64_t)DECOMMISSIONED_VALUE;
@@ -25406,8 +25401,6 @@ static mark* const DECOMMISSIONED_MARK_P = (mark*)DECOMMISSIONED_VALUE;
 static const BOOL DECOMMISSIONED_BOOL = 0xdec0dec0;
 static const BOOL DECOMMISSIONED_INT = (int)0xdec0dec0;
 static const float DECOMMISSIONED_FLOAT = (float)DECOMMISSIONED_VALUE;
-
-static const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
 
 void gc_heap::check_decommissioned_heap()
 {
@@ -46969,7 +46962,7 @@ void gc_heap::background_sweep()
             else
             {
                 // For SOH segments we go backwards.
-                next_seg = heap_segment_prev (gen_start_seg, seg);
+                next_seg = heap_segment_prev (start_seg, seg);
             }
 #endif //DOUBLY_LINKED_FL
 
