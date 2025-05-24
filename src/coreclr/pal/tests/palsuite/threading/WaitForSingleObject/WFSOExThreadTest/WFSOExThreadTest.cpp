@@ -163,14 +163,14 @@ satisfying any threads that were waiting on the object.
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = minipal_lowres_ticks();
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hWaitThread, 
 								ChildThreadWaitTime, 
         							Alertable);
     
-    NewTimeStamp = minipal_lowres_ticks();
+    NewTimeStamp = minipal_hires_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -184,7 +184,7 @@ satisfying any threads that were waiting on the object.
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFSOExThreadTest = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExThreadTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
 
     ret = CloseHandle(hWaitThread);
     if (!ret)
