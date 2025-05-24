@@ -3,6 +3,8 @@
 
 #include "stdafx.h"
 
+#include <minipal/critsect.h>
+
 #include "mscoree.h"
 #include "clrinternal.h"
 #include "clrhost.h"
@@ -12,28 +14,28 @@ thread_local size_t t_ThreadType;
 
 CRITSEC_COOKIE ClrCreateCriticalSection(CrstType crstType, CrstFlags flags)
 {
-    CRITICAL_SECTION *cs = (CRITICAL_SECTION*)malloc(sizeof(CRITICAL_SECTION));
-    InitializeCriticalSection(cs);
+    minipal_critsect* cs = (minipal_critsect*)malloc(sizeof(minipal_critsect));
+    minipal_critsect_init(cs);
     return (CRITSEC_COOKIE)cs;
 }
 
 void ClrDeleteCriticalSection(CRITSEC_COOKIE cookie)
 {
     _ASSERTE(cookie);
-    DeleteCriticalSection((CRITICAL_SECTION*)cookie);
+    minipal_critsect_destroy((minipal_critsect*)cookie);
     free(cookie);
 }
 
 void ClrEnterCriticalSection(CRITSEC_COOKIE cookie)
 {
     _ASSERTE(cookie);
-    EnterCriticalSection((CRITICAL_SECTION*)cookie);
+    minipal_critsect_enter((minipal_critsect*)cookie);
 }
 
 void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
 {
     _ASSERTE(cookie);
-    LeaveCriticalSection((CRITICAL_SECTION*)cookie);
+    minipal_critsect_leave((minipal_critsect*)cookie);
 }
 
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)

@@ -4,8 +4,9 @@
 // crosscomp.h - cross-compilation enablement structures.
 //
 
-
 #pragma once
+
+#include <minipal/critsect.h>
 
 #if (!defined(HOST_64BIT) && defined(TARGET_64BIT)) || (defined(HOST_64BIT) && !defined(TARGET_64BIT))
 #define CROSSBITNESS_COMPILE
@@ -705,77 +706,36 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 
 #endif
 
-#if defined(DACCESS_COMPILE) && defined(TARGET_UNIX)
-// This is a TARGET oriented copy of CRITICAL_SECTION and PAL_CS_NATIVE_DATA_SIZE
-// It is configured based on TARGET configuration rather than HOST configuration
-// There is validation code in src/coreclr/vm/crst.cpp to keep these from
-// getting out of sync
-
-#define T_CRITICAL_SECTION_VALIDATION_MESSAGE "T_CRITICAL_SECTION validation failed. It is not in sync with CRITICAL_SECTION"
-
-#if defined(TARGET_OSX) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 76
-#elif defined(TARGET_APPLE) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 120
-#elif defined(TARGET_APPLE) && defined(TARGET_ARM64)
-#define DAC_CS_NATIVE_DATA_SIZE 120
-#elif defined(TARGET_FREEBSD) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 12
-#elif defined(TARGET_FREEBSD) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 24
-#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
-#define DAC_CS_NATIVE_DATA_SIZE 24
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_ARM)
-#define DAC_CS_NATIVE_DATA_SIZE 80
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_ARM64)
-#define DAC_CS_NATIVE_DATA_SIZE 104
-#elif defined(TARGET_LINUX) && defined(TARGET_LOONGARCH64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 76
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_S390X)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_RISCV64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_POWERPC64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_NETBSD) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_NETBSD) && defined(TARGET_ARM)
-#define DAC_CS_NATIVE_DATA_SIZE 56
-#elif defined(TARGET_NETBSD) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 56
-#elif defined(__sun) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 48
-#elif defined(TARGET_HAIKU) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 56
-#elif defined(TARGET_WASM)
-#define DAC_CS_NATIVE_DATA_SIZE 76
+#if defined(TARGET_APPLE)
+#define DAC_CS_MAX_SIZE 96
+#elif defined(TARGET_FREEBSD) || defined(TARGET_NETBSD)
+#define DAC_CS_MAX_SIZE 96
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#define DAC_CS_MAX_SIZE 48
+#elif defined(TARGET_WINDOWS)
+#define DAC_CS_MAX_SIZE 64
 #else
-#warning
-#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture. This should be same value as PAL_CS_NATIVE_DATA_SIZE (aka sizeof(PAL_CS_NATIVE_DATA)).
+// Fallback to a conservative default value
+#define DAC_CS_MAX_SIZE 128
 #endif
 
-struct T_CRITICAL_SECTION {
-    PVOID DebugInfo;
-    LONG LockCount;
-    LONG RecursionCount;
-    HANDLE OwningThread;
-    ULONG_PTR SpinCount;
+static_assert(DAC_CS_MAX_SIZE >= sizeof(minipal_critsect), "DAC_CS_MAX_SIZE must be greater than or equal to the size of minipal_critsect");
 
-#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
-    BOOL bInternal;
-#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
-    volatile DWORD dwInitState;
-
-    union CSNativeDataStorage
+// This type is used to ensure a consistent size of critical sections
+// contained with our Crst types.
+// We have this requirement for cross OS compiling the DAC.
+struct tgt_minipal_critsect final
+{
+    union
     {
-        BYTE rgNativeDataStorage[DAC_CS_NATIVE_DATA_SIZE];
-        PVOID pvAlign; // make sure the storage is machine-pointer-size aligned
-    } csnds;
+        // DAC builds want to have the data layout of the target system.
+        // Make sure that the host minipal_critsect does not influence
+        // the target data layout
+#ifndef DACCESS_COMPILE
+        minipal_critsect _cs;
+#endif // !DACCESS_COMPILE
+
+        // This is unused padding to ensure struct size.
+        alignas(void*) BYTE _dacPadding[DAC_CS_MAX_SIZE];
+    };
 };
-#else
-#define T_CRITICAL_SECTION CRITICAL_SECTION
-#endif

@@ -168,6 +168,7 @@ function_name() to call the system's implementation
 #undef __real_type_class
 #endif
 
+#include <minipal/critsect.h>
 
 #include "pal.h"
 #include "palprivate.h"

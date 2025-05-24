@@ -904,7 +904,7 @@ static void GetLogicalProcessorCacheSizeFromSysFs(size_t* cacheLevel, size_t* ca
             }
         }
     }
-#endif 
+#endif
 }
 
 static void GetLogicalProcessorCacheSizeFromHeuristic(size_t* cacheLevel, size_t* cacheSize)
@@ -952,7 +952,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         GetLogicalProcessorCacheSizeFromSysConf(&cacheLevel, &cacheSize);
     }
 
-    if (cacheSize == 0) 
+    if (cacheSize == 0)
     {
         GetLogicalProcessorCacheSizeFromSysFs(&cacheLevel, &cacheSize);
         if (cacheSize == 0)
@@ -1542,44 +1542,4 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
 bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
 {
     return ParseIndexOrRange(config_string, start_index, end_index);
-}
-
-// Initialize the critical section
-bool CLRCriticalSection::Initialize()
-{
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-    {
-        return false;
-    }
-
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-    {
-        st = pthread_mutex_init(&m_cs.mutex, &mutexAttributes);
-    }
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    return (st == 0);
-}
-
-// Destroy the critical section
-void CLRCriticalSection::Destroy()
-{
-    int st = pthread_mutex_destroy(&m_cs.mutex);
-    assert(st == 0);
-}
-
-// Enter the critical section. Blocks until the section can be entered.
-void CLRCriticalSection::Enter()
-{
-    pthread_mutex_lock(&m_cs.mutex);
-}
-
-// Leave the critical section
-void CLRCriticalSection::Leave()
-{
-    pthread_mutex_unlock(&m_cs.mutex);
 }

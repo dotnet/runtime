@@ -43,7 +43,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "config.h"
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal_endian.h"
 #include "pal.h"
@@ -2329,7 +2328,7 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pip, int nee
     return unw_get_proc_info_in_range(start_ip, end_ip, ehFrameHdrAddr, ehFrameHdrLen, exidxFrameHdrAddr, exidxFrameHdrLen, as, ip, pip, need_unwind_info, arg);
 #else // HAVE_GET_PROC_INFO_IN_RANGE || !defined(HOST_UNIX)
 
-    // This branch is executed when using llvm-libunwind (macOS and similar platforms) 
+    // This branch is executed when using llvm-libunwind (macOS and similar platforms)
     // or HP-libunwind version 1.6 and earlier.
 
     if (ehFrameHdrAddr == 0) {

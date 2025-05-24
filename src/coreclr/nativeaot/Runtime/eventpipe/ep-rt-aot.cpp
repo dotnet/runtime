@@ -17,6 +17,7 @@
 #include <unistd.h>
 #endif
 
+#include <minipal/critsect.h>
 #include <minipal/random.h>
 #include <minipal/time.h>
 
@@ -398,7 +399,7 @@ uint32_t
 ep_rt_aot_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(GetCurrentProcessId ());
+    return PalGetCurrentProcessId ();
 }
 
 ep_rt_thread_id_t
@@ -432,7 +433,7 @@ ep_rt_aot_system_timestamp_get (void)
     STATIC_CONTRACT_NOTHROW;
 
     FILETIME value;
-    GetSystemTimeAsFileTime (&value);
+    PalGetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
 }
 

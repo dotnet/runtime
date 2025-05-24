@@ -4068,8 +4068,6 @@ public:
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
 
-    static BOOL CanAcquireLock();
-
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);
 
