@@ -106,45 +106,6 @@ enum X86Reg : UCHAR
 // to add a cast and think about what exactly they are doing.
 const int kESP_Unsafe = 4;
 
-//----------------------------------------------------------------------
-// Encodes X86 conditional jumps. The numbers are chosen to match
-// Intel's opcode encoding.
-//----------------------------------------------------------------------
-class X86CondCode {
-    public:
-        enum cc {
-            kJA   = 0x7,
-            kJAE  = 0x3,
-            kJB   = 0x2,
-            kJBE  = 0x6,
-            kJC   = 0x2,
-            kJE   = 0x4,
-            kJZ   = 0x4,
-            kJG   = 0xf,
-            kJGE  = 0xd,
-            kJL   = 0xc,
-            kJLE  = 0xe,
-            kJNA  = 0x6,
-            kJNAE = 0x2,
-            kJNB  = 0x3,
-            kJNBE = 0x7,
-            kJNC  = 0x3,
-            kJNE  = 0x5,
-            kJNG  = 0xe,
-            kJNGE = 0xc,
-            kJNL  = 0xd,
-            kJNLE = 0xf,
-            kJNO  = 0x1,
-            kJNP  = 0xb,
-            kJNS  = 0x9,
-            kJNZ  = 0x5,
-            kJO   = 0x0,
-            kJP   = 0xa,
-            kJPE  = 0xa,
-            kJPO  = 0xb,
-            kJS   = 0x8,
-        };
-};
 
 //----------------------------------------------------------------------
 // StubLinker with extensions for generating X86 code.
@@ -162,28 +123,15 @@ class StubLinkerCPU : public StubLinker
 #endif
 
         VOID X86EmitAddReg(X86Reg reg, INT32 imm32);
-        VOID X86EmitAddRegReg(X86Reg destreg, X86Reg srcReg);
-        VOID X86EmitSubReg(X86Reg reg, INT32 imm32);
-        VOID X86EmitSubRegReg(X86Reg destreg, X86Reg srcReg);
 
         VOID X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg);
-        VOID X86EmitMovSPReg(X86Reg srcReg);
-        VOID X86EmitMovRegSP(X86Reg destReg);
 
         VOID X86EmitPushReg(X86Reg reg);
         VOID X86EmitPopReg(X86Reg reg);
-        VOID X86EmitPushRegs(unsigned regSet);
-        VOID X86EmitPopRegs(unsigned regSet);
         VOID X86EmitPushImm32(UINT value);
-        VOID X86EmitPushImm32(CodeLabel &pTarget);
-        VOID X86EmitPushImm8(BYTE value);
         VOID X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg = kR10));
 
-        VOID X86EmitCmpRegImm32(X86Reg reg, INT32 imm32); // cmp reg, imm32
-        VOID X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32); // cmp [reg+offs], imm32
 #ifdef TARGET_AMD64
-        VOID X64EmitCmp32RegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32); // cmp dword ptr [reg+offs], imm32
-
         VOID X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg);
         VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
@@ -205,21 +153,13 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
 
         VOID X86EmitNearJump(CodeLabel *pTarget);
-        VOID X86EmitCondJump(CodeLabel *pTarget, X86CondCode::cc condcode);
-        VOID X86EmitCall(CodeLabel *target, int iArgBytes);
-        VOID X86EmitReturn(WORD wArgBytes);
-
-        VOID X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet);
 
         VOID X86EmitIndexRegLoad(X86Reg dstreg, X86Reg srcreg, int32_t ofs = 0);
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 
         VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
-        VOID X86EmitBaseIndexPush(X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
         VOID X86EmitIndexPop(X86Reg srcreg, int32_t ofs);
 
-        VOID X86EmitSPIndexPush(int32_t ofs);
-        VOID X86EmitSubEsp(INT32 imm32);
         VOID X86EmitAddEsp(INT32 imm32);
         VOID X86EmitEspOffset(BYTE opcode,
                               X86Reg altreg,
@@ -318,9 +258,6 @@ class StubLinkerCPU : public StubLinker
 #ifdef _DEBUG
         VOID X86EmitDebugTrashReg(X86Reg reg);
 #endif
-
-    private:
-        VOID X86EmitSubEspWorker(INT32 imm32);
 
     public:
         static void Init();
