@@ -261,8 +261,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeAsyncEnumerable_NullArgument_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: null));
-            AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: null, jsonTypeInfo: ResolveJsonTypeInfo<int>()));
+            AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: (Stream?)null));
+            AssertExtensions.Throws<ArgumentNullException>("utf8Json", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: (Stream?)null, jsonTypeInfo: ResolveJsonTypeInfo<int>()));
             AssertExtensions.Throws<ArgumentNullException>("jsonTypeInfo", () => JsonSerializer.DeserializeAsyncEnumerable<int>(utf8Json: new MemoryStream(), jsonTypeInfo: null));
         }
 
