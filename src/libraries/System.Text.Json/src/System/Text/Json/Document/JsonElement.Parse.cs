@@ -53,6 +53,20 @@ namespace System.Text.Json
             return document.RootElement;
         }
 
+        internal static JsonElement ParseValue(ref Utf8JsonReader reader, bool allowDuplicateProperties)
+        {
+            bool ret = JsonDocument.TryParseValue(
+                ref reader,
+                out JsonDocument? document,
+                shouldThrow: true,
+                useArrayPools: false,
+                allowDuplicateProperties: allowDuplicateProperties);
+
+            Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
+            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            return document.RootElement;
+        }
+
         internal static JsonElement ParseValue(Stream utf8Json, JsonDocumentOptions options)
         {
             JsonDocument document = JsonDocument.ParseValue(utf8Json, options);

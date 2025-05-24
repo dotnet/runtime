@@ -14,6 +14,8 @@ namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonObjectTests
     {
+        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
+
         [Fact]
         public static void KeyValuePair()
         {
@@ -1630,6 +1632,79 @@ namespace System.Text.Json.Nodes.Tests
         {
             [JsonExtensionData]
             public JsonObject ExtensionData { get; set; }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicatePropertyThrowsLazily<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrowsLazily<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedInArray(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicatePropertyThrowsLazily<JsonArray>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrowsLazily<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedDeeply(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicatePropertyThrowsLazily<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrowsLazily<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicatePropertyThrowsLazily<T>(string jsonPayload, bool isValidJson)
+            where T : JsonNode
+        {
+            T node = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions);
+
+            if (isValidJson)
+            {
+                JsonNode.DeepEquals(node, node); // Assert no throw
+                node = JsonSerializer.Deserialize<T>(jsonPayload);
+                JsonNode.DeepEquals(node, node); // Assert no throw
+            }
+            else
+            {
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonNode.DeepEquals(node, node),
+                    "An item with the same key has already been added.");
+
+                // Default options also throw
+                node = JsonSerializer.Deserialize<T>(jsonPayload);
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonNode.DeepEquals(node, node),
+                    "An item with the same key has already been added.");
+            }
+        }
+
+        [Fact]
+        public static void JsonObject_DuplicatePropertyCaseInsensitiveLazilyThrows()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            string jsonPayload = """{"a":1,"A":2}""";
+
+            JsonObject obj = JsonSerializer.Deserialize<JsonObject>(jsonPayload, options);
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => _ = obj.Count,
+                "An item with the same key has already been added.");
+
+            JsonNode node = JsonSerializer.Deserialize<JsonNode>(jsonPayload, options);
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => _ = ((JsonObject)node).Count,
+                "An item with the same key has already been added.");
         }
     }
 }

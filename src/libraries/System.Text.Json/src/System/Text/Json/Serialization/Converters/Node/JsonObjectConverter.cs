@@ -31,7 +31,19 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(value == null || value is JsonNode);
             JsonNode? jNodeValue = value;
 
-            jObject[propertyName] = jNodeValue;
+            if (options.AllowDuplicateProperties)
+            {
+                jObject[propertyName] = jNodeValue;
+            }
+            else
+            {
+                if (jObject.ContainsKey(propertyName))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
+                }
+
+                jObject.Add(propertyName, jNodeValue);
+            }
         }
 
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
@@ -59,8 +71,11 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
+        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
+            // The returned JsonObject is lazily constructed so errors will be thrown as its
+            // properties are accessed. Therefore we don't need to pass any validation options
+            // to the JsonElement.ParseValue.
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             JsonObject jObject = new JsonObject(jElement, options);
             return jObject;

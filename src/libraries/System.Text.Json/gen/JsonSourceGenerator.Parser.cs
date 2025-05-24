@@ -287,6 +287,7 @@ namespace System.Text.Json.SourceGeneration
                 bool? writeIndented = null;
                 char? indentCharacter = null;
                 int? indentSize = null;
+                bool? allowDuplicateProperties = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
                 {
@@ -412,6 +413,10 @@ namespace System.Text.Json.SourceGeneration
                             generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowDuplicateProperties):
+                            allowDuplicateProperties = (bool)namedArg.Value.Value!;
+                            break;
+
                         default:
                             throw new InvalidOperationException();
                     }
@@ -446,6 +451,7 @@ namespace System.Text.Json.SourceGeneration
                     WriteIndented = writeIndented,
                     IndentCharacter = indentCharacter,
                     IndentSize = indentSize,
+                    AllowDuplicateProperties = allowDuplicateProperties,
                 };
             }
 

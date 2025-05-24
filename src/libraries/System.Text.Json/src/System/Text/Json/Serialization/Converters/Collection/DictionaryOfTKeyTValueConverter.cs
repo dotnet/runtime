@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -19,7 +20,19 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            TCollection dictionary = (TCollection)state.Current.ReturnValue!;
+
+            if (options.AllowDuplicateProperties)
+            {
+                dictionary[key] = value;
+            }
+            else
+            {
+                if (!dictionary.TryAdd(key, value))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                }
+            }
         }
 
         protected internal override bool OnWriteResume(

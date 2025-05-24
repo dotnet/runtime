@@ -34,8 +34,11 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions? options = null)
+        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
+            // The returned JsonObject is lazily constructed so errors will be thrown as its
+            // properties are accessed. Therefore we don't need to pass any validation options
+            // to the JsonElement.ParseValue.
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             return new JsonArray(jElement, options);
         }
