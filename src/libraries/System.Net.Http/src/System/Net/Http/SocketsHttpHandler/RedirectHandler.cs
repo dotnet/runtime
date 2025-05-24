@@ -10,24 +10,23 @@ namespace System.Net.Http
 {
     internal sealed class RedirectHandler : HttpMessageHandlerStage
     {
-        private readonly HttpMessageHandlerStage _initialInnerHandler;       // Used for initial request
-        private readonly HttpMessageHandlerStage _redirectInnerHandler;      // Used for redirects; this allows disabling auth
+        private readonly HttpMessageHandlerStage _innerHandler;
         private readonly int _maxAutomaticRedirections;
+        private readonly bool _disableAuthOnRedirect;
 
-        public RedirectHandler(int maxAutomaticRedirections, HttpMessageHandlerStage initialInnerHandler, HttpMessageHandlerStage redirectInnerHandler)
+        public RedirectHandler(int maxAutomaticRedirections, HttpMessageHandlerStage innerHandler, bool disableAuthOnRedirect)
         {
-            Debug.Assert(initialInnerHandler != null);
-            Debug.Assert(redirectInnerHandler != null);
+            Debug.Assert(innerHandler != null);
             Debug.Assert(maxAutomaticRedirections > 0);
 
             _maxAutomaticRedirections = maxAutomaticRedirections;
-            _initialInnerHandler = initialInnerHandler;
-            _redirectInnerHandler = redirectInnerHandler;
+            _innerHandler = innerHandler;
+            _disableAuthOnRedirect = disableAuthOnRedirect;
         }
 
         internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = await _initialInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             uint redirectCount = 0;
             Uri? redirectUri;
@@ -79,8 +78,13 @@ namespace System.Net.Http
                     }
                 }
 
+                if (_disableAuthOnRedirect)
+                {
+                    request.DisableAuth();
+                }
+
                 // Issue the redirected request.
-                response = await _redirectInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
+                response = await _innerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
             }
 
             return response;
@@ -159,8 +163,7 @@ namespace System.Net.Http
         {
             if (disposing)
             {
-                _initialInnerHandler.Dispose();
-                _redirectInnerHandler.Dispose();
+                _innerHandler.Dispose();
             }
 
             base.Dispose(disposing);
