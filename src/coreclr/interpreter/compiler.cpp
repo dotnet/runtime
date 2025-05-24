@@ -3027,7 +3027,7 @@ retry_emit:
                 ctorClass = m_compHnd->getMethodClass(ctorMethod);
                 int32_t numArgs = ctorSignature.numArgs;
 
-                // TODO Special case array ctor / string ctor
+                // TODO Special case array ctor. We detect string ctor at execution time
                 m_pStackPointer -= numArgs;
 
                 // Allocate callArgs for the call, this + numArgs + terminator
@@ -3061,11 +3061,15 @@ retry_emit:
                 {
                     AddIns(INTOP_NEWOBJ_VT);
                     m_pLastNewIns->data[1] = (int32_t)ALIGN_UP_TO(vtsize, INTERP_STACK_SLOT_SIZE);
+                    m_pLastNewIns->data[2] = 0;
                 }
                 else
                 {
                     AddIns(INTOP_NEWOBJ);
                     m_pLastNewIns->data[1] = GetDataItemIndex(ctorClass);
+                    m_pLastNewIns->data[2] = (m_compHnd->getArrayRank(ctorClass) > 0)
+                        ? GetDataItemIndexForHelperFtn(CORINFO_HELP_NEW_MDARR)
+                        : 0;
                 }
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(ctorMethod);
                 m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
