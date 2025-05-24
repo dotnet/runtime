@@ -423,11 +423,14 @@ namespace System.Diagnostics.Metrics
             }
             else if (genericDefType == typeof(Histogram<>))
             {
-                lock (this)
+                return () =>
                 {
-                    // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
-                    return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ? () => null : _histogramAggregatorFactory;
-                }
+                    lock (this)
+                    {
+                        // checking currentHistograms first because avoiding unexpected increment of TimeSeries count.
+                        return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ? null : _histogramAggregatorFactory();
+                    }
+                };
             }
             else if (genericDefType == typeof(UpDownCounter<>))
             {
