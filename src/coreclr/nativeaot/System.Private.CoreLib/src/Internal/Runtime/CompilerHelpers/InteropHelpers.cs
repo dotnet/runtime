@@ -499,7 +499,7 @@ namespace Internal.Runtime.CompilerHelpers
 
 #if TARGET_WINDOWS
 #pragma warning disable CA1416
-            return ComWrappers.ComObjectForInterface(pUnk);
+            return ComWrappers.ComObjectForInterface(pUnk, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
 #pragma warning restore CA1416
 #else
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
