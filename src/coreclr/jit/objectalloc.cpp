@@ -1211,7 +1211,8 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
         GenTreeAllocObj* const allocObj = tree->AsAllocObj();
         CORINFO_CLASS_HANDLE   clsHnd   = allocObj->gtAllocObjClsHnd;
         assert(clsHnd != NO_CLASS_HANDLE);
-        bool const canBeOnStack = comp->info.compCompHnd->canAllocateOnStack(clsHnd);
+        const bool isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
+        bool const canBeOnStack = isValueClass || comp->info.compCompHnd->canAllocateOnStack(clsHnd);
         allocType               = canBeOnStack ? OAT_NEWOBJ : OAT_NEWOBJ_HEAP;
     }
     else if (!m_isR2R && tree->IsHelperCall())
