@@ -211,7 +211,7 @@ namespace System.Net.Http
                             activity.SetStatus(ActivityStatusCode.Error);
 
                             // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/exceptions.md
-                            activity.AddException(exception);
+                            activity.AddException(exception!);
                         }
                     }
 
