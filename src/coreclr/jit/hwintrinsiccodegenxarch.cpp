@@ -298,12 +298,12 @@ static unsigned GetImmediateMaxAndMask(instruction ins, unsigned simdSize, unsig
 
         // These instructions extract/insert a 128-bit vector from/to either a 256-bit or
         // 512-bit vector. The number of positions is equal to the number of 128-bit lanes.
-        case INS_vextractf128:
-        case INS_vextracti128:
+        case INS_vextractf32x4:
+        case INS_vextracti32x4:
         case INS_vextractf64x2:
         case INS_vextracti64x2:
-        case INS_vinsertf128:
-        case INS_vinserti128:
+        case INS_vinsertf32x4:
+        case INS_vinserti32x4:
         case INS_vinsertf64x2:
         case INS_vinserti64x2:
         {
@@ -1174,8 +1174,10 @@ void CodeGen::genHWIntrinsic_R_RM(
                         // SIMD register so the broadcast instruction can execute successfully. We'll just move
                         // the value into the target register and then broadcast it out from that.
 
-                        emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
-                        emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
+                        emitAttr    movdAttr = emitActualTypeSize(node->GetSimdBaseType());
+                        instruction movdIns  = (movdAttr == EA_4BYTE) ? INS_movd32 : INS_movd64;
+
+                        emit->emitIns_Mov(movdIns, movdAttr, reg, rmOpReg, /* canSkip */ false);
                         rmOpReg = reg;
                     }
                     else if (needsInstructionFixup)
@@ -2350,7 +2352,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             // overflow check
             emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg1, op1Reg, minValueFld, 0, instOptions);
             emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op2Reg, negOneFld, 0, instOptions);
-            emit->emitIns_SIMD_R_R_R(INS_pand, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_pandd, typeSize, tmpReg1, tmpReg1, tmpReg2, instOptions);
             emit->emitIns_R_R(INS_ptest, typeSize, tmpReg1, tmpReg1, instOptions);
             genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
 

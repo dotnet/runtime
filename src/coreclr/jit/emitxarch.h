@@ -131,11 +131,11 @@ static bool IsApxOnlyInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool             HasVexEncoding(instruction ins) const;
-bool             HasEvexEncoding(instruction ins) const;
-bool             HasRex2Encoding(instruction ins) const;
-bool             HasApxNdd(instruction ins) const;
-bool             HasApxNf(instruction ins) const;
+static bool      HasVexEncoding(instruction ins);
+static bool      HasEvexEncoding(instruction ins);
+static bool      HasRex2Encoding(instruction ins);
+static bool      HasApxNdd(instruction ins);
+static bool      HasApxNf(instruction ins);
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
 bool             IsRex2EncodableInstruction(instruction ins) const;
@@ -228,7 +228,8 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
-insTupleType insTupleTypeInfo(instruction ins) const;
+static insTupleType insTupleTypeInfo(instruction ins);
+static unsigned     insKMaskBaseSize(instruction ins);
 
 // 2-byte REX2 prefix starts with byte 0xD5
 #define REX2_PREFIX_MASK_2BYTE 0xFF0000000000ULL
