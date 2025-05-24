@@ -774,7 +774,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         //
                         GenTree* const       data = lclTree->Data();
                         ObjectAllocationType oat  = m_allocator->AllocationKind(data);
-                        if ((oat == OAT_NEWOBJ_HEAP) || (oat == OAT_NONE) && !data->IsIntegralConst(0))
+                        if ((oat == OAT_NEWOBJ_HEAP) || ((oat == OAT_NONE) && !data->IsIntegralConst(0)))
                         {
                             // Add a connection to the unknown source.
                             //
