@@ -67,7 +67,7 @@ namespace System.Runtime.Intrinsics.X86
             [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
             public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) => DivRem(lower, upper, divisor);
 
-#if CORECLR
+#if !MONO
             /// <summary>
             ///   <para>unsigned _umul128(unsigned __int64 Multiplier, unsigned __int64  Multiplicand, unsigned __int64 * HighProduct)</para>
             ///   <para>  MUL reg/m64</para>
@@ -143,7 +143,7 @@ namespace System.Runtime.Intrinsics.X86
         [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public static (nint Quotient, nint Remainder) DivRem(nuint lower, nint upper, nint divisor) => DivRem(lower, upper, divisor);
 
-#if CORECLR
+#if !MONO
         /// <summary>
         ///   <para>  MUL reg/m32</para>
         /// </summary>
