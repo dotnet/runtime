@@ -521,6 +521,40 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     }
 }
 
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+static void DispatchLongJmp(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                            IN     PVOID               pEstablisherFrame,
+                            IN OUT PCONTEXT            pContextRecord)
+{
+    // Pop all the SEH frames including the one that is currently called
+    // to prevent setjmp from trying to unwind it again when we inject our
+    // longjmp.
+    SetCurrentSEHRecord(((PEXCEPTION_REGISTRATION_RECORD)pEstablisherFrame)->Next);
+
+#pragma warning(push)
+#pragma warning(disable:4611) // interaction between 'function' and C++ object destruction is non-portable
+    jmp_buf jumpBuffer;
+    if (setjmp(jumpBuffer))
+    {
+        // We reach this point after the finally handlers were called and
+        // the unwinding should continue below the managed frame.
+        return;
+    }
+#pragma warning(pop)
+
+    // Emulate the parameters that are passed on 64-bit systems and expected by
+    // DispatchManagedException.
+    EXCEPTION_RECORD newExceptionRecord = *pExceptionRecord;
+    newExceptionRecord.NumberParameters = 2;
+    newExceptionRecord.ExceptionInformation[0] = (DWORD_PTR)&jumpBuffer;
+    newExceptionRecord.ExceptionInformation[1] = 1;
+
+    OBJECTREF oref = ExInfo::CreateThrowable(&newExceptionRecord, FALSE);
+    DispatchManagedException(oref, pContextRecord, &newExceptionRecord);
+    UNREACHABLE();
+}
+#endif
+
 EXTERN_C EXCEPTION_DISPOSITION __cdecl
 ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                     IN     PVOID               pEstablisherFrame,
@@ -613,7 +647,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     }
 
     // Second pass (unwinding)
-    GCX_COOP();
+    GCX_COOP_NO_DTOR();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
     ExInfo *pPrevExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
     if (pPrevExInfo != NULL && pPrevExInfo->m_DebuggerExState.GetDebuggerInterceptContext() != NULL)
@@ -621,6 +655,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         ContinueExceptionInterceptionUnwind();
         UNREACHABLE();
     }
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+    else if (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP)
+    {
+        DispatchLongJmp(pExceptionRecord, pEstablisherFrame, pContextRecord);
+        GCX_COOP_NO_DTOR_END();
+        return ExceptionContinueSearch;
+    }
+#endif
     else
     {
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
@@ -3030,10 +3072,12 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
 }
 
 #ifdef HOST_WINDOWS
-VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
+VOID DECLSPEC_NORETURN __fastcall PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
 {
     WRAPPER_NO_CONTRACT;
+    GCX_PREEMP_NO_DTOR();
     longjmp(*pJmpBuf, retVal);
+    UNREACHABLE();
 }
 
 // This is a personality routine that the RtlRestoreContext calls when it is called with
@@ -3235,7 +3279,14 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         if (pLongJmpBuf != NULL)
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of longjmp through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+#ifdef HOST_X86
+            // On x86 we don't jump to the original longjmp target. Instead we return to DispatchLongJmp called
+            // from ProcessCLRException which in turn return ExceptionContinueSearch to continue unwinding the
+            // original longjmp call.
+            longjmp(*pLongJmpBuf, longJmpReturnValue);
+#else
             ExecuteFunctionBelowContext((PCODE)PropagateLongJmpThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)pLongJmpBuf, longJmpReturnValue);
+#endif
         }
         else
 #endif
