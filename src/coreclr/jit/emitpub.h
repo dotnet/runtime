@@ -43,7 +43,7 @@ unsigned emitEndCodeGen(Compiler*         comp,
 unsigned emitGetEpilogCnt();
 
 template <typename Callback>
-bool emitGenNoGCLst(Callback& cb, bool skipAllPrologsAndEpilogs = false);
+bool emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs = false);
 
 void     emitBegProlog();
 unsigned emitGetPrologOffsetEstimate();

@@ -19,10 +19,15 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 13
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MAJOR_VERSION 14
+#define READYTORUN_MINOR_VERSION 0x0000
 
+// Remove the x86 special case once the general minimum version is bumped
+#ifdef TARGET_X86
+#define MINIMUM_READYTORUN_MAJOR_VERSION 14
+#else
 #define MINIMUM_READYTORUN_MAJOR_VERSION 13
+#endif
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -43,6 +48,8 @@
 // R2R Version 13 removes usage of PSPSym, changes ABI for funclets to match NativeAOT, changes register for
 //                exception parameter on AMD64, and redefines generics instance context stack slot in GCInfo v4
 //                to be SP/FP relative
+// R2R Version 13.1 added long/ulong to float helper calls
+// R2R Version 14 changed x86 code generation to use funclets
 
 struct READYTORUN_CORE_HEADER
 {
