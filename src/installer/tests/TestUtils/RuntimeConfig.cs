@@ -325,26 +325,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 ["runtimeOptions"] = runtimeOptions
             };
-
-            string jsonString = json.ToString();
             
-            if (withUtf8Bom)
-            {
-                // Write with UTF8 BOM
-                byte[] utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
-                byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonString);
-                byte[] fileBytes = new byte[utf8Bom.Length + jsonBytes.Length];
-                
-                Array.Copy(utf8Bom, 0, fileBytes, 0, utf8Bom.Length);
-                Array.Copy(jsonBytes, 0, fileBytes, utf8Bom.Length, jsonBytes.Length);
-                
-                File.WriteAllBytes(_path, fileBytes);
-            }
-            else
-            {
-                // Write without UTF8 BOM (default behavior)
-                File.WriteAllText(_path, jsonString);
-            }
+            FileUtils.WriteJsonWithOptionalUtf8Bom(_path, json.ToString(), withUtf8Bom);
         }
     }
 }

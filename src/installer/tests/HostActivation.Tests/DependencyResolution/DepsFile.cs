@@ -55,28 +55,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             TestApp app = sharedState.FrameworkReferenceApp;
             
             // Create a copy of the existing deps.json with UTF8 BOM
-            string originalDepsJson = app.DepsJson;
-            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(originalDepsJson), 
-                Path.GetFileNameWithoutExtension(originalDepsJson) + "_bom.deps.json");
+            string depsJsonWithBom = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath), 
+                Path.GetFileNameWithoutExtension(sharedState.DepsJsonPath) + "_bom.deps.json");
             
             try
             {
-                // Read the original deps.json content
-                string jsonContent = File.ReadAllText(originalDepsJson, Encoding.UTF8);
-                  // Write the content with UTF8 BOM
-                byte[] utf8Bom = { 0xEF, 0xBB, 0xBF };
-                byte[] jsonBytes = Encoding.UTF8.GetBytes(jsonContent);
-                byte[] bomAndJson = new byte[utf8Bom.Length + jsonBytes.Length];
-                Array.Copy(utf8Bom, 0, bomAndJson, 0, utf8Bom.Length);
-                Array.Copy(jsonBytes, 0, bomAndJson, utf8Bom.Length, jsonBytes.Length);
-                File.WriteAllBytes(depsJsonWithBom, bomAndJson);
-                
+                // Read the original deps.json content and write with UTF8 BOM
+                string jsonContent = File.ReadAllText(sharedState.DepsJsonPath, Encoding.UTF8);
+                FileUtils.WriteJsonWithOptionalUtf8Bom(depsJsonWithBom, jsonContent, withUtf8Bom: true);
+
                 // Test that the app can be executed with the BOM deps.json
+                string dependencyPath = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath), $"{SharedTestState.DependencyName}.dll");
                 sharedState.DotNetWithNetCoreApp.Exec("exec", Constants.DepsFile.CommandLineArgument, depsJsonWithBom, app.AppDll)
                     .EnableTracingAndCaptureOutputs()
                     .Execute()
                     .Should().Pass()
-                    .And.HaveResolvedAssembly(Path.Combine(app.Location, $"{SharedTestState.DependencyName}.dll"));
+                    .And.HaveResolvedAssembly(dependencyPath);
             }
             finally
             {

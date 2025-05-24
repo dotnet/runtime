@@ -123,7 +123,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     size_t size = m_size;
 
     // Skip over UTF-8 BOM, if present
-    if (size >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[1] == 0xBF)
+    if (size >= 3 && data[0] == (char)0xEF && data[1] == (char)0xBB && data[2] == (char)0xBF)
     {
         size -= 3;
         data += 3;
