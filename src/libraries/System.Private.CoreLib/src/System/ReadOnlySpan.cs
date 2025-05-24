@@ -69,14 +69,8 @@ namespace System
                 this = default;
                 return; // returns default
             }
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#else
-            if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#endif
+
+            MemoryExtensions.ValidateSliceArguments(array.Length, start, length);
 
             _reference = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */);
             _length = length;
@@ -373,14 +367,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySpan<T> Slice(int start, int length)
         {
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#else
-            if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException();
-#endif
+            MemoryExtensions.ValidateSliceArguments(_length, start, length);
 
             return new ReadOnlySpan<T>(ref Unsafe.Add(ref _reference, (nint)(uint)start /* force zero-extension */), length);
         }

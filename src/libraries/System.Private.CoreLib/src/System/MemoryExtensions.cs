@@ -18,6 +18,31 @@ namespace System
     /// </summary>
     public static partial class MemoryExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool SliceArgumentsAreValid(int sourceLength, int start, int length)
+        {
+#if TARGET_64BIT
+            // Since start and length are both 32-bit, their sum can be computed across a 64-bit domain
+            // without loss of fidelity. The cast to uint before the cast to ulong ensures that the
+            // extension from 32- to 64-bit is zero-extending rather than sign-extending. The end result
+            // of this is that if either input is negative or if the input sum overflows past Int32.MaxValue,
+            // that information is captured correctly in the comparison against the source length.
+            // We don't use this same mechanism in a 32-bit process due to the overhead of 64-bit arithmetic.
+            return (ulong)(uint)start + (ulong)(uint)length <= (ulong)(uint)sourceLength;
+#else
+            return (uint)start <= (uint)sourceLength && (uint)length <= (uint)(sourceLength - start);
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ValidateSliceArguments(int sourceLength, int start, int length)
+        {
+            if (!SliceArgumentsAreValid(sourceLength, start, length))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+        }
+
         /// <summary>
         /// Creates a new span over the portion of the target array.
         /// </summary>
@@ -115,12 +140,12 @@ namespace System
             if (text == null)
             {
                 if (start != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
 
             if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), text.Length - start);
         }
@@ -136,7 +161,7 @@ namespace System
             {
                 if (!startIndex.Equals(Index.Start))
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
                 }
 
                 return default;
@@ -145,7 +170,7 @@ namespace System
             int actualIndex = startIndex.GetOffset(text.Length);
             if ((uint)actualIndex > (uint)text.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
             }
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)actualIndex /* force zero-extension */), text.Length - actualIndex);
@@ -193,18 +218,11 @@ namespace System
             if (text == null)
             {
                 if (start != 0 || length != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
 
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#else
-            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#endif
+            ValidateSliceArguments(text.Length, start, length);
 
             return new ReadOnlySpan<char>(ref Unsafe.Add(ref text.GetRawStringData(), (nint)(uint)start /* force zero-extension */), length);
         }
@@ -232,12 +250,12 @@ namespace System
             if (text == null)
             {
                 if (start != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
 
             if ((uint)start > (uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new ReadOnlyMemory<char>(text, start, text.Length - start);
         }
@@ -275,18 +293,11 @@ namespace System
             if (text == null)
             {
                 if (start != 0 || length != 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
 
-#if TARGET_64BIT
-            // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)text.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#else
-            if ((uint)start > (uint)text.Length || (uint)length > (uint)(text.Length - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-#endif
+            ValidateSliceArguments(text.Length, start, length);
 
             return new ReadOnlyMemory<char>(text, start, length);
         }
@@ -3738,7 +3749,7 @@ namespace System
         public static Span<T> AsSpan<T>(this ArraySegment<T> segment, int start)
         {
             if (((uint)start) > (uint)segment.Count)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new Span<T>(segment.Array, segment.Offset + start, segment.Count - start);
         }
@@ -3771,10 +3782,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> AsSpan<T>(this ArraySegment<T> segment, int start, int length)
         {
-            if (((uint)start) > (uint)segment.Count)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            if (((uint)length) > (uint)(segment.Count - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            ValidateSliceArguments(segment.Count, start, length);
 
             return new Span<T>(segment.Array, segment.Offset + start, length);
         }
@@ -3880,7 +3888,7 @@ namespace System
         public static Memory<T> AsMemory<T>(this ArraySegment<T> segment, int start)
         {
             if (((uint)start) > (uint)segment.Count)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new Memory<T>(segment.Array, segment.Offset + start, segment.Count - start);
         }
@@ -3899,10 +3907,7 @@ namespace System
         /// </exception>
         public static Memory<T> AsMemory<T>(this ArraySegment<T> segment, int start, int length)
         {
-            if (((uint)start) > (uint)segment.Count)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            if (((uint)length) > (uint)(segment.Count - start))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+            ValidateSliceArguments(segment.Count, start, length);
 
             return new Memory<T>(segment.Array, segment.Offset + start, length);
         }
