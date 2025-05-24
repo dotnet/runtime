@@ -443,7 +443,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [InlineData(false, true)]
         [InlineData(true, true)]
         public void Hostfxr_resolve_frameworks_for_runtime_config(bool isMissing, bool withUtf8Bom)
-        {            string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
+        {
+            string api = ApiNames.hostfxr_resolve_frameworks_for_runtime_config;
             using (TestArtifact artifact = TestArtifact.Create(api))
             {
                 (string Name, string Version) requested = ("Framework", "1.2.3");

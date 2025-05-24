@@ -325,7 +325,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 ["runtimeOptions"] = runtimeOptions
             };
-            
+
             FileUtils.WriteJsonWithOptionalUtf8Bom(_path, json.ToString(), withUtf8Bom);
         }
     }
