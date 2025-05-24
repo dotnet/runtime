@@ -52,13 +52,13 @@ PALTEST(threading_SleepEx_test1_paltest_sleepex_test1, "threading/SleepEx/test1/
 
     for (i = 0; i<sizeof(testCases) / sizeof(testCases[0]); i++)
     {
-        OldTimeStamp = minipal_lowres_ticks();
+        OldTimeStamp = minipal_hires_ticks();
 
         SleepEx(testCases[i].SleepTime, testCases[i].Alertable);
 
-        NewTimeStamp = minipal_lowres_ticks();
+        NewTimeStamp = minipal_hires_ticks();
 
-        TimeDelta = NewTimeStamp - OldTimeStamp;
+        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
 
         /* For longer intervals use a 10 percent tolerance */
         if ((testCases[i].SleepTime * 0.1) > AcceptableTimeError)

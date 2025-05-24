@@ -45,11 +45,11 @@ PALTEST(threading_Sleep_test1_paltest_sleep_test1, "threading/Sleep/test1/paltes
 
     for( i = 0; i < sizeof(SleepTimes) / sizeof(DWORD); i++)
     {
-        OldTimeStamp = minipal_lowres_ticks();
+        OldTimeStamp = minipal_hires_ticks();
         Sleep(SleepTimes[i]);
-        NewTimeStamp = minipal_lowres_ticks();
+        NewTimeStamp = minipal_hires_ticks();
 
-        TimeDelta = NewTimeStamp - OldTimeStamp;
+        TimeDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
 
         /* For longer intervals use a 10 percent tolerance */
         if ((SleepTimes[i] * 0.1) > AcceptableTimeError)
