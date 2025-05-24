@@ -6082,6 +6082,11 @@ namespace System
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                if (value is null)
+                {
+                    return true;
+                }
+
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                 // derives from the former.  For value types, it won't matter as the type checks devolve into
                 // JIT-time constants.  For reference types, they're more likely to implement IFormattable
@@ -6120,7 +6125,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);
@@ -6136,6 +6141,11 @@ namespace System
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                if (value is null)
+                {
+                    return true;
                 }
 
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
@@ -6176,7 +6186,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);
