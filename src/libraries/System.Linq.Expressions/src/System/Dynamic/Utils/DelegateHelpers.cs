@@ -16,41 +16,15 @@ namespace System.Dynamic.Utils
         [FeatureSwitchDefinition("System.Linq.Expressions.CanEmitObjectArrayDelegate")]
         internal static bool CanEmitObjectArrayDelegate => true;
 
-        // Separate class so that the it can be trimmed away and doesn't get conflated
-        // with the Reflection.Emit statics below.
-        private static class DynamicDelegateLightup
-        {
-            public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
-                = CreateObjectArrayDelegateInternal();
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        private static extern Delegate CreateObjectArrayDelegate(
+            [UnsafeAccessorType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib")] object? _,
+            Type delegateType,
+            Func<object?[], object?> invoker
+        );
 
-            private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
-            {
-                // This is only supported by NativeAOT which always expects CanEmitObjectArrayDelegate to be false.
-                // This check guards static constructor of trying to resolve 'Internal.Runtime.Augments.DynamicDelegateAugments'
-                // on runtimes which do not support this private API.
-                if (!CanEmitObjectArrayDelegate)
-                {
-                    return Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments, System.Private.CoreLib", throwOnError: true)!
-                        .GetMethod("CreateObjectArrayDelegate")!
-                        .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
-                }
-                else
-                {
-                    return new Func<Type, Func<object?[], object?>, Delegate>((_x, _y) => throw new NotImplementedException());
-                }
-            }
-        }
-
-        private static class ForceAllowDynamicCodeLightup
-        {
-            public static Func<IDisposable>? ForceAllowDynamicCodeDelegate { get; }
-                = ForceAllowDynamicCodeDelegateInternal();
-
-            private static Func<IDisposable>? ForceAllowDynamicCodeDelegateInternal()
-                => typeof(AssemblyBuilder)
-                    .GetMethod("ForceAllowDynamicCode", BindingFlags.NonPublic | BindingFlags.Static)
-                    ?.CreateDelegate<Func<IDisposable>>();
-        }
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod)]
+        public static extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _ = null);
 
         internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
         {
@@ -63,7 +37,7 @@ namespace System.Dynamic.Utils
             }
             else
             {
-                return DynamicDelegateLightup.CreateObjectArrayDelegate(delegateType, handler);
+                return CreateObjectArrayDelegate(null, delegateType, handler);
             }
         }
 
@@ -222,7 +196,7 @@ namespace System.Dynamic.Utils
                             // for example when running on CoreClr with PublishAot=true, this will allow IL to be emitted.
                             // If we are running on a runtime that really doesn't support dynamic code, like NativeAOT,
                             // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
-                            return ForceAllowDynamicCodeLightup.ForceAllowDynamicCodeDelegate?.Invoke();
+                            return ForceAllowDynamicCode();
                         }
 
                         return null;
