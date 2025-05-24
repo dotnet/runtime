@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         protected override bool PreserveFilterOrder => true;
 
         [Fact]
-        public void ComplexPatternSequence_SimpleFilters()
+        public void MixedPatternSequence_SimpleFilters()
         {
             var scenario = new FileSystemGlobbingTestContext(@"c:/project/", true)
                 .Include("A/*")
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Fact]
-        public void ComplexPatternSequence_DeeplyNestedFilters()
+        public void MixedPatternSequence_DeeplyNestedFilters()
         {
             var scenario = new FileSystemGlobbingTestContext(@"c:/project/", true)
                 .Include("**/*.cs")                                   // Include all .cs files
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
         }
 
         [Fact]
-        public void ComplexIncludesThenGlobalExcludeOverrides()
+        public void IncludesThenGlobalExcludeOverrides()
         {
             var scenario = new FileSystemGlobbingTestContext(@"c:/data/", true)
                 .Include("**/*.json")
@@ -175,6 +175,36 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
                 .Execute();
 
             scenario.AssertExact();
+        }
+
+        [Fact]
+        public void PreserveFilterOrderingFalse()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", false)
+                .Exclude("**/a.txt")
+                .Include("**/a.txt")
+                .Files("a.txt")
+                .Execute();
+
+            scenario.AssertExact();
+        }
+
+        [Fact]
+        public void ReIncludeSubdir()
+        {
+            var scenario = new FileSystemGlobbingTestContext(@"c:/project/", true)
+                .Include("src/")
+                .Exclude("src/Internal/")
+                .Include("src/Internal/PatternContexts/")
+                .Files(
+                    "src/Internal/PatternContexts/PatternContext.cs",
+                    "src/Internal/PatternSegments/CurrentPathSegment.cs"
+                )
+                .Execute();
+
+            scenario.AssertExact(
+                "src/Internal/PatternContexts/PatternContext.cs"
+            );
         }
     }
 }

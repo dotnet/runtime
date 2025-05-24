@@ -436,18 +436,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests
             }, scenario.Result.Files.ToArray());
         }
 
-        [Fact]
-        public void PreserveFilterOrderingFalse()
-        {
-            var scenario = new FileSystemGlobbingTestContext(@"c:/data/", false)
-                .Exclude("**/a.txt")
-                .Include("**/a.txt")
-                .Files("a.txt")
-                .Execute();
-
-            scenario.AssertExact();
-        }
-
         // exclude: **/.*/**
         // exclude: node_modules/*
         // exclude: **/.cs
