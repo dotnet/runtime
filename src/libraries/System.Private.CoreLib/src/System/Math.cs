@@ -171,7 +171,7 @@ namespace System
             return ((long)a) * b;
         }
 
-#if !TARGET_ARM64 && !(TARGET_AMD64 && CORECLR) // BigMul 64*64 has high performance intrinsics on ARM64 and AMD64 (but not yet on MONO)
+#if !(TARGET_ARM64 || (TARGET_AMD64 && CORECLR)) // BigMul 64*64 has high performance intrinsics on ARM64 and AMD64 (but not yet on MONO)
         /// <summary>
         /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
         /// </summary>
@@ -254,18 +254,18 @@ namespace System
         /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
-            if (ArmBase.Arm64.IsSupported)
-            {
-                low = a * b;
-                return ArmBase.Arm64.MultiplyHigh(a, b);
-            }
-#if !MONO // Multiply is not yet implemented in MONO
-            else if (X86Base.X64.IsSupported)
+#if CORECLR // Multiply is not yet implemented in MONO
+            if (X86Base.X64.IsSupported)
             {
                 (low, long hi) = X86Base.X64.Multiply(a, b);
                 return hi;
             }
 #endif
+            if (ArmBase.Arm64.IsSupported)
+            {
+                low = a * b;
+                return ArmBase.Arm64.MultiplyHigh(a, b);
+            }
 
             ulong high = BigMul((ulong)a, (ulong)b, out ulong ulow);
             low = (long)ulow;
