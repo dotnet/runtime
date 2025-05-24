@@ -59,7 +59,7 @@ function Get-Help() {
   Write-Host "                                 [Default: Minimal]"
   Write-Host "  -vs                            Open the solution with Visual Studio using the locally acquired SDK."
   Write-Host "                                 Path or any project or solution name is accepted."
-  Write-Host "                                 (Example: -vs Microsoft.CSharp or -vs CoreCLR.slnx)"
+  Write-Host "                                 (Example: -vs Microsoft.CSharp or -vs CoreCLR.sln)"
   Write-Host ""
 
   Write-Host "Actions (defaults to -restore -build):"
@@ -175,10 +175,11 @@ if ($vs) {
     $configToOpen = $runtimeConfiguration
   }
 
-  if ($vs -ieq "coreclr.slnx") {
-    # If someone passes in coreclr.slnx (case-insensitive),
+  # Auto-generated solution file that still uses the sln format 
+  if ($vs -ieq "coreclr.sln") {
+    # If someone passes in coreclr.sln (case-insensitive),
     # launch the generated CMake solution.
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.slnx"
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/coreclr/runtime.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true /p:ClrFullNativeBuild=true"
       if ($lastExitCode -ne 0) {
@@ -190,8 +191,9 @@ if ($vs) {
       }
     }
   }
-  elseif ($vs -ieq "corehost.slnx") {
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.slnx"
+  # Auto-generated solution file that still uses the sln format
+  elseif ($vs -ieq "corehost.sln") {
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
     if (-Not (Test-Path $vs)) {
       Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
       if ($lastExitCode -ne 0) {
