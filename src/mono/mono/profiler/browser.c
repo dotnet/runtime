@@ -384,7 +384,7 @@ mono_profiler_init_browser_devtools (const char *desc)
 MonoProfilerHandle 
 mono_profiler_init_browser_eventpipe (void)
 {
-	char *desc = g_getenv ("DOTNET_WasmPerfInstrumentation");
+	char *desc = g_getenv ("DOTNET_WasmPerformanceInstrumentation");
 	mono_profiler_init_browser_common (desc);
 	free(desc);
 	return profiler_handle;
