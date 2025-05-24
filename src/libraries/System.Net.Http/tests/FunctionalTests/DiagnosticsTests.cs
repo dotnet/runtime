@@ -784,7 +784,7 @@ namespace System.Net.Http.Functional.Tests
                     ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
                     ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
 
-                    ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
+                    ActivityEvent evt = conn.Events.Single(e => e.Name == "exception");
                     Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
                     Assert.Contains("exception.type", tags.Keys);
                     Assert.Contains("exception.message", tags.Keys);
@@ -810,7 +810,7 @@ namespace System.Net.Http.Functional.Tests
                     ActivityAssert.HasTag(conn, "error.type", "connection_error");
                     ActivityAssert.HasTag(wait, "error.type", "connection_error");
 
-                    ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
+                    ActivityEvent evt = conn.Events.Single(e => e.Name == "exception");
                     Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
                     Assert.Contains("exception.type", tags.Keys);
                     Assert.Contains("exception.message", tags.Keys);
