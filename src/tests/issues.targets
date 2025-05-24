@@ -628,7 +628,10 @@
         <ExcludeList Include="$(XunitTestBinBase)JIT/Methodical/tailcall_v4/hijacking/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/**">
+        <ExcludeList Include="$(XunitTestBinBase)/async/**">
+          <Issue>Runtime async on NativeAOT NYI</Issue>
+        </ExcludeList>
+      <ExcludeList Include="$(XunitTestBinBase)/reflection/Modifiers/modifiers/**">
             <Issue>https://github.com/dotnet/runtime/issues/91381</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Regression/GetInterfaceMapWithStaticVirtualsAndConstraints/**">
@@ -1343,7 +1346,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/LeakGen/leakgen/**">
             <Issue>PlatformDetection.IsPreciseGcSupported false on mono</Issue>
         </ExcludeList>
-
+      
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/SingLinkList/singlinkgen/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -1395,6 +1398,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/ReversePInvoke/MarshalSeqStruct/ReversePInvoke/ReversePInvokeTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
+
+        <ExcludeList Include="$(XunitTestBinBase)/async/**">
+          <Issue>Runtime async on Mono NYI</Issue>
+        </ExcludeList>
+      
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/ldind_conv/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
