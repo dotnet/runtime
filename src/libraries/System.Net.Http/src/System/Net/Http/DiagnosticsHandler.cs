@@ -209,6 +209,9 @@ namespace System.Net.Http
                             // The presence of error.type indicates that the conditions for setting Error status are also met.
                             // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
                             activity.SetStatus(ActivityStatusCode.Error);
+
+                            // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/exceptions.md
+                            activity.AddException(exception);
                         }
                     }
 
