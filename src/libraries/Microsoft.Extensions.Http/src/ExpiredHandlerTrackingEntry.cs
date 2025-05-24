@@ -8,9 +8,11 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Microsoft.Extensions.Http
 {
     // Thread-safety: This class is immutable
-    internal sealed class ExpiredHandlerTrackingEntry
+    internal sealed class ExpiredHandlerTrackingEntry : IDisposable
     {
         private readonly WeakReference _livenessTracker;
+
+        internal bool _forceDispose;
 
         // IMPORTANT: don't cache a reference to `other` or `other.Handler` here.
         // We need to allow it to be GC'ed.
@@ -23,6 +25,7 @@ namespace Microsoft.Extensions.Http
             InnerHandler = other.Handler.InnerHandler!;
         }
 
+        // Used during normal cleanup cycles
         public bool CanDispose => !_livenessTracker.IsAlive;
 
         public HttpMessageHandler InnerHandler { get; }
@@ -30,5 +33,23 @@ namespace Microsoft.Extensions.Http
         public string Name { get; }
 
         public IServiceScope? Scope { get; }
+
+        public void Dispose()
+        {
+            // Always dispose the inner handler when explicitly disposing or when CanDispose is true
+            if (_forceDispose || !_livenessTracker.IsAlive)
+            {
+                try
+                {
+                    InnerHandler.Dispose();
+                }
+                finally
+                {
+                    Scope?.Dispose();
+                }
+            }
+            // If IsAlive is true, it means the handler is still in use
+            // Don't dispose the scope as it's still being used with the handler
+        }
     }
 }
