@@ -200,7 +200,7 @@ namespace System
         /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong BigMul(ulong a, ulong b, out ulong low)
+        public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
         {
 #if MONO // Multiply is not yet implemented in MONO
             if (Bmi2.X64.IsSupported)
