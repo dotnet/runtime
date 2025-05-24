@@ -487,14 +487,14 @@ namespace System.Text.Json
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
                 // Note: The ReadBufferState ctor rents pooled buffers.
-                ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
+                IReadBufferState bufferState = new StreamReadBufferState(utf8Json, listTypeInfo.Options.DefaultBufferSize);
 
                 try
                 {
                     bool success;
                     do
                     {
-                        bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        bufferState = await bufferState.ReadAsync(cancellationToken, fillBuffer: false).ConfigureAwait(false);
                         success = listTypeInfo.ContinueDeserialize(
                             ref bufferState,
                             ref jsonReaderState,
