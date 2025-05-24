@@ -9,6 +9,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class JsonDocumentTests
     {
+        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
+
         [Fact]
         public void SerializeJsonDocument()
         {
@@ -68,6 +70,81 @@ namespace System.Text.Json.Serialization.Tests
             data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""");
             stream = new MemoryStream(data);
             Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonDocument>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonDocumentWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicateProperty<JsonDocument>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonDocumentArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicateProperty<JsonDocument>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void DserializeJsonDocumentDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty<JsonDocument>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonDocumentClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"Object":{{jsonPayload}}}""";
+            AssertDuplicateProperty<JsonDocument>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicateProperty<T>(string jsonPayload, bool isValidJson)
+        {
+            if (isValidJson)
+            {
+                _ = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions); // Assert no throw
+            }
+            else
+            {
+                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions));
+            }
+
+            _ = JsonSerializer.Deserialize<T>(jsonPayload); // Assert no throw
+        }
+
+        [Fact]
+        public void DserializeJsonDocumentCaseInsensitiveWithDuplicateProperties()
+        {
+            string jsonPayload = """{"a": 1, "A": 2}""";
+
+            JsonElement obj = JsonSerializer.Deserialize<JsonElement>(jsonPayload, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowDuplicateProperties = true
+            });
+
+            Assert.Equal(1, obj.GetProperty("a").GetInt32());
+            Assert.Equal(2, obj.GetProperty("A").GetInt32());
+        }
+
+        [Fact]
+        public void DserializeJsonDocumentClassCaseInsensitiveWithDuplicateProperties()
+        {
+            string jsonPayload = """{"Object": {"a": 1, "A": 2}}""";
+
+            JsonElementClass obj = JsonSerializer.Deserialize<JsonElementClass>(jsonPayload, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowDuplicateProperties = true
+            });
+
+            Assert.Equal(1, obj.Object.GetProperty("a").GetInt32());
+            Assert.Equal(2, obj.Object.GetProperty("A").GetInt32());
         }
     }
 }

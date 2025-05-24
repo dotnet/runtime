@@ -1047,9 +1047,10 @@ namespace System.Text.Json
         {
             return new JsonDocumentOptions
             {
+                AllowDuplicateProperties = AllowDuplicateProperties,
                 AllowTrailingCommas = AllowTrailingCommas,
                 CommentHandling = ReadCommentHandling,
-                MaxDepth = MaxDepth
+                MaxDepth = MaxDepth,
             };
         }
 

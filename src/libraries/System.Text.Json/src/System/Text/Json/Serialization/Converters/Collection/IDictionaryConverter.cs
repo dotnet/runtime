@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (collection.Contains(key))
                 {
-                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(key);
                 }
 
                 collection.Add(key, value);

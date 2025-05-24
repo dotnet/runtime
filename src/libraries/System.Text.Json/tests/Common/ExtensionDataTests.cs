@@ -628,15 +628,40 @@ namespace System.Text.Json.Serialization.Tests
 
             await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options));
-            _ = Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
 
             await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
-            _ = Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
 
             await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options));
-            _ = Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
+            await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{ "a": 0   , "A": 1    }""")]
+        [InlineData("""{ "a": null, "A": null }""")]
+        [InlineData("""{ "a": "a" , "A": null }""")]
+        [InlineData("""{ "a": null, "A": "b"  }""")]
+        public async Task ExtensionProperty_CaseInsensitiveDuplicatesNoThrow(string payload)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            // Dictionary extension properties are always case-sensitive
+            ICollection d;
+            d = (await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options)).MyOverflow;
+            Assert.Equal(2, d.Count);
+
+            d = (await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options)).MyOverflow;
+            Assert.Equal(2, d.Count);
+
+            // But JsonObject abides by options
+            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
         }
 
         [Theory]

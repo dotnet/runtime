@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartArray:
-                    return ReadList(ref reader, options);
+                    return ReadList(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -34,10 +34,13 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
-            JsonElement jElement = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
-            return new JsonArray(jElement, options.GetNodeOptions());
+            // The returned JsonObject is lazily constructed so errors will be thrown as its
+            // properties are accessed. Therefore we don't need to pass any validation options
+            // to the JsonElement.ParseValue.
+            JsonElement jElement = JsonElement.ParseValue(ref reader);
+            return new JsonArray(jElement, options);
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };

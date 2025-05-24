@@ -1628,90 +1628,83 @@ namespace System.Text.Json.Nodes.Tests
             Assert.Equal(size, result.ExtensionData.Count);
         }
 
-        [Theory]
-        [MemberData(nameof(DuplicatePropertyJsonPayloads))]
-        public static void JsonObject_DuplicatePropertyThrows(string jsonPayload, bool isValidJson = false)
-        {
-            AssertDuplicateProperty<JsonObject>(jsonPayload, isValidJson);
-            AssertDuplicateProperty<JsonNode>(jsonPayload, isValidJson);
-        }
-
-        [Theory]
-        [MemberData(nameof(DuplicatePropertyJsonPayloads))]
-        public static void JsonObject_DuplicatePropertyThrows_NestedInArray(string jsonPayload, bool isValidJson = false)
-        {
-            jsonPayload = $"[{jsonPayload}]";
-            AssertDuplicateProperty<JsonArray>(jsonPayload, isValidJson);
-            AssertDuplicateProperty<JsonNode>(jsonPayload, isValidJson);
-        }
-
-        [Theory]
-        [MemberData(nameof(DuplicatePropertyJsonPayloads))]
-        public static void JsonObject_DuplicatePropertyThrows_NestedDeeply(string jsonPayload, bool isValidJson = false)
-        {
-            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
-            AssertDuplicateProperty<JsonObject>(jsonPayload, isValidJson);
-            AssertDuplicateProperty<JsonNode>(jsonPayload, isValidJson);
-        }
-
-        private static void AssertDuplicateProperty<T>(string jsonPayload, bool isValidJson)
-        {
-            if (isValidJson)
-            {
-                _ = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions); // Assert no throw
-            }
-            else
-            {
-                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions));
-            }
-
-            _ = JsonSerializer.Deserialize<T>(jsonPayload); // Assert no throw
-        }
-
-        public static IEnumerable<object[]> DuplicatePropertyJsonPayloads =>
-        [
-            new object[] { $$"""{"p0":0,"p0":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p1":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p2":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p3":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p4":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p5":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p6":42}""" },
-
-            new object[] { $$"""{"p0":0,"p1":1,"p0":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p0":42}""" },
-
-            // First occurrence escaped
-            new object[] { $$"""{"p0":0,"p\u0031":1,"p1":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p\u0036":6,"p6":42}""" },
-            new object[] { $$"""{"p\u0030":0,"p1":1,"p0":42}""" },
-            new object[] { $$"""{"p\u0030":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p0":42}""" },
-
-            // Last occurrence escaped
-            new object[] { $$"""{"p0":0,"p1":1,"p\u0031":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0036":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p\u0030":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0030":42}""" },
-
-            // Both occurrences escaped
-            new object[] { $$"""{"p0":0,"p\u0031":1,"p\u0031":42}""" },
-            new object[] { $$"""{"p0":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p\u0036":6,"p\u0036":42}""" },
-            new object[] { $$"""{"p\u0030":0,"p1":1,"p\u0030":42}""" },
-            new object[] { $$"""{"p\u0030":0,"p1":1,"p2":2,"p3":3,"p4":4,"p5":5,"p6":6,"p\u0030":42}""" },
-
-            new object[] { $$"""{"A":[],"A":1}""" },
-            new object[] { $$"""{"A":{"A":1},"A":1}""" },
-            new object[] { $$"""{"A":{"B":1},"A":1}""" },
-
-            // No error
-            new object[] { $$"""{"A":{"A":1} }""", true }, 
-            new object[] { $$"""{"A":{"B":1},"B":1}""", true },
-        ];
-
         class ClassWithObjectExtensionData
         {
             [JsonExtensionData]
             public JsonObject ExtensionData { get; set; }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicatePropertyThrowsLazily<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrowsLazily<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedInArray(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicatePropertyThrowsLazily<JsonArray>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrowsLazily<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void JsonObject_DuplicatePropertyThrows_NestedDeeply(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicatePropertyThrowsLazily<JsonObject>(jsonPayload, isValidJson);
+            AssertDuplicatePropertyThrowsLazily<JsonNode>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicatePropertyThrowsLazily<T>(string jsonPayload, bool isValidJson)
+            where T : JsonNode
+        {
+            T node = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions);
+
+            if (isValidJson)
+            {
+                JsonNode.DeepEquals(node, node); // Assert no throw
+                node = JsonSerializer.Deserialize<T>(jsonPayload);
+                JsonNode.DeepEquals(node, node); // Assert no throw
+            }
+            else
+            {
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonNode.DeepEquals(node, node),
+                    "An item with the same key has already been added.");
+
+                // Default options also throw
+                node = JsonSerializer.Deserialize<T>(jsonPayload);
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonNode.DeepEquals(node, node),
+                    "An item with the same key has already been added.");
+            }
+        }
+
+        [Fact]
+        public static void JsonObject_DuplicatePropertyCaseInsensitiveLazilyThrows()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            string jsonPayload = """{"a":1,"A":2}""";
+
+            JsonObject obj = JsonSerializer.Deserialize<JsonObject>(jsonPayload, options);
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => _ = obj.Count,
+                "An item with the same key has already been added.");
+
+            JsonNode node = JsonSerializer.Deserialize<JsonNode>(jsonPayload, options);
+            AssertExtensions.ThrowsContains<ArgumentException>(
+                () => _ = ((JsonObject)node).Count,
+                "An item with the same key has already been added.");
         }
     }
 }

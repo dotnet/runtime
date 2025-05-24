@@ -428,9 +428,12 @@ namespace System.Text.Json
         /// <exception cref="JsonException">
         ///   A value could not be read from the reader.
         /// </exception>
-        public static JsonDocument ParseValue(ref Utf8JsonReader reader)
+        public static JsonDocument ParseValue(ref Utf8JsonReader reader) =>
+            ParseValue(ref reader, allowDuplicateProperties: true);
+
+        internal static JsonDocument ParseValue(ref Utf8JsonReader reader, bool allowDuplicateProperties)
         {
-            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true);
+            bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true, allowDuplicateProperties);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
             Debug.Assert(document != null, "null document returned with shouldThrow: true.");

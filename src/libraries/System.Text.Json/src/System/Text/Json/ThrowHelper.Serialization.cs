@@ -336,6 +336,34 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(string name)
+        {
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_DuplicatePropertyNotAllowed(ReadOnlySpan<byte> nameBytes)
+        {
+            string name = JsonHelpers.Utf8GetString(nameBytes);
+            throw new JsonException(SR.Format(SR.DuplicatePropertiesNotAllowed_NameSpan, Truncate(name)));
+        }
+
+        private static string Truncate(ReadOnlySpan<char> str)
+        {
+            const int MaxLength = 15;
+
+            if (str.Length <= MaxLength)
+            {
+                return str.ToString();
+            }
+
+            Span<char> builder = stackalloc char[MaxLength + 3];
+            str.Slice(0, MaxLength).CopyTo(builder);
+            builder[MaxLength] = builder[MaxLength + 1] = builder[MaxLength + 2] = '.';
+            return builder.ToString();
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_NamingPolicyReturnNull(JsonNamingPolicy namingPolicy)
         {
             throw new InvalidOperationException(SR.Format(SR.NamingPolicyReturnNull, namingPolicy));

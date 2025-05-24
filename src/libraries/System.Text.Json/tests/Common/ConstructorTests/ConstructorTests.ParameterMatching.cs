@@ -1719,12 +1719,43 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{"X":1,"Y":2,"Z":3,"X":4}""", typeof(Class_ExtraProperty_ExtData))]
         [InlineData("""{"X":1,"Y":2,"Z":3,"Y":4}""", typeof(Class_ExtraProperty_ExtData))]
         [InlineData("""{"X":1,"Y":2,"Z":3,"Z":4}""", typeof(Class_ExtraProperty_ExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"X":4}""", typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Y":4}""", typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"Z":4}""", typeof(Class_ExtraProperty_JsonElementDictionaryExtData))]
         public async Task RespectAllowDuplicateProp_Small(string json, Type type)
         {
             await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper(json, type, s_noDuplicateParamsOptions));
 
             await Serializer.DeserializeWrapper(json, type); // Assert no throw
+
+            await Assert.ThrowsAsync<JsonException>(
+                () => Serializer.DeserializeWrapper(json, type, s_noDuplicateParamsOptions));
+
+            await Serializer.DeserializeWrapper(json, type); // Assert no throw
+        }
+
+        [Theory]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"x":4}""", true)]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"y":4}""", true)]
+        [InlineData("""{"X":1,"Y":2,"Z":3,"z":4}""", false)] // Dictionary extension properties are case-sensitive
+        public async Task RespectAllowDuplicatePropCaseInsensitive_Small(string json, bool throws)
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            if (throws)
+            {
+                await Assert.ThrowsAsync<JsonException>(
+                    () => Serializer.DeserializeWrapper<Class_ExtraProperty_ExtData>(json, options));
+            }
+            else
+            {
+                await Serializer.DeserializeWrapper<Class_ExtraProperty_ExtData>(json, options); // Assert no throw
+            }
         }
 
         public class Class_ExtraProperty_ExtData
@@ -1742,10 +1773,25 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        public class Class_ExtraProperty_JsonElementDictionaryExtData
+        {
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> ExtensionData { get; set; }
+
+            public Class_ExtraProperty_JsonElementDictionaryExtData(int x)
+            {
+                X = x;
+            }
+        }
+
         [Theory]
         [InlineData("P0")]
         [InlineData("Prop")]
-        [InlineData("ExtensionData")]
+        [InlineData("ExtensionDataProp")]
         public async Task RespectAllowDuplicateProp_Large(string duplicatedProperty)
         {
             string json = $$"""
@@ -1757,7 +1803,7 @@ namespace System.Text.Json.Serialization.Tests
                     "P4": 4,
                     "P5": 5,
                     "Prop": 6,
-                    "ExtensionData": 7,
+                    "ExtensionDataProp": 7,
                     "{{duplicatedProperty}}": 42
                 }
                 """;

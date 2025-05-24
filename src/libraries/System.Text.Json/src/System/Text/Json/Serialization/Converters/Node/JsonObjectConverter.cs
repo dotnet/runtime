@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (jObject.ContainsKey(propertyName))
                 {
-                    ThrowHelper.ThrowJsonReaderException(in reader, ExceptionResource.DuplicatePropertiesNotAllowed);
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
                 }
 
                 jObject.Add(propertyName, jNodeValue);
@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartObject:
-                    return ReadObject(ref reader, options);
+                    return ReadObject(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -71,10 +71,13 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
-            JsonElement jElement = JsonElement.ParseValue(ref reader, options.AllowDuplicateProperties);
-            JsonObject jObject = new JsonObject(jElement, options.GetNodeOptions());
+            // The returned JsonObject is lazily constructed so errors will be thrown as its
+            // properties are accessed. Therefore we don't need to pass any validation options
+            // to the JsonElement.ParseValue.
+            JsonElement jElement = JsonElement.ParseValue(ref reader);
+            JsonObject jObject = new JsonObject(jElement, options);
             return jObject;
         }
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class JsonElementTests
     {
+        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
+
         [Fact]
         public void SerializeJsonElement()
         {
@@ -291,6 +294,81 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonDocumentOptions options = new JsonDocumentOptions { MaxDepth = depth };
             return JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonElementWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonElementArrayWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $"[{jsonPayload}]";
+            AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public static void DserializeJsonElementDeeplyNestedWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"p0":{"p1":{"p2":{"p3":{"p4":{"p5":{"p6":{"p7":{"p8":{"p9":{{jsonPayload}}} } } } } } } } } }""";
+            AssertDuplicateProperty<JsonElement>(jsonPayload, isValidJson);
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData.DuplicatePropertyJsonPayloads), MemberType = typeof(TestData))]
+        public void DserializeJsonElementClassWithDuplicateProperties(string jsonPayload, bool isValidJson = false)
+        {
+            jsonPayload = $$"""{"Object":{{jsonPayload}}}""";
+            AssertDuplicateProperty<JsonElementClass>(jsonPayload, isValidJson);
+        }
+
+        private static void AssertDuplicateProperty<T>(string jsonPayload, bool isValidJson)
+        {
+            if (isValidJson)
+            {
+                _ = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions); // Assert no throw
+            }
+            else
+            {
+                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions));
+            }
+
+            _ = JsonSerializer.Deserialize<T>(jsonPayload); // Assert no throw
+        }
+
+        [Fact]
+        public void DserializeJsonElementCaseInsensitiveWithDuplicateProperties()
+        {
+            string jsonPayload = """{"a": 1, "A": 2}""";
+
+            JsonElement obj = JsonSerializer.Deserialize<JsonElement>(jsonPayload, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowDuplicateProperties = true
+            });
+
+            Assert.Equal(1, obj.GetProperty("a").GetInt32());
+            Assert.Equal(2, obj.GetProperty("A").GetInt32());
+        }
+
+        [Fact]
+        public void DserializeJsonElementClassCaseInsensitiveWithDuplicateProperties()
+        {
+            string jsonPayload = """{"Object": {"a": 1, "A": 2}}""";
+
+            JsonElementClass obj = JsonSerializer.Deserialize<JsonElementClass>(jsonPayload, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                AllowDuplicateProperties = true
+            });
+
+            Assert.Equal(1, obj.Object.GetProperty("a").GetInt32());
+            Assert.Equal(2, obj.Object.GetProperty("A").GetInt32());
         }
     }
 }

@@ -55,7 +55,7 @@ namespace System.Text.Json
                     {
                         if (previousPropertyName.Span.SequenceEqual(propertyName.Span))
                         {
-                            ThrowHelper.ThrowJsonReaderException(in reader, ExceptionResource.DuplicatePropertiesNotAllowed);
+                            ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName.Span);
                         }
                     }
 
@@ -87,7 +87,7 @@ namespace System.Text.Json
 
                         if (previousPropertyName.Span.SequenceEqual(propertyName.Span))
                         {
-                            ThrowHelper.ThrowJsonReaderException(in reader, ExceptionResource.DuplicatePropertiesNotAllowed);
+                            ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName.Span);
                         }
 
                         if (shouldCreateSet)

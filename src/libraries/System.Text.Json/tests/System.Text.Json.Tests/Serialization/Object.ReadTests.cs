@@ -700,5 +700,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload, options));
             _ = JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload); // Assert no throw
         }
+
+        [Theory]
+        [InlineData("""{ "MyInt32" : 42, "myInt32" : 42 }""")]
+        [InlineData("""{ "MyInt32Array" : null, "myInt32Array" : null }""")]
+        public static void ReadSimpleObjectWithDuplicatePropertiesCaseInsensitive(string payload)
+        {
+            var options = new JsonSerializerOptions
+            {
+                AllowDuplicateProperties = false,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+        }
     }
 }

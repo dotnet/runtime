@@ -506,9 +506,6 @@ namespace System.Text.Json
                 case ExceptionResource.InvalidLeadingZeroInNumber:
                     message = SR.Format(SR.InvalidLeadingZeroInNumber, character);
                     break;
-                case ExceptionResource.DuplicatePropertiesNotAllowed:
-                    message = SR.DuplicatePropertiesNotAllowed;
-                    break;
                 default:
                     Debug.Fail($"The ExceptionResource enum value: {resource} is not part of the switch. Add the appropriate case and exception message.");
                     break;
@@ -810,7 +807,6 @@ namespace System.Text.Json
         NotEnoughData,
         InvalidLeadingZeroInNumber,
         CannotWriteWithinString,
-        DuplicatePropertiesNotAllowed,
     }
 
     internal enum NumericType
