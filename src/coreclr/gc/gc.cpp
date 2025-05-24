@@ -49261,7 +49261,11 @@ HRESULT GCHeap::Initialize()
 #endif
         }
         size_t virtual_mem_limit = GCToOSInterface::GetVirtualMemoryLimit();
+#ifdef HOST_64BIT
         gc_heap::regions_range = min(gc_heap::regions_range, virtual_mem_limit/2);
+#else
+        gc_heap::regions_range = min(gc_heap::regions_range, virtual_mem_limit/4);
+#endif
         gc_heap::regions_range = align_on_page(gc_heap::regions_range);
     }
     GCConfig::SetGCRegionRange(gc_heap::regions_range);
