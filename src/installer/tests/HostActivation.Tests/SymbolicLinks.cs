@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using Microsoft.DotNet.Cli.Build.Framework;
@@ -22,6 +24,90 @@ namespace HostActivation.Tests
         }
 
         [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_all_files_fx(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+            Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
+
+            // Symlink every file in the app directory
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(sharedTestState.FrameworkDependentApp.Location))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(testDir.Location, symlinkRelativePath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
+                }
+
+                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                // This should succeed on all platforms, but for different reasons:
+                // * Windows: The apphost will look next to the symlink for the app dll and find the symlinked dll
+                // * Unix: The apphost will look next to the resolved apphost for the app dll and find the real thing
+                result
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World");
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_all_files_self_contained(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+            Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
+
+            // Symlink every file in the app directory
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(sharedTestState.SelfContainedApp.Location))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(testDir.Location, symlinkRelativePath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
+                }
+
+                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                // This should succeed on all platforms, but for different reasons:
+                // * Windows: The apphost will look next to the symlink for the files and find the symlinks
+                // * Unix: The apphost will look next to the resolved apphost for the files and find the real thing
+                result
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("Hello World");
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
         [InlineData ("a/b/SymlinkToApphost")]
         [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
@@ -33,12 +119,23 @@ namespace HostActivation.Tests
                 var symlinkFullPath = Path.Combine(testDir.Location, symlinkRelativePath);
 
                 using var symlink = new SymLink(symlinkFullPath, sharedTestState.SelfContainedApp.AppExe);
-                Command.Create(symlinkFullPath)
+                var result = Command.Create(symlinkFullPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
@@ -63,12 +160,23 @@ namespace HostActivation.Tests
                 Directory.CreateDirectory(Path.GetDirectoryName(symlink1Path));
                 using var symlink1 = new SymLink(symlink1Path, symlink2Path);
 
-                Command.Create(symlink1.SrcPath)
+                var result = Command.Create(symlink1.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
@@ -86,13 +194,24 @@ namespace HostActivation.Tests
                 Directory.CreateDirectory(Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath)));
 
                 using var symlink = new SymLink(Path.Combine(testDir.Location, symlinkRelativePath), sharedTestState.FrameworkDependentApp.AppExe);
-                Command.Create(symlink.SrcPath)
+                var result = Command.Create(symlink.SrcPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .DotNetRoot(TestContext.BuiltDotNet.BinPath)
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
@@ -144,12 +263,23 @@ namespace HostActivation.Tests
                 var dotnetSymlink = Path.Combine(testDir.Location, Binaries.DotNet.FileName);
 
                 using var symlink = new SymLink(dotnetSymlink, TestContext.BuiltDotNet.DotnetExecutablePath);
-                Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
+                var result = Command.Create(symlink.SrcPath, sharedTestState.SelfContainedApp.AppDll)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .Execute()
-                    .Should().Pass()
-                    .And.HaveStdOutContaining("Hello World");
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining($"[{Path.Combine(testDir.Location, "host", "fxr")}] does not exist");
+                }
+                else
+                {
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
             }
         }
 
