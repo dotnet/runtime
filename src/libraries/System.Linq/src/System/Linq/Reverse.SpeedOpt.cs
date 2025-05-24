@@ -30,7 +30,7 @@ namespace System.Linq
 
             public override TSource? TryGetElementAt(int index, out bool found)
             {
-                if (_source is IList<TSource> list)
+                if (_source is IReadOnlyList<TSource> list)
                 {
                     int count = list.Count;
                     if ((uint)index < (uint)count)
@@ -59,7 +59,7 @@ namespace System.Linq
                 {
                     return iterator.TryGetLast(out found);
                 }
-                else if (_source is IList<TSource> list)
+                else if (_source is IReadOnlyList<TSource> list)
                 {
                     int count = list.Count;
                     if (count > 0)
@@ -95,7 +95,7 @@ namespace System.Linq
                 {
                     return iterator.TryGetFirst(out found);
                 }
-                else if (_source is IList<TSource> list)
+                else if (_source is IReadOnlyList<TSource> list)
                 {
                     if (list.Count > 0)
                     {

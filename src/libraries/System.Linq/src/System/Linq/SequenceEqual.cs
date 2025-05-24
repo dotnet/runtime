@@ -22,7 +22,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
-            if (first is ICollection<TSource> firstCol && second is ICollection<TSource> secondCol)
+            if (first is IReadOnlyCollection<TSource> firstCol && second is IReadOnlyCollection<TSource> secondCol)
             {
                 if (first.TryGetSpan(out ReadOnlySpan<TSource> firstSpan) && second.TryGetSpan(out ReadOnlySpan<TSource> secondSpan))
                 {
@@ -34,7 +34,7 @@ namespace System.Linq
                     return false;
                 }
 
-                if (firstCol is IList<TSource> firstList && secondCol is IList<TSource> secondList)
+                if (firstCol is IReadOnlyList<TSource> firstList && secondCol is IReadOnlyList<TSource> secondList)
                 {
                     comparer ??= EqualityComparer<TSource>.Default;
 
