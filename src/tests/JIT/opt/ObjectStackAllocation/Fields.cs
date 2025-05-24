@@ -195,6 +195,8 @@ public class Fields
         a[0].y = 3;
         a[1].y = 4;
 
+        GC.Collect();
+        
         return a[1].y + a[0].y;
     }
 
@@ -216,6 +218,8 @@ public class Fields
 
         a[0].y = 3;
         a[1].y = 4;
+
+        GC.Collect();
 
         return a[1].y + a[0].y;
     }

@@ -160,7 +160,8 @@ class ObjectAllocator final : public Phase
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
-    LocalToLocalMap     m_HeapLocalToStackLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackObjLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackArrLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
     unsigned            m_stackAllocationCount;

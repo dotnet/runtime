@@ -42,7 +42,8 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_bvCount(0)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_unknownSourceIndex(BAD_VAR_NUM)
-    , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_HeapLocalToStackObjLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_HeapLocalToStackArrLocalMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_ConnGraphAdjacencyMatrix(nullptr)
     , m_StackAllocMaxSize(0)
     , m_stackAllocationCount(0)
@@ -1482,9 +1483,9 @@ bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
         MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
                                       candidate.m_block, candidate.m_statement);
 
-    // Note we do not want to rewrite uses of the array temp, so we
-    // do not update m_HeapLocalToStackLocalMap.
+    // Keep track of this new local for later type updates.
     //
+    m_HeapLocalToStackArrLocalMap.AddOrUpdate(candidate.m_lclNum, stackLclNum);
     comp->Metrics.StackAllocatedArrays++;
 
     return true;
@@ -1552,7 +1553,7 @@ bool ObjectAllocator::MorphAllocObjNodeHelperObj(AllocationCandidate& candidate)
 
     const unsigned int stackLclNum =
         MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), layout, candidate.m_block, candidate.m_statement);
-    m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+    m_HeapLocalToStackObjLocalMap.AddOrUpdate(lclNum, stackLclNum);
 
     candidate.m_bashCall = true;
 
@@ -2574,7 +2575,10 @@ void ObjectAllocator::RewriteUses()
             var_types    newType   = lclVarDsc->TypeGet();
             ClassLayout* newLayout = nullptr;
 
-            if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
+            // Note we do not update stack array locals here; the newarr expansion
+            // is deferred until after optimization.
+            //
+            if (m_allocator->m_HeapLocalToStackObjLocalMap.TryGetValue(lclNum, &newLclNum))
             {
                 assert(tree->OperIs(GT_LCL_VAR)); // Must be a use.
                 newType = TYP_I_IMPL;
@@ -2781,14 +2785,44 @@ void ObjectAllocator::RewriteUses()
 
         var_types newType     = TYP_UNDEF;
         unsigned  stackLclNum = BAD_VAR_NUM;
-        if (m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &stackLclNum))
+        if (m_HeapLocalToStackObjLocalMap.TryGetValue(lclNum, &stackLclNum))
         {
-            // Appearances of lclNum will be replaced. We'll retype anyways.
+            // Appearances of lclNum will be replaced. We still need to retype.
             //
             newType = TYP_I_IMPL;
 
             // If we are tracking object fields we might also need to
-            // retype the stack allocated local.
+            // retype the stack allocated obj local.
+            //
+            if (m_trackObjectFields)
+            {
+                const unsigned fieldIndex = GetFieldIndexFromLocal(lclNum);
+                if (MayIndexPointToStack(fieldIndex))
+                {
+                    LclVarDsc* const   stackLclDsc   = comp->lvaGetDesc(stackLclNum);
+                    ClassLayout* const stackLayout   = stackLclDsc->GetLayout();
+                    bool const         retypeAsNonGC = DoesIndexPointToStack(fieldIndex);
+                    ClassLayout* const newLayout =
+                        retypeAsNonGC ? GetNonGCLayout(stackLayout) : GetByrefLayout(stackLayout);
+                    JITDUMP("Changing layout of stack allocated object V%02u to %s\n", stackLclNum,
+                            retypeAsNonGC ? "nongc" : "byref");
+                    stackLclDsc->ChangeLayout(newLayout);
+                }
+                else
+                {
+                    JITDUMP("Fields of V%02u not possibly stack pointing; so not changing layout of V%02u\n", lclNum,
+                            stackLclNum);
+                }
+            }
+        }
+        else if (m_HeapLocalToStackArrLocalMap.TryGetValue(lclNum, &stackLclNum))
+        {
+            // Appearances of lclNum will be NOT be replaced. We still need to retype.
+            //
+            newType = TYP_I_IMPL;
+
+            // If we are tracking object fields we might also need to
+            // retype the stack allocated array local.
             //
             if (m_trackObjectFields)
             {
