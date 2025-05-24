@@ -1390,6 +1390,12 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
     assert(UNROLL_LIMIT_SZ[COUNT_OPT_CODE] == 0);
 
+    if (loop->GetHeader()->isRunRarely())
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": Loop is cold.\n", loop->GetIndex());
+        return false;
+    }
+
     NaturalLoopIterInfo iterInfo;
     if (!loop->AnalyzeIteration(&iterInfo))
     {
@@ -2383,20 +2389,6 @@ PhaseStatus Compiler::optOptimizeFlow()
     if (!fgIsUsingProfileWeights())
     {
         modified |= fgExpandRarelyRunBlocks();
-    }
-
-    // Run branch optimizations for non-handler blocks.
-    assert(!fgFuncletsCreated);
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->hasHndIndex())
-        {
-            assert(bbIsHandlerBeg(block));
-            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
-            continue;
-        }
-
-        modified |= fgOptimizeBranch(block);
     }
 
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;

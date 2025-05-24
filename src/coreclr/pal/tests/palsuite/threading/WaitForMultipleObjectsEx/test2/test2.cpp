@@ -140,8 +140,8 @@ VOID PALAPI APCFunc_WFMO_test2(ULONG_PTR dwParam)
 DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
 {
     HANDLE Semaphore;
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
 
@@ -156,19 +156,13 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        Fail("Failed to query performance frequency!");
-    }
-
-    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    OldTimeStamp = minipal_lowres_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForMultipleObjectsEx(1, &Semaphore, FALSE, ChildThreadWaitTime,
         Alertable);
 
-    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    NewTimeStamp = minipal_lowres_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
