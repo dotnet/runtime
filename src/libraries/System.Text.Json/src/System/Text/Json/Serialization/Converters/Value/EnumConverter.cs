@@ -454,8 +454,17 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (s_isFlagsEnum)
             {
-                ulong remainingBits = key;
+                // First try to match exact field (for performance)
+                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+                {
+                    if (fieldInfo.Key == key)
+                    {
+                        return true;
+                    }
+                }
 
+                // Try the standard bit-by-bit matching
+                ulong remainingBits = key;
                 foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
                 {
                     ulong fieldKey = fieldInfo.Key;
@@ -466,6 +475,27 @@ namespace System.Text.Json.Serialization.Converters
                         if (remainingBits == 0)
                         {
                             return true;
+                        }
+                    }
+                }
+
+                // If the above failed, try matching by analyzing field combinations
+                // This ensures backwards compatibility with .NET 8 behavior for flags enums with combination values
+                if (remainingBits != 0)
+                {
+                    // Similar to the approach used by FormatEnumAsString, but we don't need to build the actual string.
+                    // We only need to know if any field matches at all - if it does, we'll format it as a string.
+                    // This mimics the .NET 8 behavior where any flags enum with at least one named field would
+                    // be formatted as a string rather than a number.
+                    ulong unmatchedBits = key;
+
+                    foreach (EnumFieldInfo enumField in _enumFieldInfo)
+                    {
+                        ulong fieldKey = enumField.Key;
+                        if (fieldKey == 0 ? key == 0 : (unmatchedBits & fieldKey) == fieldKey)
+                        {
+                            unmatchedBits &= ~fieldKey;
+                            return true; // Found at least one field that matches part of the value
                         }
                     }
                 }
