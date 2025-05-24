@@ -411,7 +411,7 @@ globalThis.getDotnetRuntime(0).collectGcDump()
 
 The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
 ```js
-globalThis.getDotnetRuntime(0).collectPerfCounters({durationSeconds: 60})
+globalThis.getDotnetRuntime(0).collectMetrics({durationSeconds: 60})
 ```
 
 The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
