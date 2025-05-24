@@ -4125,6 +4125,11 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     {
                         replacementNode->SetUnusedValue();
                     }
+
+                    GenTree* next = node->gtNext;
+                    BlockRange().Remove(op4);
+                    BlockRange().Remove(node);
+                    return next;
                 }
                 break;
             }
@@ -5167,8 +5172,8 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         return LowerNode(node);
     }
 
-    uint32_t count    = simdSize / genTypeSize(simdBaseType);
     uint32_t elemSize = genTypeSize(simdBaseType);
+    uint32_t count    = simdSize / elemSize;
 
     if (op1->OperIs(GT_IND))
     {
@@ -5655,19 +5660,22 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
 
     if (!op2->OperIsConst())
     {
-        comp->getSIMDInitTempVarNum(simdType);
-
         // We will specially handle WithElement in codegen when op2 isn't a constant
         ContainCheckHWIntrinsic(node);
         return node->gtNext;
     }
 
-    ssize_t count     = simdSize / genTypeSize(simdBaseType);
-    ssize_t imm8      = op2->AsIntCon()->IconValue();
-    ssize_t simd16Cnt = 16 / genTypeSize(simdBaseType);
-    ssize_t simd16Idx = imm8 / simd16Cnt;
+    // We should have a bounds check inserted for any index outside the allowed range
+    // but we need to generate some code anyways, and so we'll simply mask here for simplicity.
 
-    assert(0 <= imm8 && imm8 < count);
+    uint32_t elemSize = genTypeSize(simdBaseType);
+    uint32_t count    = simdSize / elemSize;
+
+    uint32_t imm8      = static_cast<uint8_t>(op2->AsIntCon()->IconValue()) % count;
+    uint32_t simd16Cnt = 16 / elemSize;
+    uint32_t simd16Idx = imm8 / simd16Cnt;
+
+    assert((0 <= imm8) && (imm8 < count));
 
     switch (simdBaseType)
     {
@@ -7875,7 +7883,8 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     // However, we want to prefer containing the store over allowing the
                     // input to be regOptional, so track and clear containment if required.
 
-                    clearContainedNode = hwintrinsic->Op(1);
+                    GenTree* op1       = hwintrinsic->Op(1);
+                    clearContainedNode = op1;
                     isContainable      = !clearContainedNode->isContained();
 
                     if (isContainable && varTypeIsIntegral(simdBaseType))
@@ -7887,13 +7896,29 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                         if (isContainable && varTypeIsSmall(simdBaseType))
                         {
                             CorInfoType baseJitType = varTypeIsByte(node) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_USHORT;
-                            intrinsicId             = varTypeIsByte(node) ? NI_SSE41_Extract : NI_SSE2_Extract;
+
+                            if (intrinsicId == NI_Vector512_ToScalar)
+                            {
+                                op1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector512_GetLower128,
+                                                                     baseJitType, 64);
+                                BlockRange().InsertBefore(hwintrinsic, op1);
+                                LowerNode(op1);
+                            }
+                            else if (intrinsicId == NI_Vector256_ToScalar)
+                            {
+                                op1 = comp->gtNewSimdGetLowerNode(TYP_SIMD16, op1, baseJitType, 32);
+                                BlockRange().InsertBefore(hwintrinsic, op1);
+                                LowerNode(op1);
+                            }
+
+                            intrinsicId = varTypeIsByte(node) ? NI_SSE41_Extract : NI_SSE2_Extract;
 
                             GenTree* zero = comp->gtNewZeroConNode(TYP_INT);
                             BlockRange().InsertBefore(hwintrinsic, zero);
 
                             hwintrinsic->SetSimdBaseJitType(baseJitType);
-                            hwintrinsic->ResetHWIntrinsicId(intrinsicId, hwintrinsic->Op(1), zero);
+                            hwintrinsic->SetSimdSize(16);
+                            hwintrinsic->ResetHWIntrinsicId(intrinsicId, op1, zero);
                             zero->SetContained();
                         }
                     }

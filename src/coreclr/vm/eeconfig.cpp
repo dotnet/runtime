@@ -112,6 +112,7 @@ HRESULT EEConfig::Init()
     fJitMinOpts = false;
     fJitEnableOptionalRelocs = false;
     fDisableOptimizedThreadStaticAccess = false;
+    fIsWriteBarrierCopyEnabled = false;
     fPInvokeRestoreEsp = (DWORD)-1;
 
     fStressLog = false;
@@ -501,6 +502,8 @@ HRESULT EEConfig::sync()
     if (iJitOptimizeType > OPT_RANDOM)     iJitOptimizeType = OPT_DEFAULT;
 
     fDisableOptimizedThreadStaticAccess = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableOptimizedThreadStaticAccess) != 0;
+
+    fIsWriteBarrierCopyEnabled = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_UseGCWriteBarrierCopy) != 0;
 
 #ifdef TARGET_X86
     fPInvokeRestoreEsp = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Jit_NetFx40PInvokeStackResilience);
@@ -998,7 +1001,6 @@ HRESULT TypeNamesList::Init(_In_z_ LPCWSTR str)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
         PRECONDITION(CheckPointer(str));
         INJECT_FAULT(return E_OUTOFMEMORY);
     } CONTRACTL_END;

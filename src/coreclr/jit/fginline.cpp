@@ -781,6 +781,17 @@ PhaseStatus Compiler::fgInline()
         Metrics.ProfileConsistentBeforeInline++;
     }
 
+    if (!fgHaveProfileWeights())
+    {
+        JITDUMP("INLINER: no pgo data\n");
+    }
+    else
+    {
+        JITDUMP("INLINER: pgo source is %s; pgo data is %sconsistent; %strusted; %ssufficient\n",
+                compGetPgoSourceName(), fgPgoConsistent ? "" : "not ", fgHaveTrustedProfileWeights() ? "" : "not ",
+                fgHaveSufficientProfileWeights() ? "" : "not ");
+    }
+
     noway_assert(fgFirstBB != nullptr);
 
     BasicBlock*                                 block = fgFirstBB;

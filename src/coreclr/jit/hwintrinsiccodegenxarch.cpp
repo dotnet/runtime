@@ -1974,6 +1974,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector512_WithElement:
         {
             // Optimize the case where op2 is not a constant.
+
+            assert(!op1->isContained());
             assert(!op2->OperIsConst());
 
             // We don't have an instruction to implement this intrinsic if the index is not a constant.
@@ -2005,13 +2007,13 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                                       emitTypeSize(simdType), op1Reg, simdInitTempVarNum, 0);
 
             // Set the desired element.
-            GetEmitter()->emitIns_ARX_R(ins_Move_Extend(op3->TypeGet(), false), // Store
-                                        emitTypeSize(baseType),                 // Of the vector baseType
-                                        valueReg,                               // From valueReg
-                                        (isEBPbased) ? REG_EBP : REG_ESP,       // Stack-based
-                                        indexReg,                               // Indexed
-                                        genTypeSize(baseType),                  // by the size of the baseType
-                                        offs);                                  // Offset
+            GetEmitter()->emitIns_ARX_R(ins_Store(op3->TypeGet()),        // Store
+                                        emitTypeSize(baseType),           // Of the vector baseType
+                                        valueReg,                         // From valueReg
+                                        (isEBPbased) ? REG_EBP : REG_ESP, // Stack-based
+                                        indexReg,                         // Indexed
+                                        genTypeSize(baseType),            // by the size of the baseType
+                                        offs);                            // Offset
 
             // Write back the modified vector to the original location.
             GetEmitter()->emitIns_R_S(ins_Load(simdType, compiler->isSIMDTypeLocalAligned(simdInitTempVarNum)),

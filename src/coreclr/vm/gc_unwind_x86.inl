@@ -189,13 +189,29 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
         header.syncEndOffset = decodeUnsigned(table);
 
         _ASSERTE(header.syncStartOffset != INVALID_SYNC_OFFSET && header.syncEndOffset != INVALID_SYNC_OFFSET);
+#ifdef FEATURE_EH_FUNCLETS
+        _ASSERTE(header.syncStartOffset == 1);
+        _ASSERTE(header.syncEndOffset == 1);
+#else
         _ASSERTE(header.syncStartOffset < header.syncEndOffset);
+#endif
     }
 
     if (header.revPInvokeOffset == HAS_REV_PINVOKE_FRAME_OFFSET)
     {
         header.revPInvokeOffset = fastDecodeUnsigned(table);
     }
+
+    if (header.noGCRegionCnt == HAS_NOGCREGIONS)
+    {
+        hasArgTabOffset = TRUE;
+        header.noGCRegionCnt = fastDecodeUnsigned(table);
+    }
+    else if (header.noGCRegionCnt > 0)
+    {
+        hasArgTabOffset = TRUE;
+    }
+
 
     /* Some sanity checks on header */
 
@@ -231,6 +247,7 @@ size_t DecodeGCHdrInfo(GCInfoToken gcInfoToken,
     infoPtr->syncStartOffset = header.syncStartOffset;
     infoPtr->syncEndOffset   = header.syncEndOffset;
     infoPtr->revPInvokeOffset = header.revPInvokeOffset;
+    infoPtr->noGCRegionCnt   = header.noGCRegionCnt;
 
     infoPtr->doubleAlign     = header.doubleAlign;
     infoPtr->handlers        = header.handlers;
@@ -366,6 +383,9 @@ size_t GetLocallocSPOffset(hdrInfo * info)
     _ASSERTE(info->localloc && info->ebpFrame);
 
     unsigned position = info->savedRegsCountExclFP +
+#ifdef FEATURE_EH_FUNCLETS
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+#endif
                         1;
     return position * sizeof(TADDR);
 }
@@ -377,12 +397,20 @@ size_t GetParamTypeArgOffset(hdrInfo * info)
 
     _ASSERTE((info->genericsContext || info->handlers) && info->ebpFrame);
 
+#ifdef FEATURE_EH_FUNCLETS
+    unsigned position = info->savedRegsCountExclFP +
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) + // Is this method synchronized
+                        info->localloc +
+                        1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+#else
     unsigned position = info->savedRegsCountExclFP +
                         info->localloc +
                         1;  // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+#endif
     return position * sizeof(TADDR);
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 inline size_t GetStartShadowSPSlotsOffset(hdrInfo * info)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -425,6 +453,7 @@ inline size_t GetEndShadowSPSlotsOffset(hdrInfo * info, unsigned maxHandlerNesti
     return GetStartShadowSPSlotsOffset(info) +
            (numberOfShadowSPSlots * sizeof(TADDR));
 }
+#endif // FEATURE_EH_FUNCLETS
 
 /*****************************************************************************
  *    returns the base frame pointer corresponding to the target nesting level.
@@ -524,7 +553,6 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
             _ASSERTE(condition);                        \
         }
 
-    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
     TADDR  baseSP            = GetOutermostBaseFP(frameEBP, info);
     bool    nonLocalHandlers = false; // Are the funclets invoked by EE (instead of managed code itself)
     bool    hasInnerFilter   = false;
@@ -539,6 +567,7 @@ FrameType   GetHandlerFrameInfo(hdrInfo   * info,
     // expected to be in decreasing order.
     size_t lvl = 0;
 #ifndef FEATURE_EH_FUNCLETS
+    PTR_TADDR pFirstBaseSPslot = GetFirstBaseSPslotPtr(frameEBP, info);
     PTR_TADDR pSlot;
     for(lvl = 0, pSlot = pFirstBaseSPslot;
         *pSlot && lvl < unwindLevel;
@@ -653,6 +682,15 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_EH_FUNCLETS
+    _ASSERTE(info->ebpFrame);
+    unsigned position = info->savedRegsCountExclFP +
+                        info->localloc +
+                        info->genericsContext + // For CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+                        ((info->syncStartOffset != INVALID_SYNC_OFFSET) ? 1 : 0) // Is this method synchronized
+                        + 1; // for ebpFrame
+    return position * sizeof(TADDR);
+#else
     // See comment above Compiler::lvaAssignFrameOffsets() in src\jit\il\lclVars.cpp
     // for frame layout
 
@@ -664,8 +702,40 @@ inline size_t GetSizeOfFrameHeaderForEnC(hdrInfo * info)
     // to get the total size of the header.
     return sizeof(TADDR) +
             GetEndShadowSPSlotsOffset(info, MAX_EnC_HANDLER_NESTING_LEVEL);
+#endif // FEATURE_EH_FUNCLETS
 }
 #endif // FEATURE_NATIVEAOT
+
+/*****************************************************************************/
+bool IsInNoGCRegion(hdrInfo   * infoPtr,
+                    PTR_CBYTE   table,
+                    unsigned    curOffset)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    if (infoPtr->noGCRegionCnt == 0)
+        return false;
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
+#endif
+
+    unsigned count = infoPtr->noGCRegionCnt;
+    while (count-- > 0) {
+        unsigned regionOffset = fastDecodeUnsigned(table);
+        if (curOffset < regionOffset)
+            return false;
+        unsigned regionSize = fastDecodeUnsigned(table);
+        if (curOffset - regionOffset < regionSize)
+            return true;
+    }
+
+    return false;
+}
 
 /*****************************************************************************/
 static
@@ -691,6 +761,13 @@ PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 #if VERIFY_GC_TABLES
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
+
+    /* Skip over the no GC regions table */
+
+    count = info.noGCRegionCnt;
+    while (count-- > 0) {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
 
     /* Skip over the untracked frame variable table */
 
@@ -2393,7 +2470,7 @@ void UnwindEspFrameEpilog(
 
         // We have already popped off the frame (excluding the callee-saved registers)
 
-        if (epilogBase[0] == X86_INSTR_POP_ECX)
+        if (epilogBase[offset] == X86_INSTR_POP_ECX)
         {
             // We may use "POP ecx" for doing "ADD ESP, 4",
             // or we may not (in the case of JMP epilogs)
@@ -2510,8 +2587,11 @@ void UnwindEbpDoubleAlignFrameEpilog(
         {
             // do nothing before popping the callee-saved registers
         }
-        else if (info->rawStkSize == sizeof(void*))
+        else if (info->rawStkSize == sizeof(void*) && epilogBase[offset] == X86_INSTR_POP_ECX)
         {
+            // We may use "POP ecx" for doing "ADD ESP, 4",
+            // or we may not (in the case of JMP epilogs)
+
             // "pop ecx" will make ESP point to the callee-saved registers
             if (!InstructionAlreadyExecuted(offset, info->epilogOffs))
                 ESP += sizeof(void*);
@@ -3583,6 +3663,12 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     unsigned ptrAddr;
     unsigned lowBits;
 
+    /* Skip over no-GC region table */
+    count = info.noGCRegionCnt;
+    while (count-- > 0)
+    {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
 
     /* Process the untracked frame variable table */
 

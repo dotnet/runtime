@@ -37,8 +37,8 @@
 
 #include <minipal/guid.h>
 
-constexpr GUID JITEEVersionIdentifier = { /* bcfedb4f-ed47-4df3-8156-7ad8fc8521f1 */
-    0xbcfedb4f,
+constexpr GUID JITEEVersionIdentifier = { /* bcfedb4e-ed47-4df3-8156-7ad8fc8521f1 */
+    0xbcfedb4e,
     0xed47,
     0x4df3,
     {0x81, 0x56, 0x7a, 0xd8, 0xfc, 0x85, 0x21, 0xf1}

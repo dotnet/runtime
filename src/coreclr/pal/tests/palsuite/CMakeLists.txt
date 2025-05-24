@@ -355,7 +355,6 @@ add_executable_clr(paltests
   miscellaneous/GetEnvironmentVariableW/test6/test6.cpp
   miscellaneous/GetLastError/test1/test.cpp
   miscellaneous/GetSystemInfo/test1/test.cpp
-  miscellaneous/GetTickCount/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -378,8 +377,6 @@ add_executable_clr(paltests
   #miscellaneous/IsBadWritePtr/test1/test.cpp
   #miscellaneous/IsBadWritePtr/test2/test2.cpp
   #miscellaneous/IsBadWritePtr/test3/test3.cpp
-  miscellaneous/queryperformancecounter/test1/test1.cpp
-  miscellaneous/queryperformancefrequency/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
   miscellaneous/SetEnvironmentVariableA/test3/test3.cpp

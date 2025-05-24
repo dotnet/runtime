@@ -17,10 +17,11 @@
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+#include "minipal/time.h"
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
 extern bool s_forcedGCInProgress;
-ULONGLONG FinalizerThread::LastHeapDumpTime = 0;
+int64_t FinalizerThread::LastHeapDumpTime = 0;
 
 Volatile<BOOL> g_TriggerHeapDump = FALSE;
 #endif // __linux__
@@ -125,13 +126,8 @@ void FinalizerThread::FinalizeAllObjects()
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
-    // Non-host environment
-
     // We don't want kLowMemoryNotification to starve out kFinalizer
-    // (as the latter may help correct the former), and we don't want either
-    // to starve out kProfilingAPIAttach, as we want decent responsiveness
-    // to a user trying to attach a profiler.  So check in this order:
-    //     kProfilingAPIAttach alone (0 wait)
+    // (as the latter may help correct the former). So check in this order:
     //     kFinalizer alone (2s wait)
     //     all events together (infinite wait)
 
@@ -162,7 +158,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
         //
         //     * kLowMemoryNotification (if it's non-NULL && g_fEEStarted)
         //     * kFinalizer (always)
-        //     * kProfilingAPIAttach (if it's non-NULL)
         //
         // The enum code:MHandleType values become important here, as
         // WaitForMultipleObjects needs to wait on a contiguous set of non-NULL
@@ -277,7 +272,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-        if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
+        if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
         {
             s_forcedGCInProgress = true;
             GetFinalizerThread()->DisablePreemptiveGC();
@@ -285,7 +280,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->EnablePreemptiveGC();
             s_forcedGCInProgress = false;
 
-            LastHeapDumpTime = CLRGetTickCount64();
+            LastHeapDumpTime = minipal_lowres_ticks();
             g_TriggerHeapDump = FALSE;
         }
 #endif
@@ -392,6 +387,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
     // handshake with EE initialization, as now we can attach Thread objects to native threads.
     hEventFinalizerDone->Set();
+    WaitForFinalizerEvent (hEventFinalizer);
 #endif
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();

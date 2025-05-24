@@ -17,7 +17,7 @@ public class Async2CollectibleAlc
         AsyncEntryPoint().Wait();
     }
 
-    private static async2 Task AsyncEntryPoint()
+    private static async Task AsyncEntryPoint()
     {
         WeakReference wr = await CallFooAsyncAndUnload();
 
@@ -31,7 +31,7 @@ public class Async2CollectibleAlc
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static async2 Task<WeakReference> CallFooAsyncAndUnload()
+    private static async Task<WeakReference> CallFooAsyncAndUnload()
     {
         TaskCompletionSource tcs = new();
         (Task<string> task, WeakReference wr) = CallFooAsyncInCollectibleALC(tcs.Task);
@@ -63,7 +63,7 @@ public class Async2CollectibleAlc
     }
 
     // Task[] to work around a compiler bug
-    private static async2 Task<string> FooAsync(Task[] t)
+    private static async Task<string> FooAsync(Task[] t)
     {
         await t[0];
         return "done";

@@ -389,6 +389,12 @@ public:
                                                                                     && pSkipGCCoverageList->IsInList(assemblyName));}
 #endif
 
+    bool IsWriteBarrierCopyEnabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return fIsWriteBarrierCopyEnabled;
+    }
+
 #ifdef _DEBUG
     inline DWORD FastGCStressLevel() const
     {LIMITED_METHOD_CONTRACT;  return iFastGCStress;}
@@ -453,6 +459,7 @@ private: //----------------------------------------------------------------
     bool fJitMinOpts;                  // Enable MinOpts for all jitted methods
     bool fJitEnableOptionalRelocs;     // Allow optional relocs
     bool fDisableOptimizedThreadStaticAccess; // Disable OptimizedThreadStatic access
+    bool fIsWriteBarrierCopyEnabled; // Is the GC write barrier copy enabled?
 
     unsigned iJitOptimizeType; // 0=Blended,1=SmallCode,2=FastCode,              default is 0=Blended
 
