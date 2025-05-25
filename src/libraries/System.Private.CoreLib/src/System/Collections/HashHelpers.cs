@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections
@@ -52,15 +53,25 @@ namespace System.Collections
             return candidate == 2;
         }
 
+
+        private static ReadOnlySpan<int> LookUp => new int[24]
+        {
+            0, 0, 1, 2, 3, 6, 9, 12, 16, 19, 23, 27, 31, 34, 38, 42, 46, 50, 53, 57, 61, 65, 69, 0
+        };
+
         public static int GetPrime(int min)
         {
             if (min < 0)
                 throw new ArgumentException(SR.Arg_HTCapacityOverflow);
 
-            foreach (int prime in Primes)
+            if (min <= 7199369)
             {
-                if (prime >= min)
-                    return prime;
+                int index = LookUp[BitOperations.Log2((uint)min)];
+                foreach (var prime in Primes.Slice(index))
+                {
+                    if (prime >= min)
+                        return prime;
+                }
             }
 
             // Outside of our predefined table. Compute the hard way.
