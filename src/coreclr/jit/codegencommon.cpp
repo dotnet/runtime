@@ -2895,34 +2895,23 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
             return dsc->TypeGet();
         case TYP_STRUCT:
         {
-            if (genIsValidFloatReg(seg.GetRegister()))
-            {
-                return seg.GetRegisterType();
-            }
-
-            ClassLayout* layout = dsc->GetLayout();
-            assert(seg.Offset < layout->GetSize());
-            if (((seg.Offset % TARGET_POINTER_SIZE) == 0) && (seg.Size == TARGET_POINTER_SIZE))
-            {
-                return layout->GetGCPtrType(seg.Offset / TARGET_POINTER_SIZE);
-            }
-
+            var_types type = seg.GetRegisterType(dsc->GetLayout());
             // For the Swift calling convention the enregistered segments do
             // not match the memory layout, so we need to use exact store sizes
             // for the same reason as RISCV64/LA64 below.
             if (compiler->info.compCallConv == CorInfoCallConvExtension::Swift)
             {
-                return seg.GetRegisterType();
+                return type;
             }
 
 #if defined(TARGET_ARM64)
             // We round struct sizes up to TYP_I_IMPL on the stack frame so we
             // can always use the full register size here. This allows us to
             // use stp more often.
-            return TYP_I_IMPL;
+            return genTypeSize(type) < TARGET_POINTER_SIZE ? TYP_I_IMPL : type;
 #elif defined(TARGET_XARCH)
             // Round up to use smallest possible encoding
-            return genActualType(seg.GetRegisterType());
+            return genActualType(type);
 #else
             // On other platforms, a safer default is to use the exact size always. For example, for
             // RISC-V/LoongArch structs passed according to floating-point calling convention are enregistered one
@@ -2930,7 +2919,7 @@ var_types CodeGen::genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& se
             // must not be upsized to 4 bytes, otherwise for example:
             // * struct { struct{} e1,e2,e3; byte b; float f; } -- 4-byte store for 'b' would trash 'f'
             // * struct { float f; struct{} e1,e2,e3; byte b; } -- 4-byte store for 'b' would trash adjacent stack slot
-            return seg.GetRegisterType();
+            return type;
 #endif
         }
         default:
