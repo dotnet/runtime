@@ -55,7 +55,6 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     Debug.Fail("F# Map is a collection");
 
-                    // TODO No reference to Linq?
                     foreach (KeyValuePair<TKey, TValue> _ in map)
                     {
                         mapCount++;

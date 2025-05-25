@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -328,52 +327,6 @@ namespace System.Text.Json
                 // We should never reach here.
                 Debug.Fail($"Unable to find expected {lookupType} token");
                 return -1;
-            }
-
-            // This assumes that the next row will be either a property or end object.
-            // TODO can be non-allocating with struct enumerator
-            internal readonly IEnumerable<int> EnumeratePreviousProperties()
-            {
-                // TODO we can skip over complex objects by reading their length,
-                // but for now just do a full scan.
-
-                int depth = 0;
-
-                for (int i = Length - DbRow.Size; i >= 0; i -= DbRow.Size)
-                {
-                    DbRow row = MemoryMarshal.Read<DbRow>(_data.AsSpan(i));
-
-                    // Check if we're entering a nested object/array
-                    if (row.TokenType is JsonTokenType.EndArray or JsonTokenType.EndObject)
-                    {
-                        depth++;
-                        continue;
-                    }
-
-                    // Skip tokens in nested objects/arrays
-                    if (depth > 0)
-                    {
-                        if (row.TokenType is JsonTokenType.StartArray or JsonTokenType.StartObject)
-                        {
-                            depth--;
-                        }
-
-                        continue;
-                    }
-
-                    if (row.TokenType == JsonTokenType.PropertyName)
-                    {
-                        yield return i;
-                    }
-                    else if (row.TokenType == JsonTokenType.StartObject)
-                    {
-                        yield break;
-                    }
-                }
-
-                // We should never reach here.
-                Debug.Fail("Could not find start of object.");
-                yield break;
             }
 
             internal DbRow Get(int index)

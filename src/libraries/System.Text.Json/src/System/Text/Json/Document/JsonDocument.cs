@@ -6,8 +6,6 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.Json
@@ -943,20 +941,18 @@ namespace System.Text.Json
         }
 
         private static void Parse(
-            ReadOnlyMemory<byte> utf8Json,
+            ReadOnlySpan<byte> utf8JsonSpan,
             JsonReaderOptions readerOptions,
             ref MetadataDb database,
-            ref StackRowStack stack,
-            bool allowDuplicateProperties = true)
+            ref StackRowStack stack)
         {
             bool inArray = false;
             int arrayItemsOrPropertyCount = 0;
             int numberOfRowsForMembers = 0;
             int numberOfRowsForValues = 0;
-            PropertyNameSet propertyNameSet = default;
 
             Utf8JsonReader reader = new Utf8JsonReader(
-                utf8Json.Span,
+                utf8JsonSpan,
                 isFinalBlock: true,
                 new JsonReaderState(options: readerOptions));
 
@@ -978,11 +974,10 @@ namespace System.Text.Json
 
                     numberOfRowsForValues++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForMembers + 1, propertyNameSet);
+                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForMembers + 1);
                     stack.Push(row);
                     arrayItemsOrPropertyCount = 0;
                     numberOfRowsForMembers = 0;
-                    propertyNameSet = default;
                 }
                 else if (tokenType == JsonTokenType.EndObject)
                 {
@@ -1000,7 +995,6 @@ namespace System.Text.Json
                     StackRow row = stack.Pop();
                     arrayItemsOrPropertyCount = row.SizeOrLength;
                     numberOfRowsForMembers += row.NumberOfRows;
-                    propertyNameSet = row.PropertyNames;
                 }
                 else if (tokenType == JsonTokenType.StartArray)
                 {
@@ -1011,11 +1005,10 @@ namespace System.Text.Json
 
                     numberOfRowsForMembers++;
                     database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1, propertyNameSet);
+                    var row = new StackRow(arrayItemsOrPropertyCount, numberOfRowsForValues + 1);
                     stack.Push(row);
                     arrayItemsOrPropertyCount = 0;
                     numberOfRowsForValues = 0;
-                    propertyNameSet = default;
                 }
                 else if (tokenType == JsonTokenType.EndArray)
                 {
@@ -1048,19 +1041,9 @@ namespace System.Text.Json
                     StackRow row = stack.Pop();
                     arrayItemsOrPropertyCount = row.SizeOrLength;
                     numberOfRowsForValues += row.NumberOfRows;
-                    propertyNameSet = row.PropertyNames;
                 }
                 else if (tokenType == JsonTokenType.PropertyName)
                 {
-                    // TODO this check can be deferred until after parsing has finished.
-                    // The tradeoff is that duplicate checking would be a little easier
-                    // (since the number of properties is known) but there is no early
-                    // parsing bailout for invalid JSON
-                    if (!allowDuplicateProperties)
-                    {
-                        propertyNameSet.AddPropertyName(utf8Json, ref reader, ref database, arrayItemsOrPropertyCount);
-                    }
-
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
                     arrayItemsOrPropertyCount++;
@@ -1109,8 +1092,88 @@ namespace System.Text.Json
                 inArray = reader.IsInArray;
             }
 
-            Debug.Assert(reader.BytesConsumed == utf8Json.Length);
+            Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
             database.CompleteAllocations();
+        }
+
+        private static void ValidateDocument(JsonDocument document, bool allowDuplicateProperties)
+        {
+            if (!allowDuplicateProperties &&
+                document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+            {
+                ValidateDuplicateProperties(document);
+            }
+        }
+
+        private static void ValidateDuplicateProperties(JsonDocument document)
+        {
+            Debug.Assert(document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object);
+
+            using PropertyNameSet propertyNameSet = new PropertyNameSet();
+
+            Stack<int> traversalPath = new Stack<int>();
+            int? databaseIndexOflastProcessedChild = null;
+
+            traversalPath.Push(document.RootElement.MetadataDbIndex);
+
+            do
+            {
+                JsonElement curr = new JsonElement(document, traversalPath.Peek());
+
+                switch (curr.ValueKind)
+                {
+                    case JsonValueKind.Object:
+                    {
+                        JsonElement.ObjectEnumerator enumerator = new(curr, databaseIndexOflastProcessedChild ?? -1);
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                            {
+                                traversalPath.Push(enumerator.Current.Value.MetadataDbIndex);
+                                databaseIndexOflastProcessedChild = null;
+                                goto continueOuter;
+                            }
+                        }
+
+                        // No more children, so process the current element.
+                        enumerator.Reset();
+
+                        foreach (JsonProperty property in enumerator)
+                        {
+                            propertyNameSet.AddPropertyName(property, document);
+                        }
+
+                        propertyNameSet.Reset();
+                        databaseIndexOflastProcessedChild = traversalPath.Pop();
+                        break;
+                    }
+                    case JsonValueKind.Array:
+                    {
+                        JsonElement.ArrayEnumerator enumerator = new(curr, databaseIndexOflastProcessedChild ?? -1);
+
+                        while (enumerator.MoveNext())
+                        {
+                            if (enumerator.Current.ValueKind is JsonValueKind.Object or JsonValueKind.Array)
+                            {
+                                traversalPath.Push(enumerator.Current.MetadataDbIndex);
+                                databaseIndexOflastProcessedChild = null;
+                                goto continueOuter;
+                            }
+                        }
+
+                        databaseIndexOflastProcessedChild = traversalPath.Pop();
+                        break;
+                    }
+                    default:
+                        Debug.Fail($"Expected only complex children but got {curr.ValueKind}");
+                        ThrowHelper.ThrowJsonException();
+                        break;
+                }
+
+            continueOuter:
+                ;
+            } while (traversalPath.Count is not 0);
         }
 
         private void CheckNotDisposed()

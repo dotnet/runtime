@@ -717,12 +717,13 @@ namespace System.Text.Json
             PooledByteBufferWriter? extraPooledByteBufferWriter = null,
             bool allowDuplicateProperties = true)
         {
+            ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
-            var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth);
+            var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {
-                Parse(utf8Json, readerOptions, ref database, ref stack, allowDuplicateProperties);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
             }
             catch
             {
@@ -734,7 +735,9 @@ namespace System.Text.Json
                 stack.Dispose();
             }
 
-            return new JsonDocument(utf8Json, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter);
+            JsonDocument document = new JsonDocument(utf8Json, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter);
+            ValidateDocument(document, allowDuplicateProperties);
+            return document;
         }
 
         private static JsonDocument ParseUnrented(
@@ -749,6 +752,7 @@ namespace System.Text.Json
                 tokenType != JsonTokenType.False &&
                 tokenType != JsonTokenType.True);
 
+            ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             MetadataDb database;
 
             if (tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number)
@@ -756,15 +760,15 @@ namespace System.Text.Json
                 // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
                 database = MetadataDb.CreateLocked(utf8Json.Length);
                 StackRowStack stack = default;
-                Parse(utf8Json, readerOptions, ref database, ref stack, allowDuplicateProperties);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
             }
             else
             {
                 database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
-                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth);
+                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
                 try
                 {
-                    Parse(utf8Json, readerOptions, ref database, ref stack, allowDuplicateProperties);
+                    Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
                 }
                 finally
                 {
@@ -772,7 +776,9 @@ namespace System.Text.Json
                 }
             }
 
-            return new JsonDocument(utf8Json, database, isDisposable: false);
+            JsonDocument document = new JsonDocument(utf8Json, database, isDisposable: false);
+            ValidateDocument(document, allowDuplicateProperties);
+            return document;
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)
