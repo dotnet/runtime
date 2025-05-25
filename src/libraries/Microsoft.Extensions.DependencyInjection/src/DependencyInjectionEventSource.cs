@@ -144,6 +144,18 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             lock (_providers)
             {
+                int providersCount = _providers.Count;
+                if (providersCount > 0 && _providers.Capacity == providersCount)
+                {
+                    for (int i = providersCount - 1; i >= 0; i--)
+                    {
+                        if (!_providers[i].TryGetTarget(out _))
+                        {
+                            _providers.RemoveAt(i);
+                        }
+                    }
+                }
+
                 _providers.Add(new WeakReference<ServiceProvider>(provider));
             }
 
