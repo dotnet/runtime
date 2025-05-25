@@ -374,5 +374,9 @@ namespace System
                     new ProcessCpuUsage { UserTime = new TimeSpan(procUserTime), PrivilegedTime = new TimeSpan(procKernelTime) } :
                     new ProcessCpuUsage { UserTime = TimeSpan.Zero, PrivilegedTime = TimeSpan.Zero };
         }
+
+        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
+        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
+        public static long TickCount64 => (long)Interop.Kernel32.GetTickCount64();
     }
 }

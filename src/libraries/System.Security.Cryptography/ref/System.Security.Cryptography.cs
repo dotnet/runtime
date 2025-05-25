@@ -3225,6 +3225,8 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class PublicKey
     {
         public PublicKey(System.Security.Cryptography.AsymmetricAlgorithm key) { }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        public PublicKey(System.Security.Cryptography.MLDsa key) { }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public PublicKey(System.Security.Cryptography.MLKem key) { }
         public PublicKey(System.Security.Cryptography.Oid oid, System.Security.Cryptography.AsnEncodedData? parameters, System.Security.Cryptography.AsnEncodedData keyValue) { }

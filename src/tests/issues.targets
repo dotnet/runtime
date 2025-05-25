@@ -952,6 +952,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_115667/**">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/reflection\DefaultInterfaceMethods\Emit\*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection.Emit</Issue>
         </ExcludeList>
@@ -3063,6 +3066,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_90219/Runtime_90219/*">
             <Issue>Loads an assembly from file</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_115667/**">
+          <Issue>Loads an assembly from file</Issue>
         </ExcludeList>
     </ItemGroup>
 
