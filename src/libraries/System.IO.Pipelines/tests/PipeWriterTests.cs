@@ -361,7 +361,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, Pipe.Writer.UnflushedBytes);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.Is64BitProcess))]
         public void UnflushedBytesShouldOverflowInt()
         {
             PipeWriter writer = PipeWriter.Create(Stream.Null);
