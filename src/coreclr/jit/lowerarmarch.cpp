@@ -2194,10 +2194,10 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpVL(GenTreeHWIntrinsic* node, genTreeOps 
     GenTree* cmpResult = node->Op(1);
     LowerNode(cmpResult);
 
-    GenTree* allTrue = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    GenTree* allTrue       = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
     GenTree* activeElemCnt = comp->gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
-        simdBaseJitType, simdSize);
-    GenTree* cntNode = comp->gtNewIconNode(0, TYP_LONG);
+                                                            simdBaseJitType, simdSize);
+    GenTree* cntNode       = comp->gtNewIconNode(0, TYP_LONG);
     BlockRange().InsertBefore(node, allTrue);
     BlockRange().InsertBefore(node, activeElemCnt);
     BlockRange().InsertBefore(node, cntNode);
@@ -2208,7 +2208,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOpVL(GenTreeHWIntrinsic* node, genTreeOps 
     LowerNode(cmp);
 
     node->ChangeOper(cmpOp);
-    node->gtType = TYP_INT;
+    node->gtType        = TYP_INT;
     node->AsOp()->gtOp1 = activeElemCnt;
     node->AsOp()->gtOp2 = cntNode;
 
@@ -4296,7 +4296,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_ShiftLeftLogicalImm:
             {
                 assert(!hasImmediateOperand);
-                if (intrin.op2->IsCnsIntOrI() && emitter::isValidVectorShiftAmount(intrin.op2->AsIntCon()->IconValue(), emitTypeSize(intrin.baseType), false))
+                if (intrin.op2->IsCnsIntOrI() &&
+                    emitter::isValidVectorShiftAmount(intrin.op2->AsIntCon()->IconValue(),
+                                                      emitTypeSize(intrin.baseType), false))
                 {
                     MakeSrcContained(node, intrin.op2);
                 }
@@ -4306,7 +4308,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_ShiftRightLogicalImm:
             {
                 assert(!hasImmediateOperand);
-                if (intrin.op2->IsCnsIntOrI() && emitter::isValidVectorShiftAmount(intrin.op2->AsIntCon()->IconValue(), emitTypeSize(intrin.baseType), true))
+                if (intrin.op2->IsCnsIntOrI() && emitter::isValidVectorShiftAmount(intrin.op2->AsIntCon()->IconValue(),
+                                                                                   emitTypeSize(intrin.baseType), true))
                 {
                     MakeSrcContained(node, intrin.op2);
                 }

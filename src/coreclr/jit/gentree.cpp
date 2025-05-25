@@ -20995,7 +20995,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 if (UseSveForVectorT())
                 {
-                    op2 = gtNewSimdHWIntrinsicNode(type, op2, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
+                    op2 =
+                        gtNewSimdHWIntrinsicNode(type, op2, NI_Sve_DuplicateScalarToVector, simdBaseJitType, simdSize);
                 }
                 else
                 {
@@ -22489,9 +22490,9 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
                 // However, NOT() operation only operates on "byte" variant i.e. `p1.B`, while the result of `p1` from
                 // `SVE_CMP_CC` can be of other variants like `p1.S` or `p1.D`, etc.
                 GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-                op1 = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
-                    simdBaseJitType, simdSize);
-                op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
+                op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+                                                            simdBaseJitType, simdSize);
+                op2              = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
             }
             break;
         }
@@ -22738,8 +22739,8 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
                 //      if r1 != 0 return true else false
 
                 GenTree* allTrue = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
-                op1 = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
-                    simdBaseJitType, simdSize);
+                op1              = gtNewSimdHWIntrinsicNode(TYP_LONG, allTrue, cmpResult, NI_Sve_GetActiveElementCount,
+                                                            simdBaseJitType, simdSize);
 
                 op2 = gtNewSimdAllFalseMaskNode(simdBaseJitType, simdSize);
             }
@@ -22803,7 +22804,7 @@ GenTree* Compiler::gtNewSimdCndSelNode(
     if (UseSveForVectorT())
     {
         intrinsic = NI_Sve_ConditionalSelect;
-        op1 = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
+        op1       = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op1, simdBaseJitType, simdSize);
     }
     else
     {
@@ -29185,7 +29186,7 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 //
 genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar)
 {
-    //TODO-VL: Update this method with SVE_ intrinsics as well
+    // TODO-VL: Update this method with SVE_ intrinsics as well
     *isScalar = false;
 
     switch (id)
@@ -29747,7 +29748,6 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
     }
 }
 
-
 //------------------------------------------------------------------------------
 // GetScalableHWIntrinsicId: Returns SVE equivalent of given intrinsic ID, if applicable
 //
@@ -29756,8 +29756,8 @@ NamedIntrinsic GenTreeHWIntrinsic::GetScalableHWIntrinsicId(unsigned simdSize, N
     NamedIntrinsic sveId = id;
 
 #ifdef TARGET_ARM64
-    //TODO-VL: Look for all places where NI_AdvSimd_* is used and add logic for NI_Sve_* at all those places
-    
+    // TODO-VL: Look for all places where NI_AdvSimd_* is used and add logic for NI_Sve_* at all those places
+
     if (Compiler::UseSveForVectorT())
     {
         switch (id)

@@ -9961,9 +9961,9 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
             case TYP_SIMD16:
                 tryReusingPrevValue = true;
                 break;
-#endif // TARGET_AMD64
-#endif // FEATURE_HW_INTRINSICS
-#endif // TARGET_64BIT
+#endif                      // TARGET_AMD64
+#endif                      // FEATURE_HW_INTRINSICS
+#endif                      // TARGET_64BIT
 
             // TYP_FLOAT and TYP_DOUBLE aren't needed here - they're expected to
             // be converted to TYP_INT/TYP_LONG for constant value.

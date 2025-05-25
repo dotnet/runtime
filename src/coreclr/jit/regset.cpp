@@ -608,13 +608,12 @@ var_types RegSet::tmpNormalizeType(var_types type)
 #if defined(TARGET_ARM64)
     if (Compiler::UseSveForType(type))
     {
-        //TODO-VL: temporary work around to allow scalable registers
+        // TODO-VL: temporary work around to allow scalable registers
         type = TYP_SIMD16;
     }
 #endif
 
 #endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
-
 
     return type;
 }

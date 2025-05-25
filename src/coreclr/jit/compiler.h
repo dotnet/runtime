@@ -8931,7 +8931,7 @@ private:
 private:
 
     static unsigned compVectorTLength;
-    //static unsigned compMinVectorTLengthForSve;
+    // static unsigned compMinVectorTLengthForSve;
     static bool compUseSveForVectorT;
 
 public:
@@ -9296,11 +9296,11 @@ public:
         // to decide to use higher vector length. E.g. ReadUtf8, Memmove, etc.
         // To make them functional, some of them need SVE2 intrinsics/instructions.
         // We will incrementally enable them as we add support for SVE2 APIs.
-        //if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
+        // if (compExactlyDependsOn(InstructionSet_Sve_Arm64))
         //{
         //    return Compiler::compVectorTLength;
         //}
-        //else
+        // else
         if (compOpportunisticallyDependsOn(InstructionSet_AdvSimd))
         {
             return FP_REGSIZE_BYTES;
@@ -9409,16 +9409,16 @@ public:
         // Return 0 if size is even less than XMM, otherwise - XMM
         return (size >= XMM_REGSIZE_BYTES) ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        //if (FP_REGSIZE_BYTES < Compiler::compVectorTLength)
+        // if (FP_REGSIZE_BYTES < Compiler::compVectorTLength)
         //{
-        //    if (size >= Compiler::compVectorTLength)
-        //    {
-        //        return Compiler::compVectorTLength;
-        //    }
-        //}
-        //else
-        //TODO-VL: For now, disable most of the optimizations like memmove, struct copy,
-        // etc. for VL
+        //     if (size >= Compiler::compVectorTLength)
+        //     {
+        //         return Compiler::compVectorTLength;
+        //     }
+        // }
+        // else
+        // TODO-VL: For now, disable most of the optimizations like memmove, struct copy,
+        //  etc. for VL
         {
             assert(getMaxVectorByteLength() == FP_REGSIZE_BYTES);
         }
@@ -9591,7 +9591,7 @@ public:
 #if defined(TARGET_ARM64)
             // For now, just use SIMD register size for unroll threshold
             // decisions
-            //maxRegSize = getPreferredVectorByteLength();
+            // maxRegSize = getPreferredVectorByteLength();
             maxRegSize = FP_REGSIZE_BYTES;
 #endif // TARGET_ARM64
 

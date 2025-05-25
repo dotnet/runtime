@@ -2663,26 +2663,31 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if ((op1Reg == REG_NA) && (op2Reg == REG_NA))
                 {
                     int start = (int)intrin.op1->AsIntCon()->gtIconVal;
-                    int step = (int)intrin.op2->AsIntCon()->gtIconVal;
-                    GetEmitter()->emitInsSve_R_I_I(ins, EA_SCALABLE, targetReg, start, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    int step  = (int)intrin.op2->AsIntCon()->gtIconVal;
+                    GetEmitter()->emitInsSve_R_I_I(ins, EA_SCALABLE, targetReg, start, step,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                 }
                 else if ((op1Reg != REG_NA) && (op2Reg != REG_NA))
                 {
                     emitAttr scalarSize = emitActualTypeSize(node->GetSimdBaseType());
-                    GetEmitter()->emitInsSve_R_R_R(ins, scalarSize, targetReg, op1Reg, op2Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    GetEmitter()->emitInsSve_R_R_R(ins, scalarSize, targetReg, op1Reg, op2Reg,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                 }
                 else if (op1Reg != REG_NA)
                 {
                     assert(op2Reg == REG_NA);
                     int step = (int)intrin.op2->AsIntCon()->gtIconVal;
-                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, step, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op1Reg, step,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                 }
                 else
                 {
                     assert(op1Reg == REG_NA);
 
                     int start = (int)intrin.op1->AsIntCon()->gtIconVal;
-                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op2Reg, start, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)), INS_SCALABLE_OPTS_IMM_FIRST);
+                    GetEmitter()->emitInsSve_R_R_I(ins, EA_SCALABLE, targetReg, op2Reg, start,
+                                                   emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)),
+                                                   INS_SCALABLE_OPTS_IMM_FIRST);
                 }
                 break;
             }
@@ -2690,17 +2695,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 if (op1Reg == REG_NA)
                 {
-                    GetEmitter()->emitIns_R_I(ins, emitTypeSize(intrin.baseType), targetReg, intrin.op1->AsIntCon()->IconValue(), emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                    GetEmitter()->emitIns_R_I(ins, emitTypeSize(intrin.baseType), targetReg,
+                                              intrin.op1->AsIntCon()->IconValue(),
+                                              emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                 }
                 else
                 {
                     if (varTypeIsIntegral(intrin.op1))
                     {
-                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                        GetEmitter()->emitIns_R_R(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg,
+                                                  emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                     }
                     else
                     {
-                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0, emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
+                        GetEmitter()->emitIns_R_R_I(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg, 0,
+                                                    emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType)));
                     }
                 }
                 break;

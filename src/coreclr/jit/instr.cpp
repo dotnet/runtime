@@ -535,7 +535,8 @@ void CodeGen::inst_Mov(var_types dstType,
 #ifdef TARGET_ARM
     GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, flags);
 #elif defined(TARGET_ARM64)
-    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip, size == EA_SCALABLE ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE);
+    GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip,
+                              size == EA_SCALABLE ? INS_OPTS_SCALABLE_D : INS_OPTS_NONE);
 #else
     GetEmitter()->emitIns_Mov(ins, size, dstReg, srcReg, canSkip);
 #endif

@@ -1674,8 +1674,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(Compiler::UseSveForVectorT());
 
-            op2 = impPopStack().val;
-            op1 = impPopStack().val;
+            op2     = impPopStack().val;
+            op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_Sve_Index, simdBaseJitType, simdSize);
             break;
         }
@@ -1704,8 +1704,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_get_Indices:
         {
             GenTree* start = gtNewIconNode(0, TYP_INT);
-            GenTree* step = gtNewIconNode(1, TYP_INT);
-            retNode = gtNewSimdHWIntrinsicNode(retType, start, step, NI_Sve_Index, simdBaseJitType, simdSize);
+            GenTree* step  = gtNewIconNode(1, TYP_INT);
+            retNode        = gtNewSimdHWIntrinsicNode(retType, start, step, NI_Sve_Index, simdBaseJitType, simdSize);
             break;
         }
         case NI_Vector64_get_Indices:
@@ -2146,7 +2146,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector_Max:
-        //case NI_Vector_MaxNumber:
+        // case NI_Vector_MaxNumber:
         case NI_Vector64_Max:
         case NI_Vector128_Max:
         {
@@ -2178,7 +2178,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector_Min:
-        //case NI_Vector_MinNumber:
+        // case NI_Vector_MinNumber:
         case NI_Vector64_Min:
         case NI_Vector128_Min:
         {
@@ -3538,7 +3538,6 @@ GenTree* Compiler::gtNewSimdAllFalseMaskNode(CorInfoType simdBaseJitType, unsign
 {
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskAll, simdBaseJitType, simdSize);
 }
-
 
 //------------------------------------------------------------------------
 // gtNewSimdFalseMaskByteNode: Create an embedded mask with all bits set to false

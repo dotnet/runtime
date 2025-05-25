@@ -10782,9 +10782,9 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
     {
         if (mode == LinearScan::LSRA_DUMP_POST && tree->gtFlags & GTF_SPILLED)
         {
-            
+
 #ifdef TARGET_ARM64
-//TODO-VL: Evaluate this
+            // TODO-VL: Evaluate this
             assert(tree->gtHasReg(compiler) ||
                    (tree->OperIs(GT_INTRINSIC) && (tree->AsIntrinsic()->gtIntrinsicName == NI_SIMD_UpperRestore)));
 #else

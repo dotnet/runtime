@@ -10927,7 +10927,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 
                             const char* lookupMethodName = methodName;
 
-                            if (!useSizeAgnosticVector && ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0')))
+                            if (!useSizeAgnosticVector &&
+                                ((strncmp(methodName, "As", 2) == 0) && (methodName[2] != '\0')))
                             {
                                 if (strncmp(methodName + 2, "Vector", 6) == 0)
                                 {

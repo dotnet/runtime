@@ -2364,8 +2364,9 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                             CORINFO_FIELD_HANDLE hnd;
                             hnd = emit->emitSimdConst(&vecCon->gtSimdVal, emitTypeSize(tree->TypeGet()));
                             emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
-                            //emit->emitIns_R_C(INS_adr, EA_8BYTE, addrReg, REG_NA, hnd, 0);
-                            //emit->emitIns_R_R_R_I(INS_sve_ld1b, EA_SCALABLE, targetReg, REG_P1, addrReg, 0, INS_OPTS_SCALABLE_B);
+                            // emit->emitIns_R_C(INS_adr, EA_8BYTE, addrReg, REG_NA, hnd, 0);
+                            // emit->emitIns_R_R_R_I(INS_sve_ld1b, EA_SCALABLE, targetReg, REG_P1, addrReg, 0,
+                            // INS_OPTS_SCALABLE_B);
                         }
                     }
                     break;
@@ -2389,18 +2390,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         if (ElementsAreSame(val.i32, 16) && emitter::isValidSimm_MultipleOf<8, 256>(val.i32[0]))
                         {
                             emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i32[0], INS_OPTS_SCALABLE_S,
-                                INS_SCALABLE_OPTS_IMM_BITMASK);
+                                              INS_SCALABLE_OPTS_IMM_BITMASK);
                         }
-                        else if (ElementsAreSame(val.i16, 32) &&
-                            emitter::isValidSimm_MultipleOf<8, 256>(val.i16[0]))
+                        else if (ElementsAreSame(val.i16, 32) && emitter::isValidSimm_MultipleOf<8, 256>(val.i16[0]))
                         {
                             emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i16[0], INS_OPTS_SCALABLE_H,
-                                INS_SCALABLE_OPTS_IMM_BITMASK);
+                                              INS_SCALABLE_OPTS_IMM_BITMASK);
                         }
                         else if (ElementsAreSame(val.i8, 64) && emitter::isValidSimm<8>(val.i8[0]))
                         {
                             emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i8[0], INS_OPTS_SCALABLE_B,
-                                INS_SCALABLE_OPTS_IMM_BITMASK);
+                                              INS_SCALABLE_OPTS_IMM_BITMASK);
                         }
                         else
                         {
@@ -3043,7 +3043,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
     emitAttr attr = emitActualTypeSize(targetType);
     if (attr == EA_SCALABLE)
     {
-        //TODO-VL: Should we check the baseType or it doesn't matter because it is just reg->reg move
+        // TODO-VL: Should we check the baseType or it doesn't matter because it is just reg->reg move
         GetEmitter()->emitIns_Mov(INS_sve_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired,
                                   INS_OPTS_SCALABLE_Q);
     }
@@ -3051,7 +3051,6 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
     {
         GetEmitter()->emitIns_Mov(INS_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired);
     }
-    
 }
 
 /***********************************************************************************************
@@ -5415,7 +5414,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
 
-    unsigned       varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
+    unsigned varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
     assert((varSize == 16) || (Compiler::SizeMatchesVectorTLength(varSize)));
 
     regNumber srcReg = node->GetRegNum();

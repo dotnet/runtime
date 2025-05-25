@@ -914,8 +914,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #ifdef TARGET_ARM64
          || SizeMatchesVectorTLength(structSize)
 #endif
-        )
-       )
+             ))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -2164,7 +2163,7 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 #ifdef TARGET_ARM64
 unsigned Compiler::compVectorTLength = 0;
-//unsigned Compiler::compMinVectorTLengthForSve = 0;
+// unsigned Compiler::compMinVectorTLengthForSve = 0;
 bool Compiler::compUseSveForVectorT = false;
 #endif
 
@@ -2608,7 +2607,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // DEBUG
     }
 
-
 #if defined(TARGET_ARM64)
 
 #ifdef DEBUG
@@ -2622,7 +2620,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     else
 #endif // DEBUG
     {
-        compVectorTLength = info.compCompHnd->getTargetVectorLength();
+        compVectorTLength    = info.compCompHnd->getTargetVectorLength();
         compUseSveForVectorT = (compVectorTLength > 16) && (compVectorTLength <= 256);
     }
 #endif // TARGET_ARM64

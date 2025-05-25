@@ -3906,7 +3906,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     else
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
-                    if (UseSveForType(simdType))
+                        if (UseSveForType(simdType))
                     {
                         hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_Sve);
                     }
@@ -6909,7 +6909,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (genActualType(lclTyp) == TYP_I_IMPL)
                 {
                     impBashVarAddrsToI(op1);
-                } 
+                }
 
                 // If this is a local and the local is a ref type, see
                 // if we can improve type information based on the
