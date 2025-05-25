@@ -536,6 +536,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 assert(simdSize != 0);
 
                 genConsumeMultiOpOperands(node);
+                genConsumeRegs(lastOp);
 
                 if (isTableDriven)
                 {
