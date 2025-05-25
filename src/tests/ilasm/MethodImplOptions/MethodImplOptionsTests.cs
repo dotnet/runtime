@@ -55,8 +55,8 @@ public class MethodImplOptionsTests : IDisposable
 
     [Theory]
     [InlineData("AggressiveOptimizationTest", "MiAggressiveOptimization.il", "Main", "aggressiveoptimization")]
-    [InlineData("AsyncIdentifierTest", "MiAsUnquotedIdentifier.il", "async", "async")]
-    [InlineData("RuntimeIdentifierNoInliningTest", "MiAsUnquotedIdentifier.il", "runtime", "noinlining")]
+    [InlineData("AsyncIdentifierTest", "MiAsUnquotedIdentifier.il", "'async'", "async")]
+    [InlineData("RuntimeIdentifierNoInliningTest", "MiAsUnquotedIdentifier.il", "'runtime'", "noinlining")]
     public void RunMethodImplOptionsTest(
         string testName,
         string ilFileName,
@@ -80,7 +80,7 @@ public class MethodImplOptionsTests : IDisposable
         string disasmIl = File.ReadAllText(disasmIlFileName);
         var findMainAttributeRegex =
             new Regex(
-                $@"\bvoid\s+{methodName}\s*\(\s*\).*?\b{ilDisasmAttributeKeyword}\b",
+                $@"\bvoid\s+{methodName}\s*\(.*?\).*?\b{ilDisasmAttributeKeyword}\b",
                 RegexOptions.Compiled | RegexOptions.Multiline);
 
         Assert.True(findMainAttributeRegex.IsMatch(disasmIl), $"Attribute '{ilDisasmAttributeKeyword}' did not round-trip through ilasm and ildasm");
