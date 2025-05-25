@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.Text.Json.Serialization
 {
     [StructLayout(LayoutKind.Auto)]
-    internal struct StreamReadBufferState : IReadBufferState
+    internal struct StreamReadBufferState : IReadBufferState<StreamReadBufferState>
     {
         private readonly Stream _stream;
 
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public readonly async ValueTask<IReadBufferState> ReadAsync(
+        public readonly async ValueTask<StreamReadBufferState> ReadAsync(
             CancellationToken cancellationToken,
             bool fillBuffer = true)
         {

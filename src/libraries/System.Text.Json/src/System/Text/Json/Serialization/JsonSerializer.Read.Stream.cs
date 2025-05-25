@@ -486,8 +486,8 @@ namespace System.Text.Json
                 ReadStack readStack = default;
                 readStack.Initialize(listTypeInfo, supportContinuation: true);
                 JsonReaderState jsonReaderState = new(readerOptions);
-                // Note: The ReadBufferState ctor rents pooled buffers.
-                IReadBufferState bufferState = new StreamReadBufferState(utf8Json, listTypeInfo.Options.DefaultBufferSize);
+                // Note: The StreamReadBufferState ctor rents pooled buffers.
+                StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, listTypeInfo.Options.DefaultBufferSize);
 
                 try
                 {
