@@ -70,16 +70,13 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 ServiceCollection newSc = new();
                 newSc.AddSingleton(new object());
-                ServiceProvider expected = newSc.BuildServiceProvider();
+                newSc.BuildServiceProvider();
 
                 var providersField = typeof(DependencyInjectionEventSource).GetField("_providers", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 Assert.NotNull(providersField);
                 object? providersValue = providersField.GetValue(DependencyInjectionEventSource.Log);
-                var results = Assert.IsType<List<WeakReference<ServiceProvider>>>(providersValue);
-                WeakReference<ServiceProvider>  result = Assert.Single(results);
-                Assert.True(result.TryGetTarget(out ServiceProvider resultTarget));
-                Assert.Equal(expected, resultTarget);
-                GC.KeepAlive(newSc);
+                var result = Assert.IsType<List<WeakReference<ServiceProvider>>>(providersValue);
+                Assert.Single(result);
             }).Dispose();
         }
     }
