@@ -3676,7 +3676,15 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
-    if (!isFilterFunclet)
+    if (isFilterFunclet)
+    {
+        count = info.untrackedCnt;
+        while (count-- > 0)
+        {
+            fastSkipSigned(table);
+        }
+    }
+    else
 #endif // FEATURE_EH_FUNCLETS
     {
         count = info.untrackedCnt;
@@ -3734,7 +3742,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                                               info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
                                               true)));
         }
-
     }
 
 #if VERIFY_GC_TABLES
