@@ -30,8 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
             ReadStack readStack = default;
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-            // Note: The ReadBufferState ctor rents pooled buffers.
-            IReadBufferState bufferState = new PipeReadBufferState(utf8Json);//, options.DefaultBufferSize);
+            PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);//, options.DefaultBufferSize);
 
             try
             {
@@ -64,7 +63,7 @@ namespace System.Text.Json.Serialization.Metadata
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
             // Note: The ReadBufferState ctor rents pooled buffers.
-            IReadBufferState bufferState = new StreamReadBufferState(utf8Json, options.DefaultBufferSize);
+            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, options.DefaultBufferSize);
 
             try
             {
@@ -97,7 +96,7 @@ namespace System.Text.Json.Serialization.Metadata
             readStack.Initialize(this, supportContinuation: true);
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
             // Note: The ReadBufferState ctor rents pooled buffers.
-            IReadBufferState bufferState = new StreamReadBufferState(utf8Json, options.DefaultBufferSize);
+            StreamReadBufferState bufferState = new StreamReadBufferState(utf8Json, options.DefaultBufferSize);
 
             try
             {
@@ -148,11 +147,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
-        internal bool ContinueDeserialize(
-            ref IReadBufferState bufferState,
+        internal bool ContinueDeserialize<TReadBufferState>(
+            ref TReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
             ref ReadStack readStack,
             out T? value)
+            where TReadBufferState : struct, IReadBufferState<TReadBufferState>
         {
             Utf8JsonReader reader;
             if (bufferState.Bytes.IsSingleSegment)

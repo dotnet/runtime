@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Text.Json.Serialization
 {
     [StructLayout(LayoutKind.Auto)]
-    internal struct PipeReadBufferState : IReadBufferState
+    internal struct PipeReadBufferState : IReadBufferState<PipeReadBufferState>
     {
         private readonly PipeReader _utf8Json;
 
@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization
         /// Calling ReadCore is relatively expensive, so we minimize the number of times
         /// we need to call it.
         /// </summary>
-        public async ValueTask<IReadBufferState> ReadAsync(CancellationToken cancellationToken, bool fillBuffer = true)
+        public async ValueTask<PipeReadBufferState> ReadAsync(CancellationToken cancellationToken, bool fillBuffer = true)
         {
             // Since mutable structs don't work well with async state machines,
             // make all updates on a copy which is returned once complete.
