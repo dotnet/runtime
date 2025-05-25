@@ -11247,35 +11247,31 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // will loop at least once so the threshold is 6.
         if (blkSize < (6 * maxSimdSize))
         {
+            assert((blkSize % XMM_REGSIZE_BYTES) == 0);
+
             // Generate the following code:
             //
             //   xorps   xmm4, xmm4
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
             //   ...
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
-            //   mov      qword ptr [ebp/esp-OFFS], rax
-            //
+
             // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg, INS_OPTS_NONE);
 
-            int i = 0;
-            if (maxSimdSize > XMM_REGSIZE_BYTES)
+            int lenRemaining = blkSize;
+            while (lenRemaining > 0)
             {
-                for (; i <= blkSize - maxSimdSize; i += maxSimdSize)
-                {
-                    // We previously aligned data to 16 bytes which might not be aligned to maxSimdSize
-                    emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(maxSimdSize), zeroSIMDReg, frameReg,
-                                       alignedLclLo + i);
-                }
-                // Remainder will be handled by the xmm loop below
-            }
+                const int regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
+                const int offset  = blkSize - lenRemaining;
 
-            for (; i < blkSize; i += XMM_REGSIZE_BYTES)
-            {
-                emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);
-            }
+                emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(regSize), zeroSIMDReg, frameReg,
+                                   alignedLclLo + offset);
 
-            assert(i == blkSize);
+                assert(lenRemaining >= regSize);
+                lenRemaining -= regSize;
+            }
+            assert(lenRemaining == 0);
         }
         else
         {
