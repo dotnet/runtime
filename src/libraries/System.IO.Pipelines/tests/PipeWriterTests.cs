@@ -360,5 +360,27 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, pool.CurrentlyRentedBlocks);
             Assert.Equal(0, Pipe.Writer.UnflushedBytes);
         }
+
+        [Fact]
+        public void UnflushedBytesShouldOverflowInt()
+        {
+            PipeWriter writer = PipeWriter.Create(Stream.Null);
+            while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
+            {
+                Memory<byte> buffer = writer.GetMemory();
+                if (buffer.Length < 47)
+                {
+                    writer.Advance(21);
+                    buffer = writer.GetMemory(47);
+                    writer.Advance(14);
+                }
+                else
+                {
+                    writer.Advance(35);
+                }
+            }
+
+            Assert.True(writer.UnflushedBytes > int.MaxValue);
+        }
     }
 }
