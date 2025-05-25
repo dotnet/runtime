@@ -621,21 +621,24 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "1": null, "1": "b"  }""")]
         public async Task ExtensionProperty_DuplicatesThrow(string payload)
         {
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-            };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
 
-            await Assert.ThrowsAsync<JsonException>(
+            Exception ex = await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
             await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsObject>(payload); // Assert no throw
 
-            await Assert.ThrowsAsync<JsonException>(
+            ex = await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
             await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload); // Assert no throw
 
-            await Assert.ThrowsAsync<JsonException>(
+            ex = await Assert.ThrowsAsync<JsonException>(
                 () => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
             await Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonElement>(payload); // Assert no throw
         }
 
@@ -646,11 +649,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "a": null, "A": "b"  }""")]
         public async Task ExtensionProperty_CaseInsensitiveDuplicatesNoThrow(string payload)
         {
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-                PropertyNameCaseInsensitive = true,
-            };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
 
             // Dictionary extension properties are always case-sensitive
             ICollection d;
@@ -661,7 +660,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, d.Count);
 
             // But JsonObject abides by options
-            await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper<ClassWithExtensionPropertyAsJsonObject>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
         }
 
         [Theory]

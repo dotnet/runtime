@@ -14,8 +14,6 @@ namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonObjectTests
     {
-        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
-
         [Fact]
         public static void KeyValuePair()
         {
@@ -1663,7 +1661,7 @@ namespace System.Text.Json.Nodes.Tests
         private static void AssertDuplicatePropertyThrowsLazily<T>(string jsonPayload, bool isValidJson)
             where T : JsonNode
         {
-            T node = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions);
+            T node = JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties);
 
             if (isValidJson)
             {
@@ -1688,11 +1686,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void JsonObject_DuplicatePropertyCaseInsensitiveLazilyThrows()
         {
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-                PropertyNameCaseInsensitive = true,
-            };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
 
             string jsonPayload = """{"a":1,"A":2}""";
 

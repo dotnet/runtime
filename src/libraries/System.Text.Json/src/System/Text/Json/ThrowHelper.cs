@@ -367,15 +367,15 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonReaderException(ref readonly Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
+        public static void ThrowJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte = default, ReadOnlySpan<byte> bytes = default)
         {
-            throw GetJsonReaderException(in json, resource, nextByte, bytes);
+            throw GetJsonReaderException(ref json, resource, nextByte, bytes);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static JsonException GetJsonReaderException(ref readonly Utf8JsonReader json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
+        public static JsonException GetJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
         {
-            string message = GetResourceString(in json, resource, nextByte, JsonHelpers.Utf8GetString(bytes));
+            string message = GetResourceString(ref json, resource, nextByte, JsonHelpers.Utf8GetString(bytes));
 
             long lineNumber = json.CurrentState._lineNumber;
             long bytePositionInLine = json.CurrentState._bytePositionInLine;
@@ -394,7 +394,7 @@ namespace System.Text.Json
 
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetResourceString(ref readonly Utf8JsonReader json, ExceptionResource resource, byte nextByte, string characters)
+        private static string GetResourceString(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, string characters)
         {
             string character = GetPrintableString(nextByte);
 

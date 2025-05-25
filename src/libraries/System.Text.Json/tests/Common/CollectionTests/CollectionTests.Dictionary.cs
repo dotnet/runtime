@@ -1081,16 +1081,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeDictionaryWithDuplicatePropertiesThrow()
         {
-            JsonSerializerOptions options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
 
-            await Assert.ThrowsAsync<JsonException>(() =>
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() =>
                 Serializer.DeserializeWrapper<PocoDuplicate>(@"{""BoolProperty"": false, ""BoolProperty"": true}", options));
+            Assert.Contains("Duplicate", ex.Message);
 
-            await Assert.ThrowsAsync<JsonException>(() =>
+            ex = await Assert.ThrowsAsync<JsonException>(() =>
                 Serializer.DeserializeWrapper<PocoDuplicate>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}", options));
+            Assert.Contains("Duplicate", ex.Message);
 
-            await Assert.ThrowsAsync<JsonException>(() =>
+            ex = await Assert.ThrowsAsync<JsonException>(() =>
                 Serializer.DeserializeWrapper<PocoDuplicate>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}", options));
+            Assert.Contains("Duplicate", ex.Message);
         }
 
         public class PocoDuplicate
@@ -1103,13 +1106,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task DeserializeNestedDictionaryWithDuplicatePropertiesThrow()
         {
-            JsonSerializerOptions options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
 
-            await Assert.ThrowsAsync<JsonException>(() =>
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() =>
                 Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""", options));
+            Assert.Contains("Duplicate", ex.Message);
 
-            // Assert no throw
-            _ = await Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""");
+            Assert.Equal("a", (await Serializer.DeserializeWrapper<PocoDictionary>("""{"key": {"A": "a", "A": "a"}}""")).key["A"]);
         }
 
         public static IEnumerable<object[]> TestDictionaryTypes =
@@ -1124,10 +1127,11 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(TestDictionaryTypes))]
         public async Task DeserializeBuiltInDictionaryWithDuplicatePropertiesThrow(Type t)
         {
-            JsonSerializerOptions options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
             
-            await Assert.ThrowsAsync<JsonException>(() =>
+            Exception ex = await Assert.ThrowsAsync<JsonException>(() =>
                 Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t, options));
+            Assert.Contains("Duplicate", ex.Message);
 
             // Assert no throw
             _ = await Serializer.DeserializeWrapper("""{"1": "a", "1": "a"}""", t);
@@ -1144,14 +1148,9 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(TestStringKeyDictionaryTypes))]
         public async Task DeserializeCaseInsensitiveBuiltInDictionaryWithDuplicatePropertiesNoThrow(Type t)
         {
-            JsonSerializerOptions options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-                PropertyNameCaseInsensitive = true,
-            };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
 
-            // Assert no throw
-            _ = await Serializer.DeserializeWrapper("""{"a": "a", "A": "a"}""", t);
+            await Serializer.DeserializeWrapper("""{"a": "a", "A": "a"}""", t, options); // Assert no throw
         }
 
         public class ClassWithPopulatedDictionaryAndNoSetter

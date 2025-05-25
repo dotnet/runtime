@@ -678,12 +678,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "MyInt32Array" : null, "MyInt32Array" : null }""")]
         public static void ReadSimpleObjectWithDuplicateProperties(string payload)
         {
-            var options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-            };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            Exception ex =  Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
             _ = JsonSerializer.Deserialize<SimpleTestClass>(payload); // Assert no throw
         }
 
@@ -692,12 +691,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "MyData" : {}, "MyData" : {} }""")]
         public static void ReadNestedObjectWithDuplicateProperties(string payload)
         {
-            var options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-            };
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicateProperties;
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload, options));
+            Exception ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
+
             _ = JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(payload); // Assert no throw
         }
 
@@ -706,13 +704,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "MyInt32Array" : null, "myInt32Array" : null }""")]
         public static void ReadSimpleObjectWithDuplicatePropertiesCaseInsensitive(string payload)
         {
-            var options = new JsonSerializerOptions
-            {
-                AllowDuplicateProperties = false,
-                PropertyNameCaseInsensitive = true,
-            };
+            var options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            Exception ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(payload, options));
+            Assert.Contains("Duplicate", ex.Message);
         }
     }
 }

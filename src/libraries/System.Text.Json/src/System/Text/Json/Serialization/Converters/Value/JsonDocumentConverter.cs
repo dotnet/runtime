@@ -3,7 +3,6 @@
 
 using System.Text.Json.Schema;
 using System.Text.Json.Nodes;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {

@@ -12,8 +12,6 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class JsonElementTests
     {
-        private static readonly JsonSerializerOptions s_noDuplicateParamsOptions = new() { AllowDuplicateProperties = false };
-
         [Fact]
         public void SerializeJsonElement()
         {
@@ -331,42 +329,39 @@ namespace System.Text.Json.Serialization.Tests
         {
             if (isValidJson)
             {
-                _ = JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions); // Assert no throw
+                _ = JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties); // Assert no throw
             }
             else
             {
-                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, s_noDuplicateParamsOptions));
+                Exception ex = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties));
+                Assert.Contains("Duplicate", ex.Message);
             }
 
             _ = JsonSerializer.Deserialize<T>(jsonPayload); // Assert no throw
         }
 
         [Fact]
-        public void DserializeJsonElementCaseInsensitiveWithDuplicateProperties()
+        public void DserializeJsonElement_CaseInsensitiveWithDuplicatePropertiesNoThrow()
         {
             string jsonPayload = """{"a": 1, "A": 2}""";
 
-            JsonElement obj = JsonSerializer.Deserialize<JsonElement>(jsonPayload, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                AllowDuplicateProperties = true
-            });
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+            JsonElement obj = JsonSerializer.Deserialize<JsonElement>(jsonPayload, options);
 
+            // JsonElement is always case-sensitive
             Assert.Equal(1, obj.GetProperty("a").GetInt32());
             Assert.Equal(2, obj.GetProperty("A").GetInt32());
         }
 
         [Fact]
-        public void DserializeJsonElementClassCaseInsensitiveWithDuplicateProperties()
+        public void DserializeJsonElementWrapper_CaseInsensitiveWithDuplicatePropertiesNoThrow()
         {
-            string jsonPayload = """{"Object": {"a": 1, "A": 2}}""";
+            string jsonPayload = """{"object": {"a": 1, "A": 2}}""";
 
-            JsonElementClass obj = JsonSerializer.Deserialize<JsonElementClass>(jsonPayload, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                AllowDuplicateProperties = true
-            });
+            JsonSerializerOptions options = JsonTestSerializerOptions.DisallowDuplicatePropertiesIgnoringCase;
+            JsonElementClass obj = JsonSerializer.Deserialize<JsonElementClass>(jsonPayload, options);
 
+            // JsonElement is always case-sensitive
             Assert.Equal(1, obj.Object.GetProperty("a").GetInt32());
             Assert.Equal(2, obj.Object.GetProperty("A").GetInt32());
         }
