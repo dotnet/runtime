@@ -502,7 +502,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
     {
-        JITDUMP(" tree to sub is catch arg, or lcl heap\n");
+        JITDUMP(" tree to sub is %s\n", GenTree::OpName(fwdSubNode->OperGet()));
         return false;
     }
 
