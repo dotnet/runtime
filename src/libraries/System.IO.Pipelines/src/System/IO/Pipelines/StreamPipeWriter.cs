@@ -75,9 +75,9 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
             }
 
+            _tailBytesBuffered += bytes;
             checked
             {
-                _tailBytesBuffered += bytes;
                 _bytesBuffered += bytes;
             }
 
