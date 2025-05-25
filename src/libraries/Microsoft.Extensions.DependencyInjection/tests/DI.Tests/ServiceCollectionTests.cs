@@ -50,8 +50,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.True(serviceCollection.IsReadOnly);
         }
 
-        [Fact]
-        public void ServiceProviderListGetResizedAfterCapacityThreshold()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void ServiceProviderListGetResizedAfterCapacityThresholdHit()
         {
             RemoteExecutor.Invoke(async () =>
             {
@@ -70,13 +70,16 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 ServiceCollection newSc = new();
                 newSc.AddSingleton(new object());
-                newSc.BuildServiceProvider();
+                ServiceProvider expected = newSc.BuildServiceProvider();
 
                 var providersField = typeof(DependencyInjectionEventSource).GetField("_providers", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
                 Assert.NotNull(providersField);
                 object? providersValue = providersField.GetValue(DependencyInjectionEventSource.Log);
-                var result = Assert.IsType<List<WeakReference<ServiceProvider>>>(providersValue);
-                Assert.Single(result);
+                var results = Assert.IsType<List<WeakReference<ServiceProvider>>>(providersValue);
+                WeakReference<ServiceProvider>  result = Assert.Single(results);
+                Assert.True(result.TryGetTarget(out ServiceProvider resultTarget));
+                Assert.Equal(expected, resultTarget);
+                GC.KeepAlive(newSc);
             }).Dispose();
         }
     }
