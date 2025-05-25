@@ -45,7 +45,6 @@
     <Compile Include="ActivityTests.cs" />
     <Compile Include="ActivitySourceTests.cs" />
     <Compile Include="ActivityTagsCollectionTests.cs" />
-    <Compile Include="MetricEventSourceTests.cs" />
     <Compile Include="MetricsAdviceTests.cs" />
     <Compile Include="MetricsTests.cs" />
     <Compile Include="PropagatorTests.cs" />
