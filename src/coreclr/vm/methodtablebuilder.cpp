@@ -736,7 +736,8 @@ void MethodTableBuilder::SetBMTData(
     bmtGCSeriesInfo *bmtGCSeries,
     bmtMethodImplInfo *bmtMethodImpl,
     const bmtGenericsInfo *bmtGenerics,
-    bmtEnumFieldInfo *bmtEnumFields)
+    bmtEnumFieldInfo *bmtEnumFields,
+    bmtLayoutInfo *bmtFieldLayout)
 {
     LIMITED_METHOD_CONTRACT;
     this->bmtAllocator = bmtAllocator;
@@ -754,6 +755,7 @@ void MethodTableBuilder::SetBMTData(
     this->bmtMethodImpl = bmtMethodImpl;
     this->bmtGenerics = bmtGenerics;
     this->bmtEnumFields = bmtEnumFields;
+    this->bmtLayout = bmtFieldLayout;
 }
 
 //*******************************************************************************
@@ -1165,7 +1167,6 @@ MethodTableBuilder::CopyParentVtable()
 // support.
 // If so:
 //   - Update the NumInstanceFieldBytes on the bmtFieldPlacement.
-//   - Update the m_cbNativeSize and m_cbManagedSize if HasLayout() is true.
 // Return a BOOL result to indicate whether the size has been updated.
 //
 BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
@@ -1203,12 +1204,6 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (numInstanceFieldBytes != 16)
     {
         bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
-
-        if (HasLayout())
-        {
-            GetLayoutInfo()->m_cbManagedSize = numInstanceFieldBytes;
-        }
-
         return true;
     }
 #endif // TARGET_X86 || TARGET_AMD64
@@ -1270,10 +1265,6 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
     m_pImplTable = pST;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
 //---------------------------------------------------------------------------------------
 //
 // Builds the method table, allocates MethodDesc, handles overloaded members, attempts to compress
@@ -1286,7 +1277,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     Module *                   pModule,
     mdToken                    cl,
     BuildingInterfaceInfo_t *  pBuildingInterfaceList,
-    const LayoutRawFieldInfo * pLayoutRawFieldInfos,
+    const bmtLayoutInfo *      initialLayoutInfo,
     MethodTable *              pParentMethodTable,
     const bmtGenericsInfo *    bmtGenericsInfo,
     SigPointer                 parentInst,
@@ -1319,7 +1310,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
         new (GetStackingAllocator()) bmtGCSeriesInfo(),
         new (GetStackingAllocator()) bmtMethodImplInfo(),
         bmtGenericsInfo,
-        new (GetStackingAllocator()) bmtEnumFieldInfo(pModule->GetMDImport()));
+        new (GetStackingAllocator()) bmtEnumFieldInfo(pModule->GetMDImport()),
+        new (GetStackingAllocator()) bmtLayoutInfo(*initialLayoutInfo));
 
     //Initialize structs
 
@@ -1742,7 +1734,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     MethodTable ** pByValueClassCache = NULL;
 
     // Go thru all fields and initialize their FieldDescs.
-    InitializeFieldDescs(GetApproxFieldDescListRaw(), pLayoutRawFieldInfos, bmtInternal, bmtGenerics,
+    InitializeFieldDescs(GetApproxFieldDescListRaw(), bmtInternal, bmtGenerics,
         bmtMetaData, bmtEnumFields, bmtError,
         &pByValueClassCache, bmtMFDescs, bmtFP,
         &totalDeclaredFieldSize);
@@ -1795,55 +1787,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
             GetNumStaticFields(), GetNumHandleRegularStatics() + GetNumHandleThreadStatics(),
             pszDebugName));
 
-    if (IsBlittable() || IsManagedSequential())
-    {
-        bmtFP->NumGCPointerSeries = 0;
-        bmtFP->NumInstanceGCPointerFields = 0;
-
-        _ASSERTE(HasLayout());
-
-        if (bmtFP->NumInlineArrayElements != 0)
-        {
-            INT64 extendedSize = (INT64)GetLayoutInfo()->m_cbManagedSize * (INT64)bmtFP->NumInlineArrayElements;
-            if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET)
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
-            }
-
-            GetLayoutInfo()->m_cbManagedSize = (UINT32)extendedSize;
-        }
-
-        bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
-
-        // For simple Blittable types we still need to check if they have any overlapping
-        // fields and call the method SetHasOverlaidFields() when they are detected.
-        //
-        if (HasExplicitFieldOffsetLayout())
-        {
-            _ASSERTE(!bmtGenerics->fContainsGenericVariables);   // A simple Blittable type can't ever be an open generic type.
-            HandleExplicitLayout(pByValueClassCache);
-        }
-    }
-    else
-    {
-        _ASSERTE(!IsBlittable());
-        // HandleExplicitLayout fails for the GenericTypeDefinition when
-        // it will succeed for some particular instantiations.
-        // Thus we only do explicit layout for real instantiations, e.g. C<int>, not
-        // the open types such as the GenericTypeDefinition C<!0> or any
-        // of the "fake" types involving generic type variables which are
-        // used for reflection and verification, e.g. C<List<!0>>.
-        //
-        if (!bmtGenerics->fContainsGenericVariables && HasExplicitFieldOffsetLayout())
-        {
-            HandleExplicitLayout(pByValueClassCache);
-        }
-        else
-        {
-            // Place instance fields
-            PlaceInstanceFields(pByValueClassCache);
-        }
-    }
+    PlaceInstanceFields(pByValueClassCache);
 
     if (IsValueClass())
     {
@@ -2063,7 +2007,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (HasParent())
         {
             MethodTable * pParentClass = GetParentMethodTable();
-            PREFIX_ASSUME(pParentClass != NULL);
+            _ASSERTE(pParentClass != NULL);
             isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
         }
 
@@ -2118,10 +2062,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     return GetHalfBakedMethodTable();
 } // MethodTableBuilder::BuildMethodTableThrowing
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -2153,7 +2093,7 @@ MethodTableBuilder::ResolveInterfaces(
     if (HasParent())
     {
         MethodTable * pParentClass = GetParentMethodTable();
-        PREFIX_ASSUME(pParentClass != NULL);
+        _ASSERTE(pParentClass != NULL);
 
         bmtParent->NumParentPointerSeries  = pParentClass->ContainsGCPointers() ?
             (DWORD)CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries() : 0;
@@ -2685,11 +2625,6 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
     }
     return hr;
 }
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
 
 //---------------------------------------------------------------------------------------
 //
@@ -3387,7 +3322,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 {
                     // ordinary Task-returning method:
                     //    Declare a TaskReturning method and add an Async variant that is a thunk to the TaskReturing one.
-                    // 
+                    //
                     // IsMiAsync Task-returning method:
                     //    Declare a RuntimeAsync method and add an Async variant with the actual implementation.
                     //    The RuntimeAsync method becomes a thunk to the implementation helper.
@@ -3560,9 +3495,6 @@ MethodTableBuilder::EnumerateClassMethods()
     }
 #endif // FEATURE_COMINTEROP
 } // MethodTableBuilder::EnumerateClassMethods
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 //
@@ -3597,6 +3529,14 @@ MethodTableBuilder::EnumerateClassFields()
     if (FAILED(hr))
     {
         BuildMethodTableThrowException(hr, *bmtError);
+    }
+
+    // Variant delegates should not have any instance fields of the variant.
+    // type parameter. For now, we just completely disallow all fields even
+    // if they are non-variant or static, as it is not a useful scenario.
+    if ((hEnumField.EnumGetCount() != 0) && IsDelegate() && (bmtGenerics->pVarianceInfo != NULL))
+    {
+        BuildMethodTableThrowException(IDS_CLASSLOAD_VARIANCE_IN_DELEGATE);
     }
 
     bmtMetaData->cFields = hEnumField.EnumGetCount();
@@ -3878,19 +3818,6 @@ VOID MethodTableBuilder::AllocateFieldDescs()
     }
 }
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-//*******************************************************************************
-//
-// Heuristic to determine if we should have instances of this class 8 byte aligned
-//
-BOOL MethodTableBuilder::ShouldAlign8(DWORD dwR8Fields, DWORD dwTotalFields)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return dwR8Fields*2>dwTotalFields && dwR8Fields>=2;
-}
-#endif
-
 //*******************************************************************************
 BOOL MethodTableBuilder::IsSelfReferencingStaticValueTypeField(mdToken     dwByValueClassToken,
                                                                bmtInternalInfo* bmtInternal,
@@ -3955,13 +3882,7 @@ static BOOL IsSelfRef(MethodTable * pMT)
 //
 // Go thru all fields and initialize their FieldDescs.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
-
 VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
-                                                 const LayoutRawFieldInfo* pLayoutRawFieldInfos,
                                                  bmtInternalInfo* bmtInternal,
                                                  const bmtGenericsInfo* bmtGenerics,
                                                  bmtMetaDataInfo* bmtMetaData,
@@ -4000,13 +3921,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
     DWORD   dwCurrentStaticField   = 0;
     DWORD   dwCurrentThreadStaticField = 0;
 
-
-    DWORD   dwR8Fields              = 0;        // Number of R8's the class has
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    // Track whether any field in this type requires 8-byte alignment
-    BOOL    fFieldRequiresAlign8 = HasParent() ? GetParentMethodTable()->RequiresAlign8() : FALSE;
-#endif
 #if defined(FEATURE_METADATA_UPDATER)
     bool isEnCField = pFieldDescList != NULL && pFieldDescList->IsEnCNew();
 #else
@@ -4147,23 +4061,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             }
 
         case ELEMENT_TYPE_R8:
-            {
-                dwR8Fields++;
-
-                // Deliberate fall through...
-                FALLTHROUGH;
-            }
-
         case ELEMENT_TYPE_I8:
         case ELEMENT_TYPE_U8:
         IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
         IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
             {
-#ifdef FEATURE_64BIT_ALIGNMENT
-                // Record that this field requires alignment for Int64/UInt64.
-                if(!fIsStatic)
-                    fFieldRequiresAlign8 = true;
-#endif
                 dwLog2FieldSize = 3;
                 break;
             }
@@ -4392,12 +4294,6 @@ IS_VALUETYPE:
                         // Inherit instance attributes
                         EEClass * pFieldClass = pByValueClass->GetClass();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-                        // If a value type requires 8-byte alignment this requirement must be inherited by any
-                        // class/struct that embeds it as a field.
-                        if (pFieldClass->IsAlign8Candidate())
-                            fFieldRequiresAlign8 = true;
-#endif
                         if (pFieldClass->HasNonPublicFields())
                             SetHasNonPublicFields();
                         if (pFieldClass->HasFieldsWhichMustBeInited())
@@ -4475,22 +4371,6 @@ IS_VALUETYPE:
 
         bmtMFDescs->ppFieldDescList[i] = pFD;
 
-        const LayoutRawFieldInfo *pLayoutFieldInfo = NULL;
-
-        if (HasLayout())
-        {
-            const LayoutRawFieldInfo *pwalk = pLayoutRawFieldInfos;
-            while (pwalk->m_MD != mdFieldDefNil)
-            {
-                if (pwalk->m_MD == bmtMetaData->pFields[i])
-                {
-                    pLayoutFieldInfo = pwalk;
-                    break;
-                }
-                pwalk++;
-            }
-        }
-
         LPCSTR pszFieldName = NULL;
 #ifdef _DEBUG
         if (FAILED(pInternalImport->GetNameOfFieldDef(bmtMetaData->pFields[i], &pszFieldName)))
@@ -4513,31 +4393,12 @@ IS_VALUETYPE:
         //
         if (fIsByValue)
         {
-            if (!fIsStatic &&
-                (IsBlittable() || HasExplicitFieldOffsetLayout()))
-            {
-                (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
-                    (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
-
-                if (pLayoutFieldInfo)
-                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-                else
-                    pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
-            }
-            else if (!fIsStatic && IsManagedSequential())
-            {
-                (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
-                    (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
-
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            }
-            else
-            {
-                // static value class fields hold a handle, which is ptr sized
-                // (instance field layout ignores this value)
-                (DWORD_PTR&)(pFD->m_pMTOfEnclosingClass) = LOG2_PTRSIZE;
-                pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
-            }
+            pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
+            DWORD_PTR& fieldSizeStorage = (DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
+            // static value class fields hold a handle, which is ptr sized
+            fieldSizeStorage = fIsStatic
+                ? LOG2_PTRSIZE
+                : (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
         }
         else
         {
@@ -4546,14 +4407,7 @@ IS_VALUETYPE:
             // -1 (FIELD_OFFSET_UNPLACED) means that this is a non-GC field that has not yet been placed
             // -2 (FIELD_OFFSET_UNPLACED_GC_PTR) means that this is a GC pointer field that has not yet been placed
 
-            // If there is any kind of explicit layout information for this field, use it. If not, then
-            // mark it as either GC or non-GC and as unplaced; it will get placed later on in an optimized way.
-
-            if ((IsBlittable() || HasExplicitFieldOffsetLayout()) && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (IsManagedSequential() && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_placement.m_offset));
-            else if (bCurrentFieldIsObjectRef)
+            if (bCurrentFieldIsObjectRef)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED);
@@ -4695,31 +4549,6 @@ IS_VALUETYPE:
         GetHalfBakedClass()->SetHasFixedAddressVTStatics();
     }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    // For types with layout we drop any 64-bit alignment requirement if the packing size was less than 8
-    // bytes (this mimics what the native compiler does and ensures we match up calling conventions during
-    // interop).
-    // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
-    // as auto-layout ignores any Pack directives.
-    if (HasLayout() && (HasExplicitFieldOffsetLayout() || IsManagedSequential()) && GetLayoutInfo()->GetPackingSize() < 8)
-    {
-        fFieldRequiresAlign8 = false;
-    }
-
-    if (fFieldRequiresAlign8)
-    {
-        SetAlign8Candidate();
-    }
-#endif // FEATURE_64BIT_ALIGNMENT
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if (ShouldAlign8(dwR8Fields, dwNumInstanceFields))
-    {
-        SetAlign8Candidate();
-    }
-#endif // FEATURE_DOUBLE_ALIGNMENT_HINT
-
-
     //========================================================================
     // END:
     //    Go thru all fields and initialize their FieldDescs.
@@ -4727,10 +4556,6 @@ IS_VALUETYPE:
 
     return;
 } // MethodTableBuilder::InitializeFieldDescs
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
@@ -7217,7 +7042,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
 
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
-        
+
         if (it->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
             size += sizeof(AsyncMethodData);
 
@@ -7286,16 +7111,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     COUNT_T methodDescCount = 0;
 
     SIZE_T offset = sizeof(MethodDescChunk);
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22019) // Suppress PREFast warning about integer underflow
-#endif // _PREFAST_
     for (COUNT_T i = 0; i < count; i++)
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
-
     {
         bmtMDMethod * pMDMethod = (*bmtMethod)[static_cast<SLOT_INDEX>(startIndex + i)];
 
@@ -7303,15 +7119,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
         pMD->SetChunkIndex(pChunk);
         InitNewMethodDesc(pMDMethod, pMD);
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22018) // Suppress PREFast warning about integer underflow
-#endif // _PREFAST_
         offset += pMD->SizeOf();
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
         methodDescCount++;
 
@@ -7340,16 +7148,14 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
             // and should not be used.  We should go to the effort of having proper constructors
             // in the MethodDesc class. </NICE>
 
-            memcpy(pUnboxedMD, pMD, pMD->SizeOf());
-
-            // Reset the chunk index
-            pUnboxedMD->SetChunkIndex(pChunk);
-
-            if (bmtGenerics->GetNumGenericArgs() == 0) {
-                pUnboxedMD->SetHasNonVtableSlot();
+            if (bmtGenerics->GetNumGenericArgs() == 0)
+            {
+                memcpy(pUnboxedMD, pMD, pMD->GetBaseSize());
 
                 // By settings HasNonVTableSlot, the following chunks of data have been shifted around.
                 // This is an example of the fragility noted in the memcpy comment above
+                pUnboxedMD->SetHasNonVtableSlot();
+
                 if (pUnboxedMD->HasNativeCodeSlot())
                 {
                     *pUnboxedMD->GetAddrOfNativeCodeSlot() = *pMD->GetAddrOfNativeCodeSlot();
@@ -7363,6 +7169,13 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
                     *pUnboxedMD->GetAddrOfAsyncMethodData() = *pMD->GetAddrOfAsyncMethodData();
                 }
             }
+            else
+            {
+                memcpy(pUnboxedMD, pMD, pMD->SizeOf());
+            }
+
+            // Reset the chunk index
+            pUnboxedMD->SetChunkIndex(pChunk);
 
             //////////////////////////////////////////////////////////
             // Modify the original MethodDesc to be an unboxing stub
@@ -8329,7 +8142,148 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
 //
 // Place instance fields
 //
-VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCache)
+VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
+{
+    MethodTable* pParentMT = GetParentMethodTable();
+    bool hasNonTrivialParent = pParentMT && !pParentMT->IsObjectClass() && !pParentMT->IsValueTypeClass();
+
+    if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Auto)
+    {
+        // Auto layout has been requested.
+        // We never switch away from auto layout, so just go use it right away.
+
+#if defined(FEATURE_64BIT_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
+        // Check for 8-byte alignment requirements for this type.
+        // We don't need to check any of the other nested field flags
+        // for auto layout, so only check this flag when targeting
+        // a platform that can have the align8 requirement for a type.
+        EEClassLayoutInfo::NestedFieldFlags nestedFieldFlags =
+            EEClassLayoutInfo::GetNestedFieldFlags(
+                GetModule(),
+                GetHalfBakedClass()->GetFieldDescList(),
+                bmtEnumFields->dwNumDeclaredFields,
+                bmtLayout->nlFlags,
+                pByValueClassCache);
+
+        bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
+#if defined(FEATURE_64BIT_ALIGNMENT)
+            || (pParentMT && pParentMT->RequiresAlign8())
+#endif // FEATURE_64BIT_ALIGNMENT
+        ;
+
+        if (isAlign8)
+        {
+            GetHalfBakedClass()->SetAlign8Candidate();
+        }
+#endif // FEATURE_64BIT_ALIGNMENT || FEATURE_DOUBLE_ALIGNMENT_HINT
+
+        HandleAutoLayout(pByValueClassCache);
+        return;
+    }
+
+    // We are not using auto layout, so we need to check all of the nested field flags.
+    // All other layouts need to consider these flags.
+    EEClassLayoutInfo::NestedFieldFlags nestedFieldFlags =
+        EEClassLayoutInfo::GetNestedFieldFlags(
+            GetModule(),
+            GetHalfBakedClass()->GetFieldDescList(),
+            bmtEnumFields->dwNumDeclaredFields,
+            bmtLayout->nlFlags,
+            pByValueClassCache);
+
+    bool hasGCFields = (pParentMT && pParentMT->ContainsGCPointers())
+        || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::GCPointer) == EEClassLayoutInfo::NestedFieldFlags::GCPointer);
+
+    bool isBlittable = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::NonBlittable) != EEClassLayoutInfo::NestedFieldFlags::NonBlittable);
+    if (hasNonTrivialParent)
+    {
+        isBlittable &= pParentMT->IsBlittable() == TRUE;
+    }
+
+    bool isAutoLayoutOrHasAutoLayoutField = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::AutoLayout) == EEClassLayoutInfo::NestedFieldFlags::AutoLayout);
+    if (hasNonTrivialParent)
+    {
+        isAutoLayoutOrHasAutoLayoutField &= pParentMT->IsAutoLayoutOrHasAutoLayoutField() == TRUE;
+    }
+
+    bool hasInt128Field = (pParentMT && pParentMT->IsInt128OrHasInt128Fields())
+        || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
+
+    bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
+#if defined(FEATURE_64BIT_ALIGNMENT)
+        || (pParentMT && pParentMT->RequiresAlign8())
+#endif // FEATURE_64BIT_ALIGNMENT
+        ;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+    pLayoutInfo->SetIsBlittable(isBlittable ? TRUE : FALSE);
+    pLayoutInfo->SetHasAutoLayoutField(isAutoLayoutOrHasAutoLayoutField ? TRUE : FALSE);
+    pLayoutInfo->SetIsInt128OrHasInt128Fields(hasInt128Field ? TRUE : FALSE);
+    pLayoutInfo->SetHasExplicitSize(bmtLayout->classSize);
+
+    if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential)
+    {
+        if (hasNonTrivialParent && !pParentMT->IsManagedSequential())
+        {
+            // If the parent type is not Object, ValueType or Sequential, then we need to use Auto layout.
+            bmtLayout->layoutType = EEClassLayoutInfo::LayoutType::Auto;
+        }
+
+        if (hasGCFields)
+        {
+            // If this type has GC fields, we will use Auto layout instead of Sequential layout.
+            bmtLayout->layoutType = EEClassLayoutInfo::LayoutType::Auto;
+        }
+    }
+
+    if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Auto)
+    {
+        if (isAlign8)
+        {
+            GetHalfBakedClass()->SetAlign8Candidate();
+        }
+        HandleAutoLayout(pByValueClassCache);
+        return;
+    }
+
+    // For types with layout we drop any 64-bit alignment requirement if the packing size was less than 8
+    // bytes (this mimics what the native compiler does and ensures we match up calling conventions during
+    // interop).
+    // We don't do this for types that are marked as sequential but end up with auto-layout due to containing pointers,
+    // as auto-layout ignores any Pack directives.
+    if (bmtLayout->packingSize < 8)
+    {
+        isAlign8 = false;
+    }
+
+    if (isAlign8)
+    {
+        GetHalfBakedClass()->SetAlign8Candidate();
+    }
+
+    if (!hasGCFields)
+    {
+        bmtFP->NumGCPointerSeries = 0;
+        bmtFP->NumInstanceGCPointerFields = 0;
+    }
+
+    switch (bmtLayout->layoutType)
+    {
+    case EEClassLayoutInfo::LayoutType::Sequential:
+        HandleSequentialLayout(pByValueClassCache);
+        break;
+    case EEClassLayoutInfo::LayoutType::Explicit:
+        HandleExplicitLayout(pByValueClassCache);
+        break;
+    default:
+        UNREACHABLE();
+        break;
+    }
+}
+
+VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8434,7 +8388,7 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                         break;
                     // TODO: since we will refuse to place GC references we should filter them out here.
                     // otherwise the "back-filling" process stops completely.
-                    // (PlaceInstanceFields)
+                    // (HandleAutoLayout)
                     // the following code would fix the issue (a replacement for the code above this comment):
                     // if (bmtFP->NumInstanceFieldsOfSize[j] != 0 &&
                     //     (j != LOG2SLOT || bmtFP->NumInstanceFieldsOfSize[j] > bmtFP->NumInstanceGCPointerFields))
@@ -8707,6 +8661,85 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         //===============================================================
 }
 
+VOID MethodTableBuilder::HandleSequentialLayout(MethodTable** pByValueClassCache)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+
+    CONSISTENCY_CHECK(pLayoutInfo != nullptr);
+
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeSequentialFieldLayout(
+        GetHalfBakedClass()->GetFieldDescList(),
+        pByValueClassCache,
+        bmtEnumFields->dwNumDeclaredFields,
+        bmtLayout->packingSize,
+        bmtLayout->classSize,
+        GetParentMethodTable()
+    );
+
+    // Handle InlineArray element layout
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        INT64 extendedSize = (INT64)bmtFP->NumInstanceFieldBytes * (INT64)bmtFP->NumInlineArrayElements;
+        if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET)
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+        }
+        bmtFP->NumInstanceFieldBytes = (DWORD)extendedSize;
+    }
+}
+
+VOID MethodTableBuilder::HandleExplicitLayout(MethodTable** pByValueClassCache)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(HasLayout());
+
+    EEClassLayoutInfo* pLayoutInfo = GetLayoutInfo();
+
+    CONSISTENCY_CHECK(pLayoutInfo != nullptr);
+
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeExplicitFieldLayout(
+        GetHalfBakedClass()->GetFieldDescList(),
+        pByValueClassCache,
+        bmtEnumFields->dwNumDeclaredFields,
+        bmtLayout->packingSize,
+        bmtLayout->classSize,
+        GetParentMethodTable(),
+        GetModule(),
+        GetCl()
+    );
+
+    // Handle InlineArray element layout
+    if (bmtFP->NumInlineArrayElements != 0)
+    {
+        INT64 extendedSize = (INT64)bmtFP->NumInstanceFieldBytes * (INT64)bmtFP->NumInlineArrayElements;
+        if (extendedSize > FIELD_OFFSET_LAST_REAL_OFFSET)
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+        }
+        bmtFP->NumInstanceFieldBytes = (DWORD)extendedSize;
+    }
+
+    // ValidateExplicitLayout fails for the GenericTypeDefinition when
+    // it will succeed for some particular instantiations.
+    // Thus we only do explicit layout for real instantiations, e.g. C<int>, not
+    // the open types such as the GenericTypeDefinition C<!0> or any
+    // of the "fake" types involving generic type variables which are
+    // used for reflection and verification, e.g. C<List<!0>>.
+    //
+    if (!bmtGenerics->fContainsGenericVariables)
+    {
+        // For simple Blittable types we still need to check if they have any overlapping
+        // fields and call the method SetHasOverlaidFields() when they are detected,
+        // so we do this for Explicit layout whether or not there's any GC fields.
+        ValidateExplicitLayout(pByValueClassCache);
+    }
+}
+
 //*******************************************************************************
 // this accesses the field size which is temporarily stored in m_pMTOfEnclosingClass
 // during class loading. Don't use any other time
@@ -8793,7 +8826,7 @@ void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassi
 // for object ref fields so we don't need to try to align it
 //
 VOID
-MethodTableBuilder::HandleExplicitLayout(
+MethodTableBuilder::ValidateExplicitLayout(
     MethodTable ** pByValueClassCache)
 {
     STANDARD_VM_CONTRACT;
@@ -8824,7 +8857,7 @@ MethodTableBuilder::HandleExplicitLayout(
     }
 
     CQuickBytes qb;
-    PREFIX_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
+    _ASSERTE(sizeof(bmtFieldLayoutTag) == 1);
     bmtFieldLayoutTag *pFieldLayout = (bmtFieldLayoutTag*)qb.AllocThrows(instanceSliceSize * sizeof(bmtFieldLayoutTag));
     for (i=0; i < instanceSliceSize; i++)
     {
@@ -9071,7 +9104,7 @@ MethodTableBuilder::HandleExplicitLayout(
         else
         {
             // align up to the alignment requirements of the members of this value type.
-            numInstanceFieldBytes.AlignUp(GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers);
+            numInstanceFieldBytes.AlignUp(GetLayoutInfo()->GetAlignmentRequirement());
             if (numInstanceFieldBytes.IsOverflow())
             {
                 // addition overflow or cast truncation
@@ -9115,7 +9148,7 @@ MethodTableBuilder::HandleExplicitLayout(
             BuildMethodTableThrowException(hr, *bmtError);
         }
     }
-} // MethodTableBuilder::HandleExplicitLayout
+} // MethodTableBuilder::ValidateExplicitLayout
 
 //*******************************************************************************
 // make sure that no object fields are overlapped incorrectly, returns the trust level
@@ -10264,16 +10297,16 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // The System V ABI for i386 defaults to 8-byte alignment for __m64, except for parameter passing,
                     // where it has an alignment of 4.
 
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8; // sizeof(__m64)
+                    pLayout->SetAlignmentRequirement(8); // sizeof(__m64)
                 }
                 else if (strcmp(name, g_Vector128Name) == 0)
                 {
     #ifdef TARGET_ARM
                     // The Procedure Call Standard for ARM defaults to 8-byte alignment for __m128
 
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+                    pLayout->SetAlignmentRequirement(8);
     #else
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__m128)
+                    pLayout->SetAlignmentRequirement(16); // sizeof(__m128)
     #endif // TARGET_ARM
                 }
                 else if (strcmp(name, g_Vector256Name) == 0)
@@ -10282,22 +10315,22 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // No such type exists for the Procedure Call Standard for ARM. We will default
                     // to the same alignment as __m128, which is supported by the ABI.
 
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+                    pLayout->SetAlignmentRequirement(8);
     #elif defined(TARGET_ARM64)
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
 
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+                    pLayout->SetAlignmentRequirement(16);
     #elif defined(TARGET_LOONGARCH64)
                     // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+                    pLayout->SetAlignmentRequirement(16);
     #elif defined(TARGET_RISCV64)
                     // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
                     // RISC-V Vector Extenstion Intrinsic Document
                     // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+                    pLayout->SetAlignmentRequirement(16);
     #else
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 32; // sizeof(__m256)
+                    pLayout->SetAlignmentRequirement(32); // sizeof(__m256)
     #endif // TARGET_ARM elif TARGET_ARM64
                 }
                 else if (strcmp(name, g_Vector512Name) == 0)
@@ -10306,23 +10339,23 @@ void MethodTableBuilder::CheckForSystemTypes()
                     // No such type exists for the Procedure Call Standard for ARM. We will default
                     // to the same alignment as __m128, which is supported by the ABI.
 
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+                    pLayout->SetAlignmentRequirement(8);
     #elif defined(TARGET_ARM64)
                     // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
 
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+                    pLayout->SetAlignmentRequirement(16);
 
     #elif defined(TARGET_LOONGARCH64)
                     // TODO-LoongArch64: Update alignment to proper value when implement LoongArch64 intrinsic.
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+                    pLayout->SetAlignmentRequirement(16);
     #elif defined(TARGET_RISCV64)
                     // TODO-RISCV64: Update alignment to proper value when we implement RISC-V intrinsic.
                     // RISC-V Vector Extenstion Intrinsic Document
                     // https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/master/vector_type_infos.adoc
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16;
+                    pLayout->SetAlignmentRequirement(16);
     #else
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 64; // sizeof(__m512)
+                    pLayout->SetAlignmentRequirement(64); // sizeof(__m512)
     #endif // TARGET_ARM elif TARGET_ARM64
                 }
                 else
@@ -10403,7 +10436,7 @@ void MethodTableBuilder::CheckForSystemTypes()
                 case ELEMENT_TYPE_R8:
                 {
                     EEClassLayoutInfo * pLayout = pClass->GetLayoutInfo();
-                    pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 4;
+                    pLayout->SetAlignmentRequirement(4);
                     break;
                 }
 
@@ -10444,7 +10477,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             // No such type exists for the Procedure Call Standard for ARM. We will default
             // to the same alignment as __m128, which is supported by the ABI.
 
-            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 8;
+            pLayout->SetAlignmentRequirement(8);
 #elif defined(TARGET_64BIT) || defined(TARGET_X86)
 
             // These types correspond to fundamental data types in the underlying ABIs:
@@ -10455,9 +10488,9 @@ void MethodTableBuilder::CheckForSystemTypes()
             // On Windows, no standard for Int128 has been established yet,
             // although applying 16 byte alignment is consistent with treatment of 128 bit SSE types
             // even on X86
-            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(__int128)
+            pLayout->SetAlignmentRequirement(16); // sizeof(__int128)
 #elif defined(TARGET_WASM)
-            pLayout->m_ManagedLargestAlignmentRequirementOfAllMembers = 16; // sizeof(v128)
+            pLayout->SetAlignmentRequirement(16); // sizeof(v128)
 #else
 #error Unknown architecture
 #endif // TARGET_64BIT
@@ -10771,11 +10804,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 //
 // Setup the method table
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
-
 VOID
 MethodTableBuilder::SetupMethodTable2(
         Module * pLoaderModule)
@@ -11359,9 +11387,6 @@ MethodTableBuilder::SetupMethodTable2(
     // additional information in the bmtMFDescs structure. Now it's time to add
     // this information as an optional extension to the MethodTable.
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 // Returns true if there is at least one default implementation for this interface method
 // We don't care about conflicts at this stage in order to avoid impact type load performance
@@ -12391,7 +12416,7 @@ MethodTableBuilder::GatherGenericsInfo(
 //   *pPackingSize       declared packing size
 //   *pfExplicitoffsets  offsets explicit in metadata or computed?
 //=======================================================================
-BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, mdTypeDef cl, MethodTable* pParentMT, BYTE* pPackingSize, BYTE* pNLTType, BOOL* pfExplicitOffsets)
+BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, mdTypeDef cl, MethodTable* pParentMT, BYTE* pPackingSize, ULONG* pClassSize, CorNativeLinkType* pNLTType, BOOL* pfExplicitOffsets)
 {
     CONTRACTL
     {
@@ -12400,6 +12425,7 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
         MODE_ANY;
         PRECONDITION(CheckPointer(pInternalImport));
         PRECONDITION(CheckPointer(pPackingSize));
+        PRECONDITION(CheckPointer(pClassSize));
         PRECONDITION(CheckPointer(pNLTType));
         PRECONDITION(CheckPointer(pfExplicitOffsets));
     }
@@ -12467,6 +12493,11 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
         pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
     }
 
+    if (FAILED(pInternalImport->GetClassTotalSize(cl, pClassSize)))
+    {
+        *pClassSize = 0;
+    }
+
     *pPackingSize = (BYTE)dwPackSize;
 
     return TRUE;
@@ -12503,7 +12534,6 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     DWORD         cInterfaces;
     BuildingInterfaceInfo_t * pInterfaceBuildInfo = NULL;
     IMDInternalImport *       pInternalImport = NULL;
-    LayoutRawFieldInfo *      pLayoutRawFieldInfos = NULL;
     MethodTableBuilder::bmtGenericsInfo genericsInfo;
 
     Assembly * pAssembly = pModule->GetAssembly();
@@ -12566,8 +12596,8 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
 
     GetEnclosingClassThrowing(pInternalImport, pModule, cl, &tdEnclosing);
 
-    BYTE nstructPackingSize = 0, nstructNLT = 0;
     BOOL fExplicitOffsets = FALSE;
+    MethodTableBuilder::bmtLayoutInfo layoutInfo;
     // NOTE: HasLayoutMetadata does not load classes
     BOOL fHasLayout =
         !genericsInfo.fContainsGenericVariables &&
@@ -12576,9 +12606,21 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
             pInternalImport,
             cl,
             pParentMethodTable,
-            &nstructPackingSize,
-            &nstructNLT,
+            &layoutInfo.packingSize,
+            &layoutInfo.classSize,
+            &layoutInfo.nlFlags,
             &fExplicitOffsets);
+
+    if (fHasLayout)
+    {
+        layoutInfo.layoutType = fExplicitOffsets
+            ? EEClassLayoutInfo::LayoutType::Explicit
+            : EEClassLayoutInfo::LayoutType::Sequential;
+    }
+    else
+    {
+        layoutInfo.layoutType = EEClassLayoutInfo::LayoutType::Auto;
+    }
 
     BOOL fIsEnum = ((g_pEnumClass != NULL) && (pParentMethodTable == g_pEnumClass));
 
@@ -12730,64 +12772,22 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         _ASSERTE(i == cInterfaces);
     }
 
-    if (fHasLayout ||
-        /* Variant delegates should not have any instance fields of the variant.
-           type parameter. For now, we just completely disallow all fields even
-           if they are non-variant or static, as it is not a useful scenario.
-           @TODO: A more logical place for this check would be in
-           MethodTableBuilder::EnumerateClassMembers() */
-        (fIsDelegate && genericsInfo.pVarianceInfo))
+    if (fHasLayout)
     {
-        // check for fields and variance
         ULONG               cFields;
         HENUMInternalHolder hEnumField(pInternalImport);
         hEnumField.EnumInit(mdtFieldDef, cl);
 
         cFields = pInternalImport->EnumGetCount(&hEnumField);
-
-        if ((cFields != 0) && fIsDelegate && (genericsInfo.pVarianceInfo != NULL))
+        // Though we fail on this condition, we should never run into it.
+        CONSISTENCY_CHECK(layoutInfo.packingSize != 0);
+        // MD Val check: PackingSize
+        if((layoutInfo.packingSize == 0)  ||
+            (layoutInfo.packingSize > 128) ||
+            (layoutInfo.packingSize & (layoutInfo.packingSize-1)))
         {
-            pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_VARIANCE_IN_DELEGATE);
-        }
-
-        if (fHasLayout)
-        {
-            // Though we fail on this condition, we should never run into it.
-            CONSISTENCY_CHECK(nstructPackingSize != 0);
-            // MD Val check: PackingSize
-            if((nstructPackingSize == 0)  ||
-               (nstructPackingSize > 128) ||
-               (nstructPackingSize & (nstructPackingSize-1)))
-            {
-                THROW_BAD_FORMAT_MAYBE(!"ClassLayout:Invalid PackingSize", BFA_BAD_PACKING_SIZE, pModule);
-                pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
-            }
-
-            pLayoutRawFieldInfos = (LayoutRawFieldInfo *)pStackingAllocator->Alloc(
-                (S_UINT32(1) + S_UINT32(cFields)) * S_UINT32(sizeof(LayoutRawFieldInfo)));
-
-            {
-                // Warning: this can load classes
-                CONTRACT_VIOLATION(LoadsTypeViolation);
-
-                // Set a flag that allows us to break dead-locks that are result of the LoadsTypeViolation
-                ThreadStateNCStackHolder tsNC(TRUE, Thread::TSNC_LoadsTypeViolation);
-
-                EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
-                    cl,
-                    nstructPackingSize,
-                    nstructNLT,
-                    fExplicitOffsets,
-                    pParentMethodTable,
-                    cFields,
-                    &hEnumField,
-                    pModule,
-                    &genericsInfo.typeContext,
-                    &(((LayoutEEClass *)pClass)->m_LayoutInfo),
-                    pLayoutRawFieldInfos,
-                    pAllocator,
-                    pamTracker);
-            }
+            THROW_BAD_FORMAT_MAYBE(!"ClassLayout:Invalid PackingSize", BFA_BAD_PACKING_SIZE, pModule);
+            pAssembly->ThrowTypeLoadException(pInternalImport, cl, IDS_CLASSLOAD_BADFORMAT);
         }
     }
 
@@ -12806,7 +12806,7 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         pModule,
         cl,
         pInterfaceBuildInfo,
-        pLayoutRawFieldInfos,
+        &layoutInfo,
         pParentMethodTable,
         &genericsInfo,
         parentInst,

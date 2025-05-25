@@ -77,6 +77,8 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void Constructor_ConversionFromV7_Write(TarEntryFormat originalEntryFormat)
         {
+            DateTimeOffset initialNow = DateTimeOffset.UtcNow;
+
             string name = "file.txt";
             string contents = "Hello world";
 
@@ -90,22 +92,28 @@ namespace System.Formats.Tar.Tests
             dataStream.Position = 0;
             originalEntry.DataStream = dataStream;
 
-            DateTimeOffset expectedATime;
-            DateTimeOffset expectedCTime;
+            DateTimeOffset expectedATime = default;
+            DateTimeOffset expectedCTime = default;
 
-            if (originalEntryFormat is TarEntryFormat.Pax or TarEntryFormat.Gnu)
+            if (originalEntry is GnuTarEntry gnuEntry)
             {
-                // The constructor should've set the atime and ctime automatically to the same value of mtime
-                expectedATime = originalEntry.ModificationTime;
-                expectedCTime = originalEntry.ModificationTime;
+                Assert.Equal(default, gnuEntry.AccessTime);
+                Assert.Equal(default, gnuEntry.ChangeTime);
+                // Change them to mtime
+                gnuEntry.AccessTime = gnuEntry.ModificationTime;
+                gnuEntry.ChangeTime = gnuEntry.ModificationTime;
+
+                expectedATime = gnuEntry.ModificationTime;
+                expectedCTime = gnuEntry.ModificationTime;
             }
-            else
+            else if (originalEntry is PaxTarEntry paxEntry)
             {
-                // ustar and v7 do not have atime and ctime, so the expected values of atime and ctime should be
-                // larger than mtime, because the conversion constructor sets those values automatically
-                DateTimeOffset now = DateTimeOffset.UtcNow;
-                expectedATime = now;
-                expectedCTime = now;
+                expectedATime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaATime);
+                expectedCTime = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, PaxEaCTime);
+
+                Assert.Equal(paxEntry.ModificationTime, expectedATime);
+                Assert.Equal(paxEntry.ModificationTime, expectedCTime);
+                // Can't change them, it's a read-only dictionary
             }
 
             TarEntry convertedEntry = InvokeTarEntryConversionConstructor(TarEntryFormat.Pax, originalEntry);
@@ -144,11 +152,6 @@ namespace System.Formats.Tar.Tests
                 {
                     Assert.Equal(expectedATime, atime);
                     Assert.Equal(expectedCTime, ctime);
-                }
-                else
-                {
-                    AssertExtensions.GreaterThanOrEqualTo(atime, expectedATime);
-                    AssertExtensions.GreaterThanOrEqualTo(ctime, expectedCTime);
                 }
             }
         }

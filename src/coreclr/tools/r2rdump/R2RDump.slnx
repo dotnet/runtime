@@ -1,0 +1,35 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Checked" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="../aot/ILCompiler.Diagnostics/ILCompiler.Diagnostics.csproj">
+    <Platform Solution="*|x86" Project="x86" />
+    <Platform Solution="Checked|Any CPU" Project="x86" />
+    <Platform Solution="Checked|x64" Project="x64" />
+    <Platform Solution="Debug|Any CPU" Project="x64" />
+    <Platform Solution="Debug|x64" Project="x64" />
+    <Build Solution="Checked|Any CPU" Project="false" />
+  </Project>
+  <Project Path="../aot/ILCompiler.Reflection.ReadyToRun/ILCompiler.Reflection.ReadyToRun.csproj">
+    <BuildType Solution="Checked|*" Project="Release" />
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="../aot/ILCompiler.TypeSystem/ILCompiler.TypeSystem.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+  </Project>
+  <Project Path="R2RDump.csproj">
+    <BuildType Solution="Checked|Any CPU" Project="Release" />
+    <BuildType Solution="Checked|x64" Project="Release" />
+    <BuildType Solution="Checked|x86" Project="Debug" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Platform Solution="Debug|Any CPU" Project="x64" />
+  </Project>
+</Solution>

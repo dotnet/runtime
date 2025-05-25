@@ -69,6 +69,7 @@ namespace Internal.ReadyToRunConstants
         RiscV64Base=56,
         Zba=57,
         Zbb=58,
+        Sve2=59,
 
     }
 }

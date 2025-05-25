@@ -964,6 +964,8 @@ protected:
         {
             return m_array.Iterate();
         }
+
+        friend struct cdac_data<AppDomain>;
     };  // class DomainAssemblyList
 
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
@@ -1621,6 +1623,7 @@ template<>
 struct cdac_data<AppDomain>
 {
     static constexpr size_t RootAssembly = offsetof(AppDomain, m_pRootAssembly);
+    static constexpr size_t DomainAssemblyList = offsetof(AppDomain, m_Assemblies) + offsetof(AppDomain::DomainAssemblyList, m_array);
 };
 
 typedef DPTR(class SystemDomain) PTR_SystemDomain;
@@ -1953,7 +1956,16 @@ public:
                                    bool enumThis);
 #endif
 
+    friend struct ::cdac_data<SystemDomain>;
 };  // class SystemDomain
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_data<SystemDomain>
+{
+    static constexpr PTR_SystemDomain* SystemDomain = &SystemDomain::m_pSystemDomain;
+};
+#endif // DACCESS_COMPILE
 
 #include "comreflectioncache.inl"
 

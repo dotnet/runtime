@@ -37,6 +37,13 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+// On MacOS, local labels cannot be used in arithmetic expressions.
+#if defined(__APPLE__)
+#define FIXUP_LABEL(name) name
+#else
+#define FIXUP_LABEL(name) .L##name
+#endif
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
 #if defined(__APPLE__)

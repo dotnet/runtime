@@ -32,8 +32,10 @@ namespace Microsoft.Extensions.DependencyInjection
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter)]
     public partial class FromKeyedServicesAttribute : System.Attribute
     {
-        public FromKeyedServicesAttribute(object key) { }
-        public object Key { get { throw null; } }
+        public FromKeyedServicesAttribute() { }
+        public FromKeyedServicesAttribute(object? key) { }
+        public object? Key { get { throw null; } }
+        public Microsoft.Extensions.DependencyInjection.ServiceKeyLookupMode LookupMode { get { throw null; } }
     }
     public partial interface IServiceCollection : System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IEnumerable<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.Generic.IList<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>, System.Collections.IEnumerable
     {
@@ -205,6 +207,12 @@ namespace Microsoft.Extensions.DependencyInjection
     public partial class ServiceKeyAttribute : System.Attribute
     {
         public ServiceKeyAttribute() { }
+    }
+    public enum ServiceKeyLookupMode
+    {
+        InheritKey = 0,
+        NullKey = 1,
+        ExplicitKey = 2,
     }
     public enum ServiceLifetime
     {

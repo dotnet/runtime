@@ -193,6 +193,16 @@ type MonoConfig = {
         [i: string]: string;
     };
     /**
+     * Subset of runtimeconfig.json
+     */
+    runtimeConfig?: {
+        runtimeOptions?: {
+            configProperties?: {
+                [i: string]: string | number | boolean;
+            };
+        };
+    };
+    /**
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolInitialSize?: number;

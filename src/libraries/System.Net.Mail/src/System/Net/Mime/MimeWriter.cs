@@ -35,37 +35,13 @@ namespace System.Net.Mime
 
         #region Cleanup
 
-        internal IAsyncResult BeginClose(AsyncCallback? callback, object? state)
-        {
-            MultiAsyncResult multiResult = new MultiAsyncResult(this, callback, state);
-
-            Close(multiResult);
-
-            multiResult.CompleteSequence();
-
-            return multiResult;
-        }
-
-        internal void EndClose(IAsyncResult result)
-        {
-            MultiAsyncResult.End(result);
-
-            _stream.Close();
-        }
-
         internal override void Close()
-        {
-            Close(null);
-
-            _stream.Close();
-        }
-
-        private void Close(MultiAsyncResult? multiResult)
         {
             _bufferBuilder.Append("\r\n--"u8);
             _bufferBuilder.Append(_boundaryBytes);
             _bufferBuilder.Append("--\r\n"u8);
-            Flush(multiResult);
+            Flush();
+            _stream.Close();
         }
 
         /// <summary>

@@ -205,6 +205,11 @@ namespace System.Security.Cryptography.X509Certificates
                         key = mldsa;
                         generator = X509SignatureGenerator.CreateForMLDsa(mldsa!);
                         break;
+                    case string when Helpers.IsSlhDsaOid(keyAlgorithm):
+                        SlhDsa? slhdsa = issuerCertificate.GetSlhDsaPrivateKey();
+                        key = slhdsa;
+                        generator = X509SignatureGenerator.CreateForSlhDsa(slhdsa!);
+                        break;
                     default:
                         throw new ArgumentException(
                             SR.Format(SR.Cryptography_UnknownKeyAlgorithm, keyAlgorithm),

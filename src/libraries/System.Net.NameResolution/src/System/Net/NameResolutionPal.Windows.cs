@@ -454,6 +454,11 @@ namespace System.Net
                             NetEventSource.Info(@this, $"GetAddrInfoExCancel returned error {cancelResult}");
                         }
                     }
+                    catch (ObjectDisposedException)
+                    {
+                        // There is a race between checking @this._completed and @this.DangerousAddRef and disposing from another thread.
+                        // We lost the race. No further action needed.
+                    }
                     finally
                     {
                         if (needRelease)

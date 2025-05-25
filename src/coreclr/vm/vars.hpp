@@ -500,12 +500,6 @@ EXTERN const char g_psBaseLibrarySatelliteAssemblyName[];
 //
 EXTERN bool g_fWeControlLifetime;
 
-#ifdef _DEBUG
-// The following should only be used for assertions.  (Famous last words).
-EXTERN bool dbg_fDrasticShutdown;
-#endif
-EXTERN bool g_fInControlC;
-
 // There is a global table of prime numbers that's available for e.g. hashing
 extern const DWORD g_rgPrimes[71];
 

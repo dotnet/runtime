@@ -69,6 +69,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void CreateChain_SlhDsa()
+        {
+            using (SlhDsa rootKey = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            using (SlhDsa intermed1Key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            using (SlhDsa intermed2Key = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            using (SlhDsa leafKey = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f))
+            {
+                byte[] pubKey = leafKey.ExportSlhDsaPublicKey();
+
+                using (SlhDsa leafPubKey = SlhDsa.ImportSlhDsaPublicKey(leafKey.Algorithm, pubKey))
+                {
+                    CreateAndTestChain(
+                        rootKey,
+                        intermed1Key,
+                        intermed2Key,
+                        leafPubKey);
+                }
+            }
+        }
+
         [Fact]
         public static void CreateChain_Hybrid()
         {
@@ -233,6 +254,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 ECDsa ecdsa => new CertificateRequest(x500dn, ecdsa, hashAlgorithm),
                 ECDiffieHellman ecdh => new CertificateRequest(x500dn, new PublicKey(ecdh), hashAlgorithm),
                 MLDsa mldsa => new CertificateRequest(x500dn, mldsa),
+                SlhDsa slhdsa => new CertificateRequest(x500dn, slhdsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
             };
@@ -245,6 +267,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 RSA rsa => X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
                 ECDsa ecdsa => X509SignatureGenerator.CreateForECDsa(ecdsa),
                 MLDsa mldsa => X509SignatureGenerator.CreateForMLDsa(mldsa),
+                SlhDsa slhdsa => X509SignatureGenerator.CreateForSlhDsa(slhdsa),
                 _ => throw new InvalidOperationException(
                     $"Had no handler for key of type {key?.GetType().FullName ?? "null"}")
             };

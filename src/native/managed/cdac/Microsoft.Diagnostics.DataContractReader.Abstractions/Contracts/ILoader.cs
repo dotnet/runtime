@@ -19,8 +19,26 @@ public readonly struct ModuleHandle
 [Flags]
 public enum ModuleFlags
 {
-    EditAndContinue = 0x00000008,   // Edit and Continue is enabled for this module
-    ReflectionEmit = 0x00000040,    // Reflection.Emit was used to create this module
+    Tenured = 0x1,                  // Set once we know for sure the Module will not be freed until the appdomain itself exits
+    ClassFreed = 0x4,
+    EditAndContinue = 0x8,          // Edit and Continue is enabled for this module
+
+    ProfilerNotified = 0x10,
+    EtwNotified = 0x20,
+
+    ReflectionEmit = 0x40,          // Reflection.Emit was used to create this module
+    ProfilerDisableOptimizations = 0x80,
+    ProfilerDisableInlining = 0x100,
+
+    DebuggerUserOverridePriv = 0x400,
+    DebuggerAllowJitOptsPriv = 0x800,
+    DebuggerTrackJitInfoPriv = 0x1000,
+    DebuggerEnCEnabledPriv = 0x2000,
+    DebuggerPDBsCopied = 0x4000,
+    DebuggerIgnorePDbs = 0x8000,
+
+    IJWFixedUp = 0x80000,
+    BeingUnloaded = 0x100000,
 }
 
 public record struct ModuleLookupTables(
@@ -32,12 +50,34 @@ public record struct ModuleLookupTables(
     TargetPointer TypeRefToMethodTable,
     TargetPointer MethodDefToILCodeVersioningState);
 
+[Flags]
+public enum AssemblyIterationFlags
+{
+    // load status flags
+    IncludeLoaded = 0x00000001, // include assemblies that are already loaded
+                                // (m_level >= code:FILE_LOAD_DELIVER_EVENTS)
+    IncludeLoading = 0x00000002, // include assemblies that are still in the process of loading
+                                 // (all m_level values)
+    IncludeAvailableToProfilers = 0x00000020, // include assemblies available to profilers
+                                              // See comment at code:DomainAssembly::IsAvailableToProfilers
+
+    // Execution / introspection flags
+    IncludeExecution = 0x00000004, // include assemblies that are loaded for execution only
+
+    IncludeFailedToLoad = 0x00000010, // include assemblies that failed to load
+
+    // Collectible assemblies flags
+    ExcludeCollectible = 0x00000040, // Exclude all collectible assemblies
+    IncludeCollected = 0x00000080, // Include all collectible assemblies that have been collected
+}
+
 public interface ILoader : IContract
 {
     static string IContract.Name => nameof(Loader);
 
     ModuleHandle GetModuleHandle(TargetPointer modulePointer) => throw new NotImplementedException();
 
+    IEnumerable<ModuleHandle> GetModules(TargetPointer appDomain, AssemblyIterationFlags iterationFlags) => throw new NotImplementedException();
     TargetPointer GetRootAssembly() => throw new NotImplementedException();
     TargetPointer GetAssembly(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetPEAssembly(ModuleHandle handle) => throw new NotImplementedException();
@@ -54,6 +94,7 @@ public interface ILoader : IContract
 
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
+    bool IsAssemblyLoaded(ModuleHandle handle) => throw new NotImplementedException();
 }
 
 public readonly struct Loader : ILoader

@@ -86,11 +86,6 @@ public class BootJsonData
     public string globalizationMode { get; set; }
 
     /// <summary>
-    /// Gets or sets a value that determines if the caching startup memory is enabled.
-    /// </summary>
-    public bool? startupMemoryCache { get; set; }
-
-    /// <summary>
     /// Gets a value for mono runtime options.
     /// </summary>
     public string[] runtimeOptions { get; set; }
@@ -104,6 +99,10 @@ public class BootJsonData
     /// Gets or sets environment variables.
     /// </summary>
     public System.Collections.Generic.Dictionary<string, string> environmentVariables { get; set; }
+    /// <summary>
+    /// Subset of runtimeconfig.json
+    /// </summary>
+    public RuntimeConfigData runtimeConfig { get; set; }
 
     /// <summary>
     /// Gets or sets diagnostic tracing.
@@ -119,6 +118,25 @@ public class BootJsonData
     /// Gets or sets pthread pool unused size.
     /// </summary>
     public int? pthreadPoolUnusedSize { get; set; }
+}
+
+/// <summary>
+/// Subset of runtimeconfig.json
+/// </summary>
+public class RuntimeConfigData
+{
+    /// <summary>
+    /// Runtime options
+    /// </summary>
+    public RuntimeOptionsData runtimeOptions { get; set; }
+}
+
+public class RuntimeOptionsData
+{
+    /// <summary>
+    /// Config properties for the runtime
+    /// </summary>
+    public Dictionary<string, object> configProperties { get; set; }
 }
 
 public class ResourcesData

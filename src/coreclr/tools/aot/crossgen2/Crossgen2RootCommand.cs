@@ -388,6 +388,7 @@ namespace ILCompiler
                 "defaultsort" => MethodLayoutAlgorithm.DefaultSort,
                 "exclusiveweight" => MethodLayoutAlgorithm.ExclusiveWeight,
                 "hotcold" => MethodLayoutAlgorithm.HotCold,
+                "instrumentedhotcold" => MethodLayoutAlgorithm.InstrumentedHotCold,
                 "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
                 "callfrequency" => MethodLayoutAlgorithm.CallFrequency,
                 "pettishansen" => MethodLayoutAlgorithm.PettisHansen,

@@ -21,6 +21,8 @@ namespace System.Security.Cryptography
             _key = key;
         }
 
+        public SafeEvpPKeyHandle DuplicateHandle() => _key.DuplicateHandle();
+
         internal static partial bool SupportsAny()
         {
             bool supportsSlhDsaSha2_128s = Interop.Crypto.EvpPKeySlhDsaAlgs.SlhDsaSha2_128s is not null;
@@ -51,7 +53,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static partial SlhDsa GenerateKeyCore(SlhDsaAlgorithm algorithm)
+        internal static partial SlhDsaImplementation GenerateKeyCore(SlhDsaAlgorithm algorithm)
         {
             SafeEvpPKeyHandle key = Interop.Crypto.SlhDsaGenerateKey(algorithm.Name);
             return new SlhDsaImplementation(algorithm, key);
@@ -69,17 +71,17 @@ namespace System.Security.Cryptography
         protected override void ExportSlhDsaSecretKeyCore(Span<byte> destination) =>
             Interop.Crypto.SlhDsaExportSecretKey(_key, destination);
 
-        internal static partial SlhDsa ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static partial SlhDsaImplementation ImportPublicKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.PublicKeySizeInBytes, $"Public key was expected to be {algorithm.PublicKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: false);
             return new SlhDsaImplementation(algorithm, key);
         }
 
-        internal static partial SlhDsa ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
+        internal static partial SlhDsaImplementation ImportPkcs8PrivateKeyValue(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial SlhDsa ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
+        internal static partial SlhDsaImplementation ImportSecretKey(SlhDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
             Debug.Assert(source.Length == algorithm.SecretKeySizeInBytes, $"Secret key was expected to be {algorithm.SecretKeySizeInBytes} bytes, but was {source.Length} bytes.");
             SafeEvpPKeyHandle key = Interop.Crypto.EvpPKeyFromData(algorithm.Name, source, privateKey: true);

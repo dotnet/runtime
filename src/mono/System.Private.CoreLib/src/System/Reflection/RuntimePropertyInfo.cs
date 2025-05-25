@@ -136,6 +136,8 @@ namespace System.Reflection
             return GetDeclaringTypeInternal().GetRuntimeModule();
         }
 
+        public override bool IsCollectible => false;
+
         #region Object Overrides
         public override string ToString()
         {

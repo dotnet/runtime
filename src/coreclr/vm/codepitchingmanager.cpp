@@ -37,6 +37,7 @@
 #if defined(FEATURE_JIT_PITCHING)
 
 #include "threadsuspend.h"
+#include "minipal/time.h"
 
 static PtrHashMap* s_pPitchingCandidateMethods = nullptr;
 static PtrHashMap* s_pPitchingCandidateSizes = nullptr;
@@ -427,7 +428,7 @@ EXTERN_C void CheckStacksAndPitch()
     if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchEnabled) != 0) &&
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchMemThreshold) != 0) &&
         (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchTimeInterval) == 0 ||
-         ((::GetTickCount64() - s_JitPitchLastTick) > CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchTimeInterval))))
+         ((minipal_lowres_ticks() - s_JitPitchLastTick) > CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPitchTimeInterval))))
     {
         SimpleReadLockHolder srlh(s_totalNCSizeLock);
 
@@ -467,7 +468,7 @@ EXTERN_C void CheckStacksAndPitch()
                     s_pPitchingCandidateSizes->Compact();
                 }
 
-                s_JitPitchLastTick = ::GetTickCount64();
+                s_JitPitchLastTick = minipal_lowres_ticks();
 
                 ThreadSuspend::RestartEE(FALSE, TRUE);
             }

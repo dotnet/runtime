@@ -100,11 +100,6 @@
                                                  .Replace('{ExtraTrimmerArgs}', '%(TestConsoleApps.ExtraTrimmerArgs)')
                                                  .Replace('{AdditionalProperties}', '$(_additionalPropertiesString)')
                                                  .Replace('{ToolsILLinkDir}', '$(ToolsILLinkDir)')
-                                                 .Replace('{IlcToolsPath}', '$(IlcToolsPath)')
-                                                 .Replace('{IlcBuildTasksPath}', '$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll')
-                                                 .Replace('{IlcSdkPath}', '$(CoreCLRAotSdkDir)')
-                                                 .Replace('{IlcFrameworkPath}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
-                                                 .Replace('{IlcFrameworkNativePath}', '$(MicrosoftNetCoreAppRuntimePackNativeDir)')
                                                  .Replace('{CoreCLRBuildIntegrationDir}', '$(CoreCLRBuildIntegrationDir)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
@@ -125,9 +120,14 @@
                                                  .Replace('{MicrosoftNetCoreAppFrameworkName}', '$(MicrosoftNetCoreAppFrameworkName)')
                                                  .Replace('{MicrosoftNetCoreAppRefPackDir}', '$(MicrosoftNetCoreAppRefPackDir)')
                                                  .Replace('{MicrosoftNetCoreAppRuntimePackDir}', '$(MicrosoftNetCoreAppRuntimePackDir)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackRidLibTfmDir}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
+                                                 .Replace('{MicrosoftNetCoreAppRuntimePackNativeDir}', '$(MicrosoftNetCoreAppRuntimePackNativeDir)')
+                                                 .Replace('{CoreCLRILCompilerDir}', '$(CoreCLRILCompilerDir)')
+                                                 .Replace('{CoreCLRCrossILCompilerDir}', '$(CoreCLRCrossILCompilerDir)')
+                                                 .Replace('{CoreCLRAotSdkDir}', '$(CoreCLRAotSdkDir)')
                                                  .Replace('{NativeSanitizersTargets}', '$(RepositoryEngineeringDir)nativeSanitizers.targets')
-                                                 .Replace('{AppHostSourcePath}', '$(AppHostSourcePath)')
-                                                 .Replace('{SingleFileHostSourcePath}', '$(SingleFileHostSourcePath)')
+                                                 .Replace('{LocalAppHostPath}', '$(LocalAppHostPath)')
+                                                 .Replace('{LocalSingleFileHostPath}', '$(LocalSingleFileHostPath)')
                                                  .Replace('{SanitizerRuntimeFolder}', '$(DotNetHostBinDir)'))"
                       Overwrite="true" />
     <Copy SourceFiles="$(_projectSourceFile);

@@ -22,6 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             MLDsa,
             RsaPkcs1,
             RsaPss,
+            SlhDsa,
         }
 
         public static IEnumerable<object[]> SupportedCertKinds()
@@ -35,6 +36,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             yield return new object[] { CertKind.RsaPkcs1 };
             yield return new object[] { CertKind.RsaPss };
+
+            if (SlhDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.SlhDsa };
+            }
         }
 
         public static IEnumerable<object[]> NoHashAlgorithmCertKinds()
@@ -42,6 +48,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             if (MLDsa.IsSupported)
             {
                 yield return new object[] { CertKind.MLDsa };
+            }
+
+            if (SlhDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.SlhDsa };
             }
         }
 
@@ -1533,6 +1544,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                     key = mldsa;
                     req = new CertificateRequest(subjectName, mldsa);
                 }
+                else if (certKind == CertKind.SlhDsa)
+                {
+                    SlhDsa slhDsa = SlhDsa.GenerateKey(SlhDsaAlgorithm.SlhDsaSha2_128f);
+                    key = slhDsa;
+                    req = new CertificateRequest(subjectName, slhDsa);
+                }
                 else
                 {
                     throw new NotSupportedException($"Unsupported CertKind: {certKind}");
@@ -1697,6 +1714,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                 key = mldsa;
                 return X509SignatureGenerator.CreateForMLDsa(mldsa);
             }
+            else if (certKind == CertKind.SlhDsa)
+            {
+                SlhDsa slhDsa = cert.GetSlhDsaPrivateKey();
+                key = slhDsa;
+                return X509SignatureGenerator.CreateForSlhDsa(slhDsa);
+            }
             else
             {
                 throw new NotSupportedException($"Unsupported CertKind: {certKind}");
@@ -1727,6 +1750,11 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
                 using MLDsa mldsa = cert.GetMLDsaPublicKey();
                 signatureValid = mldsa.VerifyData(data, signature);
             }
+            else if (certKind == CertKind.SlhDsa)
+            {
+                using SlhDsa slhDsa = cert.GetSlhDsaPublicKey();
+                signatureValid = slhDsa.VerifyData(data, signature);
+            }
             else
             {
                 throw new NotSupportedException($"Unsupported CertKind: {certKind}");
@@ -1743,7 +1771,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             return certKind switch
             {
                 CertKind.ECDsa or CertKind.RsaPkcs1 or CertKind.RsaPss => true,
-                CertKind.MLDsa => false,
+                CertKind.MLDsa or CertKind.SlhDsa => false,
                 _ => throw new NotSupportedException(certKind.ToString())
             };
         }

@@ -130,6 +130,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </AddWasmStaticWebAssetsDependsOn>
     <GenerateBuildWasmBootJsonDependsOn>
       $(GenerateBuildWasmBootJsonDependsOn);
+      GenerateBuildRuntimeConfigurationFiles;
       ResolveWasmOutputs;
     </GenerateBuildWasmBootJsonDependsOn>
   </PropertyGroup>
@@ -187,7 +188,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
-      <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
@@ -397,12 +397,12 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
-      StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(_WasmProfilers)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
       ModuleAfterRuntimeReady="@(WasmModuleAfterRuntimeReady)"
@@ -805,11 +805,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
-      StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       EnvVariables="@(WasmEnvironmentVariable)"
       Profilers="$(_WasmProfilers)"
+      RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"

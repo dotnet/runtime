@@ -129,13 +129,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override ObjectNodeSection GetSection(NodeFactory factory)
-        {
-            if (factory.Target.IsWindows)
-                return ObjectNodeSection.ReadOnlyDataSection;
-            else
-                return ObjectNodeSection.DataSection;
-        }
+        // For R2R, we can put the header in the read-only section on non-Windows as well. Since we emit a PE image
+        // and do our own mapping, we don't need it to be writeable for the OS loader to handle absolute pointer relocs.
+        // Our R2R PE images group read-only data into the .text section, so this doesn't result in more work to map.
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.ReadOnlyDataSection;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {

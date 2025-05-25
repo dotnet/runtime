@@ -265,12 +265,6 @@ inline BOOL PEImage::MDImportLoaded()
     return m_pMDImport != NULL;
 }
 
-inline BOOL PEImage::HasV1Metadata()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetMDImport()->GetMetadataStreamVersion()==MD_STREAM_VER_1X;
-}
-
 inline BOOL PEImage::IsILOnly()
 {
     WRAPPER_NO_CONTRACT;

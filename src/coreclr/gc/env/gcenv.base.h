@@ -465,7 +465,7 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 #define CONSISTENCY_CHECK(_expr) ASSERT(_expr)
-#define PREFIX_ASSUME(cond) ASSERT(cond)
+#define COMPILER_ASSUME(cond) ASSERT(cond)
 #define EEPOLICY_HANDLE_FATAL_ERROR(error) ASSERT(!"EEPOLICY_HANDLE_FATAL_ERROR")
 #define UI64(_literal) _literal##ULL
 

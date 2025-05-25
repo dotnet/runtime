@@ -191,8 +191,8 @@ namespace System.Numerics.Tensors
             xRentedBuffer.Dispose();
         }
 
-        public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y, in TensorSpan<TResult> destination)
-            where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, TResult>
+        public static void Invoke<TOperation, TArg1, TArg2, TResult>(in ReadOnlyTensorSpan<TArg1> x, in ReadOnlyTensorSpan<TArg2> y, in TensorSpan<TResult> destination)
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg1, TArg2, TResult>
         {
             scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
             scoped Span<nint> yIndexes = RentedBuffer.Create(destination.Rank, y.Strides, out nint yLinearOffset, out RentedBuffer<nint> yRentedBuffer);
@@ -215,6 +215,10 @@ namespace System.Numerics.Tensors
             yRentedBuffer.Dispose();
             destinationRentedBuffer.Dispose();
         }
+
+        public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y, in TensorSpan<TResult> destination)
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, TResult>
+        => Invoke<TOperation, TArg, TArg, TResult>(in x, in y, in destination);
 
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y, ref TResult result)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Tensor<TArg, TResult>
@@ -248,8 +252,8 @@ namespace System.Numerics.Tensors
         public static void Invoke<TOperation, TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, int y, in TensorSpan<TResult> destination)
             where TOperation : TensorOperation.IBinaryOperation_Tensor_Int32<TArg, TResult> => Invoke<TOperation, TArg, int, TResult>(in x, y, in destination);
 
-        public static void Invoke<TOperation, T1Arg, T2, TResult>(in ReadOnlyTensorSpan<T1Arg> x, T2 y, in TensorSpan<TResult> destination)
-            where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<T1Arg, T2, TResult>
+        public static void Invoke<TOperation, TArg1, TArg2, TResult>(in ReadOnlyTensorSpan<TArg1> x, TArg2 y, in TensorSpan<TResult> destination)
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<TArg1, TArg2, TResult>
         {
             scoped Span<nint> xIndexes = RentedBuffer.Create(destination.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
             scoped Span<nint> destinationIndexes = RentedBuffer.Create(destination.Rank, destination.Strides, out nint destinationLinearOffset, out RentedBuffer<nint> destinationRentedBuffer);
@@ -292,8 +296,8 @@ namespace System.Numerics.Tensors
             destinationRentedBuffer.Dispose();
         }
 
-        public static void Invoke<TOperation, T1Arg, T2, TResult>(in ReadOnlyTensorSpan<T1Arg> x, T2 y, ref TResult result)
-            where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<T1Arg, T2, TResult>
+        public static void Invoke<TOperation, TArg1, TArg2, TResult>(in ReadOnlyTensorSpan<TArg1> x, TArg2 y, ref TResult result)
+            where TOperation : TensorOperation.IBinaryOperation_Tensor_Scalar<TArg1, TArg2, TResult>
         {
             scoped Span<nint> xIndexes = RentedBuffer.Create(x.Rank, x.Strides, out nint xLinearOffset, out RentedBuffer<nint> xRentedBuffer);
 
@@ -335,7 +339,7 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_LengthsNotCompatible();
         }
 
-        public static void ValidateCompatibility<TArg, TResult>(in ReadOnlyTensorSpan<TArg> x, in ReadOnlyTensorSpan<TArg> y, in TensorSpan<TResult> destination)
+        public static void ValidateCompatibility<TArg1, TArg2, TResult>(in ReadOnlyTensorSpan<TArg1> x, in ReadOnlyTensorSpan<TArg2> y, in TensorSpan<TResult> destination)
         {
             // can do bidirectional validation between x and y, that result can then be broadcast to destination
             if (TensorShape.AreCompatible(x._shape, y._shape, true))
@@ -2153,6 +2157,48 @@ namespace System.Numerics.Tensors
             }
         }
 
+        public readonly struct FilteredUpdate<T>
+            : IBinaryOperation_Tensor_Scalar<bool, T, T>,
+              IBinaryOperation_Tensor_Tensor<bool, T, T>
+        {
+            public static void Invoke(ref readonly bool x, ref readonly T y, ref T destination)
+            {
+                if (x)
+                {
+                    destination = y;
+                }
+            }
+            public static void Invoke(ReadOnlySpan<bool> x, ReadOnlySpan<T> y, Span<T> destination)
+            {
+                for (int i = 0; i < x.Length; i++)
+                {
+                    if (x[i])
+                    {
+                        destination[i] = y[i];
+                    }
+                }
+            }
+
+            public static void Invoke(ref readonly bool x, T y, ref T destination)
+            {
+                if (x)
+                {
+                    destination = y;
+                }
+            }
+
+            public static void Invoke(ReadOnlySpan<bool> x, T y, Span<T> destination)
+            {
+                for (int i = 0; i < x.Length; i++)
+                {
+                    if (x[i])
+                    {
+                        destination[i] = y;
+                    }
+                }
+            }
+        }
+
         public readonly struct GreaterThan<T>
             : IBinaryOperation_Tensor_Scalar<T, bool>,
               IBinaryOperation_Tensor_Tensor<T, bool>
@@ -2531,10 +2577,15 @@ namespace System.Numerics.Tensors
             static abstract void Invoke(T1 x, ReadOnlySpan<T2> y, Span<TResult> destination);
         }
 
-        public interface IBinaryOperation_Tensor_Tensor<T, TResult>
+        public interface IBinaryOperation_Tensor_Tensor<T1, T2, TResult>
         {
-            static abstract void Invoke(ref readonly T x, ref readonly T y, ref TResult destination);
-            static abstract void Invoke(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<TResult> destination);
+            static abstract void Invoke(ref readonly T1 x, ref readonly T2 y, ref TResult destination);
+            static abstract void Invoke(ReadOnlySpan<T1> x, ReadOnlySpan<T2> y, Span<TResult> destination);
+        }
+
+        public interface IBinaryOperation_Tensor_Tensor<T, TResult>
+            : IBinaryOperation_Tensor_Tensor<T, T, TResult>
+        {
         }
 
         public interface IOperation<T>

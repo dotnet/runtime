@@ -927,7 +927,8 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (!IsAuthenticated)
+            // if the Protocol is set then rest of the ConnectionInfo is valid
+            if (_connectionInfo.Protocol == 0)
             {
                 ThrowNotAuthenticated();
             }

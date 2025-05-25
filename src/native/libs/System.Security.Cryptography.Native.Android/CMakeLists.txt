@@ -57,3 +57,7 @@ if (GEN_SHARED_LIB)
 endif()
 
 install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install (TARGETS System.Security.Cryptography.Native.Android-Static DESTINATION sharedFramework COMPONENT runtime)
+endif()

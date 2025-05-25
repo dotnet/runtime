@@ -96,6 +96,18 @@ FCIMPL1_L(double, RhpULng2Dbl, uint64_t val)
 }
 FCIMPLEND
 
+FCIMPL1_L(float, RhpLng2Flt, int64_t val)
+{
+    return (float)val;
+}
+FCIMPLEND
+
+FCIMPL1_L(float, RhpULng2Flt, uint64_t val)
+{
+    return (float)val;
+}
+FCIMPLEND
+
 #endif
 
 #ifndef HOST_64BIT

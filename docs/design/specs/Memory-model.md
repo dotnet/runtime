@@ -55,7 +55,7 @@ As a consequence:
 The practical motivations for these rules are:
 - We can't allow speculative writes as we consider changing the value to be observable, thus effects of a speculative write may not be possible to undo.
 - A read cannot be re-done, since it could fetch a different value and thus introduce a data race that the program did not have.
-- Reading from a variable and not observing sideeffects of the read is the same as not performing a read, thus unused reads can be removed.
+- Reading from a variable and not observing side-effects of the read is the same as not performing a read, thus unused reads can be removed.
 - Coalescing of adjacent ordinary memory accesses to the same location is ok because most programs do not rely on presence of data races thus, unlike introducing, removing data races is ok. Programs that do rely on observing data races shall use `volatile` accesses.
 
 ## Thread-local memory accesses
@@ -85,10 +85,10 @@ The effects of ordinary reads and writes can be reordered as long as that preser
      - `System.Threading.Volatile.WriteBarrier` (applies to all following writes)
      - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method, applies to all following writes)
 
-* **volatile. initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceeding reads and writes.
+* **volatile. initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceding reads and writes.
 
 * **volatile. cpblk** combines ordering semantics of a volatile read and write with respect to the read and written memory locations.
-     - The writes performed by `volatile. cpblk` will not be observable earlier than the effects of preceeding reads and writes.
+     - The writes performed by `volatile. cpblk` will not be observable earlier than the effects of preceding reads and writes.
      - No read or write that is later in the program order may be speculatively executed before the reads performed by `volatile. cpblk`
      - `cpblk` may be implemented as a sequence of reads and writes. The granularity and mutual order of such reads and writes is unspecified.
 
@@ -138,7 +138,7 @@ The motivation is to ensure that storing an object reference to shared memory ac
 The reading thread does not need to perform an acquiring read before accessing the content of an instance since runtime guarantees ordering of data-dependent reads.
 
 The ordering side-effects of reference assignment should not be used for general ordering purposes because:
--	independent nonvolatile reference assignments could be reordered by the compiler.
+-	independent non-volatile reference assignments could be reordered by the compiler.
 -	an optimizing compiler can omit the release semantics if it can prove that the instance is not shared with other threads.
 
 There was a lot of ambiguity around the guarantees provided by object assignments. Going forward the runtimes will only provide the guarantees described in this document.
@@ -169,7 +169,7 @@ That applies even for locations targeted by overlapping aligned reads and writes
 Either the platform defaults to release consistency or stronger (that is, x64 is TSO, which is stronger), or provides means to implement release consistency via fencing operations.
 
 *	It is possible to guarantee ordering of data-dependent reads.
-Either the platform honors data dependedncy by default (all currently supported platforms), or provides means to order data-dependent reads via fencing operations.
+Either the platform honors data dependency by default (all currently supported platforms), or provides means to order data-dependent reads via fencing operations.
 
 ## Examples and common patterns
 The following examples work correctly on all supported implementations of .NET runtime regardless of the target OS or architecture.

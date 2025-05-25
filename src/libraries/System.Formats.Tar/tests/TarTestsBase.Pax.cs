@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Formats.Tar.Tests

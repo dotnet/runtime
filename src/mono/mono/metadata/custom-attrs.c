@@ -51,6 +51,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, "System.R
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.Reflection", "CustomAttributeNamedArgument");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (customattribute_data, "System.Reflection", "RuntimeCustomAttributeData");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unsafe_accessor_attribute, "System.Runtime.CompilerServices", "UnsafeAccessorAttribute");
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (unsafe_accessor_type_attribute, "System.Runtime.CompilerServices", "UnsafeAccessorTypeAttribute");
 
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs, gboolean respect_cattr_visibility);
@@ -2091,6 +2092,58 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 			*member_name = (char*)name;
 		}
 	}
+
+	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
+
+	return TRUE;
+}
+
+gboolean
+mono_method_param_get_unsafe_accessor_type_attr_data (MonoMethod *method, int param_seq, char **type_name, MonoError *error)
+{
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_param_checked (method, param_seq, error);
+
+	if (!cinfo || !is_ok (error)) {
+		mono_error_cleanup (error);
+		return FALSE;
+	}
+
+	MonoClass *unsafeAccessorType = mono_class_try_get_unsafe_accessor_type_attribute_class ();
+	MonoCustomAttrEntry *attr = NULL;
+
+	for (int idx = 0; idx < cinfo->num_attrs; ++idx) {
+		MonoClass *ctor_class = cinfo->attrs [idx].ctor->klass;
+		if (ctor_class == unsafeAccessorType) {
+			attr = &cinfo->attrs [idx];
+			break;
+		}
+	}
+
+	if (!attr){
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
+		return FALSE;
+	}
+
+	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
+
+	if (!is_ok (error)) {
+		mono_error_cleanup (error);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
+		return FALSE;
+	}
+
+	g_assert (decoded_args->typed_args_num == 1);
+	const char *ptr = (const char*)decoded_args->typed_args [0]->value.primitive;
+	uint32_t len = mono_metadata_decode_value (ptr, &ptr);
+	char *name = m_method_alloc0 (method, len + 1);
+	memcpy (name, ptr, len);
+	name[len] = 0;
+	*type_name = (char*)name;
 
 	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 	if (!cinfo->cached)

@@ -19,6 +19,10 @@
 #define PF_ARM_SVE_INSTRUCTIONS_AVAILABLE (46)
 #endif
 
+#ifndef PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE (47)
+#endif
+
 #else // HOST_WINDOWS
 
 #include "minipalconfig.h"
@@ -43,6 +47,9 @@
 #endif
 #ifndef HWCAP_SVE
 #define HWCAP_SVE   (1 << 22)
+#endif
+#ifndef HWCAP2_SVE2
+#define HWCAP2_SVE2   (1 << 1)
 #endif
 
 #endif
@@ -444,6 +451,11 @@ int minipal_getcpufeatures(void)
     if (hwCap & HWCAP_SVE)
         result |= ARM64IntrinsicConstants_Sve;
 
+    unsigned long hwCap2 = getauxval(AT_HWCAP2);
+
+    if (hwCap2 & HWCAP2_SVE2)
+        result |= ARM64IntrinsicConstants_Sve2;
+
 #else // !HAVE_AUXV_HWCAP_H
 
 #if HAVE_SYSCTLBYNAME
@@ -532,6 +544,11 @@ int minipal_getcpufeatures(void)
     if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Sve;
+    }
+
+    if (IsProcessorFeaturePresent(PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE))
+    {
+        result |= ARM64IntrinsicConstants_Sve2;
     }
 
 #endif // HOST_WINDOWS

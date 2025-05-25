@@ -42,7 +42,6 @@ class   EEClass;
 class   LayoutEEClass;
 class   EnCFieldDesc;
 class   FieldDesc;
-struct  LayoutRawFieldInfo;
 class   MetaSig;
 class   MethodDesc;
 class   MethodDescChunk;

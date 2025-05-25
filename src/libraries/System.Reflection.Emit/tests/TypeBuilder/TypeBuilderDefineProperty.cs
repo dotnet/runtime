@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(returnType ?? typeof(void), createdProperty.PropertyType);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [MemberData(nameof(TestData))]
         public void DefinePropertyPersistedAssembly(string name, PropertyAttributes attributes, Type returnType, Type[] parameterTypes, string expectedName, PropertyAttributes _)
         {
@@ -91,10 +91,10 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(2, properties.Length);
             Assert.Equal("PropertyName", properties[0].Name);
             Assert.Equal("PropertyName", properties[1].Name);
-            Assert.Throws<AmbiguousMatchException>(() => createdType.GetProperty("PropertyName", Helpers.AllFlags)); 
+            Assert.Throws<AmbiguousMatchException>(() => createdType.GetProperty("PropertyName", Helpers.AllFlags));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void DefineProperty_NameCollisionPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);

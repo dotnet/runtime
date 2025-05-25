@@ -348,7 +348,7 @@ void SetObjectReferenceUnchecked(OBJECTREF *dst,OBJECTREF ref)
     ErectWriteBarrier(dst, ref);
 }
 
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
+void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 {
 
     STATIC_CONTRACT_NOTHROW;
@@ -395,7 +395,7 @@ void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT)
 // Copy value class into the argument specified by the argDest.
 // The destOffset is nonzero when copying values into Nullable<T>, it is the offset
 // of the T value inside of the Nullable<T>
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
+void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;

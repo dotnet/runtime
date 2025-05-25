@@ -9,6 +9,7 @@ public static class Constants
     {
         // See src/coreclr/debug/runtimeinfo/datadescriptor.h
         public const string AppDomain = nameof(AppDomain);
+        public const string SystemDomain = nameof(SystemDomain);
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
         public const string GCThread = nameof(GCThread);

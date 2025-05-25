@@ -167,6 +167,7 @@ dn_simdhash_new_internal (dn_simdhash_meta_t *meta, dn_simdhash_vtable_t vtable,
 {
 	const size_t size = sizeof(dn_simdhash_t) + meta->data_size;
 	dn_simdhash_t *result = (dn_simdhash_t *)dn_allocator_alloc(allocator, size);
+	dn_simdhash_assert(result);
 	memset(result, 0, size);
 
 	dn_simdhash_assert(meta);
@@ -248,7 +249,13 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	size_t buckets_size_bytes = (bucket_count * hash->meta->bucket_size_bytes) + DN_SIMDHASH_VECTOR_WIDTH,
 		values_size_bytes = value_count * hash->meta->value_size;
 
-	hash->buffers.buckets = dn_allocator_alloc(hash->buffers.allocator, buckets_size_bytes);
+	void *new_buckets = dn_allocator_alloc(hash->buffers.allocator, buckets_size_bytes),
+		*new_values = dn_allocator_alloc(hash->buffers.allocator, values_size_bytes);
+
+	dn_simdhash_assert(new_buckets);
+	dn_simdhash_assert(new_values);
+
+	hash->buffers.buckets = new_buckets;
 	memset(hash->buffers.buckets, 0, buckets_size_bytes);
 
 	// Calculate necessary bias for alignment
@@ -257,7 +264,7 @@ dn_simdhash_ensure_capacity_internal (dn_simdhash_t *hash, uint32_t capacity)
 	hash->buffers.buckets = (void *)(((uint8_t *)hash->buffers.buckets) + hash->buffers.buckets_bias);
 
 	// No need to go out of our way to align values
-	hash->buffers.values = dn_allocator_alloc(hash->buffers.allocator, values_size_bytes);
+	hash->buffers.values = new_values;
 	// Skip this for performance; memset is especially slow in wasm
 	// memset(hash->buffers.values, 0, values_size_bytes);
 

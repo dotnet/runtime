@@ -892,7 +892,7 @@ namespace System.Net.Mail
         {
             try
             {
-                _message!.EndSend(result);
+                MailMessage.EndSend(result);
                 // If some recipients failed but not others, throw AFTER sending the message.
                 Complete(_failedRecipientException, result.AsyncState!);
             }
@@ -929,8 +929,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
-                    _message!.BeginSend(_writer,
-                        IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState!);
+                    _message!.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network, IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState!);
                 }
             }
             catch (Exception e)

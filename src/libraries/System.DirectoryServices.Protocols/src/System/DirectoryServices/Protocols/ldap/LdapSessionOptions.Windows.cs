@@ -51,5 +51,8 @@ namespace System.DirectoryServices.Protocols
                 SetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS, (int)value);
             }
         }
+
+        // In practice, this apparently rarely if ever contains useful text
+        internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_SERVER_ERROR, true);
     }
 }

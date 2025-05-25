@@ -278,3 +278,10 @@ int32_t CryptoNative_SlhDsaGetPalId(const EVP_PKEY* pKey, int32_t* slhDsaTypeId)
     *slhDsaTypeId = PalSlhDsaId_Unknown;
     return 0;
 }
+
+int32_t IsSlhDsaFamily(const EVP_PKEY* pKey)
+{
+    int slhDsaId = 0;
+    return CryptoNative_SlhDsaGetPalId(pKey, &slhDsaId) &&
+           slhDsaId != PalSlhDsaId_Unknown;
+}

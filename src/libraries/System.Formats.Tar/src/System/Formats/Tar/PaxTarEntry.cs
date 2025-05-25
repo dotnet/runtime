@@ -103,9 +103,12 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
-        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
+        /// <exception cref="ArgumentException">
+        /// <para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
-        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para></exception>
+        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para>
+        /// </exception>
+        /// <remarks>When converting a <see cref="GnuTarEntry"/> to <see cref="PaxTarEntry"/> using this constructor, the <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> values will get transfered to the <see cref="ExtendedAttributes" /> dictionary only if their values are not <see langword="default"/> (which is <see cref="DateTimeOffset.MinValue"/>).</remarks>
         public PaxTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Pax)
         {
@@ -122,8 +125,14 @@ namespace System.Formats.Tar
             {
                 if (other is GnuTarEntry gnuOther)
                 {
-                    _header.ExtendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
-                    _header.ExtendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
+                    if (gnuOther.AccessTime != default)
+                    {
+                        _header.ExtendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
+                    }
+                    if (gnuOther.ChangeTime != default)
+                    {
+                        _header.ExtendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
+                    }
                 }
             }
 

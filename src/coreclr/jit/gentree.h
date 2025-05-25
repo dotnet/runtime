@@ -7867,6 +7867,13 @@ public:
         return m_layout;
     }
 
+    void SetLayout(ClassLayout* newLayout)
+    {
+        assert(newLayout != nullptr);
+        assert(newLayout->GetSize() == m_layout->GetSize());
+        m_layout = newLayout;
+    }
+
     // The data to be stored (null for GT_BLK)
     GenTree*& Data()
     {
@@ -7900,9 +7907,7 @@ public:
         BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
 
-#ifndef JIT32_GCENCODER
     bool gtBlkOpGcUnsafe;
-#endif
 
     bool ContainsReferences()
     {
@@ -7940,11 +7945,9 @@ public:
         assert(layout != nullptr);
         assert(layout->GetSize() != 0);
 
-        m_layout    = layout;
-        gtBlkOpKind = BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
+        m_layout        = layout;
+        gtBlkOpKind     = BlkOpKindInvalid;
         gtBlkOpGcUnsafe = false;
-#endif
     }
 
 #if DEBUGGABLE_GENTREE

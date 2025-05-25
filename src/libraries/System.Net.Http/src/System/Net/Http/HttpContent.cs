@@ -481,9 +481,11 @@ namespace System.Net.Http
 
             try
             {
+#pragma warning disable CA2025
                 Task task = SerializeToStreamAsync(tempBuffer, null, cancellationToken);
                 CheckTaskNotNull(task);
                 return LoadIntoBufferAsyncCore(task, tempBuffer);
+#pragma warning restore
             }
             catch (Exception e)
             {

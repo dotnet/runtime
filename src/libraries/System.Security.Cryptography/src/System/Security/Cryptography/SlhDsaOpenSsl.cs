@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed partial class SlhDsaOpenSsl : SlhDsa
     {
         private readonly SafeEvpPKeyHandle _key;

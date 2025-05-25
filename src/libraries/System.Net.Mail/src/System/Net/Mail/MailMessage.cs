@@ -3,10 +3,13 @@
 
 using System;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Mime;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Mail
 {
@@ -429,22 +432,28 @@ namespace System.Net.Mail
             }
         }
 
-        internal void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode)
+        internal void Send(BaseWriter writer, bool sendEnvelope, bool allowUnicode, CancellationToken cancellationToken = default)
         {
-            SetContent(allowUnicode);
-            _message.Send(writer, sendEnvelope, allowUnicode);
+            Task task = SendAsync<SyncReadWriteAdapter>(writer, sendEnvelope, allowUnicode, cancellationToken);
+            Debug.Assert(task.IsCompleted, "SendAsync should be completed synchronously.");
+            task.GetAwaiter().GetResult();
         }
 
-        internal IAsyncResult BeginSend(BaseWriter writer, bool allowUnicode,
-            AsyncCallback? callback, object? state)
+        internal IAsyncResult BeginSend(BaseWriter writer, bool sendEnvelope, bool allowUnicode, AsyncCallback callback, object? state)
         {
-            SetContent(allowUnicode);
-            return _message.BeginSend(writer, allowUnicode, callback, state);
+            return TaskToAsyncResult.Begin(SendAsync<AsyncReadWriteAdapter>(writer, sendEnvelope, allowUnicode), callback, state);
         }
 
-        internal void EndSend(IAsyncResult asyncResult)
+        internal static void EndSend(IAsyncResult asyncResult)
         {
-            _message.EndSend(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
+        }
+
+        internal async Task SendAsync<TIOAdapter>(BaseWriter writer, bool sendEnvelope, bool allowUnicode, CancellationToken cancellationToken = default)
+            where TIOAdapter : IReadWriteAdapter
+        {
+            SetContent(allowUnicode);
+            await _message.SendAsync<TIOAdapter>(writer, sendEnvelope, allowUnicode, cancellationToken).ConfigureAwait(false);
         }
 
         internal string BuildDeliveryStatusNotificationString()

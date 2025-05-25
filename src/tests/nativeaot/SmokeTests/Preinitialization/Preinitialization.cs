@@ -68,6 +68,7 @@ internal class Program
         TestVTableNegativeScenarios.Run();
         TestByRefFieldAddressEquality.Run();
         TestComInterfaceEntry.Run();
+        TestPreinitializedBclTypes.Run();
 #else
         Console.WriteLine("Preinitialization is disabled in multimodule builds for now. Skipping test.");
 #endif
@@ -2104,6 +2105,16 @@ unsafe class TestComInterfaceEntry
         Assert.AreEqual(new Guid(0x1234, 0x4567, 0x789A, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89), VtableEntries.Entries.TinyImpl.IID);
         Assert.AreEqual(ISmallVtableImpl.VftablePtr, VtableEntries.Entries.SmallImpl.Vtable);
         Assert.AreEqual(new Guid(0x4321, 0x7654, 0xA987, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x87, 0x98), VtableEntries.Entries.SmallImpl.IID);
+    }
+}
+
+unsafe class TestPreinitializedBclTypes
+{
+    // Verify that (given that all of the other tests have passed), that a select number of BCL types
+    // that depend on this optimization for high-performance scenarios are preinitialized.
+    public static void Run()
+    {
+        Assert.IsPreinitialized(Type.GetType("System.Runtime.InteropServices.ComWrappers+VtableImplementations, System.Private.CoreLib"));
     }
 }
 

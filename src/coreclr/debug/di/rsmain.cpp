@@ -1702,7 +1702,7 @@ HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
 
         UnlockProcessList();
 
-        PREFIX_ASSUME(pProcess != NULL);
+        _ASSERTE(pProcess != NULL);
 
         pProcess->ExternalAddRef();
         *ppProcess = (ICorDebugProcess *)pProcess;
@@ -2026,11 +2026,6 @@ void Cordb::EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled)
     }
 
     // Made it this far, we succeeded.
-}
-
-HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
-{
-    return CreateObject(CorDebugVersion_1_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, NULL, id, object);
 }
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -2492,7 +2487,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugModuleEnum * pModEnum, CordbAssembly *pA
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
             pPrevious = pElement;
@@ -2596,7 +2591,7 @@ HRESULT CordbEnumFilter::Init (ICorDebugThreadEnum *pThreadEnum, CordbAppDomain 
             }
             else
             {
-                PREFIX_ASSUME(pPrevious != NULL);
+                _ASSERTE(pPrevious != NULL);
                 pPrevious->SetNext (pElement);
             }
 

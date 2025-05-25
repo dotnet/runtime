@@ -2303,7 +2303,7 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         Assert.Equal(x.Name, y.Name);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
 #if XMLSERIALIZERGENERATORTESTS
     // Lack of AssemblyDependencyResolver results in assemblies that are not loaded by path to get
     // loaded in the default ALC, which causes problems for this test.

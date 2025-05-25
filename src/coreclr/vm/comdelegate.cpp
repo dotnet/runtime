@@ -1457,7 +1457,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     DelegateEEClass*    pClass      = (DelegateEEClass*)pMT->GetClass();
     MethodDesc*         pMD         = FindDelegateInvokeMethod(pMT);
 
-    PREFIX_ASSUME(pClass != NULL);
+    _ASSERTE(pClass != NULL);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Get or create the marshaling stub information

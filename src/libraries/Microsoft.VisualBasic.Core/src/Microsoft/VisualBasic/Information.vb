@@ -468,7 +468,7 @@ Namespace Microsoft.VisualBasic
 
                         Result = typ.Name
 
-                        If (typ.IsCOMObject AndAlso (System.String.CompareOrdinal(Result, COMObjectName) = 0)) Then
+                        If (typ.IsCOMObject AndAlso System.String.Equals(Result, COMObjectName, System.StringComparison.Ordinal)) Then
                             Result = LegacyTypeNameOfCOMObject(VarName, True)
                         End If
 

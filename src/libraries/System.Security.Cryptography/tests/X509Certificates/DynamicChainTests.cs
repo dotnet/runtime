@@ -7,6 +7,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -594,6 +597,208 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             });
         }
 
+        [ConditionalFact]
+        public static void NameConstraintViolation_ExcludedTree_Upn()
+        {
+            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
+            {
+                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+            }
+
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.com");
+            byte[] exampleCom = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                ExcludedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleCom,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(X509ChainStatusFlags.HasExcludedNameConstraint, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [Fact]
+        public static void NameConstraintViolation_PermittedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.org");
+            byte[] exampleOrg = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                PermittedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleOrg,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(X509ChainStatusFlags.HasNotPermittedNameConstraint, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [Fact]
+        public static void NameConstraintsAllowed_PermittedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.com");
+            byte[] exampleOrg = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                PermittedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleOrg,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+
+                if (PlatformDetection.IsWindows)
+                {
+                    AssertExtensions.TrueExpression(result);
+                    Assert.Equal(X509ChainStatusFlags.NoError, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [ConditionalFact]
+        public static void NameConstraintAllowed_ExcludedTree_Upn()
+        {
+            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
+            {
+                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+            }
+
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.org");
+            byte[] exampleOrg = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                ExcludedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleOrg,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+
+                if (PlatformDetection.IsWindows)
+                {
+                    AssertExtensions.TrueExpression(result);
+                    Assert.Equal(X509ChainStatusFlags.NoError, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52976", TestPlatforms.Android)]
         public static void MismatchKeyIdentifiers()
@@ -929,6 +1134,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             return flags;
+        }
+
+        private static bool AppleHasExcludedSubTreeHandling
+        {
+            get
+            {
+                // Apple operating systems did not initially handle name constraint excluded subtree handling
+                // correctly, and trustd would effectively ignore them. This was addressed in macOS 15.4 and iOS-like 18.4.
+                return OperatingSystem.IsMacOSVersionAtLeast(15, 4) ||
+                    OperatingSystem.IsIOSVersionAtLeast(18, 4) || // Also handles MacCatalyst
+                    OperatingSystem.IsTvOSVersionAtLeast(18, 4);
+            }
         }
 
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)

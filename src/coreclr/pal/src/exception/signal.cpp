@@ -846,15 +846,9 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
         {
             PROCCreateCrashDumpIfEnabled(code, siginfo, false);
         }
-        // g_pSynchronizationManager shouldn't be null if PAL is initialized.
-        _ASSERTE(g_pSynchronizationManager != nullptr);
+    }
 
-        g_pSynchronizationManager->SendTerminationRequestToWorkerThread();
-    }
-    else
-    {
-        restore_signal_and_resend(SIGTERM, &g_previous_sigterm);
-    }
+    restore_signal_and_resend(SIGTERM, &g_previous_sigterm);
 }
 
 #ifdef INJECT_ACTIVATION_SIGNAL

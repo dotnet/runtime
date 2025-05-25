@@ -746,7 +746,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
                 ParsableFromStringSpec keyType = (ParsableFromStringSpec)_typeIndex.GetEffectiveTypeSpec(type.KeyTypeRef);
-                TypeSpec elementType = _typeIndex.GetTypeSpec(type.ElementTypeRef);
+                TypeSpec elementType = _typeIndex.GetEffectiveTypeSpec(type.ElementTypeRef);
 
                 // Parse key
                 EmitBindingLogic(
@@ -1180,7 +1180,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (strategy is ObjectInstantiationStrategy.ParameterlessConstructor)
                     {
-                        initExpr = $"new {typeFQN}()";
+                        // value tuple types will be declared with syntax like:
+                        //     (int, int) value = default;
+                        // This is to avoid using invalid syntax calling the parameterless constructor
+                        initExpr = type.IsValueTuple ? "default" : $"new {typeFQN}()";
                     }
                     else
                     {
@@ -1195,7 +1198,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case InitializationKind.Declaration:
                         {
                             Debug.Assert(!memberAccessExpr.Contains('.'));
-                            _writer.WriteLine($"var {memberAccessExpr} = {initExpr};");
+                            // value tuple will be declared with syntax like:
+                            //     (int, int) value = default;
+                            // We need to specify the typeFQN as we assign the variable to default value.
+                            string declarationType = type.IsValueTuple ? typeFQN : $"var";
+                            _writer.WriteLine($"{declarationType} {memberAccessExpr} = {initExpr};");
                         }
                         break;
                     case InitializationKind.AssignmentWithNullCheck:

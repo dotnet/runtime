@@ -861,10 +861,6 @@ BOOL SourceLinesHelper(void *GUICookie, LineCodeDescr* pLCD, _Out_writes_(nSize)
     return param.fRet;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, mdToken FuncToken, ParamDescriptor* pszArgname, ULONG ulArgs)
 {
     DWORD      PC;
@@ -1961,9 +1957,6 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
 
     return TRUE;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void SplitSignatureByCommas(__inout __nullterminated char* szString,
                             __inout __nullterminated char* pszTailSig,

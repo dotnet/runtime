@@ -17,6 +17,9 @@ extern "C"
     // Returns the frequency of high resolution timer ticks in Hz
     int64_t minipal_hires_tick_frequency(void);
 
+    // Returns a low-precision monotonically increasing timer in milliseconds
+    int64_t minipal_lowres_ticks(void);
+
     // Delays execution of current thread by `usecs` microseconds.
     // The delay is best-effort and may take longer than desired.
     // Some delays, depending on OS and duration, could be implemented via busy waiting.

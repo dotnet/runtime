@@ -23,7 +23,7 @@ class Thread;
 
 BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord);
 BOOL IsIPinVirtualStub(PCODE f_IP);
-bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
+bool IsIPInMarkedJitHelper(PCODE uControlPc);
 
 BOOL IsProcessCorruptedStateException(DWORD dwExceptionCode, OBJECTREF throwable);
 
@@ -806,6 +806,10 @@ X86_ONLY(EXCEPTION_REGISTRATION_RECORD* GetNextCOMPlusSEHRecord(EXCEPTION_REGIST
 #ifdef FEATURE_EH_FUNCLETS
 VOID DECLSPEC_NORETURN ContinueExceptionInterceptionUnwind();
 #endif // FEATURE_EH_FUNCLETS
+
+#ifdef FEATURE_INTERPRETER
+void ThrowResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP);
+#endif // FEATURE_INTERPRETER
 
 #endif // !DACCESS_COMPILE
 

@@ -690,7 +690,8 @@ public:
 
     // Returns the value number for AllBitsSet of the given "typ".
     // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
-    ValueNum VNAllBitsForType(var_types typ);
+    // elementCount is used for TYP_MASK and indicates how many bits should be set
+    ValueNum VNAllBitsForType(var_types typ, unsigned elementCount);
 
 #ifdef FEATURE_SIMD
     // Returns the value number broadcast of the given "simdType" and "simdBaseType".

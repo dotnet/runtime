@@ -316,7 +316,7 @@ namespace System.Net.Mail
         {
             while (_toIndex < _toCollection.Count)
             {
-                MultiAsyncResult result = (MultiAsyncResult)RecipientCommand.BeginSend(_connection,
+                IAsyncResult result = RecipientCommand.BeginSend(_connection,
                     _toCollection[_toIndex++].GetSmtpAddress(_allowUnicode) + _deliveryNotify,
                     s_sendToCollectionCompleted, this);
                 if (!result.CompletedSynchronously)

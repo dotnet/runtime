@@ -3737,7 +3737,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline void Compiler::optAssertionReset(AssertionIndex limit)
 {
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     while (optAssertionCount > limit)
     {
@@ -3793,7 +3793,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 {
     assert(index > 0);
     assert(index <= optAssertionCount);
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     AssertionDsc* curAssertion = optGetAssertion(index);
 

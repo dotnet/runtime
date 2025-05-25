@@ -41,9 +41,6 @@ class Object;
 #include "finalizerthread.h"
 #include "dynamicinterfacecastable.h"
 
-// static
-SLIST_HEADER RCW::s_RCWStandbyList;
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -1292,19 +1289,6 @@ const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
     GC_PRESSURE_REMOTE,          // GCPressureSize_Remote
 };
 
-// Deletes all items in code:s_RCWStandbyList.
-void RCW::FlushStandbyList()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PSLIST_ENTRY pEntry = InterlockedFlushSList(&RCW::s_RCWStandbyList);
-    while (pEntry)
-    {
-        PSLIST_ENTRY pNextEntry = pEntry->Next;
-        delete (RCW *)pEntry;
-        pEntry = pNextEntry;
-    }
-}
 //--------------------------------------------------------------------------------
 // The IUnknown passed in is AddRef'ed if we succeed in creating the wrapper.
 RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodTable *pClassMT)
@@ -1344,16 +1328,7 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
     CONTRACT_END;
 
     // now allocate the wrapper
-    RCW *pWrap = (RCW *)InterlockedPopEntrySList(&RCW::s_RCWStandbyList);
-    if (pWrap != NULL)
-    {
-        // cache hit - reinitialize the data structure
-        new (pWrap) RCW();
-    }
-    else
-    {
-        pWrap = new RCW();
-    }
+    RCW *pWrap = new RCW();
 
     AppDomain * pAppDomain = GetAppDomain();
     ULONG cbRef = SafeAddRefPreemp(pUnk);
@@ -1764,7 +1739,7 @@ void RCW::Cleanup()
 #endif
 
     // If there's no thread currently working with the RCW, this call will release helper fields on IUnkEntry
-    // and recycle the entire RCW structure, i.e. insert it in the standby list to be reused or free the memory.
+    // and delete the entire RCW structure.
     // If a thread still keeps a ref-count on the RCW, it will release it when it's done. Keeping the structure
     // and the helper fields alive reduces the chances of memory corruption in race scenarios.
     DecrementUseCount();

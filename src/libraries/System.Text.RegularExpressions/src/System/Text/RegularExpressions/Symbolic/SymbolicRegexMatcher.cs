@@ -1125,7 +1125,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// <summary>
             /// Apply a single effect to these registers at the provided input position.
             /// </summary>
-            /// <param name="effect">the effecto to be applied</param>
+            /// <param name="effect">the effect to be applied</param>
             /// <param name="pos">the current input position to record</param>
             public void ApplyEffect(DerivativeEffect effect, int pos)
             {

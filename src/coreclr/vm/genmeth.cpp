@@ -728,11 +728,6 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
 // allowCreate may be set to FALSE to enforce that the method searched
 // should already be in existence - thus preventing creation and GCs during
 // inappropriate times.
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 /* static */
 MethodDesc*
 MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
@@ -778,7 +773,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
     if (!pDefMD->HasClassOrMethodInstantiation() &&
         methodInst.IsEmpty() &&
         !forceBoxedEntryPoint &&
-        !pDefMD->IsUnboxingStub() && 
+        !pDefMD->IsUnboxingStub() &&
         asyncVariantLookup == AsyncVariantLookup::MatchingAsyncVariant)
     {
         // Make sure that pDefMD->GetMethodTable() and pExactMT are related types even
@@ -1233,9 +1228,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         RETURN(pInstMD);
     }
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 // Normalize the methoddesc for reflection
 /*static*/ MethodDesc* MethodDesc::FindOrCreateAssociatedMethodDescForReflection(

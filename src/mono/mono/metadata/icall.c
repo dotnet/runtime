@@ -6244,19 +6244,6 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 	abort ();
 }
 
-gint32
-ves_icall_System_Environment_get_TickCount (void)
-{
-	/* this will overflow after ~24 days */
-	return (gint32) (mono_msec_boottime () & 0xffffffff);
-}
-
-gint64
-ves_icall_System_Environment_get_TickCount64 (void)
-{
-	return mono_msec_boottime ();
-}
-
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {

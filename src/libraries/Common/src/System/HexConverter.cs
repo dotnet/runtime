@@ -8,6 +8,7 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Unicode;
@@ -243,7 +244,7 @@ namespace System
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
 #if SYSTEM_PRIVATE_CORELIB
-            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
+            if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) &&
                 chars.Length >= Vector128<ushort>.Count * 2)
             {
                 return TryDecodeFromUtf16_Vector128(chars, bytes, out charsProcessed);
@@ -255,9 +256,10 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsProcessed)
         {
-            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
             Debug.Assert(chars.Length <= bytes.Length * 2);
             Debug.Assert(chars.Length % 2 == 0);
             Debug.Assert(chars.Length >= Vector128<ushort>.Count * 2);
@@ -313,6 +315,12 @@ namespace System
                     Vector128<short> odd = AdvSimd.Arm64.TransposeOdd(nibbles, Vector128<byte>.Zero).AsInt16();
                     even = AdvSimd.ShiftLeftLogical(even, 4).AsInt16();
                     output = AdvSimd.AddSaturate(even, odd).AsByte();
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    Vector128<byte> shiftedNibbles = PackedSimd.ShiftLeft(nibbles, 4);
+                    Vector128<byte> zipped = PackedSimd.BitwiseSelect(nibbles, shiftedNibbles, Vector128.Create((ushort)0xFF00).AsByte());
+                    output = PackedSimd.AddPairwiseWidening(zipped).AsByte();
                 }
                 else
                 {

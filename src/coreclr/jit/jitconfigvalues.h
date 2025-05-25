@@ -439,6 +439,7 @@ RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",           
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",           1) // Allows Arm64 Sve2+ hardware intrinsics to be disabled
 #elif defined(TARGET_RISCV64)
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
@@ -657,6 +658,7 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // relies on PGO if it exists and generally is more aggressive.
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicy, "JitExtDefaultPolicy", 1)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, "JitExtDefaultPolicyMaxIL", 0x80)
+RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILRoot, "JitExtDefaultPolicyMaxILRoot", 0x100)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, "JitExtDefaultPolicyMaxILProf", 0x400)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, "JitExtDefaultPolicyMaxBB", 7)
 
@@ -684,6 +686,7 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationA
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAllocationTrackFields", 1)
 CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
+CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
@@ -806,6 +809,9 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
+
+// Enable postorder local assertion prop
+RELEASE_CONFIG_INTEGER(JitEnablePostorderLocalAssertionProp, "JitEnablePostorderLocalAssertionProp", 1)
 
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)

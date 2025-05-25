@@ -21,6 +21,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			StaticFieldAccess.Test ();
 			InstanceFieldAccess.Test ();
 			InheritanceTest.Test ();
+			PrivateTypeTest.Test ();
 		}
 
 		// Trimmer doesn't use method overload resolution for UnsafeAccessor and instead marks entire method groups (by name)
@@ -892,6 +893,41 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
+		[Kept]
+		class PrivateTypeTest
+		{
+			class ExternalType
+			{
+				[Kept]
+				[KeptMember (".ctor()")]
+				class PrivateType
+				{
+					[Kept]
+					private void TargetMethod ()
+					{
+					}
+				}
+			}
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+			[return: KeptAttributeAttribute (typeof (UnsafeAccessorTypeAttribute))]
+			[return: UnsafeAccessorType ("Mono.Linker.Test.Cases.Reflection.UnsafeAccessor+PrivateTypeTest+ExternalType+PrivateType")]
+			extern static object TargetConstructor ();
+
+			[Kept]
+			[KeptAttributeAttribute (typeof (UnsafeAccessorAttribute))]
+			[UnsafeAccessor (UnsafeAccessorKind.Method)]
+			extern static void TargetMethod ([KeptAttributeAttribute(typeof(UnsafeAccessorTypeAttribute)), UnsafeAccessorType ("Mono.Linker.Test.Cases.Reflection.UnsafeAccessor+PrivateTypeTest+ExternalType+PrivateType")] object target);
+
+			[Kept]
+			public static void Test ()
+			{
+				TargetMethod (TargetConstructor());
+			}
+		}
+
 		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve base type if it's not used anywhere
 		class SuperBase { }
 
@@ -902,5 +938,21 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept (By = Tool.Trimmer)] // NativeAOT doesn't preserve base type if it's not used anywhere
 		[KeptBaseType (typeof (Base), By = Tool.Trimmer)]
 		class Derived : Base { }
+	}
+}
+
+// Polyfill for UnsafeAccessorTypeAttribute until we use an LKG runtime that has it.
+namespace System.Runtime.CompilerServices
+{
+	[Kept(By = Tool.Trimmer)]
+	[KeptBaseType(typeof(Attribute), By = Tool.Trimmer)]
+	[KeptAttributeAttribute(typeof(AttributeUsageAttribute), By = Tool.Trimmer)]
+	[AttributeUsage (AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = false)]
+	public sealed class UnsafeAccessorTypeAttribute : Attribute
+	{
+		[Kept(By = Tool.Trimmer)]
+		public UnsafeAccessorTypeAttribute (string typeName)
+		{
+		}
 	}
 }

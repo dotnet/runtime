@@ -134,7 +134,7 @@ if [!__PassThroughArgs!]==[] (
     set "__PassThroughArgs=%__PassThroughArgs% %1"
 )
 
-if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)    
+if /i "%1" == "-hostos"              (set __HostOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
@@ -400,9 +400,9 @@ if %__BuildNative% EQU 1 (
     )
 
     set __ExtraCmakeArgs=!__ExtraCmakeArgs! %__CMakeArgs%
-    
-    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
-    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
+
+    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
+    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__HostArch% !__HostOS! !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
         goto ExitWithError
@@ -490,7 +490,7 @@ set /A __TotalSpecifiedTargetArch=__TargetArchX64 + __TargetArchX86 + __TargetAr
 if %__TotalSpecifiedTargetArch% EQU 0 (
     REM Nothing specified means we want to build all architectures.
     set __TargetArchList=x64 x86 arm arm64
-    
+
     if %__BuildAllJitsCommunity%==1 (
         set __TargetArchList=%__TargetArchList% loongarch64 riscv64
     )

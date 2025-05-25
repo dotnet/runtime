@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -299,6 +300,7 @@ namespace System.Security.Cryptography.X509Certificates
             RSA? rsa = publicKey.GetRSAPublicKey();
             ECDsa? ecdsa = publicKey.GetECDsaPublicKey();
             MLDsa? mldsa = publicKey.GetMLDsaPublicKey();
+            SlhDsa? slhDsa = publicKey.GetSlhDsaPublicKey();
 
             try
             {
@@ -348,6 +350,9 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.MLDsa87:
                         hashAlg = default;
                         break;
+                    case string oid when Helpers.IsSlhDsaOid(oid):
+                        hashAlg = default;
+                        break;
                     default:
                         throw new NotSupportedException(
                             SR.Format(SR.Cryptography_UnknownKeyAlgorithm, algorithmIdentifier.Algorithm));
@@ -390,6 +395,15 @@ namespace System.Security.Cryptography.X509Certificates
                         }
 
                         return mldsa.VerifyData(toBeSigned, signature);
+
+                    case string oid when Helpers.IsSlhDsaOid(oid):
+                        if (slhDsa is null)
+                        {
+                            return false;
+                        }
+
+                        return slhDsa.VerifyData(toBeSigned, signature);
+
                     default:
                         Debug.Fail(
                             $"Algorithm ID {algorithmIdentifier.Algorithm} was in the first switch, but not the second");
@@ -409,6 +423,7 @@ namespace System.Security.Cryptography.X509Certificates
                 rsa?.Dispose();
                 ecdsa?.Dispose();
                 mldsa?.Dispose();
+                slhDsa?.Dispose();
             }
         }
     }

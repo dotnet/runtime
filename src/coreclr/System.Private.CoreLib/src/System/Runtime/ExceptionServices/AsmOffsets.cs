@@ -58,14 +58,19 @@ class AsmOffsets
 
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
+#if FEATURE_INTERPRETER
+    public const int SIZEOF__StackFrameIterator = 0x170;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x168;
+#else
     public const int SIZEOF__StackFrameIterator = 0x150;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x132;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x148;
+#endif
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x132;
 #elif TARGET_X86
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x4;
-    public const int SIZEOF__StackFrameIterator = 0x3cc;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x3ba;
-    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x3c8;
+    public const int SIZEOF__StackFrameIterator = 0x3d4;
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x3c2;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x3d0;
 #else // TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x4;
     public const int SIZEOF__StackFrameIterator = 0xcc;
@@ -119,14 +124,19 @@ class AsmOffsets
 
 #if TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x8;
+#if FEATURE_INTERPRETER
+    public const int SIZEOF__StackFrameIterator = 0x168;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x160;
+#else
     public const int SIZEOF__StackFrameIterator = 0x148;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x12a;
     public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x140;
+#endif
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x12a;
 #elif TARGET_X86
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x4;
-    public const int SIZEOF__StackFrameIterator = 0x3c4;
-    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x3b2;
-    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x3c0;
+    public const int SIZEOF__StackFrameIterator = 0x3cc;
+    public const int OFFSETOF__StackFrameIterator__m_isRuntimeWrappedExceptions = 0x3ba;
+    public const int OFFSETOF__StackFrameIterator__m_AdjustedControlPC = 0x3c8;
 #else // TARGET_64BIT
     public const int OFFSETOF__REGDISPLAY__m_pCurrentContext = 0x4;
     public const int SIZEOF__StackFrameIterator = 0xc4;

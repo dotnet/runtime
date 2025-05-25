@@ -19,6 +19,7 @@
 #include "hostinformation.h"
 #include <minipal/guid.h>
 #include <minipal/strings.h>
+#include <minipal/time.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -990,11 +991,7 @@ ep_rt_perf_counter_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 static
@@ -1004,11 +1001,7 @@ ep_rt_perf_frequency_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
 static

@@ -7,8 +7,10 @@
   <ItemGroup>
     <Compile Include="UnsafeAccessorsTests.cs" />
     <Compile Include="UnsafeAccessorsTests.Generics.cs" />
+    <Compile Include="UnsafeAccessorsTests.Types.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="PrivateLib.csproj" />
   </ItemGroup>
 </Project>

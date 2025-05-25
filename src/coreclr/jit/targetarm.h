@@ -138,7 +138,8 @@
   //     On exit:
   //       r0: trashed
   //       r3: trashed
-  // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
+  //      r12: trashed
+// CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
   //     On entry:
   //       r0: the destination address (object reference written here)
   //       r1: the source address (points to object reference to write)
@@ -147,6 +148,7 @@
   //       r1: incremented by 4
   //       r2: trashed
   //       r3: trashed
+  //      r12: trashed
 
   #define REG_WRITE_BARRIER_DST          REG_ARG_0
   #define RBM_WRITE_BARRIER_DST          RBM_ARG_0

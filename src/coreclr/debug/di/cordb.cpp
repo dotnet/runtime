@@ -321,19 +321,6 @@ STDAPI DLLEXPORT DllGetClassObjectInternal(               // Return code.
     {
         pfnCreateObject = Cordb::CreateObjectTelesto;
     }
-#else  // !FEATURE_DBGIPC_TRANSPORT_DI
-    if(rclsid == CLSID_CorDebug_V1)
-    {
-        if (0) // if (IsSingleCLR())
-        {
-            // Don't allow creating backwards objects until we ensure that the v2.0 Right-side
-            // is backwards compat. This may involve using CordbProcess::SupportsVersion to conditionally
-            // emulate old behavior.
-            // If emulating V1.0, QIs for V2.0 interfaces should fail.
-            _ASSERTE(!"Ensure that V2.0 RS is backwards compat");
-            pfnCreateObject = Cordb::CreateObjectV1;
-        }
-    }
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
     if (pfnCreateObject == NULL)

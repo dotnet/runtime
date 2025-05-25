@@ -45,11 +45,7 @@ extern TADDR g_ClrModuleBase;
 CRITICAL_SECTION g_dacCritSec;
 ClrDataAccess* g_dacImpl;
 
-EXTERN_C
-#ifdef TARGET_UNIX
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
+EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
 {
     static bool g_procInitialized = false;
 

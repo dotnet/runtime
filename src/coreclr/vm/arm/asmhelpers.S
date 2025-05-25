@@ -609,7 +609,7 @@ LOCAL_LABEL(stackProbe_loop):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     .macro UPDATE_WRITE_WATCH_TABLE name, ptrReg, mp, tmpReg
 
-        LOAD_GC_GLOBAL \name, __wbScratch, g_sw_ww_table
+        LOAD_GC_GLOBAL \name, __wbScratch, g_write_watch_table
         cbz __wbScratch, 2f
         add __wbScratch, __wbScratch, \ptrReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
 
@@ -719,7 +719,7 @@ LOCAL_LABEL(stackProbe_loop):
         .word __\name\()__g_ephemeral_high_offset
         .word __\name\()__g_card_table_offset
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        .word __\name\()__g_sw_ww_table_offset
+        .word __\name\()__g_write_watch_table_offset
 #endif
     .endm
 

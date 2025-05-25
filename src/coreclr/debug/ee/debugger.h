@@ -3063,7 +3063,7 @@ public:
     BOOL IsOutOfProcessSetContextEnabled();
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
     void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext);
-#endif // FEATURE_SPECIAL_USER_MODE_APC        
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 
@@ -3159,7 +3159,7 @@ public:
         DebuggerHeap* pHeap = g_pDebugger->GetInteropSafeHeap_NoThrow();
         _ASSERTE(pHeap != NULL); // should already exist
 
-        PREFIX_ASSUME( iCurSize >= 0 );
+        _ASSERTE( iCurSize >= 0 );
         S_UINT32 iNewSize = S_UINT32( iCurSize ) + S_UINT32( GrowSize(iCurSize) );
         if( iNewSize.IsOverflow() )
         {

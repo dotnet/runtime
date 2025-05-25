@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveAssemblyBuilderTests
     {
         private readonly AssemblyName _assemblyName = new AssemblyName("MyAssembly");
@@ -305,7 +305,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/113789", TestRuntimes.Mono)]
-        [InlineData(true)] 
+        [InlineData(true)]
         [InlineData(false)]
         public unsafe void AssemblyWithInstanceBasedFunctionPointer(bool useExplicitThis)
         {
@@ -350,7 +350,7 @@ namespace System.Reflection.Emit.Tests
 
                     // In this test, we use typeof(object) for the "this" pointer to ensure the IL could be re-used for other
                     // reference types, but normally this would be the appropriate type such as typeof(MyClassWithGuidProperty).
-                    parameterTypes: [typeof(object), typeof(IntPtr)]); 
+                    parameterTypes: [typeof(object), typeof(IntPtr)]);
 
                 ILGenerator il = methodBuilder.GetILGenerator();
                 il.Emit(OpCodes.Ldarg_0); // this
@@ -489,7 +489,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(42, field.GetRawConstantValue());
             field = type4.GetField("FieldOffset");
             Assert.NotNull(field);
-            
+
             field = type4.GetField("FieldModopt");
             var cmods = field.GetRequiredCustomModifiers();
             Assert.Equal(1, cmods.Length);

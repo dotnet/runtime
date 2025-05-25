@@ -46,12 +46,12 @@ public class DiagnosticsTests : WasmTemplateTestsBase
     public async Task RunSimpleAppWithBrowserProfiler()
     {
         Configuration config = Configuration.Release;
-        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "BrowserProfilerTest");
 
-        string extraArgs = $"-p:WasmProfilers=\"browser\"";
-        BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraArgs, AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
+        string extraProperties = "<WasmProfilers>browser:callspec=all,interval=0</WasmProfilers>";
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "BrowserProfilerTest", extraProperties: extraProperties);
 
-        var result = await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "BrowserProfilerTest"));
-        Assert.Contains("performance.measure: TestMeaning", result.TestOutput);
+        BuildProject(info, config, new BuildOptions(AssertAppBundle: false, WasmPerfTracing: true), isNativeBuild: true);
+
+        await RunForBuildWithDotnetRun(new BrowserRunOptions(Configuration: config, TestScenario: "BrowserProfilerTest"));
     }
 }

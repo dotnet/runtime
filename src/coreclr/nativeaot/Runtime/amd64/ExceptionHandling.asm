@@ -401,27 +401,6 @@ NESTED_ENTRY RhpCallCatchFunclet, _TEXT
         mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
         mov     r15, [rax]
 
-if 0 ;; _DEBUG  ;; @TODO: temporarily removed because trashing RBP breaks the debugger
-        ;; trash the values at the old homes to make sure nobody uses them
-        mov     r9, 0baaddeedh
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], r9
-        mov     rax, [r8 + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], r9
-endif
-
         movdqa  xmm6, [r8 + OFFSETOF__REGDISPLAY__Xmm + 0*10h]
         movdqa  xmm7, [r8 + OFFSETOF__REGDISPLAY__Xmm + 1*10h]
         movdqa  xmm8, [r8 + OFFSETOF__REGDISPLAY__Xmm + 2*10h]
@@ -617,61 +596,9 @@ NESTED_ENTRY RhpCallFinallyFunclet, _TEXT
         movdqa  xmm14,[rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h]
         movdqa  xmm15,[rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h]
 
-if 0 ;; _DEBUG ;; @TODO: temporarily removed because trashing RBP breaks the debugger
-        ;; trash the values at the old homes to make sure nobody uses them
-        mov     r9, 0baaddeedh
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax], r9
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax], r9
-endif
-
         call    qword ptr [rsp + rsp_offsetof_arguments + 0h]       ;; handler funclet address
 
 ALTERNATE_ENTRY RhpCallFinallyFunclet2
-
-        mov     rdx, [rsp + rsp_offsetof_arguments + 8h]            ;; rdx <- regdisplay
-
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbx]
-        mov     [rax]                            , rbx
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRbp]
-        mov     [rax]                            , rbp
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRsi]
-        mov     [rax]                            , rsi
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pRdi]
-        mov     [rax]                            , rdi
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR12]
-        mov     [rax]                            , r12
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR13]
-        mov     [rax]                            , r13
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR14]
-        mov     [rax]                            , r14
-        mov     rax, [rdx + OFFSETOF__REGDISPLAY__pR15]
-        mov     [rax]                            , r15
-
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 0*10h], xmm6
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 1*10h], xmm7
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 2*10h], xmm8
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 3*10h], xmm9
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 4*10h], xmm10
-
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 5*10h], xmm11
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 6*10h], xmm12
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 7*10h], xmm13
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 8*10h], xmm14
-        movdqa  [rdx + OFFSETOF__REGDISPLAY__Xmm + 9*10h], xmm15
 
         mov     rax, [rsp + rsp_offsetof_thread]                                    ;; rax <- Thread*
         lock or             dword ptr [rax + OFFSETOF__Thread__m_ThreadStateFlags], TSF_DoNotTriggerGc

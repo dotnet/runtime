@@ -177,8 +177,8 @@
   <data name="ThrowArgument_InPlaceInvalidShape" xml:space="preserve">
     <value>In place operations require the same shape for both tensors</value>
   </data>
-  <data name="ThrowArgument_InvalidAxis" xml:space="preserve">
-    <value>Invalid axis provided. Must be greater then or equal to 0 and less than the tensor rank.</value>
+  <data name="ThrowArgument_InvalidDimension" xml:space="preserve">
+    <value>Invalid dimension provided. Must be greater then or equal to 0 and less than the tensor rank.</value>
   </data>
   <data name="ThrowArgument_InvalidConcatenateShape" xml:space="preserve">
     <value>The tensors must have the same shape, except in the dimension corresponding to axis.</value>

@@ -320,8 +320,7 @@ namespace System.ComponentModel.Composition
                 Assert.Equal(0, cat.LoadedFiles.Count);
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
                 // Add one text file

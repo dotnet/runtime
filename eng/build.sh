@@ -48,6 +48,8 @@ usage()
   echo "  --usemonoruntime                Product a .NET runtime with Mono as the underlying runtime."
   echo "  --verbosity (-v)                MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic]."
   echo "                                  [Default: Minimal]"
+  echo "  --use-bootstrap                 Use the results of building the bootstrap subset to build published tools on the target machine."
+  echo "  --bootstrap                     Build the bootstrap subset and then build the repo with --use-bootstrap."
   echo ""
 
   echo "Actions (defaults to --restore --build):"
@@ -156,6 +158,7 @@ cmakeargs=''
 extraargs=''
 crossBuild=0
 portableBuild=1
+bootstrap=0
 
 source $scriptroot/common/native/init-os-and-arch.sh
 
@@ -508,6 +511,16 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+      -use-bootstrap)
+      arguments="$arguments /p:UseBootstrap=true"
+      shift 1
+      ;;
+
+      -bootstrap)
+      bootstrap=1
+      shift 1
+      ;;
+
       -fsanitize)
       if [ -z ${2+x} ]; then
         echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
@@ -570,4 +583,21 @@ export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 cmakeargs="${cmakeargs// /%20}"
 arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
+
+if [[ "$bootstrap" == "1" ]]; then
+  # Strip build actions other than -restore and -build from the arguments for the bootstrap build.
+  bootstrapArguments="$arguments"
+  for flag in --sign --publish --pack --test -sign -publish -pack -test; do
+    bootstrapArguments="${bootstrapArguments//$flag/}"
+  done
+  "$scriptroot/common/build.sh" $bootstrapArguments /p:Subset=bootstrap -bl:$scriptroot/../artifacts/log/bootstrap.binlog
+
+  # Remove artifacts from the bootstrap build so the product build is a "clean" build.
+  echo "Cleaning up artifacts from bootstrap build..."
+  rm -r "$scriptroot/../artifacts/bin"
+  # Remove all directories in obj except for the source-built-upstream-cache directory to avoid breaking SourceBuild.
+  find "$scriptroot/../artifacts/obj" -mindepth 1 -maxdepth 1 ! -name 'source-built-upstream-cache' -exec rm -rf {} +
+  arguments="$arguments /p:UseBootstrap=true"
+fi
+
 "$scriptroot/common/build.sh" $arguments

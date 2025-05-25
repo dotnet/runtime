@@ -6,6 +6,9 @@
 
 #include "rhassert.h"
 #include <minipal/utils.h>
+#ifdef PROFILE_STARTUP
+#include <minipal/time.h>
+#endif
 
 #define EXTERN_C extern "C"
 
@@ -323,7 +326,7 @@ enum STARTUP_TIMELINE_EVENT_ID
 
 #ifdef PROFILE_STARTUP
 extern uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS];
-#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = PalQueryPerformanceCounter();
+#define STARTUP_TIMELINE_EVENT(eventid) g_startupTimelineEvents[eventid] = (uint64_t)minipal_hires_ticks();
 #else // PROFILE_STARTUP
 #define STARTUP_TIMELINE_EVENT(eventid)
 #endif // PROFILE_STARTUP

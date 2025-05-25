@@ -3237,7 +3237,7 @@ void DebuggerController::ApplyTraceFlag(Thread *thread)
         context = GetManagedStoppedCtx(thread);
     }
     CONSISTENCY_CHECK_MSGF(context != NULL, ("Can't apply ss flag to thread 0x%p b/c it's not in a safe place.\n", thread));
-    PREFIX_ASSUME(context != NULL);
+    _ASSERTE(context != NULL);
 
 
     g_pEEInterface->MarkThreadForDebugStepping(thread, true);
