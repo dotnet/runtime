@@ -11265,8 +11265,10 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
                 const int regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
                 const int offset  = blkSize - lenRemaining;
 
-                emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(regSize), zeroSIMDReg, frameReg,
-                                   alignedLclLo + offset);
+                // It is known to be 16-bytes aligned
+                instruction ins = regSize == XMM_REGSIZE_BYTES ? simdAlignedMovIns() : simdUnalignedMovIns();
+
+                emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + offset);
 
                 assert(lenRemaining >= regSize);
                 lenRemaining -= regSize;
