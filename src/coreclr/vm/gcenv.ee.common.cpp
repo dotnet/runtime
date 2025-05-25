@@ -5,7 +5,8 @@
 #include "gcenv.h"
 #include <exinfo.h>
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(FEATURE_EH_FUNCLETS)
+#if defined(USE_GC_INFO_DECODER)
 
 struct FindFirstInterruptiblePointState
 {
@@ -70,8 +71,22 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 
     return state.returnOffs;
 }
+#else // USE_GC_INFO_DECODER
 
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+// Find the first interruptible point in the range [offs .. endOffs) (the beginning of the range is inclusive,
+// the end is exclusive). Return -1 if no such point exists.
+unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned endOffs)
+{
+    EECodeInfo *codeInfo = pCF->GetCodeInfo();
+    hdrInfo info = { 0 };
+    PTR_CBYTE table = codeInfo->DecodeGCHdrInfo(&info, offs);
+    // NOTE: We make an assumption that we are not searching for the main function so we can ignore the
+    // prolog/epilog info.
+    return ::FindFirstInterruptiblePoint(&info, table, offs, endOffs);
+}
+
+#endif
+#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
@@ -317,16 +332,21 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     #endif // _DEBUG
 
             DWORD relOffsetOverride = NO_OVERRIDE_OFFSET;
-#if defined(FEATURE_EH_FUNCLETS) && defined(USE_GC_INFO_DECODER)
+#if defined(FEATURE_EH_FUNCLETS)
             if (pCF->ShouldParentToFuncletUseUnwindTargetLocationForGCReporting())
             {
+                bool wantsReportOnlyLeaf = true;
+
+#if defined(USE_GC_INFO_DECODER)
                 GCInfoToken gcInfoToken = pCF->GetGCInfoToken();
                 GcInfoDecoder _gcInfoDecoder(
                                     gcInfoToken,
                                     DECODE_CODE_LENGTH
                                     );
+                wantsReportOnlyLeaf = _gcInfoDecoder.WantsReportOnlyLeaf();
+#endif // USE_GC_INFO_DECODER
 
-                if(_gcInfoDecoder.WantsReportOnlyLeaf())
+                if (wantsReportOnlyLeaf)
                 {
                     // We're in a special case of unwinding from a funclet, and resuming execution in
                     // another catch funclet associated with same parent function. We need to report roots.
@@ -347,7 +367,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                 }
 
             }
-#endif // FEATURE_EH_FUNCLETS && USE_GC_INFO_DECODER
+#endif // FEATURE_EH_FUNCLETS
 
             pCM->EnumGcRefs(pCF->GetRegisterSet(),
                             pCF->GetCodeInfo(),
