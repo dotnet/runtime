@@ -150,7 +150,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (InCall)
+                if (_inCall)
                 {
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
@@ -175,7 +175,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (InCall)
+                if (_inCall)
                 {
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
@@ -198,7 +198,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (InCall)
+                if (_inCall)
                 {
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
@@ -216,7 +216,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (InCall)
+                if (_inCall)
                 {
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
@@ -239,7 +239,7 @@ namespace System.Net.Mail
             }
             set
             {
-                if (InCall)
+                if (_inCall)
                 {
                     throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
                 }
@@ -426,7 +426,7 @@ namespace System.Net.Mail
                 Timer? timer = null;
                 try
                 {
-                    if (InCall)
+                    if (Interlocked.Exchange(ref _inCall, true))
                     {
                         throw new InvalidOperationException(SR.net_inasync);
                     }
@@ -469,8 +469,6 @@ namespace System.Net.Mail
                     {
                         throw new InvalidOperationException(SR.SmtpRecipientRequired);
                     }
-                    // TODO: Interlocked.CompareExchange for InCall
-                    InCall = true;
 
                     // argument validation is done, wrap all exceptions below this point
                     forceWrapExceptions = true;
@@ -552,7 +550,7 @@ namespace System.Net.Mail
                 }
                 finally
                 {
-                    InCall = false;
+                    _inCall = false;
                     timer?.Dispose();
                 }
             }
@@ -607,7 +605,7 @@ namespace System.Net.Mail
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (!InCall)
+            if (!_inCall)
             {
                 return;
             }
@@ -659,18 +657,6 @@ namespace System.Net.Mail
         //*********************************
         // private methods
         //********************************
-        internal bool InCall
-        {
-            get
-            {
-                return _inCall;
-            }
-            set
-            {
-                _inCall = value;
-            }
-        }
-
         private void CheckHostAndPort()
         {
             if (string.IsNullOrEmpty(_host))
@@ -739,9 +725,9 @@ namespace System.Net.Mail
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (InCall)
+                if (_inCall)
                 {
-                    _pendingSendCts?.Cancel();
+                    _pendingSendCts.Cancel();
                     Abort();
                 }
                 else
