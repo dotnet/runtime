@@ -1481,45 +1481,56 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse()
         {
-            _ = Task.Delay(TimeSpan.FromMinutes(2.5)).ContinueWith((_) =>
+            Timer timer = null;
+            try
             {
-                Environment.FailFast("Test took too long to complete, likely due to a deadlock or infinite loop.");
-            });
-            Activity parent0 = new Activity("parent0");
-            Activity parent1 = new Activity("parent1") { TraceStateString = "wow=1" };
-            Activity parent2 = new Activity("parent2") { TraceStateString = "wow=2" };
+                using (ExecutionContext.SuppressFlow())
+                {
+                    timer = new Timer((_) =>
+                    {
+                        Environment.FailFast("Test took too long to complete, likely due to a deadlock or infinite loop.");
+                    }, null, TimeSpan.FromMinutes(5), Timeout.InfiniteTimeSpan);
+                }
+                Activity parent0 = new Activity("parent0");
+                Activity parent1 = new Activity("parent1") { TraceStateString = "wow=1" };
+                Activity parent2 = new Activity("parent2") { TraceStateString = "wow=2" };
 
-            const string FirstTraceParent = "00-F";
-            const string FirstTraceState = "first";
+                const string FirstTraceParent = "00-F";
+                const string FirstTraceState = "first";
 
-            await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+                await GetFactoryForVersion(UseVersion).CreateServerAsync(async (server, uri) =>
+                {
+                    SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), parent0, parent1, parent2);
+                    using HttpClient client = new HttpClient(handler);
+                    HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+                    request.Headers.Add("traceparent", FirstTraceParent);
+                    request.Headers.Add("tracestate", FirstTraceState);
+
+                    Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
+
+                    HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                    // On the first send DiagnosticsHandler should keep user-supplied headers.
+                    string traceparent = GetHeaderValue(requestData, "traceparent");
+                    string tracestate = GetHeaderValue(requestData, "tracestate");
+                    Assert.Equal(FirstTraceParent, traceparent);
+                    Assert.Equal(FirstTraceState, tracestate);
+
+                    requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
+
+                    // Headers should be overridden on each subsequent send.
+                    AssertHeadersAreInjected(requestData, parent1);
+                    requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
+                    AssertHeadersAreInjected(requestData, parent2);
+
+                    await clientTask;
+                });
+            }
+            finally
             {
-                SendMultipleTimesHandler handler = new SendMultipleTimesHandler(CreateSocketsHttpHandler(allowAllCertificates: true), parent0, parent1, parent2);
-                using HttpClient client = new HttpClient(handler);
-                HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
-
-                request.Headers.Add("traceparent", FirstTraceParent);
-                request.Headers.Add("tracestate", FirstTraceState);
-
-                Task clientTask = TestAsync ? client.SendAsync(request) : Task.Run(() => client.Send(request));
-
-                HttpRequestData requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
-
-                // On the first send DiagnosticsHandler should keep user-supplied headers.
-                string traceparent = GetHeaderValue(requestData, "traceparent");
-                string tracestate = GetHeaderValue(requestData, "tracestate");
-                Assert.Equal(FirstTraceParent, traceparent);
-                Assert.Equal(FirstTraceState, tracestate);
-
-                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.InternalServerError);
-
-                // Headers should be overridden on each subsequent send.
-                AssertHeadersAreInjected(requestData, parent1);
-                requestData = await server.AcceptConnectionSendResponseAndCloseAsync(statusCode: HttpStatusCode.OK);
-                AssertHeadersAreInjected(requestData, parent2);
-
-                await clientTask;
-            });
+                timer?.Dispose();
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
