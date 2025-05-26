@@ -34,13 +34,8 @@ jobs:
           sudo dpkg -i libmsquic* && \
           rm libmsquic*
 
-      - name: Restore Solution
-        env:
-          RESTORE_ARGS: --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true
-        # 'DefaultSubsets' don't include 'libs.tests', so restoring it explicitly
-        run: |
-          ./build.sh $RESTORE_ARGS && \
-          ./build.sh libs.tests $RESTORE_ARGS
+      - name: Restore solution
+        run: ./build.sh --restore --excludecibinarylog --warnaserror false /p:BuildAllConfigurations=true /p:DotNetBuildAllRuntimePacks=true /p:DotNetBuildTests=true
 
       - name: Put dotnet on the path
         run: echo "PATH=$PWD/.dotnet:$PATH" >> $GITHUB_ENV
@@ -50,6 +45,3 @@ jobs:
 
       - name: Build clr+libs
         run: ./build.sh clr+libs -rc release
-
-      - name: Verify testhost exists
-        run: find ./artifacts/bin/testhost/ -type f -name dotnet

@@ -214,18 +214,18 @@ From the repository root:
 
 - **Shared Framework Missing**
 
-    - If the build fails with an error "The shared framework must be built before the local targeting pack can be consumed.", build the runtime (clr or mono) first.
-      E.g., from the repo root, run `./build.sh clr -rc release`.
+    - If the build fails with an error "The shared framework must be built before the local targeting pack can be consumed.", build both the runtime (clr or mono) and the libs.
+      E.g., from the repo root, run `./build.sh clr+libs -rc release` if working on Libraries on CoreCLR. Refer to the section `1.2. Baseline Setup`.
 
 - **Testhost Is Missing**
 
     - If a test run fails with errors indicating a missing testhost, such as:
         - "Failed to launch testhost with error: System.IO.FileNotFoundException", or
         - "artifacts/bin/testhost/... No such file or directory",
-      this means the required runtime was not built.
+      that means some of the prerequisites were not built.
 
-    - To resolve, build the appropriate runtime before running tests.
-      For example, run `./build.sh clr -rc release` if testing libraries.
+    - To resolve, build both the appropriate runtime (clr or mono) and the libs as a single command before running tests.
+      E.g., from the repo root, run `./build.sh clr+libs -rc release` before testing Libraries on CoreCLR. Refer to the section `1.2. Baseline Setup`.
 
 - **Build Timeout**
 
