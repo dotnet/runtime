@@ -41,6 +41,7 @@ C_FUNC(\Name):
         .global C_FUNC(_\Name)
         .type \Name, %function
 #endif
+        .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
 .endm
