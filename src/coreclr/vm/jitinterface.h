@@ -150,7 +150,7 @@ EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PT
 EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 
-#if defined(FEATURE_64BIT_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
+#if defined(FEATURE_64BIT_ALIGNMENT)
 EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
@@ -161,10 +161,6 @@ EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
-#if defined(FEATURE_64BIT_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8_UP, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL1(Object*, RhpNewFastMisalign_UP, CORINFO_CLASS_HANDLE typeHnd_);
-#endif
 #endif
 
 EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);

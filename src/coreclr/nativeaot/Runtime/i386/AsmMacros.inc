@@ -145,8 +145,6 @@ TrapThreadsFlags_None            equ 0
 TrapThreadsFlags_AbortInProgress equ 1
 TrapThreadsFlags_TrapThreads     equ 2
 
-ASM_MIN_OBJECT_SIZE              equ MIN_OBJECT_SIZE
-
 ;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
 STATUS_REDHAWK_THREAD_ABORT      equ 43h
 

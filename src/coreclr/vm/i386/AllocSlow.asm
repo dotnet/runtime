@@ -27,10 +27,8 @@ EXTERN g_global_alloc_context : DWORD
 ; Allocate non-array object, slow path.
 ;
 FASTCALL_FUNC RhpNew, 4
-
         xor         edx, edx
         jmp         @RhpNewObject@8
-
 FASTCALL_ENDFUNC
 
 ;
@@ -39,7 +37,6 @@ FASTCALL_ENDFUNC
 ; Allocate non-array object, may be on frozen heap.
 ;
 FASTCALL_FUNC RhpNewMaybeFrozen, 4
-
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
@@ -48,7 +45,6 @@ FASTCALL_FUNC RhpNewMaybeFrozen, 4
 
         POP_COOP_PINVOKE_FRAME
         ret
-
 FASTCALL_ENDFUNC
 
 ;
@@ -57,7 +53,6 @@ FASTCALL_ENDFUNC
 ; Allocate array object, may be on frozen heap.
 ;
 FASTCALL_FUNC RhpNewArrayMaybeFrozen, 8
-
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
@@ -65,14 +60,12 @@ FASTCALL_FUNC RhpNewArrayMaybeFrozen, 8
 
         POP_COOP_PINVOKE_FRAME
         ret
-
 FASTCALL_ENDFUNC
 
 ;
 ; void RhExceptionHandling_FailedAllocation(MethodTable *pMT, bool isOverflow)
 ;
 RhExceptionHandling_FailedAllocation PROC PUBLIC
-
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
@@ -80,58 +73,17 @@ RhExceptionHandling_FailedAllocation PROC PUBLIC
 
         POP_COOP_PINVOKE_FRAME
         ret
-
 RhExceptionHandling_FailedAllocation ENDP
 
 ;
-; Shared code for RhpNewFast_UP, RhpNewFastAlign8_UP and RhpNewFastMisalign_UP
-;  ECX == MethodTable
+; void RhpNewFast_UP(MethodTable *pMT)
 ;
-NEW_FAST_UP MACRO Variation
-
-        LOCAL AlreadyAligned
-        LOCAL AllocFailed
-        LOCAL AllocFailed_Unlock
-
+; Allocate non-array object, uniprocessor version
+;
+FASTCALL_FUNC   RhpNewFast_UP, 4
         inc         [g_global_alloc_lock]
         jnz         AllocFailed
 
-        ;; When doing aligned or misaligned allocation we first check
-        ;; the alignment and skip to the regular path if it's already
-        ;; matching the expectation.
-        ;; Otherwise, we try to allocate size + ASM_MIN_OBJECT_SIZE and
-        ;; then prepend a dummy free object at the beginning of the
-        ;; allocation.
-IFDIF <&Variation>, <>
-        mov         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
-        test        eax, 7
-IFIDN <&Variation>, <Align8>
-        jz          AlreadyAligned
-ELSE ; Variation == <Misalign>
-        jnz         AlreadyAligned
-ENDIF
-
-        mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, ASM_MIN_OBJECT_SIZE
-        add         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
-        cmp         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          AllocFailed_Unlock
-        mov         [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
-
-        ; calc the new object pointer and initialize it
-        sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        mov         [eax + OFFSETOF__Object__m_pEEType], ecx
-
-        ; initialize the padding object preceeding the new object
-        mov         edx, [G_FREE_OBJECT_METHOD_TABLE]
-        mov         [eax + OFFSETOF__Object__m_pEEType - ASM_MIN_OBJECT_SIZE], edx
-        mov         dword ptr [eax + OFFSETOF__Array__m_Length - ASM_MIN_OBJECT_SIZE], 0
-
-        mov         [g_global_alloc_lock], -1
-        ret
-ENDIF ; Variation != ""
-
-AlreadyAligned:
         mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
         add         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         cmp         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
@@ -149,44 +101,8 @@ AllocFailed_Unlock:
         mov         [g_global_alloc_lock], -1
 
 AllocFailed:
-IFIDN <&Variation>, <Align8>
-        mov         edx, GC_ALLOC_ALIGN8
-ELSEIFIDN <&Variation>, <Misalign>
-        mov         edx, GC_ALLOC_ALIGN8 + GC_ALLOC_ALIGN8_BIAS
-ELSE
         xor         edx, edx
-ENDIF
         jmp         @RhpNewObject@8
-
-ENDM
-
-;
-; void RhpNewFast_UP(MethodTable *pMT)
-;
-; Allocate non-array object, uniprocessor version
-;
-FASTCALL_FUNC   RhpNewFast_UP, 4
-        NEW_FAST_UP
-FASTCALL_ENDFUNC
-
-;
-; void RhpNewFastAlign8_UP(MethodTable *pMT)
-;
-; Allocate simple object (not finalizable, array or value type) on an 8 byte boundary,
-; uniprocessor version
-;
-FASTCALL_FUNC   RhpNewFastAlign8_UP, 4
-        NEW_FAST_UP <Align8>
-FASTCALL_ENDFUNC
-
-;
-; void RhpNewFastMisalign_UP(MethodTable *pMT)
-;
-; Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
-; itself is 8 byte aligned), uniprocessor version
-;
-FASTCALL_FUNC   RhpNewFastMisalign_UP, 4
-        NEW_FAST_UP <Misalign>
 FASTCALL_ENDFUNC
 
 ;
@@ -204,7 +120,6 @@ NEW_ARRAY_FAST_PROLOG_UP MACRO
 ENDM
 
 NEW_ARRAY_FAST_UP MACRO
-
         LOCAL AllocContextOverflow
 
         ; ECX == MethodTable
@@ -245,7 +160,6 @@ AllocContextOverflow:
 
         mov         [g_global_alloc_lock], -1
         jmp         @RhpNewArray@8
-
 ENDM
 
 ;
@@ -254,7 +168,6 @@ ENDM
 ; Allocate a string, uniprocessor version
 ;
 FASTCALL_FUNC   RhNewString_UP, 8
-
         ;; Make sure computing the aligned overall allocation size won't overflow
         cmp         edx, MAX_STRING_LENGTH
         ja          StringSizeOverflow
@@ -274,7 +187,6 @@ StringSizeOverflow:
         ;; ecx holds MethodTable pointer already
         xor         edx, edx            ; Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
-
 FASTCALL_ENDFUNC
 
 ;
@@ -283,7 +195,6 @@ FASTCALL_ENDFUNC
 ; Allocate one dimensional, zero based array (SZARRAY), uniprocessor version
 ;
 FASTCALL_FUNC   RhpNewArrayFast_UP, 8
-
         NEW_ARRAY_FAST_PROLOG_UP
 
         ; Compute overall allocation size (align(base size + (element size * elements), 4)).
@@ -331,7 +242,6 @@ ArraySizeOverflow:
         ; ecx holds MethodTable pointer already
         mov         edx, 1          ; Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
-
 FASTCALL_ENDFUNC
 
 ;
@@ -341,7 +251,6 @@ FASTCALL_ENDFUNC
 ; uniprocessor version
 ;
 FASTCALL_FUNC   RhpNewObjectArrayFast_UP, 8
-
         cmp         edx, (ASM_LARGE_OBJECT_SIZE - 256)/4 ; sizeof(void*)
         jae         @RhpNewArray@8
 
@@ -354,7 +263,6 @@ FASTCALL_FUNC   RhpNewObjectArrayFast_UP, 8
 
         NEW_ARRAY_FAST_PROLOG_UP
         NEW_ARRAY_FAST_UP
-
 FASTCALL_ENDFUNC
 
 

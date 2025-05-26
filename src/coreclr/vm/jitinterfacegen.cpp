@@ -32,7 +32,7 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewObjectArrayFast);
 
-#if defined(FEATURE_64BIT_ALIGNMENT) || defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
+#if defined(FEATURE_64BIT_ALIGNMENT)
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
@@ -52,14 +52,7 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewObjectArrayFast_UP);
-
-#if defined(FEATURE_DOUBLE_ALIGNMENT_HINT)
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8_UP);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign_UP);
-            // There's no RhpNewArrayFastAlign8_UP, it's same as the default RhpNewArray helper
-#else
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFast_UP);
-#endif
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString_UP), ECall::FastAllocateString);
         }
