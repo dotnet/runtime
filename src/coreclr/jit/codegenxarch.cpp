@@ -11257,17 +11257,20 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg, INS_OPTS_NONE);
 
-            int lenRemaining = ALIGN_UP(blkSize, 16);
+            assert((blkSize % XMM_REGSIZE_BYTES) == 0);
+
+            int lenRemaining = blkSize;
             while (lenRemaining > 0)
             {
+                // Use the largest SIMD register size that fits in the remaining length
                 const int regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
-                const int offset  = blkSize - lenRemaining;
+                assert(regSize >= XMM_REGSIZE_BYTES);
 
                 // frameReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
-                instruction ins = regSize == XMM_REGSIZE_BYTES ? simdMov : simdUnalignedMovIns();
+                instruction ins = regSize > XMM_REGSIZE_BYTES ? simdUnalignedMovIns() : simdMov;
+                const int offset  = blkSize - lenRemaining;
                 emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + offset);
 
-                assert(lenRemaining >= regSize);
                 lenRemaining -= regSize;
             }
             assert(lenRemaining == 0);
