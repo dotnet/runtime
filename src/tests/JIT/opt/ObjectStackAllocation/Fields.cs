@@ -196,7 +196,7 @@ public class Fields
         a[1].y = 4;
 
         GC.Collect();
-        
+
         return a[1].y + a[0].y;
     }
 
@@ -228,6 +228,37 @@ public class Fields
     public static int Stack5()
     {
         return CallTestAndVerifyAllocation(RunStack5, 8, StackAllocation());
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int RunStack6()
+    {
+        // Array of structs of arrays + strings.
+
+        var fullInput = new[]
+        {
+            new { utf8Bytes = new byte[] { 0x40 }, output = "@" },
+            new { utf8Bytes = new byte[] { 0xC3, 0x85 }, output = "[00C5]" },
+        };
+
+        int result = 0;
+
+        foreach (var f in fullInput)
+        {
+            if (result == 0)
+            {
+                GC.Collect();
+            }
+            result += f.utf8Bytes.Length + f.output.Length;
+        }
+
+        return result;
+    }
+    
+    [Fact]
+    public static int Stack6()
+    {
+        return CallTestAndVerifyAllocation(RunStack6, 10, StackAllocation());
     }
 
     // --------------- ESCAPE TESTS ------------------

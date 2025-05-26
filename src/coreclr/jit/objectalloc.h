@@ -109,8 +109,19 @@ struct CloneInfo : public GuardInfo
     bool m_willClone       = false;
 };
 
+struct StoreInfo
+{
+    StoreInfo(unsigned index)
+        : m_index(index)
+        , m_connected(false)
+    {
+    }
+    unsigned m_index;
+    bool     m_connected;
+};
+
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
-typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned>               NodeToIndexMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, StoreInfo>              NodeToIndexMap;
 
 class ObjectAllocator final : public Phase
 {

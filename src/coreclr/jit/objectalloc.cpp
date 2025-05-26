@@ -799,6 +799,62 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                 }
                 tree->gtFlags &= ~GTF_VAR_CONNECTED;
             }
+            else if (tree->OperIs(GT_STOREIND, GT_STORE_BLK))
+            {
+                // See if we have an index for the destination, and if we connected it to a source.
+                //
+                StoreInfo* const info = m_allocator->m_StoreAddressToIndexMap.LookupPointer(tree);
+
+                if ((info != nullptr) && !info->m_connected)
+                {
+                    assert(info->m_index != BAD_VAR_NUM);
+                    const unsigned dstIndex = info->m_index;
+
+                    JITDUMP(" ... Unmodelled GC store to");
+                    JITDUMPEXEC(m_allocator->DumpIndex(dstIndex));
+                    JITDUMP(" at [%06u]\n", m_compiler->dspTreeID(tree));
+
+                    bool valueIsUnkonwn = true;
+
+                    // Look for stores of nullptr; these do not need to create a connection.
+                    //
+                    if (tree->OperIs(GT_STOREIND))
+                    {
+                        GenTree* const data = tree->AsStoreInd()->Data();
+                        valueIsUnkonwn      = !data->IsIntegralConst(0);
+                    }
+
+                    if (valueIsUnkonwn)
+                    {
+                        m_allocator->AddConnGraphEdgeIndex(dstIndex, m_allocator->m_unknownSourceIndex);
+                        JITDUMPEXEC(m_allocator->DumpIndex(dstIndex))
+                        JITDUMP(" value unknown at [%06u]\n", m_compiler->dspTreeID(tree));
+
+                        // If we're tracking fields, the fields have unknown values and escape.
+                        // (check if value can have GC refs...?)
+                        //
+                        if (m_allocator->m_trackObjectFields)
+                        {
+                            const unsigned fieldIndex = m_allocator->GetFieldIndexFromLocal(dstIndex);
+                            if (fieldIndex != BAD_VAR_NUM)
+                            {
+                                m_allocator->AddConnGraphEdgeIndex(fieldIndex, m_allocator->m_unknownSourceIndex);
+                                m_allocator->MarkIndexAsEscaping(fieldIndex);
+                            }
+                        }
+                    }
+
+                    info->m_connected = true;
+                }
+                else if (info == nullptr)
+                {
+                    JITDUMP(" ... No store info for [%06u]\n", m_compiler->dspTreeID(tree));
+                }
+                else
+                {
+                    JITDUMP(" ... Already connected at [%06u]\n", m_compiler->dspTreeID(tree));
+                }
+            }
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
     };
@@ -2017,13 +2073,35 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
             case GT_STOREIND:
             case GT_STORE_BLK:
             {
+                // Is this a GC store?
+                //
+                if (!IsTrackedType(parent->TypeGet()))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                    break;
+                }
+
+                if (tree->OperIs(GT_STORE_BLK))
+                {
+                    ClassLayout* const layout = parent->AsBlk()->GetLayout();
+
+                    if (!layout->HasGCPtr())
+                    {
+                        canLclVarEscapeViaParentStack = false;
+                        break;
+                    }
+                }
+
+                // Yes... if we're walking the address tree, save
+                // the destination index for later.
+                //
                 GenTree* const addr = parent->AsIndir()->Addr();
                 if (tree == addr)
                 {
                     if (isAddress)
                     {
                         JITDUMP("... store address is local\n");
-                        m_StoreAddressToIndexMap.Set(tree, lclIndex);
+                        m_StoreAddressToIndexMap.Set(parent, StoreInfo(lclIndex));
                     }
                     else
                     {
@@ -2031,7 +2109,7 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                         if (fieldIndex != BAD_VAR_NUM)
                         {
                             JITDUMP("... store address is local field\n");
-                            m_StoreAddressToIndexMap.Set(tree, fieldIndex);
+                            m_StoreAddressToIndexMap.Set(parent, StoreInfo(fieldIndex));
                         }
                     }
 
@@ -2041,23 +2119,28 @@ void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsi
                     break;
                 }
 
-                // Is this a store to a tracked resource?
+                // If we're walking the value tree, model the store.
                 //
-                unsigned dstIndex;
-                if (m_StoreAddressToIndexMap.Lookup(addr, &dstIndex) && (dstIndex != BAD_VAR_NUM))
+                StoreInfo* const dstInfo = m_StoreAddressToIndexMap.LookupPointer(parent);
+                if (dstInfo != nullptr)
                 {
+                    assert(dstInfo->m_index != BAD_VAR_NUM);
+                    assert(!dstInfo->m_connected);
                     JITDUMP("... local.field store\n");
 
                     if (isAddress)
                     {
-                        AddConnGraphEdgeIndex(dstIndex, m_unknownSourceIndex);
+                        AddConnGraphEdgeIndex(dstInfo->m_index, m_unknownSourceIndex);
                     }
                     else
                     {
-                        AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                        AddConnGraphEdgeIndex(dstInfo->m_index, lclIndex);
                         canLclVarEscapeViaParentStack = false;
                         break;
                     }
+
+                    // Note that we made a connection
+                    dstInfo->m_connected = true;
                 }
 
                 // We're storing the value somewhere unknown. Assume the worst.
