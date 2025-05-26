@@ -6,15 +6,57 @@
 
 #include "AsmMacros_Shared.h"
 
-// Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
-// allocation context then automatically fallback to the slow allocation path.
+// Shared code for RhpNewFast, RhpNewFastAlign8 and RhpNewFastMisalign
 //  r0 == MethodTable
-LEAF_ENTRY RhpNewFast, _TEXT
+.macro NEW_FAST Variation
         PROLOG_PUSH "{r4,lr}"
         mov	        r4, r0 // save MethodTable
 
         // r0 = ee_alloc_context pointer; trashes volatile registers, expects saved lr
         INLINE_GET_ALLOC_CONTEXT
+
+        // When doing aligned or misaligned allocation we first check
+        // the alignment and skip to the regular path if it's already
+        // matching the expectation.
+        // Otherwise, we try to allocate size + ASM_MIN_OBJECT_SIZE and
+        // then prepend a dummy free object at the beginning of the
+        // allocation.
+.ifnc \Variation,
+        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        tst         r3, #0x7
+.ifc \Variation,Align8
+        beq         1f // AlreadyAligned
+.else // Variation == "Misalign"
+        bne         1f // AlreadyAligned
+.endif
+
+        ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
+        add         r2, ASM_MIN_OBJECT_SIZE
+        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        add         r2, r3
+        ldr         r1, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         r2, r1
+        bhi         2f // AllocFailed
+
+        // set the new alloc pointer
+        str         r2, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+
+        // initialize the padding object preceeding the new object
+        PREPARE_EXTERNAL_VAR_INDIRECT G_FREE_OBJECT_METHOD_TABLE, r2
+        str         r2, [r3, #OFFSETOF__Object__m_pEEType]
+        mov         r2, #0
+        str         r2, [r3, #OFFSETOF__Array__m_Length]
+
+        // calc the new object pointer and initialize it
+        add         r3, ASM_MIN_OBJECT_SIZE
+        str         r4, [r3, #OFFSETOF__Object__m_pEEType]
+
+        mov         r0, r3
+
+        EPILOG_POP  "{r4,pc}"
+.endif // Variation != ""
+
+1: // AlreadyAligned
 
         // r4 contains MethodTable pointer
         ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
@@ -27,7 +69,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         add         r2, r3
         ldr         r1, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
         cmp         r2, r1
-        bhi         LOCAL_LABEL(RhpNewFast_RarePath)
+        bhi         2f // AllocFailed
 
         // set the new alloc pointer
         str         r2, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
@@ -39,29 +81,65 @@ LEAF_ENTRY RhpNewFast, _TEXT
 
         EPILOG_POP  "{r4,pc}"
 
-LOCAL_LABEL(RhpNewFast_RarePath):
+2: // AllocFailed
         mov         r0, r4            // restore MethodTable
+.ifc \Variation,
         mov         r1, #0
+.else
+.ifc \Variation,Align8
+        mov         r1, #GC_ALLOC_ALIGN8
+.else
+        mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
+.endif
+.endif
         EPILOG_POP  "{r4,lr}"
         b           C_FUNC(RhpNewObject)
+.endm
 
+
+// Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
+// allocation context then automatically fallback to the slow allocation path.
+//  r0 == MethodTable
+LEAF_ENTRY RhpNewFast, _TEXT
+        NEW_FAST
 LEAF_END RhpNewFast, _TEXT
+
+
+// Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
+//  r0 == MethodTable
+LEAF_ENTRY RhpNewFastAlign8, _TEXT
+        NEW_FAST Align8
+LEAF_END RhpNewFastAlign8, _TEXT
+
+
+// Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
+// itself is 8 byte aligned).
+//  r0 == MethodTable
+LEAF_ENTRY RhpNewFastMisalign, _TEXT
+        NEW_FAST Misalign
+LEAF_END RhpNewFastMisalign, _TEXT
 
 
 // Allocate non-array object with finalizer.
 //  r0 == MethodTable
-//
 LEAF_ENTRY RhpNewFinalizable, _TEXT
         mov         r1, #GC_ALLOC_FINALIZE
         b           C_FUNC(RhpNewObject)
 LEAF_END RhpNewFinalizable, _TEXT
 
 
+// Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
+//  r0 == MethodTable
+LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
+        mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
+        b           C_FUNC(RhpNewObject)
+LEAF_END RhpNewFinalizableAlign8, _TEXT
+
+
 // Allocate non-array object.
 //  r0 == MethodTable
 //  r1 == alloc flags
 NESTED_ENTRY RhpNewObject, _TEXT, NoHandler
-
         PUSH_COOP_PINVOKE_FRAME r3
 
         // r0: MethodTable
@@ -91,7 +169,6 @@ LOCAL_LABEL(NewOutOfMemory):
         POP_COOP_PINVOKE_FRAME
 
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
-
 NESTED_END RhpNewObject, _TEXT
 
 // Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
@@ -303,122 +380,6 @@ LOCAL_LABEL(ArrayOutOfMemory):
 
 NESTED_END RhpNewArray, _TEXT
 
-// Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
-//  r0 == MethodTable
-LEAF_ENTRY RhpNewFastAlign8, _TEXT
-        PROLOG_PUSH "{r4,lr}"
-
-        mov         r4, r0 // save MethodTable
-
-        // r0 = ee_alloc_context pointer; trashes volatile registers, expects saved lr
-        INLINE_GET_ALLOC_CONTEXT
-
-        // Fetch object size into r2.
-        ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
-
-        // r4: MethodTable pointer
-        // r0: Thread pointer
-        // r2: base size
-
-        // Load potential new object address into r3. Cache this result in r12 as well for the common case
-        // where the allocation succeeds (r3 will be overwritten in the following bounds check).
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
-        mov         r12, r3
-
-        // Check whether the current allocation context is already aligned for us.
-        tst         r3, #0x7
-        bne         LOCAL_LABEL(Alloc8Failed)
-
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
-        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add         r2, r3
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
-        cmp         r2, r3
-        bhi         LOCAL_LABEL(Alloc8Failed)
-
-        // Update the alloc pointer to account for the allocation.
-        str         r2, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
-
-        // Set the new object's MethodTable pointer.
-        str         r4, [r12, #OFFSETOF__Object__m_pEEType]
-
-        // Return the object allocated in r0.
-        mov         r0, r12
-
-        EPILOG_POP  "{r4,pc}"
-
-LOCAL_LABEL(Alloc8Failed):
-        // Fast allocation failed. Call slow helper with flags set to indicate an 8-byte alignment and no
-        // finalization.
-        mov         r0, r4 // restore MethodTable
-        mov         r1, #GC_ALLOC_ALIGN8
-        EPILOG_POP  "{r4,lr}"
-        b           C_FUNC(RhpNewObject)
-
-LEAF_END RhpNewFastAlign8, _TEXT
-
-// Allocate a finalizable object (by definition not an array or value type) on an 8 byte boundary.
-//  r0 == MethodTable
-LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
-        mov         r1, #(GC_ALLOC_FINALIZE | GC_ALLOC_ALIGN8)
-        b           C_FUNC(RhpNewObject)
-LEAF_END RhpNewFinalizableAlign8, _TEXT
-
-// Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
-// itself is 8 byte aligned).
-//  r0 == MethodTable
-LEAF_ENTRY RhpNewFastMisalign, _TEXT
-        PROLOG_PUSH "{r4,lr}"
-
-        mov         r4, r0 // save MethodTable
-
-        // r0 = ee_alloc_context pointer; trashes volatile registers, expects saved lr
-        INLINE_GET_ALLOC_CONTEXT
-
-        // Fetch object size into r2.
-        ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
-
-        // r4: MethodTable pointer
-        // r0: ee_alloc_context pointer
-        // r2: base size
-
-        // Load potential new object address into r3. Cache this result in r12 as well for the common case
-        // where the allocation succeeds (r3 will be overwritten in the following bounds check).
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
-        mov         r12, r3
-
-        // Check whether the current allocation context is already aligned for us (for boxing that means the
-        // address % 8 == 4, so the value type payload following the MethodTable* is actually 8-byte aligned).
-        tst         r3, #0x7
-        beq         LOCAL_LABEL(BoxAlloc8Failed)
-
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
-        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add         r2, r3
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
-        cmp         r2, r3
-        bhi         LOCAL_LABEL(BoxAlloc8Failed)
-
-        // Update the alloc pointer to account for the allocation.
-        str         r2, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
-
-        // Set the new object's MethodTable pointer.
-        str         r4, [r12, #OFFSETOF__Object__m_pEEType]
-
-        // Return the object allocated in r0.
-        mov         r0, r12
-
-        EPILOG_POP  "{r4,pc}"
-
-LOCAL_LABEL(BoxAlloc8Failed):
-        // Fast allocation failed. Call slow helper with flags set to indicate an 8+4 byte alignment and no
-        // finalization.
-        mov         r0, r4 // restore MethodTable
-        mov         r1, #(GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS)
-        EPILOG_POP  "{r4,lr}"
-        b           C_FUNC(RhpNewObject)
-
-LEAF_END RhpNewFastMisalign, _TEXT
 
 // Allocate an array on an 8 byte boundary.
 //  r0 == MethodTable
