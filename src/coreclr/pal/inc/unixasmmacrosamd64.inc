@@ -40,6 +40,7 @@ C_FUNC(\Name):
 #else
         .type \Name, %function
 #endif
+        .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
 .endm
