@@ -332,32 +332,8 @@ namespace ILCompiler
 
             if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx512")))
             {
-                // We can simply try adding all of the AVX-512 ISA's here,
-                // since SortedSet just ignores the value if it is already present.
-
-                _supportedInstructionSets.Add("avx512f");
-                _supportedInstructionSets.Add("avx512f_vl");
-                _supportedInstructionSets.Add("avx512bw");
-                _supportedInstructionSets.Add("avx512bw_vl");
-                _supportedInstructionSets.Add("avx512cd");
-                _supportedInstructionSets.Add("avx512cd_vl");
-                _supportedInstructionSets.Add("avx512dq");
-                _supportedInstructionSets.Add("avx512dq_vl");
-
-                // If AVX-512VBMI is specified, then we have to include its VL
-                // counterpart as well.
-
-                if (_supportedInstructionSets.Contains("avx512vbmi"))
-                    _supportedInstructionSets.Add("avx512vbmi_vl");
-
                 // These ISAs should automatically extend to 512-bit if
                 // AVX-512 is enabled.
-
-                if (_supportedInstructionSets.Contains("avx10v1"))
-                    _supportedInstructionSets.Add("avx10v1_v512");
-
-                if (_supportedInstructionSets.Contains("avx10v2"))
-                    _supportedInstructionSets.Add("avx10v2_v512");
 
                 if (_supportedInstructionSets.Contains("gfni"))
                     _supportedInstructionSets.Add("gfni_v512");
@@ -417,7 +393,7 @@ namespace ILCompiler
                 {
                     Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
                     Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
-                    Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
+                    Debug.Assert(InstructionSet.X86_AVX512 == InstructionSet.X64_AVX512);
 
                     Debug.Assert(InstructionSet.X86_VectorT128 == InstructionSet.X64_VectorT128);
                     Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
@@ -430,7 +406,7 @@ namespace ILCompiler
                     Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 
-                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F) && (maxVectorTBitWidth >= 512))
+                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512) && (maxVectorTBitWidth >= 512))
                     {
                         supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
                         supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);

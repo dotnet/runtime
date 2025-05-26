@@ -8251,14 +8251,14 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
     if ((dataSize == 64) && (constValue->v256[1] == constValue->v256[0]))
     {
-        assert(emitComp->IsBaselineVector512IsaSupportedDebugOnly());
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512));
         dataSize = 32;
         ins      = INS_vbroadcastf32x8;
     }
 
     if ((dataSize == 32) && (constValue->v128[1] == constValue->v128[0]))
     {
-        assert(emitComp->IsBaselineVector256IsaSupportedDebugOnly());
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX));
         dataSize = 16;
         ins      = INS_vbroadcastf32x4;
     }

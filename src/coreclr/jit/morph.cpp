@@ -9652,25 +9652,25 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         {
             case GT_AND:
             {
-                maskIntrinsicId = NI_EVEX_AndMask;
+                maskIntrinsicId = NI_AVX512_AndMask;
                 break;
             }
 
             case GT_NOT:
             {
-                maskIntrinsicId = NI_EVEX_NotMask;
+                maskIntrinsicId = NI_AVX512_NotMask;
                 break;
             }
 
             case GT_OR:
             {
-                maskIntrinsicId = NI_EVEX_OrMask;
+                maskIntrinsicId = NI_AVX512_OrMask;
                 break;
             }
 
             case GT_XOR:
             {
-                maskIntrinsicId = NI_EVEX_XorMask;
+                maskIntrinsicId = NI_AVX512_XorMask;
                 break;
             }
 

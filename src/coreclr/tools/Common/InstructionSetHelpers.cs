@@ -218,17 +218,9 @@ namespace System.CommandLine
                     }
                 }
 
-                Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
-                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F))
+                Debug.Assert(InstructionSet.X64_AVX512 == InstructionSet.X86_AVX512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512))
                 {
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ_VL));
-
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
@@ -258,8 +250,8 @@ namespace System.CommandLine
 
             if (throttleAvx512)
             {
-                Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
-                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512F))
+                Debug.Assert(InstructionSet.X86_AVX512 == InstructionSet.X64_AVX512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512))
                 {
                     Debug.Assert(InstructionSet.X86_Vector256 == InstructionSet.X64_Vector256);
                     Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);

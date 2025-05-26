@@ -1341,17 +1341,10 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v4
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0))
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
     {
-        // While the AVX-512 ISAs can be individually lit-up, they really
-        // need F, BW, CD, DQ, and VL to be fully functional without adding
-        // significant complexity into the JIT. Additionally, unlike AVX/AVX2
-        // there was never really any hardware that didn't provide all 5 at
-        // once, with the notable exception being Knight's Landing which
-        // provided a similar but not quite the same feature.
-
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F) &&
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512) &&
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F_VL) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW_VL) &&
@@ -1360,15 +1353,11 @@ void EEJitManager::SetCpuInfo()
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
         {
-            CPUCompileFlags.Set(InstructionSet_EVEX);
-            CPUCompileFlags.Set(InstructionSet_AVX512F);
-            CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
-            CPUCompileFlags.Set(InstructionSet_AVX512BW);
-            CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
-            CPUCompileFlags.Set(InstructionSet_AVX512CD);
-            CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
-            CPUCompileFlags.Set(InstructionSet_AVX512DQ);
-            CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
+            // These ISAs are grouped together and if any are disabled then
+            // you lose access to all of them. We recommend modern code just
+            // use EnableAVX512, but we continue checking the older knobs for
+            // back-compat
+            CPUCompileFlags.Set(InstructionSet_AVX512);
         }
     }
 
@@ -1377,8 +1366,8 @@ void EEJitManager::SetCpuInfo()
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
         {
+            // These ISAs are likewise grouped together
             CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
         }
     }
 
@@ -1417,14 +1406,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_GFNI_V512);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Evex) != 0) &&
-        ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0))
+    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0)
     {
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
         {
-            CPUCompileFlags.Set(InstructionSet_EVEX);
             CPUCompileFlags.Set(InstructionSet_AVX10v1);
-            CPUCompileFlags.Set(InstructionSet_AVX10v1_V512);
         }
     }
 
@@ -1433,7 +1419,6 @@ void EEJitManager::SetCpuInfo()
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
         {
             CPUCompileFlags.Set(InstructionSet_AVX10v2);
-            CPUCompileFlags.Set(InstructionSet_AVX10v2_V512);
         }
     }
 

@@ -399,16 +399,8 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BW,              "EnableAVX512BW",            1) // Allows AVX512BW+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BW_VL,           "EnableAVX512BW_VL",         1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512CD,              "EnableAVX512CD",            1) // Allows AVX512CD+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512CD_VL,           "EnableAVX512CD_VL",         1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512DQ,              "EnableAVX512DQ",            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512DQ_VL,           "EnableAVX512DQ_VL",         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512F,               "EnableAVX512F",             1) // Allows AVX512F+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512F_VL,            "EnableAVX512F_VL",          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512VBMI,            "EnableAVX512VBMI",          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512VBMI_VL,         "EnableAVX512VBMI_VL",       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             1) // Allows AVX10v2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
@@ -449,6 +441,24 @@ RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",  
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
+
+//
+// These are "legacy" ISA enablement knobs that aren't recommended for use anymore
+//
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+// These have been superceded by EnableAVX512 as you get all of them or none of them
+RELEASE_CONFIG_INTEGER(EnableAVX512BW,              "EnableAVX512BW",            1) // Allows AVX512BW+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512BW_VL,           "EnableAVX512BW_VL",         1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512CD,              "EnableAVX512CD",            1) // Allows AVX512CD+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512CD_VL,           "EnableAVX512CD_VL",         1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512DQ,              "EnableAVX512DQ",            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512DQ_VL,           "EnableAVX512DQ_VL",         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512F,               "EnableAVX512F",             1) // Allows AVX512F+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512F_VL,            "EnableAVX512F_VL",          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
+
+// These have been superceded by EnableAVX512VBMI as you get all of them or none of them
+RELEASE_CONFIG_INTEGER(EnableAVX512VBMI_VL,         "EnableAVX512VBMI_VL",       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
+#endif
 
 // clang-format on
 

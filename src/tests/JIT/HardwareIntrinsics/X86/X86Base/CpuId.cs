@@ -269,15 +269,23 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 }
             }
 
-            if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // AVX512VBMI and AVX512VBMI.VL are likewise provided together or not at all
+                // so we loop twice to ensure it all lines up as expected.
+
+                if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi.VL), Avx512Vbmi.VL.IsSupported, "AVX512VBMI_VL", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
-            if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi.VL), Avx512Vbmi.VL.IsSupported, "AVX512VBMI_VL", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
+            bool isAvx10HierarchyDisabled = isHierarchyDisabled;
 
             isHierarchyDisabled = isX86BaseDisabled;
 
@@ -330,11 +338,22 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvxHierarchyDisabled | isFmaHierarchyDisabled;
+            isHierarchyDisabled = isAvx10HierarchyDisabled;
 
-            if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // AVX10v1 and AVX10v1.V512 are likewise provided together or not at all
+                // so we loop twice to ensure it all lines up as expected.
+
+                if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(edx, 19, typeof(Avx10v1.V512), Avx10v1.V512.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
