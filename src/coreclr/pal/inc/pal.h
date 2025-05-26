@@ -3900,29 +3900,6 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 #define ERANGE          34
 #endif
 
-/****************PAL Perf functions for PInvoke*********************/
-#if PAL_PERF
-PALIMPORT
-VOID
-PALAPI
-PAL_EnableProcessProfile();
-
-PALIMPORT
-VOID
-PALAPI
-PAL_DisableProcessProfile();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsProcessProfileEnabled();
-
-PALIMPORT
-INT64
-PALAPI
-PAL_GetCpuTickCount();
-#endif // PAL_PERF
-
 /******************* PAL functions for exceptions *******/
 
 #ifdef __cplusplus
