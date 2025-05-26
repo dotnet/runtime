@@ -393,11 +393,24 @@ C_FUNC(\Name\()_End):
 #endif
 .endm
 
+// Pushes a TransitionBlock on the stack without saving the FP argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
 .macro PUSH_COOP_PINVOKE_FRAME target
-        PROLOG_WITH_TRANSITION_BLOCK
+        set_cfa_register rsp, 8
+
+        __PWTB_StackAlloc = 8 // alignment of the stack to 16b
+        __PWTB_TransitionBlock = __PWTB_StackAlloc
+
+        PUSH_CALLEE_SAVED_REGISTERS
+        PUSH_ARGUMENT_REGISTERS
+        alloc_stack     __PWTB_StackAlloc
+        END_PROLOGUE
+
         lea     \target, [rsp + __PWTB_TransitionBlock]
 .endm
 
 .macro POP_COOP_PINVOKE_FRAME
-        EPILOG_WITH_TRANSITION_BLOCK
+        free_stack      __PWTB_StackAlloc
+        POP_ARGUMENT_REGISTERS
+        POP_CALLEE_SAVED_REGISTERS
 .endm
