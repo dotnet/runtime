@@ -25,6 +25,7 @@
 #include "shash.h"
 #include "shash.inl"
 #include "GcStressControl.h"
+#include "minipal/time.h"
 
 
 class GcStressControl
@@ -70,7 +71,7 @@ private:
             if (g_pRhConfig->GetGcStressSeed())
                 s_lGcStressRNGSeed = (uint32_t)g_pRhConfig->GetGcStressSeed();
             else
-                s_lGcStressRNGSeed = (uint32_t)PalGetTickCount64();
+                s_lGcStressRNGSeed = (uint32_t)minipal_lowres_ticks();
 
             if (g_pRhConfig->GetGcStressFreqDenom())
                 s_lGcStressFreqDenom = (uint32_t)g_pRhConfig->GetGcStressFreqDenom();

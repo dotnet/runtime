@@ -1,0 +1,29 @@
+parameters:
+  archType: ''
+  osGroup: ''
+  creator: ''
+  helixQueues: ''
+
+steps:
+  - template: /eng/common/templates/steps/send-to-helix.yml
+    parameters:
+      DisplayNamePrefix: Send to Helix
+      HelixProjectPath: src/installer/tests/helixpublish.proj
+      ${{ if ne(parameters.osGroup, 'windows') }}:
+        HelixProjectArguments: >-
+          --ci
+          /p:Configuration=$(_BuildConfig)
+          /p:TargetArchitecture=${{ parameters.archType }}
+          /p:TargetOS=${{ parameters.osGroup }}
+      ${{ if eq(parameters.osGroup, 'windows') }}:
+        HelixProjectArguments: >-
+          -ci
+          /p:Configuration=$(_BuildConfig)
+          /p:TargetArchitecture=${{ parameters.archType }}
+          /p:TargetOS=${{ parameters.osGroup }}
+      Creator: ${{ parameters.creator }}
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: ${{ replace(lower(join('+', parameters.helixQueues)), '.open', '') }}
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}

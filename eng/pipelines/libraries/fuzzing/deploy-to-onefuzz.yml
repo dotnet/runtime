@@ -22,7 +22,7 @@ extends:
       jobs:
       - job: windows
         displayName: Build & Deploy to OneFuzz
-        timeoutInMinutes: 120
+        timeoutInMinutes: 240
         pool:
           name: $(DncEngInternalBuildPool)
           demands: ImageOverride -equals windows.vs2022.amd64

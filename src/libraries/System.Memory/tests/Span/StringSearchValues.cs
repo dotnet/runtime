@@ -597,7 +597,7 @@ namespace System.Memory.Tests.Span
             Assert.True(CanTestInvariantCulture);
 
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true");
 
             RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();
@@ -608,7 +608,7 @@ namespace System.Memory.Tests.Span
             Assert.True(CanTestNls);
 
             var psi = new ProcessStartInfo();
-            psi.Environment.Clear();
+            TestEnvironment.ClearGlobalizationEnvironmentVars(psi.Environment);
             psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_USENLS", "true");
 
             RemoteExecutor.Invoke(action, new RemoteInvokeOptions { StartInfo = psi, TimeOut = 10 * 60 * 1000 }).Dispose();

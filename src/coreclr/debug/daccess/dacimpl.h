@@ -1417,7 +1417,7 @@ public:
     ULONG32 m_instanceAge;
     bool m_debugMode;
 
-    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdacreader
+    // This currently exists on the DAC as a way of managing lifetime of loading/freeing the cdac
     // TODO: [cdac] Remove when cDAC deploys with SOS - https://github.com/dotnet/runtime/issues/108720
     CDAC m_cdac;
 
@@ -1504,6 +1504,7 @@ private:
     BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
+    TADDR GetIdentityForManagedObjectWrapper(TADDR mow);
 #endif
 
 protected:

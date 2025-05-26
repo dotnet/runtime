@@ -65,10 +65,15 @@ void emitDispInsHelp(instrDesc* id,
 
 private:
 instrDesc* emitNewInstrCallDir(
-    int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
+    int argCnt, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize, bool hasAsyncRet);
 
-instrDesc* emitNewInstrCallInd(
-    int argCnt, ssize_t disp, VARSET_VALARG_TP GCvars, regMaskTP gcrefRegs, regMaskTP byrefRegs, emitAttr retSize);
+instrDesc* emitNewInstrCallInd(int              argCnt,
+                               ssize_t          disp,
+                               VARSET_VALARG_TP GCvars,
+                               regMaskTP        gcrefRegs,
+                               regMaskTP        byrefRegs,
+                               emitAttr         retSize,
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*               Private helpers for instruction output                 */

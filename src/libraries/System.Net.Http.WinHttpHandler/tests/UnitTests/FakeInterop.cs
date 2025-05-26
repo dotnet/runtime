@@ -474,12 +474,6 @@ internal static partial class Interop
             ref uint optionData,
             uint optionLength = sizeof(uint))
         {
-            if (option == Interop.WinHttp.WINHTTP_OPTION_DECOMPRESSION & !TestControl.WinHttpDecompressionSupport)
-            {
-                TestControl.LastWin32Error = (int)Interop.WinHttp.ERROR_WINHTTP_INVALID_OPTION;
-                return false;
-            }
-
             if (option == Interop.WinHttp.WINHTTP_OPTION_DISABLE_FEATURE &&
                 optionData == Interop.WinHttp.WINHTTP_DISABLE_COOKIES)
             {

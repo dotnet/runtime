@@ -1186,7 +1186,7 @@ void ProfileSynthesis::GaussSeidelSolver()
     weight_t                      relResidual          = 0;
     weight_t                      oldRelResidual       = 0;
     weight_t                      eigenvalue           = 0;
-    weight_t const                stopRelResidual      = 0.002;
+    weight_t const                stopRelResidual      = 0.001;
     BasicBlock*                   residualBlock        = nullptr;
     BasicBlock*                   relResidualBlock     = nullptr;
     const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();
@@ -1389,14 +1389,9 @@ void ProfileSynthesis::GaussSeidelSolver()
             // Note we are using a "point" bound here ("infinity norm") rather than say
             // computing the L2-norm of the entire residual vector.
             //
-            weight_t const smallFractionOfChange = 1e-9 * change;
-            weight_t       relDivisor            = oldWeight;
-            if (relDivisor < smallFractionOfChange)
-            {
-                relDivisor = smallFractionOfChange;
-            }
-
-            weight_t const blockRelResidual = change / relDivisor;
+            // Avoid dividing by zero if oldWeight is very small.
+            //
+            weight_t const blockRelResidual = change / max(oldWeight, 1e-12);
 
             if ((relResidualBlock == nullptr) || (blockRelResidual > relResidual))
             {

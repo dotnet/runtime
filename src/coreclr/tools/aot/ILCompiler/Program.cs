@@ -348,10 +348,10 @@ namespace ILCompiler
             // Compile
             //
 
-            var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
-
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
-            builder.UseCompilationUnitPrefix(compilationUnitPrefix);
+            var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
+                .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
             if (mibcFilePaths.Length > 0)

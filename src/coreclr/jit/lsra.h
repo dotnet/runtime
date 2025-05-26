@@ -38,6 +38,13 @@ typedef var_types RegisterType;
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType  TYP_MASK
 
+// NEXT_REGISTER : update reg to next active registers.
+#ifdef TARGET_AMD64
+#define NEXT_REGISTER(reg, index) index++, reg = regIndices[index]
+#else
+#define NEXT_REGISTER(reg, index) reg = REG_NEXT(reg)
+#endif
+
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
 //
@@ -1030,7 +1037,7 @@ private:
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
 
-    void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
+    RefPosition* addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -2014,6 +2021,7 @@ private:
     int  BuildPutArgReg(GenTreeUnOp* node);
     int  BuildCall(GenTreeCall* call);
     void MarkSwiftErrorBusyForCall(GenTreeCall* call);
+    void MarkAsyncContinuationBusyForCall(GenTreeCall* call);
     int  BuildCmp(GenTree* tree);
     int  BuildCmpOperands(GenTree* tree);
     int  BuildBlockStore(GenTreeBlk* blkNode);
@@ -2132,7 +2140,8 @@ private:
     }
 #endif // TARGET_XARCH
 
-    unsigned availableRegCount;
+    unsigned   availableRegCount;
+    regNumber* regIndices;
 
     FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {

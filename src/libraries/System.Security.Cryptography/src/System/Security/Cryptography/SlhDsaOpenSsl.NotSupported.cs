@@ -47,5 +47,11 @@ namespace System.Security.Cryptography
             Debug.Fail("Caller should have checked platform availability.");
             throw new PlatformNotSupportedException();
         }
+
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            Debug.Fail("Caller should have checked platform availability.");
+            throw new PlatformNotSupportedException();
+        }
     }
 }

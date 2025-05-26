@@ -119,8 +119,8 @@ namespace System.Security.Cryptography.Tests
             {
                 OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer);
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer);
+                    AssertExtensions.Same(ciphertext, ciphertextBuffer);
+                    AssertExtensions.Same(sharedSecret, sharedSecretBuffer);
                 }
             };
 
@@ -138,8 +138,8 @@ namespace System.Security.Cryptography.Tests
             {
                 OnEncapsulateCore = (Span<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertext, ciphertextBuffer.Span);
-                    AssertSameBuffer(sharedSecret, sharedSecretBuffer.Span);
+                    AssertExtensions.Same(ciphertext, ciphertextBuffer.Span);
+                    AssertExtensions.Same(sharedSecret, sharedSecretBuffer.Span);
                 }
             };
 
@@ -230,8 +230,8 @@ namespace System.Security.Cryptography.Tests
             {
                 OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertextBuffer, ciphertext);
-                    AssertSameBuffer(sharedSecretBuffer, sharedSecret);
+                    AssertExtensions.Same(ciphertextBuffer, ciphertext);
+                    AssertExtensions.Same(sharedSecretBuffer, sharedSecret);
                 }
             };
 
@@ -250,8 +250,8 @@ namespace System.Security.Cryptography.Tests
             {
                 OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertextBuffer.Span, ciphertext);
-                    AssertSameBuffer(sharedSecretBuffer.Span, sharedSecret);
+                    AssertExtensions.Same(ciphertextBuffer.Span, ciphertext);
+                    AssertExtensions.Same(sharedSecretBuffer.Span, sharedSecret);
                 }
             };
 
@@ -289,7 +289,7 @@ namespace System.Security.Cryptography.Tests
             {
                 OnDecapsulateCore = (ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
                 {
-                    AssertSameBuffer(ciphertextBuffer, ciphertext);
+                    AssertExtensions.Same(ciphertextBuffer, ciphertext);
                     sharedSecret.Fill(0x55);
                 }
             };
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography.Tests
             {
                  OnExportPrivateSeedCore = (Span<byte> destination) =>
                  {
-                    AssertSameBuffer(privateSeedBuffer, destination);
+                     AssertExtensions.Same(privateSeedBuffer, destination);
                  }
             };
 
@@ -397,7 +397,7 @@ namespace System.Security.Cryptography.Tests
             {
                  OnExportDecapsulationKeyCore = (Span<byte> destination) =>
                  {
-                    AssertSameBuffer(privateSeedBuffer, destination);
+                     AssertExtensions.Same(privateSeedBuffer, destination);
                  }
             };
 
@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.Tests
             {
                  OnExportEncapsulationKeyCore = (Span<byte> destination) =>
                  {
-                    AssertSameBuffer(privateSeedBuffer, destination);
+                     AssertExtensions.Same(privateSeedBuffer, destination);
                  }
             };
 
@@ -620,7 +620,7 @@ namespace System.Security.Cryptography.Tests
             {
                 OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
                 {
-                    AssertSameBuffer(buffer, destination);
+                    AssertExtensions.Same(buffer, destination);
                     bytesWritten = writtenSize;
                     return success;
                 }
@@ -685,7 +685,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten()
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten_Oversized()
         {
             MLKemContract kem = new(MLKemAlgorithm.MLKem512)
             {
@@ -693,6 +693,21 @@ namespace System.Security.Cryptography.Tests
                 {
                     // This is not possible and indiciates a derived type is misimplemented.
                     bytesWritten = destination.Length + 1;
+                    return true;
+                }
+            };
+
+            Assert.Throws<CryptographicException>(() => kem.ExportPkcs8PrivateKey());
+        }
+
+        [Fact]
+        public static void ExportPkcs8PrivateKey_MisbehavingBytesWritten_Negative()
+        {
+            MLKemContract kem = new(MLKemAlgorithm.MLKem512)
+            {
+                OnTryExportPkcs8PrivateKeyCore = (Span<byte> destination, out int bytesWritten) =>
+                {
+                    bytesWritten = -1;
                     return true;
                 }
             };
@@ -1043,21 +1058,6 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.TrueExpression(reader.TryReadPrimitiveBitString(out int unusedBits, out subjectPublicKey));
             reader.ThrowIfNotEmpty();
             Assert.Equal(0, unusedBits);
-        }
-
-        private static void AssertSameBuffer(ReadOnlySpan<byte> buffer1, ReadOnlySpan<byte> buffer2)
-        {
-            if (buffer1.Length != buffer2.Length)
-            {
-                Assert.Fail("Expected buffers to have same length. " +
-                    $"The first buffer's length {buffer1.Length} does not match the second buffer's length {buffer2.Length}.");
-            }
-
-            if (!buffer1.Overlaps(buffer2, out int offset) || offset != 0)
-            {
-                Assert.Fail("Expected buffers to be the same memory location, but were not.");
-            }
-
         }
 
         private static bool TryExportEncryptedPkcs8PrivateKeyByKind(

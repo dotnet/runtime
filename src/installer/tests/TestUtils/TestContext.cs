@@ -42,8 +42,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             MicrosoftNETCoreAppVersion = GetTestContextVariable("MNA_VERSION");
             Tfm = GetTestContextVariable("MNA_TFM");
 
-            TestAssetsOutput = GetTestContextVariable("TEST_ASSETS_OUTPUT");
-            TestArtifactsPath = GetTestContextVariable("TEST_ARTIFACTS");
+            TestAssetsOutput = ResolveTestContextPath(GetTestContextVariable("TEST_ASSETS_OUTPUT"));
+            TestArtifactsPath = ResolveTestContextPath(GetTestContextVariable("TEST_ARTIFACTS"));
             Directory.CreateDirectory(TestArtifactsPath);
 
             // Create an empty global.json, so running tests from test artifacts is not affected
@@ -67,6 +67,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             throw new ArgumentException($"Unable to find variable '{name}' in test context variable file '{_testContextVariableFilePath}'");
+        }
+
+        private static string ResolveTestContextPath(string path)
+        {
+            // On macOS, /tmp/ is a symlink. Running apps out of it will resolve the path, so determine the resolved path here.
+            if (!OperatingSystem.IsMacOS())
+                return path;
+
+            string tmpPath = "/tmp/";
+            if (!path.StartsWith(tmpPath))
+                return path;
+
+            // No trailing slash in order to properly check the link target
+            DirectoryInfo tmp = new DirectoryInfo(tmpPath[..^1]);
+            if (tmp.LinkTarget == null)
+                return path;
+
+            return Path.Combine(tmp.ResolveLinkTarget(true).FullName, path[tmpPath.Length..]);
         }
     }
 }

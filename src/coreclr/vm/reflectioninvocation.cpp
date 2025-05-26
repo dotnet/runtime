@@ -1490,7 +1490,7 @@ void RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(
     }
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
     // Don't allow creating instances of delegates
     if (pMT->IsDelegate())
@@ -1589,7 +1589,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     RuntimeTypeHandle::ValidateTypeAbleToBeInstantiated(typeHandle, false /* fGetUninitializedObject */);
 
     MethodTable* pMT = typeHandle.AsMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     // COM allocation can involve the __ComObject base type (with attached CLSID) or a

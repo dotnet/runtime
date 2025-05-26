@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "stacklevelsetter.h"
 #include "patchpointinfo.h"
 #include "jitstd/algorithm.h"
+#include "minipal/time.h"
 
 extern ICorJitHost* g_jitHost;
 
@@ -488,8 +489,9 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compILCodeSize   = methodInfo->ILCodeSize;
     info.compILImportSize = 0;
 
-    info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs          = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compIsVarArgs             = false;
+    info.compUsesAsyncContinuation = false;
 }
 
 //------------------------------------------------------------------------
@@ -3159,6 +3161,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: Jit invoked for AOT\n");
         }
+
+        if (compIsAsync())
+        {
+            printf("OPTIONS: compilation is an async state machine\n");
+        }
     }
 #endif
 
@@ -3200,7 +3207,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
-        regIntLast = REG_R23;
+        regIntLast = REG_R31;
     }
 #endif // TARGET_AMD64
 
@@ -5006,6 +5013,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // TARGET_ARM
 
+    if (compIsAsync())
+    {
+        DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
+    }
+
     // Assign registers to variables, etc.
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
@@ -6075,6 +6087,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Sve() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
+        }
+
+        if (JitConfig.EnableArm64Sve2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
         }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
@@ -7825,12 +7842,7 @@ START:
             pParam->pPrevComp = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
-#if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
-#else
             assert(pParam->pComp != nullptr);
-#endif
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
@@ -9248,12 +9260,7 @@ void Compiler::PrintPerMethodLoopHoistStats()
 void Compiler::RecordStateAtEndOfInlining()
 {
 #if defined(DEBUG)
-    LARGE_INTEGER lpCycles;
-    BOOL          result = QueryPerformanceCounter(&lpCycles);
-    if (result == TRUE)
-    {
-        m_compCyclesAtEndOfInlining = (int64_t)lpCycles.QuadPart;
-    }
+    m_compCyclesAtEndOfInlining = minipal_hires_ticks();
 #endif // defined(DEBUG)
 }
 
@@ -9266,21 +9273,13 @@ void Compiler::RecordStateAtEndOfCompilation()
 #if defined(DEBUG)
     m_compCycles = 0;
 
-    LARGE_INTEGER lpCycles;
-    BOOL          result = QueryPerformanceCounter(&lpCycles);
-    if (result == TRUE)
+    int64_t lpCycles = minipal_hires_ticks();
+    if (lpCycles > m_compCyclesAtEndOfInlining)
     {
-        if ((int64_t)lpCycles.QuadPart > m_compCyclesAtEndOfInlining)
-        {
-            LARGE_INTEGER lpFreq;
-            result = QueryPerformanceFrequency(&lpFreq);
-            if (result == TRUE)
-            {
-                m_compCycles = (int64_t)lpCycles.QuadPart - m_compCyclesAtEndOfInlining;
-                m_compCycles *= 1000000;
-                m_compCycles /= (int64_t)lpFreq.QuadPart;
-            }
-        }
+        int64_t lpFreq = minipal_hires_tick_frequency();
+        m_compCycles   = lpCycles - m_compCyclesAtEndOfInlining;
+        m_compCycles *= 1000000;
+        m_compCycles /= lpFreq;
     }
 #endif // defined(DEBUG)
 }

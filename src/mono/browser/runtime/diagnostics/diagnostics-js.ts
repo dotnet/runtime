@@ -7,7 +7,7 @@ import { PromiseAndController } from "../types/internal";
 import { loaderHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
-import { collectPerfCounters } from "./dotnet-counters";
+import { collectMetrics } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 
 //let diagClient:IDiagClient|undefined = undefined as any;
@@ -121,6 +121,9 @@ class DiagnosticSession extends DiagnosticConnectionBase implements IDiagnosticC
         if (this.diagClient?.onClose) {
             this.diagClient.onClose(this.messagesToSend);
         }
+        if (this.diagClient?.onClosePromise) {
+            this.diagClient.onClosePromise.resolve(this.messagesToSend);
+        }
         if (this.messagesToSend.length === 0) {
             return 0;
         }
@@ -147,7 +150,7 @@ export function createDiagConnectionJs (socket_handle:number, scenarioName:strin
             collectGcDump({});
         }
         if (scenarioName.startsWith("js://counters")) {
-            collectPerfCounters({});
+            collectMetrics({});
         }
         if (scenarioName.startsWith("js://cpu-samples")) {
             collectCpuSamples({});

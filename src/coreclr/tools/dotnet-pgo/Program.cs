@@ -1050,7 +1050,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 bool hasPid = IsSet(_command.Pid);
                 string processName = Get(_command.ProcessName);
-                if (hasPid && processName == null && traceLog.Processes.Count != 1)
+                if (!hasPid && processName == null && traceLog.Processes.Count != 1)
                 {
                     PrintError("Trace file contains multiple processes to distinguish between");
                     PrintOutput("Either a pid or process name from the following list must be specified");

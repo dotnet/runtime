@@ -224,6 +224,8 @@ public:
         return m_gcPtrCount != 0;
     }
 
+    bool HasGCByRef() const;
+
     bool IsStackOnly(Compiler* comp) const;
 
     bool IsGCPtr(unsigned slot) const

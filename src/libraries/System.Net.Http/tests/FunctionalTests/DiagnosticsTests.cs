@@ -699,7 +699,7 @@ namespace System.Net.Http.Functional.Tests
                         requestRecorder.VerifyActivityRecorded(2);
                         Activity req2 = requestRecorder.LastFinishedActivity;
                         Assert.NotSame(req1, req2);
-                        waitForConnectionRecorder.VerifyActivityRecorded(version == HttpVersion30 ? 2 : 1);
+                        waitForConnectionRecorder.VerifyActivityRecorded(1);
                         connectionSetupRecorder.VerifyActivityRecorded(1);
 
                         // The second request should also have a link to the shared connection.
@@ -1070,83 +1070,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
-        {
-            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                Exception exceptionLogged = null;
-
-                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
-                {
-                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        GetProperty<HttpRequestMessage>(kvp.Value, "Request");
-                        TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
-                        Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();
-                    }
-                    else if (kvp.Key.Equals("System.Net.Http.Exception"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        exceptionLogged = GetProperty<Exception>(kvp.Value, "Exception");
-                    }
-                });
-
-                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-                {
-                    diagnosticListenerObserver.Enable();
-
-                    using (HttpClientHandler handler = CreateHttpClientHandler(useVersion))
-                    using (HttpClient client = CreateHttpClient(handler, useVersion))
-                    {
-                        // Set a ftp proxy.
-                        // Forces a synchronous exception for SocketsHttpHandler.
-                        // SocketsHttpHandler only allow http & https & socks scheme for proxies.
-                        handler.Proxy = new WebProxy($"ftp://foo.bar", false);
-                        var request = new HttpRequestMessage(HttpMethod.Get, InvalidUri)
-                        {
-                            Version = Version.Parse(useVersion)
-                        };
-
-                        // We cannot use Assert.Throws<Exception>(() => { SendAsync(...); }) to verify the
-                        // synchronous exception here, because DiagnosticsHandler SendAsync() method has async
-                        // modifier, and returns Task. If the call is not awaited, the current test method will continue
-                        // run before the call is completed, thus Assert.Throws() will not capture the exception.
-                        // We need to wait for the Task to complete synchronously, to validate the exception.
-
-                        Exception exception = null;
-                        if (bool.Parse(testAsync))
-                        {
-                            Task sendTask = client.SendAsync(request);
-                            Assert.True(sendTask.IsFaulted);
-                            exception = sendTask.Exception.InnerException;
-                        }
-                        else
-                        {
-                            try
-                            {
-                                client.Send(request);
-                            }
-                            catch (Exception ex)
-                            {
-                                exception = ex;
-                            }
-                            Assert.NotNull(exception);
-                        }
-
-                        await activityStopTcs.Task;
-
-                        Assert.IsType<NotSupportedException>(exception);
-                        Assert.Same(exceptionLogged, exception);
-                    }
-                }
-            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
             await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
@@ -1252,9 +1175,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("fAlSe")]
         [InlineData("helloworld")]
         [InlineData("")]
-        public void SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
+        public async Task SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
             {
                 Environment.SetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName, envVarValue);
 
@@ -1283,7 +1206,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(isInstrumentationEnabled, anyEventLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -1593,6 +1516,77 @@ namespace System.Net.Http.Functional.Tests
 
                 await clientTask;
             });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task Http3_WaitForConnection_RecordedWhenWaitingForStream()
+        {
+            if (UseVersion != HttpVersion30 || !TestAsync)
+            {
+                throw new SkipTestException("This test is specific to async HTTP/3 runs.");
+            }
+
+            using Http3LoopbackServer server =  CreateHttp3LoopbackServer(new Http3Options() { MaxInboundBidirectionalStreams = 1 });
+
+            TaskCompletionSource stream1Created = new();
+            TaskCompletionSource allRequestsWaiting = new();
+
+            Task serverTask = Task.Run(async () =>
+            {
+                await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                Http3LoopbackStream stream1 = await connection.AcceptRequestStreamAsync();
+                stream1Created.SetResult();
+
+                await allRequestsWaiting.Task;
+                await stream1.HandleRequestAsync();
+                await stream1.DisposeAsync();
+
+                Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
+                await stream2.HandleRequestAsync();
+                await stream2.DisposeAsync();
+
+                Http3LoopbackStream stream3 = await connection.AcceptRequestStreamAsync();
+                await stream3.HandleRequestAsync();
+                await stream3.DisposeAsync();
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using Activity parentActivity = new Activity("parent").Start();
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                {
+                    VerifyParent = false
+                };
+                waitForConnectionRecorder.OnStarted = a =>
+                {
+                    if (waitForConnectionRecorder.Started == 3)
+                    {
+                        allRequestsWaiting.SetResult();
+                    }
+                };
+
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                using HttpClient client = new HttpClient(CreateSocketsHttpHandler(allowAllCertificates: true))
+                {
+                    DefaultRequestVersion = HttpVersion30,
+                    DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
+
+                Task<HttpResponseMessage> request1Task = client.GetAsync(server.Address);
+                await stream1Created.Task;
+
+                Task<HttpResponseMessage> request2Task = client.GetAsync(server.Address);
+                Task<HttpResponseMessage> request3Task = client.GetAsync(server.Address);
+
+                await new Task[] { request1Task, request2Task, request3Task }.WhenAllOrAnyFailed(30_000);
+                Assert.Equal(3, waitForConnectionRecorder.Stopped);
+            });
+
+            await new Task[] { serverTask, clientTask }.WhenAllOrAnyFailed(30_000);
         }
 
         private static T GetProperty<T>(object obj, string propertyName)

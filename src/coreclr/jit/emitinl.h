@@ -585,10 +585,17 @@ inline bool insIsCMOV(instruction ins)
  *  false. Returns the final result of the callback.
  */
 template <typename Callback>
-bool emitter::emitGenNoGCLst(Callback& cb)
+bool emitter::emitGenNoGCLst(Callback& cb, bool skipMainPrologsAndEpilogs /* = false */)
 {
     for (insGroup* ig = emitIGlist; ig; ig = ig->igNext)
     {
+        if (skipMainPrologsAndEpilogs)
+        {
+            if (ig == emitPrologIG)
+                continue;
+            if (ig->igFlags & IGF_EPILOG)
+                continue;
+        }
         if ((ig->igFlags & IGF_NOGCINTERRUPT) && ig->igSize > 0)
         {
             emitter::instrDesc* id = emitFirstInstrDesc(ig->igData);
