@@ -36,8 +36,6 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, RhpNewFastAlign8);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8_VC, RhpNewFastMisalign);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFastAlign8);
-#else
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFast);
 #endif
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
@@ -52,7 +50,6 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, RhpNewFast_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, RhpNewArrayFast_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewObjectArrayFast_UP);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, RhpNewArrayFast_UP);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString_UP), ECall::FastAllocateString);
         }
