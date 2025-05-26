@@ -25,6 +25,7 @@ typedef unsigned short char16_t;
 #include <palprivate.h>
 #include <minipal/utils.h>
 #include <minipal/types.h>
+#include <minipal/time.h>
 #include <errno.h>
 
 #define PALTEST(testfunc, testname) \
@@ -162,7 +163,6 @@ inline ULONG   VAL32(ULONG x)
 
 WCHAR* convert(const char * aString);
 char* convertC(const WCHAR * wString);
-UINT64 GetHighPrecisionTimeStamp(LARGE_INTEGER performanceFrequency);
 
 extern const char* szTextFile;
 

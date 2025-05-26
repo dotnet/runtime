@@ -31,6 +31,7 @@
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -3329,7 +3330,7 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
 retry:
     if (millis != INFINITE)
     {
-        dwStart = CLRGetTickCount64();
+        dwStart = minipal_lowres_ticks();
     }
 
     if (tryNonblockingWaitFirst)
@@ -3355,7 +3356,7 @@ retry:
         // in the thread state bits. Otherwise we just go back to sleep again.
         if (millis != INFINITE)
         {
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (dwEnd - dwStart >= millis)
             {
                 ret = WAIT_TIMEOUT;
@@ -3438,7 +3439,7 @@ retry:
 
             // Compute the new timeout value by assume that the timeout
             // is not large enough for more than one wrap
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (millis != INFINITE)
             {
                 if (dwEnd - dwStart >= millis)
@@ -3566,7 +3567,7 @@ DWORD Thread::DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertabl
 
     if (INFINITE != millis)
     {
-        dwStart = CLRGetTickCount64();
+        dwStart = minipal_lowres_ticks();
     }
 
     ret = SignalObjectAndWait(pHandles[0], pHandles[1], millis, alertable);
@@ -3585,7 +3586,7 @@ retry:
         }
         if (INFINITE != millis)
         {
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (dwStart + millis <= dwEnd)
             {
                 ret = WAIT_TIMEOUT;
@@ -3595,7 +3596,7 @@ retry:
             {
                 millis -= (DWORD)(dwEnd - dwStart);
             }
-            dwStart = CLRGetTickCount64();
+            dwStart = minipal_lowres_ticks();
         }
         //Retry case we don't want to signal again so only do the wait...
         ret = WaitForSingleObjectEx(pHandles[1],millis,TRUE);
@@ -3957,7 +3958,7 @@ void Thread::UserSleep(INT32 time)
     DWORD dwTime = (DWORD)time;
 retry:
 
-    ULONGLONG start = CLRGetTickCount64();
+    ULONGLONG start = minipal_lowres_ticks();
 
     res = ClrSleepEx (dwTime, TRUE);
 
@@ -3977,7 +3978,7 @@ retry:
         }
         else
         {
-            ULONGLONG actDuration = CLRGetTickCount64() - start;
+            ULONGLONG actDuration = minipal_lowres_ticks() - start;
 
             if (dwTime > actDuration)
             {
