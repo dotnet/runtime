@@ -9815,7 +9815,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 {
                                     GenTreeCast* cast = op1->AsCast();
                                     if (!varTypeIsFloating(cast->CastToType()) &&
-                                        !varTypeIsFloating(cast->CastFromType()) &&
+                                        !varTypeIsFloating(cast->CastFromType()) && !cast->CastOp()->OperIsLong() &&
                                         (genTypeSize(cast->CastToType()) >= genTypeSize(simdBaseType)) &&
                                         (genTypeSize(cast->CastFromType()) >= genTypeSize(simdBaseType)))
                                     {
