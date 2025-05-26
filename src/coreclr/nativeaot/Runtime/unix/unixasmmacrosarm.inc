@@ -24,7 +24,7 @@
 #define TrapThreadsFlags_TrapThreads     2
 
 // GC minimal sized object. We use this to switch between 4 and 8 byte alignment in the GC heap (see AllocFast.asm).
-#define SIZEOF__MinObject 12
+#define ASM_MIN_OBJECT_SIZE 12
 
 .macro NESTED_ENTRY Name, Section, Handler
         LEAF_ENTRY \Name, \Section

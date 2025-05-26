@@ -42,6 +42,8 @@
 #define GC_ALLOC_ALIGN8_BIAS        4
 #define GC_ALLOC_ALIGN8             8
 
+#define G_FREE_OBJECT_METHOD_TABLE  g_pFreeObjectEEType
+
 #if defined(HOST_AMD64)
 #include "unixasmmacrosamd64.inc"
 #elif defined(HOST_ARM)
