@@ -462,16 +462,24 @@ INLINE_GET_ALLOC_CONTEXT macro Reg, RegTrash
 
         endm
 
+; Pushes a TransitionBlock on the stack without saving the argument registers. See
+; the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
 PUSH_COOP_PINVOKE_FRAME macro target
         
-        PROLOG_WITH_TRANSITION_BLOCK
+        __PWTB_StackAlloc = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES + 8 ; alignment to make the stack 16b aligned
+        __PWTB_TransitionBlock = __PWTB_StackAlloc
+
+        PUSH_CALLEE_SAVED_REGISTERS
+        alloc_stack     __PWTB_StackAlloc
+        END_PROLOGUE
         lea     target, [rsp + __PWTB_TransitionBlock]
 
         endm
 
 POP_COOP_PINVOKE_FRAME macro
 
-        EPILOG_WITH_TRANSITION_BLOCK
+        add rsp, __PWTB_StackAlloc
+        POP_CALLEE_SAVED_REGISTERS
 
         endm
 

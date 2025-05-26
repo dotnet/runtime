@@ -373,7 +373,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 .macro PUSH_COOP_PINVOKE_FRAME target
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 0, 0
         add     \target, sp, #__PWTB_TransitionBlock
 .endm 
 

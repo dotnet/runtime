@@ -182,7 +182,7 @@ $FuncName
     MACRO
     PUSH_COOP_PINVOKE_FRAME $Target
 
-        PROLOG_WITH_TRANSITION_BLOCK
+        PROLOG_WITH_TRANSITION_BLOCK 0, {false}
         add     $Target, sp, #__PWTB_TransitionBlock
 
     MEND
