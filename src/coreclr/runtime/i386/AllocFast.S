@@ -4,93 +4,29 @@
 .intel_syntax noprefix
 #include "AsmMacros_Shared.h"
 
-// Shared code for RhpNewFast, RhpNewFastAlign8 and RhpNewFastMisalign
-//  ECX == MethodTable
-.macro NEW_FAST Variation
-
-        // edx = ee_alloc_context pointer, TRASHES eax
-        INLINE_GET_ALLOC_CONTEXT
-
-        // When doing aligned or misaligned allocation we first check
-        // the alignment and skip to the regular path if it's already
-        // matching the expectation.
-        // Otherwise, we try to allocate size + ASM_MIN_OBJECT_SIZE and
-        // then prepend a dummy free object at the beginning of the
-        // allocation.
-.ifnc \Variation,
-        mov         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        test        eax, 7
-.ifc \Variation,Align8
-        jz          1f // AlreadyAligned
-.else // Variation == "Misalign"
-        jnz         1f // AlreadyAligned
-.endif
-
-        mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, ASM_MIN_OBJECT_SIZE
-        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          2f // AllocFailed
-        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
-
-        // calc the new object pointer and initialize it
-        sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        mov         [eax + OFFSETOF__Object__m_pEEType], ecx
-
-        // initialize the padding object preceeding the new object
-        PREPARE_EXTERNAL_VAR G_FREE_OBJECT_METHOD_TABLE, edx
-        mov         [eax + OFFSETOF__Object__m_pEEType - ASM_MIN_OBJECT_SIZE], edx
-        mov         dword ptr [eax + OFFSETOF__Array__m_Length - ASM_MIN_OBJECT_SIZE], 0
-
-        ret
-.endif // Variation != ""
-
-1: // AlreadyAligned
-        mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          2f // AllocFailed
-        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
-
-        // calc the new object pointer and initialize it
-        sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        mov         [eax + OFFSETOF__Object__m_pEEType], ecx
-
-        ret
-
-2: // AllocFailed
-.ifc \Variation,
-        xor         edx, edx
-.else
-.ifc \Variation,Align8
-        mov         edx, GC_ALLOC_ALIGN8
-.else
-        mov         edx, GC_ALLOC_ALIGN8 + GC_ALLOC_ALIGN8_BIAS
-.endif
-.endif
-        jmp         RhpNewObject
-
-.endm
-
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  ECX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
-        NEW_FAST
+        // edx = ee_alloc_context pointer, TRASHES eax
+        INLINE_GET_ALLOC_CONTEXT
+
+        mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
+        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
+        ja          LOCAL_LABEL(RhpNewFast_AllocFailed)
+        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
+
+        // calc the new object pointer and initialize it
+        sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
+        mov         [eax + OFFSETOF__Object__m_pEEType], ecx
+
+        ret
+
+LOCAL_LABEL(RhpNewFast_AllocFailed):
+        xor         edx, edx
+        jmp         RhpNewObject
 LEAF_END RhpNewFast, _TEXT
-
-// Allocate simple object (not finalizable, array or value type) on an 8 byte boundary.
-//  ECX == MethodTable
-LEAF_ENTRY RhpNewFastAlign8, _TEXT
-        NEW_FAST Align8
-LEAF_END RhpNewFastAlign8, _TEXT
-
-// Allocate a value type object (i.e. box it) on an 8 byte boundary + 4 (so that the value type payload
-// itself is 8 byte aligned).
-//  ECX == MethodTable
-LEAF_ENTRY RhpNewFastMisalign, _TEXT
-        NEW_FAST Misalign
-LEAF_END RhpNewFastMisalign, _TEXT
 
 // Allocate non-array object with finalizer.
 //  ECX == MethodTable
@@ -99,18 +35,10 @@ LEAF_ENTRY RhpNewFinalizable, _TEXT
         jmp         RhpNewObject
 LEAF_END RhpNewFinalizable, _TEXT
 
-// Allocate non-array object with finalizer on an 8 byte boundary.
-//  ECX == MethodTable
-LEAF_ENTRY RhpNewFinalizableAlign8, _TEXT
-        mov         edx, GC_ALLOC_FINALIZE + GC_ALLOC_ALIGN8        // Flags
-        jmp         RhpNewObject
-LEAF_END RhpNewFinalizableAlign8, _TEXT
-
 // Allocate non-array object
 //  ECX == MethodTable
 //  EDX == alloc flags
 LEAF_ENTRY RhpNewObject, _TEXT
-
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax                                             // transition frame
@@ -137,7 +65,6 @@ NewOutOfMemory:
 
         xor         edx, edx            // Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
-
 LEAF_END RhpNewObject, _TEXT
 
 // Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
@@ -152,7 +79,6 @@ LEAF_END RhpNewObject, _TEXT
 .endm
 
 .macro NEW_ARRAY_FAST
-
         // edx = ee_alloc_context pointer, TRASHES ecx
         INLINE_GET_ALLOC_CONTEXT
 
@@ -197,14 +123,12 @@ LEAF_END RhpNewObject, _TEXT
         ESP_EPILOG_END
 
         jmp         RhpNewArray
-
 .endm
 
 // Allocate a new string.
 //  ECX == MethodTable
 //  EDX == element count
 LEAF_ENTRY RhNewString, _TEXT
-
         // Make sure computing the aligned overall allocation size won't overflow
         cmp         edx, MAX_STRING_LENGTH
         ja          StringSizeOverflow
@@ -224,7 +148,6 @@ StringSizeOverflow:
         // ecx holds MethodTable pointer already
         xor         edx, edx            // Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
-
 LEAF_END RhNewString, _TEXT
 
 
@@ -232,7 +155,6 @@ LEAF_END RhNewString, _TEXT
 //  ECX == MethodTable
 //  EDX == element count
 LEAF_ENTRY RhpNewArrayFast, _TEXT
-
         NEW_ARRAY_FAST_PROLOG
 
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
@@ -280,7 +202,6 @@ ArraySizeOverflow:
         // ecx holds MethodTable pointer already
         mov         edx, 1          // Indicate that we should throw OverflowException
         jmp         RhExceptionHandling_FailedAllocation
-
 LEAF_END RhpNewArrayFast, _TEXT
 
 
@@ -289,7 +210,6 @@ LEAF_END RhpNewArrayFast, _TEXT
 //  ECX == MethodTable
 //  EDX == element count
 LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
-
         cmp         edx, (ASM_LARGE_OBJECT_SIZE - 256)/4 // sizeof(void*)
         jae         RhpNewArray
 
@@ -302,18 +222,22 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
-
 LEAF_END RhpNewObjectArrayFast, _TEXT
 #endif
 
-// Shared code for RhpNewArray and RhpNewArrayFastAlign8
-.macro NEW_ARRAY Flags
+//
+// Object* RhpNewArray(MethodTable *pMT, INT_PTR size)
+//
+// ecx == MethodTable
+// edx == element count
+//
+LEAF_ENTRY RhpNewArray, _TEXT
         PUSH_COOP_PINVOKE_FRAME eax
 
         // Push alloc helper arguments (transition frame, size, flags, MethodTable).
         push        eax                                             // transition frame
         push        edx                                             // numElements
-        push        \Flags                                          // Flags
+        push        0                                               // Flags
         push        ecx                                             // MethodTable
 
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
@@ -324,37 +248,14 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
         POP_COOP_PINVOKE_FRAME
 
         test        eax, eax
-        jz          1f
+        jz          LOCAL_LABEL(RhpNewArray_AllocFailed)
 
         ret
 
-1:
+LOCAL_LABEL(RhpNewArray_AllocFailed):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
         xor         edx, edx        // Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
-.endm
-
-//
-// Object* RhpNewArray(MethodTable *pMT, INT_PTR size)
-//
-// ecx == MethodTable
-// edx == element count
-//
-LEAF_ENTRY RhpNewArray, _TEXT
-        NEW_ARRAY 0
 LEAF_END RhpNewArray, _TEXT
-
-//
-// Object* RhpNewArrayFastAlign8(MethodTable *pMT, INT_PTR size)
-//
-// ecx == MethodTable
-// edx == element count
-//
-LEAF_ENTRY RhpNewArrayFastAlign8, _TEXT
-        // We don't really provide a fast path here. CoreCLR has a configurable threshold
-        // for array size to go to large object heap and it's not worth the extra effort
-        // to check for it.
-        NEW_ARRAY GC_ALLOC_ALIGN8
-LEAF_END RhpNewArrayFastAlign8, _TEXT
