@@ -13346,7 +13346,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     {
         LPWSTR interpreterConfig;
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
-        if ((interpreterConfig != NULL) && !interpreterMgr->LoadInterpreter())
+        if (
+#ifdef FEATURE_JIT
+            // If both JIT and interpret are available, load the interpreter for testing purposes only if the config switch is set
+            (interpreterConfig != NULL) &&
+#endif
+            !interpreterMgr->LoadInterpreter())
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
         }
@@ -13367,6 +13372,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
+#ifndef FEATURE_JIT
+    if (!ret)
+    {
+        _ASSERTE(!"this platform does not support JIT compilation");
+    }
+#else // !FEATURE_JIT
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13425,6 +13436,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
+#endif // !FEATURE_JIT
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;
