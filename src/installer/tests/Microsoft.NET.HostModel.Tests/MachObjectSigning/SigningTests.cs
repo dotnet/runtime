@@ -129,14 +129,14 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        // [Fact]
-        // [PlatformSpecific(TestPlatforms.OSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         void MatchesCodesignOutput()
         {
             using var testArtifact = TestArtifact.Create(nameof(MatchesCodesignOutput));
             foreach (var filePath in GetTestFilePaths(testArtifact))
             {
-                string fileName = Path.GetFileName(filePath);
+                string identifier = Path.GetFileName(filePath);
                 string originalFilePath = filePath;
                 string codesignFilePath = filePath + ".codesigned";
                 string managedSignedPath = filePath + ".signed";
@@ -144,15 +144,14 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 // Codesigned file
                 File.Copy(filePath, codesignFilePath);
                 Assert.True(Codesign.IsAvailable, "Could not find codesign tool");
-                Codesign.Run("--remove-signature --preserve-entitlements", codesignFilePath).ExitCode.Should().Be(0, $"'codesign --remove-signature {codesignFilePath}' failed!");
-                Codesign.Run("-s -", codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - {codesignFilePath}' failed!");
+                Codesign.Run($"-s - --preserve-metadata=entitlements -f -i {identifier}", codesignFilePath).ExitCode.Should().Be(0, $"'codesign -s - --preserve-metadata=Entitlements -f' failed for '{codesignFilePath}'. Original file: '{filePath}'");
 
                 // Managed signed file
-                AdHocSignFile(originalFilePath, managedSignedPath, fileName);
+                AdHocSignFile(originalFilePath, managedSignedPath, identifier);
 
                 var check = Codesign.Run("-v", managedSignedPath);
                 check.ExitCode.Should().Be(0, check.StdErr, $"Failed to sign a copy of '{filePath}'");
-                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath, fileName), $"Managed signature does not match codesign output for '{filePath}'");
+                Assert.True(MachFilesAreEquivalent(codesignFilePath, managedSignedPath), $"File at '{managedSignedPath}' signed by managed codesigner does not match file '{codesignFilePath}' signed by codesign tool. Original file: '{filePath}'");
             }
         }
 
@@ -177,13 +176,13 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        static bool MachFilesAreEquivalent(string codesignedPath, string managedSignedPath, string fileName)
+        static bool MachFilesAreEquivalent(string codesignedPath, string managedSignedPath)
         {
             using var managedFileStream = new FileStream(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var managedMMapFile = MemoryMappedFile.CreateFromFile(managedFileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var managedSignedAccessor = managedMMapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 
-            using var codesignedFileStream = new FileStream(managedSignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
+            using var codesignedFileStream = new FileStream(codesignedPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1);
             using var codesignedMMapFile = MemoryMappedFile.CreateFromFile(codesignedFileStream, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true);
             using var codesignedAccessor = codesignedMMapFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.CopyOnWrite);
 

@@ -248,8 +248,8 @@ internal unsafe partial class MachObjectFile
         if (a._codeSignatureBlob is null || b._codeSignatureBlob is null)
             return false;
         // This may be false if the __LINKEDIT segment load command is not on the first page, but that is unlikely.
-        // if (!CodeSignature.AreEquivalent(a._codeSignatureBlob, b._codeSignatureBlob))
-        //     return false;
+        if (!CodeSignature.AreEquivalent(a._codeSignatureBlob, b._codeSignatureBlob))
+            return false;
 
         return true;
 

@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -18,9 +19,15 @@ namespace Microsoft.NET.HostModel.MachO;
 /// </remarks>
 internal sealed unsafe class CodeDirectoryBlob : Blob
 {
-    public override uint Size => (uint)(base.Size + sizeof(CodeDirectoryHeader) + _data.Length);
+    public override uint Size => (uint)(base.Size
+        + sizeof(CodeDirectoryHeader)
+        + Encoding.UTF8.GetByteCount(_identifier) + 1 // +1 for null terminator
+        + SpecialSlotCount * HashSize
+        + CodeSlotCount * HashSize);
     private CodeDirectoryHeader _cdHeader;
-    private byte[] _data;
+    private string _identifier;
+    private byte[][] _specialSlotHashes;
+    private byte[][] _codeHashes;
 
     public CodeDirectoryBlob(MemoryMappedViewAccessor accessor, long offset)
         : base(accessor, offset)
@@ -33,17 +40,43 @@ internal sealed unsafe class CodeDirectoryBlob : Blob
         size = size.ConvertFromBigEndian();
         accessor.Read(offset + base.Size, out _cdHeader);
         var dataSize = size - (base.Size + sizeof(CodeDirectoryHeader));
-        _data = new byte[dataSize];
+        var _data = new byte[dataSize];
         accessor.ReadArray(offset + base.Size + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
+
+        int identifierDataOffset = GetDataOffset(IdentifierOffset);
+        int nullTerminatorIndex = _data.AsSpan().Slice(identifierDataOffset).IndexOf((byte)0x00);
+        _identifier = Encoding.UTF8.GetString(_data, identifierDataOffset, nullTerminatorIndex);
+        var hashesDataOffset = GetDataOffset(HashesOffset);
+        _specialSlotHashes = new byte[SpecialSlotCount][];
+        _codeHashes = new byte[CodeSlotCount][];
+        // Ensure the highest special slot is still within _data bounds
+        if (hashesDataOffset - SpecialSlotCount * HashSize < 0)
+        {
+            throw new InvalidDataException("Invalid CodeDirectoryBlob: SpecialSlotCount is too high for the provided data.");
+        }
+        // Special slot hashes are stored negatively indexed from HashesOffset
+        int specialSlotHashesOffset = (int)(hashesDataOffset - SpecialSlotCount * HashSize);
+        for (int i = 0; i < SpecialSlotCount; i++)
+        {
+            _specialSlotHashes[i] = _data.AsSpan(specialSlotHashesOffset + i * HashSize, HashSize).ToArray();
+        }
+        _specialSlotHashes.Reverse();
+
+        // Code slot hashes are stored positively indexed from HashesOffset
+        for (int codeSlotNumber = 0; codeSlotNumber < CodeSlotCount; codeSlotNumber++)
+        {
+            _codeHashes[codeSlotNumber] = _data.AsSpan(hashesDataOffset + codeSlotNumber * HashSize, HashSize).ToArray();
+        }
     }
 
-    public CodeDirectoryBlob(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags, byte[] hashes) : base(BlobMagic.CodeDirectory)
+    private int GetDataOffset(uint blobOffset) => (int)(blobOffset - base.Size - sizeof(CodeDirectoryHeader));
+
+    public CodeDirectoryBlob(string identifier, uint codeSlotCount, uint specialCodeSlotCount, uint executableLength, byte hashSize, HashType hashType, ulong signatureStart, ulong execSegmentBase, ulong execSegmentLimit, ExecutableSegmentFlags execSegmentFlags, byte[][] specialSlotHashes, byte[][] codeHashes) : base(BlobMagic.CodeDirectory)
     {
         _cdHeader = new CodeDirectoryHeader(identifier, codeSlotCount, specialCodeSlotCount, executableLength, hashSize, hashType, signatureStart, execSegmentBase, execSegmentLimit, execSegmentFlags);
-        Debug.Assert(hashes.Length == hashSize * (specialCodeSlotCount + codeSlotCount));
-        _data = new byte[hashes.Length + Encoding.UTF8.GetByteCount(identifier) + 1];
-        int count = Encoding.UTF8.GetBytes(identifier, 0, identifier.Length, _data, 0);
-        hashes.CopyTo(_data, count + 1);
+        _identifier = identifier;
+        _specialSlotHashes = specialSlotHashes;
+        _codeHashes = codeHashes;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -88,7 +121,7 @@ internal sealed unsafe class CodeDirectoryBlob : Blob
             _codeLimit64 = (signatureStart >= uint.MaxValue ? signatureStart : 0).ConvertToBigEndian();
             _execSegmentBase = execSegmentBase.ConvertToBigEndian();
             _execSegmentLimit = execSegmentLimit.ConvertToBigEndian();
-            _execSegmentFlags = (ExecutableSegmentFlags)((uint)execSegmentFlags).ConvertToBigEndian();
+            _execSegmentFlags = (ExecutableSegmentFlags)((ulong)execSegmentFlags).ConvertToBigEndian();
         }
     }
 
@@ -147,16 +180,106 @@ internal sealed unsafe class CodeDirectoryBlob : Blob
         get => (ExecutableSegmentFlags)((ulong)_cdHeader._execSegmentFlags).ConvertFromBigEndian();
         set => _cdHeader._execSegmentFlags = (ExecutableSegmentFlags)((ulong)value).ConvertToBigEndian();
     }
+    public byte HashSize
+    {
+        get => _cdHeader.HashSize;
+        set => _cdHeader.HashSize = value;
+    }
 
     public override void Write(MemoryMappedViewAccessor accessor, long offset)
     {
         base.Write(accessor, offset);
         accessor.Write<CodeDirectoryHeader>(offset + sizeof(uint) + sizeof(uint), ref _cdHeader);
-        accessor.WriteArray(offset + base.Size + sizeof(CodeDirectoryHeader), _data, 0, _data.Length);
+        var identifierLength = Encoding.UTF8.GetByteCount(_identifier);
+        accessor.WriteArray(offset + IdentifierOffset, Encoding.UTF8.GetBytes(_identifier), 0, identifierLength);
+        accessor.Write(offset + identifierLength + IdentifierOffset, (byte)0x00); // Null-terminate the identifier
+        Debug.Assert(identifierLength + 1 + IdentifierOffset == HashesOffset - SpecialSlotCount * HashSize);
+        int specialSlotHashesOffset = (int)(HashesOffset - SpecialSlotCount * HashSize);
+        for (int i = 0; i < SpecialSlotCount; i++)
+        {
+            accessor.WriteArray(offset + specialSlotHashesOffset + i * HashSize, _specialSlotHashes[i], 0, HashSize);
+        }
+
+        int codeHashesOffset = (int)HashesOffset;
+        for (int i = 0; i < CodeSlotCount; i++)
+        {
+            accessor.WriteArray(offset + codeHashesOffset + i * HashSize, _codeHashes[i], 0, HashSize);
+        }
     }
 
     public override void Write(Span<byte> buffer)
     {
         throw new NotImplementedException("Not implemented yet.");
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj is not CodeDirectoryBlob other)
+            return false;
+        if (string.Empty == "")
+            throw new NotImplementedException(this.ToString());
+
+        bool cdHeaderIsEqual = _cdHeader._version == other._cdHeader._version &&
+            _cdHeader._flags == other._cdHeader._flags &&
+            _cdHeader._hashesOffset == other._cdHeader._hashesOffset &&
+            _cdHeader._identifierOffset == other._cdHeader._identifierOffset &&
+            _cdHeader._specialSlotCount == other._cdHeader._specialSlotCount &&
+            _cdHeader._codeSlotCount == other._cdHeader._codeSlotCount &&
+            _cdHeader._executableLength == other._cdHeader._executableLength &&
+            _cdHeader.HashSize == other._cdHeader.HashSize &&
+            _cdHeader.HashType == other._cdHeader.HashType &&
+            _cdHeader.Platform == other._cdHeader.Platform &&
+            _cdHeader.Log2PageSize == other._cdHeader.Log2PageSize &&
+            _cdHeader._reserved == other._cdHeader._reserved &&
+            _cdHeader._scatterOffset == other._cdHeader._scatterOffset &&
+            _cdHeader._teamIdOffset == other._cdHeader._teamIdOffset &&
+            _cdHeader._reserved2 == other._cdHeader._reserved2 &&
+            _cdHeader._codeLimit64 == other._cdHeader._codeLimit64 &&
+            _cdHeader._execSegmentBase == other._cdHeader._execSegmentBase &&
+            _cdHeader._execSegmentFlags == other._cdHeader._execSegmentFlags;
+        if (!cdHeaderIsEqual)
+        {
+            return false;
+        }
+        for (int i = 0; i < _specialSlotHashes.Length; i++)
+        {
+            if (!_specialSlotHashes[i].SequenceEqual(other._specialSlotHashes[i]))
+            {
+                return false;
+            }
+        }
+        // The first 2 code slots may have differences due to the load commands and padding added.
+        for (int i = 2; i < _codeHashes.Length; i++)
+        {
+            if (!_codeHashes[i].SequenceEqual(other._codeHashes[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public override int GetHashCode()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override string ToString()
+    {
+#pragma warning disable CA1872 // Prefer 'System.Convert.ToHexStringLower(byte[])' over call chains based on 'System.BitConverter.ToString(byte[])'
+        return $"""
+        Identifier: {_identifier}
+        CodeDirectory v={Version,0:X} size={Size} flags=0x{Flags,0:x}({Flags.ToString().ToLowerInvariant()}) hashes={SpecialSlotCount}+{CodeSlotCount}
+        Executable Segment base={ExecSegmentBase}
+        Executable Segment limit={ExecSegmentLimit}
+        Executable Segment flags=0x{ExecSegmentFlags:x}
+        Page size={1 << _cdHeader.Log2PageSize} bytes
+            {string.Join($"{Environment.NewLine}    ", _specialSlotHashes.Select((hash, index)
+                => $"-{SpecialSlotCount - index}: {BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant()}"))}
+            {string.Join($"{Environment.NewLine}    ", _codeHashes.Select((hash, index)
+                => $"{index}: {BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant()}"))}
+        """;
+#pragma warning restore CA1872 // Prefer 'System.Convert.ToHexStringLower(byte[])' over call chains based on 'System.BitConverter.ToString(byte[])'
     }
 }

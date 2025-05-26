@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -19,6 +20,7 @@ internal unsafe partial class MachObjectFile
     {
         private const uint PageSize = MachObjectFile.PageSize;
         private const byte DefaultHashSize = 32;
+        private static byte[] EmptyHash => new byte[DefaultHashSize];
         private const HashType DefaultHashType = HashType.SHA256;
         private static IncrementalHash GetDefaultIncrementalHash() => IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
@@ -33,8 +35,9 @@ internal unsafe partial class MachObjectFile
 
         /// <summary>
         /// Creates a new code signature from the file.
-        /// The signature is composed of an Embedded Signature Superblob header, followed by a CodeDirectory blob, a Requirements blob, and a CMS blob.
+        /// The signature is composed of an Embedded Signature Superblob header, followed by a CodeDirectory blob, a Requirements blob, and a CMS blob. Optionally, it may also contain an Entitlements blob and a DER Entitlements blob if the <paramref name="oldSignature"/> contains them.
         /// The codesign tool also adds an empty Requirements blob and an empty CMS blob, which are not strictly required but are added here for compatibility.
+        /// If there are entitlements blobs in the old signature, they are preserved in the new signature.
         /// </summary>
         internal static CodeSignature CreateSignature(MachObjectFile machObject, MemoryMappedViewAccessor file, string identifier, CodeSignature? oldSignature)
         {
@@ -53,74 +56,58 @@ internal unsafe partial class MachObjectFile
                     CodeDirectorySpecialSlot.Requirements);
 
 
-            byte[] identifierBytes = new byte[GetIdentifierLength(identifier)];
-            Encoding.UTF8.GetBytes(identifier).CopyTo(identifierBytes, 0);
-
-            byte[] codeDirectoryHashes = new byte[(GetCodeSlotCount(signatureStart) + specialCodeSlotCount) * DefaultHashSize];
+            byte[][] specialSlotHashes = new byte[(int)specialCodeSlotCount][];
+            for (int i = 0; i < specialSlotHashes.Length; i++)
+            {
+                specialSlotHashes[i] = EmptyHash;
+            }
+            byte[][] codeDirectoryHashes = new byte[(int)GetCodeSlotCount(signatureStart)][];
 
             // Fill in the CodeDirectory hashes
+            var hasher = GetDefaultIncrementalHash();
+
+            // Special slot hashes
+            // -7 is the der entitlements blob hash
+            if (derEntitlementsBlob != null)
             {
-                var hasher = GetDefaultIncrementalHash();
+                hasher.AppendData(derEntitlementsBlob.GetBytes());
+                specialSlotHashes[(int)CodeDirectorySpecialSlot.DerEntitlements - 1] = hasher.GetHashAndReset();
+            }
 
-                byte[] hash;
-                // Special slot hashes
-                int hashSlotsOffset = 0;
-                // -7 is the der entitlements blob hash
-                if (derEntitlementsBlob != null)
-                {
-                    hasher.AppendData(derEntitlementsBlob.GetBytes());
-                    hash = hasher.GetHashAndReset();
-                    hash.CopyTo(codeDirectoryHashes, hashSlotsOffset);
-                    hashSlotsOffset += DefaultHashSize;
+            // -5 is the entitlements blob hash
+            if (entitlementsBlob != null)
+            {
+                hasher.AppendData(entitlementsBlob.GetBytes());
+                specialSlotHashes[(int)CodeDirectorySpecialSlot.Entitlements - 1] = hasher.GetHashAndReset();
+            }
 
-                    // -6 is skipped
-                    hashSlotsOffset += DefaultHashSize;
-                }
+            // -2 is the requirements blob hash
+            hasher.AppendData(requirementsBlob.GetBytes());
+            byte[] hash = hasher.GetHashAndReset();
+            Debug.Assert(hash.Length == DefaultHashSize);
+            specialSlotHashes[(int)CodeDirectorySpecialSlot.Requirements - 1] = hash;
+            // -1 is the CMS blob hash (which is empty -- nothing to hash)
 
-                // -5 is the entitlements blob hash
-                if (entitlementsBlob != null)
-                {
-                    hasher.AppendData(entitlementsBlob.GetBytes());
-                    hasher.GetHashAndReset().CopyTo(codeDirectoryHashes, hashSlotsOffset);
-                    hashSlotsOffset += DefaultHashSize;
-                }
-
-                if (entitlementsBlob != null || derEntitlementsBlob != null)
-                {
-                    // -4 is skipped
-                    hashSlotsOffset += DefaultHashSize;
-                    // -3 is skipped
-                    hashSlotsOffset += DefaultHashSize;
-                }
-
-                // -2 is the requirements blob hash
-                hasher.AppendData(requirementsBlob.GetBytes());
+            specialSlotHashes.Reverse();
+            // 0 - N are Code hashes
+            byte[] pageBuffer = new byte[(int)PageSize];
+            long remaining = signatureStart;
+            long buffptr = 0;
+            int cdIndex = 0;
+            while (remaining > 0)
+            {
+                int codePageSize = (int)Math.Min(remaining, 4096);
+                int bytesRead = file.ReadArray(buffptr, pageBuffer, 0, codePageSize);
+                if (bytesRead != codePageSize)
+                    throw new IOException("Could not read all bytes");
+                buffptr += bytesRead;
+                hasher.AppendData(pageBuffer, 0, codePageSize);
                 hash = hasher.GetHashAndReset();
                 Debug.Assert(hash.Length == DefaultHashSize);
-                hash.CopyTo(codeDirectoryHashes, hashSlotsOffset);
-                hashSlotsOffset += DefaultHashSize;
-                // -1 is the CMS blob hash (which is empty -- nothing to hash)
-                hashSlotsOffset += DefaultHashSize;
-
-                // 0 - N are Code hashes
-                byte[] pageBuffer = new byte[(int)PageSize];
-                long remaining = signatureStart;
-                long buffptr = 0;
-                while (remaining > 0)
-                {
-                    int codePageSize = (int)Math.Min(remaining, 4096);
-                    int bytesRead = file.ReadArray(buffptr, pageBuffer, 0, codePageSize);
-                    if (bytesRead != codePageSize)
-                        throw new IOException("Could not read all bytes");
-                    buffptr += bytesRead;
-                    hasher.AppendData(pageBuffer, 0, codePageSize);
-                    hash = hasher.GetHashAndReset();
-                    Debug.Assert(hash.Length == DefaultHashSize);
-                    hash.CopyTo(codeDirectoryHashes, hashSlotsOffset);
-                    remaining -= codePageSize;
-                    hashSlotsOffset += DefaultHashSize;
-                }
+                codeDirectoryHashes[cdIndex++] = hash;
+                remaining -= codePageSize;
             }
+
             CodeDirectoryBlob codeDirectory = new CodeDirectoryBlob(
                 identifier: identifier,
                 codeSlotCount: GetCodeSlotCount(signatureStart),
@@ -132,7 +119,8 @@ internal unsafe partial class MachObjectFile
                 execSegmentBase: machObject._textSegment64.Command.GetFileOffset(machObject._header),
                 execSegmentLimit: machObject._linkEditSegment64.Command.GetFileOffset(machObject._header),
                 execSegmentFlags: machObject._header.FileType == MachFileType.Execute ? ExecutableSegmentFlags.MainBinary : 0,
-                hashes: codeDirectoryHashes);
+                specialSlotHashes: specialSlotHashes,
+                codeHashes: codeDirectoryHashes);
 
             var embeddedSignature = new EmbeddedSignatureBlob(codeDirectory, requirementsBlob, cmsWrapperBlob, entitlementsBlob, derEntitlementsBlob);
 
@@ -162,6 +150,8 @@ internal unsafe partial class MachObjectFile
 
         /// <summary>
         /// Returns the size of a signature used to replace an existing one.
+        /// If the existing signature is null, it will assume sizing using the default signature, which includes the Requirements and CMS blobs.
+        /// If the existing signature is not null, it will preserve the Entitlements and DER Entitlements blobs if they exist.
         /// </summary>
         internal static long GetSignatureSize(uint fileSize, string identifier, CodeSignature? existingSignature)
         {
@@ -176,10 +166,10 @@ internal unsafe partial class MachObjectFile
 
             if (existingSignature != null)
             {
-                // This isn't accurate when the existing signature doesn't have any special slots.
+                // We preserve Entitlements and DER Entitlements blobs if they exist in the old signature.
+                // We need to update the relevant sizes and counts to reflect this.
                 specialCodeSlotCount = Math.Max((uint)CodeDirectorySpecialSlot.Requirements, existingSignature.EmbeddedSignatureBlob.GetSpecialSlotCount());
-                requirementsBlobSize = existingSignature.EmbeddedSignatureBlob.RequirementsBlob?.Size ?? requirementsBlobSize;
-                cmsBlobSize = existingSignature.EmbeddedSignatureBlob.CmsWrapperBlob?.Size ?? cmsBlobSize;
+                // Requirements and CMSWrapper blobs are always overwritten as emtpy, but present.
                 entitlementsBlobSize = existingSignature.EmbeddedSignatureBlob.EntitlementsBlob?.Size ?? entitlementsBlobSize;
                 derEntitlementsBlobSize = existingSignature.EmbeddedSignatureBlob.DerEntitlementsBlob?.Size ?? derEntitlementsBlobSize;
                 if (existingSignature.EmbeddedSignatureBlob.EntitlementsBlob is not null)
@@ -236,6 +226,40 @@ internal unsafe partial class MachObjectFile
             size += EntitlementsBlob.MaxSize;
             size += DerEntitlementsBlob.MaxSize;
             return size + 64;
+        }
+
+        public static bool AreEquivalent(CodeSignature a, CodeSignature b)
+        {
+            if (a.EmbeddedSignatureBlob == null && b.EmbeddedSignatureBlob == null)
+                return true;
+
+            if (a.EmbeddedSignatureBlob == null || b.EmbeddedSignatureBlob == null)
+                return false;
+
+            if (a.FileOffset != b.FileOffset)
+                return false;
+
+            if (a.EmbeddedSignatureBlob.GetSpecialSlotCount() != b.EmbeddedSignatureBlob.GetSpecialSlotCount())
+                return false;
+
+            if (!a.EmbeddedSignatureBlob.CodeDirectoryBlob.Equals(b.EmbeddedSignatureBlob.CodeDirectoryBlob))
+                throw new ArgumentException("CodeDirectory blobs are not equivalent");
+
+            if (a.EmbeddedSignatureBlob.RequirementsBlob == null ^ b.EmbeddedSignatureBlob.RequirementsBlob == null)
+                return false;
+
+            if (a.EmbeddedSignatureBlob.EntitlementsBlob == null ^ b.EmbeddedSignatureBlob.EntitlementsBlob == null)
+                return false;
+
+            if (a.EmbeddedSignatureBlob.DerEntitlementsBlob == null ^ b.EmbeddedSignatureBlob.DerEntitlementsBlob == null)
+                return false;
+
+            if (a.EmbeddedSignatureBlob.CmsWrapperBlob == null ^ b.EmbeddedSignatureBlob.CmsWrapperBlob == null)
+                return false;
+
+            // TODO: Compare the contents of the blobs
+
+            return true;
         }
     }
 }
