@@ -11247,8 +11247,6 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         // will loop at least once so the threshold is 6.
         if (blkSize < (6 * maxSimdSize))
         {
-            assert((blkSize % XMM_REGSIZE_BYTES) == 0);
-
             // Generate the following code:
             //
             //   xorps   xmm4, xmm4
@@ -11259,15 +11257,14 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg, INS_OPTS_NONE);
 
-            int lenRemaining = blkSize;
+            int lenRemaining = ALIGN_UP(blkSize, 16);
             while (lenRemaining > 0)
             {
                 const int regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
                 const int offset  = blkSize - lenRemaining;
 
-                // It is known to be 16-bytes aligned
-                instruction ins = regSize == XMM_REGSIZE_BYTES ? simdAlignedMovIns() : simdUnalignedMovIns();
-
+                // frameReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
+                instruction ins = regSize == XMM_REGSIZE_BYTES ? simdMov : simdUnalignedMovIns();
                 emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + offset);
 
                 assert(lenRemaining >= regSize);
