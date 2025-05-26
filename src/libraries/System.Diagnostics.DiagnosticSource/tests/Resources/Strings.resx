@@ -117,66 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ActivityIdFormatInvalid" xml:space="preserve">
-    <value>"Value must be a valid ActivityIdFormat value"</value>
-  </data>
-  <data name="ActivityNotRunning" xml:space="preserve">
-    <value>Trying to set an Activity that is not running</value>
-  </data>
-  <data name="ActivityNotStarted" xml:space="preserve">
-    <value>"Can not stop an Activity that was not started"</value>
-  </data>
-  <data name="ActivityStartAlreadyStarted" xml:space="preserve">
-    <value>"Can not start an Activity that was already started"</value>
-  </data>
-  <data name="ActivitySetParentAlreadyStarted" xml:space="preserve">
-    <value>"Can not set parent on already started Activity"</value>
-  </data>
-  <data name="EndTimeNotUtc" xml:space="preserve">
-    <value>"EndTime is not UTC"</value>
-  </data>
-  <data name="OperationNameInvalid" xml:space="preserve">
-    <value>"OperationName must not be null or empty"</value>
-  </data>
-  <data name="ParentIdAlreadySet" xml:space="preserve">
-    <value>"ParentId is already set"</value>
-  </data>
-  <data name="ParentIdInvalid" xml:space="preserve">
-    <value>"ParentId must not be null or empty"</value>
-  </data>
-  <data name="SetFormatOnStartedActivity" xml:space="preserve">
-    <value>"Can not change format for an activity that was already started"</value>
-  </data>
-  <data name="SetParentIdOnActivityWithParent" xml:space="preserve">
-    <value>"Can not set ParentId on activity which has parent"</value>
-  </data>
-  <data name="StartTimeNotUtc" xml:space="preserve">
-    <value>"StartTime is not UTC"</value>
-  </data>
-  <data name="KeyAlreadyExist" xml:space="preserve">
-    <value>"The collection already contains item with same key '{0}''"</value>
-  </data>
-  <data name="InvalidTraceParent" xml:space="preserve">
-    <value>"Invalid trace parent."</value>
-  </data>
-  <data name="UnableAccessServicePointTable" xml:space="preserve">
-    <value>Unable to access the ServicePointTable field</value>
-  </data>
-  <data name="UnableToInitialize" xml:space="preserve">
-    <value>Unable to initialize all required reflection objects</value>
-  </data>
-  <data name="UnsupportedType" xml:space="preserve">
-    <value>{0} is unsupported type for this operation. The only supported types are byte, short, int, long, float, double, and decimal.  </value>
-  </data>
-  <data name="Arg_BufferTooSmall" xml:space="preserve">
-    <value>Destination buffer is not long enough to copy all the items in the list.</value>
-  </data>
-  <data name="InvalidInstrumentType" xml:space="preserve">
-    <value>The instrument is of different generic type.</value>
-  </data>
-  <data name="InvalidHistogramExplicitBucketBoundaries" xml:space="preserve">
-    <value>Histogram explicit bucket boundaries must be specified in ascending order and cannot contain duplicate values.</value>
-  </data>
   <data name="InvalidHistogramScale" xml:space="preserve">
     <value>Invalid scale value {0}. Scale must be greater than or equal to {1} and less than or equal to {2}.</value>
   </data>

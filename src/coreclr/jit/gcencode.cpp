@@ -2223,7 +2223,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     if (header.noGCRegionCnt != 0)
     {
         NoGCRegionEncoder encoder(mask != 0 ? dest : NULL);
-        compiler->GetEmitter()->emitGenNoGCLst(encoder, /* skipAllPrologsAndEpilogs = */ true);
+        compiler->GetEmitter()->emitGenNoGCLst(encoder, /* skipMainPrologsAndEpilogs = */ true);
         totalSize += encoder.totalSize;
         if (mask != 0)
             dest += encoder.totalSize;

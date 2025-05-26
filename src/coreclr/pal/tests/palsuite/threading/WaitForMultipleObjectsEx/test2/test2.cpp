@@ -156,13 +156,13 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = minipal_lowres_ticks();
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForMultipleObjectsEx(1, &Semaphore, FALSE, ChildThreadWaitTime,
         Alertable);
 
-    NewTimeStamp = minipal_lowres_ticks();
+    NewTimeStamp = minipal_hires_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -176,7 +176,7 @@ DWORD PALAPI WaiterProc_WFMO_test2(LPVOID lpParameter)
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFMO_test2 = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFMO_test2 = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
 
     ret = CloseHandle(Semaphore);
     if (!ret)

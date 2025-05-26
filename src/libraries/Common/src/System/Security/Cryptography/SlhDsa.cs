@@ -53,8 +53,12 @@ namespace System.Security.Cryptography
         /// <param name="algorithm">
         ///   The specific SLH-DSA algorithm for this key.
         /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="algorithm" /> is <see langword="null" />.
+        /// </exception>
         protected SlhDsa(SlhDsaAlgorithm algorithm)
         {
+            ArgumentNullException.ThrowIfNull(algorithm);
             Algorithm = algorithm;
         }
 
