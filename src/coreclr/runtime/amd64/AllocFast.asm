@@ -159,18 +159,13 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
         cmp         rdx, 07fffffffh
         ja          ArraySizeOverflow
 
-        ; save element count
-        mov         r8, rdx
-
         ; Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rcx + OFFSETOF__MethodTable__m_usComponentSize]
-        mul         rdx
-        mov         edx, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         rax, rdx
+        imul        rax, rdx
+        mov         r8d, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
+        add         rax, r8
         add         rax, 7
         and         rax, -8
-
-        mov         rdx, r8
 
         NEW_ARRAY_FAST
 
