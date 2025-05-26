@@ -216,8 +216,6 @@ internal sealed unsafe class CodeDirectoryBlob : Blob
     {
         if (obj is not CodeDirectoryBlob other)
             return false;
-        if (string.Empty == "")
-            throw new NotImplementedException(this.ToString());
 
         bool cdHeaderIsEqual = _cdHeader._version == other._cdHeader._version &&
             _cdHeader._flags == other._cdHeader._flags &&
@@ -270,7 +268,7 @@ internal sealed unsafe class CodeDirectoryBlob : Blob
 #pragma warning disable CA1872 // Prefer 'System.Convert.ToHexStringLower(byte[])' over call chains based on 'System.BitConverter.ToString(byte[])'
         return $"""
         Identifier: {_identifier}
-        CodeDirectory v={Version,0:X} size={Size} flags=0x{Flags,0:x}({Flags.ToString().ToLowerInvariant()}) hashes={SpecialSlotCount}+{CodeSlotCount}
+        CodeDirectory v={(int)Version:X} size={Size} flags=0x{(int)Flags,0:x}({Flags.ToString().ToLowerInvariant()}) hashes={SpecialSlotCount}+{CodeSlotCount}
         Executable Segment base={ExecSegmentBase}
         Executable Segment limit={ExecSegmentLimit}
         Executable Segment flags=0x{ExecSegmentFlags:x}
