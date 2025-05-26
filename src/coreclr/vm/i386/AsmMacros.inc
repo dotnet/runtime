@@ -123,6 +123,3 @@ endm
 GC_ALLOC_FINALIZE               equ 1
 GC_ALLOC_ALIGN8_BIAS            equ 4
 GC_ALLOC_ALIGN8                 equ 8
-
-G_FREE_OBJECT_METHOD_TABLE                  equ ?g_pFreeObjectMethodTable@@3PAVMethodTable@@A
-EXTERN G_FREE_OBJECT_METHOD_TABLE : DWORD
