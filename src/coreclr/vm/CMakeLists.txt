@@ -53,7 +53,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     assembly.cpp
     assemblybinder.cpp
     binder.cpp
-    bundle.cpp
     castcache.cpp
     callcounting.cpp
     cdacplatformmetadata.cpp
@@ -162,6 +161,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     codeman.h
     codeman.inl
     codeversion.h
+    conditionalweaktable.h
     contractimpl.h
     crst.h
     debugdebugger.h
@@ -275,6 +275,7 @@ endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
+    conditionalweaktable.cpp # The usage of conditionalweaktable is only in the DAC, but we put the headers in the VM to enable validation.
     threaddebugblockinginfo.cpp
 )
 
@@ -293,14 +294,17 @@ set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
     assemblynative.cpp
+    assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
+    bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
-    CachedInterfaceDispatchCoreclr.cpp
+    CachedInterfaceDispatch_Coreclr.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
     callsiteinspect.cpp
+    callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
     clrvarargs.cpp
@@ -339,9 +343,11 @@ set(VM_SOURCES_WKS
     hosting.cpp
     hostinformation.cpp
     ilmarshalers.cpp
+    instancecalli.cpp
     interopconverter.cpp
     interoputil.cpp
     interpexec.cpp
+    interpframeallocator.cpp
     invokeutil.cpp
     jithelpers.cpp
     managedmdimport.cpp
@@ -377,6 +383,8 @@ set(VM_SOURCES_WKS
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
+    unsafeaccessors.cpp
+    asyncthunks.cpp
     weakreferencenative.cpp
     yieldprocessornormalized.cpp
     ${VM_SOURCES_GDBJIT}
@@ -390,6 +398,7 @@ set(VM_HEADERS_WKS
     ../inc/jithelpers.h
     appdomainnative.hpp
     assemblynative.hpp
+    ../inc/assemblyprobeextension.h
     assemblyspec.hpp
     assemblyspecbase.h
     baseassemblyspec.h
@@ -440,6 +449,8 @@ set(VM_HEADERS_WKS
     interoputil.h
     interoputil.inl
     interpexec.h
+    interpframeallocator.h
+    callstubgenerator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
@@ -640,6 +651,7 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/UMThunkStub.asm
         ${ARCH_SOURCES_DIR}/VirtualCallStubAMD64.asm
         ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
     )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -649,11 +661,13 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/RedirectedHandledJITCase.asm
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
+        ${ARCH_SOURCES_DIR}/ehhelpers.asm
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
-    )
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
+        )
 
     set(VM_HEADERS_WKS_ARCH_ASM
         ${ARCH_SOURCES_DIR}/asmconstants.h
@@ -668,6 +682,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
         ${ARCH_SOURCES_DIR}/CachedInterfaceDispatchCoreCLR.asm
         ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.asm
+        ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.asm
         )
 
     set(VM_HEADERS_WKS_ARCH_ASM
@@ -699,6 +714,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/unixasmhelpers.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/virtualcallstubamd64.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_I386)
@@ -710,6 +726,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
             )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -718,6 +735,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/patchedcode.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -729,6 +747,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/StubDispatch.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
             ${ARCH_SOURCES_DIR}/StubPrecodeDynamicHelpers.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -736,6 +755,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/calldescrworkerloongarch64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
         set(VM_SOURCES_WKS_ARCH_ASM
@@ -743,6 +763,7 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/calldescrworkerriscv64.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
+            ${RUNTIME_DIR}/${ARCH_SOURCES_DIR}/WriteBarriers.S
         )
     endif()
 
@@ -766,11 +787,11 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
         jitinterfacegen.cpp
+        writebarriermanager.cpp
     )
 
     set(VM_HEADERS_WKS_ARCH
@@ -837,6 +858,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
         gcinfodecoder.cpp
+        writebarriermanager.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)

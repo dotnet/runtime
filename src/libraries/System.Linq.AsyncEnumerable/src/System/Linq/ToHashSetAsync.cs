@@ -22,9 +22,9 @@ namespace System.Linq
             IEqualityComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), comparer);
+            return Impl(source.WithCancellation(cancellationToken), comparer);
 
             static async ValueTask<HashSet<TSource>> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,

@@ -98,14 +98,8 @@ namespace System.IO.Packaging
                                 string? contentType,
                                 CompressionOption compressionOption)
         {
-            if (package is null)
-            {
-                throw new ArgumentNullException(nameof(package));
-            }
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(package);
+            ArgumentNullException.ThrowIfNull(partUri);
 
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 

@@ -34,6 +34,8 @@ static bool AllowR2RForImage(PEImage* pOwner)
 }
 
 #ifndef DACCESS_COMPILE
+extern BOOL g_useDefaultBaseAddr;
+
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
@@ -104,7 +106,9 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
 #endif
 
-    if ((pFlat->HasReadyToRunHeader() && AllowR2RForImage(pOwner))
+    // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
+    // we need to actually load/map it into virtual addresses
+    if ((pFlat->HasReadyToRunHeader() && !pFlat->IsComponentAssembly() && AllowR2RForImage(pOwner))
         || pFlat->HasWriteableSections())
     {
         return new ConvertedImageLayout(pFlat, disableMapping);
@@ -124,7 +128,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
     {
         if (!pOwner->IsInBundle()
 #if defined(TARGET_UNIX)
-            || (pOwner->GetUncompressedSize() == 0)
+            || !pOwner->IsCompressed()
 #endif
             )
         {
@@ -281,7 +285,7 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             USHORT fixup = VAL16(fixups[0]);
 
             IMAGE_SECTION_HEADER *pSection = RvaToSection(rva + (fixup & 0xfff));
-            PREFIX_ASSUME(pSection != NULL);
+            _ASSERTE(pSection != NULL);
 
             pWriteableRegion = (BYTE*)GetRvaData(VAL32(pSection->VirtualAddress));
             cbWriteableRegion = VAL32(pSection->SizeOfRawData);
@@ -492,7 +496,7 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
         PT_RUNTIME_FUNCTION   pExceptionDir = (PT_RUNTIME_FUNCTION)GetDirectoryEntryData(IMAGE_DIRECTORY_ENTRY_EXCEPTION, &cbSize);
         DWORD tableSize = cbSize / sizeof(T_RUNTIME_FUNCTION);
 
-        if (pExceptionDir != NULL)
+        if (tableSize != 0)
         {
             // the only native code that we expect here is from R2R images
             _ASSERTE(HasReadyToRunHeader());
@@ -537,7 +541,7 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
     CONTRACTL_END;
 
     m_pOwner = pOwner;
-    _ASSERTE(pOwner->GetUncompressedSize() == 0);
+    _ASSERTE(!pOwner->IsCompressed());
 
 #ifndef TARGET_UNIX
     _ASSERTE(!pOwner->IsInBundle());
@@ -670,12 +674,13 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
     // It's okay if resource files are length zero
     if (size > 0)
     {
-        INT64 uncompressedSize = pOwner->GetUncompressedSize();
+        INT64 uncompressedSize;
+        BOOL isCompressed = pOwner->IsCompressed(&uncompressedSize);
 
         DWORD mapAccess = PAGE_READONLY;
 #if !defined(TARGET_UNIX)
         // to map sections into executable views on Windows the mapping must have EXECUTE permissions
-        if (uncompressedSize == 0)
+        if (!isCompressed)
         {
             mapAccess = PAGE_EXECUTE_READ;
         }
@@ -701,7 +706,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         m_FileView.Assign(view);
         addr = (LPVOID)((size_t)view + offset - mapBegin);
 
-        if (uncompressedSize > 0)
+        if (isCompressed)
         {
 #if defined(CORECLR_EMBEDDED)
             // The mapping we have just created refers to the region in the bundle that contains compressed data.
@@ -1031,7 +1036,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     }
     CONTRACTL_END;
 
-    if (!HavePlaceholderAPI() || m_pOwner->GetUncompressedSize() != 0)
+    if (!HavePlaceholderAPI() || m_pOwner->IsCompressed())
     {
         return NULL;
     }

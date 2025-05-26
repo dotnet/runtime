@@ -686,7 +686,7 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    mask        - the mask (set) of registers.
 //    currentLoc  - the location at which they should be added
 //
-void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
+RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 {
     // The mask identifies a set of registers that will be used during
     // codegen. Mark these as modified here, so when we do final frame
@@ -705,6 +705,8 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
+
+    return pos;
 }
 
 //------------------------------------------------------------------------
@@ -4603,7 +4605,9 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT, GT_CCMP));
+#elif defined(TARGET_X86)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT));
 #elif defined(TARGET_ARM64)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_JTEST, GT_CCMP));
@@ -4739,3 +4743,24 @@ void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
     setDelayFree(swiftErrorRegRecord->lastRefPosition);
 }
 #endif
+
+//------------------------------------------------------------------------
+// MarkAsyncContinuationBusyForCall:
+//   Add a ref position that marks the async continuation register as busy
+//   until it is killed.
+//
+// Arguments:
+//    call - The call node
+//
+void LinearScan::MarkAsyncContinuationBusyForCall(GenTreeCall* call)
+{
+    // We model the async continuation like the swift error register: we ensure
+    // the node follows the call in lowering, and make it delay freed to ensure
+    // nothing is allocated into the register between the call and
+    // ASYNC_CONTINUATION node. We need to add a kill here in the right spot as
+    // not all targets may naturally have one created.
+    assert(call->gtNext != nullptr);
+    assert(call->gtNext->OperIs(GT_ASYNC_CONTINUATION));
+    RefPosition* refPos = addKillForRegs(RBM_ASYNC_CONTINUATION_RET, currentLoc + 1);
+    setDelayFree(refPos);
+}

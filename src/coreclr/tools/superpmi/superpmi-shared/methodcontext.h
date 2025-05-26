@@ -574,6 +574,10 @@ public:
     void dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value);
     void repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut);
 
+    void recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo);
+    void dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value);
+    void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
+
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
     void repGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
@@ -871,6 +875,10 @@ public:
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
 
+    void recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd);
+    void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
+    CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
+
     void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
     void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);
     void repUpdateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint);
@@ -915,12 +923,12 @@ public:
 
     struct Environment
     {
-        Environment() : getIntConfigValue(nullptr), getStingConfigValue(nullptr)
+        Environment() : getIntConfigValue(nullptr), getStringConfigValue(nullptr)
         {
         }
 
         LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* getIntConfigValue;
-        LightWeightMap<DWORD, DWORD>*                  getStingConfigValue;
+        LightWeightMap<DWORD, DWORD>*                  getStringConfigValue;
     };
 
     Environment cloneEnvironment();
@@ -1208,6 +1216,8 @@ enum mcPackets
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
     Packet_NotifyInstructionSetUsage = 229,
+    Packet_GetAsyncInfo = 230,
+    Packet_GetAsyncResumptionStub = 231,
 };
 
 void SetDebugDumpVariables();

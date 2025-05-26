@@ -1390,6 +1390,12 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
     assert(UNROLL_LIMIT_SZ[COUNT_OPT_CODE] == 0);
 
+    if (loop->GetHeader()->isRunRarely())
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": Loop is cold.\n", loop->GetIndex());
+        return false;
+    }
+
     NaturalLoopIterInfo iterInfo;
     if (!loop->AnalyzeIteration(&iterInfo))
     {
@@ -2379,24 +2385,10 @@ PhaseStatus Compiler::optOptimizeFlow()
 
     bool modified = fgUpdateFlowGraph(/* doTailDuplication */ true);
 
-    // Skipping fgExpandRarelyRunBlocks when we have PGO data incurs diffs if the profile is inconsistent,
-    // as it will propagate missing profile weights throughout the flowgraph.
-    // Running profile synthesis beforehand should get rid of these diffs.
     // TODO: Always rely on profile synthesis to identify cold blocks.
-    modified |= fgExpandRarelyRunBlocks();
-
-    // Run branch optimizations for non-handler blocks.
-    assert(!fgFuncletsCreated);
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
+    if (!fgIsUsingProfileWeights())
     {
-        if (block->hasHndIndex())
-        {
-            assert(bbIsHandlerBeg(block));
-            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
-            continue;
-        }
-
-        modified |= fgOptimizeBranch(block);
+        modified |= fgExpandRarelyRunBlocks();
     }
 
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -5907,8 +5899,10 @@ void Compiler::optRemoveRedundantZeroInits()
                                 defsInBlock.Set(lclNum, 1);
                             }
                         }
-                        else if (varTypeIsStruct(lclDsc) && ((tree->gtFlags & GTF_VAR_USEASG) == 0) &&
-                                 lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE)
+                        // Here we treat both "full" and "partial" tracked field defs as defs
+                        // (that is, we ignore the state of GTF_VAR_USEASG).
+                        //
+                        else if (varTypeIsStruct(lclDsc) && lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE)
                         {
                             for (unsigned i = lclDsc->lvFieldLclStart; i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt;
                                  ++i)

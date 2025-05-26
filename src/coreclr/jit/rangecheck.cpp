@@ -996,8 +996,9 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
                     return l2;
                 }
 
-                // Otherwise, prefer the BinOpArray(preferredBound) over the constant.
-                return l1;
+                // Otherwise, prefer the BinOpArray(preferredBound) over the constant for the upper bound
+                // and the constant for the lower bound.
+                return isLower ? l2 : l1;
             }
             unreached();
         };

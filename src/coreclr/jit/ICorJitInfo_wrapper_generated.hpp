@@ -647,15 +647,6 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBox(
     return temp;
 }
 
-CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBoxOnStack(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(getTypeForBoxOnStack);
-    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBoxOnStack(cls);
-    API_LEAVE(getTypeForBoxOnStack);
-    return temp;
-}
-
 CorInfoHelpFunc WrapICorJitInfo::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -1181,6 +1172,14 @@ void WrapICorJitInfo::getEEInfo(
     API_LEAVE(getEEInfo);
 }
 
+void WrapICorJitInfo::getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut)
+{
+    API_ENTER(getAsyncInfo);
+    wrapHnd->getAsyncInfo(pAsyncInfoOut);
+    API_LEAVE(getAsyncInfo);
+}
+
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1552,6 +1551,14 @@ bool WrapICorJitInfo::getTailCallHelpers(
     API_ENTER(getTailCallHelpers);
     bool temp = wrapHnd->getTailCallHelpers(callToken, sig, flags, pResult);
     API_LEAVE(getTailCallHelpers);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAsyncResumptionStub()
+{
+    API_ENTER(getAsyncResumptionStub);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAsyncResumptionStub();
+    API_LEAVE(getAsyncResumptionStub);
     return temp;
 }
 

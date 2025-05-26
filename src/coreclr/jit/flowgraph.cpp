@@ -825,7 +825,7 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
@@ -1075,7 +1075,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1286,7 +1286,6 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
         CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
         if (ptr != NULL)
         {
-            setMethodHasFrozenObjects();
             tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
         }
         else
@@ -1369,13 +1368,13 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
  *      {
  *          unsigned byte acquired = 0;
  *          try {
- *              JIT_MonEnterWorker(<lock object>, &acquired);
+ *              Monitor.Enter(<lock object>, &acquired);
  *
  *              *** all the preexisting user code goes here ***
  *
- *              JIT_MonExitWorker(<lock object>, &acquired);
+ *              Monitor.ExitIfTaken(<lock object>, &acquired);
  *          } fault {
- *              JIT_MonExitWorker(<lock object>, &acquired);
+ *              Monitor.ExitIfTaken(<lock object>, &acquired);
  *         }
  *      L_return:
  *         ret
@@ -2450,7 +2449,18 @@ PhaseStatus Compiler::fgAddInternal()
         }
         else
         {
-            merger.SetMaxReturns(MergedReturns::ReturnCountHardLimit);
+            unsigned limit = MergedReturns::ReturnCountHardLimit;
+#ifdef JIT32_GCENCODER
+            // For the jit32 GC encoder the limit is an actual hard limit. In
+            // async functions we will be introducing another return during
+            // the async transformation, so make sure there's a free epilog
+            // for it.
+            if (compIsAsync())
+            {
+                limit--;
+            }
+#endif
+            merger.SetMaxReturns(limit);
         }
     }
 
@@ -3093,18 +3103,6 @@ PhaseStatus Compiler::fgCreateFunclets()
 {
     assert(UsesFunclets());
     assert(!fgFuncletsCreated);
-
-    // Allocate the PSPSym, if needed. PSPSym is not used by the NativeAOT ABI
-    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        if (ehNeedsPSPSym())
-        {
-            lvaPSPSym            = lvaGrabTempWithImplicitUse(false DEBUGARG("PSPSym"));
-            LclVarDsc* lclPSPSym = lvaGetDesc(lvaPSPSym);
-            lclPSPSym->lvType    = TYP_I_IMPL;
-            lvaSetVarDoNotEnregister(lvaPSPSym DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
-        }
-    }
 
     fgCreateFuncletPrologBlocks();
 
@@ -3913,6 +3911,8 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
     // check changes from being enclosed in a try to being
     // enclosed in a finally.
     //
+    // Filter ACDs should always remain in filter regions.
+    //
     const bool inHnd = acdHndIndex > 0;
     const bool inTry = acdTryIndex > 0;
 
@@ -3922,26 +3922,35 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
     {
         // Non-funclet case
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
     }
     else if (!inTry && !inHnd)
     {
         // Moved outside of all EH regions.
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = AcdKeyDesignator::KD_NONE;
     }
     else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
     {
         // Moved into a parent try region.
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = AcdKeyDesignator::KD_TRY;
     }
     else
     {
-        // Moved into a parent handler region.
-        // Note this cannot be a filter region.
+        // Moved into a parent or renumbered handler or filter region.
         //
-        newDsg = AcdKeyDesignator::KD_HND;
+        if (acdKeyDsg == AcdKeyDesignator::KD_FLT)
+        {
+            newDsg = AcdKeyDesignator::KD_FLT;
+        }
+        else
+        {
+            newDsg = AcdKeyDesignator::KD_HND;
+        }
     }
 
     bool result = (newDsg != acdKeyDsg);
@@ -4870,7 +4879,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
 
-        if (!FindNaturalLoopBlocks(loop, worklist))
+        if (!FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
         {
             loops->m_improperLoopHeaders++;
 
@@ -5062,6 +5071,40 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, Ar
             {
                 worklist.Push(predBlock);
             }
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::IsLoopCanonicalizable:
+//   Check if a loop will be able to be canonicalized if we record it.
+//
+// Parameters:
+//   loop - Loop structure (partially filled by caller)
+//
+// Returns:
+//   True if the loop header can be canonicalized:
+//     - Can have a preheader created
+//     - Exits can be made unique from the loop
+//
+bool FlowGraphNaturalLoops::IsLoopCanonicalizable(FlowGraphNaturalLoop* loop)
+{
+    Compiler* comp = loop->GetDfsTree()->GetCompiler();
+    // The only (known) problematic case is when a backedge is a callfinally edge.
+    if (!comp->bbIsHandlerBeg(loop->GetHeader()))
+    {
+        return true;
+    }
+
+    for (FlowEdge* backedge : loop->BackEdges())
+    {
+        if (backedge->getSourceBlock()->KindIs(BBJ_CALLFINALLY))
+        {
+            // It would not be possible to create a preheader for this loop
+            // since this backedge could not be redirected.
+            return false;
         }
     }
 

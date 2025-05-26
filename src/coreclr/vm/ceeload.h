@@ -627,6 +627,8 @@ private:
         IS_ETW_NOTIFIED             = 0x00000020,
 
         IS_REFLECTION_EMIT          = 0x00000040,
+        PROF_DISABLE_OPTIMIZATIONS  = 0x00000080,   // indicates if Profiler disabled JIT optimization event mask was set when loaded
+        PROF_DISABLE_INLINING       = 0x00000100,   // indicates if Profiler disabled JIT Inlining event mask was set when loaded
 
         //
         // Note: The values below must match the ones defined in
@@ -913,6 +915,39 @@ protected:
         SUPPORTS_DAC;
         _ASSERTE((m_dwTransientFlags & IS_EDIT_AND_CONTINUE) == 0 || IsEditAndContinueCapable());
         return (m_dwTransientFlags & IS_EDIT_AND_CONTINUE) != 0;
+    }
+
+    BOOL IsInliningDisabledByProfiler() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+        return (m_dwTransientFlags & PROF_DISABLE_INLINING) != 0;
+    }
+
+    BOOL AreJITOptimizationsDisabled() const
+    {
+        WRAPPER_NO_CONTRACT;
+        SUPPORTS_DAC;
+
+#ifdef DEBUGGING_SUPPORTED
+        // check if debugger has disallowed JIT optimizations
+        auto dwDebuggerBits = GetDebuggerInfoBits();
+        if (!CORDebuggerAllowJITOpts(dwDebuggerBits))
+        {
+            return TRUE;
+        }
+#endif // DEBUGGING_SUPPORTED
+
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+        // check if profiler had disabled JIT optimizations when module was loaded
+        if (m_dwTransientFlags & PROF_DISABLE_OPTIMIZATIONS)
+        {
+            return TRUE;
+        }
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+
+        return FALSE;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -1339,7 +1374,7 @@ public:
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
 
-    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void)
+    DebuggerAssemblyControlFlags GetDebuggerInfoBits(void) const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -1489,8 +1524,18 @@ public:
     void   StartUnload();
 
 public:
+#ifndef DACCESS_COMPILE
     void SetDynamicIL(mdToken token, TADDR blobAddress);
+#endif // !DACCESS_COMPILE
     TADDR GetDynamicIL(mdToken token);
+
+protected:
+#ifndef DACCESS_COMPILE
+    void SetDynamicRvaField(mdToken token, TADDR blobAddress);
+#endif // !DACCESS_COMPILE
+
+public:
+    TADDR GetDynamicRvaField(mdToken token);
 
     // store and retrieve the instrumented IL offset mapping for a particular method
 #if !defined(DACCESS_COMPILE)
@@ -1519,6 +1564,8 @@ public:
     // words, they become compliant
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeWrapExceptions();
+    void                    UpdateCachedIsRuntimeWrapExceptions();
+    BOOL                    IsRuntimeWrapExceptionsDuringEH();
 
     //-----------------------------------------------------------------------------------------
     // If true, the built-in runtime-generated marshalling subsystem will be used for
@@ -1531,6 +1578,16 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
     }
+
+protected:
+    // For reflection emit modules we set this flag when we emit the attribute, and always consider
+    // the current setting of the flag to be set.
+    void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
+    }
+public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
 
@@ -1634,6 +1691,7 @@ template<>
 struct cdac_data<Module>
 {
     static constexpr size_t Assembly = offsetof(Module, m_pAssembly);
+    static constexpr size_t PEAssembly = offsetof(Module, m_pPEAssembly);
     static constexpr size_t Base = offsetof(Module, m_baseAddress);
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
@@ -1641,6 +1699,7 @@ struct cdac_data<Module>
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
+    static constexpr size_t GrowableSymbolStream = offsetof(Module, m_pIStreamSym);
 
     // Lookup map pointers
     static constexpr size_t FieldDefToDescMap = offsetof(Module, m_FieldDefToDescMap);

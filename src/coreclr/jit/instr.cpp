@@ -809,6 +809,7 @@ void CodeGen::inst_RV_SH(
 // logic for determining what "kind" of operand "op" is.
 //
 // Arguments:
+//    ins - The instruction that will consume the operand.
 //    op - The operand node for which to obtain the descriptor.
 //
 // Return Value:
@@ -818,7 +819,7 @@ void CodeGen::inst_RV_SH(
 //    This method is not idempotent - it can only be called once for a
 //    given node.
 //
-CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
+CodeGen::OperandDesc CodeGen::genOperandDesc(instruction ins, GenTree* op)
 {
     if (!op->isContained() && !op->isUsedFromSpillTemp())
     {
@@ -901,7 +902,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     // handle other cases recursively.
                     GenTree* hwintrinsicChild = hwintrinsic->Op(1);
                     assert(hwintrinsicChild->isContained());
-                    if (hwintrinsicChild->OperIs(GT_CNS_INT, GT_CNS_LNG))
+                    if (hwintrinsicChild->IsIntegralConst())
                     {
                         // a special case is when the operand of CreateScalarUnsafe is an integer type,
                         // CreateScalarUnsafe node will be folded, so we directly match a pattern of
@@ -915,7 +916,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     {
                         // If the operand of broadcast is not a constant integer,
                         // we handle all the other cases recursively.
-                        return genOperandDesc(hwintrinsicChild);
+                        return genOperandDesc(ins, hwintrinsicChild);
                     }
                     break;
                 }
@@ -935,7 +936,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 
                     assert(hwintrinsic->isContained());
                     op = hwintrinsic->Op(1);
-                    return genOperandDesc(op);
+                    return genOperandDesc(ins, op);
                 }
 
                 default:
@@ -989,59 +990,26 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 #if defined(FEATURE_SIMD)
             case GT_CNS_VEC:
             {
-                switch (op->TypeGet())
+                insTupleType tupleType = emit->insTupleTypeInfo(ins);
+                unsigned     cnsSize   = genTypeSize(op);
+
+                if ((tupleType == INS_TT_TUPLE1_SCALAR) || (tupleType == INS_TT_TUPLE1_FIXED))
                 {
-                    case TYP_SIMD8:
-                    {
-                        simd8_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd8_t));
-                        return OperandDesc(emit->emitSimd8Const(constValue));
-                    }
+                    // We have a vector const, but the instruction will only read a scalar from it,
+                    // so don't waste space putting the entire vector to the data section.
 
-                    case TYP_SIMD12:
-                    {
-                        simd16_t constValue = {};
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd12_t));
-                        return OperandDesc(emit->emitSimd16Const(constValue));
-                    }
-                    case TYP_SIMD16:
-                    {
-                        simd16_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd16_t));
-                        return OperandDesc(emit->emitSimd16Const(constValue));
-                    }
-
-#if defined(TARGET_XARCH)
-                    case TYP_SIMD32:
-                    {
-                        simd32_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd32_t));
-                        return OperandDesc(emit->emitSimd32Const(constValue));
-                    }
-
-                    case TYP_SIMD64:
-                    {
-                        simd64_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simd64_t));
-                        return OperandDesc(emit->emitSimd64Const(constValue));
-                    }
-
-#endif // TARGET_XARCH
-
-                    default:
-                    {
-                        unreached();
-                    }
+                    cnsSize = max(CodeGenInterface::instInputSize(ins), 4U);
+                    assert(cnsSize <= genTypeSize(op));
                 }
+
+                return OperandDesc(emit->emitSimdConst(&op->AsVecCon()->gtSimdVal, EA_TYPE(cnsSize)));
             }
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
             case GT_CNS_MSK:
             {
-                simdmask_t constValue;
-                memcpy(&constValue, &op->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
-                return OperandDesc(emit->emitSimdMaskConst(constValue));
+                return OperandDesc(emit->emitSimdMaskConst(op->AsMskCon()->gtSimdMaskVal));
             }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
@@ -1071,7 +1039,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 void CodeGen::inst_TT(instruction ins, emitAttr size, GenTree* op1)
 {
     emitter*    emit    = GetEmitter();
-    OperandDesc op1Desc = genOperandDesc(op1);
+    OperandDesc op1Desc = genOperandDesc(ins, op1);
 
     switch (op1Desc.GetKind())
     {
@@ -1120,7 +1088,7 @@ void CodeGen::inst_TT(instruction ins, emitAttr size, GenTree* op1)
 void CodeGen::inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2)
 {
     emitter*    emit    = GetEmitter();
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     switch (op2Desc.GetKind())
     {
@@ -1202,7 +1170,7 @@ void CodeGen::inst_RV_TT_IV(
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-    OperandDesc rmOpDesc = genOperandDesc(rmOp);
+    OperandDesc rmOpDesc = genOperandDesc(ins, rmOp);
 
     switch (rmOpDesc.GetKind())
     {
@@ -1339,7 +1307,7 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     switch (op2Desc.GetKind())
     {
@@ -1426,7 +1394,7 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
     }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
-    OperandDesc op2Desc = genOperandDesc(op2);
+    OperandDesc op2Desc = genOperandDesc(ins, op2);
 
     switch (op2Desc.GetKind())
     {
@@ -1617,9 +1585,9 @@ bool CodeGen::arm_Valid_Imm_For_Add_SP(target_ssize_t imm)
 bool CodeGenInterface::validImmForBL(ssize_t addr)
 {
     return
-        // If we are running the altjit for NGEN, then assume we can use the "BL" instruction.
-        // This matches the usual behavior for NGEN, since we normally do generate "BL".
-        (!compiler->info.compMatchedVM && compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT)) ||
+        // If we are running the altjit for AOT, then assume we can use the "BL" instruction.
+        // This matches the usual behavior for AOT, since we normally do generate "BL".
+        (!compiler->info.compMatchedVM && compiler->IsAot()) ||
         (compiler->eeGetRelocTypeHint((void*)addr) == IMAGE_REL_BASED_THUMB_BRANCH24);
 }
 
@@ -1631,7 +1599,7 @@ bool CodeGenInterface::validImmForBL(ssize_t addr)
     // On arm64, we always assume a call target is in range and generate a 28-bit relative
     // 'bl' instruction. If this isn't sufficient range, the VM will generate a jump stub when
     // we call recordRelocation(). See the IMAGE_REL_ARM64_BRANCH26 case in jitinterface.cpp
-    // (for JIT) or zapinfo.cpp (for NGEN). If we cannot allocate a jump stub, it is fatal.
+    // (for JIT) or zapinfo.cpp (for AOT). If we cannot allocate a jump stub, it is fatal.
     return true;
 }
 #endif // TARGET_ARM64

@@ -814,8 +814,7 @@ bool Compiler::fgCanCompactBlock(BasicBlock* block)
     // If target has multiple incoming edges, we can still compact if block is empty.
     // However, not if it is the beginning of a handler.
     //
-    if (target->countOfInEdges() != 1 &&
-        (!block->isEmpty() || block->HasFlag(BBF_FUNCLET_BEG) || (block->bbCatchTyp != BBCT_NONE)))
+    if (target->countOfInEdges() != 1 && (!block->isEmpty() || (block->bbCatchTyp != BBCT_NONE)))
     {
         return false;
     }
@@ -2637,12 +2636,10 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     }
 
     //
-    // We we are ngen-ing:
-    // If the uncondional branch is a rarely run block then
-    // we are willing to have more code expansion since we
-    // won't be running code from this page
+    // If we are AOT compiling: if the unconditional branch is a rarely run block then we are willing to have
+    // more code expansion since we won't be running code from this page.
     //
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
+    if (IsAot())
     {
         if (rareJump)
         {
@@ -2737,42 +2734,20 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         newStmtList->SetPrevStmt(newLastStmt);
     }
 
-    //
-    // Reverse the sense of the compare
-    //
-    gtReverseCond(condTree);
-
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
     // Update bbRefs and bbPreds
     //
-    // For now we set the likelihood of the new branch to match
-    // the likelihood of the old branch.
-    //
-    // This may or may not match the block weight adjustments we're
-    // making. All this becomes easier to reconcile once we rely on
-    // edge likelihoods more and have synthesis running.
-    //
-    // Until then we won't worry that edges and blocks are potentially
-    // out of sync.
-    //
-    FlowEdge* const destFalseEdge = bDest->GetFalseEdge();
-    FlowEdge* const destTrueEdge  = bDest->GetTrueEdge();
+    FlowEdge* const falseEdge = bDest->GetFalseEdge();
+    FlowEdge* const trueEdge  = bDest->GetTrueEdge();
 
-    // bJump now falls through into the next block.
-    // Note that we're deriving the false edge's likelihood from 'destTrueEdge',
-    // because the comparison in 'bJump' is flipped.
-    // Similarly, we will derive the true edge's likelihood from 'destFalseEdge'.
-    //
-    FlowEdge* const falseEdge = fgAddRefPred(trueTarget, bJump, destTrueEdge);
-
-    // bJump now jumps to bDest's normal jump target
-    //
     fgRedirectTargetEdge(bJump, falseTarget);
-    bJump->GetTargetEdge()->setLikelihood(destFalseEdge->getLikelihood());
+    bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
 
-    bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
+    FlowEdge* const newTrueEdge = fgAddRefPred(trueTarget, bJump, trueEdge);
+
+    bJump->SetCond(newTrueEdge, bJump->GetTargetEdge());
 
     // Update profile data
     //
@@ -3181,7 +3156,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 if (block->isBBCallFinallyPair())
                 {
                     BasicBlock* bNext = block->Next();
-                    PREFIX_ASSUME(bNext != nullptr);
+                    assert(bNext != nullptr);
                     bNext->bbSetRunRarely();
 #ifdef DEBUG
                     if (verbose)
@@ -4260,6 +4235,64 @@ PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 }
 
 //-------------------------------------------------------------
+// fgDedupReturnComparison: Expands BBJ_RETURN <relop> into BBJ_COND <relop> with two
+//   BBJ_RETURN blocks ("return true" and "return false"). Such transformation
+//   helps other phases to focus only on BBJ_COND <relop> (normalization).
+//
+// Arguments:
+//    block - the BBJ_RETURN block to convert into BBJ_COND <relop>
+//
+// Returns:
+//    true if the block was converted into BBJ_COND <relop>
+//
+bool Compiler::fgDedupReturnComparison(BasicBlock* block)
+{
+#ifdef JIT32_GCENCODER
+    // JIT32_GCENCODER has a hard limit on the number of epilogues, let's not add more.
+    return false;
+#endif
+
+    assert(block->KindIs(BBJ_RETURN));
+
+    // We're only interested in boolean returns
+    if ((info.compRetType != TYP_UBYTE) || (block == genReturnBB) || (block->lastStmt() == nullptr))
+    {
+        return false;
+    }
+
+    GenTree* rootNode = block->lastStmt()->GetRootNode();
+    if (!rootNode->OperIs(GT_RETURN) || !rootNode->gtGetOp1()->OperIsCmpCompare())
+    {
+        return false;
+    }
+
+    GenTree* cmp = rootNode->gtGetOp1();
+    cmp->gtFlags |= (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
+    rootNode->ChangeOper(GT_JTRUE);
+    rootNode->ChangeType(TYP_VOID);
+
+    GenTree* retTrue  = gtNewOperNode(GT_RETURN, TYP_INT, gtNewTrue());
+    GenTree* retFalse = gtNewOperNode(GT_RETURN, TYP_INT, gtNewFalse());
+
+    // Create RETURN 1/0 blocks. We expect fgHeadTailMerge to handle them if there are similar returns.
+    DebugInfo   dbgInfo    = block->lastStmt()->GetDebugInfo();
+    BasicBlock* retTrueBb  = fgNewBBFromTreeAfter(BBJ_RETURN, block, retTrue, dbgInfo);
+    BasicBlock* retFalseBb = fgNewBBFromTreeAfter(BBJ_RETURN, block, retFalse, dbgInfo);
+
+    FlowEdge* trueEdge  = fgAddRefPred(retTrueBb, block);
+    FlowEdge* falseEdge = fgAddRefPred(retFalseBb, block);
+    block->SetCond(trueEdge, falseEdge);
+
+    // We might want to instrument 'return <cond>' too in the future. For now apply 50%/50%.
+    trueEdge->setLikelihood(0.5);
+    falseEdge->setLikelihood(0.5);
+    retTrueBb->inheritWeightPercentage(block, 50);
+    retFalseBb->inheritWeightPercentage(block, 50);
+
+    return true;
+}
+
+//-------------------------------------------------------------
 // fgUpdateFlowGraph: Removes any empty blocks, unreachable blocks, and redundant jumps.
 // Most of those appear after dead store removal and folding of conditionals.
 // Also, compact consecutive basic blocks.
@@ -4353,6 +4386,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
             bNext      = block->Next();
             bDest      = nullptr;
             bFalseDest = nullptr;
+
+            // Expand BBJ_RETURN <relop> into BBJ_COND <relop> when doTailDuplication is enabled
+            if (doTailDuplication && block->KindIs(BBJ_RETURN) && fgDedupReturnComparison(block))
+            {
+                assert(block->KindIs(BBJ_COND));
+                change   = true;
+                modified = true;
+                bNext    = block->Next();
+            }
 
             if (block->KindIs(BBJ_ALWAYS))
             {
@@ -5563,6 +5605,63 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 }
 
 //------------------------------------------------------------------------
+// gtTreeContainsCall:
+//   Check if a tree contains a call node matching the given predicate.
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   True if a call node matching the predicate was found, false otherwise.
+//
+template <typename Predicate>
+bool Compiler::gtTreeContainsCall(GenTree* tree, Predicate pred)
+{
+    struct HasCallVisitor : GenTreeVisitor<HasCallVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        HasCallVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<HasCallVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & GTF_CALL) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (node->IsCall() && m_pred(node->AsCall()))
+            {
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & GTF_CALL) == 0)
+    {
+        return false;
+    }
+
+    HasCallVisitor hasCall(this, pred);
+    return hasCall.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------
 // gtTreeContainsTailCall: Check if a tree contains any tail call or tail call
 // candidate.
 //
@@ -5577,37 +5676,30 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 //
 bool Compiler::gtTreeContainsTailCall(GenTree* tree)
 {
-    struct HasTailCallCandidateVisitor : GenTreeVisitor<HasTailCallCandidateVisitor>
+    return gtTreeContainsCall(tree, [](GenTreeCall* call) {
+        return call->CanTailCall() || call->IsTailCall();
+    });
+}
+
+//------------------------------------------------------------------------
+// gtTreeContainsAsyncCall: Check if a tree contains any async call.
+//
+// Parameters:
+//   tree - The tree to check
+//
+// Returns:
+//   True if any node in the tree is an async call, false otherwise.
+//
+bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
+{
+    if (!compIsAsync())
     {
-        enum
-        {
-            DoPreOrder = true
-        };
+        return false;
+    }
 
-        HasTailCallCandidateVisitor(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-            if ((node->gtFlags & GTF_CALL) == 0)
-            {
-                return WALK_SKIP_SUBTREES;
-            }
-
-            if (node->IsCall() && (node->AsCall()->CanTailCall() || node->AsCall()->IsTailCall()))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
-    };
-
-    HasTailCallCandidateVisitor visitor(this);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtTreeContainsCall(tree, [](GenTreeCall* call) {
+        return call->IsAsync();
+    });
 }
 
 //------------------------------------------------------------------------

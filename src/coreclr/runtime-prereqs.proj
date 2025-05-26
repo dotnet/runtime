@@ -13,7 +13,7 @@
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
-  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile" />
   
   <!-- 
     This is a workaround when cross-compiling on Windows for Android. 

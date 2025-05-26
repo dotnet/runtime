@@ -67,6 +67,9 @@ Abstract:
 #include "pedecoder.h"
 #include "gcinfo.h"
 #include "eexcp.h"
+#ifdef TARGET_X86
+#include "gc_unwind_x86.h"
+#endif
 
 class MethodDesc;
 class ICorJitCompiler;
@@ -87,6 +90,7 @@ class EECodeInfo;
 
 #define ROUND_DOWN_TO_PAGE(x)   ( (size_t) (x)                        & ~((size_t)GetOsPageSize()-1))
 #define ROUND_UP_TO_PAGE(x)     (((size_t) (x) + (GetOsPageSize()-1)) & ~((size_t)GetOsPageSize()-1))
+
 
 enum StubCodeBlockKind : int
 {
@@ -111,6 +115,44 @@ enum StubCodeBlockKind : int
     // Placeholdes used by ReadyToRun images
     STUB_CODE_BLOCK_METHOD_CALL_THUNK = 0x13,
 };
+
+inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
+{
+    switch (kind)
+    {
+    case STUB_CODE_BLOCK_JUMPSTUB:
+        return "JumpStub";
+    case STUB_CODE_BLOCK_STUBLINK:
+        return "StubLinkStub";
+    case STUB_CODE_BLOCK_MANAGED:
+        return "Managed";
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return "MethodCallThunk";
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+        return "MethodCallThunk";
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return "MethodCallThunk";
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return "VSD_DispatchStub";
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return "VSD_ResolveStub";
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return "VSD_LookupStub";
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return "VSD_VTableStub";
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+    default:
+        return "Unknown";
+    }
+}
+
+void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
+#ifndef FEATURE_PERFMAP
+inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+{
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
@@ -245,6 +287,11 @@ public:
         SUPPORTS_DAC;
         return pRealCodeHeader->nUnwindInfos;
     }
+
+    bool MayHaveFunclets()
+    {
+        return GetNumberOfUnwindInfos() != 1;
+    }
     void                    SetNumberOfUnwindInfos(UINT nUnwindInfos)
     {
         LIMITED_METHOD_CONTRACT;
@@ -328,6 +375,21 @@ public:
     {
         return FALSE;
     }
+
+#if defined(FEATURE_EH_FUNCLETS)
+    bool MayHaveFunclets()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return true;
+    }
+    // Used during initialization of the EECodeInfo if MayHaveFunclets returns false.
+    // As that can't happen, the implementaiton here is meaningless.
+    PTR_RUNTIME_FUNCTION    GetUnwindInfo(UINT iUnwindInfo)
+    {
+        _ASSERTE(!"Unexpected call to GetUnwindInfoZero");
+        return NULL;
+    }
+#endif
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJitMan);
@@ -472,13 +534,13 @@ struct HeapList
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT)
         return (CLRPersonalityRoutine != NULL) ? (TADDR)CLRPersonalityRoutine : (TADDR)mapBase;
 #else
         return (TADDR)mapBase;
@@ -1708,7 +1770,7 @@ public:
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength) = 0;
 
-    virtual BOOL IsFunclet(EECodeInfo * pCodeInfo);
+    virtual BOOL LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL IsFilterFunclet(EECodeInfo * pCodeInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1719,7 +1781,7 @@ public:
     // DAC builds is compatible with the non-DAC one so that DAC virtual dispatch will work correctly.
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD) = 0;
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
@@ -1862,7 +1924,7 @@ protected:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 protected:
     template<typename TCodeHeader>
-    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif // !DACCESS_COMPILE
 
 private:
@@ -2023,7 +2085,7 @@ public:
     GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
 
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif // DACCESS_COMPILE
 
 #if !defined DACCESS_COMPILE
@@ -2219,7 +2281,7 @@ public:
         BOOL Acquired();
     };
 
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT)
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2431,8 +2493,7 @@ public:
 
     static void DumpExecutionManagerUsage()
     {
-        fprintf(stderr, "JumpStub usage count:\n");
-        fprintf(stderr, "Normal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
+        minipal_log_print_info("JumpStub usage count:\nNormal: %u, LCG: %u\n", m_normal_JumpStubLookup, m_LCG_JumpStubLookup);
     }
 
     struct JumpStubCache
@@ -2602,7 +2663,7 @@ public:
 
     virtual TADDR                   GetFuncletStartAddress(EECodeInfo * pCodeInfo);
     virtual DWORD                   GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
-    virtual BOOL                    IsFunclet(EECodeInfo * pCodeInfo);
+    virtual BOOL                    LazyIsFunclet(EECodeInfo * pCodeInfo);
     virtual BOOL                    IsFilterFunclet(EECodeInfo * pCodeInfo);
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2610,7 +2671,7 @@ public:
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
@@ -2662,11 +2723,7 @@ public:
 
     virtual TADDR JitTokenToStartAddress(const METHODTOKEN& MethodToken);
 
-    virtual void JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-    }
+    virtual void JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo);
 
     static InterpreterCodeHeader * GetCodeHeaderFromStartAddress(TADDR methodStartAddress);
     static InterpreterCodeHeader * GetCodeHeader(const METHODTOKEN& MethodToken);
@@ -2701,12 +2758,7 @@ public:
         return PTR_NULL;
     }
 
-    virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-        return 0;
-    }
+    virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo);
 
     virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
     {
@@ -2739,7 +2791,7 @@ public:
 
 #if defined(DACCESS_COMPILE)
 
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
@@ -2774,6 +2826,15 @@ class EECodeInfo
 #ifdef FEATURE_READYTORUN
     friend BOOL ReadyToRunJitManager::JitCodeToMethodInfo(RangeSection * pRangeSection, PCODE currentPC, MethodDesc** ppMethodDesc, EECodeInfo * pCodeInfo);
 #endif
+
+#if defined(FEATURE_EH_FUNCLETS)
+    enum class IsFuncletCache : uint32_t
+    {
+        NotSet = 2,
+        IsFunclet = 1,
+        IsNotFunclet = 0
+    };
+#endif // FEATURE_EH_FUNCLETS
 
 public:
     EECodeInfo();
@@ -2863,7 +2924,7 @@ public:
 
 #ifdef FEATURE_EH_FUNCLETS
     PTR_RUNTIME_FUNCTION GetFunctionEntry();
-    BOOL        IsFunclet()     { WRAPPER_NO_CONTRACT; return GetJitManager()->IsFunclet(this); }
+    BOOL        IsFunclet();
     EECodeInfo  GetMainFunctionInfo();
 #endif // FEATURE_EH_FUNCLETS
 
@@ -2873,6 +2934,22 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetCodeManager()->GetFrameSize(GetGCInfoToken());
     }
+
+    FORCEINLINE PTR_CBYTE DecodeGCHdrInfo(hdrInfo   ** infoPtr)
+    {
+        if (m_hdrInfoTable == NULL)
+        {
+            return DecodeGCHdrInfoHelper(infoPtr);
+        }
+
+        *infoPtr = &m_hdrInfoBody;
+        return m_hdrInfoTable;
+    }
+
+    PTR_CBYTE DecodeGCHdrInfo(hdrInfo * infoPtr, DWORD relOffset);
+
+private:
+    PTR_CBYTE   DecodeGCHdrInfoHelper(hdrInfo   ** infoPtr);
 #endif // TARGET_X86
 
 #if defined(TARGET_WASM)
@@ -2884,7 +2961,6 @@ ULONG       GetFixedStackSize();
     ULONG       GetFixedStackSize();
 
     void         GetOffsetsFromUnwindInfo(ULONG* pRSPOffset, ULONG* pRBPOffset);
-    ULONG        GetFrameOffsetFromUnwindInfo();
 #endif // TARGET_AMD64
 
 private:
@@ -2894,8 +2970,14 @@ private:
     IJitManager        *m_pJM;
     DWORD               m_relOffset;
 #ifdef FEATURE_EH_FUNCLETS
+    IsFuncletCache      m_isFuncletCache;
     PTR_RUNTIME_FUNCTION m_pFunctionEntry;
 #endif // FEATURE_EH_FUNCLETS
+
+#ifdef TARGET_X86
+    PTR_CBYTE           m_hdrInfoTable;
+    hdrInfo             m_hdrInfoBody;
+#endif
 
 #ifdef TARGET_AMD64
     // Simple helper to return a pointer to the UNWIND_INFO given the offset to the unwind info.

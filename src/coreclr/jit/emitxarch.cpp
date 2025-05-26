@@ -141,6 +141,38 @@ bool emitter::IsPermuteVar2xInstruction(instruction ins)
     }
 }
 
+//------------------------------------------------------------------------
+// IsKMOVInstruction: Is this an Avx512 KMOV instruction?
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if it is a KMOV instruction.
+//
+bool emitter::IsKMOVInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_kmovb_gpr:
+        case INS_kmovw_gpr:
+        case INS_kmovd_gpr:
+        case INS_kmovq_gpr:
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
+        {
+            return true;
+        }
+
+        default:
+        {
+            return false;
+        }
+    }
+}
+
 regNumber emitter::getBmiRegNumber(instruction ins)
 {
     switch (ins)
@@ -365,8 +397,14 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
         return false;
     }
 
-    if (HasApxNdd(ins) || HasApxNf(ins) || (ins == INS_crc32_apx))
+    if (HasApxNdd(ins) || HasApxNf(ins))
     {
+        return true;
+    }
+
+    if (ins == INS_crc32_apx)
+    {
+        // With the new opcode, CRC32 is promoted to EVEX with APX.
         return true;
     }
 
@@ -1717,8 +1755,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         // Requires the EVEX encoding due to used registers
         // A special case here is KMOV, the original KMOV introduced in Avx512 can only be encoded in VEX, APX promoted
         // them to EVEX, so only return true when APX is available.
-        if ((ins == INS_kmovb_msk) || (ins == INS_kmovw_msk) || (ins == INS_kmovd_msk) || (ins == INS_kmovq_msk) ||
-            (ins == INS_kmovb_gpr) || (ins == INS_kmovw_gpr) || (ins == INS_kmovd_gpr) || (ins == INS_kmovq_gpr))
+        if (IsKMOVInstruction(ins))
         {
             // Use EVEX only when needed.
             return HasExtendedGPReg(id);
@@ -1757,6 +1794,13 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
             return false;
         }
 
+        if (IsKMOVInstruction(ins))
+        {
+            // KMOV should not be encoded in EVEX when stressing EVEX, as they are supposed to encded in EVEX only
+            // when APX is available, only stressing EVEX is not enough making the encoding valid.
+            return false;
+        }
+
         // Requires the EVEX encoding due to STRESS mode and no change in semantics
         //
         // Some instructions, like VCMPEQW return the value in a SIMD register for
@@ -1769,7 +1813,17 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
     if (IsApxExtendedEvexInstruction(ins) && emitComp->DoJitStressPromotedEvexEncoding())
     {
         // This path will be hit when we stress APX-EVEX and encode VEX with Extended EVEX.
-        return (IsBMIInstruction(ins) && HasApxNf(ins));
+        if (IsKMOVInstruction(ins))
+        {
+            return true;
+        }
+
+        if (IsBMIInstruction(ins))
+        {
+            return HasApxNf(ins);
+        }
+
+        return false;
     }
 #endif // DEBUG
 
@@ -1926,9 +1980,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 // - V'- bit to extend vvvv
 // - aaa - specifies mask register
 //    Rest    - reserved for future use and usage of them will uresult in Undefined instruction exception.
-// - u - Bit to indicate YMM Embedded rounding.
-//   Set to 1 for isas Avx10.1 and below
-//   Needs to be set to 0 for AVX10.2 and above to indicate YMM embedded rounding
 // - B' - reserved as of now
 //   set to 0 for future compatibility.
 //
@@ -1939,7 +1990,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #define LBIT_IN_BYTE_EVEX_PREFIX      0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
-#define uBIT_IN_BYTE_EVEX_PREFIX      0x0000040000000000ULL
 
 #define MAP4_IN_BYTE_EVEX_PREFIX   0x4000000000000ULL
 #define ND_BIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
@@ -2046,13 +2096,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         if (!id->idHasMem())
         {
-            // ymm embedded rounding case.
-            if (attr == EA_32BYTE)
-            {
-                assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
-                code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
-            }
-
             unsigned roundingMode = id->idGetEvexbContext();
             if (roundingMode == 1)
             {
@@ -2475,7 +2518,7 @@ regNumber AbsRegNumber(regNumber reg)
 bool IsExtendedReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    return ((reg >= REG_R8) && (reg <= REG_R23)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
+    return ((reg >= REG_R8) && (reg <= REG_R31)) || ((reg >= REG_XMM8) && (reg <= REG_XMM31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended reg are not available.
     return false;
@@ -5160,7 +5203,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
 static bool baseRegisterRequiresSibByte(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_ESP || base == REG_R12 || base == REG_R20;
+    return base == REG_ESP || base == REG_R12 || base == REG_R20 || base == REG_R28;
 #else
     return base == REG_ESP;
 #endif
@@ -5169,7 +5212,7 @@ static bool baseRegisterRequiresSibByte(regNumber base)
 static bool baseRegisterRequiresDisplacement(regNumber base)
 {
 #ifdef TARGET_AMD64
-    return base == REG_EBP || base == REG_R13 || base == REG_R21;
+    return base == REG_EBP || base == REG_R13 || base == REG_R21 || base == REG_R29;
 #else
     return base == REG_EBP;
 #endif
@@ -7277,6 +7320,7 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
+        case INS_movq:
         case INS_movsd_simd:
         case INS_movss:
         case INS_movsx:
@@ -7296,7 +7340,6 @@ bool emitter::IsMovInstruction(instruction ins)
         }
 
 #if defined(TARGET_AMD64)
-        case INS_movq:
         case INS_movsxd:
         {
             return true;
@@ -7447,7 +7490,6 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-#if defined(TARGET_AMD64)
         case INS_movq:
         {
             // Clears the upper bits
@@ -7455,6 +7497,7 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
+#if defined(TARGET_AMD64)
         case INS_movsxd:
         {
             // Sign-extends the source
@@ -7727,13 +7770,13 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
             break;
         }
 
-#if defined(TARGET_AMD64)
         case INS_movq:
         {
             assert(isFloatReg(dstReg) && isFloatReg(srcReg));
             break;
         }
 
+#if defined(TARGET_AMD64)
         case INS_movsxd:
         {
             assert(isGeneralRegister(dstReg) && isGeneralRegister(srcReg));
@@ -11041,50 +11084,36 @@ void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
  */
 
 // clang-format off
-void emitter::emitIns_Call(EmitCallType          callType,
-                           CORINFO_METHOD_HANDLE methHnd,
-                           INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                           void*                 addr,
-                           ssize_t               argSize,
-                           emitAttr              retSize
-                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                           VARSET_VALARG_TP      ptrVars,
-                           regMaskTP             gcrefRegs,
-                           regMaskTP             byrefRegs,
-                           const DebugInfo&      di,
-                           regNumber             ireg,
-                           regNumber             xreg,
-                           unsigned              xmul,
-                           ssize_t               disp,
-                           bool                  isJump,
-                           bool                  noSafePoint)
+void emitter::emitIns_Call(const EmitCallParams& params)
 // clang-format on
 {
     /* Sanity check the arguments depending on callType */
 
-    assert(callType < EC_COUNT);
+    assert(params.callType < EC_COUNT);
     if (!emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        assert((callType != EC_FUNC_TOKEN && callType != EC_FUNC_TOKEN_INDIR) ||
-               (addr != nullptr && ireg == REG_NA && xreg == REG_NA && xmul == 0 && disp == 0));
+        assert((params.callType != EC_FUNC_TOKEN && params.callType != EC_FUNC_TOKEN_INDIR) ||
+               (params.addr != nullptr && params.ireg == REG_NA && params.xreg == REG_NA && params.xmul == 0 &&
+                params.disp == 0));
     }
-    assert(callType != EC_INDIR_R || (addr == nullptr && ireg < REG_COUNT && xreg == REG_NA && xmul == 0 && disp == 0));
-    assert(callType != EC_INDIR_ARD || (addr == nullptr));
+    assert(params.callType != EC_INDIR_R || (params.addr == nullptr && params.ireg < REG_COUNT &&
+                                             params.xreg == REG_NA && params.xmul == 0 && params.disp == 0));
+    assert(params.callType != EC_INDIR_ARD || (params.addr == nullptr));
 
     // Our stack level should be always greater than the bytes of arguments we push. Just
     // a sanity test.
-    assert((unsigned)abs((signed)argSize) <= codeGen->genStackLevel);
+    assert((unsigned)abs((signed)params.argSize) <= codeGen->genStackLevel);
 
     // Trim out any callee-trashed registers from the live set.
-    regMaskTP savedSet = emitGetGCRegsSavedOrModified(methHnd);
-    gcrefRegs &= savedSet;
-    byrefRegs &= savedSet;
+    regMaskTP savedSet  = emitGetGCRegsSavedOrModified(params.methHnd);
+    regMaskTP gcrefRegs = params.gcrefRegs & savedSet;
+    regMaskTP byrefRegs = params.byrefRegs & savedSet;
 
 #ifdef DEBUG
     if (EMIT_GC_VERBOSE)
     {
-        printf("\t\t\t\t\t\t\tCall: GCvars=%s ", VarSetOps::ToString(emitComp, ptrVars));
-        dumpConvertedVarSet(emitComp, ptrVars);
+        printf("\t\t\t\t\t\t\tCall: GCvars=%s ", VarSetOps::ToString(emitComp, params.ptrVars));
+        dumpConvertedVarSet(emitComp, params.ptrVars);
         printf(", gcrefRegs=");
         printRegMaskInt(gcrefRegs);
         emitDispRegSet(gcrefRegs);
@@ -11096,9 +11125,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 #endif
 
     /* Managed RetVal: emit sequence point for the call */
-    if (emitComp->opts.compDbgInfo && di.IsValid())
+    if (emitComp->opts.compDbgInfo && params.debugInfo.IsValid())
     {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, di, false);
+        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
     }
 
     /*
@@ -11117,61 +11146,63 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     instrDesc* id;
 
-    assert(argSize % REGSIZE_BYTES == 0);
-    int argCnt = (int)(argSize / (int)REGSIZE_BYTES); // we need a signed-divide
+    assert(params.argSize % REGSIZE_BYTES == 0);
+    int argCnt = (int)(params.argSize / (int)REGSIZE_BYTES); // we need a signed-divide
 
-    if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
+    if ((params.callType == EC_INDIR_R) || (params.callType == EC_INDIR_ARD))
     {
         /* Indirect call, virtual calls */
 
-        id = emitNewInstrCallInd(argCnt, disp, ptrVars, gcrefRegs, byrefRegs,
-                                 retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
+        id = emitNewInstrCallInd(argCnt, params.disp, params.ptrVars, gcrefRegs, byrefRegs,
+                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize),
+                                 params.hasAsyncRet);
     }
     else
     {
         // Helper/static/nonvirtual/function calls (direct or through handle),
         // and calls to an absolute addr.
 
-        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR);
+        assert(params.callType == EC_FUNC_TOKEN || params.callType == EC_FUNC_TOKEN_INDIR);
 
-        id = emitNewInstrCallDir(argCnt, ptrVars, gcrefRegs, byrefRegs,
-                                 retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize));
+        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs,
+                                 params.retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(params.secondRetSize),
+                                 params.hasAsyncRet);
     }
 
     /* Update the emitter's live GC ref sets */
 
     // If the method returns a GC ref, mark EAX appropriately
-    if (retSize == EA_GCREF)
+    if (params.retSize == EA_GCREF)
     {
         gcrefRegs |= RBM_EAX;
     }
-    else if (retSize == EA_BYREF)
+    else if (params.retSize == EA_BYREF)
     {
         byrefRegs |= RBM_EAX;
     }
 
 #ifdef UNIX_AMD64_ABI
     // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
-    if (secondRetSize == EA_GCREF)
+    if (params.secondRetSize == EA_GCREF)
     {
         gcrefRegs |= RBM_RDX;
     }
-    else if (secondRetSize == EA_BYREF)
+    else if (params.secondRetSize == EA_BYREF)
     {
         byrefRegs |= RBM_RDX;
     }
 #endif // UNIX_AMD64_ABI
 
-    VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
+    VarSetOps::Assign(emitComp, emitThisGCrefVars, params.ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
     /* Set the instruction - special case jumping a function (tail call) */
     instruction ins = INS_call;
 
-    if (isJump)
+    if (params.isJump)
     {
-        if (callType == EC_FUNC_TOKEN)
+        if (params.callType == EC_FUNC_TOKEN)
         {
             ins = INS_l_jmp;
         }
@@ -11183,16 +11214,16 @@ void emitter::emitIns_Call(EmitCallType          callType,
     id->idIns(ins);
 
     // for the purpose of GC safepointing tail-calls are not real calls
-    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
+    id->idSetIsNoGC(params.isJump || params.noSafePoint || emitNoGChelper(params.methHnd));
 
     UNATIVE_OFFSET sz;
 
     // Record the address: method, indirection, or funcptr
-    if ((callType == EC_INDIR_R) || (callType == EC_INDIR_ARD))
+    if ((params.callType == EC_INDIR_R) || (params.callType == EC_INDIR_ARD))
     {
         // This is an indirect call/jmp (either a virtual call or func ptr call)
 
-        if (callType == EC_INDIR_R) // call reg
+        if (params.callType == EC_INDIR_R) // call reg
         {
             id->idSetIsCallRegPtr();
         }
@@ -11202,9 +11233,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
 
-        id->idAddr()->iiaAddrMode.amBaseReg = ireg;
-        id->idAddr()->iiaAddrMode.amIndxReg = xreg;
-        id->idAddr()->iiaAddrMode.amScale   = xmul ? emitEncodeScale(xmul) : emitter::OPSZ1;
+        id->idAddr()->iiaAddrMode.amBaseReg = params.ireg;
+        id->idAddr()->iiaAddrMode.amIndxReg = params.xreg;
+        id->idAddr()->iiaAddrMode.amScale   = params.xmul ? emitEncodeScale(params.xmul) : emitter::OPSZ1;
 
         code_t code = insCodeMR(ins);
         if (ins == INS_tail_i_jmp)
@@ -11216,9 +11247,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
         sz = emitInsSizeAM(id, code);
 
-        if (ireg == REG_NA && xreg == REG_NA)
+        if (params.ireg == REG_NA && params.xreg == REG_NA)
         {
-            if (codeGen->genCodeIndirAddrNeedsReloc(disp))
+            if (codeGen->genCodeIndirAddrNeedsReloc(params.disp))
             {
                 id->idSetIsDspReloc();
             }
@@ -11228,20 +11259,20 @@ void emitter::emitIns_Call(EmitCallType          callType,
                 // An absolute indir address that doesn't need reloc should fit within 32-bits
                 // to be encoded as offset relative to zero.  This addr mode requires an extra
                 // SIB byte
-                noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+                noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
                 sz++;
             }
 #endif // TARGET_AMD64
         }
     }
-    else if (callType == EC_FUNC_TOKEN_INDIR)
+    else if (params.callType == EC_FUNC_TOKEN_INDIR)
     {
         // call/jmp [method_addr]
 
-        assert(addr != nullptr);
+        assert(params.addr != nullptr);
 
         id->idInsFmt(IF_METHPTR);
-        id->idAddr()->iiaAddr = (BYTE*)addr;
+        id->idAddr()->iiaAddr = (BYTE*)params.addr;
         sz                    = 6;
 
         if (TakesRex2Prefix(id))
@@ -11252,7 +11283,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         // Since this is an indirect call through a pointer and we don't
         // currently pass in emitAttr into this function, we query codegen
         // whether addr needs a reloc.
-        if (codeGen->genCodeIndirAddrNeedsReloc((size_t)addr))
+        if (codeGen->genCodeIndirAddrNeedsReloc((size_t)params.addr))
         {
             id->idSetIsDspReloc();
         }
@@ -11262,7 +11293,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             // An absolute indir address that doesn't need reloc should fit within 32-bits
             // to be encoded as offset relative to zero.  This addr mode requires an extra
             // SIB byte
-            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
+            noway_assert((size_t) static_cast<int>(reinterpret_cast<intptr_t>(params.addr)) == (size_t)params.addr);
             sz++;
         }
 #endif // TARGET_AMD64
@@ -11271,21 +11302,21 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         // This is a simple direct call/jmp: call/jmp helper/method/addr
 
-        assert(callType == EC_FUNC_TOKEN);
+        assert(params.callType == EC_FUNC_TOKEN);
 
-        assert(addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+        assert(params.addr != nullptr || emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
         id->idInsFmt(IF_METHOD);
         sz = 5;
 
-        id->idAddr()->iiaAddr = (BYTE*)addr;
+        id->idAddr()->iiaAddr = (BYTE*)params.addr;
 
         // Direct call to a method and no addr indirection is needed.
-        if (codeGen->genCodeAddrNeedsReloc((size_t)addr))
+        if (codeGen->genCodeAddrNeedsReloc((size_t)params.addr))
         {
             id->idSetIsDspReloc();
 
-            if ((size_t)methHnd == 1)
+            if ((size_t)params.methHnd == 1)
             {
                 id->idSetTlsGD();
                 sz += 1; // For REX.W prefix
@@ -11295,14 +11326,14 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (m_debugInfoSize > 0)
     {
-        INDEBUG(id->idDebugOnlyInfo()->idCallSig = sigInfo);
-        id->idDebugOnlyInfo()->idMemCookie = (size_t)methHnd; // method token
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
     }
 
 #ifdef LATE_DISASM
-    if (addr != nullptr)
+    if (params.addr != nullptr)
     {
-        codeGen->getDisAssembler().disSetMethod((size_t)addr, methHnd);
+        codeGen->getDisAssembler().disSetMethod((size_t)params.addr, params.methHnd);
     }
 #endif // LATE_DISASM
 
@@ -11315,10 +11346,10 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* The call will pop the arguments */
 
-    if (emitCntStackDepth && argSize > 0)
+    if (emitCntStackDepth && params.argSize > 0)
     {
-        noway_assert((ssize_t)emitCurStackLvl >= argSize);
-        emitCurStackLvl -= (int)argSize;
+        noway_assert((ssize_t)emitCurStackLvl >= params.argSize);
+        emitCurStackLvl -= (int)params.argSize;
         assert((int)emitCurStackLvl >= 0);
     }
 
@@ -14228,12 +14259,12 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 
 #ifdef DEBUG
     // For cases where 'align' was placed behind a 'jmp' in an IG that does not
-    // immediately preced the loop IG, we do not know in advance the offset of
+    // immediately precede the loop IG, we do not know in advance the offset of
     // IG having loop. For such cases, skip the padding calculation validation.
 
-    // For prejit, `dst` is not aliged as requested, but the final assembly will have them aligned.
+    // For AOT, `dst` is not aligned as requested, but the final assembly will have them aligned.
     // So, just calculate the offset of the current `dst` from the start.
-    size_t offset = emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) ? emitCurCodeOffs(dst) : (size_t)dst;
+    size_t offset          = emitComp->IsAot() ? emitCurCodeOffs(dst) : (size_t)dst;
     bool   validatePadding = !alignInstr->isPlacedAfterJmp;
 #endif
 
@@ -14802,7 +14833,7 @@ GOT_DSP:
                     }
 #else  // TARGET_AMD64
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
+       // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)dsp) != IMAGE_REL_BASED_REL32);
@@ -15277,8 +15308,14 @@ DONE:
             {
                 case IF_RWR_ARD:
                 case IF_RRW_ARD:
+                case IF_RWR_ARD_CNS:
+                case IF_RRW_ARD_CNS:
+                case IF_RWR_ARD_RRD:
+                case IF_RRW_ARD_RRD:
                 case IF_RWR_RRD_ARD:
                 case IF_RRW_RRD_ARD:
+                case IF_RWR_RRD_ARD_CNS:
+                case IF_RWR_RRD_ARD_RRD:
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
@@ -17971,10 +18008,7 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
         // path, but for those instructions with no tuple information,
         // APX-EVEX treat the scaling factor to be 1 constantly.
         instruction ins = id->idIns();
-        // TODO-XArch-APX:
-        // This assert may need tweak if BMI1 instructions are promoted
-        // into EVEX for multiple features, currently only EVEX.NF.
-        assert(IsApxExtendedEvexInstruction(id->idIns()));
+        assert(IsApxExtendedEvexInstruction(ins) || IsBMIInstruction(ins));
         *dspInByte = ((signed char)dsp == (ssize_t)dsp);
         return dsp;
     }
@@ -18188,11 +18222,6 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
  *  point past the generated code, and returns the size of the instruction
  *  descriptor in bytes.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
@@ -18433,7 +18462,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     dst += emitOutputWord(dst, code | 0x0500);
 #else  // TARGET_AMD64
        // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
-       // This addr mode should never be used while generating relocatable ngen code nor if
+       // This addr mode should never be used while generating relocatable AOT code nor if
        // the addr can be encoded as pc-relative address.
                     noway_assert(!emitComp->opts.compReloc);
                     noway_assert(codeGen->genAddrRelocTypeHint((size_t)addr) != IMAGE_REL_BASED_REL32);
@@ -18534,11 +18563,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 byrefRegs |= RBM_EAX;
             }
 
-#ifdef UNIX_AMD64_ABI
             // If is a multi-register return method is called, mark RDX appropriately (for System V AMD64).
             if (id->idIsLargeCall())
             {
                 instrDescCGCA* idCall = (instrDescCGCA*)id;
+#ifdef UNIX_AMD64_ABI
                 if (idCall->idSecondGCref() == GCT_GCREF)
                 {
                     gcrefRegs |= RBM_RDX;
@@ -18547,8 +18576,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     byrefRegs |= RBM_RDX;
                 }
-            }
 #endif // UNIX_AMD64_ABI
+                if (idCall->hasAsyncContinuationRet())
+                {
+                    gcrefRegs |= RBM_ASYNC_CONTINUATION_RET;
+                }
+            }
 
             // If the GC register set has changed, report the new set
             if (gcrefRegs != emitThisGCrefRegs)
@@ -20004,9 +20037,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     return sz;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 emitter::insFormat emitter::getMemoryOperation(instrDesc* id) const
 {
@@ -20064,6 +20094,14 @@ emitter::insFormat emitter::ExtractMemoryFormat(insFormat insFmt) const
 
     return IF_NONE;
 }
+
+#ifdef TARGET_AMD64
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+/*static*/ bool emitter::emitIns_valid_imm_for_ccmp(INT64 imm)
+{
+    return (((INT32)imm) == imm);
+}
+#endif
 
 #if defined(DEBUG) || defined(LATE_DISASM)
 

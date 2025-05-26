@@ -116,7 +116,7 @@ if /i "%__TargetOS%" == "linux-bionic" (
 
 :: Regenerate the VS solution
 
-call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
+call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 
 :BuildNativeProj
@@ -129,7 +129,7 @@ if [%__Ninja%] == [1] (
 ) else if [%__TargetOS%] == [wasi] (
     set __generatorArgs=
 ) else (
-    set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
+    set __generatorArgs=
 )
 
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%

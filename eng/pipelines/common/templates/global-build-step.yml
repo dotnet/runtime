@@ -10,7 +10,7 @@ parameters:
   condition: succeeded()
 
 steps:
-  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci ${{ parameters.archParameter }} $(_osParameter) ${{ parameters.crossArg }} ${{ parameters.buildArgs }} ${{ parameters.targetCxxLibraryConfigurationArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci ${{ parameters.archParameter }} $(_osParameter) ${{ parameters.crossArg }} ${{ parameters.buildArgs }} ${{ parameters.targetCxxLibraryConfigurationArgs }} $(_officialBuildParameter) $(_overrideTestScriptWindowsCmdParameter)
     displayName: ${{ parameters.displayName }}
     ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
       continueOnError: ${{ parameters.shouldContinueOnError }}
