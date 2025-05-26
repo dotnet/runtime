@@ -37,8 +37,9 @@ void SString::Startup()
 #ifndef DACCESS_COMPILE
     if (s_Empty == NULL)
     {
-        s_Empty = PTR_SString(new (s_EmptySpace) SString());
-        s_Empty->SetNormalized();
+        SString* emptyString = new (s_EmptySpace) SString();
+        emptyString->SetNormalized();
+        s_Empty = PTR_SString(emptyString);
     }
 #endif // DACCESS_COMPILE
 }
