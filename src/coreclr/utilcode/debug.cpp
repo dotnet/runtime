@@ -38,8 +38,8 @@ static void GetExecutableFileNameUtf8(SString& value)
     CONTRACTL_END;
 
     SString tmp;
-    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(_MAX_PATH);
-    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, _MAX_PATH);
+    WCHAR * pCharBuf = tmp.OpenUnicodeBuffer(MAX_PATH);
+    DWORD numChars = GetModuleFileNameW(0 /* Get current executable */, pCharBuf, MAX_PATH);
     tmp.CloseBuffer(numChars);
 
     tmp.ConvertToUTF8(value);
