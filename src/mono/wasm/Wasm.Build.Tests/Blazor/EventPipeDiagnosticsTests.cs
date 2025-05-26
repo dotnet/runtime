@@ -1,162 +1,344 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
-using System.Text;
-using System.Linq;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing;
-using Microsoft.Diagnostics.Tracing.Parsers;
-using Microsoft.Diagnostics.Tracing.Parsers.Clr;
+using Microsoft.Diagnostics.Tracing.Etlx;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.Diagnostics.Tracing.Etlx;
 
 #nullable enable
 
-namespace Wasm.Build.Tests.Blazor
-{
-    public class EventPipeDiagnosticsTests : BlazorWasmTestBase
-    {
-        public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-            : base(output, buildContext)
-        {
-            _enablePerTestCleanup = true;
-        }
+namespace Wasm.Build.Tests.Blazor;
 
-        [Fact]
-        public async Task BlazorEventPipeTestWithCpuSamples()
-        {
-            string extraProperties = @"
+public class EventPipeDiagnosticsTests : BlazorWasmTestBase
+{
+    public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+        : base(output, buildContext)
+    {
+        _enablePerTestCleanup = true;
+    }
+
+    [Fact]
+    public async Task BlazorEventPipeTestWithCpuSamples()
+    {
+        string extraProperties = @"
                 <WasmPerfInstrumentation>all,interval=0</WasmPerfInstrumentation>
                 <WasmPerfTracing>true</WasmPerfTracing>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
-            ProjectInfo info = CopyTestAsset(Configuration.Release, aot: false, TestAsset.BlazorBasicTestApp, "blazor_eventpipe", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(Configuration.Release, aot: false, TestAsset.BlazorBasicTestApp, "blazor_cpu_samples", extraProperties: extraProperties);
 
-            UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string> {
-                    {
-                        @"currentCount++;",
-                        """
-                        for(int i = 0; i < 50; i++)
-                        {
-                            if( i % 50 == 0)
-                            {
-                                Console.WriteLine($"Incrementing count: {i} {DateTime.Now:O}");
-                            }
-                        }
-                        currentCount++;
-                        if (currentCount > 4)
-                        {
-                            Console.WriteLine("WASM EXIT 0");
-                        }
-                        """
-                    }
-                });
+        UpdateCounterPage();
 
+        BuildProject(info, Configuration.Release, new BuildOptions(AssertAppBundle: false));
 
-            // Build the project
-            BuildProject(info, Configuration.Release, new BuildOptions(AssertAppBundle: false));
+        async Task CpuProfileTest(IPage page)
+        {
+            await SetupCounterPage(page);
 
-            // Setup the environment for file uploads
-            var serverEnv = new Dictionary<string, string>
-            {
-                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
-            };
-
-            // Create a custom test handler that will navigate to Counter page, collect CPU samples,
-            // click the button, and upload the trace
-            async Task CpuProfileTest(IPage page)
-            {
-                await Task.Delay(500);
-                // Navigate to the Counter page
-                await page.Locator("text=Counter").ClickAsync();
-                
-                // Verify we're on the Counter page
-                var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-                Assert.Equal("Current count: 0", txt);
-
-                // Collect CPU samples for 5 seconds
-                await page.EvaluateAsync(@"
-                    globalThis.getDotnetRuntime(0)
-                    .collectCpuSamples({durationSeconds: 2.0, skipDownload:true}).then(traces => {
-                        // concatenate the buffers into a single Uint8Array
-                        const concatenated = new Uint8Array(traces.reduce((acc, curr) => acc + curr.byteLength, 0));
-                        let offset = 0;
-                        for (const trace of traces) {
-                            concatenated.set(new Uint8Array(trace), offset);
-                            offset += trace.byteLength;
-                        }
-
-                        console.log(`File size to upload: ${concatenated.byteLength} bytes ${new Date().toISOString()}`);
-                        return fetch('/upload/cpuprofile.nettrace', {
-                            headers: {
-                                'Content-Type': 'application/octet-stream'
-                            },
-                            method: 'POST',
-                            body: concatenated
-                        });
-                    }).then(() => {
-                        console.log(`File uploaded successfully`);
-                    }).catch(err => {
-                        console.log(`ERROR: ${err}`);
-                    });
-                    console.log(`collectCpuSamples started at ${new Date().toISOString()}`);
+            await page.EvaluateAsync(@"
+                    globalThis.upload = globalThis.uploadTrace(`cpuprofile.nettrace`, globalThis.getDotnetRuntime(0).collectCpuSamples({ durationSeconds: 2.0, skipDownload: true }));
+                    console.log(`CPU samples collected: ${new Date().toISOString()}`);
                 ");
 
-                // Click the button a few times
-                for (int i = 0; i < 5; i++)
-                {
-                    await page.Locator("text=\"Click me\"").ClickAsync();
-                    await Task.Delay(10);
-                }                
+            await ClickAndCollect(page);
+        }
 
-                var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
-                Assert.NotEqual("Current count: 0", txt2);
-
-                await Task.Delay(5000);
+        // Run the test using the custom handler
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+            Configuration: Configuration.Release,
+            Test: CpuProfileTest,
+            TimeoutSeconds: 60,
+            CheckCounter: false,
+            ServerEnvironment: new Dictionary<string, string>
+            {
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
             }
-
-            // Run the test using the custom handler
-            await RunForBuildWithDotnetRun(new BlazorRunOptions(
-                Configuration: Configuration.Release, 
-                Test: CpuProfileTest,
-                TimeoutSeconds: 60,
-                CheckCounter: false,
-                ServerEnvironment: serverEnv
-            ));
+        ));
 
 
-            // Verify the trace file was created
-            var traceFilePath = Path.GetFullPath(Path.Combine(info.LogPath, "cpuprofile.nettrace"));
-            Assert.True(File.Exists(traceFilePath), $"Trace file {traceFilePath} was not created");
-            var conversionLog = new StringBuilder();
-            var converted = TraceLog.CreateFromEventTraceLogFile(traceFilePath,null,new TraceLogOptions
+        var methodFound = false;
+        using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
+        {
+            methodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName == "BlazorBasicTestApp.Pages.Counter.IncrementCount()");
+            if (!methodFound)
             {
-                ConversionLog = new StringWriter(conversionLog),
-            });
-            _testOutput.WriteLine(conversionLog.ToString());
-            Assert.True(File.Exists(converted), $"Trace file {converted} was not created");
-
-            var methodFound = false;
-            using (var source = TraceLog.OpenOrConvert(converted))
-            {
-                methodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName=="BlazorBasicTestApp.Pages.Counter.IncrementCount()");
-                if(!methodFound)
+                foreach (var stack in source.CallStacks)
                 {
-                    foreach (var stack in source.CallStacks)
-                    {
-                        _testOutput.WriteLine($"Stack: {stack.CodeAddress.FullMethodName}");
-                    }
+                    _testOutput.WriteLine($"Stack: {stack.CodeAddress.FullMethodName}");
                 }
             }
-
-            Assert.True(methodFound, "The trace should contain stack frames for the 'IncrementCount' method");
         }
+
+        Assert.True(methodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
+    }
+
+    [Fact]
+    public async Task BlazorEventPipeTestWithMetrics()
+    {
+        string extraProperties = @"
+                <WasmPerfTracing>true</WasmPerfTracing>
+                <WBTDevServer>true</WBTDevServer>
+            ";
+
+        ProjectInfo info = CopyTestAsset(Configuration.Release, aot: false, TestAsset.BlazorBasicTestApp, "blazor_metrics", extraProperties: extraProperties);
+
+        UpdateCounterPage();
+        BuildProject(info, Configuration.Release, new BuildOptions(AssertAppBundle: false));
+
+        async Task CpuProfileTest(IPage page)
+        {
+            await SetupCounterPage(page);
+
+            await page.EvaluateAsync(@"
+                    globalThis.upload = globalThis.uploadTrace(`metrics.nettrace`, globalThis.getDotnetRuntime(0).collectPerfCounters({ durationSeconds: 2.0, skipDownload: true }));
+                    console.log(`Metrics collected: ${new Date().toISOString()}`);
+                ");
+
+            await ClickAndCollect(page);
+        }
+
+        // Run the test using the custom handler
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+            Configuration: Configuration.Release,
+            Test: CpuProfileTest,
+            TimeoutSeconds: 60,
+            CheckCounter: false,
+            ServerEnvironment: new Dictionary<string, string>
+            {
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+            }
+        ));
+
+        var dictionary = ExtractInstrumentNames(info, "metrics.nettrace");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.assembly.count"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.exceptions"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.collections"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.heap.total_allocated"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.heap.fragmentation.size"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.heap.size"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.last_collection.memory.committed_size"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.gc.pause.time"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.jit.compilation.time"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.jit.compiled_il.size"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.jit.compiled_methods"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.monitor.lock_contentions"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.process.cpu.count"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.process.memory.working_set"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.queue.length"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.thread.count"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.thread_pool.work_item.count"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("System.Diagnostics.Metrics/instrumentName/dotnet.timer.count"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("Microsoft-DotNETCore-EventPipe/ArchInformation/Unknown"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("Microsoft-DotNETCore-EventPipe/CommandLine//managed BlazorBasicTestApp"), "The metrics.nettrace should contain instrument");
+        Assert.True(dictionary.ContainsKey("Microsoft-DotNETCore-EventPipe/OSInformation/Unknown"), "The metrics.nettrace should contain instrument");
+    }
+
+    [Fact]
+    public async Task BlazorEventPipeTestWithHeapDump()
+    {
+        string extraProperties = @"
+                <WasmPerfTracing>true</WasmPerfTracing>
+                <WBTDevServer>true</WBTDevServer>
+            ";
+
+        ProjectInfo info = CopyTestAsset(Configuration.Release, aot: false, TestAsset.BlazorBasicTestApp, "blazor_gc_dump", extraProperties: extraProperties);
+
+        UpdateCounterPage();
+
+        // Build the project
+        BuildProject(info, Configuration.Release, new BuildOptions(AssertAppBundle: false));
+
+        // Create a custom test handler that will navigate to Counter page, collect CPU samples,
+        // click the button, and upload the trace
+        async Task CpuProfileTest(IPage page)
+        {
+            await SetupCounterPage(page);
+
+            await page.EvaluateAsync(@"
+                    globalThis.upload = globalThis.uploadTrace(`gcdump.nettrace`, globalThis.getDotnetRuntime(0).collectGcDump({ durationSeconds: 2.0, skipDownload: true }));
+                    console.log(`GC dump collected: ${new Date().toISOString()}`);
+                ");
+
+            await ClickAndCollect(page);
+        }
+
+        // Run the test using the custom handler
+        await RunForBuildWithDotnetRun(new BlazorRunOptions(
+            Configuration: Configuration.Release,
+            Test: CpuProfileTest,
+            TimeoutSeconds: 60,
+            CheckCounter: false,
+            ServerEnvironment: new Dictionary<string, string>
+            {
+                ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
+            }
+        ));
+
+        var dictionary = ExtractEventNames(info, "gcdump.nettrace");
+        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/Start"), "The metrics.nettrace should contain GC/Start");
+        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/Stop"), "The metrics.nettrace should contain GC/Stop");
+        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/BulkEdge"), "The metrics.nettrace should contain GC/BulkEdge");
+        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/BulkNode"), "The metrics.nettrace should contain GC/BulkNode");
+        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/GC/BulkRootEdge"), "The metrics.nettrace should contain GC/BulkRootEdge");
+        Assert.True(dictionary.ContainsKey("Microsoft-Windows-DotNETRuntime/Type/BulkType"), "The metrics.nettrace should contain GC/BulkType");
+    }
+
+    private string ConvertTrace(ProjectInfo info, string fileName)
+    {
+        var traceFilePath = Path.GetFullPath(Path.Combine(info.LogPath, fileName));
+        Assert.True(File.Exists(traceFilePath), $"Trace file {traceFilePath} was not created");
+        var conversionLog = new StringBuilder();
+        using var sw = new StringWriter(conversionLog);
+        var options = new TraceLogOptions
+        {
+            ConversionLog = sw,
+        };
+        var traceConvertedPath = TraceLog.CreateFromEventTraceLogFile(traceFilePath, null, options);
+        _testOutput.WriteLine(conversionLog.ToString());
+        Assert.True(File.Exists(traceConvertedPath), $"Trace file {traceConvertedPath} was not created");
+        return traceConvertedPath;
+    }
+
+    private static Dictionary<string, int> ExtractEventNames(ProjectInfo info, string fileName)
+    {
+        var dictionary = new Dictionary<string, int>();
+        var traceFilePath = Path.GetFullPath(Path.Combine(info.LogPath, fileName));
+        using (var source = new EventPipeEventSource(traceFilePath))
+        {
+            source.Clr.All += (data) =>
+            {
+                var key = $"{data.ProviderName}/{data.EventName}";
+                if (dictionary.ContainsKey(key))
+                {
+                    dictionary[key] = dictionary[key] + 1;
+                }
+                else
+                {
+                    dictionary[key] = 1;
+                }
+            };
+            source.Process();
+        }
+
+        return dictionary;
+    }
+
+    private static Dictionary<string, int> ExtractInstrumentNames(ProjectInfo info, string fileName)
+    {
+        var dictionary = new Dictionary<string, int>();
+        var traceFilePath = Path.GetFullPath(Path.Combine(info.LogPath, fileName));
+        using (var source = new EventPipeEventSource(traceFilePath))
+        {
+            source.Dynamic.All += (data) =>
+            {
+                foreach (var arg in data.PayloadNames)
+                {
+                    var key = $"{data.ProviderName}/{arg}/{data.PayloadByName(arg)}";
+                    if (dictionary.ContainsKey(key))
+                    {
+                        dictionary[key] = dictionary[key] + 1;
+                    }
+                    else
+                    {
+                        dictionary[key] = 1;
+                    }
+                }
+            };
+            source.Process();
+        }
+
+        return dictionary;
+    }
+
+    private void UpdateCounterPage()
+    {
+        UpdateFile(Path.Combine("Pages", "Counter.razor"), new Dictionary<string, string> {
+                {
+                    @"currentCount++;",
+                    """
+                    for(int i = 0; i < 100; i++)
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        sb.Append("Incrementing count: ");
+                        sb.Append(i);
+                        sb.Append(" ");
+                        sb.Append(DateTime.Now.ToString("O"));
+                        if( i % 50 == 0)
+                        {
+                            Console.WriteLine(sb.ToString());
+                        }
+                    }
+                    currentCount++;
+                    if (currentCount > 4)
+                    {
+                        Console.WriteLine("WASM EXIT 0");
+                    }
+                    """
+                }
+            });
+    }
+
+    private async Task SetupCounterPage(IPage page)
+    {
+        await Task.Delay(500);
+        // Navigate to the Counter page
+        await page.Locator("text=Counter").ClickAsync();
+
+        // Verify we're on the Counter page
+        var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
+        Assert.Equal("Current count: 0", txt);
+
+        var up = """
+        globalThis.uploadTrace = async (filename, tracesPromise) => {
+            console.log(`${filename} typeof  ${typeof tracesPromise} ${new Date().toISOString()}`);
+
+            const traces = await tracesPromise;
+
+            console.log(`${filename} typeof  ${typeof traces} ${new Date().toISOString()}`);
+                    
+            // concatenate the buffers into a single Uint8Array
+            const concatenated = new Uint8Array(traces.reduce((acc, curr) => acc + curr.byteLength, 0));
+            let offset = 0;
+            for (const trace of traces) {
+                concatenated.set(new Uint8Array(trace), offset);
+                offset += trace.byteLength;
+            }
+
+            console.log(`File ${filename} size to upload: ${concatenated.byteLength} bytes ${new Date().toISOString()}`);
+            await fetch(`/upload/${filename}`, {
+                headers: {
+                    'Content-Type': 'application/octet-stream'
+                },
+                method: 'POST',
+                body: concatenated
+            });
+            console.log(`File uploaded successfully`);
+        };
+        console.log(`globalThis.uploadTrace defined ${new Date().toISOString()}`);
+        """;
+        await page.EvaluateAsync(up);
+    }
+
+    private async Task ClickAndCollect(IPage page)
+    {
+        // Click the button a few times
+        for (int i = 0; i < 5; i++)
+        {
+            await page.Locator("text=\"Click me\"").ClickAsync();
+            await Task.Delay(10);
+        }
+        await Task.Delay(1000);
+        await page.EvaluateAsync(@"globalThis.upload;");
+
+        var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
+        Assert.NotEqual("Current count: 0", txt2);
     }
 }

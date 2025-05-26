@@ -9,6 +9,7 @@ import { mono_log_warn } from "./logging";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
 import { collectMetrics } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
+import { mono_assert } from "../globals";
 
 //let diagClient:IDiagClient|undefined = undefined as any;
 //let server:DiagServer = undefined as any;
@@ -140,6 +141,7 @@ export function cleanupClient () {
 }
 
 export function setupJsClient (client:IDiagnosticClient) {
+    mono_assert(!nextJsClient.promise_control.isDone, "multiple clients in parallel are not allowed");
     nextJsClient.promise_control.resolve(client);
 }
 
