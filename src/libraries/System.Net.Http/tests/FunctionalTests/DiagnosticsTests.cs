@@ -1481,6 +1481,10 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public async Task SendAsync_ReuseRequestInHandler_ResetsHeadersForEachReuse()
         {
+            _ = Task.Delay(TimeSpan.FromMinutes(2.5)).ContinueWith((_) =>
+            {
+                Environment.FailFast("Test took too long to complete, likely due to a deadlock or infinite loop.");
+            });
             Activity parent0 = new Activity("parent0");
             Activity parent1 = new Activity("parent1") { TraceStateString = "wow=1" };
             Activity parent2 = new Activity("parent2") { TraceStateString = "wow=2" };
