@@ -2914,11 +2914,6 @@ FlushInstructionCache(
 #define MAX_LEADBYTES         12
 #define MAX_DEFAULTCHAR       2
 
-PALIMPORT
-UINT
-PALAPI
-GetACP(void);
-
 typedef struct _cpinfo {
     UINT MaxCharSize;
     BYTE DefaultChar[MAX_DEFAULTCHAR];
