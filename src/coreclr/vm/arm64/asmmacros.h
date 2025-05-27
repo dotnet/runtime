@@ -182,16 +182,27 @@ $FuncName
     MACRO
     PUSH_COOP_PINVOKE_FRAME $Target
 
-        PROLOG_WITH_TRANSITION_BLOCK 0, {false}
-        add     $Target, sp, #__PWTB_TransitionBlock
+        PROLOG_SAVE_REG_PAIR   fp, lr, #-176!
 
+        ; Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, #16
+        PROLOG_SAVE_REG_PAIR   x21, x22, #32
+        PROLOG_SAVE_REG_PAIR   x23, x24, #48
+        PROLOG_SAVE_REG_PAIR   x25, x26, #64
+        PROLOG_SAVE_REG_PAIR   x27, x28, #80
+
+        mov     $Target, sp
     MEND
 
     MACRO
     POP_COOP_PINVOKE_FRAME
 
-        EPILOG_WITH_TRANSITION_BLOCK
-
+        EPILOG_RESTORE_REG_PAIR   x19, x20, #16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, #32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, #48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, #64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, #80
+        EPILOG_RESTORE_REG_PAIR   fp, lr,   #176!
     MEND
 
 #define GC_ALLOC_FINALIZE 1
