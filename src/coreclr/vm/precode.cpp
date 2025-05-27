@@ -560,6 +560,14 @@ void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_
 #else // TARGET_X86
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)StubPrecodeCode), StubPrecode::CodeSize, pageSize);
 #endif // TARGET_X86
+#ifdef _DEBUG
+    for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
+    {
+        _ASSERTE(StubPrecode::IsStubPrecodeByASM((PCODE)(pageBaseRX + i)));
+        _ASSERTE(StubPrecode::IsStubPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
+    }
+#endif // _DEBUG
+
 }
 
 BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
@@ -733,7 +741,8 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
 #ifdef _DEBUG
     for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
     {
-        _ASSERTE(FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBase + i)));
+        _ASSERTE(FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBaseRX + i)));
+        _ASSERTE(FixupPrecode::IsFixupPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
     }
 #endif // _DEBUG
 #endif // !TARGET_WASM
