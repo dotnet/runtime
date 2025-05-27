@@ -3061,9 +3061,6 @@ public:
     // Used by Debugger::FirstChanceNativeException to update the context from out of process
     void SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo *pDebuggerSteppingInfo = NULL);
     BOOL IsOutOfProcessSetContextEnabled();
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    void SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext);
-#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 
