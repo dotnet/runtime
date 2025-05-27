@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -75,6 +76,12 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
                 contextStruct.FillFromBuffer(contextBuf);
                 localContextStruct.FillFromBuffer(localContextBuf);
+
+                using (StreamWriter outputFile = new StreamWriter("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", true))
+                {
+                    outputFile.WriteLine($"cDAC: {contextStruct}");
+                    outputFile.WriteLine($" DAC: {localContextStruct}");
+                }
 
                 Debug.Assert(contextStruct.Equals(localContextStruct));
             }

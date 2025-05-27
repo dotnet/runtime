@@ -12,10 +12,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct StackWalk_1 : IStackWalk
 {
     private readonly Target _target;
+    private readonly RuntimeInfoArchitecture _arch;
 
     internal StackWalk_1(Target target)
     {
         _target = target;
+        _arch = target.Contracts.RuntimeInfo.GetTargetArchitecture();
     }
 
     public enum StackWalkState
@@ -91,7 +93,7 @@ internal readonly struct StackWalk_1 : IStackWalk
                 break;
             case StackWalkState.SW_FRAME:
                 handle.FrameIter.UpdateContextFromFrame(handle.Context);
-                if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
+                if (_arch == RuntimeInfoArchitecture.X86 || !handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.FrameIter.Next();
                 }
@@ -131,6 +133,18 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
     }
 
+    //
+    // If an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call),
+    // we may have skipped an explicit frame.  This function checks for them.
+    //
+    // Return Value:
+    //    Returns true if there are skipped frames.
+    //
+    // Notes:
+    //    x86 wants to stop at the skipped stack frames after the containing managed stack frame, but
+    //    WIN64 wants to stop before.  I don't think x86 actually has any good reason for this, except
+    //    because it doesn't unwind one frame ahead of time like WIN64 does.  This means that we don't
+    //    have the caller SP on x86.
     private bool CheckForSkippedFrames(StackWalkData handle)
     {
         // ensure we can find the caller context
@@ -146,7 +160,24 @@ internal readonly struct StackWalk_1 : IStackWalk
         IPlatformAgnosticContext parentContext = handle.Context.Clone();
         parentContext.Unwind(_target);
 
-        return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
+        if (handle.FrameIter.CurrentFrameAddress.Value >= parentContext.StackPointer.Value)
+            return false;
+
+        while (handle.FrameIter.IsValid() &&
+               handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value)
+        {
+            if (_arch == RuntimeInfoArchitecture.X86 && handle.FrameIter.IsInlineCallFrameWithActiveCall())
+            {
+                // On x86 we have already reported the InlinedCallFrame, don't report it again.
+                handle.FrameIter.Next();
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     byte[] IStackWalk.GetRawContext(IStackDataFrameHandle stackDataFrameHandle)

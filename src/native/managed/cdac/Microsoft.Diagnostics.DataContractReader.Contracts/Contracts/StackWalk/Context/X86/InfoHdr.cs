@@ -139,7 +139,7 @@ public record struct InfoHdr
 
     public static InfoHdr DecodeHeader(Target target, ref TargetPointer offset, uint codeLength)
     {
-        byte nextByte = target.Read<byte>(offset);
+        byte nextByte = target.Read<byte>(offset++);
         byte encoding = (byte)(nextByte & 0x7Fu);
 
         if (encoding < 0 || encoding >= INFO_HDR_TABLE.Length)

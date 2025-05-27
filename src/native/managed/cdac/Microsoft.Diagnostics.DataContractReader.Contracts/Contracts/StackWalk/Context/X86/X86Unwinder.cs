@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86Context;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
@@ -36,8 +38,8 @@ public class X86Unwinder(Target target)
         eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint _);
         uint relOffset = (uint)eman.GetRelativeOffset(cbh).Value;
         TargetCodePointer methodStart = eman.GetStartAddress(cbh);
-        // TargetCodePointer funcletStart = eman.GetFuncletStartAddress(cbh);
-        // bool isFunclet = eman.IsFunclet(cbh);
+        TargetCodePointer funcletStart = eman.GetFuncletStartAddress(cbh);
+        bool isFunclet = eman.IsFunclet(cbh);
 
         GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
 
@@ -51,7 +53,6 @@ public class X86Unwinder(Target target)
         {
             /* Handle ESP frames */
             UnwindEspFrame(ref context, gcInfo, methodStart);
-            return true;
         }
         else
         {
@@ -67,6 +68,7 @@ public class X86Unwinder(Target target)
             }
         }
 
+        context.ContextFlags |= (uint)ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL;
         return true;
     }
 
@@ -493,8 +495,9 @@ public class X86Unwinder(Target target)
 
                 if (!gcInfo.SavedRegsMask.HasFlag(regMask)) continue;
 
-                // TODO(cdacX86): set register locations
-                Console.WriteLine(pSavedRegs);
+                pSavedRegs -= (uint)_target.PointerSize;
+                TargetPointer regValueFromStack = _target.ReadPointer(pSavedRegs);
+                SetRegValue(ref context, regMask, regValueFromStack);
             }
         }
 
@@ -564,7 +567,7 @@ public class X86Unwinder(Target target)
             /* Increment "offset" in steps to see which callee-saved
                registers have been pushed already */
 
-            foreach (RegMask regMask in registerOrder)
+            foreach (RegMask regMask in registerOrder.Reverse())
             {
                 if (regMask == RegMask.EBP) continue;
 
@@ -572,9 +575,9 @@ public class X86Unwinder(Target target)
 
                 if (InstructionAlreadyExecuted(offset, curOffs))
                 {
-                    // TODO(cdacx86): UpdateAllRegs set location??
-                    // SetLocation(pContext, i, PTR_DWORD(--pSavedRegs));
-                    Console.WriteLine(pSavedRegs);
+                    pSavedRegs -= (uint)_target.PointerSize;
+                    TargetPointer regValueFromStack = _target.ReadPointer(pSavedRegs);
+                    SetRegValue(ref context, regMask, regValueFromStack);
                 }
 
                 offset = SKIP_PUSH_REG(methodStart, offset);
@@ -858,10 +861,40 @@ public class X86Unwinder(Target target)
         return offset + delta;
     }
 
-
     private static bool CAN_COMPRESS(int val)
     {
         return ((byte)val) == val;
+    }
+
+    private static void SetRegValue(ref X86Context context, RegMask regMask, TargetPointer value)
+    {
+        uint regValue = (uint)value;
+        switch (regMask)
+        {
+            case RegMask.EAX:
+                context.Eax = regValue;
+                break;
+            case RegMask.EBX:
+                context.Ebx = regValue;
+                break;
+            case RegMask.ECX:
+                context.Ecx = regValue;
+                break;
+            case RegMask.EDX:
+                context.Edx = regValue;
+                break;
+            case RegMask.EBP:
+                context.Ebp = regValue;
+                break;
+            case RegMask.ESI:
+                context.Esi = regValue;
+                break;
+            case RegMask.EDI:
+                context.Edi = regValue;
+                break;
+            default:
+                throw new ArgumentException($"Unsupported register mask: {regMask}");
+        }
     }
 
     #endregion

@@ -54,7 +54,7 @@ internal sealed unsafe partial class ClrDataTask : IXCLRDataTask
         }
 
         stackWalk = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk);
-        return HResults.S_OK;
+        return HResults.E_BOUNDS;
     }
 
     int IXCLRDataTask.GetOSThreadID(uint* id)

@@ -24,6 +24,15 @@ public struct X86Context : IPlatformContext
         CONTEXT_FULL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT,
         CONTEXT_ALL = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS,
         CONTEXT_XSTATE = CONTEXT_i386 | 0x40,
+
+        //
+        // This flag is set by the unwinder if it has unwound to a call
+        // site, and cleared whenever it unwinds through a trap frame.
+        // It is used by language-specific exception handlers to help
+        // differentiate exception scopes during dispatching.
+        //
+        CONTEXT_UNWOUND_TO_CALL = 0x20000000,
+        CONTEXT_AREA_MASK = 0xFFFF,
     }
 
     public readonly uint Size => 0x2cc;
@@ -229,7 +238,38 @@ public struct X86Context : IPlatformContext
     #endregion
 
     [FieldOffset(0xcc)]
-    public unsafe fixed byte ExtendedRegisters[512];
+    public unsafe fixed byte ExtendedRegisters[512];    /// <summary>
+    /// Returns a string representation of the X86Context with all register values except ExtendedRegisters.
+    /// </summary>
+    /// <returns>A formatted string with all register values</returns>
+    public override readonly string ToString()
+    {
+        return $"X86Context: " +
+               $"ContextFlags=0x{ContextFlags:X8} " +
+               // Debug registers
+               $"Dr0=0x{Dr0:X8} Dr1=0x{Dr1:X8} Dr2=0x{Dr2:X8} Dr3=0x{Dr3:X8} Dr6=0x{Dr6:X8} Dr7=0x{Dr7:X8} " +
+               // Floating point control registers
+               $"ControlWord=0x{ControlWord:X8} StatusWord=0x{StatusWord:X8} TagWord=0x{TagWord:X8} " +
+               $"ErrorOffset=0x{ErrorOffset:X8} ErrorSelector=0x{ErrorSelector:X4} " +
+               $"DataOffset=0x{DataOffset:X8} DataSelector=0x{DataSelector:X4} " +
+               // Floating point registers (displaying only Mantissa and Exponent for each)
+            //    $"ST0.M=0x{ST0.Mantissa:X16} ST0.E=0x{ST0.Exponent:X4} " +
+            //    $"ST1.M=0x{ST1.Mantissa:X16} ST1.E=0x{ST1.Exponent:X4} " +
+            //    $"ST2.M=0x{ST2.Mantissa:X16} ST2.E=0x{ST2.Exponent:X4} " +
+            //    $"ST3.M=0x{ST3.Mantissa:X16} ST3.E=0x{ST3.Exponent:X4} " +
+            //    $"ST4.M=0x{ST4.Mantissa:X16} ST4.E=0x{ST4.Exponent:X4} " +
+            //    $"ST5.M=0x{ST5.Mantissa:X16} ST5.E=0x{ST5.Exponent:X4} " +
+            //    $"ST6.M=0x{ST6.Mantissa:X16} ST6.E=0x{ST6.Exponent:X4} " +
+            //    $"ST7.M=0x{ST7.Mantissa:X16} ST7.E=0x{ST7.Exponent:X4} " +
+            //    $"Cr0NpxState=0x{Cr0NpxState:X8} " +
+               // Segment registers
+               $"Gs=0x{Gs:X4} Fs=0x{Fs:X4} Es=0x{Es:X4} Ds=0x{Ds:X4} Cs=0x{Cs:X4} Ss=0x{Ss:X4} " +
+               // Integer registers
+               $"Edi=0x{Edi:X8} Esi=0x{Esi:X8} Ebx=0x{Ebx:X8} Edx=0x{Edx:X8} Ecx=0x{Ecx:X8} Eax=0x{Eax:X8} " +
+               // Control registers
+               $"Ebp=0x{Ebp:X8} Eip=0x{Eip:X8} EFlags=0x{EFlags:X8} Esp=0x{Esp:X8}";
+    }
+
 }
 
 /// <summary>
