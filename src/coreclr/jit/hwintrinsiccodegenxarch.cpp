@@ -989,7 +989,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX2:
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
-        case InstructionSet_AVX512VBMI:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;

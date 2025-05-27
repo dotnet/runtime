@@ -1234,7 +1234,7 @@ void EEJitManager::SetCpuInfo()
 
     CORJIT_FLAGS CPUCompileFlags;
 
-    int cpuFeatures = minipal_getcpufeatures();
+    int64_t cpuFeatures = minipal_getcpufeatures();
 
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
     uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
@@ -1332,16 +1332,17 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX512);
     }
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
-    {
-        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-    }
-
     // Unversioned
 
     if (((cpuFeatures & XArchIntrinsicConstants_Aes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAES))
     {
         CPUCompileFlags.Set(InstructionSet_AES);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Vaes) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableVAES))
+    {
+        CPUCompileFlags.Set(InstructionSet_AES_V256);
+        CPUCompileFlags.Set(InstructionSet_AES_V512);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Pclmulqdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
@@ -1355,9 +1356,29 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_PCLMULQDQ_V512);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_AvxIfma) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXIFMA))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVXIFMA);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_AvxVnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))
     {
         CPUCompileFlags.Set(InstructionSet_AVXVNNI);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_F16c) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableF16C))
+    {
+        CPUCompileFlags.Set(InstructionSet_F16C);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Sha) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSHA))
+    {
+        CPUCompileFlags.Set(InstructionSet_SHA);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_WaitPkg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableWAITPKG))
+    {
+        CPUCompileFlags.Set(InstructionSet_WAITPKG);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Serialize) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
@@ -1370,6 +1391,51 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_GFNI);
         CPUCompileFlags.Set(InstructionSet_GFNI_V256);
         CPUCompileFlags.Set(InstructionSet_GFNI_V512);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Bitalg) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BITALG))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512BITALG);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Bf16) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BF16))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512BF16);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Fp16) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512FP16))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512FP16);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Ifma) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512IFMA))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512IFMA);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI2))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512VBMI2);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vnni) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VNNI))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512VNNI);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vp2intersect) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VP2INTERSECT))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512VP2INTERSECT);
+    }
+
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vpopcntdq) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VPOPCNTDQ))
+    {
+        CPUCompileFlags.Set(InstructionSet_AVX512VPOPCNTDQ);
     }
 
     if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))

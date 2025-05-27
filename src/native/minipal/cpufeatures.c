@@ -216,9 +216,9 @@ static bool IsApxEnabled()
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 #endif // HOST_WINDOWS
 
-int minipal_getcpufeatures(void)
+int64_t minipal_getcpufeatures(void)
 {
-    int result = 0;
+    int64_t result = 0;
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
@@ -288,85 +288,9 @@ int minipal_getcpufeatures(void)
                                 result |= XArchIntrinsicConstants_Fma;
                             }
 
-                            if (maxCpuId >= 0x07)
+                            if ((cpuidInfo[CPUID_ECX] & (1 << 29)) != 0)                                        // F16C
                             {
-                                __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
-
-                                if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                     // GFNI
-                                {
-                                    result |= XArchIntrinsicConstants_Gfni;
-                                }
-
-                                if ((cpuidInfo[CPUID_ECX] & (1 << 10)) != 0)                                    // VPCLMULQDQ
-                                {
-                                    result |= XArchIntrinsicConstants_Vpclmulqdq;
-                                }
-
-                                if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
-                                {
-                                    result |= XArchIntrinsicConstants_Avx2;
-
-                                    if (IsAvx512Enabled() && (avx512StateSupport() == 1))                       // XGETBV XRC0[7:5] == 111
-                                    {
-                                        if (((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                        // AVX512F
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0) &&                        // AVX512BW
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0) &&                        // AVX512CD
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                        // AVX512DQ
-                                            ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0))                          // AVX512VL
-                                        {
-                                            // While the AVX-512 ISAs can be individually lit-up, they really
-                                            // need F, BW, CD, DQ, and VL to be fully functional without adding
-                                            // significant complexity into the JIT. Additionally, unlike AVX/AVX2
-                                            // there was never really any hardware that didn't provide all 5 at
-                                            // once, with the notable exception being Knight's Landing which
-                                            // provided a similar but not quite the same feature.
-
-                                            result |= XArchIntrinsicConstants_Avx512;
-
-                                            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx512Vbmi;
-                                            }
-
-                                            if (((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0) &&                    // Avx10
-                                                ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                    // Avx10/V256
-                                                ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0))                      // Avx10/V512
-                                            {
-                                                // While AVX10 was originally spec'd to allow no V512 support
-                                                // this was later changed and all implementations must provide
-                                                // V512 support
-
-                                                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
-                                                uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
-
-                                                if (avx10Version >= 1)                                          // Avx10.1
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx10v1;
-                                                }
-
-                                                if (avx10Version >= 2)                                          // Avx10.2
-                                                {
-                                                    result |= XArchIntrinsicConstants_Avx10v2;
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-
-                                    if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
-                                    {
-                                        result |= XArchIntrinsicConstants_AvxVnni;
-                                    }
-
-                                    if (IsApxEnabled() && apxStateSupport())
-                                    {
-                                        if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                            // Apx
-                                        {
-                                            result |= XArchIntrinsicConstants_Apx;
-                                        }
-                                    }
-                                }
+                                result |= XArchIntrinsicConstants_F16c;
                             }
                         }
                     }
@@ -379,19 +303,171 @@ int minipal_getcpufeatures(void)
     {
         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-        if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                           // BMI1
+        if ((result & XArchIntrinsicConstants_Avx) != 0)
+        {
+            if ((cpuidInfo[CPUID_ECX] & (1 << 8)) != 0)                                                         // GFNI
+            {
+                result |= XArchIntrinsicConstants_Gfni;
+            }
+
+            if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                         // VAES
+            {
+                result |= XArchIntrinsicConstants_Vaes;
+            }
+
+            if ((cpuidInfo[CPUID_ECX] & (1 << 10)) != 0)                                                        // VPCLMULQDQ
+            {
+                result |= XArchIntrinsicConstants_Vpclmulqdq;
+            }
+
+            if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                                         // AVX2
+            {
+                result |= XArchIntrinsicConstants_Avx2;
+
+                if (IsAvx512Enabled() && (avx512StateSupport() == 1))                                           // XGETBV XRC0[7:5] == 111
+                {
+                    if (((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                                            // AVX512F
+                        ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0) &&                                            // AVX512BW
+                        ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0) &&                                            // AVX512CD
+                        ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                                            // AVX512DQ
+                        ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0))                                              // AVX512VL
+                    {
+                        // While the AVX-512 ISAs can be individually lit-up, they really
+                        // need F, BW, CD, DQ, and VL to be fully functional without adding
+                        // significant complexity into the JIT. Additionally, unlike AVX/AVX2
+                        // there was never really any hardware that didn't provide all 5 at
+                        // once, with the notable exception being Knight's Landing which
+                        // provided a similar but not quite the same feature.
+
+                        result |= XArchIntrinsicConstants_Avx512;
+
+                        if ((cpuidInfo[CPUID_EBX] & (1 << 21)) != 0)                                            // AVX512-IFMA
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Ifma;
+                        }
+
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                             // AVX512-VBMI
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Vbmi;
+                        }
+
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 6)) != 0)                                             // AVX512-VBMI2
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Vbmi2;
+                        }
+
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 11)) != 0)                                            // AVX512-VNNI
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Vnni;
+                        }
+
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                            // AVX512-BITALG
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Bitalg;
+                        }
+
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 14)) != 0)                                            // AVX512-VPOPCNTDQ
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Vpopcntdq;
+                        }
+
+                        if ((cpuidInfo[CPUID_EDX] & (1 << 8)) != 0)                                             // AVX512-VP2INTERSECT
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Vp2intersect;
+                        }
+
+                        if ((cpuidInfo[CPUID_EDX] & (1 << 23)) != 0)                                            // AVX512-FP16
+                        {
+                            result |= XArchIntrinsicConstants_Avx512Fp16;
+                        }
+                    }
+                }
+            }
+        }
+
+        if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                             // BMI1
         {
             result |= XArchIntrinsicConstants_Bmi1;
         }
 
-        if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                           // BMI2
+        if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                             // BMI2
         {
             result |= XArchIntrinsicConstants_Bmi2;
         }
 
-        if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
+        if ((cpuidInfo[CPUID_EBX] & (1 << 29)) != 0)                                                            // SHA
         {
-            result |= XArchIntrinsicConstants_Serialize;                                               // SERIALIZE
+            result |= XArchIntrinsicConstants_Sha;
+        }
+
+        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                             // WAITPKG
+        {
+            result |= XArchIntrinsicConstants_WaitPkg;
+        }
+
+        if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)                                                            // SERIALIZE
+        {
+            result |= XArchIntrinsicConstants_Serialize;
+        }
+
+        __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+
+        if ((result & XArchIntrinsicConstants_Avx2) != 0)
+        {
+            if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                                         // AVX-VNNI
+            {
+                result |= XArchIntrinsicConstants_AvxVnni;
+            }
+
+            if ((cpuidInfo[CPUID_EAX] & (1 << 23)) != 0)                                                        // AVX-IFMA
+            {
+                result |= XArchIntrinsicConstants_AvxIfma;
+            }
+
+            if ((result & XArchIntrinsicConstants_Avx512) != 0)
+            {
+                if ((cpuidInfo[CPUID_EAX] & (1 << 5)) != 0)                                                     // AVX512-BF16
+                {
+                    result |= XArchIntrinsicConstants_Avx512Bf16;
+                }
+            }
+
+            if (IsApxEnabled() && apxStateSupport())
+            {
+                if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                                                    // Apx
+                {
+                    result |= XArchIntrinsicConstants_Apx;
+                }
+            }
+        }
+
+        if (maxCpuId >= 0x24)
+        {
+            if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                                        // Avx10
+            {
+                // While AVX10 was originally spec'd to allow no V512 support
+                // this was later changed and all implementations must provide
+                // V512 support
+
+                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
+
+                if (((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0) &&                                                // Avx10/V128
+                    ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                                                // Avx10/V256
+                    ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0))                                                  // Avx10/V512
+                {
+                    uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
+
+                    if (avx10Version >= 1)                                                                      // Avx10.1
+                    {
+                        result |= XArchIntrinsicConstants_Avx10v1;
+                    }
+
+                    if (avx10Version >= 2)                                                                      // Avx10.2
+                    {
+                        result |= XArchIntrinsicConstants_Avx10v2;
+                    }
+                }
+            }
         }
     }
 
@@ -402,7 +478,7 @@ int minipal_getcpufeatures(void)
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
+        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                              // LZCNT
         {
             result |= XArchIntrinsicConstants_Lzcnt;
         }

@@ -310,7 +310,7 @@ LEAF_END RhpAssignRef, _TEXT
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
+        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, 16
         tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(CmpXchgRetry)
 #endif
 
@@ -372,7 +372,7 @@ LOCAL_LABEL(NoBarrierCmpXchg):
     LEAF_ENTRY RhpCheckedXchg, _TEXT
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
+        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, 16
         tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(ExchangeRetry)
 #endif
 

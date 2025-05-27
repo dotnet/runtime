@@ -37,7 +37,7 @@ namespace ILCompiler
             return false;
         }
 
-        public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, int flags)
+        public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, long flags)
         {
             switch (builder.Architecture)
             {
@@ -61,31 +61,44 @@ namespace ILCompiler
         private static class XArchIntrinsicConstants
         {
             // SSE and SSE2 are baseline ISAs - they're always available
-            public const int Aes = 0x0001;
-            public const int Pclmulqdq = 0x0002;
-            public const int Sse3 = 0x0004;
-            public const int Ssse3 = 0x0008;
-            public const int Sse41 = 0x0010;
-            public const int Sse42 = 0x0020;
-            public const int Popcnt = 0x0040;
-            public const int Avx = 0x0080;
-            public const int Fma = 0x0100;
-            public const int Avx2 = 0x0200;
-            public const int Bmi1 = 0x0400;
-            public const int Bmi2 = 0x0800;
-            public const int Lzcnt = 0x1000;
-            public const int AvxVnni = 0x2000;
-            public const int Movbe = 0x4000;
-            public const int Avx512 = 0x8000;
-            public const int Avx512Vbmi = 0x10000;
-            public const int Serialize = 0x20000;
-            public const int Avx10v1 = 0x40000;
-            public const int Apx = 0x80000;
-            public const int Vpclmulqdq = 0x100000;
-            public const int Avx10v2 = 0x200000;
-            public const int Gfni = 0x400000;
+            public const long Aes = (1L << 0);
+            public const long Pclmulqdq = (1L << 1);
+            public const long Sse3 = (1L << 2);
+            public const long Ssse3 = (1L << 3);
+            public const long Sse41 = (1L << 4);
+            public const long Sse42 = (1L << 5);
+            public const long Popcnt = (1L << 6);
+            public const long Avx = (1L << 7);
+            public const long Fma = (1L << 8);
+            public const long Avx2 = (1L << 9);
+            public const long Bmi1 = (1L << 10);
+            public const long Bmi2 = (1L << 11);
+            public const long Lzcnt = (1L << 12);
+            public const long AvxVnni = (1L << 13);
+            public const long Movbe = (1L << 14);
+            public const long Avx512 = (1L << 15);
+            public const long Avx512Vbmi = (1L << 16);
+            public const long Serialize = (1L << 17);
+            public const long Avx10v1 = (1L << 18);
+            public const long Apx = (1L << 19);
+            public const long Vpclmulqdq = (1L << 20);
+            public const long Avx10v2 = (1L << 21);
+            public const long Gfni = (1L << 22);
+            public const long Avx512Bitalg = (1L << 23);
+            public const long Avx512Bf16 = (1L << 24);
+            public const long Avx512Fp16 = (1L << 25);
+            public const long Avx512Ifma = (1L << 26);
+            public const long Avx512Vbmi2 = (1L << 27);
+            public const long Avx512Vnni = (1L << 28);
+            public const long Avx512Vp2intersect = (1L << 29);
+            public const long Avx512Vpopcntdq = (1L << 30);
+            public const long AvxIfma = (1L << 31);
+            public const long F16c = (1L << 32);
+            public const long Sha = (1L << 33);
+            public const long Vaes = (1L << 34);
+            public const long WaitPkg = (1L << 35);
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
             {
                 if ((flags & Aes) != 0)
                     builder.AddSupportedInstructionSet("aes");
@@ -143,9 +156,39 @@ namespace ILCompiler
                     if ((flags & Avx512) != 0)
                         builder.AddSupportedInstructionSet("gfni_v512");
                 }
+                if ((flags & Avx512Bitalg) != 0)
+                    builder.AddSupportedInstructionSet("avx512bitalg");
+                if ((flags & Avx512Bf16) != 0)
+                    builder.AddSupportedInstructionSet("avx512bf16");
+                if ((flags & Avx512Fp16) != 0)
+                    builder.AddSupportedInstructionSet("avx512fp16");
+                if ((flags & Avx512Ifma) != 0)
+                    builder.AddSupportedInstructionSet("avx512ifma");
+                if ((flags & Avx512Vbmi2) != 0)
+                    builder.AddSupportedInstructionSet("avx512vbmi2");
+                if ((flags & Avx512Vnni) != 0)
+                    builder.AddSupportedInstructionSet("avx512vnni");
+                if ((flags & Avx512Vp2intersect) != 0)
+                    builder.AddSupportedInstructionSet("avx512vp2intersect");
+                if ((flags & Avx512Vpopcntdq) != 0)
+                    builder.AddSupportedInstructionSet("avx512vpopcntdq");
+                if ((flags & AvxIfma) != 0)
+                    builder.AddSupportedInstructionSet("avxifma");
+                if ((flags & F16c) != 0)
+                    builder.AddSupportedInstructionSet("f16c");
+                if ((flags & Sha) != 0)
+                    builder.AddSupportedInstructionSet("sha");
+                if ((flags & Vaes) != 0)
+                {
+                    builder.AddSupportedInstructionSet("vaes");
+                    if ((flags & Avx512) != 0)
+                        builder.AddSupportedInstructionSet("vaes_v512");
+                }
+                if ((flags & WaitPkg) != 0)
+                    builder.AddSupportedInstructionSet("waitpkg");
             }
 
-            public static int FromInstructionSet(InstructionSet instructionSet)
+            public static long FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
                 Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
@@ -200,6 +243,30 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
+                    InstructionSet.X64_AES_V256 => (Vaes | Avx),
+                    InstructionSet.X64_AES_V512 => (Vaes | Avx512),
+                    InstructionSet.X64_AVXIFMA => AvxIfma,
+                    InstructionSet.X64_AVXIFMA_X64 => AvxIfma,
+                    InstructionSet.X64_F16C => F16c,
+                    InstructionSet.X64_F16C_X64 => F16c,
+                    InstructionSet.X64_SHA => Sha,
+                    InstructionSet.X64_SHA_X64 => Sha,
+                    InstructionSet.X64_WAITPKG => WaitPkg,
+                    InstructionSet.X64_WAITPKG_X64 => WaitPkg,
+                    InstructionSet.X64_AVX512BITALG => Avx512Bitalg,
+                    InstructionSet.X64_AVX512BITALG_X64 => Avx512Bitalg,
+                    InstructionSet.X64_AVX512BF16 => Avx512Bf16,
+                    InstructionSet.X64_AVX512BF16_X64 => Avx512Bf16,
+                    InstructionSet.X64_AVX512FP16 => Avx512Fp16,
+                    InstructionSet.X64_AVX512FP16_X64 => Avx512Fp16,
+                    InstructionSet.X64_AVX512IFMA => Avx512Ifma,
+                    InstructionSet.X64_AVX512VBMI2 => Avx512Vbmi2,
+                    InstructionSet.X64_AVX512VBMI2_X64 => Avx512Vbmi2,
+                    InstructionSet.X64_AVX512VNNI => Avx512Vnni,
+                    InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
+                    InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,
+                    InstructionSet.X64_AVX512VPOPCNTDQ => Avx512Vpopcntdq,
+                    InstructionSet.X64_AVX512VPOPCNTDQ_X64 => Avx512Vpopcntdq,
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_X86Base => 0,
@@ -218,19 +285,19 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class Arm64IntrinsicConstants
         {
-            public const int Aes = 0x0001;
-            public const int Crc32 = 0x0002;
-            public const int Dp = 0x0004;
-            public const int Rdm = 0x0008;
-            public const int Sha1 = 0x0010;
-            public const int Sha256 = 0x0020;
-            public const int Atomics = 0x0040;
-            public const int Rcpc = 0x0080;
-            public const int Rcpc2 = 0x0100;
-            public const int Sve = 0x0200;
-            public const int Sve2 = 0x0400;
+            public const long Aes = (1L << 0);
+            public const long Crc32 = (1L << 1);
+            public const long Dp = (1L << 2);
+            public const long Rdm = (1L << 3);
+            public const long Sha1 = (1L << 4);
+            public const long Sha256 = (1L << 5);
+            public const long Atomics = (1L << 6);
+            public const long Rcpc = (1L << 7);
+            public const long Rcpc2 = (1L << 8);
+            public const long Sve = (1L << 9);
+            public const long Sve2 = (1L << 10);
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
             {
                 if ((flags & Aes) != 0)
                     builder.AddSupportedInstructionSet("aes");
@@ -256,7 +323,7 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("sve2");
             }
 
-            public static int FromInstructionSet(InstructionSet instructionSet)
+            public static long FromInstructionSet(InstructionSet instructionSet)
             {
                 return instructionSet switch
                 {
@@ -299,8 +366,8 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class RiscV64IntrinsicConstants
         {
-            public const int Zba = 0x0001;
-            public const int Zbb = 0x0002;
+            public const long Zba = (1L << 0);
+            public const long Zbb = (1L << 1);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -310,7 +377,7 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("zbb");
             }
 
-            public static int FromInstructionSet(InstructionSet instructionSet)
+            public static long FromInstructionSet(InstructionSet instructionSet)
             {
                 return instructionSet switch
                 {

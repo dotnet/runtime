@@ -6089,24 +6089,14 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
         }
 
-        if (JitConfig.EnableSSE3() != 0)
+        if (JitConfig.EnableAES() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
         }
 
-        if (JitConfig.EnableSSSE3() != 0)
+        if (JitConfig.EnableAPX() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
-        }
-
-        if (JitConfig.EnableSSE41() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
-        }
-
-        if (JitConfig.EnableSSE42() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
+            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
         }
 
         if (JitConfig.EnableAVX() != 0)
@@ -6119,9 +6109,74 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
         }
 
-        if (JitConfig.EnableAES() != 0)
+        if (JitConfig.EnableAVX512() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
+        }
+
+        if (JitConfig.EnableAVX512BITALG() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BITALG);
+        }
+
+        if (JitConfig.EnableAVX512BF16() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BF16);
+        }
+
+        if (JitConfig.EnableAVX512FP16() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512FP16);
+        }
+
+        if (JitConfig.EnableAVX512IFMA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512IFMA);
+        }
+
+        if (JitConfig.EnableAVX512VBMI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
+        }
+
+        if (JitConfig.EnableAVX512VBMI2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI2);
+        }
+
+        if (JitConfig.EnableAVX512VNNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VNNI);
+        }
+
+        if (JitConfig.EnableAVX512VP2INTERSECT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        }
+
+        if (JitConfig.EnableAVX512VPOPCNTDQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VPOPCNTDQ);
+        }
+
+        if (JitConfig.EnableAVX10v1() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
+        }
+
+        if (JitConfig.EnableAVX10v2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
+        }
+
+        if (JitConfig.EnableAVXIFMA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
+        }
+
+        if (JitConfig.EnableAVXVNNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
         }
 
         if (JitConfig.EnableBMI1() != 0)
@@ -6139,6 +6194,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
         }
 
+        if (JitConfig.EnableF16C() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_F16C);
+        }
+
         if (JitConfig.EnableGFNI() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
@@ -6151,9 +6211,50 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
         }
 
+        if (JitConfig.EnableMOVBE() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_MOVBE);
+        }
+
         if (JitConfig.EnablePCLMULQDQ() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
+        }
+
+        if (JitConfig.EnablePOPCNT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
+        }
+
+        if (JitConfig.EnableSHA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
+        }
+
+        if (JitConfig.EnableSSE3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
+        }
+
+        if (JitConfig.EnableSSE41() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
+        }
+
+        if (JitConfig.EnableSSE42() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
+        }
+
+        if (JitConfig.EnableSSSE3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
+        }
+
+        if (JitConfig.EnableVAES() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
         }
 
         if (JitConfig.EnableVPCLMULQDQ() != 0)
@@ -6162,39 +6263,14 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
         }
 
-        if (JitConfig.EnablePOPCNT() != 0)
+        if (JitConfig.EnableWAITPKG() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
+            instructionSetFlags.AddInstructionSet(InstructionSet_WAITPKG);
         }
 
-        if (JitConfig.EnableAVXVNNI() != 0)
+        if (JitConfig.EnableX86Serialize() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
-        }
-
-        if (JitConfig.EnableAVX512() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
-        }
-
-        if (JitConfig.EnableAVX512VBMI() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
-        }
-
-        if (JitConfig.EnableAVX10v1() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
-        }
-
-        if (JitConfig.EnableAVX10v2() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
-        }
-
-        if (JitConfig.EnableAPX() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
+            instructionSetFlags.AddInstructionSet(InstructionSet_X86Serialize);
         }
 #elif defined(TARGET_RISCV64)
         if (JitConfig.EnableHWIntrinsic() != 0)

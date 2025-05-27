@@ -26,9 +26,9 @@ namespace ILCompiler
         public static MethodIL EmitIsSupportedIL(MethodDesc method, FieldDesc isSupportedField, InstructionSet instructionSet)
         {
             Debug.Assert(IsIsSupportedMethod(method));
-            Debug.Assert(isSupportedField.IsStatic && isSupportedField.FieldType.IsWellKnownType(WellKnownType.Int32));
+            Debug.Assert(isSupportedField.IsStatic && isSupportedField.FieldType.IsWellKnownType(WellKnownType.Int64));
 
-            int flag = 0;
+            long flag = 0;
 
             switch (method.Context.Target.Architecture)
             {
@@ -49,7 +49,7 @@ namespace ILCompiler
             var emit = new ILEmitter();
             ILCodeStream codeStream = emit.NewCodeStream();
 
-            if (!uint.IsPow2((uint)flag))
+            if (!ulong.IsPow2((ulong)flag))
             {
                 // These are the ISAs managed by multiple-bit flags.
                 // we need to emit different IL to handle the checks.
@@ -77,9 +77,9 @@ namespace ILCompiler
             return emit.Link(method);
         }
 
-        public static int GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
+        public static long GetRuntimeRequiredIsaFlags(InstructionSetSupport instructionSetSupport)
         {
-            int result = 0;
+            long result = 0;
             switch (instructionSetSupport.Architecture)
             {
                 case TargetArchitecture.X86:
