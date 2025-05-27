@@ -453,16 +453,23 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         // Get the external object's managed wrapper
-        ::OBJECTHANDLE srcHandle = static_cast<::OBJECTHANDLE>(targetHandle);
+        ::OBJECTHANDLE srcHandle = static_cast<::OBJECTHANDLE>(sourceHandle);
         OBJECTREF source = ObjectFromHandle(srcHandle);
 
         // Get the target of the external object's reference.
         ::OBJECTHANDLE tgtHandle = static_cast<::OBJECTHANDLE>(targetHandle);
-        OBJECTREF target = ObjectFromHandle(tgtHandle );
+        MOWHOLDERREF holder = (MOWHOLDERREF)ObjectFromHandle(tgtHandle);
 
-        // Return if the target has been collected or these are the same object.
-        if (target == NULL
-            || source->PassiveGetSyncBlock() == target->PassiveGetSyncBlock())
+        // Return if the holder has been collected
+        if (holder == NULL)
+        {
+            return S_FALSE;
+        }
+
+        OBJECTREF target = holder->_wrappedObject;
+
+        // Return if these are the same object.
+        if (source == target)
         {
             return S_FALSE;
         }
@@ -496,7 +503,7 @@ bool ComWrappersNative::IsManagedObjectComWrapper(_In_ OBJECTREF managedObjectWr
 
     MOWHOLDERREF holder = (MOWHOLDERREF)managedObjectWrapperHolderRef;
 
-    *pIsRooted = InteropLib::Com::IsRooted(holder->ManagedObjectWrapper);
+    *pIsRooted = InteropLib::Com::IsRooted(holder->_wrapper);
 
     return true;
 }

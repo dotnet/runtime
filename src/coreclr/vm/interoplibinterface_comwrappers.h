@@ -73,9 +73,9 @@ class ManagedObjectWrapperHolderObject : public Object
     friend class ClrDataAccess;
 private:
     OBJECTREF _releaser;
-    OBJECTREF _wrappedObject;
 public:
-    DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) ManagedObjectWrapper;
+    OBJECTREF _wrappedObject;
+    DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) _wrapper;
 };
 
 class NativeObjectWrapperObject : public Object

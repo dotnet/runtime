@@ -164,13 +164,13 @@ namespace System.Runtime.InteropServices
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero)
                 {
                     FindReferenceTargetsCallback.s_currentRootObjectHandle = nativeObjectWrapper.ProxyHandle;
-                    if (IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)Unsafe.AsPointer(in s_findReferencesTargetCallback)) != HResults.S_OK)
+                    int hr = IReferenceTracker.FindTrackerTargets(nativeObjectWrapper.TrackerObject, (IntPtr)Unsafe.AsPointer(in s_findReferencesTargetCallback));
+                    FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
+                    if (hr < 0)
                     {
                         walkFailed = true;
-                        FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
                         break;
                     }
-                    FindReferenceTargetsCallback.s_currentRootObjectHandle = default;
                 }
             }
 
@@ -227,16 +227,23 @@ namespace System.Runtime.InteropServices
         {
             if (referenceTrackerTarget == IntPtr.Zero)
             {
-                return HResults.E_INVALIDARG;
+                return HResults.E_POINTER;
             }
 
-            if (TryGetObject(referenceTrackerTarget, out object? foundObject))
+            object sourceObject = s_currentRootObjectHandle.Target!;
+
+            if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
-                // Notify the runtime a reference path was found.
-                return TrackerObjectManager.AddReferencePath(s_currentRootObjectHandle.Target, foundObject) ? HResults.S_OK : HResults.S_FALSE;
+                return HResults.S_FALSE;
             }
 
-            return HResults.S_OK;
+            if (sourceObject == targetObject)
+            {
+                return HResults.S_FALSE;
+            }
+
+            // Notify the runtime a reference path was found.
+            return TrackerObjectManager.AddReferencePath(sourceObject, targetObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
         internal struct ReferenceTargetsVftbl
