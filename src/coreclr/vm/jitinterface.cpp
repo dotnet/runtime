@@ -5701,16 +5701,6 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
         helper = CORINFO_HELP_NEWSFAST;
     }
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // If we are use the fast allocator we also may need the
-    // specialized varion for align8
-    if (pMT->GetClass()->IsAlign8Candidate() &&
-        (helper == CORINFO_HELP_NEWSFAST))
-    {
-        helper = CORINFO_HELP_NEWSFAST_ALIGN8;
-    }
-#endif // FEATURE_DOUBLE_ALIGNMENT_HINT
-
     return helper;
 }
 
@@ -5788,13 +5778,6 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
             // Use the slow helper
             result = CORINFO_HELP_NEWARR_1_DIRECT;
         }
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        else if (elemType == ELEMENT_TYPE_R8)
-        {
-            // Use the Align8 fast helper
-            result = CORINFO_HELP_NEWARR_1_ALIGN8;
-        }
-#endif
         else
         {
             // Yea, we can do it the fast way!
@@ -10438,48 +10421,7 @@ void CEEInfo::HandleException(struct _EXCEPTION_POINTERS *pExceptionPointers)
     EE_TO_JIT_TRANSITION_LEAF();
 }
 
-CORINFO_MODULE_HANDLE CEEInfo::embedModuleHandle(CORINFO_MODULE_HANDLE handle,
-                                                 void **ppIndirection)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        PRECONDITION(!IsDynamicScope(handle));
-    }
-    CONTRACTL_END;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return handle;
-}
-
 CORINFO_CLASS_HANDLE CEEInfo::embedClassHandle(CORINFO_CLASS_HANDLE handle,
-                                               void **ppIndirection)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    if (ppIndirection != NULL)
-        *ppIndirection = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return handle;
-}
-
-CORINFO_FIELD_HANDLE CEEInfo::embedFieldHandle(CORINFO_FIELD_HANDLE handle,
                                                void **ppIndirection)
 {
     CONTRACTL {
@@ -13363,7 +13305,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     {
         LPWSTR interpreterConfig;
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_Interpreter, &interpreterConfig));
-        if ((interpreterConfig != NULL) && !interpreterMgr->LoadInterpreter())
+        if (
+#ifdef FEATURE_JIT
+            // If both JIT and interpret are available, load the interpreter for testing purposes only if the config switch is set
+            (interpreterConfig != NULL) &&
+#endif
+            !interpreterMgr->LoadInterpreter())
         {
             EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("Failed to load interpreter"));
         }
@@ -13384,6 +13331,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
 #endif // FEATURE_INTERPRETER
 
+#ifndef FEATURE_JIT
+    if (!ret)
+    {
+        _ASSERTE(!"this platform does not support JIT compilation");
+    }
+#else // !FEATURE_JIT
     if (!ret)
     {
         EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
@@ -13442,6 +13395,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             break;
         }
     }
+#endif // !FEATURE_JIT
 
 #ifdef _DEBUG
     static BOOL fHeartbeat = -1;
