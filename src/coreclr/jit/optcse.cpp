@@ -670,7 +670,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdIsSharedConst = isSharedConst;
         }
 
-        // Append this expression to the head of the list
+        // Append this expression to the end of the list
 
         treeStmtLst* newElem = new (this, CMK_TreeStatementList) treeStmtLst;
 
