@@ -36,11 +36,18 @@ namespace System.Text.Json.Serialization.Converters
 
         public static JsonArray ReadList(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
-            // The returned JsonArray is lazily constructed so errors will be thrown as its
-            // properties are accessed. Therefore we don't need to pass any validation options
-            // to the JsonElement.ParseValue.
-            JsonElement jElement = JsonElement.ParseValue(ref reader);
-            return new JsonArray(jElement, options);
+            if (options.PropertyNameCaseInsensitive)
+            {
+                JsonElement jElement = JsonElement.ParseValue(ref reader);
+                JsonArray jArray = new JsonArray(jElement, options);
+                jArray.InitializeComplexNodesEagerly();
+                return jArray;
+            }
+            else
+            {
+                JsonElement jElement = JsonElement.ParseValue(ref reader, allowDuplicateProperties: false);
+                return new JsonArray(jElement, options);
+            }
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };

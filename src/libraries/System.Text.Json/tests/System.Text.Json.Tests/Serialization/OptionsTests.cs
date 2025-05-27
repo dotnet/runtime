@@ -1891,5 +1891,18 @@ namespace System.Text.Json.Serialization.Tests
 
             static object[] WrapArgs<T>(T value, string json) => new object[] { value, json };
         }
+
+        [Fact]
+        public static void AllowDuplicateProperties_RespectsSetting()
+        {
+            var options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+            string json = "{\"a\":1,\"a\":2}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(json, options));
+
+            options = new JsonSerializerOptions { AllowDuplicateProperties = true };
+            var result = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
+            Assert.Single(result);
+            Assert.Equal(2, result["a"]);
+        }
     }
 }
