@@ -74,8 +74,8 @@ class ManagedObjectWrapperHolderObject : public Object
 private:
     OBJECTREF _releaser;
 public:
-    OBJECTREF WrappedObject;
-    DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) ManagedObjectWrapper;
+    OBJECTREF _wrappedObject;
+    DPTR(InteropLib::ABI::ManagedObjectWrapperLayout) _wrapper;
 };
 
 class NativeObjectWrapperObject : public Object
