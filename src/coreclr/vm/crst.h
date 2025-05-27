@@ -122,6 +122,14 @@ class CrstBase
     friend class Debugger;
     friend class Crst;
 
+#ifdef FEATURE_DBGIPC_TRANSPORT_VM
+    // The debugger transport code uses a holder for its Crst, but it needs to share the holder implementation
+    // with its right side code as well (which can't see the Crst implementation and actually uses a
+    // minipal_critsect as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
+    // Leave() in order to build a shared holder class.
+    friend class DbgTransportLock;
+#endif // FEATURE_DBGIPC_TRANSPORT_VM
+
     // PendingTypeLoadTable::Entry acquires the lock during construction before anybody has a chance to see it to avoid
     // level violations.
     friend class PendingTypeLoadTable;

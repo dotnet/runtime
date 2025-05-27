@@ -7,7 +7,7 @@
 
 #ifndef RIGHT_SIDE_COMPILE
 #include <utilcode.h>
-
+#include <crst.h>
 #endif // !RIGHT_SIDE_COMPILE
 
 #include <minipal/critsect.h>
@@ -268,6 +268,44 @@ inline UINT32 DBGIPC_HTONL(UINT32 x)
 #define DBGIPC_NTOHL(x) DBGIPC_HTONL(x)
 
 #endif
+
+// Lock abstraction (we can't use the same lock implementation on LS and RS since we really want a Crst on the
+// LS and this isn't available in the RS environment).
+class DbgTransportLock final
+{
+public:
+    void Init();
+    void Destroy();
+    void Enter();
+    void Leave();
+
+private:
+#ifdef RIGHT_SIDE_COMPILE
+    minipal_critsect    m_sLock;
+#else // RIGHT_SIDE_COMPILE
+    CrstExplicitInit    m_sLock;
+#endif // RIGHT_SIDE_COMPILE
+};
+
+class TransportLockHolder final
+{
+    DbgTransportLock& _lock;
+public:
+    TransportLockHolder(DbgTransportLock& lock)
+        : _lock(lock)
+    {
+        _lock.Enter();
+    }
+    ~TransportLockHolder()
+    {
+        _lock.Leave();
+    }
+
+    TransportLockHolder(TransportLockHolder const&) = delete;
+    TransportLockHolder& operator=(TransportLockHolder const&) = delete;
+    TransportLockHolder(TransportLockHolder&& other) = delete;
+    TransportLockHolder&& operator=(TransportLockHolder&&) = delete;
+};
 
 // The transport has only one queue for IPC events, but each IPC event can be marked as one of two types.
 // The transport will signal the handle corresponding to the type of each IPC event.  (See
@@ -645,7 +683,7 @@ private:
     // multiple threads and that we never attempt to use a connection that is being deallocated on another
     // thread due to a state change. Receives don't need this since they're performed only on the transport
     // thread (which is also the only thread allowed to deallocate the connection).
-    minipal_critsect m_sStateLock;
+    DbgTransportLock m_sStateLock;
 
     // Queue of messages that have been sent over the connection but not acknowledged yet or are waiting to be
     // sent (because another message is using the connection or we're in a SessionResync state). You must hold

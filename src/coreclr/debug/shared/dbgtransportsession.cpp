@@ -55,7 +55,7 @@ DbgTransportSession::~DbgTransportSession()
 #endif // RIGHT_SIDE_COMPILE
 
     if (m_fInitStateLock)
-        minipal_critsect_destroy(&m_sStateLock);
+        m_sStateLock.Destroy();
 }
 
 // Allocates initial resources (including starting the transport thread). The session will start in the
@@ -114,7 +114,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
     m_pADB = pADB;
 #endif // RIGHT_SIDE_COMPILE
 
-    minipal_critsect_init(&m_sStateLock);
+    m_sStateLock.Init();
     m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
@@ -187,7 +187,7 @@ void DbgTransportSession::Shutdown()
 
         // Must take the state lock to make a state transition.
         {
-            minipal::CritSectHolder sLockHolder(m_sStateLock);
+            TransportLockHolder sLockHolder(m_sStateLock);
 
             // Remember previous state and transition to SS_Closed.
             SessionState ePreviousState = m_eState;
@@ -271,7 +271,7 @@ bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 
 bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 {
-    minipal::CritSectHolder sLockHolder(m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
     if (m_fDebuggerAttached)
     {
         if (pTicket->IsValid())
@@ -309,7 +309,7 @@ bool DbgTransportSession::UseAsDebugger(DebugTicket * pTicket)
 
 bool DbgTransportSession::StopUsingAsDebugger(DebugTicket * pTicket)
 {
-    minipal::CritSectHolder sLockHolder(m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
     if (m_fDebuggerAttached && pTicket->IsValid())
     {
         // The caller is indeed the owner of the debug ticket.
@@ -365,7 +365,7 @@ void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
 
     // Must acquire the state lock to synchronize us wrt to the transport thread (clients already guarantee
     // they serialize calls to this and waiting on m_rghEventReadyEvent).
-    minipal::CritSectHolder sLockHolder(m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
 
     // There must be at least one valid event waiting (this call does not block).
     _ASSERTE(m_cValidEventBuffers);
@@ -607,7 +607,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
     // and while determining whether to send immediately or not depending on the session state (to avoid
     // posting a send on a closed and possibly recycled socket).
     {
-        minipal::CritSectHolder sLockHolder(m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         // Perform any last updates to the header or data block here since we might be about to encrypt them.
 
@@ -890,7 +890,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 
     // We need the state lock to perform a state transition.
     if (!fCallerHoldsStateLock)
-        minipal_critsect_enter(&m_sStateLock);
+        m_sStateLock.Enter();
 
     switch (m_eState)
     {
@@ -930,7 +930,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
     }
 
     if (!fCallerHoldsStateLock)
-        minipal_critsect_leave(&m_sStateLock);
+        m_sStateLock.Leave();
 }
 
 // Scan the send queue and discard any messages which have been processed by the other side according to the
@@ -939,7 +939,7 @@ void DbgTransportSession::HandleNetworkError(bool fCallerHoldsStateLock)
 void DbgTransportSession::FlushSendQueue(DWORD dwLastProcessedId)
 {
     // Must access the send queue under the state lock.
-    minipal::CritSectHolder sLockHolder(m_sStateLock);
+    TransportLockHolder sLockHolder(m_sStateLock);
 
     // Note that message headers (and data blocks) may be encrypted. Use the cached fields in the Message
     // structure to compare message IDs and types.
@@ -1030,7 +1030,7 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
             // we don't need to put it on the queue in order (it will never be resent). Easiest just to put it
             // on the head.
             {
-                minipal::CritSectHolder sLockHolder(m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 pMsg->m_pNext = m_pSendQueueFirst;
                 m_pSendQueueFirst = pMsg;
                 if (m_pSendQueueLast == NULL)
@@ -1101,7 +1101,7 @@ DbgTransportSession::Message * DbgTransportSession::RemoveMessageFromSendQueue(D
     // Locate original message on the send queue.
     Message *pMsg = NULL;
     {
-        minipal::CritSectHolder sLockHolder(m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         pMsg = m_pSendQueueFirst;
         Message *pLastMsg = NULL;
@@ -1340,7 +1340,7 @@ void DbgTransportSession::TransportWorker()
         // blocked on a Receive() on the newly formed connection (important if they want to transition the state
         // to SS_Closed).
         {
-            minipal::CritSectHolder sLockHolder(m_sStateLock);
+            TransportLockHolder sLockHolder(m_sStateLock);
 
             if (m_eState == SS_Closed)
                 break;
@@ -1481,7 +1481,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                minipal::CritSectHolder sLockHolder(m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
                 {
@@ -1500,7 +1500,7 @@ void DbgTransportSession::TransportWorker()
 
             // Finally we can transition to SS_Open.
             {
-                minipal::CritSectHolder sLockHolder(m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
                 if (m_eState == SS_Closed)
                     break;
                 else if (m_eState == SS_Opening)
@@ -1617,7 +1617,7 @@ void DbgTransportSession::TransportWorker()
 
             // Must access the send queue under the state lock.
             {
-                minipal::CritSectHolder sLockHolder(m_sStateLock);
+                TransportLockHolder sLockHolder(m_sStateLock);
 
                 Message *pMsg = m_pSendQueueFirst;
                 while (pMsg)
@@ -1766,7 +1766,7 @@ void DbgTransportSession::TransportWorker()
                 // We need to do some state cleanup here, since when we reform a connection (if ever, it will
                 // be with a new session).
                 {
-                    minipal::CritSectHolder sLockHolder(m_sStateLock);
+                    TransportLockHolder sLockHolder(m_sStateLock);
 
                     // Check we're still in a good state before a clean restart.
                     if (m_eState != SS_Open)
@@ -1815,7 +1815,7 @@ void DbgTransportSession::TransportWorker()
                     // that can expand the array, a client thread may be in GetNextEvent() reading from the
                     // old version.
                     {
-                        minipal::CritSectHolder sLockHolder(m_sStateLock);
+                        TransportLockHolder sLockHolder(m_sStateLock);
 
                         // When we copy old array contents over we place the head of the list at the start of
                         // the new array for simplicity. If the head happened to be at the start of the old
@@ -1868,7 +1868,7 @@ void DbgTransportSession::TransportWorker()
 
                     // We must take the lock to update the count of valid entries though, since clients can
                     // touch this field as well.
-                    minipal::CritSectHolder sLockHolder(m_sStateLock);
+                    TransportLockHolder sLockHolder(m_sStateLock);
 
                     m_cValidEventBuffers++;
                     DWORD idxCurrentEvent = m_idxEventBufferTail;
@@ -2091,7 +2091,7 @@ void DbgTransportSession::TransportWorker()
 
     // Drain any remaining entries in the send queue (aborting them when they need completions).
     {
-        minipal::CritSectHolder sLockHolder(m_sStateLock);
+        TransportLockHolder sLockHolder(m_sStateLock);
 
         Message *pMsg;
         while ((pMsg = m_pSendQueueFirst) != NULL)
@@ -2706,5 +2706,54 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
     return false;
 }
 #endif // _DEBUG
+
+// Lock abstraction code (hides difference in lock implementation between left and right side).
+#ifdef RIGHT_SIDE_COMPILE
+
+// On the right side we use a minipal_critsect.
+
+void DbgTransportLock::Init()
+{
+    minipal_critsect_init(&m_sLock);
+}
+
+void DbgTransportLock::Destroy()
+{
+    minipal_critsect_destroy(&m_sLock);
+}
+
+void DbgTransportLock::Enter()
+{
+    minipal_critsect_enter(&m_sLock);
+}
+
+void DbgTransportLock::Leave()
+{
+    minipal_critsect_leave(&m_sLock);
+}
+
+#else // RIGHT_SIDE_COMPILE
+
+// On the left side we use a Crst.
+
+void DbgTransportLock::Init()
+{
+    m_sLock.Init(CrstDbgTransport, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
+}
+
+void DbgTransportLock::Destroy()
+{
+}
+
+void DbgTransportLock::Enter()
+{
+    m_sLock.Enter();
+}
+
+void DbgTransportLock::Leave()
+{
+    m_sLock.Leave();
+}
+#endif // RIGHT_SIDE_COMPILE
 
 #endif // (!defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_VM)) || (defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_DI))
