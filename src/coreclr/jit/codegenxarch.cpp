@@ -756,7 +756,30 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     }
     else
     {
-        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+        instruction ins = INS_movbe;
+#ifdef TARGET_AMD64
+        bool needsEvex = false;
+
+        if (GetEmitter()->IsExtendedGPReg(tree->GetRegNum()))
+        {
+            needsEvex = true;
+        }
+        else if (operand->isIndir())
+        {
+            GenTreeIndir* indir = operand->AsIndir();
+            if (indir->HasBase() && GetEmitter()->IsExtendedGPReg(indir->Base()->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+            else if (indir->HasIndex() && GetEmitter()->IsExtendedGPReg(indir->Index()->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+        }
+
+        ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(operand), tree, operand);
     }
 
     if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
@@ -5679,6 +5702,22 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                 if (data->OperIs(GT_BSWAP, GT_BSWAP16))
                 {
                     ins = INS_movbe;
+#ifdef TARGET_AMD64
+                    bool needsEvex = false;
+                    if (GetEmitter()->IsExtendedGPReg(data->gtGetOp1()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (tree->HasBase() && GetEmitter()->IsExtendedGPReg(tree->Base()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (tree->HasIndex() && GetEmitter()->IsExtendedGPReg(tree->Index()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif // TARGET_AMD64
                 }
 #if defined(FEATURE_HW_INTRINSICS)
                 else if (data->OperIsHWIntrinsic())
@@ -7331,9 +7370,11 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         //   addsd    xmm0, xmm0
         //.LABEL
         //
-        regNumber argReg  = treeNode->gtGetOp1()->GetRegNum();
-        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
+        regNumber argReg = treeNode->gtGetOp1()->GetRegNum();
+        // Get the APXIncompatible register first
         regNumber tmpReg2 = internalRegisters.Extract(treeNode);
+        // tmpReg1 can be EGPR
+        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
 
         inst_Mov(TYP_LONG, tmpReg1, argReg, /* canSkip */ false, EA_8BYTE);
         inst_RV_SH(INS_shr, EA_8BYTE, tmpReg1, 1);
