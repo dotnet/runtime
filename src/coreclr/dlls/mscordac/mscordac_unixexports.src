@@ -80,7 +80,6 @@ nativeStringResourceTable_mscorrc
 #FreeEnvironmentStringsW
 #FreeLibrary
 #FileTimeToSystemTime
-#GetACP
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId

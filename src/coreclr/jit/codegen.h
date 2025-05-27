@@ -58,14 +58,14 @@ private:
         // We use movaps when non-VEX because it is a smaller instruction;
         // however the VEX version vmovaps would be used which is the same size as vmovdqa;
         // also vmovdqa has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqa : INS_movaps;
+        return compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
     }
     instruction simdUnalignedMovIns()
     {
         // We use movups when non-VEX because it is a smaller instruction;
         // however the VEX version vmovups would be used which is the same size as vmovdqu;
         // but vmovdqu has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqu : INS_movups;
+        return compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
     }
 #endif // defined(TARGET_XARCH)
 

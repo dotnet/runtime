@@ -234,7 +234,6 @@ loader/LoadLibraryW/test1/paltest_loadlibraryw_test1
 loader/LoadLibraryW/test2/paltest_loadlibraryw_test2
 loader/LoadLibraryW/test3/paltest_loadlibraryw_test3
 loader/LoadLibraryW/test5/paltest_loadlibraryw_test5
-locale_info/GetACP/test1/paltest_getacp_test1
 locale_info/MultiByteToWideChar/test1/paltest_multibytetowidechar_test1
 locale_info/MultiByteToWideChar/test2/paltest_multibytetowidechar_test2
 locale_info/MultiByteToWideChar/test3/paltest_multibytetowidechar_test3

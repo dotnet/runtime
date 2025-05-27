@@ -1290,16 +1290,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
         // We've been given an override offset for GC Info
-#ifdef _DEBUG
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_CODE_LENGTH
-                      );
-
-        // We only use override offset for wantsReportOnlyLeaf
-        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
-#endif // _DEBUG
-
         curOffs = relOffsetOverride;
 
 #ifdef TARGET_ARM
@@ -2505,16 +2495,6 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
         // We've been given an override offset for GC Info
-#ifdef _DEBUG
-        InterpreterGcInfoDecoder _gcInfoDecoder(
-                                                gcInfoToken,
-                                                DECODE_CODE_LENGTH
-                                                );
-
-        // We only use override offset for wantsReportOnlyLeaf
-        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
-#endif // _DEBUG
-
         curOffs = relOffsetOverride;
 
         LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n",

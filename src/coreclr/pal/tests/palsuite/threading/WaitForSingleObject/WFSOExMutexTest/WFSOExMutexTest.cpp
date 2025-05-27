@@ -184,14 +184,14 @@ DWORD PALAPI WaiterProc_WFSOExMutexTest(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = minipal_lowres_ticks();
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hMutex_WFSOExMutexTest,
 								ChildThreadWaitTime,
         							Alertable);
 
-    NewTimeStamp = minipal_lowres_ticks();
+    NewTimeStamp = minipal_hires_ticks();
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
     {

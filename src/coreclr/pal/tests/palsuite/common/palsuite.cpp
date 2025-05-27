@@ -67,8 +67,8 @@ mkAbsoluteFilename( LPSTR dirName,
     sizeFN = strlen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
 
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if( sizeAPN > _MAX_PATH )
+    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
+    if( sizeAPN > MAX_PATH )
     {
         return ( 0 );
     }
@@ -143,8 +143,8 @@ mkAbsoluteFilenameW (
     sizeFN = wcslen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
 
-    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
-    if ( sizeAPN > _MAX_PATH )
+    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
+    if ( sizeAPN > MAX_PATH )
     {
 	return ( 0 );
     }
@@ -204,7 +204,7 @@ DeleteFileW(
 {
     _ASSERTE(lpFileName != NULL);
 
-    CHAR mbFileName[ _MAX_PATH ];
+    CHAR mbFileName[ MAX_PATH ];
 
     if (WideCharToMultiByte( CP_ACP, 0, lpFileName, -1, mbFileName, sizeof(mbFileName), NULL, NULL ) != 0 )
     {
