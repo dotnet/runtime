@@ -955,7 +955,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public static void SerializeIgnoreWhenReadingTest()
         {
             var json = """{"Id":1,"Name":"Alice","Description":"test"}""";
-            var deserialized = JsonSerializer.Deserialize<IgnoreWhenReadingWritingPerson>(p, SerializeIgnoreReadingWritingJsonSerializerContext.Default.IgnoreWhenReadingWritingPerson);
+            var deserialized = JsonSerializer.Deserialize<IgnoreWhenReadingWritingPerson>(json, SerializeIgnoreReadingWritingJsonSerializerContext.Default.IgnoreWhenReadingWritingPerson);
             Assert.NotNull(deserialized);
             Assert.Equal(1, deserialized.Id);
             Assert.Equal("Alice", deserialized.Name);
@@ -972,11 +972,6 @@ namespace System.Text.Json.SourceGeneration.Tests
             
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
             public string? Description { get; set; }
-
-            public override string ToString()
-            {
-                return $"{Id}-{Name}";
-            }
         }
 
         [JsonSerializable(typeof(IgnoreWhenReadingWritingPerson))]
