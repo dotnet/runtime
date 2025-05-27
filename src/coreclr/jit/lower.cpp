@@ -4887,8 +4887,14 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
         var_types regType  = retDesc.GetReturnRegType(i);
         unsigned  regEnd   = regStart + genTypeSize(regType);
 
+        if ((i == numRetRegs - 1) && !varTypeUsesFloatReg(regType))
+        {
+            // Allow tail end to pass undefined bits into the register
+            regEnd = regStart + REGSIZE_BYTES;
+        }
+
         // TODO-CQ: Could just create a 0 for this.
-        if (use == nullptr)
+        if ((use == nullptr) || (use->GetOffset() >= regEnd))
         {
             JITDUMP("it is not; register %u has no corresponding field\n", i);
             return false;
@@ -4962,6 +4968,12 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
         unsigned  regStart = retDesc.GetReturnFieldOffset(i);
         var_types regType  = genActualType(retDesc.GetReturnRegType(i));
         unsigned  regEnd   = regStart + genTypeSize(regType);
+
+        if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
+        {
+            // Allow tail end to pass undefined bits into the register
+            regEnd = regStart + REGSIZE_BYTES;
+        }
 
         GenTreeFieldList::Use* regEntry = use;
 
