@@ -331,12 +331,6 @@ inline uint8_t BitScanReverse64(uint32_t *bitIndex, uint64_t mask)
     return mask != 0 ? TRUE : FALSE;
 #endif // _MSC_VER
 }
-
-typedef struct _PROCESSOR_NUMBER {
-    uint16_t Group;
-    uint8_t Number;
-    uint8_t Reserved;
-} PROCESSOR_NUMBER, *PPROCESSOR_NUMBER;
 #endif // TARGET_UNIX
 
 #define COR_E_EXECUTIONENGINE                  0x80131506

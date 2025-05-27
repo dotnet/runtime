@@ -708,18 +708,20 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 
 #if defined(TARGET_APPLE)
 #define DAC_CS_MAX_SIZE 96
-#elif defined(TARGET_FREEBSD) || defined(TARGET_NETBSD)
-#define DAC_CS_MAX_SIZE 96
+#elif defined(TARGET_FREEBSD)
+#define DAC_CS_MAX_SIZE 16
 #elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
-#define DAC_CS_MAX_SIZE 48
+#define DAC_CS_MAX_SIZE 40
 #elif defined(TARGET_WINDOWS)
-#define DAC_CS_MAX_SIZE 64
+#define DAC_CS_MAX_SIZE 40
 #else
 // Fallback to a conservative default value
 #define DAC_CS_MAX_SIZE 128
 #endif
 
+#ifndef CROSS_COMPILE
 static_assert(DAC_CS_MAX_SIZE >= sizeof(minipal_critsect), "DAC_CS_MAX_SIZE must be greater than or equal to the size of minipal_critsect");
+#endif // !CROSS_COMPILE
 
 // This type is used to ensure a consistent size of critical sections
 // contained with our Crst types.

@@ -1060,17 +1060,10 @@ uint32_t PalGetCurrentProcessId()
     return static_cast<uint32_t>(::GetCurrentProcessId());
 }
 
-#ifdef UNICODE
 uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
 {
     return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
 }
-#else
-uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize)
-{
-    return ::GetEnvironmentVariableA(lpName, lpBuffer, nSize);
-}
-#endif
 
 UInt32_BOOL PalResetEvent(HANDLE arg1)
 {
@@ -1090,9 +1083,4 @@ uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
 void PalGetSystemTimeAsFileTime(FILETIME * arg1)
 {
     ::GetSystemTimeAsFileTime(arg1);
-}
-
-void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
-{
-    ::RaiseFailFastException(arg1, arg2, arg3);
 }

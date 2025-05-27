@@ -86,7 +86,7 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
-void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
+void RhFailFast()
 {
     // Causes creation of a crash dump if enabled
     PalCreateCrashDumpIfEnabled();

@@ -9,7 +9,7 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
 #include <windows.h>
 #else
 #include <fcntl.h>
@@ -17,7 +17,6 @@
 #include <unistd.h>
 #endif
 
-#include <minipal/critsect.h>
 #include <minipal/random.h>
 #include <minipal/time.h>
 

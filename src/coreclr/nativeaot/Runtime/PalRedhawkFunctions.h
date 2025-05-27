@@ -18,5 +18,4 @@ uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
 
 #ifdef PAL_REDHAWK_INCLUDED
 void PalGetSystemTimeAsFileTime(FILETIME * arg1);
-void PalRaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3);
 #endif
