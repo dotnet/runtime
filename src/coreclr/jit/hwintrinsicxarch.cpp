@@ -1377,7 +1377,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
-//    pRetType        -- return type of the intrinsic.
+//    retType         -- return type of the intrinsic.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
@@ -1397,16 +1397,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
-                                       var_types*            pRetType,
+                                       var_types             retType,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
-    GenTree*  retNode = nullptr;
-    GenTree*  op1     = nullptr;
-    GenTree*  op2     = nullptr;
-    GenTree*  op3     = nullptr;
-    GenTree*  op4     = nullptr;
-    var_types retType = *pRetType;
+    GenTree* retNode = nullptr;
+    GenTree* op1     = nullptr;
+    GenTree* op2     = nullptr;
+    GenTree* op3     = nullptr;
+    GenTree* op4     = nullptr;
 
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 

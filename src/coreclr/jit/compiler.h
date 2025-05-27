@@ -4703,7 +4703,7 @@ protected:
                                  CORINFO_SIG_INFO*     sig
                                  R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                  CorInfoType           simdBaseJitType,
-                                 var_types*            retType,
+                                 var_types             retType,
                                  unsigned              simdSize,
                                  bool                  mustExpand);
 

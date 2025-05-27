@@ -639,7 +639,7 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 //    sig             -- signature of the intrinsic call.
 //    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
-//    pRetType        -- return type of the intrinsic. May be updated.
+//    retType         -- return type of the intrinsic.
 //    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
 //
 // Return Value:
@@ -650,13 +650,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                        CORINFO_METHOD_HANDLE method,
                                        CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                        CorInfoType           simdBaseJitType,
-                                       var_types*            pRetType,
+                                       var_types             retType,
                                        unsigned              simdSize,
                                        bool                  mustExpand)
 {
     const HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(intrinsic);
     const int                 numArgs  = sig->numArgs;
-    var_types                 retType  = *pRetType;
 
     // The vast majority of "special" intrinsics are Vector64/Vector128 methods.
     // The only exception is ArmBase.Yield which should be treated differently.
@@ -2791,7 +2790,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impPopStack().val;
 
-            // Where possible, import a constant vector.
+            // Where possible, import a constant vector to allow for optimisations.
             if (op1->IsIntegralConst())
             {
                 int64_t pattern = op1->AsIntConCommon()->IntegralValue();
@@ -2818,17 +2817,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                         break;
 
                     default:
-                        // Invalid enum.
+                        // Invalid enum, so generate the create true mask node.
                         retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
-                        *pRetType = TYP_MASK;
                         break;
                 }
             }
             else
             {
-                // Create a node of TYP_MASK, making sure to update pRetType
+                // Do not know the pattern, so generate the create true mask node.
                 retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
-                *pRetType = TYP_MASK;
             }
             break;
         }

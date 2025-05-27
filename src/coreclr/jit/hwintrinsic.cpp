@@ -2306,8 +2306,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
     else
     {
-        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, &nodeRetType,
+        retNode = impSpecialIntrinsic(intrinsic, clsHnd, method, sig R2RARG(entryPoint), simdBaseJitType, nodeRetType,
                                       simdSize, mustExpand);
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+        // The special import may have switched the type of the node.
+        nodeRetType = retNode->gtType;
+#endif
     }
 
     if (setMethodHandle && (retNode != nullptr))
@@ -2380,10 +2385,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if (retType != nodeRetType)
+    if (nodeRetType == TYP_MASK)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-        assert(nodeRetType == TYP_MASK);
 
         GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
 
