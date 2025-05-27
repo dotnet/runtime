@@ -11259,11 +11259,29 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             assert((blkSize % XMM_REGSIZE_BYTES) == 0);
 
+            int regSize = (int)compiler->roundDownSIMDSize(blkSize);
             int lenRemaining = blkSize;
             while (lenRemaining > 0)
             {
+                // Overlap with the previously zeroed memory if we can clear the remainder
+                // with just single store. Example: say we have 112 bytes to clear:
+                //
+                // Option 1 (no overlapping):
+                //   movups  zmmword ptr [+0]
+                //   movups  ymmword ptr [+64]
+                //   movups  xmmword ptr [+96]
+                //
+                // Option 2 (overlapping):
+                //   movups  zmmword ptr [+0]
+                //   movups  zmmword ptr [+48]
+                //
+                if ((regSize > lenRemaining) && !isPow2(lenRemaining))
+                {
+                    lenRemaining = regSize;
+                }
+
                 // Use the largest SIMD register size that fits in the remaining length
-                const int regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
+                regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
                 assert(regSize >= XMM_REGSIZE_BYTES);
 
                 // frameReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
