@@ -648,17 +648,19 @@ namespace System.Runtime
         [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
+#if NATIVEAOT
+
 #if TARGET_WINDOWS
             // Alert the debugger that we threw an exception.
             InternalCalls.RhpFirstChanceExceptionNotification();
 #endif // TARGET_WINDOWS
 
-#if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif
+#endif // NATIVEAOT
+
             // Transform attempted throws of null to a throw of NullReferenceException.
             if (exceptionObj == null)
             {
