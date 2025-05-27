@@ -425,9 +425,16 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 #else
     // Extract the necessary information from the info block header
     hdrInfo info;
-    DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &info);
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &info);
+    PTR_CBYTE table = gcInfo + infoSize;
 
-    return info.interruptible && info.prologOffs == hdrInfo::NOT_IN_PROLOG && info.epilogOffs == hdrInfo::NOT_IN_EPILOG;
+    if (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        return false;
+
+    if (!info.interruptible)
+        return false;
+
+    return !IsInNoGCRegion(&info, table, codeOffset);
 #endif
 }
 

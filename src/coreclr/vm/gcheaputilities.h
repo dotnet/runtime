@@ -163,7 +163,7 @@ extern "C" bool     g_region_use_bitwise_write_barrier;
 
 // Table containing the dirty state. This table is translated to exclude the lowest address it represents, see
 // TranslateTableToExcludeHeapStartAddress.
-extern "C" uint8_t *g_sw_ww_table;
+extern "C" uint8_t *g_write_watch_table;
 
 // Write watch may be disabled when it is not needed (between GCs for instance). This indicates whether it is enabled.
 extern "C" bool g_sw_ww_enabled_for_gc_heap;
@@ -292,7 +292,7 @@ public:
         uint8_t* end_of_write_ptr = reinterpret_cast<uint8_t*>(address) + (write_size - 1);
         assert(table_byte_index == reinterpret_cast<size_t>(end_of_write_ptr) >> SOFTWARE_WRITE_WATCH_AddressToTableByteIndexShift);
 #endif
-        uint8_t* table_address = &g_sw_ww_table[table_byte_index];
+        uint8_t* table_address = &g_write_watch_table[table_byte_index];
         if (*table_address == 0)
         {
             *table_address = 0xFF;
@@ -319,7 +319,7 @@ public:
 
         // We'll mark the entire region of memory as dirty by memsetting all entries in
         // the SWW table between the start and end indexes.
-        memset(&g_sw_ww_table[base_index], ~0, end_index - base_index + 1);
+        memset(&g_write_watch_table[base_index], ~0, end_index - base_index + 1);
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 

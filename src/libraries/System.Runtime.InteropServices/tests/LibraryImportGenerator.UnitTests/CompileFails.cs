@@ -22,6 +22,31 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class CompileFails
     {
+        [Fact]
+        public Task GenericDelegateParameterFails()
+        {
+            return VerifyCS.VerifySourceGeneratorAsync(
+                CodeSnippets.BasicParametersAndModifiers("System.Func<int, int>"),
+                new DiagnosticResult[]
+                {
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                        .WithLocation(0)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "Method"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(1)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "p"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(2)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "pIn"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(3)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "pRef"),
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(4)
+                        .WithArguments("Marshalling a generic delegate is not supported. Consider using a function pointer instead.", "pOut"),
+                });
+        }
+
         private static string ID(
             [CallerLineNumber] int lineNumber = 0,
             [CallerFilePath] string? filePath = null)

@@ -55,7 +55,7 @@ PALTEST(threading_CreateProcessW_test2_paltest_createprocessw_test2, "threading/
 
     char szStdOutBuf[BUF_LEN];
     char szStdErrBuf[BUF_LEN];
-    WCHAR szFullPathNameW[_MAX_PATH];
+    WCHAR szFullPathNameW[MAX_PATH];
 
 
     /*******************************************

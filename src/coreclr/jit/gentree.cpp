@@ -7772,8 +7772,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)pValue);
+            tree = gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)pValue);
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
@@ -8137,14 +8136,7 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
         case TYP_REF:
         {
             READ_VALUE(ssize_t);
-            if (val == 0)
-            {
-                return gtNewNull();
-            }
-            else
-            {
-                return gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            }
+            return val == 0 ? gtNewNull() : gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)val);
         }
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
@@ -12975,6 +12967,11 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 disp();
             }
 
+            if (call->IsAsync())
+            {
+                printf(" (async)");
+            }
+
             if ((call->gtFlags & GTF_CALL_UNMANAGED) && (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
             {
                 printf(" (FramesRoot last use)");
@@ -15684,7 +15681,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             {
-#ifdef TARGET_64BIT
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
@@ -15693,20 +15689,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = (float)lval1;
                                 }
-#else
-                                // 32-bit currently does a 2-step conversion, which is incorrect
-                                // but which we are going to take a breaking change around early
-                                // in a release cycle.
-
-                                if (tree->IsUnsigned() && (lval1 < 0))
-                                {
-                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1));
-                                }
-                                else
-                                {
-                                    f1 = forceCastToFloat((double)lval1);
-                                }
-#endif
 
                                 d1 = f1;
                                 goto CNS_DOUBLE;
@@ -20009,7 +19991,7 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
     {
         return true;
     }
@@ -25383,14 +25365,11 @@ GenTree* Compiler::gtNewSimdNarrowNode(
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
-        // unsigned integer use uint64
+        // var tmp2 = tmp1.WithUpper(op2);
         // return AdvSimd.ExtractNarrowingLower(tmp2);
 
-        CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
-
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize);
-        tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseJitType, 16);
+        tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, simdBaseJitType, 16);
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, simdSize);
     }

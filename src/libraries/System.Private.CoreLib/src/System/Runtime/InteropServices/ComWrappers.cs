@@ -901,7 +901,28 @@ namespace System.Runtime.InteropServices
         public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags)
         {
             object? obj;
-            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, IntPtr.Zero, flags, null, out obj))
+            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, IntPtr.Zero, flags, wrapperMaybe: null, userState: NoUserState.Instance, out obj))
+                throw new ArgumentNullException(nameof(externalComObject));
+
+            return obj;
+        }
+
+        /// <summary>
+        /// Get the currently registered managed object or creates a new managed object and registers it.
+        /// </summary>
+        /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
+        /// <param name="flags">Flags used to describe the external object.</param>
+        /// <param name="userState">A state object to use to help create the wrapping .NET object.</param>
+        /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
+        /// <remarks>
+        /// If a managed object was previously created for the specified <paramref name="externalComObject" />
+        /// using this <see cref="ComWrappers" /> instance, the previously created object will be returned.
+        /// If not, a new one will be created.
+        /// </remarks>
+        public object GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object? userState)
+        {
+            object? obj;
+            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, IntPtr.Zero, flags, wrapperMaybe: null, userState, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
             return obj;
@@ -943,7 +964,7 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(wrapper);
 
             object? obj;
-            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, out obj))
+            if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, userState: NoUserState.Instance, out obj))
                 throw new ArgumentNullException(nameof(externalComObject));
 
             return obj;
@@ -965,7 +986,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 IntPtr currentVersion = GetTaggedImplCurrentVersion();
-                int hr = ((delegate* unmanaged<IntPtr, IntPtr, int>)(*(*(void***)implMaybe + 3 /* ITaggedImpl.IsCurrentVersion slot */)))(implMaybe, currentVersion);
+                int hr = ((delegate* unmanaged[MemberFunction]<IntPtr, IntPtr, int>)(*(*(void***)implMaybe + 3 /* ITaggedImpl.IsCurrentVersion slot */)))(implMaybe, currentVersion);
                 Marshal.Release(implMaybe);
                 if (hr != 0)
                 {
@@ -1025,6 +1046,15 @@ namespace System.Runtime.InteropServices
             }
         }
 
+        private sealed class NoUserState
+        {
+            public static readonly NoUserState Instance = new NoUserState();
+
+            private NoUserState()
+            {
+            }
+        }
+
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
         /// </summary>
@@ -1032,13 +1062,15 @@ namespace System.Runtime.InteropServices
         /// <param name="innerMaybe">The inner instance if aggregation is involved</param>
         /// <param name="flags">Flags used to describe the external object.</param>
         /// <param name="wrapperMaybe">The <see cref="object"/> to be used as the wrapper for the external object.</param>
-        /// <param name="retValue">The managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</param>
+        /// <param name="userState">A state object provided by the user for creating the object, otherwise <see cref="NoUserState.Instance" />.</param>
         /// <returns>Returns <c>true</c> if a managed object could be retrieved/created, <c>false</c> otherwise</returns>
+        /// <param name="retValue">The managed object associated with the supplied external COM object or <c>null</c> if it could not be created.</param>
         private unsafe bool TryGetOrCreateObjectForComInstanceInternal(
             IntPtr externalComObject,
             IntPtr innerMaybe,
             CreateObjectFlags flags,
             object? wrapperMaybe,
+            object? userState,
             [NotNullWhen(true)] out object? retValue)
         {
             if (externalComObject == IntPtr.Zero)
@@ -1062,7 +1094,7 @@ namespace System.Runtime.InteropServices
                 // and return.
                 if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
                 {
-                    retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref referenceTrackerMaybe);
+                    retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, userState, ref referenceTrackerMaybe);
                     return retValue is not null;
                 }
 
@@ -1116,7 +1148,7 @@ namespace System.Runtime.InteropServices
 
                 // If the user didn't provide a wrapper and couldn't unwrap a managed object wrapper,
                 // create a new wrapper.
-                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, ref referenceTrackerMaybe);
+                retValue = CreateAndRegisterObjectForComInstance(identity, inner, flags, userState, ref referenceTrackerMaybe);
                 return retValue is not null;
             }
             finally
@@ -1137,13 +1169,30 @@ namespace System.Runtime.InteropServices
             IntPtr identity,
             IntPtr inner,
             CreateObjectFlags flags,
+            object? userState,
             ref IntPtr referenceTrackerMaybe)
         {
-            object? retValue = CreateObject(identity, flags);
+            CreatedWrapperFlags wrapperFlags = CreatedWrapperFlags.None;
+
+            object? retValue = userState is NoUserState
+                ? CreateObject(identity, flags)
+                : CreateObject(identity, flags, userState, out wrapperFlags);
+
             if (retValue is null)
             {
                 // If ComWrappers instance cannot create wrapper, we can do nothing here.
                 return null;
+            }
+
+            if (wrapperFlags.HasFlag(CreatedWrapperFlags.NonWrapping))
+            {
+                return retValue;
+            }
+
+            if (wrapperFlags.HasFlag(CreatedWrapperFlags.TrackerObject))
+            {
+                // The user has determined after inspecting the COM object that it should have tracker support.
+                flags |= CreateObjectFlags.TrackerObject;
             }
 
             return RegisterObjectForComInstance(identity, inner, retValue, flags, ref referenceTrackerMaybe);
@@ -1392,6 +1441,23 @@ namespace System.Runtime.InteropServices
         protected abstract object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags);
 
         /// <summary>
+        /// Create a managed object for the object pointed at by <paramref name="externalComObject"/> respecting the values of <paramref name="flags"/>.
+        /// </summary>
+        /// <param name="externalComObject">Object to import for usage into the .NET runtime.</param>
+        /// <param name="flags">Flags used to describe the external object.</param>
+        /// <param name="userState">User state provided by the call to <see cref="GetOrCreateObjectForComInstance(nint, CreateObjectFlags, object)" />.</param>
+        /// <param name="wrapperFlags">Flags used to describe the created wrapper object.</param>
+        /// <returns>Returns a managed object associated with the supplied external COM object.</returns>
+        /// <remarks>
+        /// The default implementation throws <see cref="NotImplementedException"/>.
+        /// If the object cannot be created and <code>null</code> is returned, the call to <see cref="GetOrCreateObjectForComInstance(nint, CreateObjectFlags, object)"/> will throw a <see cref="ArgumentNullException"/>.
+        /// </remarks>
+        protected virtual object? CreateObject(IntPtr externalComObject, CreateObjectFlags flags, object? userState, out CreatedWrapperFlags wrapperFlags)
+        {
+            throw new NotImplementedException(SR.NotImplemented_CreateObjectWithUserState);
+        }
+
+        /// <summary>
         /// Called when a request is made for a collection of objects to be released outside of normal object or COM interface lifetime.
         /// </summary>
         /// <param name="objects">Collection of objects to release.</param>
@@ -1445,26 +1511,13 @@ namespace System.Runtime.InteropServices
             return s_globalInstanceForTrackerSupport.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.TrackerSupport);
         }
 
-        // Lifetime maintained by stack - we don't care about ref counts
-        [UnmanagedCallersOnly]
-        internal static unsafe uint Untracked_AddRef(IntPtr _)
-        {
-            return 1;
-        }
-
-        [UnmanagedCallersOnly]
-        internal static unsafe uint Untracked_Release(IntPtr _)
-        {
-            return 1;
-        }
-
         // Wrapper for IWeakReference
         private static unsafe class IWeakReference
         {
             public static int Resolve(IntPtr pThis, Guid guid, out IntPtr inspectable)
             {
                 fixed (IntPtr* inspectablePtr = &inspectable)
-                    return (*(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>**)pThis)[3](pThis, &guid, inspectablePtr);
+                    return (*(delegate* unmanaged[MemberFunction]<IntPtr, Guid*, IntPtr*, int>**)pThis)[3](pThis, &guid, inspectablePtr);
             }
         }
 
@@ -1474,7 +1527,7 @@ namespace System.Runtime.InteropServices
             public static int GetWeakReference(IntPtr pThis, out IntPtr weakReference)
             {
                 fixed (IntPtr* weakReferencePtr = &weakReference)
-                    return (*(delegate* unmanaged<IntPtr, IntPtr*, int>**)pThis)[3](pThis, weakReferencePtr);
+                    return (*(delegate* unmanaged[MemberFunction]<IntPtr, IntPtr*, int>**)pThis)[3](pThis, weakReferencePtr);
             }
         }
 

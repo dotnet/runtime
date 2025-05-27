@@ -162,24 +162,6 @@ static inline void UpdatePerformanceMetrics(CrawlFrame *pcfThisFrame, BOOL bIsRe
     ETW::ExceptionLog::ExceptionThrown(pcfThisFrame, bIsRethrownException, bIsNewException);
 }
 
-#ifdef TARGET_UNIX
-static LONG volatile g_termination_triggered = 0;
-
-void HandleTerminationRequest(int terminationExitCode)
-{
-    // We set a non-zero exit code to indicate the process didn't terminate cleanly.
-    // This value can be changed by the user by setting Environment.ExitCode in the
-    // ProcessExit event. We only start termination on the first SIGTERM signal
-    // to ensure we don't overwrite an exit code already set in ProcessExit.
-    if (InterlockedCompareExchange(&g_termination_triggered, 1, 0) == 0)
-    {
-        SetLatchedExitCode(terminationExitCode);
-
-        ForceEEShutdown(SCA_ExitProcessWhenShutdownComplete);
-    }
-}
-#endif
-
 void InitializeExceptionHandling()
 {
     EH_LOG((LL_INFO100, "InitializeExceptionHandling(): ExInfo size: 0x%x bytes\n", sizeof(ExInfo)));
@@ -192,9 +174,6 @@ void InitializeExceptionHandling()
 
     // Register handler for determining whether the specified IP has code that is a GC marker for GCCover
     PAL_SetGetGcMarkerExceptionCode(GetGcMarkerExceptionCode);
-
-    // Register handler for termination requests (e.g. SIGTERM)
-    PAL_SetTerminationRequestHandler(HandleTerminationRequest);
 #endif // TARGET_UNIX
 }
 
@@ -542,6 +521,40 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     }
 }
 
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+static void DispatchLongJmp(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                            IN     PVOID               pEstablisherFrame,
+                            IN OUT PCONTEXT            pContextRecord)
+{
+    // Pop all the SEH frames including the one that is currently called
+    // to prevent setjmp from trying to unwind it again when we inject our
+    // longjmp.
+    SetCurrentSEHRecord(((PEXCEPTION_REGISTRATION_RECORD)pEstablisherFrame)->Next);
+
+#pragma warning(push)
+#pragma warning(disable:4611) // interaction between 'function' and C++ object destruction is non-portable
+    jmp_buf jumpBuffer;
+    if (setjmp(jumpBuffer))
+    {
+        // We reach this point after the finally handlers were called and
+        // the unwinding should continue below the managed frame.
+        return;
+    }
+#pragma warning(pop)
+
+    // Emulate the parameters that are passed on 64-bit systems and expected by
+    // DispatchManagedException.
+    EXCEPTION_RECORD newExceptionRecord = *pExceptionRecord;
+    newExceptionRecord.NumberParameters = 2;
+    newExceptionRecord.ExceptionInformation[0] = (DWORD_PTR)&jumpBuffer;
+    newExceptionRecord.ExceptionInformation[1] = 1;
+
+    OBJECTREF oref = ExInfo::CreateThrowable(&newExceptionRecord, FALSE);
+    DispatchManagedException(oref, pContextRecord, &newExceptionRecord);
+    UNREACHABLE();
+}
+#endif
+
 EXTERN_C EXCEPTION_DISPOSITION __cdecl
 ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                     IN     PVOID               pEstablisherFrame,
@@ -634,7 +647,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     }
 
     // Second pass (unwinding)
-    GCX_COOP();
+    GCX_COOP_NO_DTOR();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
     ExInfo *pPrevExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
     if (pPrevExInfo != NULL && pPrevExInfo->m_DebuggerExState.GetDebuggerInterceptContext() != NULL)
@@ -642,6 +655,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         ContinueExceptionInterceptionUnwind();
         UNREACHABLE();
     }
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+    else if (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP)
+    {
+        DispatchLongJmp(pExceptionRecord, pEstablisherFrame, pContextRecord);
+        GCX_COOP_NO_DTOR_END();
+        return ExceptionContinueSearch;
+    }
+#endif
     else
     {
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
@@ -2956,7 +2977,11 @@ void MarkInlinedCallFrameAsEHHelperCall(Frame* pFrame)
 static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
 {
 #ifdef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-    return CallerStackFrame::FromRegDisplay(pRD).SP;
+    TADDR sp = CallerStackFrame::FromRegDisplay(pRD).SP;
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_X86)
+    sp -= sizeof(TADDR); // For X86 with funclets we want the address 1 pointer into the callee.
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_X86)
+    return sp;
 #else
     return GetSP(pRD->pCurrentContext);
 #endif
@@ -3047,10 +3072,12 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
 }
 
 #ifdef HOST_WINDOWS
-VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
+VOID DECLSPEC_NORETURN __fastcall PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
 {
     WRAPPER_NO_CONTRACT;
+    GCX_PREEMP_NO_DTOR();
     longjmp(*pJmpBuf, retVal);
+    UNREACHABLE();
 }
 
 // This is a personality routine that the RtlRestoreContext calls when it is called with
@@ -3252,7 +3279,14 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         if (pLongJmpBuf != NULL)
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of longjmp through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+#ifdef HOST_X86
+            // On x86 we don't jump to the original longjmp target. Instead we return to DispatchLongJmp called
+            // from ProcessCLRException which in turn return ExceptionContinueSearch to continue unwinding the
+            // original longjmp call.
+            longjmp(*pLongJmpBuf, longJmpReturnValue);
+#else
             ExecuteFunctionBelowContext((PCODE)PropagateLongJmpThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)pLongJmpBuf, longJmpReturnValue);
+#endif
         }
         else
 #endif
