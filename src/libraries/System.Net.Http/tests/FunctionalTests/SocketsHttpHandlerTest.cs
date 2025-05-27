@@ -2706,249 +2706,266 @@ namespace System.Net.Http.Functional.Tests
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
-        public SocketsHttpHandlerTest_Http2(ITestOutputHelper output) : base(output) { }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
+        private readonly Timer _timer = null;
+        public SocketsHttpHandlerTest_Http2(ITestOutputHelper output)
+            : base(output)
         {
-            const int MaxConcurrentStreams = 2;
-
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            using SocketsHttpHandler handler = CreateHandler();
-            using HttpClient client = CreateHttpClient(handler);
-            server.AllowMultipleConnections = true;
-
-            List<Task<HttpResponseMessage>> sendTasks = new();
-            List<Http2LoopbackConnection> connections = new();
-            List<int> acceptedStreams = new();
-
-            for (int i = 0; i < 3; i++)
+            using (ExecutionContext.SuppressFlow())
             {
-                Http2LoopbackConnection connection = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                connections.Add(connection);
-
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-
-                acceptedStreams.AddRange(await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false));
-            }
-
-            Assert.Equal(3 * MaxConcurrentStreams, acceptedStreams.Count);
-            Assert.Equal(sendTasks.Count, acceptedStreams.Count);
-
-            int responseIndex = 0;
-            List<Task> responseTasks = new();
-            foreach (Http2LoopbackConnection connection in connections)
-            {
-                for (int i = 0; i < MaxConcurrentStreams; i++)
+                _timer = new Timer((_) =>
                 {
-                    int streamId = acceptedStreams[responseIndex++];
-                    responseTasks.Add(connection.SendDefaultResponseAsync(streamId));
+                    Environment.FailFast("Test took too long to complete, likely due to a deadlock or infinite loop.");
+                }, null, TimeSpan.FromMinutes(5), Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _timer?.Dispose();
+            base.Dispose(disposing);
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+            public async Task Http2_MultipleConnectionsEnabled_ConnectionLimitNotReached_ConcurrentRequestsSuccessfullyHandled()
+            {
+                const int MaxConcurrentStreams = 2;
+
+                using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+                using SocketsHttpHandler handler = CreateHandler();
+                using HttpClient client = CreateHttpClient(handler);
+                server.AllowMultipleConnections = true;
+
+                List<Task<HttpResponseMessage>> sendTasks = new();
+                List<Http2LoopbackConnection> connections = new();
+                List<int> acceptedStreams = new();
+
+                for (int i = 0; i < 3; i++)
+                {
+                    Http2LoopbackConnection connection = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    connections.Add(connection);
+
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+
+                    acceptedStreams.AddRange(await AcceptRequests(connection, MaxConcurrentStreams).ConfigureAwait(false));
                 }
+
+                Assert.Equal(3 * MaxConcurrentStreams, acceptedStreams.Count);
+                Assert.Equal(sendTasks.Count, acceptedStreams.Count);
+
+                int responseIndex = 0;
+                List<Task> responseTasks = new();
+                foreach (Http2LoopbackConnection connection in connections)
+                {
+                    for (int i = 0; i < MaxConcurrentStreams; i++)
+                    {
+                        int streamId = acceptedStreams[responseIndex++];
+                        responseTasks.Add(connection.SendDefaultResponseAsync(streamId));
+                    }
+                }
+
+                await TestHelper.WhenAllCompletedOrAnyFailed(responseTasks.ToArray()).ConfigureAwait(false);
+
+                await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
 
-            await TestHelper.WhenAllCompletedOrAnyFailed(responseTasks.ToArray()).ConfigureAwait(false);
-
-            await VerifySendTasks(sendTasks).ConfigureAwait(false);
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
-        {
-            // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
-            // Setting it to this value avoids any complexity that would occur from having to retry requests if the actual limit from the peer is lower.
-            const int MaxConcurrentStreams = 100;
-
-            const int ConnectionCount = 3;
-
-            // Just enough to force the third connection to be created.
-            const int RequestCount = (ConnectionCount - 1) * MaxConcurrentStreams + 1;
-
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            server.AllowMultipleConnections = true;
-
-            using SocketsHttpHandler handler = CreateHandler();
-            using HttpClient client = CreateHttpClient(handler);
-
-            List<Task<HttpResponseMessage>> sendTasks = new();
-
-            AcquireAllStreamSlots(server, client, sendTasks, RequestCount);
-
-            await using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
-            int[] streamIds1 = await AcceptRequests(c1, MaxConcurrentStreams);
-
-            await using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
-            int[] streamIds2 = await AcceptRequests(c2, MaxConcurrentStreams);
-
-            await using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
-            (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
-
-            await SendResponses(c1, streamIds1);
-            await SendResponses(c2, streamIds2);
-            await c3.SendDefaultResponseAsync(finalStreamId);
-
-            await VerifySendTasks(sendTasks);
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
-        {
-            const int MaxConcurrentStreams = 2;
-
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            using SocketsHttpHandler handler = CreateHandler();
-            using HttpClient client = CreateHttpClient(handler);
-            server.AllowMultipleConnections = true;
-
-            List<Task<HttpResponseMessage>> sendTasks = new();
-
-            Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-            AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-
-            // Accept requests but don't send responses on connection 0
-            int[] blockedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
-
-            Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-            AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-
-            // Send responses on connection 1
-            await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
-
-            // Send responses on connection 0
-            await SendResponses(connection0, blockedStreamIds);
-
-            await VerifySendTasks(sendTasks).ConfigureAwait(false);
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
-        {
-            if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
+            [ConditionalFact(nameof(SupportsAlpn))]
+            public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
             {
-                throw new SkipTestException("Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
+                // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
+                // Setting it to this value avoids any complexity that would occur from having to retry requests if the actual limit from the peer is lower.
+                const int MaxConcurrentStreams = 100;
+
+                const int ConnectionCount = 3;
+
+                // Just enough to force the third connection to be created.
+                const int RequestCount = (ConnectionCount - 1) * MaxConcurrentStreams + 1;
+
+                using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+                server.AllowMultipleConnections = true;
+
+                using SocketsHttpHandler handler = CreateHandler();
+                using HttpClient client = CreateHttpClient(handler);
+
+                List<Task<HttpResponseMessage>> sendTasks = new();
+
+                AcquireAllStreamSlots(server, client, sendTasks, RequestCount);
+
+                await using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+                int[] streamIds1 = await AcceptRequests(c1, MaxConcurrentStreams);
+
+                await using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+                int[] streamIds2 = await AcceptRequests(c2, MaxConcurrentStreams);
+
+                await using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+                (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
+
+                await SendResponses(c1, streamIds1);
+                await SendResponses(c2, streamIds2);
+                await c3.SendDefaultResponseAsync(finalStreamId);
+
+                await VerifySendTasks(sendTasks);
             }
 
-            const int MaxConcurrentStreams = 2;
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            server.AllowMultipleConnections = true;
-
-            // Allow 5 connections through the ConnectCallback.
-            SemaphoreSlim connectCallbackSemaphore = new(initialCount: 5);
-
-            using SocketsHttpHandler handler = CreateHandler();
-
-            handler.ConnectCallback = async (context, ct) =>
+            [ConditionalFact(nameof(SupportsAlpn))]
+            public async Task Http2_MultipleConnectionsEnabled_InfiniteRequestsCompletelyBlockOneConnection_RemainingRequestsAreHandledByNewConnection()
             {
-                await connectCallbackSemaphore.WaitAsync(ct);
+                const int MaxConcurrentStreams = 2;
 
-                return await DefaultConnectCallback(context.DnsEndPoint, ct);
-            };
+                using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+                using SocketsHttpHandler handler = CreateHandler();
+                using HttpClient client = CreateHttpClient(handler);
+                server.AllowMultipleConnections = true;
 
-            using (HttpClient client = CreateHttpClient(handler))
-            {
                 List<Task<HttpResponseMessage>> sendTasks = new();
 
                 Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+
+                // Accept requests but don't send responses on connection 0
+                int[] blockedStreamIds = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
 
                 Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
                 AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                int[] streamIds1 = await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                int[] streamIds2 = await AcceptRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false);
+                // Send responses on connection 1
+                await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
 
-                await TestHelper.WhenAllCompletedOrAnyFailed(
-                    SendResponses(connection0, streamIds0),
-                    SendResponses(connection1, streamIds1),
-                    SendResponses(connection2, streamIds2))
-                    .ConfigureAwait(false);
-
-                await connection0.ShutdownIgnoringErrorsAsync(streamIds0[^1]).ConfigureAwait(false);
-                await connection2.ShutdownIgnoringErrorsAsync(streamIds2[^1]).ConfigureAwait(false);
-
-                // Fill all connection1's stream slots
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                streamIds1 = await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false);
-
-                Http2LoopbackConnection connection3 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                int[] streamIds3 = await AcceptRequests(connection3, MaxConcurrentStreams).ConfigureAwait(false);
-
-                Http2LoopbackConnection connection4 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
-                int[] streamIds4 = await AcceptRequests(connection4, MaxConcurrentStreams).ConfigureAwait(false);
-
-                await TestHelper.WhenAllCompletedOrAnyFailed(
-                   SendResponses(connection1, streamIds1),
-                   SendResponses(connection3, streamIds3),
-                   SendResponses(connection4, streamIds4))
-                   .ConfigureAwait(false);
+                // Send responses on connection 0
+                await SendResponses(connection0, blockedStreamIds);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
             }
-        }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
-        [OuterLoop("Incurs long delay")]
-        public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
-        {
-            const int MaxConcurrentStreams = 2;
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-            server.AllowMultipleConnections = true;
-
-            SemaphoreSlim connectCallbackSemaphore = new(initialCount: 2);
-
-            using SocketsHttpHandler handler = CreateHandler();
-            handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(20);
-
-            handler.ConnectCallback = async (context, ct) =>
+            [ConditionalFact(nameof(SupportsAlpn))]
+            public async Task Http2_MultipleConnectionsEnabled_OpenAndCloseMultipleConnections_Success()
             {
-                await connectCallbackSemaphore.WaitAsync(ct);
+                if (PlatformDetection.IsAndroid && (PlatformDetection.IsX86Process || PlatformDetection.IsX64Process))
+                {
+                    throw new SkipTestException("Currently this test is failing on Android API 29 (used on Android-x64 and Android-x86 emulators)");
+                }
 
-                return await DefaultConnectCallback(context.DnsEndPoint, ct);
-            };
+                const int MaxConcurrentStreams = 2;
+                using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+                server.AllowMultipleConnections = true;
 
-            using (HttpClient client = CreateHttpClient(handler))
-            {
-                List<Task<HttpResponseMessage>> sendTasks0 = new();
-                List<Task<HttpResponseMessage>> sendTasks1 = new();
-                List<Task<HttpResponseMessage>> sendTasks2 = new();
+                // Allow 5 connections through the ConnectCallback.
+                SemaphoreSlim connectCallbackSemaphore = new(initialCount: 5);
 
-                Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks0, MaxConcurrentStreams);
-                int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+                using SocketsHttpHandler handler = CreateHandler();
 
-                Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks1, MaxConcurrentStreams);
-                await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
+                handler.ConnectCallback = async (context, ct) =>
+                {
+                    await connectCallbackSemaphore.WaitAsync(ct);
 
-                // Complete all the requests on connection1.
-                await VerifySendTasks(sendTasks1).ConfigureAwait(false);
+                    return await DefaultConnectCallback(context.DnsEndPoint, ct);
+                };
 
-                // Wait until the idle connection timeout expires.
-                await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    List<Task<HttpResponseMessage>> sendTasks = new();
 
-                Assert.True(connection1.IsInvalid);
-                Assert.False(connection0.IsInvalid);
+                    Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                    int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
 
-                // Due to a race condition in how a new Http2 connection is returned to the pool, we may have started a third connection attempt in the background.
-                // We were blocking such attempts from going through to the Socket layer until now to avoid having to deal with the extra connect when accepting connection2 below.
-                // Allow the third connection through the ConnectCallback now.
-                connectCallbackSemaphore.Release();
+                    Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                    int[] streamIds1 = await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false);
 
-                Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
-                AcquireAllStreamSlots(server, client, sendTasks2, MaxConcurrentStreams);
-                await SendResponses(connection2, await AcceptRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false));
+                    Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                    int[] streamIds2 = await AcceptRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false);
 
-                // Make sure connection0 is still alive.
-                await SendResponses(connection0, streamIds0).ConfigureAwait(false);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        SendResponses(connection0, streamIds0),
+                        SendResponses(connection1, streamIds1),
+                        SendResponses(connection2, streamIds2))
+                        .ConfigureAwait(false);
 
-                await VerifySendTasks(sendTasks0).ConfigureAwait(false);
-                await VerifySendTasks(sendTasks2).ConfigureAwait(false);
+                    await connection0.ShutdownIgnoringErrorsAsync(streamIds0[^1]).ConfigureAwait(false);
+                    await connection2.ShutdownIgnoringErrorsAsync(streamIds2[^1]).ConfigureAwait(false);
+
+                    // Fill all connection1's stream slots
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                    streamIds1 = await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false);
+
+                    Http2LoopbackConnection connection3 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                    int[] streamIds3 = await AcceptRequests(connection3, MaxConcurrentStreams).ConfigureAwait(false);
+
+                    Http2LoopbackConnection connection4 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks, MaxConcurrentStreams);
+                    int[] streamIds4 = await AcceptRequests(connection4, MaxConcurrentStreams).ConfigureAwait(false);
+
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                       SendResponses(connection1, streamIds1),
+                       SendResponses(connection3, streamIds3),
+                       SendResponses(connection4, streamIds4))
+                       .ConfigureAwait(false);
+
+                    await VerifySendTasks(sendTasks).ConfigureAwait(false);
+                }
             }
-        }
+
+            [ConditionalFact(nameof(SupportsAlpn))]
+            [OuterLoop("Incurs long delay")]
+            public async Task Http2_MultipleConnectionsEnabled_IdleConnectionTimeoutExpired_ConnectionRemovedAndNewCreated()
+            {
+                const int MaxConcurrentStreams = 2;
+                using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+                server.AllowMultipleConnections = true;
+
+                SemaphoreSlim connectCallbackSemaphore = new(initialCount: 2);
+
+                using SocketsHttpHandler handler = CreateHandler();
+                handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(20);
+
+                handler.ConnectCallback = async (context, ct) =>
+                {
+                    await connectCallbackSemaphore.WaitAsync(ct);
+
+                    return await DefaultConnectCallback(context.DnsEndPoint, ct);
+                };
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    List<Task<HttpResponseMessage>> sendTasks0 = new();
+                    List<Task<HttpResponseMessage>> sendTasks1 = new();
+                    List<Task<HttpResponseMessage>> sendTasks2 = new();
+
+                    Http2LoopbackConnection connection0 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks0, MaxConcurrentStreams);
+                    int[] streamIds0 = await AcceptRequests(connection0, MaxConcurrentStreams).ConfigureAwait(false);
+
+                    Http2LoopbackConnection connection1 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks1, MaxConcurrentStreams);
+                    await SendResponses(connection1, await AcceptRequests(connection1, MaxConcurrentStreams).ConfigureAwait(false));
+
+                    // Complete all the requests on connection1.
+                    await VerifySendTasks(sendTasks1).ConfigureAwait(false);
+
+                    // Wait until the idle connection timeout expires.
+                    await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
+
+                    Assert.True(connection1.IsInvalid);
+                    Assert.False(connection0.IsInvalid);
+
+                    // Due to a race condition in how a new Http2 connection is returned to the pool, we may have started a third connection attempt in the background.
+                    // We were blocking such attempts from going through to the Socket layer until now to avoid having to deal with the extra connect when accepting connection2 below.
+                    // Allow the third connection through the ConnectCallback now.
+                    connectCallbackSemaphore.Release();
+
+                    Http2LoopbackConnection connection2 = await PrepareConnection(server, client, MaxConcurrentStreams).ConfigureAwait(false);
+                    AcquireAllStreamSlots(server, client, sendTasks2, MaxConcurrentStreams);
+                    await SendResponses(connection2, await AcceptRequests(connection2, MaxConcurrentStreams).ConfigureAwait(false));
+
+                    // Make sure connection0 is still alive.
+                    await SendResponses(connection0, streamIds0).ConfigureAwait(false);
+
+                    await VerifySendTasks(sendTasks0).ConfigureAwait(false);
+                    await VerifySendTasks(sendTasks2).ConfigureAwait(false);
+                }
+            }
 
         private async Task VerifySendTasks(IReadOnlyList<Task<HttpResponseMessage>> sendTasks)
         {
