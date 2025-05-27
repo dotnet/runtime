@@ -100,23 +100,21 @@ PUSH_COOP_PINVOKE_FRAME macro target
     push        esi
     push        edi
 
-    ; push ArgumentRegisters
-    push        ecx
-    push        edx
+    ; reserve space for ArgumentRegisters
+    sub         esp, 8
 
     mov         target, esp
 endm
 
 POP_COOP_PINVOKE_FRAME macro
-    ; pop ArgumentRegisters
-    pop     edx
-    pop     ecx
+    ; skip over ArgumentRegisters space
+    add         esp, 8
 
     ; pop CalleeSavedRegisters
-    pop edi
-    pop esi
-    pop ebx
-    pop ebp
+    pop         edi
+    pop         esi
+    pop         ebx
+    pop         ebp
 endm
 
 ;; GC type flags

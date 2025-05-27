@@ -41,6 +41,9 @@ LEAF_END RhpNewFinalizable, _TEXT
 LEAF_ENTRY RhpNewObject, _TEXT
         PUSH_COOP_PINVOKE_FRAME eax
 
+        // Preserve MethodTable in ESI.
+        mov         esi, ecx
+
         push        eax                                             // transition frame
         push        0                                               // numElements
         push        edx
@@ -52,18 +55,22 @@ LEAF_ENTRY RhpNewObject, _TEXT
 
         add         esp, 16
 
-        POP_COOP_PINVOKE_FRAME
-
         test        eax, eax
-        jz          NewOutOfMemory
+        jz          LOCAL_LABEL(NewOutOfMemory)
+
+        POP_COOP_PINVOKE_FRAME
 
         ret
 
-NewOutOfMemory:
+LOCAL_LABEL(NewOutOfMemory):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
-        xor         edx, edx            // Indicate that we should throw OOM.
+        mov         ecx, esi        // Restore MethodTable pointer
+        xor         edx, edx        // Indicate that we should throw OOM.
+
+        POP_COOP_PINVOKE_FRAME
+
         jmp         RhExceptionHandling_FailedAllocation
 LEAF_END RhpNewObject, _TEXT
 
@@ -131,7 +138,7 @@ LEAF_END RhpNewObject, _TEXT
 LEAF_ENTRY RhNewString, _TEXT
         // Make sure computing the aligned overall allocation size won't overflow
         cmp         edx, MAX_STRING_LENGTH
-        ja          StringSizeOverflow
+        ja          LOCAL_LABEL(RhNewString_StringSizeOverflow)
 
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
         lea         eax, [(edx * STRING_COMPONENT_SIZE) + (STRING_BASE_SIZE + 3)]
@@ -140,7 +147,7 @@ LEAF_ENTRY RhNewString, _TEXT
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
 
-StringSizeOverflow:
+LOCAL_LABEL(RhNewString_StringSizeOverflow):
         // We get here if the size of the final string object can't be represented as an unsigned
         // 32-bit value. We're going to tail-call to a managed helper that will throw
         // an OOM exception that the caller of this allocator understands.
@@ -163,36 +170,36 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
         // (32 dimensional MdArray) is less than 0xffff.
         movzx       eax, word ptr [ecx + OFFSETOF__MethodTable__m_usComponentSize]
         cmp         edx, 0x010000
-        ja          ArraySizeBig
+        ja          LOCAL_LABEL(RhpNewArrayFast_ArraySizeBig)
         mul         edx
         add         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
         add         eax, 3
-ArrayAlignSize:
+LOCAL_LABEL(RhpNewArrayFast_ArrayAlignSize):
         and         eax, -4
 
         NEW_ARRAY_FAST
 
-ArraySizeBig:
+LOCAL_LABEL(RhpNewArrayFast_ArraySizeBig):
         // Compute overall allocation size (align(base size + (element size * elements), 4)).
         // if the element count is negative, it's an overflow, otherwise it's out of memory
         cmp         edx, 0
-        jl          ArraySizeOverflow
+        jl          LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow)
         mul         edx
-        jc          ArrayOutOfMemoryNoFrame
+        jc          LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame)
         add         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        jc          ArrayOutOfMemoryNoFrame
+        jc          LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame)
         add         eax, 3
-        jc          ArrayOutOfMemoryNoFrame
-        jmp         ArrayAlignSize
+        jc          LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame)
+        jmp         LOCAL_LABEL(RhpNewArrayFast_ArrayAlignSize)
 
-ArrayOutOfMemoryNoFrame:
+LOCAL_LABEL(RhpNewArrayFast_ArrayOutOfMemoryNoFrame):
         ESP_EPILOG_FREE 8
 
         // ecx holds MethodTable pointer already
         xor         edx, edx        // Indicate that we should throw OOM.
         jmp         RhExceptionHandling_FailedAllocation
 
-ArraySizeOverflow:
+LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow):
         ESP_EPILOG_FREE 8
 
         // We get here if the size of the final array object can't be represented as an unsigned
@@ -234,6 +241,9 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
 LEAF_ENTRY RhpNewArray, _TEXT
         PUSH_COOP_PINVOKE_FRAME eax
 
+        // Preserve MethodTable in ESI.
+        mov         esi, ecx
+
         // Push alloc helper arguments (transition frame, size, flags, MethodTable).
         push        eax                                             // transition frame
         push        edx                                             // numElements
@@ -245,10 +255,10 @@ LEAF_ENTRY RhpNewArray, _TEXT
 
         add         esp, 16
 
-        POP_COOP_PINVOKE_FRAME
-
         test        eax, eax
         jz          LOCAL_LABEL(RhpNewArray_AllocFailed)
+
+        POP_COOP_PINVOKE_FRAME
 
         ret
 
@@ -256,6 +266,10 @@ LOCAL_LABEL(RhpNewArray_AllocFailed):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
+        mov         ecx, esi        // Restore MethodTable pointer
         xor         edx, edx        // Indicate that we should throw OOM.
+
+        POP_COOP_PINVOKE_FRAME
+
         jmp         RhExceptionHandling_FailedAllocation
 LEAF_END RhpNewArray, _TEXT
