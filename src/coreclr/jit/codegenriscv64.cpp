@@ -766,7 +766,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
     {
         regNumber rEndAddr;
         noway_assert(availMask != RBM_NONE);
-        regMask = genFindLowestBit(availMask);
+        regMask  = genFindLowestBit(availMask);
         rEndAddr = genRegNumFromMask(regMask);
         availMask &= ~regMask;
 
