@@ -4970,7 +4970,13 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
         LowerFieldListRegisterInfo regInfo  = getRegInfo(i);
         unsigned                   regStart = regInfo.Offset;
         var_types                  regType  = regInfo.RegType;
-        unsigned                   regEnd   = regStart + (varTypeUsesFloatReg(regType) ? genTypeSize(regType) : REGSIZE_BYTES);
+        unsigned                   regEnd   = regStart + genTypeSize(regType);
+
+        if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
+        {
+            // Allow tail end to pass undefined bits into the register
+            regEnd = regStart + REGSIZE_BYTES;
+        }
 
         // TODO-CQ: Could just create a 0 for this.
         if ((use == nullptr) || (use->GetOffset() >= regEnd))
@@ -5048,6 +5054,12 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
         unsigned                   regStart = regInfo.Offset;
         var_types                  regType  = regInfo.RegType;
         unsigned                   regEnd   = regStart + genTypeSize(regType);
+
+        if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
+        {
+            // Allow tail end to pass undefined bits into the register
+            regEnd = regStart + REGSIZE_BYTES;
+        }
 
         GenTreeFieldList::Use* regEntry = use;
 
