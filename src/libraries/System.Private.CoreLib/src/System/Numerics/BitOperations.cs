@@ -397,6 +397,29 @@ namespace System.Numerics
                 (IntPtr)(int)((value * 0x07C4ACDDu) >> 27));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Log10(uint value)
+        {
+            value |= 1;
+            var num1 = Log2(value) + 1;
+            var num2 = (num1 * 0x4D1) >> 0xC;
+            return value < Unsafe.Add(ref MemoryMarshal.GetReference(PowersOf10), num2) ? num2 - 1 : num2;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Log10(ulong value)
+        {
+            value |= 1;
+            var num1 = Log2(value) + 1;
+            var num2 = (num1 * 0x4D1) >> 0xC;
+            return value < Unsafe.Add(ref MemoryMarshal.GetReference(PowersOf10), num2) ? num2 - 1 : num2;
+        }
+
+        private static ReadOnlySpan<ulong> PowersOf10 => new ulong[]
+        {
+            0x1, 0xA, 0x64, 0x3E8, 0x2710, 0x186A0, 0xF4240, 0x989680, 0x5F5E100, 0x3B9ACA00, 0x2540BE400, 0x174876E800, 0xE8D4A51000, 0x9184E72A000, 0x5AF3107A4000, 0x38D7EA4C68000, 0x2386F26FC10000, 0x16345785D8A0000, 0xDE0B6B3A7640000, 0x8AC7230489E80000
+        };
+
         /// <summary>Returns the integer (ceiling) log of the specified value, base 2.</summary>
         /// <param name="value">The value.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
