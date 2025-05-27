@@ -12,13 +12,13 @@
 #define CROSSBITNESS_COMPILE
 #endif
 
-#if defined(TARGET_WINDOWS) && !defined(HOST_WINDOWS)
+#if defined(TARGET_WINDOWS) && !defined(HOST_WINDOWS) && !defined(CROSS_COMPILE)
 #define CROSS_COMPILE
-#endif // TARGET_WINDOWS && !HOST_WINDOWS
+#endif // TARGET_WINDOWS && !HOST_WINDOWS && !CROSS_COMPILE
 
-#if defined(TARGET_UNIX) && !defined(HOST_UNIX)
+#if defined(TARGET_UNIX) && !defined(HOST_UNIX) && !defined(CROSS_COMPILE)
 #define CROSS_COMPILE
-#endif // TARGET_UNIX && !HOST_UNIX
+#endif // TARGET_UNIX && !HOST_UNIX && !CROSS_COMPILE
 
 // Target platform-specific library naming
 //
