@@ -831,11 +831,10 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
                         JITDUMP(" value unknown at [%06u]\n", m_compiler->dspTreeID(tree));
 
                         // If we're tracking fields, the fields have unknown values and escape.
-                        // (check if value can have GC refs...?)
                         //
                         if (m_allocator->m_trackObjectFields)
                         {
-                            const unsigned fieldIndex = m_allocator->GetFieldIndexFromLocal(dstIndex);
+                            const unsigned fieldIndex = m_allocator->GetFieldIndexFromLocalIndex(dstIndex);
                             if (fieldIndex != BAD_VAR_NUM)
                             {
                                 m_allocator->AddConnGraphEdgeIndex(fieldIndex, m_allocator->m_unknownSourceIndex);
