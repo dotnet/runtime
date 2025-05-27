@@ -254,6 +254,14 @@ namespace ILCompiler.Dataflow
             }
         }
 
+        internal void MarkTypeForCastTarget(TypeDesc type)
+        {
+            if (!_enabled)
+                return;
+
+            _dependencies.Add(Factory.TypeCastTarget(type), "ReflectionMarker.MarkTypeForCastTarget");
+        }
+
         private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, AccessKind accessKind)
         {
             Debug.Assert(entity is MethodDesc or FieldDesc);

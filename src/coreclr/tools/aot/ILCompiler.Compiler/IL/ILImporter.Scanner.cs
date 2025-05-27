@@ -283,7 +283,6 @@ namespace Internal.IL
             }
             else
             {
-                _dependencies.Add(_factory.TypeCastTarget(type), "IsInst/CastClass target type");
                 _dependencies.Add(_compilation.ComputeConstantLookup(ReadyToRunHelperId.TypeHandleForCasting, type), "IsInst/CastClass");
             }
         }

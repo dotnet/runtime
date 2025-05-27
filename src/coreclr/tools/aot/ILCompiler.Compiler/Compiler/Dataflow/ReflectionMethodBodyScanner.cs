@@ -492,5 +492,10 @@ namespace ILCompiler.Dataflow
 
             return aotUnsafeDelegate || comDangerousMethod;
         }
+
+        protected override void ScanCast(TypeDesc targetType)
+        {
+            _reflectionMarker.MarkTypeForCastTarget(targetType);
+        }
     }
 }

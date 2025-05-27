@@ -594,7 +594,6 @@ namespace ILCompiler.Dataflow
                     case ILOpcode.ldobj:
                     case ILOpcode.mkrefany:
                     case ILOpcode.unbox:
-                    case ILOpcode.unbox_any:
                     case ILOpcode.box:
                     case ILOpcode.neg:
                     case ILOpcode.not:
@@ -603,12 +602,24 @@ namespace ILCompiler.Dataflow
                         reader.Skip(opcode);
                         break;
 
+                    case ILOpcode.unbox_any:
+                        {
+                            PopUnknown(currentStack, 1, methodBody, offset);
+                            PushUnknown(currentStack);
+
+                            var type = (TypeDesc)methodBody.GetObject(reader.ReadILToken());
+                            if (!type.IsValueType)
+                            {
+                                goto case ILOpcode.castclass;
+                            }
+                        }
+                        break;
                     case ILOpcode.isinst:
                     case ILOpcode.castclass:
-                        // We can consider a NOP because the value doesn't change.
-                        // It might change to NULL, but for the purposes of dataflow analysis
-                        // it doesn't hurt much.
-                        reader.Skip(opcode);
+                        {
+                            var type = (TypeDesc)methodBody.GetObject(reader.ReadILToken());
+                            ScanCast(type);
+                        }
                         break;
 
                     case ILOpcode.ldfld:
@@ -1416,6 +1427,10 @@ namespace ILCompiler.Dataflow
                 currentStack.Push(new StackSlot(arrayIndexValue.Value));
             else
                 PushUnknown(currentStack);
+        }
+
+        protected virtual void ScanCast(TypeDesc targetType)
+        {
         }
     }
 }
