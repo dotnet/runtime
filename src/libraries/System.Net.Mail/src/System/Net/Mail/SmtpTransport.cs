@@ -19,7 +19,6 @@ namespace System.Net.Mail
         private SmtpConnection? _connection;
         private readonly SmtpClient _client;
         private ICredentialsByHost? _credentials;
-        private bool _shouldAbort;
 
         private bool _enableSsl;
         private X509CertificateCollection? _clientCertificates;
@@ -91,11 +90,6 @@ namespace System.Net.Mail
             lock (this)
             {
                 _connection = new SmtpConnection(this, _client, _credentials, _authenticationModules);
-                if (_shouldAbort)
-                {
-                    _connection.Abort();
-                }
-                _shouldAbort = false;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, _connection);
@@ -152,14 +146,7 @@ namespace System.Net.Mail
         {
             lock (this)
             {
-                if (_connection != null)
-                {
-                    _connection.Abort();
-                }
-                else
-                {
-                    _shouldAbort = true;
-                }
+                _connection?.Abort();
             }
         }
     }

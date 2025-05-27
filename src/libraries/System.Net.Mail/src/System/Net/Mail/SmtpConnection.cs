@@ -238,21 +238,9 @@ namespace System.Net.Mail
             _isConnected = true;
         }
 
-        internal async Task FlushAsync(CancellationToken cancellationToken = default)
-        {
-            await _stream!.WriteAsync(_bufferBuilder.GetBuffer().AsMemory(0, _bufferBuilder.Length), cancellationToken).ConfigureAwait(false);
-            _bufferBuilder.Reset();
-        }
-
         internal async Task FlushAsync<TIOAdapter>(CancellationToken cancellationToken = default) where TIOAdapter : IReadWriteAdapter
         {
             await TIOAdapter.WriteAsync(_stream!, _bufferBuilder.GetBuffer().AsMemory(0, _bufferBuilder.Length), cancellationToken).ConfigureAwait(false);
-            _bufferBuilder.Reset();
-        }
-
-        internal void Flush()
-        {
-            _stream!.Write(_bufferBuilder.GetBuffer(), 0, _bufferBuilder.Length);
             _bufferBuilder.Reset();
         }
 
