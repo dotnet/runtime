@@ -844,7 +844,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        assert(intrinsicId == NI_SSE2_MaskMove);
+                        assert(intrinsicId == NI_X86Base_MaskMove);
                         assert(targetReg == REG_NA);
 
                         // SSE2 MaskMove hardcodes the destination (op3) in DI/EDI/RDI
@@ -968,19 +968,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_X86Base_X64:
         {
             genX86BaseIntrinsic(node, instOptions);
-            break;
-        }
-
-        case InstructionSet_SSE:
-        case InstructionSet_SSE_X64:
-        {
-            genSSEIntrinsic(node, instOptions);
-            break;
-        }
-        case InstructionSet_SSE2:
-        case InstructionSet_SSE2_X64:
-        {
-            genSSE2Intrinsic(node, instOptions);
             break;
         }
 
@@ -1821,7 +1808,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     regNumber      targetReg   = node->GetRegNum();
     var_types      baseType    = node->GetSimdBaseType();
 
-    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_SSE));
+    assert(compiler->compIsaSupportedDebugOnly(InstructionSet_X86Base));
     assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
     GenTree* op1 = (node->GetOperandCount() >= 1) ? node->Op(1) : nullptr;
@@ -2374,6 +2361,10 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+    regNumber      targetReg   = node->GetRegNum();
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->GetSimdBaseType();
+    emitter*       emit        = GetEmitter();
 
     genConsumeMultiOpOperands(node);
 
@@ -2384,10 +2375,8 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_X64_BitScanForward:
         case NI_X86Base_X64_BitScanReverse:
         {
-            GenTree*    op1        = node->Op(1);
-            regNumber   targetReg  = node->GetRegNum();
-            var_types   targetType = node->TypeGet();
-            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
+            GenTree*    op1 = node->Op(1);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
 
             genHWIntrinsic_R_RM(node, ins, emitTypeSize(targetType), targetReg, op1, instOptions);
             break;
@@ -2396,7 +2385,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_X86Base_Pause:
         {
             assert(node->GetSimdBaseType() == TYP_UNKNOWN);
-            GetEmitter()->emitIns(INS_pause);
+            emit->emitIns(INS_pause);
             break;
         }
 
@@ -2407,18 +2396,19 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             assert(instOptions == INS_OPTS_NONE);
 
             // SIMD base type is from signature and can distinguish signed and unsigned
-            var_types   targetType = node->GetSimdBaseType();
-            GenTree*    op1        = node->Op(1);
-            GenTree*    op2        = node->Op(2);
-            GenTree*    op3        = node->Op(3);
-            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
+            targetType = node->GetSimdBaseType();
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+            GenTree* op3 = node->Op(3);
+
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
 
             regNumber op1Reg = op1->GetRegNum();
             regNumber op2Reg = op2->GetRegNum();
             regNumber op3Reg = op3->GetRegNum();
 
             emitAttr attr = emitTypeSize(targetType);
-            emitter* emit = GetEmitter();
 
             // op1: EAX, op2: EDX, op3: free
             assert(op1Reg != REG_EDX);
@@ -2438,54 +2428,19 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        default:
-            unreached();
-            break;
-    }
-
-    genProduceReg(node);
-}
-
-//------------------------------------------------------------------------
-// genSSEIntrinsic: Generates the code for an SSE hardware intrinsic node
-//
-// Arguments:
-//    node        - The hardware intrinsic node
-//    instOptions - The options used to when generating the instruction.
-//
-void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
-{
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    regNumber      targetReg   = node->GetRegNum();
-    var_types      targetType  = node->TypeGet();
-    var_types      baseType    = node->GetSimdBaseType();
-    emitter*       emit        = GetEmitter();
-
-    genConsumeMultiOpOperands(node);
-
-    switch (intrinsicId)
-    {
-        case NI_SSE_X64_ConvertToInt64:
-        case NI_SSE_X64_ConvertToInt64WithTruncation:
+        case NI_X86Base_X64_ConvertScalarToVector128Double:
+        case NI_X86Base_X64_ConvertScalarToVector128Single:
         {
-            assert(targetType == TYP_LONG);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-            genHWIntrinsic_R_RM(node, ins, EA_8BYTE, targetReg, node->Op(1), instOptions);
-            break;
-        }
-
-        case NI_SSE_X64_ConvertScalarToVector128Single:
-        {
-            assert(baseType == TYP_LONG);
+            assert(baseType == TYP_LONG || baseType == TYP_ULONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
             break;
         }
 
-        case NI_SSE_Prefetch0:
-        case NI_SSE_Prefetch1:
-        case NI_SSE_Prefetch2:
-        case NI_SSE_PrefetchNonTemporal:
+        case NI_X86Base_Prefetch0:
+        case NI_X86Base_Prefetch1:
+        case NI_X86Base_Prefetch2:
+        case NI_X86Base_PrefetchNonTemporal:
         {
             assert(baseType == TYP_UBYTE);
             assert(instOptions == INS_OPTS_NONE);
@@ -2497,63 +2452,21 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_SSE_StoreFence:
+        case NI_X86Base_StoreFence:
         {
             assert(baseType == TYP_UNKNOWN);
             emit->emitIns(INS_sfence);
             break;
         }
 
-        default:
-            unreached();
-            break;
-    }
-
-    genProduceReg(node);
-}
-
-//------------------------------------------------------------------------
-// genSSE2Intrinsic: Generates the code for an SSE2 hardware intrinsic node
-//
-// Arguments:
-//    node        - The hardware intrinsic node
-//    instOptions - The options used to when generating the instruction.
-//
-void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
-{
-    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-    regNumber      targetReg   = node->GetRegNum();
-    var_types      targetType  = node->TypeGet();
-    var_types      baseType    = node->GetSimdBaseType();
-    emitter*       emit        = GetEmitter();
-
-    genConsumeMultiOpOperands(node);
-
-    switch (intrinsicId)
-    {
-        case NI_SSE2_X64_ConvertScalarToVector128Double:
-        {
-            assert(baseType == TYP_LONG);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
-            break;
-        }
-
-        case NI_SSE2_X64_ConvertScalarToVector128Int64:
-        case NI_SSE2_X64_ConvertScalarToVector128UInt64:
-        {
-            assert(baseType == TYP_LONG || baseType == TYP_ULONG);
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
-            genHWIntrinsic_R_RM(node, ins, emitTypeSize(baseType), targetReg, node->Op(1), instOptions);
-            break;
-        }
-
-        case NI_SSE2_ConvertToInt32:
-        case NI_SSE2_ConvertToInt32WithTruncation:
-        case NI_SSE2_ConvertToUInt32:
-        case NI_SSE2_X64_ConvertToInt64:
-        case NI_SSE2_X64_ConvertToInt64WithTruncation:
-        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_X86Base_X64_ConvertScalarToVector128Int64:
+        case NI_X86Base_X64_ConvertScalarToVector128UInt64:
+        case NI_X86Base_ConvertToInt32:
+        case NI_X86Base_ConvertToInt32WithTruncation:
+        case NI_X86Base_ConvertToUInt32:
+        case NI_X86Base_X64_ConvertToInt64:
+        case NI_X86Base_X64_ConvertToInt64WithTruncation:
+        case NI_X86Base_X64_ConvertToUInt64:
         {
             emitAttr attr;
             if (varTypeIsIntegral(baseType))
@@ -2572,22 +2485,22 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_SSE2_LoadFence:
+        case NI_X86Base_LoadFence:
         {
             assert(baseType == TYP_UNKNOWN);
             emit->emitIns(INS_lfence);
             break;
         }
 
-        case NI_SSE2_MemoryFence:
+        case NI_X86Base_MemoryFence:
         {
             assert(baseType == TYP_UNKNOWN);
             emit->emitIns(INS_mfence);
             break;
         }
 
-        case NI_SSE2_StoreNonTemporal:
-        case NI_SSE2_X64_StoreNonTemporal:
+        case NI_X86Base_StoreNonTemporal:
+        case NI_X86Base_X64_StoreNonTemporal:
         {
             assert(baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG);
             instruction     ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);

@@ -2378,7 +2378,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE2_MaskMove:
+            case NI_X86Base_MaskMove:
             {
                 assert(numArgs == 3);
                 assert(!isRMW);

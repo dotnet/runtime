@@ -12,8 +12,6 @@ namespace Internal.ReadyToRunConstants
 {
     public enum ReadyToRunInstructionSet
     {
-        Sse=1,
-        Sse2=2,
         Sse3=3,
         Ssse3=4,
         Sse41=5,

@@ -696,8 +696,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePCLMULQDQ,              W("EnablePCLMULQ
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableVPCLMULQDQ,             W("EnableVPCLMULQDQ"),          1, "Allows VPCLMULQDQ+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableMOVBE,                  W("EnableMOVBE"),               1, "Allows MOVBE+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePOPCNT,                 W("EnablePOPCNT"),              1, "Allows POPCNT+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE,                    W("EnableSSE"),                 1, "Allows SSE+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE2,                   W("EnableSSE2"),                1, "Allows SSE2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3,                   W("EnableSSE3"),                1, "Allows SSE3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3_4,                 W("EnableSSE3_4"),              1, "Allows SSE3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE41,                  W("EnableSSE41"),               1, "Allows SSE4.1+ hardware intrinsics to be disabled")
@@ -740,6 +738,10 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,             W("EnableAVX512F
 
 // These have been superceded by EnableAVX512VBMI as you get all of them or none of them
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI_VL,          W("EnableAVX512VBMI_VL"),       1, "Allows AVX512VBMI_VL+ hardware intrinsics to be disabled")
+
+// These have been superceded by EnableHWIntrinsic as they are part of the baseline
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE,                    W("EnableSSE"),                 1, "Allows SSE+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE2,                   W("EnableSSE2"),                1, "Allows SSE2+ hardware intrinsics to be disabled")
 #endif
 
 ///

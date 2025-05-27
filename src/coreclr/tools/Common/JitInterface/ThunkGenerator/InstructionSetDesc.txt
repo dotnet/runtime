@@ -28,8 +28,8 @@
 definearch         ,X86   ,32Bit                ,X64, X64
 
 instructionset     ,X86   ,X86Base              ,           ,22 ,X86Base               ,base
-instructionset     ,X86   ,Sse                  ,           ,1  ,SSE                   ,sse
-instructionset     ,X86   ,Sse2                 ,           ,2  ,SSE2                  ,sse2
+instructionset     ,X86   ,Sse                  ,X86Base    ,22 ,X86Base               ,sse
+instructionset     ,X86   ,Sse2                 ,X86Base    ,22 ,X86Base               ,sse2
 instructionset     ,X86   ,Sse3                 ,           ,3  ,SSE3                  ,sse3
 instructionset     ,X86   ,Ssse3                ,           ,4  ,SSSE3                 ,ssse3
 instructionset     ,X86   ,Sse41                ,           ,5  ,SSE41                 ,sse4.1
@@ -76,8 +76,6 @@ instructionset     ,X86   ,Gfni_V256            ,           ,54 ,GFNI_V256      
 instructionset     ,X86   ,Gfni_V512            ,           ,55 ,GFNI_V512             ,gfni_v512
 
 instructionset64bit,X86   ,X86Base
-instructionset64bit,X86   ,SSE
-instructionset64bit,X86   ,SSE2
 instructionset64bit,X86   ,SSE3
 instructionset64bit,X86   ,SSSE3
 instructionset64bit,X86   ,SSE41
@@ -103,14 +101,9 @@ vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
 vectorinstructionset,X86  ,Vector512
 
-; x86-64-v1
-
-implication        ,X86   ,SSE                  ,X86Base
-implication        ,X86   ,SSE2                 ,SSE
-
 ; x86-64-v2
 
-implication        ,X86   ,SSE3                 ,SSE2
+implication        ,X86   ,SSE3                 ,X86Base
 implication        ,X86   ,SSSE3                ,SSE3
 implication        ,X86   ,SSE41                ,SSSE3
 implication        ,X86   ,SSE42                ,SSE41
@@ -134,8 +127,8 @@ implication        ,X86   ,AVX512VBMI           ,AVX512
 
 ; Unversioned
 
-implication        ,X86   ,AES                  ,SSE2
-implication        ,X86   ,PCLMULQDQ            ,SSE2
+implication        ,X86   ,AES                  ,X86Base
+implication        ,X86   ,PCLMULQDQ            ,X86Base
 implication        ,X86   ,PCLMULQDQ_V256       ,PCLMULQDQ
 implication        ,X86   ,PCLMULQDQ_V256       ,AVX
 implication        ,X86   ,PCLMULQDQ_V512       ,PCLMULQDQ_V256
@@ -156,11 +149,11 @@ implication        ,X86   ,AVX10v2              ,AVX10v1
 ; as they depend on the other implications being correct first
 ; otherwise they may not be disabled if the required isa is disabled
 
-implication        ,X86   ,Vector128            ,SSE
+implication        ,X86   ,Vector128            ,X86Base
 implication        ,X86   ,Vector256            ,AVX
 implication        ,X86   ,Vector512            ,AVX512
 
-implication        ,X86   ,VectorT128           ,SSE2
+implication        ,X86   ,VectorT128           ,X86Base
 implication        ,X86   ,VectorT256           ,AVX2
 implication        ,X86   ,VectorT512           ,AVX512
 
@@ -228,8 +221,8 @@ implication        ,RiscV64 ,Zbb                 ,RiscV64Base
 implication        ,RiscV64 ,Zba                 ,RiscV64Base
 
 ;                    ,name and aliases           ,archs    ,lower baselines included by implication
-instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
-instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt
+instructionsetgroup  ,x86-x64                    ,X64 X86  ,base
+instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,x86-x64 sse4.2 popcnt
 instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma
 instructionsetgroup  ,skylake                    ,X64 X86  ,x86-x64-v3
 instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,x86-x64-v3 avx512

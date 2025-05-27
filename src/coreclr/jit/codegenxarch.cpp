@@ -5692,10 +5692,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_Vector128_ToScalar:
                         case NI_Vector256_ToScalar:
                         case NI_Vector512_ToScalar:
-                        case NI_SSE2_ConvertToInt32:
-                        case NI_SSE2_ConvertToUInt32:
-                        case NI_SSE2_X64_ConvertToInt64:
-                        case NI_SSE2_X64_ConvertToUInt64:
+                        case NI_X86Base_ConvertToInt32:
+                        case NI_X86Base_ConvertToUInt32:
+                        case NI_X86Base_X64_ConvertToInt64:
+                        case NI_X86Base_X64_ConvertToUInt64:
                         case NI_AVX2_ConvertToInt32:
                         case NI_AVX2_ConvertToUInt32:
                         {
@@ -5718,7 +5718,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             FALLTHROUGH;
                         }
 
-                        case NI_SSE2_Extract:
+                        case NI_X86Base_Extract:
                         case NI_SSE41_Extract:
                         case NI_SSE41_X64_Extract:
                         case NI_AVX_ExtractVector128:
@@ -5730,7 +5730,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
 
-                            if (intrinsicId == NI_SSE2_Extract)
+                            if (intrinsicId == NI_X86Base_Extract)
                             {
                                 // The encoding that supports containment is SSE4.1 only
                                 ins = INS_pextrw_sse41;

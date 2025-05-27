@@ -903,8 +903,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
 // clang-format off
 #if defined(TARGET_XARCH)
     { FIRST_NI_X86Base, LAST_NI_X86Base },
-    { FIRST_NI_SSE, LAST_NI_SSE },
-    { FIRST_NI_SSE2, LAST_NI_SSE2 },
     { FIRST_NI_SSE3, LAST_NI_SSE3 },
     { FIRST_NI_SSSE3, LAST_NI_SSSE3 },
     { FIRST_NI_SSE41, LAST_NI_SSE41 },
@@ -938,8 +936,6 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },
-    { FIRST_NI_SSE_X64, LAST_NI_SSE_X64 },
-    { FIRST_NI_SSE2_X64, LAST_NI_SSE2_X64 },
     { NI_Illegal, NI_Illegal },                                 // SSE3_X64
     { NI_Illegal, NI_Illegal },                                 // SSSE3_X64
     { FIRST_NI_SSE41_X64, LAST_NI_SSE41_X64 },
@@ -1226,7 +1222,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isa == InstructionSet_Vector128)
         {
-            isa              = InstructionSet_SSE2;
+            isa              = InstructionSet_X86Base;
             vectorByteLength = 16;
         }
         else if (isa == InstructionSet_Vector256)

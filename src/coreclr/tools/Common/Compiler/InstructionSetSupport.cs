@@ -391,7 +391,7 @@ namespace ILCompiler
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                 {
-                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+                    Debug.Assert(InstructionSet.X86_X86Base == InstructionSet.X64_X86Base);
                     Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
                     Debug.Assert(InstructionSet.X86_AVX512 == InstructionSet.X64_AVX512);
 
@@ -402,7 +402,7 @@ namespace ILCompiler
                     // We only want one size supported for Vector<T> and we want the other sizes explicitly
                     // unsupported to ensure we throw away the given methods if runtime picks a larger size
 
-                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.X86_SSE2));
+                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.X86_X86Base));
                     Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 

@@ -239,30 +239,18 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_Vector256_op_Inequality:
                 case NI_Vector512_op_Equality:
                 case NI_Vector512_op_Inequality:
-                case NI_SSE_CompareScalarOrderedEqual:
-                case NI_SSE_CompareScalarOrderedNotEqual:
-                case NI_SSE_CompareScalarOrderedLessThan:
-                case NI_SSE_CompareScalarOrderedLessThanOrEqual:
-                case NI_SSE_CompareScalarOrderedGreaterThan:
-                case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedEqual:
-                case NI_SSE_CompareScalarUnorderedNotEqual:
-                case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedLessThan:
-                case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedGreaterThan:
-                case NI_SSE2_CompareScalarOrderedEqual:
-                case NI_SSE2_CompareScalarOrderedNotEqual:
-                case NI_SSE2_CompareScalarOrderedLessThan:
-                case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
-                case NI_SSE2_CompareScalarOrderedGreaterThan:
-                case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedEqual:
-                case NI_SSE2_CompareScalarUnorderedNotEqual:
-                case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedLessThan:
-                case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedGreaterThan:
+                case NI_X86Base_CompareScalarOrderedEqual:
+                case NI_X86Base_CompareScalarOrderedNotEqual:
+                case NI_X86Base_CompareScalarOrderedLessThan:
+                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarOrderedGreaterThan:
+                case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedEqual:
+                case NI_X86Base_CompareScalarUnorderedNotEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThan:
+                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedGreaterThan:
                 case NI_SSE41_TestC:
                 case NI_SSE41_TestZ:
                 case NI_SSE41_TestNotZAndNotC:
@@ -271,7 +259,7 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
-                case NI_SSE2_Extract:
+                case NI_X86Base_Extract:
                 case NI_SSE41_Extract:
                 case NI_SSE41_X64_Extract:
                 case NI_Vector128_ToScalar:

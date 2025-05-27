@@ -202,11 +202,6 @@ namespace ILCompiler
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
 
                     // Baseline ISAs - they're always available
-                    InstructionSet.X64_SSE => 0,
-                    InstructionSet.X64_SSE_X64 => 0,
-                    InstructionSet.X64_SSE2 => 0,
-                    InstructionSet.X64_SSE2_X64 => 0,
-
                     InstructionSet.X64_X86Base => 0,
                     InstructionSet.X64_X86Base_X64 => 0,
 

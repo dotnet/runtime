@@ -13223,7 +13223,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (intrinsicId)
         {
 #ifdef TARGET_XARCH
-            case NI_SSE2_MaskMove:
+            case NI_X86Base_MaskMove:
             case NI_AVX_MaskStore:
             case NI_AVX2_MaskStore:
             case NI_AVX_MaskLoad:

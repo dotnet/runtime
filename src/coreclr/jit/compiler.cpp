@@ -2015,7 +2015,7 @@ void Compiler::compSetProcessor()
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_X86Base))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
@@ -6088,19 +6088,13 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             }
         }
 
-        if (JitConfig.EnableHWIntrinsic() != 0)
+        if ((JitConfig.EnableHWIntrinsic() != 0) && (JitConfig.EnableSSE() != 0) && (JitConfig.EnableSSE2() != 0))
         {
+            // These ISAs are grouped together and if any are disabled then
+            // you lose access to all of them. We recommend modern code just
+            // use EnableHWIntrinsic, but we continue checking the older knobs
+            // for back-compat
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
-        }
-
-        if (JitConfig.EnableSSE() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE);
-        }
-
-        if (JitConfig.EnableSSE2() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE2);
         }
 
         if ((JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0))
@@ -6186,27 +6180,21 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
         }
 
-        if ((JitConfig.EnableAVX512() != 0) &&
-            (JitConfig.EnableAVX512F() != 0) &&
-            (JitConfig.EnableAVX512F_VL() != 0) &&
-            (JitConfig.EnableAVX512BW() != 0) &&
-            (JitConfig.EnableAVX512BW_VL() != 0) &&
-            (JitConfig.EnableAVX512CD() != 0) &&
-            (JitConfig.EnableAVX512CD_VL() != 0) &&
-            (JitConfig.EnableAVX512DQ() != 0) &&
+        if ((JitConfig.EnableAVX512() != 0) && (JitConfig.EnableAVX512F() != 0) &&
+            (JitConfig.EnableAVX512F_VL() != 0) && (JitConfig.EnableAVX512BW() != 0) &&
+            (JitConfig.EnableAVX512BW_VL() != 0) && (JitConfig.EnableAVX512CD() != 0) &&
+            (JitConfig.EnableAVX512CD_VL() != 0) && (JitConfig.EnableAVX512DQ() != 0) &&
             (JitConfig.EnableAVX512DQ_VL() != 0))
         {
-            // These ISAs are grouped together and if any are disabled then
-            // you lose access to all of them. We recommend modern code just
-            // use EnableAVX512, but we continue checking the older knobs for
-            // back-compat
+            // These ISAs are likewise grouped together and should be checked
+            // via EnableAVX512
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
         }
 
-        if ((JitConfig.EnableAVX512VBMI() != 0) &&
-            (JitConfig.EnableAVX512VBMI_VL() != 0))
+        if ((JitConfig.EnableAVX512VBMI() != 0) && (JitConfig.EnableAVX512VBMI_VL() != 0))
         {
-            // These ISAs are likewise grouped together
+            // These ISAs are likewise grouped together and should be checked
+            // via EnableAVX512VBMI
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
         }
 

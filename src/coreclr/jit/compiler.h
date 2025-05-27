@@ -8918,7 +8918,7 @@ private:
     {
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+        CORINFO_InstructionSet minimumIsa = InstructionSet_X86Base;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
 #elif defined(TARGET_LOONGARCH64)
@@ -8940,7 +8940,7 @@ private:
     {
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+        CORINFO_InstructionSet minimumIsa = InstructionSet_X86Base;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
 #else
@@ -9234,7 +9234,7 @@ public:
         {
             return YMM_REGSIZE_BYTES;
         }
-        else if (compOpportunisticallyDependsOn(InstructionSet_SSE))
+        else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
         {
             return XMM_REGSIZE_BYTES;
         }

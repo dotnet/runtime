@@ -20,10 +20,6 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
     {
         case InstructionSet_X86Base:
             return InstructionSet_X86Base_X64;
-        case InstructionSet_SSE:
-            return InstructionSet_SSE_X64;
-        case InstructionSet_SSE2:
-            return InstructionSet_SSE2_X64;
         case InstructionSet_SSE3:
             return InstructionSet_SSE3_X64;
         case InstructionSet_SSSE3:
@@ -269,13 +265,9 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     {
         if (strncmp(className, "Sse", 3) == 0)
         {
-            if (className[3] == '\0')
+            if ((className[3] == '\0') || (strcmp(className + 3, "2") == 0))
             {
-                return InstructionSet_SSE;
-            }
-            else if (strcmp(className + 3, "2") == 0)
-            {
-                return InstructionSet_SSE2;
+                return InstructionSet_X86Base;
             }
             else if (strcmp(className + 3, "3") == 0)
             {
@@ -597,7 +589,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarEqual : NI_SSE2_CompareScalarEqual;
+                return NI_X86Base_CompareScalarEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -606,7 +598,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareEqual : NI_SSE2_CompareEqual;
+            return NI_X86Base_CompareEqual;
         }
 
         case FloatComparisonMode::OrderedGreaterThanSignaling:
@@ -617,7 +609,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarGreaterThan : NI_SSE2_CompareScalarGreaterThan;
+                return NI_X86Base_CompareScalarGreaterThan;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -626,7 +618,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareGreaterThan;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareGreaterThan : NI_SSE2_CompareGreaterThan;
+            return NI_X86Base_CompareGreaterThan;
         }
 
         case FloatComparisonMode::OrderedGreaterThanOrEqualSignaling:
@@ -637,8 +629,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarGreaterThanOrEqual
-                                                   : NI_SSE2_CompareScalarGreaterThanOrEqual;
+                return NI_X86Base_CompareScalarGreaterThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -647,7 +638,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareGreaterThanOrEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareGreaterThanOrEqual : NI_SSE2_CompareGreaterThanOrEqual;
+            return NI_X86Base_CompareGreaterThanOrEqual;
         }
 
         case FloatComparisonMode::OrderedLessThanSignaling:
@@ -658,7 +649,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarLessThan : NI_SSE2_CompareScalarLessThan;
+                return NI_X86Base_CompareScalarLessThan;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -667,7 +658,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareLessThan;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareLessThan : NI_SSE2_CompareLessThan;
+            return NI_X86Base_CompareLessThan;
         }
 
         case FloatComparisonMode::OrderedLessThanOrEqualSignaling:
@@ -678,8 +669,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarLessThanOrEqual
-                                                   : NI_SSE2_CompareScalarLessThanOrEqual;
+                return NI_X86Base_CompareScalarLessThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -688,7 +678,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareLessThanOrEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareLessThanOrEqual : NI_SSE2_CompareLessThanOrEqual;
+            return NI_X86Base_CompareLessThanOrEqual;
         }
 
         case FloatComparisonMode::UnorderedNotEqualNonSignaling:
@@ -699,7 +689,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotEqual : NI_SSE2_CompareScalarNotEqual;
+                return NI_X86Base_CompareScalarNotEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -708,7 +698,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareNotEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotEqual : NI_SSE2_CompareNotEqual;
+            return NI_X86Base_CompareNotEqual;
         }
 
         case FloatComparisonMode::UnorderedNotGreaterThanSignaling:
@@ -719,8 +709,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThan
-                                                   : NI_SSE2_CompareScalarNotGreaterThan;
+                return NI_X86Base_CompareScalarNotGreaterThan;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -729,7 +718,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareNotGreaterThan;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotGreaterThan : NI_SSE2_CompareNotGreaterThan;
+            return NI_X86Base_CompareNotGreaterThan;
         }
 
         case FloatComparisonMode::UnorderedNotGreaterThanOrEqualSignaling:
@@ -740,8 +729,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotGreaterThanOrEqual
-                                                   : NI_SSE2_CompareScalarNotGreaterThanOrEqual;
+                return NI_X86Base_CompareScalarNotGreaterThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -750,8 +738,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareNotGreaterThanOrEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotGreaterThanOrEqual
-                                               : NI_SSE2_CompareNotGreaterThanOrEqual;
+            return NI_X86Base_CompareNotGreaterThanOrEqual;
         }
 
         case FloatComparisonMode::UnorderedNotLessThanSignaling:
@@ -762,7 +749,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotLessThan : NI_SSE2_CompareScalarNotLessThan;
+                return NI_X86Base_CompareScalarNotLessThan;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -771,7 +758,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareNotLessThan;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotLessThan : NI_SSE2_CompareNotLessThan;
+            return NI_X86Base_CompareNotLessThan;
         }
 
         case FloatComparisonMode::UnorderedNotLessThanOrEqualSignaling:
@@ -782,8 +769,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarNotLessThanOrEqual
-                                                   : NI_SSE2_CompareScalarNotLessThanOrEqual;
+                return NI_X86Base_CompareScalarNotLessThanOrEqual;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -792,7 +778,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareNotLessThanOrEqual;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareNotLessThanOrEqual : NI_SSE2_CompareNotLessThanOrEqual;
+            return NI_X86Base_CompareNotLessThanOrEqual;
         }
 
         case FloatComparisonMode::OrderedNonSignaling:
@@ -803,7 +789,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarOrdered : NI_SSE2_CompareScalarOrdered;
+                return NI_X86Base_CompareScalarOrdered;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -812,7 +798,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareOrdered;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareOrdered : NI_SSE2_CompareOrdered;
+            return NI_X86Base_CompareOrdered;
         }
 
         case FloatComparisonMode::UnorderedNonSignaling:
@@ -823,7 +809,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             }
             else if (intrinsic == NI_AVX_CompareScalar)
             {
-                return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareScalarUnordered : NI_SSE2_CompareScalarUnordered;
+                return NI_X86Base_CompareScalarUnordered;
             }
 
             assert(intrinsic == NI_AVX_Compare);
@@ -832,7 +818,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupIdForFloatComparisonMode(NamedIntrinsic   
             {
                 return NI_AVX_CompareUnordered;
             }
-            return (simdBaseType == TYP_FLOAT) ? NI_SSE_CompareUnordered : NI_SSE2_CompareUnordered;
+            return NI_X86Base_CompareUnordered;
         }
 
         default:
@@ -881,10 +867,6 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_PCLMULQDQ_V512:
         case InstructionSet_POPCNT:
         case InstructionSet_POPCNT_X64:
-        case InstructionSet_SSE:
-        case InstructionSet_SSE_X64:
-        case InstructionSet_SSE2:
-        case InstructionSet_SSE2_X64:
         case InstructionSet_SSE3:
         case InstructionSet_SSE3_X64:
         case InstructionSet_SSSE3:
@@ -967,10 +949,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
 {
     switch (id)
     {
-        case NI_SSE_CompareEqual:
-        case NI_SSE_CompareScalarEqual:
-        case NI_SSE2_CompareEqual:
-        case NI_SSE2_CompareScalarEqual:
+        case NI_X86Base_CompareEqual:
+        case NI_X86Base_CompareScalarEqual:
         case NI_AVX_CompareEqual:
         case NI_AVX512_CompareEqualMask:
         {
@@ -985,10 +965,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareGreaterThan:
-        case NI_SSE_CompareScalarGreaterThan:
-        case NI_SSE2_CompareGreaterThan:
-        case NI_SSE2_CompareScalarGreaterThan:
+        case NI_X86Base_CompareGreaterThan:
+        case NI_X86Base_CompareScalarGreaterThan:
         case NI_AVX_CompareGreaterThan:
         case NI_AVX512_CompareGreaterThanMask:
         {
@@ -1008,10 +986,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareLessThan:
-        case NI_SSE_CompareScalarLessThan:
-        case NI_SSE2_CompareLessThan:
-        case NI_SSE2_CompareScalarLessThan:
+        case NI_X86Base_CompareLessThan:
+        case NI_X86Base_CompareScalarLessThan:
         case NI_AVX_CompareLessThan:
         case NI_AVX512_CompareLessThanMask:
         {
@@ -1027,10 +1003,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareGreaterThanOrEqual:
-        case NI_SSE_CompareScalarGreaterThanOrEqual:
-        case NI_SSE2_CompareGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarGreaterThanOrEqual:
+        case NI_X86Base_CompareGreaterThanOrEqual:
+        case NI_X86Base_CompareScalarGreaterThanOrEqual:
         case NI_AVX_CompareGreaterThanOrEqual:
         case NI_AVX512_CompareGreaterThanOrEqualMask:
         {
@@ -1050,10 +1024,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareLessThanOrEqual:
-        case NI_SSE_CompareScalarLessThanOrEqual:
-        case NI_SSE2_CompareLessThanOrEqual:
-        case NI_SSE2_CompareScalarLessThanOrEqual:
+        case NI_X86Base_CompareLessThanOrEqual:
+        case NI_X86Base_CompareScalarLessThanOrEqual:
         case NI_AVX_CompareLessThanOrEqual:
         case NI_AVX512_CompareLessThanOrEqualMask:
         {
@@ -1069,10 +1041,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareNotEqual:
-        case NI_SSE_CompareScalarNotEqual:
-        case NI_SSE2_CompareNotEqual:
-        case NI_SSE2_CompareScalarNotEqual:
+        case NI_X86Base_CompareNotEqual:
+        case NI_X86Base_CompareScalarNotEqual:
         case NI_AVX_CompareNotEqual:
         case NI_AVX512_CompareNotEqualMask:
         {
@@ -1088,10 +1058,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareNotGreaterThan:
-        case NI_SSE_CompareScalarNotGreaterThan:
-        case NI_SSE2_CompareNotGreaterThan:
-        case NI_SSE2_CompareScalarNotGreaterThan:
+        case NI_X86Base_CompareNotGreaterThan:
+        case NI_X86Base_CompareScalarNotGreaterThan:
         case NI_AVX_CompareNotGreaterThan:
         case NI_AVX512_CompareNotGreaterThanMask:
         {
@@ -1111,10 +1079,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareNotLessThan:
-        case NI_SSE_CompareScalarNotLessThan:
-        case NI_SSE2_CompareNotLessThan:
-        case NI_SSE2_CompareScalarNotLessThan:
+        case NI_X86Base_CompareNotLessThan:
+        case NI_X86Base_CompareScalarNotLessThan:
         case NI_AVX_CompareNotLessThan:
         case NI_AVX512_CompareNotLessThanMask:
         {
@@ -1130,10 +1096,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareNotGreaterThanOrEqual:
-        case NI_SSE_CompareScalarNotGreaterThanOrEqual:
-        case NI_SSE2_CompareNotGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+        case NI_X86Base_CompareNotGreaterThanOrEqual:
+        case NI_X86Base_CompareScalarNotGreaterThanOrEqual:
         case NI_AVX_CompareNotGreaterThanOrEqual:
         case NI_AVX512_CompareNotGreaterThanOrEqualMask:
         {
@@ -1153,10 +1117,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareNotLessThanOrEqual:
-        case NI_SSE_CompareScalarNotLessThanOrEqual:
-        case NI_SSE2_CompareNotLessThanOrEqual:
-        case NI_SSE2_CompareScalarNotLessThanOrEqual:
+        case NI_X86Base_CompareNotLessThanOrEqual:
+        case NI_X86Base_CompareScalarNotLessThanOrEqual:
         case NI_AVX_CompareNotLessThanOrEqual:
         case NI_AVX512_CompareNotLessThanOrEqualMask:
         {
@@ -1172,10 +1134,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             break;
         }
 
-        case NI_SSE_CompareOrdered:
-        case NI_SSE_CompareScalarOrdered:
-        case NI_SSE2_CompareOrdered:
-        case NI_SSE2_CompareScalarOrdered:
+        case NI_X86Base_CompareOrdered:
+        case NI_X86Base_CompareScalarOrdered:
         case NI_AVX_CompareOrdered:
         case NI_AVX512_CompareOrderedMask:
         {
@@ -1183,10 +1143,8 @@ int HWIntrinsicInfo::lookupIval(Compiler* comp, NamedIntrinsic id, var_types sim
             return static_cast<int>(FloatComparisonMode::OrderedNonSignaling);
         }
 
-        case NI_SSE_CompareUnordered:
-        case NI_SSE_CompareScalarUnordered:
-        case NI_SSE2_CompareUnordered:
-        case NI_SSE2_CompareScalarUnordered:
+        case NI_X86Base_CompareUnordered:
+        case NI_X86Base_CompareScalarUnordered:
         case NI_AVX_CompareUnordered:
         case NI_AVX512_CompareUnorderedMask:
         {
@@ -1274,9 +1232,9 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
     assert(HWIntrinsicInfo::NoJmpTableImm(intrinsic) || HWIntrinsicInfo::MaybeNoJmpTableImm(intrinsic));
     switch (intrinsic)
     {
-        case NI_SSE2_ShiftLeftLogical:
-        case NI_SSE2_ShiftRightArithmetic:
-        case NI_SSE2_ShiftRightLogical:
+        case NI_X86Base_ShiftLeftLogical:
+        case NI_X86Base_ShiftRightArithmetic:
+        case NI_X86Base_ShiftRightLogical:
         case NI_AVX2_ShiftLeftLogical:
         case NI_AVX2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightLogical:
@@ -1415,8 +1373,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_SSE_AndNot:
-        case NI_SSE2_AndNot:
+        case NI_X86Base_AndNot:
         case NI_AVX_AndNot:
         case NI_AVX2_AndNot:
         case NI_AVX512_AndNot:
@@ -1432,23 +1389,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            if (IsBaselineSimdIsaSupported())
-            {
-                op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize));
-                retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
-            }
-            else
-            {
-                // We need to ensure we import even if SSE2 is disabled
-                assert(intrinsic == NI_SSE_AndNot);
-
-                op3 = gtNewAllBitsSetConNode(retType);
-
-                op1 = gtNewSimdHWIntrinsicNode(retType, op1, op3, NI_SSE_Xor, simdBaseJitType, simdSize);
-                op1 = gtFoldExpr(op1);
-
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_SSE_And, simdBaseJitType, simdSize);
-            }
+            op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize));
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1497,7 +1439,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     else
                     {
                         assert(simdSize == 16);
-                        intrinsic = NI_SSE2_AddSaturate;
+                        intrinsic = NI_X86Base_AddSaturate;
                     }
 
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -2071,7 +2013,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 switch (simdSize)
                 {
                     case 16:
-                        intrinsic = NI_SSE2_ConvertToVector128Single;
+                        intrinsic = NI_X86Base_ConvertToVector128Single;
                         break;
                     case 32:
                         intrinsic = NI_AVX_ConvertToVector256Single;
@@ -2559,7 +2501,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     case TYP_UBYTE:
                     {
                         op1               = impSIMDPopStack();
-                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_SSE2_MoveMask;
+                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX2_MoveMask : NI_X86Base_MoveMask;
                         break;
                     }
 
@@ -2587,12 +2529,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             simdVal.u64[3] = 0x8080808080808080;
 
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
-                            moveMaskIntrinsic = NI_SSE2_MoveMask;
+                            moveMaskIntrinsic = NI_X86Base_MoveMask;
                         }
                         else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                         {
                             shuffleIntrinsic  = NI_SSSE3_Shuffle;
-                            moveMaskIntrinsic = NI_SSE2_MoveMask;
+                            moveMaskIntrinsic = NI_X86Base_MoveMask;
                         }
                         else
                         {
@@ -2633,7 +2575,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         simdBaseJitType   = CORINFO_TYPE_FLOAT;
                         op1               = impSIMDPopStack();
-                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE_MoveMask;
+                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
                         break;
                     }
 
@@ -2643,7 +2585,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     {
                         simdBaseJitType   = CORINFO_TYPE_DOUBLE;
                         op1               = impSIMDPopStack();
-                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_SSE2_MoveMask;
+                        moveMaskIntrinsic = (simdSize == 32) ? NI_AVX_MoveMask : NI_X86Base_MoveMask;
                         break;
                     }
 
@@ -3169,8 +3111,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_SSE_LoadVector128:
-        case NI_SSE2_LoadVector128:
+        case NI_X86Base_LoadVector128:
         case NI_AVX_LoadVector256:
         case NI_AVX512_LoadVector512:
         case NI_Vector128_LoadUnsafe:
@@ -3420,7 +3361,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     // PackSignedSaturate uses the base type of the return for the simdBaseType
                     simdBaseJitType = (simdBaseType == TYP_SHORT) ? CORINFO_TYPE_BYTE : CORINFO_TYPE_SHORT;
 
-                    intrinsic = NI_SSE2_PackSignedSaturate;
+                    intrinsic = NI_X86Base_PackSignedSaturate;
                     retNode   = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
                 }
                 else if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -3871,8 +3812,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_SSE_Store:
-        case NI_SSE2_Store:
+        case NI_X86Base_Store:
         case NI_AVX_Store:
         case NI_AVX512_Store:
         {
@@ -4009,7 +3949,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     else
                     {
                         assert(simdSize == 16);
-                        intrinsic = NI_SSE2_SubtractSaturate;
+                        intrinsic = NI_X86Base_SubtractSaturate;
                     }
 
                     retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseJitType, simdSize);
@@ -4311,102 +4251,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_SSE_CompareScalarGreaterThan:
-        case NI_SSE_CompareScalarGreaterThanOrEqual:
-        case NI_SSE_CompareScalarNotGreaterThan:
-        case NI_SSE_CompareScalarNotGreaterThanOrEqual:
-        {
-            assert(sig->numArgs == 2);
-
-            bool supportsAvx = compOpportunisticallyDependsOn(InstructionSet_AVX);
-
-            if (!supportsAvx)
-            {
-                impSpillSideEffect(true,
-                                   stackState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-            }
-
-            op2             = impSIMDPopStack();
-            op1             = impSIMDPopStack();
-            simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
-            assert(JitType2PreciseVarType(simdBaseJitType) == TYP_FLOAT);
-
-            if (supportsAvx)
-            {
-                // These intrinsics are "special import" because the non-AVX path isn't directly
-                // hardware supported. Instead, they start with "swapped operands" and we fix that here.
-
-                int ival = HWIntrinsicInfo::lookupIval(this, intrinsic, simdBaseType);
-                retNode  = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, gtNewIconNode(ival), NI_AVX_CompareScalar,
-                                                    simdBaseJitType, simdSize);
-            }
-            else
-            {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                                  nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
-
-                switch (intrinsic)
-                {
-                    case NI_SSE_CompareScalarGreaterThan:
-                    {
-                        intrinsic = NI_SSE_CompareScalarLessThan;
-                        break;
-                    }
-
-                    case NI_SSE_CompareScalarGreaterThanOrEqual:
-                    {
-                        intrinsic = NI_SSE_CompareScalarLessThanOrEqual;
-                        break;
-                    }
-
-                    case NI_SSE_CompareScalarNotGreaterThan:
-                    {
-                        intrinsic = NI_SSE_CompareScalarNotLessThan;
-                        break;
-                    }
-
-                    case NI_SSE_CompareScalarNotGreaterThanOrEqual:
-                    {
-                        intrinsic = NI_SSE_CompareScalarNotLessThanOrEqual;
-                        break;
-                    }
-
-                    default:
-                    {
-                        unreached();
-                    }
-                }
-
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, simdBaseJitType,
-                                                   simdSize);
-            }
-            break;
-        }
-
-        case NI_SSE_Prefetch0:
-        case NI_SSE_Prefetch1:
-        case NI_SSE_Prefetch2:
-        case NI_SSE_PrefetchNonTemporal:
-        {
-            assert(sig->numArgs == 1);
-            assert(JITtype2varType(sig->retType) == TYP_VOID);
-            op1     = impPopStack().val;
-            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, intrinsic, CORINFO_TYPE_UBYTE, 0);
-            break;
-        }
-
-        case NI_SSE_StoreFence:
-            assert(sig->numArgs == 0);
-            assert(JITtype2varType(sig->retType) == TYP_VOID);
-            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
-            break;
-
-        case NI_SSE2_CompareScalarGreaterThan:
-        case NI_SSE2_CompareScalarGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarNotGreaterThan:
-        case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+        case NI_X86Base_CompareScalarGreaterThan:
+        case NI_X86Base_CompareScalarGreaterThanOrEqual:
+        case NI_X86Base_CompareScalarNotGreaterThan:
+        case NI_X86Base_CompareScalarNotGreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
@@ -4420,7 +4268,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
-            assert(JitType2PreciseVarType(simdBaseJitType) == TYP_DOUBLE);
+            assert(varTypeIsFloating(JitType2PreciseVarType(simdBaseJitType)));
 
             if (supportsAvx)
             {
@@ -4435,31 +4283,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 GenTree* clonedOp1 = nullptr;
                 op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                                  nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+                                                  nullptr DEBUGARG("Clone op1 for CompareScalarGreaterThan"));
 
                 switch (intrinsic)
                 {
-                    case NI_SSE2_CompareScalarGreaterThan:
+                    case NI_X86Base_CompareScalarGreaterThan:
                     {
-                        intrinsic = NI_SSE2_CompareScalarLessThan;
+                        intrinsic = NI_X86Base_CompareScalarLessThan;
                         break;
                     }
 
-                    case NI_SSE2_CompareScalarGreaterThanOrEqual:
+                    case NI_X86Base_CompareScalarGreaterThanOrEqual:
                     {
-                        intrinsic = NI_SSE2_CompareScalarLessThanOrEqual;
+                        intrinsic = NI_X86Base_CompareScalarLessThanOrEqual;
                         break;
                     }
 
-                    case NI_SSE2_CompareScalarNotGreaterThan:
+                    case NI_X86Base_CompareScalarNotGreaterThan:
                     {
-                        intrinsic = NI_SSE2_CompareScalarNotLessThan;
+                        intrinsic = NI_X86Base_CompareScalarNotLessThan;
                         break;
                     }
 
-                    case NI_SSE2_CompareScalarNotGreaterThanOrEqual:
+                    case NI_X86Base_CompareScalarNotGreaterThanOrEqual:
                     {
-                        intrinsic = NI_SSE2_CompareScalarNotLessThanOrEqual;
+                        intrinsic = NI_X86Base_CompareScalarNotLessThanOrEqual;
                         break;
                     }
 
@@ -4470,14 +4318,32 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
-                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, simdBaseJitType,
-                                                   simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_X86Base_MoveScalar,
+                                                   simdBaseJitType, simdSize);
             }
             break;
         }
 
-        case NI_SSE2_LoadFence:
-        case NI_SSE2_MemoryFence:
+        case NI_X86Base_Prefetch0:
+        case NI_X86Base_Prefetch1:
+        case NI_X86Base_Prefetch2:
+        case NI_X86Base_PrefetchNonTemporal:
+        {
+            assert(sig->numArgs == 1);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            op1     = impPopStack().val;
+            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, intrinsic, CORINFO_TYPE_UBYTE, 0);
+            break;
+        }
+
+        case NI_X86Base_StoreFence:
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+
+        case NI_X86Base_LoadFence:
+        case NI_X86Base_MemoryFence:
         {
             assert(sig->numArgs == 0);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
@@ -4487,7 +4353,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_SSE2_StoreNonTemporal:
+        case NI_X86Base_StoreNonTemporal:
         {
             assert(sig->numArgs == 2);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
@@ -4498,7 +4364,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op2     = impPopStack().val;
             op1     = impPopStack().val;
-            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, NI_SSE2_StoreNonTemporal, argJitType, 0);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, op2, NI_X86Base_StoreNonTemporal, argJitType, 0);
             break;
         }
 

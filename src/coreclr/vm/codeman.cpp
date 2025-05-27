@@ -1256,19 +1256,15 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v1
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) &&
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE) &&
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE2))
     {
+        // These ISAs are grouped together and if any are disabled then
+        // you lose access to all of them. We recommend modern code just
+        // use EnableHWIntrinsic, but we continue checking the older knobs
+        // for back-compat
         CPUCompileFlags.Set(InstructionSet_X86Base);
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE);
-    }
-
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE2))
-    {
-        CPUCompileFlags.Set(InstructionSet_SSE2);
     }
 
     // x86-64-v2
@@ -1353,10 +1349,8 @@ void EEJitManager::SetCpuInfo()
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
         {
-            // These ISAs are grouped together and if any are disabled then
-            // you lose access to all of them. We recommend modern code just
-            // use EnableAVX512, but we continue checking the older knobs for
-            // back-compat
+            // These ISAs are likewise grouped together and should be checked
+            // via EnableAVX512
             CPUCompileFlags.Set(InstructionSet_AVX512);
         }
     }
@@ -1366,7 +1360,8 @@ void EEJitManager::SetCpuInfo()
         if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI) &&
             CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
         {
-            // These ISAs are likewise grouped together
+            // These ISAs are likewise grouped together and should be checked
+            // via EnableAVX512VBMI
             CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
         }
     }
