@@ -1107,6 +1107,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
             pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
             pWalkData->prevILOffsetFound = pWalkData->dwILOffsetFound;
             pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+            pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
         }
         else if ((pOffsetMapping->ilOffset < pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))
         {
@@ -1115,7 +1116,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
         }
     }
 
-    return 1;
+    return 0;
 }
 
 // Initialization done outside the TSL.
