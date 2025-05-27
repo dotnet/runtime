@@ -60,8 +60,6 @@ void Assert(const char * expr, const char * file, unsigned int line_num, const c
     ASSERT_UNCONDITIONALLY(message); \
     ASSUME(0);  \
 
-//#define FAIL_FAST_GENERATE_EXCEPTION_ADDRESS 0x1
-
 #ifdef HOST_WINDOWS
 #define RhFailFast() ::RaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS)
 #else
