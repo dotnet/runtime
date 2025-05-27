@@ -98,7 +98,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             await SetupCounterPage(page);
 
             await page.EvaluateAsync(@"
-                    globalThis.upload = globalThis.uploadTrace(`metrics.nettrace`, globalThis.getDotnetRuntime(0).collectPerfCounters({ durationSeconds: 2.0, skipDownload: true }));
+                    globalThis.upload = globalThis.uploadTrace(`metrics.nettrace`, globalThis.getDotnetRuntime(0).collectMetrics({ durationSeconds: 2.0, skipDownload: true }));
                     console.log(`Metrics collected: ${new Date().toISOString()}`);
                 ");
 
