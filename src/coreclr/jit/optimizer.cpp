@@ -2249,36 +2249,20 @@ PhaseStatus Compiler::optInvertLoops()
     }
 #endif // OPT_CONFIG
 
-    bool madeChanges = false;
-
     if (compCodeOpt() != SMALL_CODE)
     {
+        fgDfsBlocksAndRemove();
+        optFindLoops();
         for (FlowGraphNaturalLoop* loop : m_loops->InPostOrder())
         {
-            madeChanges |= optTryInvertWhileLoop(loop);
+            optTryInvertWhileLoop(loop);
         }
-    }
 
-    if (madeChanges)
-    {
         fgInvalidateDfsTree();
-        m_dfsTree = fgComputeDfs();
-        m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-
-        // In normal cases no further canonicalization will be required as we
-        // try to ensure loops stay canonicalized during inversion. However,
-        // duplicating the condition outside an inner loop can introduce new
-        // exits in the parent loop, so we may rarely need to recanonicalize
-        // exit blocks.
-        if (optCanonicalizeLoops())
-        {
-            fgInvalidateDfsTree();
-            m_dfsTree = fgComputeDfs();
-            m_loops   = FlowGraphNaturalLoops::Find(m_dfsTree);
-        }
+        return PhaseStatus::MODIFIED_EVERYTHING;
     }
 
-    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+    return PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-----------------------------------------------------------------------------
