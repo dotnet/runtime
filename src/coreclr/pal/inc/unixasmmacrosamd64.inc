@@ -399,18 +399,15 @@ C_FUNC(\Name\()_End):
 .macro PUSH_COOP_PINVOKE_FRAME target
         set_cfa_register rsp, 8
 
-        // 6 * 8 for argument register space in TransitionBlock + alignment of the stack to 16b
-        __PWTB_StackAlloc = 7 * 8
-        __PWTB_TransitionBlock = __PWTB_StackAlloc
-
         PUSH_CALLEE_SAVED_REGISTERS
-        alloc_stack     __PWTB_StackAlloc
+        // 6 * 8 for argument register space in TransitionBlock + alignment of the stack to 16b
+        alloc_stack     56
         END_PROLOGUE
 
-        lea     \target, [rsp + __PWTB_TransitionBlock]
+        lea     \target, [rsp + 8]
 .endm
 
 .macro POP_COOP_PINVOKE_FRAME
-        free_stack      __PWTB_StackAlloc
+        free_stack      56
         POP_CALLEE_SAVED_REGISTERS
 .endm
