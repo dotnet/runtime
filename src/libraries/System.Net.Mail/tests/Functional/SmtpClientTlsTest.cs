@@ -107,6 +107,27 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        public async Task EnableSsl_NoExtendedHello_NoTls()
+        {
+            Smtp.Credentials = new NetworkCredential("foo", "bar");
+            Smtp.EnableSsl = true;
+
+            Server.OnCommandReceived = (command, arg) =>
+            {
+                if (string.Equals(command, "EHLO", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "502 Not implemented";
+                }
+
+                return null;
+            };
+
+            MailMessage msg = new MailMessage("foo@example.com", "bar@example.com", "hello", "howdydoo");
+
+            await SendMail<SmtpException>(msg);
+        }
+
+        [Fact]
         public async Task DisableSslServerSupport_NoTls()
         {
 
