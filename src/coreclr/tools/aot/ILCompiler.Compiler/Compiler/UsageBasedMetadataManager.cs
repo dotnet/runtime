@@ -57,6 +57,7 @@ namespace ILCompiler
         private readonly List<FieldDesc> _fieldsWithRuntimeMapping = new List<FieldDesc>();
         private readonly List<ReflectableCustomAttribute> _customAttributesWithMetadata = new List<ReflectableCustomAttribute>();
         private readonly List<ReflectableParameter> _parametersWithMetadata = new List<ReflectableParameter>();
+        private readonly List<TypeDesc> _typeMapTrimTargets = new List<TypeDesc>();
 
         internal IReadOnlyDictionary<string, bool> FeatureSwitches { get; }
 
@@ -170,6 +171,11 @@ namespace ILCompiler
             if (obj is ReflectedTypeNode reflectableType)
             {
                 _typesWithForcedEEType.Add(reflectableType.Type);
+            }
+
+            if (obj is TypeCastTargetNode typeCastTarget)
+            {
+                _typeMapTrimTargets.Add(typeCastTarget.Type);
             }
         }
 

@@ -581,6 +581,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new StringAllocatorMethodNode(constructor);
             });
 
+            _typeCastTargets = new NodeCache<TypeDesc, TypeCastTargetNode>(type =>
+            {
+                return new TypeCastTargetNode(type);
+            });
+
             NativeLayout = new NativeLayoutHelper(this);
         }
 
@@ -1462,6 +1467,13 @@ namespace ILCompiler.DependencyAnalysis
         public StructMarshallingDataNode StructMarshallingData(DefType type)
         {
             return _structMarshalingDataNodes.GetOrAdd(type);
+        }
+
+        private NodeCache<TypeDesc, TypeCastTargetNode> _typeCastTargets;
+
+        public TypeCastTargetNode TypeCastTarget(TypeDesc type)
+        {
+            return _typeCastTargets.GetOrAdd(type);
         }
 
         /// <summary>
