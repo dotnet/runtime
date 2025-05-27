@@ -52,6 +52,7 @@
 #else   // !defined(__i386__)
 
 #define __cdecl
+#define __stdcall
 
 #endif  // !defined(__i386__)
 
