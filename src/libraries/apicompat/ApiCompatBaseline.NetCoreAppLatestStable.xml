@@ -675,6 +675,18 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeExtensions.GetMember(System.Type,System.String,System.Reflection.BindingFlags)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Reflection.TypeExtensions.dll</Left>
+    <Right>net10.0/System.Reflection.TypeExtensions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.TypeExtensions.GetMembers(System.Type,System.Reflection.BindingFlags)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net9.0/System.Reflection.TypeExtensions.dll</Left>
+    <Right>net10.0/System.Reflection.TypeExtensions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Delegate.#ctor(System.Type,System.String)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
     <Left>net9.0/System.Runtime.dll</Left>
     <Right>net10.0/System.Runtime.dll</Right>
