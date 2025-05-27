@@ -2283,13 +2283,6 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         return true;
     }
 
-    if (argNode->OperIsFieldList())
-    {
-        // We can already see a field list here if physical promotion created
-        // it.
-        return true;
-    }
-
     GenTree* newArg = nullptr;
 
     if (argNode->OperIs(GT_LCL_VAR))
@@ -2311,8 +2304,19 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         //
         if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister && (!isSplit || FieldsMatchAbi(varDsc, arg->AbiInfo)))
         {
-            newArg = fgMorphLclToFieldList(lclNode);
+            newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
             newArg = fgMorphTree(newArg);
+        }
+    }
+    else if (argNode->OperIsFieldList())
+    {
+        // We can already see a field list here if physical promotion created it.
+        // Physical promotion will also create single-field field lists which
+        // not everything treats the same as a single node, so fix that here.
+        newArg = argNode->AsFieldList()->SoleFieldOrThis();
+        if (newArg == argNode)
+        {
+            return true;
         }
     }
 

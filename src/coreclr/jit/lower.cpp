@@ -4970,7 +4970,7 @@ bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
         LowerFieldListRegisterInfo regInfo  = getRegInfo(i);
         unsigned                   regStart = regInfo.Offset;
         var_types                  regType  = regInfo.RegType;
-        unsigned                   regEnd   = regStart + genTypeSize(regType);
+        unsigned                   regEnd   = regStart + (varTypeUsesFloatReg(regType) ? genTypeSize(regType) : REGSIZE_BYTES);
 
         // TODO-CQ: Could just create a 0 for this.
         if ((use == nullptr) || (use->GetOffset() >= regEnd))
