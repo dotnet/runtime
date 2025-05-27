@@ -1489,13 +1489,7 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
 inline GenTree* Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd)
 {
-    void *embedScpHnd, *pEmbedScpHnd;
-
-    embedScpHnd = (void*)info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
-
-    assert((!embedScpHnd) != (!pEmbedScpHnd));
-
-    return gtNewIconEmbHndNode(embedScpHnd, pEmbedScpHnd, GTF_ICON_SCOPE_HDL, scpHnd);
+    return gtNewIconEmbHndNode((void*)scpHnd, nullptr, GTF_ICON_SCOPE_HDL, scpHnd);
 }
 
 //-----------------------------------------------------------------------------
@@ -1509,6 +1503,13 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
     assert((!embedClsHnd) != (!pEmbedClsHnd));
 
     return gtNewIconEmbHndNode(embedClsHnd, pEmbedClsHnd, GTF_ICON_CLASS_HDL, clsHnd);
+}
+
+//-----------------------------------------------------------------------------
+
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+{
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -1528,13 +1529,7 @@ inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 
 inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 {
-    void *embedFldHnd, *pEmbedFldHnd;
-
-    embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
-
-    assert((!embedFldHnd) != (!pEmbedFldHnd));
-
-    return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, fldHnd);
+    return gtNewIconEmbHndNode((void*)fldHnd, nullptr, GTF_ICON_FIELD_HDL, fldHnd);
 }
 
 /*****************************************************************************/
