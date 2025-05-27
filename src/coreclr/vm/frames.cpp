@@ -1004,8 +1004,6 @@ Frame::Interception PrestubMethodFrame::GetInterception_Impl()
     return INTERCEPTION_PRESTUB;
 }
 
-#ifdef FEATURE_READYTORUN
-
 #ifndef DACCESS_COMPILE
 DynamicHelperFrame::DynamicHelperFrame(TransitionBlock * pTransitionBlock, int dynamicHelperFrameFlags)
     : FramedMethodFrame(FrameIdentifier::DynamicHelperFrame, pTransitionBlock, NULL)
@@ -1051,9 +1049,6 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
         (*fn)(dac_cast<PTR_PTR_Object>(pArgument), sc, CHECK_APP_DOMAIN);
     }
 }
-
-#endif // FEATURE_READYTORUN
-
 
 #ifndef DACCESS_COMPILE
 
