@@ -674,7 +674,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
         ${ARCH_SOURCES_DIR}/AllocSlow.asm
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
         ${ARCH_SOURCES_DIR}/ehhelpers.asm
-        ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
@@ -740,7 +739,6 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/jithelp.S
-            ${ARCH_SOURCES_DIR}/gmsasm.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S
@@ -801,7 +799,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/cgenamd64.cpp
         ${ARCH_SOURCES_DIR}/excepamd64.cpp
-        ${ARCH_SOURCES_DIR}/gmsamd64.cpp
         ${ARCH_SOURCES_DIR}/stublinkeramd64.cpp
     )
 
@@ -809,7 +806,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/asmconstants.h
         ${ARCH_SOURCES_DIR}/cgencpu.h
         ${ARCH_SOURCES_DIR}/excepcpu.h
-        ${ARCH_SOURCES_DIR}/gmscpu.h
         ${ARCH_SOURCES_DIR}/stublinkeramd64.h
     )
 
@@ -827,14 +823,12 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/cgenx86.cpp
         ${ARCH_SOURCES_DIR}/excepx86.cpp
-        ${ARCH_SOURCES_DIR}/gmsx86.cpp
         ${ARCH_SOURCES_DIR}/stublinkerx86.cpp
     )
 
     set(VM_HEADERS_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/cgencpu.h
         ${ARCH_SOURCES_DIR}/excepcpu.h
-        ${ARCH_SOURCES_DIR}/gmscpu.h
         ${ARCH_SOURCES_DIR}/stublinkerx86.h
     )
 

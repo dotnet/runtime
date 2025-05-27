@@ -1671,7 +1671,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
         case Frame::TYPE_ENTRY: // We now ignore entry + exit frames.
         case Frame::TYPE_EXIT:
-        case Frame::TYPE_HELPER_METHOD_FRAME:
         case Frame::TYPE_INTERNAL:
 
             /* If we have a specific interception type, use it. However, if this
@@ -1694,8 +1693,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
             break;
 
         case Frame::TYPE_INTERCEPTION:
-        case Frame::TYPE_SECURITY: // Security is a sub-type of interception
-            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_INTERCEPTION/TYPE_SECURITY.\n"));
+            LOG((LF_CORDB, LL_INFO100000, "DWSP: Frame type is TYPE_INTERCEPTION.\n"));
             d->info.managed = true;
             d->info.internal = true;
             use = true;
