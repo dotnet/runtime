@@ -109,6 +109,14 @@ public:
         BOOL hasFlagByte
     );
 
+    // Walk the ILOffsets without needing to allocate a buffer
+    static size_t WalkILOffsets(
+        IN PTR_BYTE                         pDebugInfo,
+        BOOL hasFlagByte,
+        void* pContext,
+        size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+    );
+
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     static PatchpointInfo * RestorePatchpointInfo(
         IN PTR_BYTE pDebugInfo

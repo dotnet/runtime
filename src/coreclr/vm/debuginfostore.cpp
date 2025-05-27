@@ -310,6 +310,61 @@ static void DoBounds(
     }
 }
 
+template <class T>
+static size_t DoBoundsCallback(
+    T trans, // transfer object.
+    ULONG32 cMap,
+    void* pContext,
+    size_t (*pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+
+    // Bounds info contains (Native Offset, IL Offset, flags)
+    // - Sorted by native offset (so use a delta encoding for that).
+    // - IL offsets aren't sorted, but they should be close to each other (so a signed delta encoding)
+    //   They may also include a sentinel value from MappingTypes.
+    // - flags is 3 independent bits.
+
+    // Loop through and transfer each Entry in the Mapping.
+    uint32_t dwLastNativeOffset = 0;
+    ICorDebugInfo::OffsetMapping bound;
+    bound.nativeOffset = 0;
+    bound.ilOffset = 0;
+    bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+
+    for(uint32_t i = 0; i < cMap; i++)
+    {
+        trans.DoEncodedDeltaU32(bound.nativeOffset, bound.nativeOffset);
+
+        trans.DoEncodedAdjustedU32(bound.ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
+
+        trans.DoEncodedSourceType(bound.source);
+
+        trans.DoCookie(0xA);
+        size_t callbackResult = pfnWalkILOffsets(&bound, pContext);
+        if (callbackResult != 0)
+        {
+            // We have a callback that wants to stop the walk.
+            return callbackResult;
+        }
+    }
+
+    bound.nativeOffset = 0xFFFFFFFF;
+    bound.ilOffset = ICorDebugInfo::NO_MAPPING;
+    bound.source = ICorDebugInfo::SOURCE_TYPE_INVALID;
+
+    return pfnWalkILOffsets(&bound, pContext);
+}
+
 
 
 // Helper to write a compressed Native Var Info
@@ -817,6 +872,69 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
             }
         }
     }
+}
+
+size_t CompressDebugInfo::WalkILOffsets(
+    IN PTR_BYTE pDebugInfo,
+    BOOL hasFlagByte,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+)
+{
+    CONTRACTL
+    {
+        THROWS; // reading from nibble stream may throw on invalid data.
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    if (hasFlagByte)
+    {
+        // Check flag byte and skip over any patchpoint info
+        BYTE flagByte = *pDebugInfo;
+        pDebugInfo++;
+
+        if ((flagByte & EXTRA_DEBUG_INFO_PATCHPOINT) != 0)
+        {
+            PTR_PatchpointInfo patchpointInfo = dac_cast<PTR_PatchpointInfo>(pDebugInfo);
+            pDebugInfo += patchpointInfo->PatchpointInfoSize();
+            flagByte &= ~EXTRA_DEBUG_INFO_PATCHPOINT;
+        }
+
+        if ((flagByte & EXTRA_DEBUG_INFO_RICH) != 0)
+        {
+            UINT32 cbRichDebugInfo = *PTR_UINT32(pDebugInfo);
+            pDebugInfo += 4;
+            pDebugInfo += cbRichDebugInfo;
+            flagByte &= ~EXTRA_DEBUG_INFO_RICH;
+        }
+
+        _ASSERTE(flagByte == 0);
+    }
+
+    NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
+
+    ULONG cbBounds = r.ReadEncodedU32();
+    ULONG cbVars   = r.ReadEncodedU32();
+
+    PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
+    PTR_BYTE addrVars   = addrBounds + cbBounds;
+
+    if (cbBounds != 0)
+    {
+        NibbleReader r(addrBounds, cbBounds);
+        TransferReader t(r);
+
+        UINT32 cNumEntries = r.ReadEncodedU32();
+        _ASSERTE(cNumEntries > 0);
+
+        // Main decompression routine.
+        return DoBoundsCallback(t, cNumEntries, pContext, pfnWalkILOffsets);
+    }
+
+    return 0;
 }
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT

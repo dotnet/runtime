@@ -1014,6 +1014,110 @@ void DebugStackTrace::Element::InitPass1(
 
 #ifndef DACCESS_COMPILE
 
+struct WalkILOffsetsData
+{
+    WalkILOffsetsData(DWORD dwSearchNativeOffset)
+        : dwSearchNativeOffset(dwSearchNativeOffset)
+    {
+    }
+    DWORD prevILOffsetFound = 0;
+    DWORD dwILOffsetFound = 0;
+    DWORD dwCurrentNativeOffset = 0;
+    const DWORD dwSearchNativeOffset;
+
+    DWORD dwFinalILOffset = 0;
+    bool prologCase = false;
+    bool firstCall = true;
+};
+
+size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
+{
+    WalkILOffsetsData *pWalkData = (WalkILOffsetsData *)pContext;
+    // Callbacks into this api are sorted by native offset, but not sorted by IL offset.
+    // In addition, there are several special IL offsets that are not actual IL offsets.
+
+    // The general rule is that we need to find the lowest IL offset that applies to the given native offset
+    // An IL offset in the mapping of ICorDebugInfo::NO_MAPPING indicates that the IL offset we report should be 0
+    // An IL offset in the mapping of ICorDebugInfo::PROLOG indicates that we should report the "next" IL offset.
+    // An IL offset in the mapping of ICorDebugInfo::EPILOG indicates that we should report the "previous" IL offset.
+
+    if (pWalkData->firstCall)
+    {
+        pWalkData->firstCall = false;
+        // This is the first time we are called, so set the current native offset to the one we are looking for
+        pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+        pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+    }
+    else
+    {
+        // If the current native offset is less than the one we are looking for, then we need to set the IL offset
+        // to the one we are looking for.
+        if (pOffsetMapping->nativeOffset > pWalkData->dwCurrentNativeOffset)
+        {
+            if (pWalkData->prologCase)
+            {
+                if (pWalkData->prevILOffsetFound != ICorDebugInfo::NO_MAPPING &&
+                    pWalkData->prevILOffsetFound != ICorDebugInfo::PROLOG && 
+                    pWalkData->prevILOffsetFound != ICorDebugInfo::EPILOG)
+                {
+                    // We found a valid IL offset after the prolog, so set the final IL offset to the one we found
+                    pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
+                }
+                else
+                {
+                    pWalkData->dwFinalILOffset = 0;
+                }
+                return 1;
+            }
+            if (pOffsetMapping->nativeOffset > pWalkData->dwSearchNativeOffset)
+            {
+                // We were searching for the IL offset, and we found it (unless we were in a PROLOG)
+                if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::EPILOG)
+                {
+                    if (pWalkData->prevILOffsetFound != ICorDebugInfo::NO_MAPPING &&
+                        pWalkData->prevILOffsetFound != ICorDebugInfo::PROLOG && 
+                        pWalkData->prevILOffsetFound != ICorDebugInfo::EPILOG)
+                    {
+                        // We found a valid IL offset, so set the final IL offset to the one we found
+                        pWalkData->dwFinalILOffset = pWalkData->prevILOffsetFound;
+                    }
+                    else
+                    {
+                        pWalkData->dwFinalILOffset = 0;
+                    }
+                    return 1;
+                }
+                else if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::NO_MAPPING)
+                {
+                    pWalkData->dwFinalILOffset = 0;
+                    return 1;
+                }
+                else if (!(pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::PROLOG))
+                {
+                    pWalkData->dwFinalILOffset = pWalkData->dwILOffsetFound;
+                    return 1;
+                }
+                else
+                {
+                    // PROLOG case
+                    _ASSERTE(pWalkData->prevILOffsetFound == ICorDebugInfo::PROLOG);
+                    pWalkData->prologCase = true;
+                }
+            }
+            pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+            pWalkData->prevILOffsetFound = pWalkData->dwILOffsetFound;
+            pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
+        }
+        else if ((pOffsetMapping->ilOffset < pWalkData->dwILOffsetFound) && (pOffsetMapping->ilOffset != (DWORD)ICorDebugInfo::NO_MAPPING))
+        {
+            // We found a new IL offset that is less than the one we are looking for
+            pWalkData->dwILOffsetFound = pOffsetMapping->ilOffset;
+        }
+    }
+
+    return 1;
+}
+
 // Initialization done outside the TSL.
 // This may need to call locking operations that aren't safe under the TSL.
 void DebugStackTrace::Element::InitPass2()
@@ -1031,6 +1135,8 @@ void DebugStackTrace::Element::InitPass2()
     bool bRes = false;
 
 #ifdef DEBUGGING_SUPPORTED
+    bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
+
     // Calculate the IL offset using the debugging services
     if ((this->ip != (PCODE)NULL) && g_pDebugInterface)
     {
@@ -1051,12 +1157,30 @@ void DebugStackTrace::Element::InitPass2()
         // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
         // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
         // instruction throwing the exception.
-        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
         bRes = g_pDebugInterface->GetILOffsetFromNative(
             pFunc,
             (LPCBYTE)this->ip,
             fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
             &this->dwILOffset);
+    }
+
+    if (this->ip != (PCODE)NULL)
+    {
+        // Get IL Offset from the JitManager directly
+
+        EECodeInfo codeInfo(this->ip);
+        if (codeInfo.IsValid())
+        {
+            TADDR startAddress = codeInfo.GetStartAddress();
+            WalkILOffsetsData data(fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset);
+            DebugInfoRequest request;
+            request.InitFromStartingAddr(codeInfo.GetMethodDesc(), startAddress);
+            if (codeInfo.GetJitManager()->WalkILOffsets(request, &data, WalkILOffsetsCallback))
+            {
+                _ASSERTE(this->dwILOffset == data.dwFinalILOffset);
+                this->dwILOffset = data.dwFinalILOffset;
+            }
+        }
     }
 
 #endif // !DEBUGGING_SUPPORTED

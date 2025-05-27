@@ -4024,6 +4024,60 @@ BOOL EEJitManager::GetBoundariesAndVars(
     return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
 
+size_t EEJitManager::WalkILOffsets(
+    const DebugInfoRequest & request,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    CodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<CodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    return WalkILOffsetsWorker(pDebugInfo, pContext, pfnWalkILOffsets);
+}
+
+size_t EECodeGenManager::WalkILOffsetsWorker(PTR_BYTE pDebugInfo,
+        void* pContext,
+        size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    // No header created, which means no jit information is available.
+    if (pDebugInfo == NULL)
+        return 0;
+
+#ifdef FEATURE_ON_STACK_REPLACEMENT
+    BOOL hasFlagByte = TRUE;
+#else
+    BOOL hasFlagByte = FALSE;
+#endif
+
+    if (m_storeRichDebugInfo)
+    {
+        hasFlagByte = TRUE;
+    }
+
+    // Uncompress. This allocates memory and may throw.
+    return CompressDebugInfo::WalkILOffsets(
+        pDebugInfo,      // input
+        hasFlagByte,
+        pContext,
+        pfnWalkILOffsets
+    );
+}
+
+
 BOOL EECodeGenManager::GetRichDebugInfoWorker(
     PTR_BYTE pDebugInfo,
     IN FP_IDS_NEW fpNew, IN void* pNewData,
@@ -4110,6 +4164,32 @@ BOOL InterpreterJitManager::GetBoundariesAndVars(
 
     return GetBoundariesAndVarsWorker(pDebugInfo, fpNew, pNewData, pcMap, ppMap, pcVars, ppVars);
 }
+
+size_t InterpreterJitManager::WalkILOffsets(
+    const DebugInfoRequest & request,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    InterpreterCodeHeader * pHdr = GetCodeHeaderFromDebugInfoRequest<InterpreterCodeHeader>(request);
+    _ASSERTE(pHdr != NULL);
+
+    PTR_BYTE pDebugInfo = pHdr->GetDebugInfo();
+
+    // Interpreter-TODO: This is a temporary workaround until the interpreter produces the debug info
+    if (pDebugInfo == NULL)
+    {
+        return 0;
+    }
+
+    return WalkILOffsetsWorker(pDebugInfo, pContext, pfnWalkILOffsets);
+}
+
 
 BOOL InterpreterJitManager::GetRichDebugInfo(
     const DebugInfoRequest& request,
@@ -6305,6 +6385,35 @@ BOOL ReadyToRunJitManager::GetBoundariesAndVars(
         FALSE);          // no patchpoint info
 
     return TRUE;
+}
+
+size_t ReadyToRunJitManager::WalkILOffsets(
+    const DebugInfoRequest & request,
+    void* pContext,
+    size_t (* pfnWalkILOffsets)(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext))
+{   
+    CONTRACTL {
+        THROWS;       // on OOM.
+        GC_NOTRIGGER; // getting vars shouldn't trigger
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    EECodeInfo codeInfo(request.GetStartAddress());
+    if (!codeInfo.IsValid())
+        return FALSE;
+
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+
+    PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
+    if (pDebugInfo == NULL)
+        return FALSE;
+
+    // Uncompress. This allocates memory and may throw.
+    return CompressDebugInfo::WalkILOffsets(
+        pDebugInfo,      // input
+        FALSE, // no patchpoint info
+        pContext, pfnWalkILOffsets);
 }
 
 BOOL ReadyToRunJitManager::GetRichDebugInfo(
