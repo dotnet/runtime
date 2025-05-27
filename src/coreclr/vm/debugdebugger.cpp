@@ -1016,8 +1016,9 @@ void DebugStackTrace::Element::InitPass1(
 
 struct WalkILOffsetsData
 {
-    WalkILOffsetsData(DWORD dwSearchNativeOffset)
-        : dwSearchNativeOffset(dwSearchNativeOffset)
+    WalkILOffsetsData(DWORD dwSearchNativeOffset, bool skipPrologsParam = false)
+        : dwSearchNativeOffset(dwSearchNativeOffset),
+        skipPrologs(skipPrologsParam)
     {
     }
     DWORD prevILOffsetFound = 0;
@@ -1026,7 +1027,8 @@ struct WalkILOffsetsData
     const DWORD dwSearchNativeOffset;
 
     DWORD dwFinalILOffset = 0;
-    bool prologCase = false;
+    const bool skipPrologs;
+    bool skipPrologCase = false;
     bool firstCall = true;
 };
 
@@ -1035,6 +1037,14 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
     WalkILOffsetsData *pWalkData = (WalkILOffsetsData *)pContext;
     // Callbacks into this api are sorted by native offset, but not sorted by IL offset.
     // In addition, there are several special IL offsets that are not actual IL offsets.
+
+    // Also, ignore all the callsite mappings since they are not relevant for the standard Native-IL mapping
+
+    if ((pOffsetMapping->source & (DWORD)ICorDebugInfo::CALL_INSTRUCTION) == (DWORD)ICorDebugInfo::CALL_INSTRUCTION)
+    {
+        // This is a call instruction mapping, so we don't care about it.
+        return 0;
+    }
 
     // The general rule is that we need to find the lowest IL offset that applies to the given native offset
     // An IL offset in the mapping of ICorDebugInfo::NO_MAPPING indicates that the IL offset we report should be 0
@@ -1054,7 +1064,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
         // to the one we are looking for.
         if (pOffsetMapping->nativeOffset > pWalkData->dwCurrentNativeOffset)
         {
-            if (pWalkData->prologCase)
+            if (pWalkData->skipPrologCase)
             {
                 if (pWalkData->prevILOffsetFound != ICorDebugInfo::NO_MAPPING &&
                     pWalkData->prevILOffsetFound != ICorDebugInfo::PROLOG && 
@@ -1100,8 +1110,16 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
                 else
                 {
                     // PROLOG case
-                    _ASSERTE(pWalkData->prevILOffsetFound == ICorDebugInfo::PROLOG);
-                    pWalkData->prologCase = true;
+                    if (pWalkData->skipPrologs)
+                    {
+                        _ASSERTE(pWalkData->dwILOffsetFound == ICorDebugInfo::PROLOG);
+                        pWalkData->skipPrologCase = true;
+                    }
+                    else
+                    {
+                        pWalkData->dwFinalILOffsets = 0;
+                        return 1;
+                    }
                 }
             }
             pWalkData->dwCurrentNativeOffset = pOffsetMapping->nativeOffset;
