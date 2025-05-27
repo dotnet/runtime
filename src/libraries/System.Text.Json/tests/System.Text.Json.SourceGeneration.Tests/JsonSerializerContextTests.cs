@@ -966,10 +966,9 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
             public int Id { get; set; }
-            
-            public required string Name { get; set; }
 
-            
+            public string Name { get; set; }
+
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
             public string? Description { get; set; }
         }
