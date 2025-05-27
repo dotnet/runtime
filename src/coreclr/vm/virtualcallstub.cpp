@@ -689,7 +689,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              pIndCellRangeList, UnlockedLoaderHeap::HeapKind::Data));
+                                              pIndCellRangeList, LoaderHeapImplementationKind::Data));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -698,7 +698,7 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
+                                              &cache_entry_rangeList, LoaderHeapImplementationKind::Data));
 
     initReservedMem += cache_entry_heap_reserve_size;
 
@@ -1204,7 +1204,7 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         DBG_ADDR(slot), DBG_ADDR(pHolder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN(pHolder);
@@ -1567,7 +1567,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     return target;
 }
 
-/* Resolve to a method and return its address or NULL if there is none 
+/* Resolve to a method and return its address or NULL if there is none
    Our return value is the target address that control should continue to.  Our caller will
    enter the target address as if a direct call with the original stack frame had been made from
    the actual call site.  Hence our strategy is to either return a target address
@@ -1765,7 +1765,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
-    PREFIX_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
 #ifndef TARGET_X86
     // Have we failed the dispatch stub too many times?
@@ -1810,7 +1810,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
-    PREFIX_ASSUME(pMgr != NULL);
+    _ASSERTE(pMgr != NULL);
 
     pMgr->BackPatchWorker(&callSite);
 }
@@ -2534,7 +2534,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
 #ifndef DACCESS_COMPILE
 
     MethodTable * pMT = GetTypeFromToken(token);
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 
@@ -2870,7 +2870,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -2931,7 +2931,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                  DBG_ADDR(dispatchToken), DBG_ADDR(pMTExpected), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3029,7 +3029,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);
@@ -3062,7 +3062,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
                                  DBG_ADDR(dispatchToken), DBG_ADDR(holder->stub())));
 
 #ifdef FEATURE_PERFMAP
-    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size());
+    PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 #endif
 
     RETURN (holder);

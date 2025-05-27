@@ -187,8 +187,9 @@ enum insFlags : uint64_t
     INS_FLAGS_Has_Wbit = 1ULL << 29,
     INS_FLAGS_Has_Sbit = 1ULL << 30,
 
-    // instruction input size
-    // if not input size is set, instruction defaults to using
+    // instruction input size which is used to determine
+    // the scalar or broadcast load amount for SIMD instructions
+    // if this flag is not present, we default to using
     // the emitAttr for size
     Input_8Bit  = 1ULL << 31,
     Input_16Bit = 1ULL << 32,
@@ -215,17 +216,25 @@ enum insFlags : uint64_t
     KInstruction = 1ULL << 41,
     KInstructionWithLBit = 1ULL << 42,
 
-    // EVEX feature: embedded broadcast
-    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
+    // UNUSED = 1ULL << 43,
 
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
 
     // APX: EVEX.ND:
-    INS_Flags_Has_NDD  = 1ULL << 45,    
-    
+    INS_Flags_Has_NDD  = 1ULL << 45,
+
     // APX: EVEX.NF:
     INS_Flags_Has_NF  = 1ULL << 46,
+
+    // base kmask size used for a 128-bit vector
+    // used to determine if we can use embedded masking
+    KMask_Base1    = 1ULL << 47,
+    KMask_Base2    = 1ULL << 48,
+    KMask_Base4    = 1ULL << 49,
+    KMask_Base8    = 1ULL << 50,
+    KMask_Base16   = 1ULL << 51,
+    KMask_BaseMask = (0x1FULL) << 47,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
@@ -438,16 +447,16 @@ enum insSvePattern : unsigned
 enum insSvePrfop : unsigned
 {
     SVE_PRFOP_PLDL1KEEP = 0b0000,
-    SVE_PRFOP_PLDL1STRM = 0b0001, 
-    SVE_PRFOP_PLDL2KEEP = 0b0010, 
-    SVE_PRFOP_PLDL2STRM = 0b0011, 
-    SVE_PRFOP_PLDL3KEEP = 0b0100, 
-    SVE_PRFOP_PLDL3STRM = 0b0101, 
-    SVE_PRFOP_PSTL1KEEP = 0b1000, 
-    SVE_PRFOP_PSTL1STRM = 0b1001, 
-    SVE_PRFOP_PSTL2KEEP = 0b1010, 
-    SVE_PRFOP_PSTL2STRM = 0b1011, 
-    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PLDL1STRM = 0b0001,
+    SVE_PRFOP_PLDL2KEEP = 0b0010,
+    SVE_PRFOP_PLDL2STRM = 0b0011,
+    SVE_PRFOP_PLDL3KEEP = 0b0100,
+    SVE_PRFOP_PLDL3STRM = 0b0101,
+    SVE_PRFOP_PSTL1KEEP = 0b1000,
+    SVE_PRFOP_PSTL1STRM = 0b1001,
+    SVE_PRFOP_PSTL2KEEP = 0b1010,
+    SVE_PRFOP_PSTL2STRM = 0b1011,
+    SVE_PRFOP_PSTL3KEEP = 0b1100,
     SVE_PRFOP_PSTL3STRM = 0b1101,
 
     SVE_PRFOP_CONST6    = 0b0110,
@@ -532,6 +541,7 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };

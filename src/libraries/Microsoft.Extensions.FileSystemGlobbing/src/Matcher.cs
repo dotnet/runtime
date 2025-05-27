@@ -162,7 +162,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>Always returns instance of <see cref="PatternMatchingResult" />, even if no files were matched</returns>
         public virtual PatternMatchingResult Execute(DirectoryInfoBase directoryInfo)
         {
-            ThrowHelper.ThrowIfNull(directoryInfo);
+            ArgumentNullException.ThrowIfNull(directoryInfo);
 
             var context = new MatcherContext(_includePatterns, _excludePatterns, directoryInfo, _comparison);
             return context.Execute();

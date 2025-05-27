@@ -20,7 +20,7 @@ namespace System.Linq
             this IAsyncEnumerable<int> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -46,7 +46,7 @@ namespace System.Linq
             this IAsyncEnumerable<long> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -71,7 +71,7 @@ namespace System.Linq
             this IAsyncEnumerable<float> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -96,7 +96,7 @@ namespace System.Linq
             this IAsyncEnumerable<double> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -121,7 +121,7 @@ namespace System.Linq
             this IAsyncEnumerable<decimal> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -147,7 +147,7 @@ namespace System.Linq
             this IAsyncEnumerable<int?> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -176,7 +176,7 @@ namespace System.Linq
             this IAsyncEnumerable<long?> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -204,7 +204,7 @@ namespace System.Linq
             this IAsyncEnumerable<float?> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -232,7 +232,7 @@ namespace System.Linq
             this IAsyncEnumerable<double?> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 
@@ -260,7 +260,7 @@ namespace System.Linq
             this IAsyncEnumerable<decimal?> source,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken));
 

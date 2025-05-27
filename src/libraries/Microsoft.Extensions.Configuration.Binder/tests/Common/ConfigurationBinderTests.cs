@@ -2816,6 +2816,29 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(new [] { "new", "class", "rosebud"}, result.Keywords);
         }
 
+        [Fact]
+        public void TestDictionaryWithNullableEnumValueType()
+        {
+            var builder = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    { "Settings:Dictionary:Key1", "Value2" },
+                    { "Settings:List:1", "Value3" },
+                });
+            var config = builder.Build();
+
+            var settingsSection = config.GetSection("Settings");
+            OptionsWithCollectionsWithNullableEnum settings = settingsSection.Get<OptionsWithCollectionsWithNullableEnum>()!;
+
+            Assert.NotNull(settings.Dictionary);
+            Assert.Equal(1, settings.Dictionary.Count);
+            Assert.Equal(MyValue.Value2, settings.Dictionary["Key1"]);
+
+            Assert.NotNull(settings.List);
+            Assert.Equal(1, settings.List.Count);
+            Assert.Equal(MyValue.Value3, settings.List[0]);
+        }
+
 #if !BUILDING_SOURCE_GENERATOR_TESTS
         [Fact]
         public void EnsureThrowingWithCollectionAndErrorOnUnknownConfigurationOption()

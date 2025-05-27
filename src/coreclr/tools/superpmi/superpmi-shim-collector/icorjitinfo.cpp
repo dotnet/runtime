@@ -735,15 +735,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-// Class handle for a boxed value type, on the stack.
-CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("getTypeForBoxOnStack");
-    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTypeForBoxOnStack(cls);
-    mc->recGetTypeForBoxOnStack(cls, temp);
-    return temp;
-}
-
 // returns the correct box helper for a particular class.  Note
 // that if this returns CORINFO_HELP_BOX, the JIT can assume
 // 'standard' boxing (allocate object and copy), and optimize
@@ -1373,6 +1364,13 @@ void interceptor_ICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     mc->recGetEEInfo(pEEInfoOut);
 }
 
+void interceptor_ICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
+{
+    mc->cr->AddCall("getAsyncInfo");
+    original_ICorJitInfo->getAsyncInfo(pAsyncInfo);
+    mc->recGetAsyncInfo(pAsyncInfo);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1520,14 +1518,6 @@ CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HAND
     return temp;
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
-{
-    mc->cr->AddCall("embedModuleHandle");
-    CORINFO_MODULE_HANDLE temp = original_ICorJitInfo->embedModuleHandle(handle, ppIndirection);
-    mc->recEmbedModuleHandle(handle, ppIndirection, temp);
-    return temp;
-}
-
 CORINFO_CLASS_HANDLE interceptor_ICJI::embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection)
 {
     mc->cr->AddCall("embedClassHandle");
@@ -1541,14 +1531,6 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::embedMethodHandle(CORINFO_METHOD_HANDLE 
     mc->cr->AddCall("embedMethodHandle");
     CORINFO_METHOD_HANDLE temp = original_ICorJitInfo->embedMethodHandle(handle, ppIndirection);
     mc->recEmbedMethodHandle(handle, ppIndirection, temp);
-    return temp;
-}
-
-CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection)
-{
-    mc->cr->AddCall("embedFieldHandle");
-    CORINFO_FIELD_HANDLE temp = original_ICorJitInfo->embedFieldHandle(handle, ppIndirection);
-    mc->recEmbedFieldHandle(handle, ppIndirection, temp);
     return temp;
 }
 
@@ -1786,6 +1768,14 @@ bool interceptor_ICJI::getTailCallHelpers(
     else
         mc->recGetTailCallHelpers(callToken, sig, flags, nullptr);
     return result;
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    mc->cr->AddCall("getAsyncResumptionStub");
+    CORINFO_METHOD_HANDLE stub = original_ICorJitInfo->getAsyncResumptionStub();
+    mc->recGetAsyncResumptionStub(stub);
+    return stub;
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)

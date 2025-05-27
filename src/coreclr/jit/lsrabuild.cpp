@@ -686,7 +686,7 @@ bool LinearScan::isContainableMemoryOp(GenTree* node)
 //    mask        - the mask (set) of registers.
 //    currentLoc  - the location at which they should be added
 //
-void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
+RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 {
     // The mask identifies a set of registers that will be used during
     // codegen. Mark these as modified here, so when we do final frame
@@ -705,6 +705,8 @@ void LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     *killTail = pos;
     killTail  = &pos->nextRefPosition;
+
+    return pos;
 }
 
 //------------------------------------------------------------------------
@@ -1960,7 +1962,7 @@ void LinearScan::buildPhysRegRecords()
     // callee trash and should appear at the end up the existing callee
     // trash set
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         regOrderFlt     = &lsraRegOrderFltEvex[0];
         regOrderFltSize = lsraRegOrderFltEvexSize;
@@ -1985,7 +1987,7 @@ void LinearScan::buildPhysRegRecords()
 #if defined(TARGET_XARCH)
     // xarch has mask registers available when EVEX is supported
 
-    if (compiler->canUseEvexEncoding())
+    if (getEvexIsSupported())
     {
         for (unsigned int i = 0; i < lsraRegOrderMskSize; i++)
         {
@@ -3833,6 +3835,14 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
 // Notes:
 //    The operands must already have been processed by buildRefPositionsForNode, and their
 //    RefInfoListNodes placed in the defList.
+//    For TARGET_XARCH:
+//              Case 1: APX is not supported at all – We do not need to worry about it at all
+//                      since high GPR doesn’t come into play at all. So, in effect, candidates are
+//                      limited to lowGPRs
+//              Case 2: APX is supported but EVEX support is not there – In this case, we need
+//                      to restrict candidates to just lowGPRs
+//              Case 3: APX support exists with EVEX support. – In this case, we do not need
+//                      to do anything. Can give LSRA access to all registers for this node
 //
 int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
 {
@@ -3844,13 +3854,17 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
         assert(op2 != nullptr);
         if (candidates == RBM_NONE && varTypeUsesFloatReg(node) && (op1->isContainedIndir() || op2->isContainedIndir()))
         {
-            if (op1->isContainedIndir())
+            if (op1->isContainedIndir() && !getEvexIsSupported())
             {
                 return BuildRMWUses(node, op1, op2, lowGprRegs, candidates);
             }
-            else
+            else if (op2->isContainedIndir() && !getEvexIsSupported())
             {
                 return BuildRMWUses(node, op1, op2, candidates, lowGprRegs);
+            }
+            else
+            {
+                return BuildRMWUses(node, op1, op2, candidates, candidates);
             }
         }
         return BuildRMWUses(node, op1, op2, candidates, candidates);
@@ -3861,11 +3875,17 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     {
 #ifdef TARGET_XARCH
         // BSWAP creates movbe
-        if (op1->isContainedIndir() &&
-            ((varTypeUsesFloatReg(node) || node->OperGet() == GT_BSWAP || node->OperGet() == GT_BSWAP16)) &&
-            candidates == RBM_NONE)
+        if (op1->isContainedIndir() && !getEvexIsSupported())
         {
-            srcCount += BuildOperandUses(op1, lowGprRegs);
+            if (candidates == RBM_NONE)
+            {
+                srcCount += BuildOperandUses(op1, lowGprRegs);
+            }
+            else
+            {
+                assert((candidates & lowGprRegs) != RBM_NONE);
+                srcCount += BuildOperandUses(op1, candidates & lowGprRegs);
+            }
         }
         else
 #endif
@@ -3875,11 +3895,18 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, SingleTypeRegSet candidates)
     }
     if (op2 != nullptr)
     {
-
 #ifdef TARGET_XARCH
-        if (op2->isContainedIndir() && varTypeUsesFloatReg(op1) && candidates == RBM_NONE)
+        if (op2->isContainedIndir() && !getEvexIsSupported())
         {
-            candidates = lowGprRegs;
+            if (candidates == RBM_NONE)
+            {
+                candidates = lowGprRegs;
+            }
+            else
+            {
+                assert((candidates & lowGprRegs) != RBM_NONE);
+                srcCount += BuildOperandUses(op1, candidates & lowGprRegs);
+            }
         }
 #endif
         srcCount += BuildOperandUses(op2, candidates);
@@ -3939,7 +3966,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
     unsigned  varIndex       = varDsc->lvVarIndex;
     Interval* varDefInterval = getIntervalForLocalVar(varIndex);
 
-    GenTree* op1 = storeLoc->gtGetOp1();
     if (!storeLoc->IsLastUse(index))
     {
         VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
@@ -3979,14 +4005,6 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 #else
     defCandidates = allRegs(type);
 #endif // TARGET_X86
-
-#ifdef TARGET_AMD64
-    if (op1->isContained() && op1->OperIs(GT_BITCAST) && varTypeUsesIntReg(varDsc->GetRegisterType(storeLoc)))
-    {
-        defCandidates = lowGprRegs;
-    }
-
-#endif // TARGET_AMD64
 
     RefPosition* def = newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, defCandidates, index);
     if (varDefInterval->isWriteThru)
@@ -4151,20 +4169,9 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
-        GenTree*         bitCastSrc   = op1->gtGetOp1();
-        RegisterType     registerType = regType(bitCastSrc->TypeGet());
-        SingleTypeRegSet candidates   = RBM_NONE;
-#ifdef TARGET_AMD64
-        if (registerType == IntRegisterType)
-        {
-            candidates = lowGprRegs;
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            candidates = allRegs(registerType);
-        }
-        singleUseRef = BuildUse(bitCastSrc, candidates);
+        GenTree*     bitCastSrc   = op1->gtGetOp1();
+        RegisterType registerType = regType(bitCastSrc->TypeGet());
+        singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
 
         Interval* srcInterval = singleUseRef->getInterval();
         assert(regType(srcInterval->registerType) == registerType);
@@ -4246,16 +4253,7 @@ int LinearScan::BuildSimple(GenTree* tree)
     }
     if (tree->IsValue())
     {
-#ifdef TARGET_AMD64
-        if ((tree->OperGet() == GT_BSWAP || tree->OperGet() == GT_BSWAP16) && varTypeUsesIntReg(tree))
-        {
-            BuildDef(tree, lowGprRegs);
-        }
-        else
-#endif // TARGET_AMD64
-        {
-            BuildDef(tree);
-        }
+        BuildDef(tree);
     }
     return srcCount;
 }
@@ -4603,10 +4601,14 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT, GT_CCMP));
+#elif defined(TARGET_X86)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT));
 #elif defined(TARGET_ARM64)
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_JTEST, GT_CCMP));
+#elif defined(TARGET_RISCV64)
+    assert(tree->OperIsCmpCompare() || tree->OperIs(GT_JCMP));
 #else
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP));
 #endif
@@ -4739,3 +4741,24 @@ void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
     setDelayFree(swiftErrorRegRecord->lastRefPosition);
 }
 #endif
+
+//------------------------------------------------------------------------
+// MarkAsyncContinuationBusyForCall:
+//   Add a ref position that marks the async continuation register as busy
+//   until it is killed.
+//
+// Arguments:
+//    call - The call node
+//
+void LinearScan::MarkAsyncContinuationBusyForCall(GenTreeCall* call)
+{
+    // We model the async continuation like the swift error register: we ensure
+    // the node follows the call in lowering, and make it delay freed to ensure
+    // nothing is allocated into the register between the call and
+    // ASYNC_CONTINUATION node. We need to add a kill here in the right spot as
+    // not all targets may naturally have one created.
+    assert(call->gtNext != nullptr);
+    assert(call->gtNext->OperIs(GT_ASYNC_CONTINUATION));
+    RefPosition* refPos = addKillForRegs(RBM_ASYNC_CONTINUATION_RET, currentLoc + 1);
+    setDelayFree(refPos);
+}

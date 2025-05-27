@@ -55,14 +55,7 @@ public abstract class SerializationRecord
     /// <exception cref="ArgumentNullException"><paramref name="type" /> is <see langword="null" />.</exception>
     public bool TypeNameMatches(Type type)
     {
-#if NET
         ArgumentNullException.ThrowIfNull(type);
-#else
-        if (type is null)
-        {
-            throw new ArgumentNullException(nameof(type));
-        }
-#endif
 
         return Matches(type, TypeName);
     }

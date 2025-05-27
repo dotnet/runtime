@@ -289,7 +289,9 @@ public:
     //-------------------------------------------------------------------------
 
 #ifdef JIT32_GCENCODER
-    void gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize);
+    void gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
+                          UNALIGNED unsigned int* pVarPtrTableSize,
+                          UNALIGNED unsigned int* pNoGCRegionCount);
 
     bool gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pThisKeptAliveIsInUntracked = nullptr);
 

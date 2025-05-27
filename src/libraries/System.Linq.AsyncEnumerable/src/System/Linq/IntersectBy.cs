@@ -34,9 +34,9 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TSource>() :
@@ -99,9 +99,9 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return
                 first.IsKnownEmpty() || second.IsKnownEmpty() ? Empty<TSource>() :

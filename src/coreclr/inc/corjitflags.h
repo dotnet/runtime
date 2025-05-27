@@ -63,7 +63,7 @@ public:
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 #endif
-
+        CORJIT_FLAG_ASYNC                   = 31, // Generate code for use as an async function
     };
 
     CORJIT_FLAGS()

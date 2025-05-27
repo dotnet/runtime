@@ -55,10 +55,10 @@ namespace Mono.Linker.Steps
 		protected ProcessLinkerXmlBase (LinkContext context, Stream documentStream, EmbeddedResource resource, AssemblyDefinition resourceAssembly, string xmlDocumentLocation)
 			: this (context, documentStream, xmlDocumentLocation)
 		{
-			_resource = (
-				resource ?? throw new ArgumentNullException (nameof (resource)),
-				resourceAssembly ?? throw new ArgumentNullException (nameof (resourceAssembly))
-			);
+			ArgumentNullException.ThrowIfNull(resource);
+			ArgumentNullException.ThrowIfNull(resourceAssembly);
+
+			_resource = (resource, resourceAssembly);
 		}
 
 		protected virtual bool ShouldProcessElement (XPathNavigator nav) => FeatureSettings.ShouldProcessElement (nav, _context, _xmlDocumentLocation);

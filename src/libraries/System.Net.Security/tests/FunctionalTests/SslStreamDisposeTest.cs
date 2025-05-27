@@ -60,6 +60,7 @@ namespace System.Net.Security.Tests
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);
 
+
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams(leaveInnerStreamOpen: true);
             using (client)
             using (server)
@@ -113,8 +114,7 @@ namespace System.Net.Security.Tests
 
             await Parallel.ForEachAsync(System.Linq.Enumerable.Range(0, 10000), cts.Token, async (i, token) =>
             {
-                // use real Tcp streams to avoid specific behavior of ConnectedStreams when concurrently disposed
-                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
 
                 using SslStream client = new SslStream(clientStream);
                 using SslStream server = new SslStream(serverStream);
@@ -148,6 +148,11 @@ namespace System.Net.Security.Tests
                 try
                 {
                     await task;
+                }
+                catch (InvalidOperationException ex) when (ex.StackTrace?.Contains("System.IO.StreamBuffer.WriteAsync") ?? true)
+                {
+                    // Writing to a disposed ConnectedStream (test only, does not happen with NetworkStream)
+                    return;
                 }
                 catch (Exception ex) when (ex
                     is ObjectDisposedException // disposed locally

@@ -627,14 +627,11 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 
     GenTreeIndexAddr* op1IndexAddr = op1->AsIndir()->Addr()->AsIndexAddr();
     GenTreeIndexAddr* op2IndexAddr = op2->AsIndir()->Addr()->AsIndexAddr();
+    GenTree*          op1ArrayRef  = op1IndexAddr->Arr();
+    GenTree*          op2ArrayRef  = op2IndexAddr->Arr();
+    GenTree*          op1IndexNode = op1IndexAddr->Index();
+    GenTree*          op2IndexNode = op2IndexAddr->Index();
 
-    GenTree* op1ArrayRef = op1IndexAddr->Arr();
-    GenTree* op2ArrayRef = op2IndexAddr->Arr();
-    assert(op1ArrayRef->TypeGet() == TYP_REF);
-    assert(op2ArrayRef->TypeGet() == TYP_REF);
-
-    GenTree* op1IndexNode = op1IndexAddr->Index();
-    GenTree* op2IndexNode = op2IndexAddr->Index();
     if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
         (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
     {

@@ -524,6 +524,15 @@ ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
 static
 inline
 void
+ep_rt_sample_profiler_session_enabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_sample_profiler_disabled (void)
 {
     STATIC_CONTRACT_NOTHROW;

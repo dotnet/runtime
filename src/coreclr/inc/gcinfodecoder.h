@@ -16,6 +16,10 @@
 #ifndef _GC_INFO_DECODER_
 #define _GC_INFO_DECODER_
 
+#ifdef SOS_INCLUDE
+#define DECODE_OLD_FORMATS
+#endif
+
 #define _max(a, b) (((a) > (b)) ? (a) : (b))
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -214,7 +218,7 @@ enum GcInfoDecoderFlags
     DECODE_INTERRUPTIBILITY      = 0x08,
     DECODE_GC_LIFETIMES          = 0x10,
     DECODE_NO_VALIDATION         = 0x20,
-    DECODE_PSP_SYM               = 0x40,
+    DECODE_PSP_SYM               = 0x40,    // Unused starting with v4 format
     DECODE_GENERICS_INST_CONTEXT = 0x80,    // stack location of instantiation context for generics
                                             // (this may be either the 'this' ptr or the instantiation secret param)
     DECODE_GS_COOKIE             = 0x100,   // stack location of the GS cookie
@@ -222,6 +226,7 @@ enum GcInfoDecoderFlags
     DECODE_PROLOG_LENGTH         = 0x400,   // length of the prolog (used to avoid reporting generics context)
     DECODE_EDIT_AND_CONTINUE     = 0x800,
     DECODE_REVERSE_PINVOKE_VAR   = 0x1000,
+    DECODE_RETURN_KIND           = 0x2000,  // Unused starting with v4 format
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     DECODE_HAS_TAILCALLS         = 0x4000,
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
@@ -232,7 +237,7 @@ enum GcInfoHeaderFlags
     GC_INFO_IS_VARARG                   = 0x1,
     // unused                           = 0x2, // was GC_INFO_HAS_SECURITY_OBJECT
     GC_INFO_HAS_GS_COOKIE               = 0x4,
-    GC_INFO_HAS_PSP_SYM                 = 0x8,
+    GC_INFO_HAS_PSP_SYM                 = 0x8, // Unused starting with v4 format
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MASK   = 0x30,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_NONE   = 0x00,
     GC_INFO_HAS_GENERICS_INST_CONTEXT_MT     = 0x10,
@@ -247,7 +252,6 @@ enum GcInfoHeaderFlags
     GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
 
-    GC_INFO_FLAGS_BIT_SIZE_VERSION_1    = 9,
     GC_INFO_FLAGS_BIT_SIZE              = 10,
 };
 
@@ -579,11 +583,13 @@ public:
     INT32   GetReversePInvokeFrameStackSlot();
     bool    HasMethodDescGenericsInstContext();
     bool    HasMethodTableGenericsInstContext();
+    bool    HasStackBaseRegister();
     bool    GetIsVarArg();
     bool    WantsReportOnlyLeaf();
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool    HasTailCalls();
 #endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || defined(TARGET_RISCV64)
+    ReturnKind GetReturnKind();
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
     UINT32  GetSizeOfEditAndContinuePreservedArea();
@@ -596,6 +602,10 @@ public:
     UINT32  GetSizeOfStackParameterArea();
 #endif // FIXED_STACK_PARAMETER_SCRATCH_AREA
 
+    inline UINT32 Version()
+    {
+        return m_Version;
+    }
 
 private:
     BitStreamReader m_Reader;
@@ -616,6 +626,8 @@ private:
 #ifdef TARGET_ARM64
     UINT32  m_SizeOfEditAndContinueFixedStackFrame;
 #endif
+    // Unused starting with v4 format
+    ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
     UINT32  m_SafePointIndex;
@@ -633,6 +645,24 @@ private:
     PTR_CBYTE m_GcInfoAddress;
 #endif
     UINT32 m_Version;
+
+    inline UINT32 NormalizeCodeOffset(UINT32 offset)
+    {
+#ifdef DECODE_OLD_FORMATS
+        if (Version() < 4)
+            return offset;
+#endif
+        return GcInfoEncoding::NORMALIZE_CODE_OFFSET(offset);
+    }
+
+    inline UINT32 DenormalizeCodeOffset(UINT32 offset)
+    {
+#ifdef DECODE_OLD_FORMATS
+        if (Version() < 4)
+            return offset;
+#endif
+        return GcInfoEncoding::DENORMALIZE_CODE_OFFSET(offset);
+    }
 
     bool PredecodeFatHeader(int remainingFlags);
 
@@ -751,6 +781,9 @@ private:
 };
 
 typedef TGcInfoDecoder<TargetGcInfoEncoding> GcInfoDecoder;
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoDecoder<InterpreterGcInfoEncoding> InterpreterGcInfoDecoder;
+#endif // FEATURE_INTERPRETER
 
 #endif // USE_GC_INFO_DECODER
 

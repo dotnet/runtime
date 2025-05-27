@@ -15,11 +15,27 @@
 #endif
 #include "lower.h" // for LowerRange()
 
-/*****************************************************************************
- *
- *  Helper for Compiler::fgPerBlockLocalVarLiveness().
- *  The goal is to compute the USE and DEF sets for a basic block.
- */
+//------------------------------------------------------------------------
+// fgMarkUseDef:
+//   Mark a local in the current def/use set.
+//
+// Parameters:
+//   tree - The local
+//
+// Template parameters:
+//   ssaLiveness - Whether the liveness computed is for SSA and should follow
+//   same modelling rules as SSA. SSA models partial defs like (v.x = 123) as
+//   (v = v with x = 123), which also implies that these partial definitions
+//   become uses. For dead-code elimination this is more conservative than
+//   needed, so outside SSA we do not model partial defs in this way:
+//
+//   * In SSA: Partial defs are full defs but are also uses. They impact both
+//   bbVarUse and bbVarDef.
+//
+//   * Outside SSA: Partial defs are _not_ full defs and are also not
+//   considered uses. They do not get included in bbVarUse/bbVarDef.
+//
+template <bool ssaLiveness>
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
     assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
@@ -35,8 +51,9 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
         varDsc->setLvRefCnt(1);
     }
 
-    const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
-    const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
+    const bool isDef     = ((tree->gtFlags & GTF_VAR_DEF) != 0);
+    const bool isFullDef = isDef && ((tree->gtFlags & GTF_VAR_USEASG) == 0);
+    const bool isUse     = ssaLiveness ? !isFullDef : !isDef;
 
     if (varDsc->lvTracked)
     {
@@ -60,7 +77,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             VarSetOps::AddElemD(this, fgCurUseSet, varDsc->lvVarIndex);
         }
 
-        if (isDef)
+        if (ssaLiveness ? isDef : isFullDef)
         {
             // This is a def, add it to the set of defs.
             VarSetOps::AddElemD(this, fgCurDefSet, varDsc->lvVarIndex);
@@ -106,7 +123,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
                         VarSetOps::AddElemD(this, fgCurUseSet, varIndex);
                     }
 
-                    if (isDef)
+                    if (ssaLiveness ? isDef : isFullDef)
                     {
                         VarSetOps::AddElemD(this, fgCurDefSet, varIndex);
                     }
@@ -116,7 +133,10 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     }
 }
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// fgLocalVarLiveness:
+//   Compute block def/use sets, liveness, and do dead code elimination.
+//
 void Compiler::fgLocalVarLiveness()
 {
 #ifdef DEBUG
@@ -216,7 +236,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
-            fgMarkUseDef(tree->AsLclVarCommon());
+            fgMarkUseDef<!lowered>(tree->AsLclVarCommon());
             break;
 
         case GT_LCL_ADDR:
@@ -229,7 +249,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                     break;
                 }
 
-                fgMarkUseDef(tree->AsLclVarCommon());
+                fgMarkUseDef<!lowered>(tree->AsLclVarCommon());
             }
             break;
 
@@ -325,7 +345,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
             if (definedLcl != nullptr)
             {
-                fgMarkUseDef(definedLcl);
+                fgMarkUseDef<!lowered>(definedLcl);
             }
             break;
         }
@@ -356,7 +376,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic)
 }
 #endif // FEATURE_HW_INTRINSICS
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// fgPerBlockLocalVarLiveness:
+//   Compute def and use sets for the IR.
+//
 void Compiler::fgPerBlockLocalVarLiveness()
 {
 #ifdef DEBUG
@@ -419,7 +442,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                     {
                         for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                         {
-                            fgMarkUseDef(lcl);
+                            fgMarkUseDef<false>(lcl);
                         }
                     }
                     else
@@ -436,12 +459,12 @@ void Compiler::fgPerBlockLocalVarLiveness()
                         // qmark arms.
                         for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                         {
-                            bool isUse = ((lcl->gtFlags & GTF_VAR_DEF) == 0) || ((lcl->gtFlags & GTF_VAR_USEASG) != 0);
+                            bool isUse = (lcl->gtFlags & GTF_VAR_DEF) == 0;
                             // We can still handle the pure def at the top level.
                             bool conditional = lcl != dst;
                             if (isUse || !conditional)
                             {
-                                fgMarkUseDef(lcl);
+                                fgMarkUseDef<false>(lcl);
                             }
                         }
                     }
@@ -453,7 +476,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 {
                     for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                     {
-                        fgMarkUseDef(lcl);
+                        fgMarkUseDef<false>(lcl);
                     }
                 }
             }
@@ -1454,6 +1477,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_JCC:
             case GT_JTRUE:
             case GT_RETURN:
+            case GT_RETURN_SUSPEND:
             case GT_SWITCH:
             case GT_RETFILT:
             case GT_START_NONGC:
@@ -2087,7 +2111,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
                         assert(cur->OperIsAnyLocal());
-                        bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
+                        bool isDef       = (cur->gtFlags & GTF_VAR_DEF) != 0;
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
                         // (incorrectly) interfere with liveness in other
