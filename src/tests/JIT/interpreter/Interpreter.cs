@@ -416,6 +416,9 @@ public class InterpreterTest
         if (!TestArray())
             Environment.FailFast(null);
 
+        if (!TestXxObj())
+            Environment.FailFast(null);
+
         if (!TestSizeof())
             Environment.FailFast(null);
 
@@ -951,6 +954,32 @@ public class InterpreterTest
         if (values[0] != value)
             return false;
         if (values[length - 1] != value)
+            return false;
+
+        return true;
+    }
+
+    public static unsafe bool TestXxObj()
+    {
+        // FIXME: There is no way to generate cpobj opcodes with roslyn at present.
+        // The only source of cpobj I've found other than hand-written IL tests is ilmarshalers.h, so once pinvoke marshaling is
+        //  supported, we can use that to verify that cpobj works. Until then, this method only tests ldobj/stobj.
+        TestStruct4fi a = new TestStruct4fi
+        {
+            a = 1,
+            b = 2,
+            c = 3,
+            d = 4,
+        }, b = default;
+        ref TestStruct4fi c = ref a,
+            d = ref b;
+
+        if (b.a == a.a)
+            return false;
+
+        c = d;
+
+        if (b.a != a.a)
             return false;
 
         return true;
