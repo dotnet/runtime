@@ -1725,8 +1725,18 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     {
         if (abiInfo.HasAnyRegisterSegment())
         {
-            if (arg->OperIs(GT_FIELD_LIST))
+            if (arg->OperIs(GT_FIELD_LIST) || (abiInfo.NumSegments > 1))
             {
+                if (!arg->OperIs(GT_FIELD_LIST))
+                {
+                    // Primitive arg, but the ABI requires it to be split into
+                    // registers. Insert the field list here.
+                    GenTreeFieldList* fieldList = comp->gtNewFieldList();
+                    fieldList->AddFieldLIR(comp, arg, 0, genActualType(arg->TypeGet()));
+                    BlockRange().InsertAfter(arg, fieldList);
+                    arg = *ppArg = fieldList;
+                }
+
                 LowerArgFieldList(callArg, arg->AsFieldList());
                 arg = *ppArg;
             }
