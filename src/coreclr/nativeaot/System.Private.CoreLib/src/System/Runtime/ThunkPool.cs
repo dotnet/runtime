@@ -87,11 +87,7 @@ namespace System.Runtime
 
             _allocatedBlocks = new AllocatedBlock();
 
-            IntPtr thunkStubsBlock;
-            lock (this)
-            {
-                thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
-            }
+            IntPtr thunkStubsBlock = ThunkBlocks.GetNewThunksBlock(out Exception ex);
 
             if (thunkStubsBlock != IntPtr.Zero)
             {
@@ -110,20 +106,15 @@ namespace System.Runtime
 
                 _allocatedBlocks._blockBaseAddress = thunkStubsBlock;
             }
+            else
+            {
+                throw ex;
+            }
         }
 
-        public static unsafe ThunksHeap? CreateThunksHeap(IntPtr commonStubAddress)
+        public static unsafe ThunksHeap CreateThunksHeap(IntPtr commonStubAddress)
         {
-            try
-            {
-                ThunksHeap newHeap = new ThunksHeap(commonStubAddress);
-
-                if (newHeap._nextAvailableThunkPtr != IntPtr.Zero)
-                    return newHeap;
-            }
-            catch (Exception) { }
-
-            return null;
+            return new ThunksHeap(commonStubAddress);
         }
 
         // TODO: Feature
@@ -134,7 +125,7 @@ namespace System.Runtime
         //
         // Note: Expected to be called under lock
         //
-        private unsafe bool ExpandHeap()
+        private unsafe bool ExpandHeap(out Exception exception)
         {
             AllocatedBlock newBlockInfo;
 
@@ -142,12 +133,13 @@ namespace System.Runtime
             {
                 newBlockInfo = new AllocatedBlock();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                exception = ex;
                 return false;
             }
 
-            IntPtr thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
+            IntPtr thunkStubsBlock = ThunkBlocks.GetNewThunksBlock(out exception);
 
             if (thunkStubsBlock != IntPtr.Zero)
             {
@@ -177,12 +169,14 @@ namespace System.Runtime
             return false;
         }
 
-        public unsafe IntPtr AllocateThunk()
+        public unsafe IntPtr AllocateThunk(out Exception exception)
         {
             // TODO: optimize the implementation and make it lock-free
             // or at least change it to a per-heap lock instead of a global lock.
 
             Debug.Assert(_nextAvailableThunkPtr != IntPtr.Zero);
+
+            exception = null;
 
             IntPtr nextAvailableThunkPtr;
             lock (this)
@@ -192,7 +186,7 @@ namespace System.Runtime
 
                 if (nextNextAvailableThunkPtr == IntPtr.Zero)
                 {
-                    if (!ExpandHeap())
+                    if (!ExpandHeap(out exception))
                     {
                         return IntPtr.Zero;
                     }
@@ -331,9 +325,10 @@ namespace System.Runtime
         private static IntPtr[] s_currentlyMappedThunkBlocks = new IntPtr[Constants.NumThunkBlocksPerMapping];
         private static int s_currentlyMappedThunkBlocksIndex = Constants.NumThunkBlocksPerMapping;
 
-        public static unsafe IntPtr GetNewThunksBlock()
+        public static unsafe IntPtr GetNewThunksBlock(out Exception exception)
         {
             IntPtr nextThunksBlock;
+            exception = null;
 
             // Check the most recently mapped thunks block. Each mapping consists of multiple
             // thunk stubs pages, and multiple thunk data pages (typically 8 pages of each in a single mapping)
@@ -347,16 +342,15 @@ namespace System.Runtime
             }
             else
             {
-                nextThunksBlock = RuntimeImports.RhAllocateThunksMapping();
+                int isOOM = 0;
+                nextThunksBlock = RuntimeImports.RhAllocateThunksMapping(&isOOM);
 
                 if (nextThunksBlock == IntPtr.Zero)
                 {
-                    // We either ran out of memory and can't do anymore mappings of the thunks templates sections,
-                    // or we are using the managed runtime services fallback, which doesn't provide the
-                    // file mapping feature (ex: older version of mrt100.dll, or no mrt100.dll at all).
-
-                    // The only option is for the caller to attempt and recycle unused thunks to be able to
-                    // find some free entries.
+                    if (isOOM == 0)
+                        exception = new NotSupportedException();
+                    else
+                        exception = new OutOfMemoryException();
 
                     return IntPtr.Zero;
                 }

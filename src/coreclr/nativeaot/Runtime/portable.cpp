@@ -365,8 +365,9 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL0(void*, RhAllocateThunksMapping)
+FCIMPL1(void*, RhAllocateThunksMapping, int * isOOM)
 {
+    *isOOM = 0;
     return NULL;
 }
 FCIMPLEND

@@ -100,13 +100,18 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
+EXTERN_C void* QCALLTYPE RhAllocateThunksMapping(int* isOOM)
 {
+    *isOOM = 0;
+
 #ifdef WIN32
 
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
+    {
+        *isOOM = 1;
         return NULL;
+    }
 
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
@@ -120,7 +125,10 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
     // changed anymore.
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
+    {
+        *isOOM = 1;
         return NULL;
+    }
 
     void * pThunksSection = pNewMapping;
     void * pDataSection = (uint8_t*)pNewMapping + THUNKS_MAP_SIZE;
