@@ -132,6 +132,10 @@ c_static_assert(EVP_KDF_HKDF_MODE_EXTRACT_ONLY == 1);
 c_static_assert(EVP_KDF_HKDF_MODE_EXPAND_ONLY == 2);
 #endif
 
+#ifndef OSSL_PKEY_PARAM_ML_DSA_SEED
+#define OSSL_PKEY_PARAM_ML_DSA_SEED "seed"
+#endif
+
 #ifndef OSSL_PKEY_PARAM_ML_KEM_SEED
 #define OSSL_PKEY_PARAM_ML_KEM_SEED   "seed"
 #endif
@@ -154,10 +158,6 @@ c_static_assert(EVP_PKEY_KEYPAIR == 135);
 #define EVP_PKEY_PUBLIC_KEY 134
 #else
 c_static_assert(EVP_PKEY_PUBLIC_KEY == 134);
-#endif
-
-#ifndef OSSL_PKEY_PARAM_ML_DSA_SEED
-#define OSSL_PKEY_PARAM_ML_DSA_SEED "seed"
 #endif
 
 #ifndef OSSL_SIGNATURE_PARAM_CONTEXT_STRING

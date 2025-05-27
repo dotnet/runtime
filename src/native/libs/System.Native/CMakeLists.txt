@@ -138,3 +138,7 @@ add_library(System.Native-Static
 set_target_properties(System.Native-Static PROPERTIES OUTPUT_NAME System.Native CLEAN_DIRECT_OUTPUT 1)
 
 install (TARGETS System.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+
+if(CLR_CMAKE_HOST_ANDROID)
+    install (TARGETS System.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+endif()

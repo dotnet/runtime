@@ -16,6 +16,10 @@
 #include "dbginterface.h"
 #include <minipal/time.h>
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
+
 #define HIJACK_NONINTERRUPTIBLE_THREADS
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
@@ -205,7 +209,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
 #if defined(_DEBUG)
     int nCnt = 0;
     bool bDiagSuspend = g_pConfig->GetDiagnosticSuspend();
-    ULONGLONG i64TimestampStart = CLRGetTickCount64();
+    ULONGLONG i64TimestampStart = minipal_lowres_ticks();
     ULONGLONG i64TimestampCur = i64TimestampStart;
     ULONGLONG i64TimestampPrev = i64TimestampStart;
 
@@ -317,7 +321,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                 if ((!fOneTryOnly) && bDiagSuspend)
                 {
                     while ( m_dwForbidSuspendThread != 0 &&
-                        CLRGetTickCount64()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
+                        minipal_lowres_ticks()-i64TimestampStart < nCnt*(i64TimestampTicksMax>>3) )
                     {
                         if (g_SystemInfo.dwNumberOfProcessors > 1)
                         {
@@ -375,9 +379,9 @@ retry:
 
 #if defined(_DEBUG)
         i64TimestampPrev = i64TimestampCur;
-        i64TimestampCur = CLRGetTickCount64();
-        // CLRGetTickCount64() is global per machine (not per CPU, like getTimeStamp()).
-        // Next ASSERT states that CLRGetTickCount64() is increasing, or has wrapped.
+        i64TimestampCur = minipal_lowres_ticks();
+        // minipal_lowres_ticks() is global per machine (not per CPU, like getTimeStamp()).
+        // Next ASSERT states that minipal_lowres_ticks() is increasing, or has wrapped.
         // If it wrapped, the last iteration should have executed faster then 0.5 seconds.
         _ASSERTE(i64TimestampCur >= i64TimestampPrev || i64TimestampCur <= 500);
 
@@ -1179,10 +1183,6 @@ bool UseActivationInjection()
 #endif
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 HRESULT
 Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
 {
@@ -1202,8 +1202,8 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
     // Swap in timeout
     if (timeout != INFINITE)
     {
-        ULONG64 curTime = CLRGetTickCount64();
-        ULONG64 newEndTime = curTime + timeout;
+        ULONGLONG curTime = minipal_lowres_ticks();
+        ULONGLONG newEndTime = curTime + timeout;
 
         SetAbortEndTime(newEndTime, abortType == EEPolicy::TA_Rude);
     }
@@ -1263,7 +1263,7 @@ Thread::UserAbort(EEPolicy::ThreadAbortTypes abortType, DWORD timeout)
         ULONGLONG abortEndTime = GetAbortEndTime();
         if (abortEndTime != MAXULONGLONG)
         {
-            ULONGLONG now_time = CLRGetTickCount64();
+            ULONGLONG now_time = minipal_lowres_ticks();
 
             if (now_time >= abortEndTime)
             {
@@ -1657,7 +1657,7 @@ LPrepareRetry:
                 return S_OK;
             }
 
-            ULONGLONG curTime = CLRGetTickCount64();
+            ULONGLONG curTime = minipal_lowres_ticks();
             if (curTime >= GetAbortEndTime())
             {
                 break;
@@ -1678,9 +1678,6 @@ LPrepareRetry:
 
     return S_OK;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void Thread::SetRudeAbortEndTimeFromEEPolicy()
 {
@@ -2266,8 +2263,6 @@ void Thread::HandleThreadAbort ()
 
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-
-    // @TODO: we should consider treating this function as an FCALL or HCALL and use FCThrow instead of COMPlusThrow
 
     // Sometimes we call this without any CLR SEH in place.  An example is UMThunkStubRareDisableWorker.
     // That's okay since COMPlusThrow will eventually erect SEH around the RaiseException. It prevents
@@ -3788,7 +3783,7 @@ ThrowControlForThread(
     exceptionRecord.ExceptionCode = EXCEPTION_COMPLUS;
     exceptionRecord.ExceptionFlags = 0;
 
-    OBJECTREF throwable = ExceptionTracker::CreateThrowable(&exceptionRecord, TRUE);
+    OBJECTREF throwable = ExInfo::CreateThrowable(&exceptionRecord, TRUE);
     pfef->GetExceptionContext()->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
     DispatchManagedException(throwable, pfef->GetExceptionContext());
 #else // FEATURE_EH_FUNCLETS
@@ -3796,7 +3791,7 @@ ThrowControlForThread(
     INSTALL_MANAGED_EXCEPTION_DISPATCHER
     RaiseComPlusException();
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER
-#endif // FEATURE_EH_FUNCLETS    
+#endif // FEATURE_EH_FUNCLETS
 }
 
 #if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
@@ -4549,7 +4544,7 @@ struct ExecutionState
 };
 
 // Client is responsible for suspending the thread before calling
-void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
+void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet))
 {
     CONTRACTL {
         NOTHROW;
@@ -4574,7 +4569,7 @@ void Thread::HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind))
         pvHijackAddr = reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 
-    SetHijackReturnKind(returnKind);
+    SetHijackReturnKind(returnKind, hasAsyncRet);
 #endif // TARGET_X86
 
     // Don't hijack if are in the first level of running a filter/finally/catch.
@@ -4807,7 +4802,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         else
         {
 #ifdef TARGET_X86
-            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), pCF->GetRegisterSet()->PCTAddr);
+            STRESS_LOG2(LF_SYNC, LL_INFO1000, "Not in Jitted code at EIP = %p, &EIP = %p\n", GetControlPC(pCF->GetRegisterSet()), GetRegdisplayPCTAddr(pCF->GetRegisterSet()));
 #else
             STRESS_LOG1(LF_SYNC, LL_INFO1000, "Not in Jitted code at pc = %p\n", GetControlPC(pCF->GetRegisterSet()));
 #endif
@@ -4837,7 +4832,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
         {
             // pPC points to the return address sitting on the stack, as our
             // current EIP for the penultimate stack frame.
-            pES->m_ppvRetAddrPtr = (void **) pRDT->PCTAddr;
+            pES->m_ppvRetAddrPtr = (void **) GetRegdisplayPCTAddr(pRDT);
 
             STRESS_LOG2(LF_SYNC, LL_INFO1000, "Partially Int case hijack address = 0x%x val = 0x%x\n", pES->m_ppvRetAddrPtr, *pES->m_ppvRetAddrPtr);
         }
@@ -4914,10 +4909,17 @@ void STDCALL OnHijackWorker(HijackArgs * pArgs)
 #endif // HIJACK_NONINTERRUPTIBLE_THREADS
 }
 
-static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind))
+static bool GetReturnAddressHijackInfo(EECodeInfo *pCodeInfo X86_ARG(ReturnKind * returnKind) X86_ARG(bool* hasAsyncRet))
 {
+    X86_ONLY(*hasAsyncRet = false);
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
-    return pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind));
+    if (!pCodeInfo->GetCodeManager()->GetReturnAddressHijackInfo(gcInfoToken X86_ARG(returnKind)))
+        return false;
+
+    MethodDesc* pMD = pCodeInfo->GetMethodDesc();
+    X86_ONLY(*hasAsyncRet = pMD->IsAsyncMethod());
+
+    return true;
 }
 
 #ifndef TARGET_UNIX
@@ -5318,9 +5320,10 @@ BOOL Thread::HandledJITCase()
             EECodeInfo codeInfo(ip);
 
             X86_ONLY(ReturnKind returnKind;)
-            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+            X86_ONLY(bool hasAsyncRet;)
+            if (GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
             {
-                HijackThread(&esb X86_ARG(returnKind));
+                HijackThread(&esb X86_ARG(returnKind) X86_ARG(hasAsyncRet));
             }
         }
     }
@@ -5825,7 +5828,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         g_pDebugInterface->SingleStepToExitApcCall(pThread, interruptedContext);
         return;
     }
-#endif        
+#endif
 
     DWORD addrOffset = codeInfo.GetRelOffset();
 
@@ -5883,7 +5886,8 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
             return;
 
         X86_ONLY(ReturnKind returnKind;)
-        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind)))
+        X86_ONLY(bool hasAsyncRet;)
+        if (!GetReturnAddressHijackInfo(&codeInfo X86_ARG(&returnKind) X86_ARG(&hasAsyncRet)))
         {
             return;
         }
@@ -5897,7 +5901,7 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool susp
         StackWalkerWalkingThreadHolder threadStackWalking(pThread);
 
         // Hijack the return address to point to the appropriate routine based on the method's return type.
-        pThread->HijackThread(&executionState X86_ARG(returnKind));
+        pThread->HijackThread(&executionState X86_ARG(returnKind) X86_ARG(hasAsyncRet));
     }
 }
 
@@ -6052,20 +6056,13 @@ DWORD StatisticsBase::secondsToDisplay = 0;
 DWORD StatisticsBase::GetTime()
 {
     LIMITED_METHOD_CONTRACT;
-    LARGE_INTEGER large;
 
     if (divisor == 0)
     {
-        if (QueryPerformanceFrequency(&large) && (large.QuadPart != 0))
-            divisor = (DWORD)(large.QuadPart / (1000 * 1000));        // microseconds
-        else
-            divisor = 1;
+        divisor = (DWORD)minipal_hires_tick_frequency() / (1000 * 1000);        // microseconds
     }
 
-    if (QueryPerformanceCounter(&large))
-        return (DWORD) (large.QuadPart / divisor);
-    else
-        return 0;
+    return (DWORD) (minipal_hires_ticks() / divisor);
 }
 
 DWORD StatisticsBase::GetElapsed(DWORD start, DWORD stop)
@@ -6096,7 +6093,7 @@ void StatisticsBase::RollOverIfNeeded()
     const DWORD RolloverInterval = 3900;
 
     // every so often, print a summary of our statistics
-    DWORD ticksNow = GetTickCount();
+    DWORD ticksNow = (DWORD)minipal_lowres_ticks();
 
     if (secondsToDisplay == 0)
     {
@@ -6111,7 +6108,7 @@ void StatisticsBase::RollOverIfNeeded()
     {
         DisplayAndUpdate();
 
-        startTick = GetTickCount();
+        startTick = (DWORD)minipal_lowres_ticks();
 
         // Our counters are 32 bits and can count to 4 GB in microseconds or 4K in seconds.
         // Reset when we get close to overflowing

@@ -999,6 +999,11 @@ void Compiler::optValnumCSE_InitDataFlow()
         }
     }
 
+    if (compIsAsync())
+    {
+        optValnumCSE_SetUpAsyncByrefKills();
+    }
+
     for (BasicBlock* const block : Blocks())
     {
         // If the block doesn't contains a call then skip it...
@@ -1080,6 +1085,112 @@ void Compiler::optValnumCSE_InitDataFlow()
     fgDebugCheckLinks();
 
 #endif // DEBUG
+}
+
+//---------------------------------------------------------------------------
+// optValnumCSE_SetUpAsyncByrefKills:
+//   Compute kills because of async calls requiring byrefs not to be live
+//   across them.
+//
+void Compiler::optValnumCSE_SetUpAsyncByrefKills()
+{
+    bool anyAsyncKills = false;
+    cseAsyncKillsMask  = BitVecOps::MakeFull(cseLivenessTraits);
+    for (unsigned inx = 1; inx <= optCSECandidateCount; inx++)
+    {
+        CSEdsc* dsc = optCSEtab[inx - 1];
+        assert(dsc->csdIndex == inx);
+        bool isByRef = false;
+        if (dsc->csdTree->TypeIs(TYP_BYREF))
+        {
+            isByRef = true;
+        }
+        else if (dsc->csdTree->TypeIs(TYP_STRUCT))
+        {
+            ClassLayout* layout = dsc->csdTree->GetLayout(this);
+            isByRef             = layout->HasGCByRef();
+        }
+
+        if (isByRef)
+        {
+            // We generate a bit pattern like: 1111111100111100 where there
+            // are 0s only for the byref CSEs.
+            BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailBit(inx));
+            BitVecOps::RemoveElemD(cseLivenessTraits, cseAsyncKillsMask, getCSEAvailCrossCallBit(inx));
+            anyAsyncKills = true;
+        }
+    }
+
+    if (!anyAsyncKills)
+    {
+        return;
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        Statement* asyncCallStmt = nullptr;
+        GenTree*   asyncCall     = nullptr;
+        // Find last async call in block
+        Statement* stmt = block->lastStmt();
+        if (stmt == nullptr)
+        {
+            continue;
+        }
+
+        while (asyncCall == nullptr)
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) != 0)
+            {
+                for (GenTree* tree = stmt->GetRootNode(); tree != nullptr; tree = tree->gtPrev)
+                {
+                    if (tree->IsCall() && tree->AsCall()->IsAsync())
+                    {
+                        asyncCallStmt = stmt;
+                        asyncCall     = tree;
+                        break;
+                    }
+                }
+            }
+
+            if (stmt == block->firstStmt())
+                break;
+
+            stmt = stmt->GetPrevStmt();
+        }
+
+        if (asyncCall == nullptr)
+        {
+            continue;
+        }
+
+        // This block has a suspension point. Make all BYREF CSEs unavailable.
+        BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseGen, cseAsyncKillsMask);
+        BitVecOps::IntersectionD(cseLivenessTraits, block->bbCseOut, cseAsyncKillsMask);
+
+        // Now make all byref CSEs after the suspension point available.
+        Statement* curStmt = asyncCallStmt;
+        GenTree*   curTree = asyncCall;
+        while (true)
+        {
+            do
+            {
+                if (IS_CSE_INDEX(curTree->gtCSEnum))
+                {
+                    unsigned CSEnum = GET_CSE_INDEX(curTree->gtCSEnum);
+                    BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, getCSEAvailBit(CSEnum));
+                    BitVecOps::AddElemD(cseLivenessTraits, block->bbCseOut, getCSEAvailBit(CSEnum));
+                }
+
+                curTree = curTree->gtNext;
+            } while (curTree != nullptr);
+
+            curStmt = curStmt->GetNextStmt();
+            if (curStmt == nullptr)
+                break;
+
+            curTree = curStmt->GetTreeList();
+        }
+    }
 }
 
 /*****************************************************************************
@@ -1420,6 +1531,49 @@ void Compiler::optValnumCSE_Availability()
                             // This is the first time visited, so record this defs exception set
                             desc->defExcSetCurrent = theLiberalExcSet;
                         }
+                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        {
+                            // We will change the value of desc->defExcSetCurrent to be the intersection of
+                            // these two sets.
+                            // This is the set of exceptions that all CSE defs have (that we have visited so
+                            // far)
+                            //
+                            ValueNum intersectionExcSet =
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+#ifdef DEBUG
+                            if (this->verbose)
+                            {
+                                VNFuncApp excSeq;
+
+                                vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
+                                printf(">>> defExcSetCurrent is ");
+                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                printf("\n");
+
+                                vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
+                                printf(">>> theLiberalExcSet is ");
+                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                printf("\n");
+
+                                if (intersectionExcSet == vnStore->VNForEmptyExcSet())
+                                {
+                                    printf(">>> the intersectionExcSet is the EmptyExcSet\n");
+                                }
+                                else
+                                {
+                                    vnStore->GetVNFunc(intersectionExcSet, &excSeq);
+                                    printf(">>> the intersectionExcSet is ");
+                                    vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                    printf("\n");
+                                }
+                            }
+#endif // DEBUG
+
+                            // Change the defExcSetCurrent to be a subset of its prior value
+                            //
+                            assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
+                            desc->defExcSetCurrent = intersectionExcSet;
+                        }
 
                         // Have we seen a CSE use and made a promise of an exception set?
                         //
@@ -1432,51 +1586,6 @@ void Compiler::optValnumCSE_Availability()
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
                                 //
-
-                                // no update is needed when these are the same VN
-                                if (desc->defExcSetCurrent != theLiberalExcSet)
-                                {
-                                    // We will change the value of desc->defExcSetCurrent to be the intersection of
-                                    // these two sets.
-                                    // This is the set of exceptions that all CSE defs have (that we have visited so
-                                    // far)
-                                    //
-                                    ValueNum intersectionExcSet =
-                                        vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
-#ifdef DEBUG
-                                    if (this->verbose)
-                                    {
-                                        VNFuncApp excSeq;
-
-                                        vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
-                                        printf(">>> defExcSetCurrent is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
-                                        printf(">>> theLiberalExcSet is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                        {
-                                            printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                        }
-                                        else
-                                        {
-                                            vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                            printf(">>> the intersectionExcSet is ");
-                                            vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                            printf("\n");
-                                        }
-                                    }
-#endif // DEBUG
-
-                                    // Change the defExcSetCurrent to be a subset of its prior value
-                                    //
-                                    assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
-                                    desc->defExcSetCurrent = intersectionExcSet;
-                                }
                             }
                             else // This CSE def doesn't satisfy one of the exceptions already promised to a CSE use
                             {
@@ -1577,7 +1686,7 @@ void Compiler::optValnumCSE_Availability()
                 // kill all of the cseAvailCrossCallBit for each CSE whenever we see a GT_CALL (unless the call
                 // generates a CSE).
                 //
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     // Check for the common case of an already empty available_cses set
                     // and thus nothing needs to be killed
@@ -1594,6 +1703,12 @@ void Compiler::optValnumCSE_Availability()
                             // partially kill any cse's that are currently alive (using the cseCallKillsMask set)
                             //
                             BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseCallKillsMask);
+
+                            // In async state machines, make all byref CSEs unavailable after suspension points.
+                            if (tree->AsCall()->IsAsync() && compIsAsync())
+                            {
+                                BitVecOps::IntersectionD(cseLivenessTraits, available_cses, cseAsyncKillsMask);
+                            }
 
                             if (isDef)
                             {

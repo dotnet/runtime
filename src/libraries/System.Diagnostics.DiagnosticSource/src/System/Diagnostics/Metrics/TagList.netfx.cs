@@ -260,10 +260,7 @@ namespace System.Diagnostics
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="arrayIndex " /> is less than 0 or greater that or equal the <paramref name="array" /> length.</exception>
         public readonly void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if ((uint)arrayIndex >= array.Length)
             {

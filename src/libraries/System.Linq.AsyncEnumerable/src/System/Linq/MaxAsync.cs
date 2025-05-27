@@ -26,7 +26,7 @@ namespace System.Linq
             IComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             comparer ??= Comparer<TSource>.Default;
 

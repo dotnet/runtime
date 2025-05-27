@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'Mono'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' != 'Mono' or '$(TargetArchitecture)' == 'wasm' or '$(TargetsMobile)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BridgeTester.cs" />

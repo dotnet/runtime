@@ -24,7 +24,7 @@ namespace System.Linq
         public static IAsyncEnumerable<TResult> OfType<TResult>(
             this IAsyncEnumerable<object?> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return
                 source.IsKnownEmpty() ? Empty<TResult>() :

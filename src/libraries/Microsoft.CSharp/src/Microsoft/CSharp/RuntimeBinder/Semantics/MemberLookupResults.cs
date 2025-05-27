@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -11,6 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // to get at the inaccessible symbols, bogus symbols, and validly bound symbols.
     // ----------------------------------------------------------------------------
 
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed partial class CMemberLookupResults
     {
         private TypeArray ContainingTypes { get; }// Types that contain the member we're looking for.

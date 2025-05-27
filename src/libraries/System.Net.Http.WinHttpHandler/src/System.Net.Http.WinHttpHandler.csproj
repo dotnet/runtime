@@ -72,14 +72,16 @@ System.Net.Http.WinHttpHandler</PackageDescription>
              Link="Common\System\Net\Security\CertificateHelper.cs" />
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs"
              Link="Common\System\Net\Security\CertificateHelper.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Windows.cs"
+             Link="Common\System\Net\Security\CertificateValidation.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs"
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
+    <Compile Include="System\Net\Http\CachedCertificateValue.cs" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
-    <Compile Include="System\Net\Http\WinHttpCertificateHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpChannelBinding.cs" />
     <Compile Include="System\Net\Http\WinHttpChunkMode.cs" />
     <Compile Include="System\Net\Http\WinHttpCookieContainerAdapter.cs" />
@@ -113,6 +115,7 @@ System.Net.Http.WinHttpHandler</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 

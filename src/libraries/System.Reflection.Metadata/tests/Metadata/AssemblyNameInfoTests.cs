@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Globalization;
 using Xunit;
 
 namespace System.Reflection.Metadata.Tests.Metadata
@@ -114,6 +115,19 @@ namespace System.Reflection.Metadata.Tests.Metadata
             // by the CultureInfo ctor that calls CultureData.GetCultureData
             // which lowers the name for caching and normalization purposes.
             Assert.Equal("aa", assemblyNameInfo.ToAssemblyName().CultureName);
+        }
+
+        [Theory]
+        // "c" is an invalid culture identifier in Full Framework
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [InlineData('c')]
+        [InlineData('C')]
+        public void Culture_C_IsMappedToInvariantCulture(char culture)
+        {
+            AssemblyNameInfo assemblyNameInfo = AssemblyNameInfo.Parse($"name,culture={culture}".AsSpan());
+            Assert.Equal(culture.ToString(), assemblyNameInfo.CultureName);
+            Assert.Equal("", assemblyNameInfo.ToAssemblyName().CultureName);
+            Assert.Equal(CultureInfo.InvariantCulture, assemblyNameInfo.ToAssemblyName().CultureInfo);
         }
 
         static void Roundtrip(AssemblyName source)

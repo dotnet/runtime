@@ -2719,8 +2719,7 @@ LDoDebuggerIntercept:
     context.Esp = pCf->GetCodeManager()->GetAmbientSP(regs,
                                                       pCf->GetCodeInfo(),
                                                       nativeOffset,
-                                                      pData->dHandler,
-                                                      pCf->GetCodeManState()
+                                                      pData->dHandler
                                                      );
     //
     // In case we see unknown FS:[0] handlers we delay the interception point until we reach the handler that protects the interception point.
@@ -2779,7 +2778,6 @@ void ResumeAtJitEH(CrawlFrame* pCf,
                                       EHClausePtr->HandlerStartPC,
                                       nestingLevel,
                                       throwable,
-                                      pCf->GetCodeManState(),
                                       &pShadowSP,
                                       &pHandlerEnd);
 
@@ -2811,8 +2809,7 @@ void ResumeAtJitEH(CrawlFrame* pCf,
         // Find the ESP of the caller of the method with the exception handler.
         bool unwindSuccess = pCf->GetCodeManager()->UnwindStackFrame(pCf->GetRegisterSet(),
                                                                      pCf->GetCodeInfo(),
-                                                                     pCf->GetCodeManagerFlags(),
-                                                                     pCf->GetCodeManState());
+                                                                     pCf->GetCodeManagerFlags());
         _ASSERTE(unwindSuccess);
 
         if (((TADDR)pThread->m_pFrame < pCf->GetRegisterSet()->SP))
@@ -2992,7 +2989,7 @@ int CallJitEHFilter(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHCla
 
     size_t * pEndFilter = NULL; // Write
     pCf->GetCodeManager()->FixContext(ICodeManager::FILTER_CONTEXT, &context, pCf->GetCodeInfo(),
-                                      EHClausePtr->FilterOffset, nestingLevel, thrownObj, pCf->GetCodeManState(),
+                                      EHClausePtr->FilterOffset, nestingLevel, thrownObj,
                                       &pShadowSP, &pEndFilter);
 
     // End of the filter is the same as start of handler
@@ -3041,7 +3038,7 @@ void CallJitEHFinally(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHC
     size_t * pFinallyEnd = NULL;
     pCf->GetCodeManager()->FixContext(
         ICodeManager::FINALLY_CONTEXT, &context, pCf->GetCodeInfo(),
-        EHClausePtr->HandlerStartPC, nestingLevel, ObjectToOBJECTREF((Object *) NULL), pCf->GetCodeManState(),
+        EHClausePtr->HandlerStartPC, nestingLevel, ObjectToOBJECTREF((Object *) NULL),
         &pShadowSP, &pFinallyEnd);
 
     if (pFinallyEnd)

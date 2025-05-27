@@ -28,11 +28,11 @@ namespace System.Net
 
         internal const uint LoopbackMaskHostOrder = 0xFF000000;
 
-        public static readonly IPAddress IPv6Any = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0);
-        public static readonly IPAddress IPv6Loopback = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 0);
+        public static readonly IPAddress IPv6Any = new ReadOnlyIPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 0);
+        public static readonly IPAddress IPv6Loopback = new ReadOnlyIPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], 0);
         public static readonly IPAddress IPv6None = IPv6Any;
 
-        private static readonly IPAddress s_loopbackMappedToIPv6 = new IPAddress((ReadOnlySpan<byte>)[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1], 0);
+        private static readonly IPAddress s_loopbackMappedToIPv6 = new ReadOnlyIPAddress([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1], 0);
 
         /// <summary>
         /// For IPv4 addresses, this field stores the Address.
@@ -438,6 +438,11 @@ namespace System.Net
                     ThrowSocketOperationNotSupported();
                 }
 
+                if (this is ReadOnlyIPAddress)
+                {
+                    ThrowSocketOperationNotSupported();
+                }
+
                 // Consider: Since scope is only valid for link-local and site-local
                 //           addresses we could implement some more robust checking here
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
@@ -771,6 +776,9 @@ namespace System.Net
         private sealed class ReadOnlyIPAddress : IPAddress
         {
             public ReadOnlyIPAddress(ReadOnlySpan<byte> newAddress) : base(newAddress)
+            { }
+
+            public ReadOnlyIPAddress(ReadOnlySpan<byte> address, long scopeid) : base(address, scopeid)
             { }
         }
     }

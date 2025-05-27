@@ -60,6 +60,8 @@ namespace System.Formats.Tar.Tests
 
         protected const string TestGName = "group";
         protected const string TestUName = "user";
+        protected const int RootUidGid = 0;
+        protected const string RootUNameGName = "root";
 
         // The metadata of the entries inside the asset archives are all set to these values
         protected const int AssetGid = 3579;
@@ -255,7 +257,7 @@ namespace System.Formats.Tar.Tests
         protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName) =>
             GetMemoryStream(GetStrangeTarFilePath(testCaseName));
 
-        private static MemoryStream GetMemoryStream(string path)
+        protected static MemoryStream GetMemoryStream(string path)
         {
             MemoryStream ms = new();
             using (FileStream fs = File.OpenRead(path))
@@ -340,7 +342,7 @@ namespace System.Formats.Tar.Tests
             }
             else
             {
-                entry.ModificationTime = DateTimeOffset.MinValue;
+                entry.ModificationTime = default;
             }
             entry.ModificationTime = TestModificationTime;
 
@@ -724,7 +726,7 @@ namespace System.Formats.Tar.Tests
             // this is 256 but is supported because prefix is not required to end in separator.
             yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(OneByteCharacter, 100);
 
-            // non-ascii prefix + name 
+            // non-ascii prefix + name
             yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(OneByteCharacter, 100);
             yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(OneByteCharacter, 100);
 
@@ -796,6 +798,26 @@ namespace System.Formats.Tar.Tests
                 yield return prefix + Repeat(TwoBytesCharacter, 100 / 2);
                 yield return prefix + Repeat(FourBytesCharacter, 100 / 4);
             }
+        }
+
+        internal static int GetChecksum(byte[] value)
+        {
+            int count = 0;
+            foreach (byte c in value)
+            {
+                count += c;
+            }
+            return count;
+        }
+
+        internal static int GetChecksum(string value)
+        {
+            int count = 0;
+            foreach (char c in value)
+            {
+                count += c;
+            }
+            return count;
         }
 
         internal static string Repeat(char c, int count)

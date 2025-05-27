@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
+#include <stdlib.h>
 
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
@@ -222,7 +223,12 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
+#if defined(DEBUG) && defined(_WIN32)
+    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    quick_exit(__managed__Main(argc, argv));
+#else
     return __managed__Main(argc, argv);
+#endif
 }
 
 #ifdef HAS_ADDRESS_SANITIZER

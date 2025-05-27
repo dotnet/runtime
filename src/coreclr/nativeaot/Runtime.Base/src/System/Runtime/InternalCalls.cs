@@ -280,9 +280,6 @@ namespace System.Runtime
         [DllImport(Redhawk.BaseName)]
         internal static extern void RhpSignalFinalizationComplete(uint fCount, int observedFullGcCount);
 
-        [DllImport(Redhawk.BaseName)]
-        internal static extern ulong RhpGetTickCount64();
-
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.
         [DllImport(Redhawk.BaseName)]

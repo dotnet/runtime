@@ -44,8 +44,26 @@ C_FUNC(\Name\()_End):
         nop
 .endm
 
+.macro GLOBAL_LABEL Name
+        .global C_FUNC(\Name)
+C_FUNC(\Name):
+.endm
+
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .type \Name, %function
+C_FUNC(\Name):
+.endm
+
 .macro PREPARE_EXTERNAL_VAR Name, HelperReg
         ldr \HelperReg, [pc, #C_FUNC(\Name)@GOTPCREL]
+.endm
+
+.macro PREPARE_EXTERNAL_VAR_INDIRECT Name, HelperReg
+        movw \HelperReg, #:lower16:C_FUNC(\Name) - (. + 12)
+        movt \HelperReg, #:upper16:C_FUNC(\Name) - (. + 8)
+        add \HelperReg, pc
+        ldr \HelperReg, [\HelperReg]
 .endm
 
 .macro push_nonvol_reg Register
