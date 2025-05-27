@@ -52,7 +52,6 @@
 #else   // !defined(__i386__)
 
 #define __cdecl
-#define __stdcall
 
 #endif  // !defined(__i386__)
 
@@ -285,7 +284,7 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
-typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
+typedef uint32_t (*BackgroundCallback)(_In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name);
 #ifdef HOST_WINDOWS
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);

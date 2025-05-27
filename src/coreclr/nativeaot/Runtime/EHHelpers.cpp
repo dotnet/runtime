@@ -325,7 +325,7 @@ static uintptr_t UnwindSimpleHelperToCaller(
 
 #ifdef TARGET_UNIX
 
-int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
+int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
     PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg)
 {
     uintptr_t faultingIP = palContext->GetIp();
