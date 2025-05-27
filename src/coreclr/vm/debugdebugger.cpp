@@ -1117,7 +1117,7 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
                     }
                     else
                     {
-                        pWalkData->dwFinalILOffsets = 0;
+                        pWalkData->dwFinalILOffset = 0;
                         return 1;
                     }
                 }
