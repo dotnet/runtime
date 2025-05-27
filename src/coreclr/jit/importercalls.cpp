@@ -8519,8 +8519,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Note different embedding would be needed for NAOT/R2R,
         // but we have ruled those out above.
         //
-        GenTree* const instParam =
-            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 

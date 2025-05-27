@@ -2443,7 +2443,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         {
 #ifndef TARGET_UNIX
             // PDB format - use diasymreader.dll with COM activation
-            InlineSString<_MAX_PATH> ssBuf;
+            InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));
             IfFailThrow(FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS,
                                                ssBuf.GetUnicode(),

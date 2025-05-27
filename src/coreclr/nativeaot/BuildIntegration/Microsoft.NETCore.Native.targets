@@ -386,7 +386,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <!-- write linker script for lld (13+) to retain the __modules section -->
-    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
+    <WriteLinesToFile File="$(NativeIntermediateOutputPath)sections.ld" Lines="OVERWRITE_SECTIONS { __modules : { KEEP(*(__modules)) } }" Overwrite="true" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(LinkerFlavor)' == 'lld' and '$(_LinkerVersion)' &gt; '12'" />
 
     <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')"
       Condition="'$(_targetOS)' != 'win' and '$(NativeLib)' != 'Static'"

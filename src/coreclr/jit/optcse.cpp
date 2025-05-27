@@ -1531,6 +1531,49 @@ void Compiler::optValnumCSE_Availability()
                             // This is the first time visited, so record this defs exception set
                             desc->defExcSetCurrent = theLiberalExcSet;
                         }
+                        else if (desc->defExcSetCurrent != theLiberalExcSet)
+                        {
+                            // We will change the value of desc->defExcSetCurrent to be the intersection of
+                            // these two sets.
+                            // This is the set of exceptions that all CSE defs have (that we have visited so
+                            // far)
+                            //
+                            ValueNum intersectionExcSet =
+                                vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
+#ifdef DEBUG
+                            if (this->verbose)
+                            {
+                                VNFuncApp excSeq;
+
+                                vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
+                                printf(">>> defExcSetCurrent is ");
+                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                printf("\n");
+
+                                vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
+                                printf(">>> theLiberalExcSet is ");
+                                vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                printf("\n");
+
+                                if (intersectionExcSet == vnStore->VNForEmptyExcSet())
+                                {
+                                    printf(">>> the intersectionExcSet is the EmptyExcSet\n");
+                                }
+                                else
+                                {
+                                    vnStore->GetVNFunc(intersectionExcSet, &excSeq);
+                                    printf(">>> the intersectionExcSet is ");
+                                    vnStore->vnDumpExcSeq(this, &excSeq, true);
+                                    printf("\n");
+                                }
+                            }
+#endif // DEBUG
+
+                            // Change the defExcSetCurrent to be a subset of its prior value
+                            //
+                            assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
+                            desc->defExcSetCurrent = intersectionExcSet;
+                        }
 
                         // Have we seen a CSE use and made a promise of an exception set?
                         //
@@ -1543,51 +1586,6 @@ void Compiler::optValnumCSE_Availability()
                                 // This new def still satisfies any promise made to all the CSE uses that we have
                                 // encountered
                                 //
-
-                                // no update is needed when these are the same VN
-                                if (desc->defExcSetCurrent != theLiberalExcSet)
-                                {
-                                    // We will change the value of desc->defExcSetCurrent to be the intersection of
-                                    // these two sets.
-                                    // This is the set of exceptions that all CSE defs have (that we have visited so
-                                    // far)
-                                    //
-                                    ValueNum intersectionExcSet =
-                                        vnStore->VNExcSetIntersection(desc->defExcSetCurrent, theLiberalExcSet);
-#ifdef DEBUG
-                                    if (this->verbose)
-                                    {
-                                        VNFuncApp excSeq;
-
-                                        vnStore->GetVNFunc(desc->defExcSetCurrent, &excSeq);
-                                        printf(">>> defExcSetCurrent is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        vnStore->GetVNFunc(theLiberalExcSet, &excSeq);
-                                        printf(">>> theLiberalExcSet is ");
-                                        vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                        printf("\n");
-
-                                        if (intersectionExcSet == vnStore->VNForEmptyExcSet())
-                                        {
-                                            printf(">>> the intersectionExcSet is the EmptyExcSet\n");
-                                        }
-                                        else
-                                        {
-                                            vnStore->GetVNFunc(intersectionExcSet, &excSeq);
-                                            printf(">>> the intersectionExcSet is ");
-                                            vnStore->vnDumpExcSeq(this, &excSeq, true);
-                                            printf("\n");
-                                        }
-                                    }
-#endif // DEBUG
-
-                                    // Change the defExcSetCurrent to be a subset of its prior value
-                                    //
-                                    assert(vnStore->VNExcIsSubset(desc->defExcSetCurrent, intersectionExcSet));
-                                    desc->defExcSetCurrent = intersectionExcSet;
-                                }
                             }
                             else // This CSE def doesn't satisfy one of the exceptions already promised to a CSE use
                             {

@@ -446,7 +446,19 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
                 if (cmpSize == EA_4BYTE)
-                    buildInternalIntRegisterDefForNode(tree);
+                {
+                    GenTree* op2 = tree->gtGetOp2();
+
+                    bool isUnsigned    = (tree->gtFlags & GTF_UNSIGNED) != 0;
+                    bool useAddSub     = !(!tree->OperIs(GT_EQ, GT_NE) || op2->IsIntegralConst(-2048));
+                    bool useShiftRight = !isUnsigned && ((tree->OperIs(GT_LT) && op2->IsIntegralConst(0)) ||
+                                                         (tree->OperIs(GT_LE) && op2->IsIntegralConst(-1)));
+                    bool useLoadImm    = isUnsigned && ((tree->OperIs(GT_LT, GT_GE) && op2->IsIntegralConst(0)) ||
+                                                     (tree->OperIs(GT_LE, GT_GT) && op2->IsIntegralConst(-1)));
+
+                    if (!useAddSub && !useShiftRight && !useLoadImm)
+                        buildInternalIntRegisterDefForNode(tree);
+                }
             }
             buildInternalRegisterUses();
         }

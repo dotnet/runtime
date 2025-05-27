@@ -41,7 +41,7 @@ PALTEST(threading_ExitThread_test2_paltest_exitthread_test2, "threading/ExitThre
     DWORD dwExpected = TEST_EXIT_CODE;
 
     char  rgchDirName[_MAX_DIR];
-    char  absPathBuf[_MAX_PATH];
+    char  absPathBuf[MAX_PATH];
     char* rgchAbsPathName;
 
     /* initialize the PAL */

@@ -145,10 +145,8 @@ struct JitInterfaceCallbacks
     void (* getFunctionFixedEntryPoint)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, bool isUnsafeFunctionPointer, CORINFO_CONST_LOOKUP* pResult);
     void* (* getMethodSync)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
     CorInfoHelpFunc (* getLazyStringLiteralHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle);
-    CORINFO_MODULE_HANDLE (* embedModuleHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE handle, void** ppIndirection);
     CORINFO_CLASS_HANDLE (* embedClassHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE handle, void** ppIndirection);
     CORINFO_METHOD_HANDLE (* embedMethodHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE handle, void** ppIndirection);
-    CORINFO_FIELD_HANDLE (* embedFieldHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE handle, void** ppIndirection);
     void (* embedGenericHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
     void (* getLocationOfThisType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
@@ -1498,16 +1496,6 @@ public:
     return temp;
 }
 
-    virtual CORINFO_MODULE_HANDLE embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_MODULE_HANDLE temp = _callbacks->embedModuleHandle(_thisHandle, &pException, handle, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection)
@@ -1524,16 +1512,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_METHOD_HANDLE temp = _callbacks->embedMethodHandle(_thisHandle, &pException, handle, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual CORINFO_FIELD_HANDLE embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_FIELD_HANDLE temp = _callbacks->embedFieldHandle(_thisHandle, &pException, handle, ppIndirection);
     if (pException != nullptr) throw pException;
     return temp;
 }

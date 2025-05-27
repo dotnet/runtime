@@ -4384,9 +4384,6 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
                 info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(helperArg.classHandle);
                 currentArg = gtNewIconEmbClsHndNode(helperArg.classHandle);
                 break;
-            case CORINFO_HELPER_ARG_TYPE_Module:
-                currentArg = gtNewIconEmbScpHndNode(helperArg.moduleHandle);
-                break;
             case CORINFO_HELPER_ARG_TYPE_Const:
                 currentArg = gtNewIconNode(helperArg.constant);
                 break;

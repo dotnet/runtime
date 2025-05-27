@@ -6,6 +6,8 @@
 
 #ifdef FEATURE_HW_INTRINSICS
 
+class Compiler;
+
 #ifdef TARGET_XARCH
 enum HWIntrinsicCategory : uint8_t
 {
@@ -162,14 +164,12 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x400000,
 
-    // The intrinsic is an embedded broadcast compatible intrinsic
-    HW_Flag_EmbBroadcastCompatible = 0x800000,
+    // UNUSED = 0x800000,
 
     // The intrinsic is an embedded rounding compatible intrinsic
     HW_Flag_EmbRoundingCompatible = 0x1000000,
 
-    // The intrinsic is an embedded masking compatible intrinsic
-    HW_Flag_EmbMaskingCompatible = 0x2000000,
+    // UNUSED = 0x2000000,
 
     // The base type of this intrinsic needs to be normalized to int/uint unless it is long/ulong.
     HW_Flag_NormalizeSmallTypeToInt = 0x4000000,
@@ -599,19 +599,9 @@ struct HWIntrinsicInfo
         return lookup(id).numArgs;
     }
 
-    static instruction lookupIns(NamedIntrinsic id, var_types type)
-    {
-        if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
-        {
-            assert(!"Unexpected type");
-            return INS_invalid;
-        }
+    static instruction lookupIns(NamedIntrinsic id, var_types type, Compiler* comp);
 
-        uint16_t result = lookup(id).ins[type - TYP_BYTE];
-        return static_cast<instruction>(result);
-    }
-
-    static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)
+    static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode, Compiler* comp)
     {
         assert(intrinsicNode != nullptr);
 
@@ -627,7 +617,7 @@ struct HWIntrinsicInfo
             type = intrinsicNode->GetSimdBaseType();
         }
 
-        return lookupIns(intrinsic, type);
+        return lookupIns(intrinsic, type, comp);
     }
 
     static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
@@ -649,22 +639,10 @@ struct HWIntrinsicInfo
     }
 
 #if defined(TARGET_XARCH)
-    static bool IsEmbBroadcastCompatible(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
-    }
-
     static bool IsEmbRoundingCompatible(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbRoundingCompatible) != 0;
-    }
-
-    static bool IsEmbMaskingCompatible(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_EmbMaskingCompatible) != 0;
     }
 #endif // TARGET_XARCH
 

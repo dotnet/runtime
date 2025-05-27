@@ -846,6 +846,9 @@ namespace System.Text.Json.SourceGeneration
 
                     switch (defaultCheckType)
                     {
+                        case SerializedValueCheckType.Ignore:
+                            break;
+
                         case SerializedValueCheckType.IgnoreWhenNull:
                             writer.WriteLine($"if ({propValueExpr} is not null)");
                             writer.WriteLine('{');
@@ -1053,12 +1056,14 @@ namespace System.Text.Json.SourceGeneration
                 IgnoreWhenNull,
                 IgnoreWhenDefault,
                 DisallowNull,
+                Ignore
             }
 
             private static SerializedValueCheckType GetCheckType(ContextGenerationSpec contextSpec, PropertyGenerationSpec propertySpec)
             {
                 return (propertySpec.DefaultIgnoreCondition ?? contextSpec.GeneratedOptionsSpec?.DefaultIgnoreCondition) switch
                 {
+                    JsonIgnoreCondition.WhenWriting => SerializedValueCheckType.Ignore,
                     JsonIgnoreCondition.WhenWritingNull => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.None,
                     JsonIgnoreCondition.WhenWritingDefault => propertySpec.PropertyType.CanBeNull ? SerializedValueCheckType.IgnoreWhenNull : SerializedValueCheckType.IgnoreWhenDefault,
                     _ when propertySpec.IsGetterNonNullableAnnotation && contextSpec.GeneratedOptionsSpec?.RespectNullableAnnotations is true => SerializedValueCheckType.DisallowNull,

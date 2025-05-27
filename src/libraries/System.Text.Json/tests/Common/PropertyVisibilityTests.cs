@@ -2168,11 +2168,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task JsonIgnoreCondition_WhenWriting()
         {
-            var options = new JsonSerializerOptions { IgnoreReadOnlyProperties = true };
             var json = await Serializer.SerializeWrapper
                 (
-                    new JsonIgnoreCondition_WhenReadingWritingTestModel { Age = 10, Name = "Mike" },
-                    options
+                    new JsonIgnoreCondition_WhenReadingWritingTestModel { Age = 10, Name = "Mike" }
                 );
             Assert.Equal("""{"Age":10}""", json);
         }
