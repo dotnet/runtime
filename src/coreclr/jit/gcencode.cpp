@@ -1606,6 +1606,22 @@ size_t GCInfo::gcInfoBlockHdrSave(
         assert(header->epilogCount <= 1);
     }
 #endif
+    if (compiler->UsesFunclets() && compiler->info.compFlags & CORINFO_FLG_SYNCH)
+    {
+        // While the sync start offset and end offset are not used by the stackwalker/EH system
+        // in funclets mode, we do need to know if the code is synchronized if we are generating
+        // an edit and continue method, so that we can properly manage the stack during a Remap
+        // operation, for determining the ParamTypeArg for collectible generics purposes, and
+        // for determining the offset of the localloc variable in the stack frame.
+        // Instead of inventing a new encoding, just encode some non-0 offsets into these fields.
+        // to indicate that the method is synchronized.
+        //
+        // Use 1 for both offsets, since that doesn't actually make sense and implies that the
+        // sync region is 0 bytes long. The JIT will never emit a sync region of 0 bytes in non-
+        // funclet mode.
+        header->syncStartOffset = 1;
+        header->syncEndOffset   = 1;
+    }
 
     header->revPInvokeOffset = INVALID_REV_PINVOKE_OFFSET;
     if (compiler->opts.IsReversePInvoke())
@@ -2207,7 +2223,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     if (header.noGCRegionCnt != 0)
     {
         NoGCRegionEncoder encoder(mask != 0 ? dest : NULL);
-        compiler->GetEmitter()->emitGenNoGCLst(encoder, /* skipAllPrologsAndEpilogs = */ true);
+        compiler->GetEmitter()->emitGenNoGCLst(encoder, /* skipMainPrologsAndEpilogs = */ true);
         totalSize += encoder.totalSize;
         if (mask != 0)
             dest += encoder.totalSize;

@@ -47,13 +47,16 @@ endif(FEATURE_PERFTRACING)
 add_compile_definitions($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:FEATURE_CACHED_INTERFACE_DISPATCH>)
 add_compile_definitions($<${FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH}:FEATURE_VIRTUAL_STUB_DISPATCH>)
 
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    add_compile_definitions(FEATURE_STATICALLY_LINKED)
+endif()
+
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
     assemblybinder.cpp
     binder.cpp
-    bundle.cpp
     castcache.cpp
     callcounting.cpp
     cdacplatformmetadata.cpp
@@ -298,6 +301,7 @@ set(VM_SOURCES_WKS
     assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
+    bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
     cachelinealloc.cpp

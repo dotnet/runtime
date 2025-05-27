@@ -177,27 +177,21 @@ VOID PALAPI APCFunc_WFSOExMutexTest(ULONG_PTR dwParam)
 /* Entry Point for child thread. */
 DWORD PALAPI WaiterProc_WFSOExMutexTest(LPVOID lpParameter)
 {
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        Fail("Failed to query performance frequency!");
-    }
-
-    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hMutex_WFSOExMutexTest, 
 								ChildThreadWaitTime, 
         							Alertable);
     
-    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    NewTimeStamp = minipal_hires_ticks();
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
     {
@@ -210,7 +204,7 @@ DWORD PALAPI WaiterProc_WFSOExMutexTest(LPVOID lpParameter)
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFSOExMutexTest = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExMutexTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
   
     return 0;
 }

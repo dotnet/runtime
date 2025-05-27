@@ -4001,7 +4001,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
         //       this probably needs to be changed.
 
         // Load
-        genCodeForLoadOffset(INS_movdqu, EA_16BYTE, xmmTmpReg, src, offset);
+        genCodeForLoadOffset(INS_movdqu32, EA_16BYTE, xmmTmpReg, src, offset);
         // Store
         genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
 
@@ -5700,7 +5700,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX2_ConvertToUInt32:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(baseType);
 #if defined(TARGET_X86)
                             if (varTypeIsLong(baseType))
@@ -5731,7 +5731,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX10v1_V512_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
 
                             if (intrinsicId == NI_SSE2_Extract)
@@ -5808,7 +5808,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
                             break;
                         }
@@ -6293,6 +6293,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         {
             params.retSize       = emitTypeSize(retTypeDesc->GetReturnRegType(0));
             params.secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
+
+            if (retTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()) == REG_INTRET)
+            {
+                // If the second return register is REG_INTRET, then the first
+                // return is expected to be in a SIMD register.
+                // The emitter has hardcoded belief that params.retSize corresponds to
+                // REG_INTRET and secondRetSize to REG_INTRET_1, so fix up the
+                // situation here.
+                assert(!EA_IS_GCREF_OR_BYREF(params.retSize));
+                params.retSize       = params.secondRetSize;
+                params.secondRetSize = EA_UNKNOWN;
+            }
         }
         else
         {
@@ -8479,7 +8491,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 
     if (type == TYP_STRUCT)
     {
-        ins = INS_movdqu;
+        ins = INS_movdqu32;
         // This should be changed!
         attr = EA_16BYTE;
         size = 16;
@@ -9348,7 +9360,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     // // Legacy instructions
     theEmitter->emitIns_R_ARX(INS_add, EA_4BYTE, REG_R16, REG_R17, REG_R18, 1, 0);
 
-    theEmitter->emitIns_AR_R(INS_movnti, EA_8BYTE, REG_R17, REG_R16, 10);
+    theEmitter->emitIns_AR_R(INS_movnti64, EA_8BYTE, REG_R17, REG_R16, 10);
     theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R17, REG_R16, REG_R18);
 
     theEmitter->emitIns_Mov(INS_kmovb_gpr, EA_4BYTE, REG_R16, REG_K0, false);
@@ -9376,8 +9388,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R_R(INS_pext, EA_4BYTE, REG_R16, REG_R18, REG_R17);
     theEmitter->emitIns_R_R_R(INS_pext, EA_8BYTE, REG_R16, REG_R18, REG_R17);
 
-    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM0, false);
-    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM16, false);
+    theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM0, false);
+    theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
     theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM0, false);
     theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM16, false);
 }
@@ -11037,6 +11049,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+#else
+    if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Funclet prologs need to have at least 1 byte or the IL->Native mapping data will not
+        // include the first IL instruction in the funclet.
+        instGen(INS_nop);
+    }
 #endif
 
     genClearAvxStateInProlog();
