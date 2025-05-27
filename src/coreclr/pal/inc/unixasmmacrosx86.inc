@@ -124,9 +124,8 @@ C_FUNC(\Name\()_End):
     PROLOG_PUSH esi
     PROLOG_PUSH edi
 
-    // push ArgumentRegisters
-    PROLOG_PUSH ecx
-    PROLOG_PUSH edx
+    // make space for ArgumentRegisters
+    sub esp, 8
 
     // set frame pointer
     PROLOG_END
@@ -154,9 +153,8 @@ C_FUNC(\Name\()_End):
     // restore stack pointer
     EPILOG_BEG
 
-    // pop ArgumentRegisters
-    EPILOG_POP edx
-    EPILOG_POP ecx
+    // skip over ArgumentRegisters
+    add esp, 8
 
     // pop CalleeSavedRegisters
     EPILOG_POP edi

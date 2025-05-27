@@ -73,14 +73,11 @@ endm
 ;; The macro assumes it is called from a helper that the values of EBX, ESI and EDI remain unchanged from their
 ;; values in managed code. It pushes the frame at the top of the stack.
 ;;
-;; EAX is trashed by this macro. ECX, EDX are preserved.
+;; EAX is trashed by this macro.
 ;;
 PUSH_COOP_PINVOKE_FRAME macro transitionFrameReg
     push        ebp
     mov         ebp, esp
-
-    push        ecx
-    push        edx
 
     lea         eax, [ebp + 8]                      ; get the ESP of the caller
     push        eax                                 ; save ESP
@@ -99,17 +96,14 @@ endm
 
 ;;
 ;; Remove the frame from a previous call to PUSH_COOP_PINVOKE_FRAME from the top of the stack and restore EBX,
-;; ESI, EDI, ECX, and EDX to their previous values. Tears down the EBP frame.
+;; ESI, and EDI to their previous values. Tears down the EBP frame.
 ;;
 POP_COOP_PINVOKE_FRAME macro
     add         esp, 4*4
     pop         ebx
     pop         esi
     pop         edi
-    pop         ecx
-
-    pop         edx
-    pop         ecx
+    add         esp, 4
 
     pop         ebp
 endm

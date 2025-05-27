@@ -45,6 +45,9 @@ FASTCALL_ENDFUNC
 FASTCALL_FUNC   RhpNewObject, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
+        ; Preserve MethodTable in ESI.
+        mov         esi, ecx
+
         push        eax                                             ; transition frame
         push        0                                               ; numElements
 
@@ -52,10 +55,10 @@ FASTCALL_FUNC   RhpNewObject, 8
         ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc
 
-        POP_COOP_PINVOKE_FRAME
-
         test        eax, eax
         jz          NewOutOfMemory
+
+        POP_COOP_PINVOKE_FRAME
 
         ret
 
@@ -63,7 +66,11 @@ NewOutOfMemory:
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
 
-        xor         edx, edx            ; Indicate that we should throw OOM.
+        mov         ecx, esi        ; Restore MethodTable pointer
+        xor         edx, edx        ; Indicate that we should throw OOM.
+
+        POP_COOP_PINVOKE_FRAME
+
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
@@ -224,6 +231,9 @@ ENDIF
 FASTCALL_FUNC RhpNewArray, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
+        ; Preserve MethodTable in ESI.
+        mov         esi, ecx
+
         ; Push alloc helper arguments (transition frame, size, flags, MethodTable).
         push        eax                                             ; transition frame
         push        edx                                             ; numElements
@@ -233,10 +243,10 @@ FASTCALL_FUNC RhpNewArray, 8
         ; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc
 
-        POP_COOP_PINVOKE_FRAME
-
         test        eax, eax
         jz          ArrayOutOfMemory
+
+        POP_COOP_PINVOKE_FRAME
 
         ret
 
@@ -244,7 +254,11 @@ ArrayOutOfMemory:
         ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ; an out of memory exception that the caller of this allocator understands.
 
+        mov         ecx, esi        ; Restore MethodTable pointer
         xor         edx, edx        ; Indicate that we should throw OOM.
+
+        POP_COOP_PINVOKE_FRAME
+
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
