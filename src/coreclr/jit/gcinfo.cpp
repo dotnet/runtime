@@ -585,7 +585,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
     if (compiler->codeGen->GetInterruptible())
     {
         NoGCRegionCounter counter;
-        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipAllPrologsAndEpilogs = */ true);
+        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
         noGCRegionCount = counter.noGCRegionCount;
     }
 

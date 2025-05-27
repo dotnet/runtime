@@ -1318,12 +1318,6 @@ CorInfoHelpFunc MyICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
     return jitInstance->mc->repGetLazyStringLiteralHelper(handle);
 }
 
-CORINFO_MODULE_HANDLE MyICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("embedModuleHandle");
-    return jitInstance->mc->repEmbedModuleHandle(handle, ppIndirection);
-}
-
 CORINFO_CLASS_HANDLE MyICJI::embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("embedClassHandle");
@@ -1334,12 +1328,6 @@ CORINFO_METHOD_HANDLE MyICJI::embedMethodHandle(CORINFO_METHOD_HANDLE handle, vo
 {
     jitInstance->mc->cr->AddCall("embedMethodHandle");
     return jitInstance->mc->repEmbedMethodHandle(handle, ppIndirection);
-}
-
-CORINFO_FIELD_HANDLE MyICJI::embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("embedFieldHandle");
-    return jitInstance->mc->repEmbedFieldHandle(handle, ppIndirection);
 }
 
 // Given a module scope (module), a method handle (context) and

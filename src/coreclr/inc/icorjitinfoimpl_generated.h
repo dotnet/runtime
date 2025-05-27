@@ -556,20 +556,12 @@ void* getMethodSync(
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
 
-CORINFO_MODULE_HANDLE embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection) override;
-
 CORINFO_CLASS_HANDLE embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection) override;
 
 CORINFO_METHOD_HANDLE embedMethodHandle(
           CORINFO_METHOD_HANDLE handle,
-          void** ppIndirection) override;
-
-CORINFO_FIELD_HANDLE embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
           void** ppIndirection) override;
 
 void embedGenericHandle(
