@@ -9827,6 +9827,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
 
                         case NI_AVX2_Shuffle:
+                        case NI_AVX512_Shuffle:
                         {
                             if (varTypeIsByte(simdBaseType))
                             {
@@ -9848,7 +9849,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512_Permute2x64:
                         case NI_AVX512_Permute4x32:
                         case NI_AVX512_Permute4x64:
-                        case NI_AVX512_Shuffle:
                         case NI_AVX512_ShuffleHigh:
                         case NI_AVX512_ShuffleLow:
                         case NI_AVX512_RotateLeft:
