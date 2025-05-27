@@ -163,6 +163,51 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 .And.HaveStdErrContaining("Ignoring FX version [9999.9.9] without .deps.json");
         }
 
+        [Fact]
+        public void ListRuntimes_OtherArchitectures()
+        {
+            // Non-host architectures
+            string[] otherArchs = new[] { "arm64", "x64", "x86" }.Where(a => a != TestContext.BuildArchitecture).ToArray();
+            var installLocations = new (string, string)[otherArchs.Length];
+
+            using (var testArtifact = TestArtifact.Create("listOtherArchs"))
+            {
+                // Add runtimes for other architectures
+                string[] versions = ["9999.0.0", "9999.0.1", "9999.0.2"];
+                for (int i = 0; i < otherArchs.Length; i++)
+                {
+                    string arch = otherArchs[i];
+                    string installLocation = Directory.CreateDirectory(Path.Combine(testArtifact.Location, arch)).FullName;
+                    foreach (string version in versions)
+                    {
+                        DotNetBuilder.AddMicrosoftNETCoreAppFrameworkMockHostPolicy(installLocation, version);
+                    }
+
+                    installLocations[i] = (arch, installLocation);
+                }
+
+                var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet.BinPath, "exe").Build();
+                using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
+                {
+                    registeredInstallLocationOverride.SetInstallLocation(installLocations);
+                    foreach (var (arch, installLocation) in installLocations)
+                    {
+                        // Verifiy exact match of command output. The output of --list-runtimes is intended to be machine-readable
+                        // and must not change in a way that breaks existing parsing.
+                        string runtimePath = Path.Combine(installLocation, "shared", MicrosoftNETCoreApp);
+                        string expectedOutput = string.Join(string.Empty, versions.Select(v => $"{MicrosoftNETCoreApp} {v} [{runtimePath}]{Environment.NewLine}"));
+                        dotnet.Exec("--list-runtimes", "--arch", arch)
+                            .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                            .CaptureStdOut()
+                            .Execute()
+                            .Should().Pass()
+                            .And.HaveStdOut(expectedOutput);
+
+                    }
+                }
+            }
+        }
+
         [Theory]
         [InlineData(true)]
         [InlineData(null)]

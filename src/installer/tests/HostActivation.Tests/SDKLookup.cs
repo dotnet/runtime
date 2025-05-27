@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-
+using System.Linq;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.TestUtils;
@@ -601,6 +601,51 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             RunTest()
                 .Should().Fail()
                 .And.HaveStdErrContaining(sdk.ErrorMessage);
+        }
+
+        [Fact]
+        public void ListSdks_OtherArchitectures()
+        {
+            // Non-host architectures
+            var otherArchs = new[] { "arm64", "x64", "x86" }.Where(a => a != TestContext.BuildArchitecture).ToArray();
+            var installLocations = new (string, string)[otherArchs.Length];
+
+            using (var testArtifact = TestArtifact.Create("listOtherArchs"))
+            {
+                // Add SDKs for other architectures
+                string[] versions = ["9999.0.0", "9999.0.1", "9999.0.2"];
+                for (int i = 0; i < otherArchs.Length; i++)
+                {
+                    string arch = otherArchs[i];
+                    string installLocation = Directory.CreateDirectory(Path.Combine(testArtifact.Location, arch)).FullName;
+                    foreach (string version in versions)
+                    {
+                        DotNetBuilder.AddMockSDK(installLocation, version, version);
+                    }
+
+                    installLocations[i] = (arch, installLocation);
+                }
+
+                var dotnet = new DotNetBuilder(testArtifact.Location, TestContext.BuiltDotNet.BinPath, "exe").Build();
+                using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(dotnet.GreatestVersionHostFxrFilePath))
+                {
+                    registeredInstallLocationOverride.SetInstallLocation(installLocations);
+                    foreach (var (arch, installLocation) in installLocations)
+                    {
+                        // Verifiy exact match of command output. The output of --list-sdks is intended to be machine-readable
+                        // and must not change in a way that breaks existing parsing.
+                        string sdkPath = Path.Combine(installLocation, "sdk");
+                        string expectedOutput = string.Join(string.Empty, versions.Select(v => $"{v} [{sdkPath}]{Environment.NewLine}"));
+                        dotnet.Exec("--list-sdks", "--arch", arch)
+                            .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                            .CaptureStdOut()
+                            .EnableTracingAndCaptureOutputs()
+                            .Execute()
+                            .Should().Pass()
+                            .And.HaveStdOut(expectedOutput);
+                    }
+                }
+            }
         }
 
         public static IEnumerable<object[]> InvalidGlobalJsonData
