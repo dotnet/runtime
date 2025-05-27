@@ -370,7 +370,7 @@ namespace System.Net.Mail.Tests
             AsyncCompletedEventArgs e = await tcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
             Assert.True(e.Cancelled, "SendAsync should have been canceled");
             _output.WriteLine(e.Error?.ToString() ?? "No error");
-            Assert.IsType<OperationCanceledException>(e.Error.InnerException);
+            Assert.IsAssignableFrom<OperationCanceledException>(e.Error.InnerException);
 
             // We should still be able to send mail on the SmtpClient instance
             await client.SendMailAsync(message).WaitAsync(TestHelper.PassingTestTimeout);
