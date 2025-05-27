@@ -32,7 +32,6 @@
     <Compile Include="System\Net\Mime\MediaTypeNames.cs" />
     <Compile Include="System\Net\Mime\MimeBasePart.cs" />
     <Compile Include="System\Net\Mime\SmtpDateTime.cs" />
-    <Compile Include="System\Net\Mime\MultiAsyncResult.cs" />
     <Compile Include="System\Net\Mime\ByteEncoder.cs" />
     <Compile Include="System\Net\Mime\Base64Encoder.cs" />
     <Compile Include="System\Net\Mime\IByteEncoder.cs" />
@@ -47,7 +46,6 @@
     <Compile Include="System\Net\Mail\Attachment.cs" />
     <Compile Include="System\Net\Mail\AttachmentCollection.cs" />
     <Compile Include="System\Net\BufferedReadStream.cs" />
-    <Compile Include="System\Net\Mail\ReadWriteAdapter.cs" />
     <Compile Include="System\Net\Mail\LinkedResource.cs" />
     <Compile Include="System\Net\Mail\LinkedResourceCollection.cs" />
     <Compile Include="System\Net\Mail\DomainLiteralReader.cs" />
@@ -69,12 +67,12 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ReadWriteAdapter.cs"
+             Link="Common\System\Net\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
-             Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
@@ -105,37 +103,12 @@
     <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\MailWriter.cs" />
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
-             Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
-             Link="Common\System\Net\DebugSafeHandle.cs" />
-    <Compile Include="$(CommonPath)System\Net\InternalException.cs"
-             Link="Common\System\Net\InternalException.cs" />
-    <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
-             Link="Common\System\Net\ExceptionCheck.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\BidirectionalDictionary.cs"
-             Link="Common\System\Collections\Generic\BidirectionalDictionary.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
   </ItemGroup>
 
-  <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
-             Link="Common\System\Net\ContextAwareResult.Unix.cs" />
-  </ItemGroup>
-
-  <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Windows.cs"
-             Link="Common\System\Net\ContextAwareResult.Windows.cs" />
-  </ItemGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -147,9 +120,7 @@
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 

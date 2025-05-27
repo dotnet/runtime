@@ -100,7 +100,6 @@ extern bool g_arm64_atomics_present;
 /******************* ABI-specific glue *******************************/
 
 #define MAX_PATH 260
-#define _MAX_PATH 260
 #define _MAX_DRIVE  3   /* max. length of drive component */
 #define _MAX_DIR    256 /* max. length of path component */
 #define _MAX_FNAME  256 /* max. length of file name component */
@@ -111,9 +110,7 @@ extern bool g_arm64_atomics_present;
 #define MAX_PATH_FNAME MAX_PATH
 #define MAX_LONGPATH   1024  /* max. length of full pathname */
 
-#define MAXSHORT      0x7fff
 #define MAXLONG       0x7fffffff
-#define MAXCHAR       0x7f
 #define MAXDWORD      0xffffffff
 
 //  Sorting IDs.
@@ -419,7 +416,6 @@ PAL_PerfJitDump_Finish();
 #define MB_OKCANCEL             0x00000001L
 #define MB_ABORTRETRYIGNORE     0x00000002L
 
-#define MB_ICONQUESTION         0x00000020L
 #define MB_ICONEXCLAMATION      0x00000030L
 
 #define MB_TASKMODAL            0x00002000L
@@ -2914,11 +2910,6 @@ FlushInstructionCache(
 #define MAX_LEADBYTES         12
 #define MAX_DEFAULTCHAR       2
 
-PALIMPORT
-UINT
-PALAPI
-GetACP(void);
-
 typedef struct _cpinfo {
     UINT MaxCharSize;
     BYTE DefaultChar[MAX_DEFAULTCHAR];
@@ -3899,29 +3890,6 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 #ifndef ERANGE
 #define ERANGE          34
 #endif
-
-/****************PAL Perf functions for PInvoke*********************/
-#if PAL_PERF
-PALIMPORT
-VOID
-PALAPI
-PAL_EnableProcessProfile();
-
-PALIMPORT
-VOID
-PALAPI
-PAL_DisableProcessProfile();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsProcessProfileEnabled();
-
-PALIMPORT
-INT64
-PALAPI
-PAL_GetCpuTickCount();
-#endif // PAL_PERF
 
 /******************* PAL functions for exceptions *******/
 
