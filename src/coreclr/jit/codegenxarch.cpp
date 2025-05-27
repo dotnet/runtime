@@ -11259,7 +11259,7 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
 
             assert((blkSize % XMM_REGSIZE_BYTES) == 0);
 
-            int regSize = (int)compiler->roundDownSIMDSize(blkSize);
+            int regSize      = (int)compiler->roundDownSIMDSize(blkSize);
             int lenRemaining = blkSize;
             while (lenRemaining > 0)
             {
