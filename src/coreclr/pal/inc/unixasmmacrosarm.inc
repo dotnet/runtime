@@ -282,12 +282,19 @@ C_FUNC(\Name):
 .endm
 
 .macro PUSH_COOP_PINVOKE_FRAME target
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0
-        add     \target, sp, #__PWTB_TransitionBlock
+        // Reserve space for argument registers
+        alloc_stack 16
+        PUSH_CALLEE_SAVED_REGISTERS
+        PROLOG_STACK_SAVE_OFFSET r7, #12
+        // let r7 point the saved r7 in the stack (clang FP style)
+        CHECK_STACK_ALIGNMENT
+        END_PROLOGUE
+        mov     \target, sp
 .endm
 
 .macro POP_COOP_PINVOKE_FRAME
-        EPILOG_WITH_TRANSITION_BLOCK
+        POP_CALLEE_SAVED_REGISTERS
+        free_stack 16
 .endm
 
 //-----------------------------------------------------------------------------
