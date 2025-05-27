@@ -687,6 +687,7 @@ void FixupPrecode::StaticInitialize()
 
 void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
 {
+#ifndef TARGET_WASM
     // Fill in the data page such that the target of the fixup precode starts as initialized to point
     // to the start of the precode itself, so that before the memory for the precode is initialized,
     // the precode is in a state where it will loop forever.
@@ -705,10 +706,12 @@ void FixupPrecode::GenerateDataPage(uint8_t* pageBase, size_t pageSize)
         PCODE* ppTargetSlot = (PCODE*)(pageBase + i + offsetof(FixupPrecodeData, Target));
         *ppTargetSlot = ((Precode*)(pageBase - pageSize + i))->GetEntryPoint();
     }
+#endif // !TARGET_WASM
 }
 
 void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
+#ifndef TARGET_WASM
     int totalCodeSize = (int)((pageSize / FixupPrecode::CodeSize) * FixupPrecode::CodeSize);
 #ifdef TARGET_X86
 
@@ -733,6 +736,7 @@ void FixupPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size
         _ASSERTE(FixupPrecode::IsFixupPrecodeByASM((PCODE)(pageBase + i)));
     }
 #endif // _DEBUG
+#endif // !TARGET_WASM
 }
 
 BOOL FixupPrecode::IsFixupPrecodeByASM(PCODE addr)

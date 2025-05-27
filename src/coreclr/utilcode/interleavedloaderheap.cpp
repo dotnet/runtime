@@ -497,11 +497,14 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     }
 
 #ifdef _DEBUG
-    // Check to ensure that the RW region of the allocated stub is zeroed out
-    BYTE *pAllocatedRWBytes = (BYTE*)pResult + GetStubCodePageSize();
-    for (size_t i = 0; i < dwRequestedSize; i++)
+    // Check to ensure that the RW region of the allocated stub is zeroed out if there isn't a data page generator
+    if (m_pConfig->DataPageGenerator == NULL)
     {
-        _ASSERTE_MSG(pAllocatedRWBytes[i] == 0, "LoaderHeap must return zero-initialized memory");
+        BYTE *pAllocatedRWBytes = (BYTE*)pResult + GetStubCodePageSize();
+        for (size_t i = 0; i < dwRequestedSize; i++)
+        {
+            _ASSERTE_MSG(pAllocatedRWBytes[i] == 0, "LoaderHeap must return zero-initialized memory");
+        }
     }
 
     if (m_dwDebugFlags & kCallTracing)

@@ -108,7 +108,7 @@
 // memory barrier to preserve the volatile semantics. Technically this is only necessary on MP systems but we
 // currently don't have a cheap way to determine the number of CPUs from this header file. Revisit this if it
 // turns out to be a performance issue for the uni-proc case.
-nein
+
 #define VOLATILE_MEMORY_BARRIER() MemoryBarrier()
 #define SFENCE_MEMORY_BARRIER()
 #else
