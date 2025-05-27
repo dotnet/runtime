@@ -230,12 +230,15 @@ namespace System.Runtime.InteropServices
                 return HResults.E_INVALIDARG;
             }
 
-            if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
+            if (s_currentRootObjectHandle.Target is not object sourceObject)
             {
                 return HResults.S_FALSE;
             }
 
-            object sourceObject = s_currentRootObjectHandle.Target!;
+            if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
+            {
+                return HResults.S_FALSE;
+            }
 
             if (sourceObject == targetObject)
             {
