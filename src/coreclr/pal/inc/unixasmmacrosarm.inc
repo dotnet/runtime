@@ -282,8 +282,8 @@ C_FUNC(\Name):
 .endm
 
 .macro PUSH_COOP_PINVOKE_FRAME target
-        // Reserve space for argument registers
-        alloc_stack 16
+        // Reserve space for argument registers + alignment
+        alloc_stack 20
         PUSH_CALLEE_SAVED_REGISTERS
         PROLOG_STACK_SAVE_OFFSET r7, #12
         // let r7 point the saved r7 in the stack (clang FP style)
@@ -294,7 +294,7 @@ C_FUNC(\Name):
 
 .macro POP_COOP_PINVOKE_FRAME
         POP_CALLEE_SAVED_REGISTERS
-        free_stack 16
+        free_stack 20
 .endm
 
 //-----------------------------------------------------------------------------
