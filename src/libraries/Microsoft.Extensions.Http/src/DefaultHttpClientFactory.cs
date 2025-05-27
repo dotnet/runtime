@@ -354,8 +354,7 @@ namespace Microsoft.Extensions.Http
                 {
                     if (entry != null)
                     {
-                        // During explicit disposal, we should force disposal of all handlers regardless of CanDispose status
-                        entry._forceDispose = true;
+                        // During explicit disposal, we force disposal of all handlers regardless of CanDispose status
                         disposables.Add(entry);
                     }
                 }
