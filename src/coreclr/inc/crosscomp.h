@@ -12,6 +12,14 @@
 #define CROSSBITNESS_COMPILE
 #endif
 
+#if defined(TARGET_WINDOWS) && !defined(HOST_WINDOWS)
+#define CROSS_COMPILE
+#endif // TARGET_WINDOWS && !HOST_WINDOWS
+
+#if defined(TARGET_UNIX) && !defined(HOST_UNIX)
+#define CROSS_COMPILE
+#endif // TARGET_UNIX && !HOST_UNIX
+
 // Target platform-specific library naming
 //
 #ifdef TARGET_WINDOWS
@@ -713,7 +721,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 #define DAC_CS_MAX_SIZE 64
 #elif defined(TARGET_WINDOWS)
-#define DAC_CS_MAX_SIZE 64
+#define DAC_CS_MAX_SIZE 40
 #else
 // Fallback to a conservative default value
 #define DAC_CS_MAX_SIZE 128
