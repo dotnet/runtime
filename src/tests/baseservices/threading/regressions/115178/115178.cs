@@ -10,7 +10,7 @@ using Xunit;
 /*
  * Issue description:
  User APCs can be queued to a thread that is waiting on a wait handle.
- This should not cancel the wait if the APC has not been queued by Mono runtime
+ This should not cancel the wait if the APC has not been queued by runtime
  as a result of internal interrupt handling.
 */
 
