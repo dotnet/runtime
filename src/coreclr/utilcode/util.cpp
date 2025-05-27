@@ -1923,35 +1923,6 @@ HRESULT validateTokenSig(
     return S_OK;
 }   // validateTokenSig()
 
-HRESULT GetImageRuntimeVersionString(PVOID pMetaData, LPCSTR* pString)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pString);
-    STORAGESIGNATURE* pSig = (STORAGESIGNATURE*) pMetaData;
-
-    // Verify the signature.
-
-    // If signature didn't match, you shouldn't be here.
-    if (pSig->GetSignature() != STORAGE_MAGIC_SIG)
-        return CLDB_E_FILE_CORRUPT;
-
-    // The version started in version 1.1
-    if (pSig->GetMajorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    if (pSig->GetMajorVer() == 1 && pSig->GetMinorVer() < 1)
-        return CLDB_E_FILE_OLDVER;
-
-    // Header data starts after signature.
-    *pString = (LPCSTR) pSig->pVersion;
-    return S_OK;
-}
-
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.
 //*****************************************************************************

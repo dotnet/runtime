@@ -145,6 +145,16 @@ export type MonoConfig = {
         [i: string]: string;
     },
     /**
+     * Subset of runtimeconfig.json
+     */
+    runtimeConfig?: {
+        runtimeOptions?: {
+            configProperties?: {
+                [i: string]: string | number | boolean;
+            }
+        }
+    },
+    /**
      * initial number of workers to add to the emscripten pthread pool
      */
     pthreadPoolInitialSize?: number,
@@ -609,7 +619,7 @@ export type DiagnosticsAPIType = {
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
-    collectPerfCounters: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    collectMetrics: (options?:DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * creates diagnostic trace file.
      * It could be opened in PerfView as is.

@@ -290,10 +290,6 @@ void ILFormatter::formatInstrArgs(OpInfo op, OpArgsVal arg, OutString* out, size
     }
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 /***************************************************************************/
 const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
 
@@ -811,8 +807,3 @@ const BYTE* ILFormatter::formatStatement(const BYTE* instrPtr, OutString* out) {
     }
     return(instrPtr);
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
-

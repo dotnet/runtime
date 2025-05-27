@@ -254,6 +254,7 @@ CONFIG_DWORD_INFO(INTERNAL_FastGCCheckStack, W("FastGCCheckStack"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_FastGCStress, W("FastGCStress"), 0, "Reduce the number of GCs done by enabling GCStress")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_GCBreakOnOOM, W("GCBreakOnOOM"), 0, "Does a DebugBreak at the soonest time we detect an OOM")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConcurrent, W("gcConcurrent"), (DWORD)-1, "Enables/Disables concurrent GC")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_UseGCWriteBarrierCopy, W("UseGCWriteBarrierCopy"), 1, "Use a copy of the write barrier for the GC. This is somewhat faster and for optimizations where the barrier is mutated as the program runs. Setting this to 0 removes scenarios where the write barrier is ever mutable.")
 
 #ifdef FEATURE_CONSERVATIVE_GC
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_gcConservative, W("gcConservative"), 0, "Enables/Disables conservative GC")
@@ -725,6 +726,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sh
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc,              W("EnableArm64Rcpc"),           1, "Allows Arm64 Rcpc+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rcpc2,             W("EnableArm64Rcpc2"),          1, "Allows Arm64 Rcpc2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve,               W("EnableArm64Sve"),            1, "Allows Arm64 SVE hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sve2"),           1, "Allows Arm64 SVE2 hardware intrinsics to be disabled")
 #elif defined(TARGET_RISCV64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
@@ -747,7 +749,6 @@ CONFIG_DWORD_INFO(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W("AlwaysUseMeta
 CONFIG_DWORD_INFO(INTERNAL_AssertOnUnneededThis, W("AssertOnUnneededThis"), 0, "While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites.")
 CONFIG_DWORD_INFO(INTERNAL_AssertStacktrace, W("AssertStacktrace"), 1, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableConfigCache, W("DisableConfigCache"), 0, "Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DoubleArrayToLargeObjectHeap, W("DoubleArrayToLargeObjectHeap"), 0, "Controls double[] placement")
 CONFIG_STRING_INFO(INTERNAL_DumpOnClassLoad, W("DumpOnClassLoad"), "Dumps information about loaded class to log.")
 CONFIG_DWORD_INFO(INTERNAL_ExpandAllOnLoad, W("ExpandAllOnLoad"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_ForceRelocs, W("ForceRelocs"), 0, "")

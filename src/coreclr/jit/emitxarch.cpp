@@ -255,31 +255,31 @@ regNumber emitter::getSseShiftRegNumber(instruction ins)
     }
 }
 
-bool emitter::HasVexEncoding(instruction ins) const
+bool emitter::HasVexEncoding(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & Encoding_VEX) != 0;
 }
 
-bool emitter::HasEvexEncoding(instruction ins) const
+bool emitter::HasEvexEncoding(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & Encoding_EVEX) != 0;
 }
 
-bool emitter::HasRex2Encoding(instruction ins) const
+bool emitter::HasRex2Encoding(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & Encoding_REX2) != 0;
 }
 
-bool emitter::HasApxNdd(instruction ins) const
+bool emitter::HasApxNdd(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & INS_Flags_Has_NDD) != 0;
 }
 
-bool emitter::HasApxNf(instruction ins) const
+bool emitter::HasApxNf(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & INS_Flags_Has_NF) != 0;
@@ -1980,9 +1980,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 // - V'- bit to extend vvvv
 // - aaa - specifies mask register
 //    Rest    - reserved for future use and usage of them will uresult in Undefined instruction exception.
-// - u - Bit to indicate YMM Embedded rounding.
-//   Set to 1 for isas Avx10.1 and below
-//   Needs to be set to 0 for AVX10.2 and above to indicate YMM embedded rounding
 // - B' - reserved as of now
 //   set to 0 for future compatibility.
 //
@@ -1993,7 +1990,6 @@ bool emitter::TakesApxExtendedEvexPrefix(const instrDesc* id) const
 #define LBIT_IN_BYTE_EVEX_PREFIX      0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
 #define ZBIT_IN_BYTE_EVEX_PREFIX      0x0000008000000000ULL
-#define uBIT_IN_BYTE_EVEX_PREFIX      0x0000040000000000ULL
 
 #define MAP4_IN_BYTE_EVEX_PREFIX   0x4000000000000ULL
 #define ND_BIT_IN_BYTE_EVEX_PREFIX 0x1000000000ULL
@@ -2100,13 +2096,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
 
         if (!id->idHasMem())
         {
-            // ymm embedded rounding case.
-            if (attr == EA_32BYTE)
-            {
-                assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX10v2));
-                code &= ~(uBIT_IN_BYTE_EVEX_PREFIX);
-            }
-
             unsigned roundingMode = id->idGetEvexbContext();
             if (roundingMode == 1)
             {
@@ -2321,10 +2310,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
     {
         switch (ins)
         {
-            case INS_cvtss2si:
-            case INS_cvtsd2si:
-            case INS_movd:
-            case INS_movnti:
             case INS_andn:
             case INS_bextr:
             case INS_blsi:
@@ -2338,8 +2323,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_sarx:
             case INS_shlx:
             case INS_shrx:
-            case INS_vcvtsd2usi:
-            case INS_vcvtss2usi:
             {
                 if (attr == EA_8BYTE)
                 {
@@ -3849,10 +3832,13 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_cvttsd2si64:
         case INS_cvttss2si32:
         case INS_cvttss2si64:
-        case INS_cvtsd2si:
-        case INS_cvtss2si:
+        case INS_cvtsd2si32:
+        case INS_cvtsd2si64:
+        case INS_cvtss2si32:
+        case INS_cvtss2si64:
         case INS_extractps:
-        case INS_movd:
+        case INS_movd32:
+        case INS_movd64:
         case INS_movmskpd:
         case INS_movmskps:
         case INS_mulx:
@@ -3868,8 +3854,10 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_shlx:
         case INS_sarx:
         case INS_shrx:
-        case INS_vcvtsd2usi:
-        case INS_vcvtss2usi:
+        case INS_vcvtsd2usi32:
+        case INS_vcvtsd2usi64:
+        case INS_vcvtss2usi32:
+        case INS_vcvtss2usi64:
         case INS_vcvttsd2usi32:
         case INS_vcvttsd2usi64:
         case INS_vcvttss2usi32:
@@ -4180,7 +4168,7 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
                 regFor012Bits = id->idReg1();
             }
         }
-        else if (ins == INS_movd)
+        else if ((ins == INS_movd32) || (ins == INS_movd64))
         {
             if (isFloatReg(regFor012Bits))
             {
@@ -4258,7 +4246,7 @@ inline bool hasTupleTypeInfo(instruction ins)
 // Return Value:
 //    the tuple type info for a given CPU instruction.
 //
-insTupleType emitter::insTupleTypeInfo(instruction ins) const
+insTupleType emitter::insTupleTypeInfo(instruction ins)
 {
     assert((unsigned)ins < ArrLen(insTupleTypeInfos));
     return insTupleTypeInfos[ins];
@@ -7324,13 +7312,15 @@ bool emitter::IsMovInstruction(instruction ins)
         case INS_mov:
         case INS_movapd:
         case INS_movaps:
-        case INS_movd:
-        case INS_movdqa:
+        case INS_movd32:
+        case INS_movd64:
+        case INS_movdqa32:
         case INS_vmovdqa64:
-        case INS_movdqu:
+        case INS_movdqu32:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
+        case INS_movq:
         case INS_movsd_simd:
         case INS_movss:
         case INS_movsx:
@@ -7350,7 +7340,6 @@ bool emitter::IsMovInstruction(instruction ins)
         }
 
 #if defined(TARGET_AMD64)
-        case INS_movq:
         case INS_movsxd:
         {
             return true;
@@ -7405,10 +7394,10 @@ bool emitter::IsBitwiseInstruction(instruction ins)
 {
     switch (ins)
     {
-        case INS_pand:
-        case INS_pandn:
-        case INS_por:
-        case INS_pxor:
+        case INS_pandd:
+        case INS_pandnd:
+        case INS_pord:
+        case INS_pxord:
             return true;
 
         default:
@@ -7441,8 +7430,8 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
 
         case INS_movapd:
         case INS_movaps:
-        case INS_movdqa:
-        case INS_movdqu:
+        case INS_movdqa32:
+        case INS_movdqu32:
         case INS_movupd:
         case INS_movups:
         {
@@ -7478,7 +7467,8 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-        case INS_movd:
+        case INS_movd32:
+        case INS_movd64:
         {
             // Clears the upper bits
             hasSideEffect = true;
@@ -7501,7 +7491,6 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
-#if defined(TARGET_AMD64)
         case INS_movq:
         {
             // Clears the upper bits
@@ -7509,6 +7498,7 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
+#if defined(TARGET_AMD64)
         case INS_movsxd:
         {
             // Sign-extends the source
@@ -7760,9 +7750,9 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
 
         case INS_movapd:
         case INS_movaps:
-        case INS_movdqa:
+        case INS_movdqa32:
         case INS_vmovdqa64:
-        case INS_movdqu:
+        case INS_movdqu32:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
@@ -7775,19 +7765,20 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
             break;
         }
 
-        case INS_movd:
+        case INS_movd32:
+        case INS_movd64:
         {
             assert(isFloatReg(dstReg) != isFloatReg(srcReg));
             break;
         }
 
-#if defined(TARGET_AMD64)
         case INS_movq:
         {
             assert(isFloatReg(dstReg) && isFloatReg(srcReg));
             break;
         }
 
+#if defined(TARGET_AMD64)
         case INS_movsxd:
         {
             assert(isGeneralRegister(dstReg) && isGeneralRegister(srcReg));
@@ -12862,9 +12853,9 @@ void emitter::emitDispIns(
         {
             switch (ins)
             {
-                case INS_vextractf128:
+                case INS_vextractf32x4:
                 case INS_vextractf64x2:
-                case INS_vextracti128:
+                case INS_vextracti32x4:
                 case INS_vextracti64x2:
                 {
                     // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
@@ -13349,12 +13340,16 @@ void emitter::emitDispIns(
 
                 case INS_cvttsd2si32:
                 case INS_cvttsd2si64:
-                case INS_cvtss2si:
-                case INS_cvtsd2si:
+                case INS_cvtsd2si32:
+                case INS_cvtsd2si64:
+                case INS_cvtss2si32:
+                case INS_cvtss2si64:
                 case INS_cvttss2si32:
                 case INS_cvttss2si64:
-                case INS_vcvtsd2usi:
-                case INS_vcvtss2usi:
+                case INS_vcvtsd2usi32:
+                case INS_vcvtsd2usi64:
+                case INS_vcvtss2usi32:
+                case INS_vcvtss2usi64:
                 case INS_vcvttsd2usi32:
                 case INS_vcvttsd2usi64:
                 case INS_vcvttss2usi32:
@@ -13508,9 +13503,9 @@ void emitter::emitDispIns(
                     break;
                 }
 
-                case INS_vinsertf128:
+                case INS_vinsertf32x4:
                 case INS_vinsertf64x2:
-                case INS_vinserti128:
+                case INS_vinserti32x4:
                 case INS_vinserti64x2:
                 {
                     attr = EA_16BYTE;
@@ -13575,9 +13570,9 @@ void emitter::emitDispIns(
 
             switch (ins)
             {
-                case INS_vextractf128:
+                case INS_vextractf32x4:
                 case INS_vextractf64x2:
-                case INS_vextracti128:
+                case INS_vextracti32x4:
                 case INS_vextracti64x2:
                 {
                     tgtAttr = EA_16BYTE;
@@ -13764,9 +13759,9 @@ void emitter::emitDispIns(
         {
             switch (ins)
             {
-                case INS_vextractf128:
+                case INS_vextractf32x4:
                 case INS_vextractf64x2:
-                case INS_vextracti128:
+                case INS_vextracti32x4:
                 case INS_vextracti64x2:
                 {
                     // vextracti/f128 extracts 128-bit data, so we fix sstr as "xmm ptr"
@@ -16653,7 +16648,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 
     if (IsSimdInstruction(ins))
     {
-        assert((ins != INS_movd) || (isFloatReg(reg1) != isFloatReg(reg2)));
+        assert(((ins != INS_movd32) && (ins != INS_movd64)) || (isFloatReg(reg1) != isFloatReg(reg2)));
 
         if (ins == INS_kmovb_gpr || ins == INS_kmovw_gpr || ins == INS_kmovd_gpr || ins == INS_kmovq_gpr)
         {
@@ -16666,7 +16661,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
                 code |= 0x01;
             }
         }
-        else if ((ins != INS_movd) || isFloatReg(reg1))
+        else if (((ins != INS_movd32) && (ins != INS_movd64)) || isFloatReg(reg1))
         {
             code = insCodeRM(ins);
         }
@@ -16839,7 +16834,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         regFor345Bits = reg1;
     }
-    if (ins == INS_movd)
+    if ((ins == INS_movd32) || (ins == INS_movd64))
     {
         assert(isFloatReg(reg1) != isFloatReg(reg2));
         if (isFloatReg(reg2))
@@ -17963,21 +17958,8 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 //
 ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
 {
+    assert((unsigned)id->idIns() < ArrLen(CodeGenInterface::instInfo));
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
-
-    // INS_movd can represent either movd or movq(https://github.com/dotnet/runtime/issues/47943).
-    // As such, this is a special case and we need to calculate size based on emitAttr.
-    if (id->idIns() == INS_movd)
-    {
-        if (EA_SIZE(id->idOpSize()) == EA_8BYTE)
-        {
-            inputSize = Input_64Bit;
-        }
-        else
-        {
-            inputSize = Input_32Bit;
-        }
-    }
 
     switch (inputSize)
     {
@@ -18233,11 +18215,6 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
  *  point past the generated code, and returns the size of the instruction
  *  descriptor in bytes.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
     assert(emitIssuing);
@@ -19630,8 +19607,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_MWR_RRD_CNS:
         case IF_MRW_RRD_CNS:
         {
-            assert((ins == INS_vextractf128) || (ins == INS_vextractf32x8) || (ins == INS_vextractf64x2) ||
-                   (ins == INS_vextractf64x4) || (ins == INS_vextracti128) || (ins == INS_vextracti32x8) ||
+            assert((ins == INS_vextractf32x4) || (ins == INS_vextractf32x8) || (ins == INS_vextractf64x2) ||
+                   (ins == INS_vextractf64x4) || (ins == INS_vextracti32x4) || (ins == INS_vextracti32x8) ||
                    (ins == INS_vextracti64x2) || (ins == INS_vextracti64x4));
             assert(UseSimdEncoding());
             emitGetInsDcmCns(id, &cnsVal);
@@ -20053,9 +20030,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     return sz;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 emitter::insFormat emitter::getMemoryOperation(instrDesc* id) const
 {
@@ -20828,7 +20802,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_25C;
             break;
 
-        case INS_movd:
+        case INS_movd32:
+        case INS_movd64:
         case INS_movq:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
@@ -20860,9 +20835,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case INS_movdqa:
+        case INS_movdqa32:
         case INS_vmovdqa64:
-        case INS_movdqu:
+        case INS_movdqu32:
         case INS_vmovdqu8:
         case INS_vmovdqu16:
         case INS_vmovdqu64:
@@ -20916,7 +20891,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case INS_movntdq:
-        case INS_movnti:
+        case INS_movnti32:
+        case INS_movnti64:
         case INS_movntps:
         case INS_movntpd:
             assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
@@ -21204,12 +21180,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_cvttsd2si32:
         case INS_cvttsd2si64:
-        case INS_cvtsd2si:
+        case INS_cvtsd2si32:
+        case INS_cvtsd2si64:
         case INS_cvtsi2sd32:
         case INS_cvtsi2ss32:
         case INS_cvtsi2sd64:
         case INS_cvtsi2ss64:
-        case INS_vcvtsd2usi:
+        case INS_vcvtsd2usi32:
+        case INS_vcvtsd2usi64:
         case INS_vcvtusi2ss32:
         case INS_vcvtusi2ss64:
         case INS_vcvttsd2usi32:
@@ -21243,8 +21221,10 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case INS_cvttss2si32:
         case INS_cvttss2si64:
-        case INS_cvtss2si:
-        case INS_vcvtss2usi:
+        case INS_cvtss2si32:
+        case INS_cvtss2si64:
+        case INS_vcvtss2usi32:
+        case INS_vcvtss2usi64:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
             break;
@@ -21275,13 +21255,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_psubusb:
         case INS_paddusw:
         case INS_psubusw:
-        case INS_pand:
+        case INS_pandd:
         case INS_vpandq:
-        case INS_pandn:
+        case INS_pandnd:
         case INS_vpandnq:
-        case INS_por:
+        case INS_pord:
         case INS_vporq:
-        case INS_pxor:
+        case INS_pxord:
         case INS_vpxorq:
         case INS_andpd:
         case INS_andps:
@@ -21538,19 +21518,19 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpermq_reg:
         case INS_vperm2i128:
         case INS_vperm2f128:
-        case INS_vextractf128:
+        case INS_vextractf32x4:
         case INS_vextractf32x8:
         case INS_vextractf64x2:
         case INS_vextractf64x4:
-        case INS_vextracti128:
+        case INS_vextracti32x4:
         case INS_vextracti32x8:
         case INS_vextracti64x2:
         case INS_vextracti64x4:
-        case INS_vinsertf128:
+        case INS_vinsertf32x4:
         case INS_vinsertf32x8:
         case INS_vinsertf64x2:
         case INS_vinsertf64x4:
-        case INS_vinserti128:
+        case INS_vinserti32x4:
         case INS_vinserti32x8:
         case INS_vinserti64x2:
         case INS_vinserti64x4:
@@ -21763,8 +21743,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpbroadcastd_gpr:
         case INS_vpbroadcastq:
         case INS_vpbroadcastq_gpr:
-        case INS_vbroadcasti128:
-        case INS_vbroadcastf128:
+        case INS_vbroadcasti32x4:
+        case INS_vbroadcastf32x4:
         case INS_vbroadcastf64x2:
         case INS_vbroadcasti64x2:
         case INS_vbroadcastf64x4:

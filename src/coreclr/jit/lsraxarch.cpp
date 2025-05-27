@@ -1114,7 +1114,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #endif
     }
     else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
-             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && !tree->gtSetFlags())
     {
         // We don'thave any specific register requirements here, so skip the logic that
         // reserves RCX or preferences the source reg.
@@ -2317,6 +2317,33 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Vector128_WithElement:
+            case NI_Vector256_WithElement:
+            case NI_Vector512_WithElement:
+            {
+                assert(numArgs == 3);
+
+                assert(!op1->isContained());
+                assert(!op2->OperIsConst());
+
+                // If the index is not a constant
+                // we will use the SIMD temp location to store the vector.
+
+                var_types requiredSimdTempType = intrinsicTree->TypeGet();
+                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+
+                // We then customize the uses as we will effectively be spilling
+                // op1, storing op3 to that spill location based on op2. Then
+                // reloading the updated value to the destination
+
+                srcCount += BuildOperandUses(op1);
+                srcCount += BuildOperandUses(op2);
+                srcCount += BuildOperandUses(op3, varTypeIsByte(baseType) ? allByteRegs() : RBM_NONE);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
@@ -2652,7 +2679,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildDelayFreeUses(operand, op1);
                         }
                     }
@@ -2665,7 +2691,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildOperandUses(operand);
                         }
                     }

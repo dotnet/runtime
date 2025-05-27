@@ -110,6 +110,8 @@
              Link="ProductionCode\MailHeaderInfo.cs" />
     <Compile Include="..\..\src\System\Net\BufferBuilder.cs"
              Link="ProductionCode\BufferBuilder.cs" />
+    <Compile Include="..\..\src\System\Net\Mail\ReadWriteAdapter.cs"
+             Link="ProductionCode\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"

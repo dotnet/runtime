@@ -264,6 +264,7 @@ class Object
     static DWORD ComputeHashCode();
     static DWORD GetGlobalNewHashCode();
 
+    inline INT32 TryGetHashCode();
 #ifndef DACCESS_COMPILE
     INT32 GetHashCodeEx();
 #endif // #ifndef DACCESS_COMPILE
@@ -493,8 +494,8 @@ inline void ClearObjectReference(OBJECTREF* dst)
 
 // CopyValueClass sets a value class field
 
-void STDCALL CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
+void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
+void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -2268,7 +2269,11 @@ public:
 
     void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const
     {
+#ifdef DACCESS_COMPILE
+        return GetStackTrace(stackTrace, outKeepaliveArray, NULL);
+#else
         return GetStackTrace(stackTrace, outKeepaliveArray, GetThread());
+#endif // DACCESS_COMPILE
     }
 
 private:
@@ -2510,8 +2515,6 @@ typedef PTR_ContractExceptionObject CONTRACTEXCEPTIONREF;
 // non-nullable case.
 //
 // To do this we need to
-//     * Modify the boxing helper code:JIT_Box (we don't need a special one because
-//           the JIT inlines the common case, so this only gets call in uncommon cases)
 //     * Make a new helper for the Unbox case (see code:JIT_Unbox_Nullable)
 //     * Plumb the JIT to ask for what kind of Boxing helper is needed
 //          (see code:CEEInfo.getBoxHelper, code:CEEInfo.getUnBoxHelper

@@ -853,7 +853,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory()
 **Arguments: args->generation:  The maximum generation to collect
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
 ==============================================================================*/
-extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
+extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode, CLR_BOOL lowMemoryPressure)
 {
     QCALL_CONTRACT;
 
@@ -865,7 +865,7 @@ extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode)
     //We don't need to check the top end because the GC will take care of that.
 
     GCX_COOP();
-    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, false, mode);
+    GCHeapUtilities::GetGCHeap()->GarbageCollect(generation, lowMemoryPressure, mode);
 
     END_QCALL;
 }

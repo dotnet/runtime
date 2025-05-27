@@ -2658,10 +2658,9 @@ private:
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);
     CORINFO_FIELD_HANDLE emitSimd16Const(simd16_t constValue);
 #if defined(TARGET_XARCH)
-    CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
-    CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
+    CORINFO_FIELD_HANDLE emitSimdConst(simd_t* constValue, emitAttr attr);
+    void                 emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, regNumber targetReg);
 #endif // TARGET_XARCH
-
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // FEATURE_MASKED_HW_INTRINSICS
@@ -2892,11 +2891,9 @@ private:
 
     void emitNewIG();
 
-#if !defined(JIT32_GCENCODER)
     void emitDisableGC();
     void emitEnableGC();
     bool emitGCDisabled();
-#endif // !defined(JIT32_GCENCODER)
 
 #if defined(TARGET_XARCH)
     static bool emitAlignInstHasNoCode(instrDesc* id);

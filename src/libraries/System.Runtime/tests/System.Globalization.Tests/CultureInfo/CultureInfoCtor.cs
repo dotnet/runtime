@@ -388,16 +388,45 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static IEnumerable<object[]> Ctor_Undetermined_TestData()
+        {
+            yield return new object[] { "und-us", "und-US", "und-US" };
+            yield return new object[] { "und-us_tradnl", "und-US", "und-US_tradnl"};
+
+            // On AppleMobile, the behavior of CultureInfo differs due to platform-specific
+            // handling of Unicode extensions and subtags. These platforms preserve the full language tag, including
+            // extensions, while other platforms normalize the tag to a simpler form.
+            if (PlatformDetection.IsAppleMobile)
+            {
+                yield return new object[] { "und-es-u-co-phoneb", "und-ES-u-co-phoneb", "und-ES-u-co-phoneb" };
+                yield return new object[] { "und-es-t-something", "und-ES-t-something", "und-ES-t-something" };
+            }
+            else
+            {
+                yield return new object[] { "und-es-u-co-phoneb", "und-ES", "und-ES_phoneb" };
+                yield return new object[] { "und-es-t-something", "und-ES", "und-ES"};
+            }
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
-        [InlineData("und-us", "und-US", "und-US")]
-        [InlineData("und-us_tradnl", "und-US", "und-US_tradnl")]
-        [InlineData("und-es-u-co-phoneb", "und-ES", "und-ES_phoneb")]
-        [InlineData("und-es-t-something", "und-ES", "und-ES")]
+        [MemberData(nameof(Ctor_Undetermined_TestData))]
         public void CtorUndeterminedLanguageTag(string cultureName, string expectedCultureName, string expectedSortName)
         {
             CultureInfo culture = new CultureInfo(cultureName);
             Assert.Equal(expectedCultureName, culture.Name);
             Assert.Equal(expectedSortName, culture.CompareInfo.Name);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        public void UndeterminedCultureTest()
+        {
+            CultureInfo invariant1 = CultureInfo.GetCultureInfo("");
+
+            CultureInfo undetermined1 = CultureInfo.GetCultureInfo("und");
+            Assert.Equal("", undetermined1.Name);
+
+            CultureInfo invariant2 = CultureInfo.GetCultureInfo("");
+            Assert.True(object.ReferenceEquals(invariant1, invariant2), "CultureInfo.GetCultureInfo(\"\") is not returning the previously cached instance");
         }
 
         [Theory]

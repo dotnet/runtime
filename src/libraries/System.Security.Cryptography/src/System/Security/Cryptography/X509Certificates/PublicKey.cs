@@ -62,15 +62,49 @@ namespace System.Security.Cryptography.X509Certificates
         /// using SubjectPublicKeyInfo from an <see cref="MLKem" />.
         /// </summary>
         /// <param name="key">
-        /// An <c>MLKem</c> key to obtain the SubjectPublicKeyInfo from.
+        /// An <see cref="MLKem" /> key to obtain the SubjectPublicKeyInfo from.
         /// </param>
         /// <exception cref="CryptographicException">
         /// The SubjectPublicKeyInfo could not be decoded. The
         /// <see cref="MLKem.ExportSubjectPublicKeyInfo" /> must return a
         /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         public PublicKey(MLKem key) : this(key.ExportSubjectPublicKeyInfo())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="MLDsa" />.
+        /// </summary>
+        /// <param name="key">
+        /// An <see cref="MLDsa" /> key to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="MLDsa.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public PublicKey(MLDsa key) : this(key.ExportSubjectPublicKeyInfo())
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PublicKey" /> class
+        /// using SubjectPublicKeyInfo from an <see cref="SlhDsa" />.
+        /// </summary>
+        /// <param name="key">
+        /// An <see cref="SlhDsa" /> key to obtain the SubjectPublicKeyInfo from.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        /// The SubjectPublicKeyInfo could not be decoded. The
+        /// <see cref="SlhDsa.ExportSubjectPublicKeyInfo" /> must return a
+        /// valid ASN.1-DER encoded X.509 SubjectPublicKeyInfo.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        public PublicKey(SlhDsa key) : this(key.ExportSubjectPublicKeyInfo())
         {
         }
 
@@ -307,7 +341,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         [UnsupportedOSPlatform("browser")]
         public MLKem? GetMLKemPublicKey()
         {
@@ -330,7 +364,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The key contents are corrupt or could not be read successfully.
         /// </exception>
-        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
         [UnsupportedOSPlatform("browser")]
         public MLDsa? GetMLDsaPublicKey()
         {
@@ -339,6 +373,26 @@ namespace System.Security.Cryptography.X509Certificates
 
             return EncodeSubjectPublicKeyInfo().Encode(MLDsa.ImportSubjectPublicKeyInfo);
         }
+
+        /// <summary>
+        ///   Gets the <see cref="SlhDsa"/> public key, or <see langword="null" />
+        ///   if the key is not an SLH-DSA key.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if the key is not an SLH-DSA key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The object represents an SLH-DSA public key, but the platform does not support the algorithm.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The key contents are corrupt or could not be read successfully.
+        /// </exception>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
+        [UnsupportedOSPlatform("browser")]
+        public SlhDsa? GetSlhDsaPublicKey() =>
+            Helpers.IsSlhDsaOid(_oid.Value)
+                ? EncodeSubjectPublicKeyInfo().Encode(SlhDsa.ImportSubjectPublicKeyInfo)
+                : null;
 
         internal AsnWriter EncodeSubjectPublicKeyInfo()
         {

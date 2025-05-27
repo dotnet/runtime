@@ -107,9 +107,9 @@ set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_PKG_RID=%cm_BaseRid%" "
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLI_CMAKE_RESOURCE_DIR=%__ResourcesDir%" "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 :: Regenerate the native build files
-echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%"
+echo Calling "%__engNativeDir%\gen-buildsys.cmd "%__sourceDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%"
 
-call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
+call "%__engNativeDir%\gen-buildsys.cmd" "%__sourceDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 popd
 
@@ -126,7 +126,7 @@ if [%__Ninja%] == [1] (
 ) else if [%__BuildArch%] == [wasm] (
     set __generatorArgs=-j
 ) else (
-    set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
+    set __generatorArgs=
 )
 
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%

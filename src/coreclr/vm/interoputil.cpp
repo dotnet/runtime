@@ -521,10 +521,10 @@ SIZE_T GetStringizedItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef)
     CONTRACTL_END;
 
     MethodTable* pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     IMDInternalImport* pMDImport = pIntfMT->GetMDImport();
-    PREFIX_ASSUME(pMDImport != NULL);
+    _ASSERTE(pMDImport != NULL);
 
     LPCWSTR             szName;
     ULONG               cchName;
@@ -1174,7 +1174,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+#if defined(FEATURE_COMINTEROP)
 
 //--------------------------------------------------------------------------------
 // Cleanup helpers
@@ -1197,12 +1197,6 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     if (pRCW)
         pRCW->MinorCleanup();
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
-#endif // FEATURE_COMWRAPPERS
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1245,20 +1239,9 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pCCW->Cleanup();
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_COMWRAPPERS
-    pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
-
-    void* eoc;
-    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
-    {
-        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
-        ComWrappersNative::DestroyExternalComObjectContext(eoc);
-    }
-#endif // FEATURE_COMWRAPPERS
 }
 
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 
@@ -1767,7 +1750,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
     CorClassIfaceAttr   ClassItfType;
     BOOL                bComVisible;
 
-    PREFIX_ASSUME(pClassMT != NULL);
+    _ASSERTE(pClassMT != NULL);
 
     if (pClassMT->IsComImport())
     {
@@ -2228,7 +2211,7 @@ ULONG GetStringizedClassItfDef(TypeHandle InterfaceType, CQuickArray<BYTE> &rDef
     LPCWSTR             szName;
     ULONG               cchName;
     MethodTable*        pIntfMT = InterfaceType.GetMethodTable();
-    PREFIX_ASSUME(pIntfMT != NULL);
+    _ASSERTE(pIntfMT != NULL);
 
     MethodTable*        pDeclaringMT = NULL;
     DWORD               nSlots;                 // Slots on the pseudo interface.
@@ -2497,7 +2480,7 @@ BOOL IsMethodVisibleFromCom(MethodDesc *pMD)
     // TODO: (async) revisit and examine if this needs to be supported somehow
     if (pMD->IsAsyncMethod())
         return false;
-        
+
     mdMethodDef md = pMD->GetMemberDef();
 
     // See if there is property information for this member.
@@ -2654,7 +2637,7 @@ BOOL IsComTargetValidForType(REFLECTCLASSBASEREF* pRefClassObj, OBJECTREF* pTarg
 
     MethodTable* pTargetMT = (*pTarget)->GetMethodTable();
     _ASSERTE(pTargetMT);
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // If the target class and the invoke class are identical then the invoke is valid.
     if (pTargetMT == pInvokedMT)
@@ -3066,7 +3049,7 @@ void IUInvokeDispMethod(
     PTRARRAYREF* pArrByrefModifiers = (PTRARRAYREF*) pByrefModifiers;
     PTRARRAYREF* pArrNamedArgs = (PTRARRAYREF*) pNamedArgs;
     MethodTable* pInvokedMT = (*pRefClassObj)->GetType().GetMethodTable();
-    PREFIX_ASSUME(pInvokedMT != NULL);
+    _ASSERTE(pInvokedMT != NULL);
 
     // Retrieve the total count of arguments.
     if (*pArrArgs != NULL)
@@ -3679,7 +3662,6 @@ void InitializeComInterop()
     }
     CONTRACTL_END;
 
-    InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();

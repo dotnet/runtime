@@ -255,6 +255,30 @@ inline TADDR GetFP(const T_CONTEXT * context)
     return (TADDR)(context->R11);
 }
 
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->R0 = DWORD(value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->R0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->R1 = DWORD(value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->R1);
+}
+
 inline void ClearITState(T_CONTEXT *context) {
     LIMITED_METHOD_DAC_CONTRACT;
     context->Cpsr = context->Cpsr & 0xf9ff03ff;

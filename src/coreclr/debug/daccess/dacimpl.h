@@ -1504,6 +1504,7 @@ private:
     BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
     TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
+    TADDR GetIdentityForManagedObjectWrapper(TADDR mow);
 #endif
 
 protected:

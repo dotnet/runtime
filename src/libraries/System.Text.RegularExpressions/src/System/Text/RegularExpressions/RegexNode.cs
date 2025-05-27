@@ -358,7 +358,7 @@ namespace System.Text.RegularExpressions
                 // "\w+@dot.net" against "is this a valid address@dot.net", the \w+ will initially match the "is" and then will fail to match the "@".
                 // Rather than bumping the scan loop by 1 and trying again to match at the "s", we can instead start at the " ".  For functional correctness
                 // we can only consider unbounded loops, as to be able to start at the end of the loop we need the loop to have consumed all possible matches;
-                // otherwise, you could end up with a pattern like "a{1,3}b" matching against "aaaabc", which should match, but if we pre-emptively stop consuming
+                // otherwise, you could end up with a pattern like "a{1,3}b" matching against "aaaabc", which should match, but if we preemptively stop consuming
                 // after the first three a's and re-start from that position, we'll end up failing the match even though it should have succeeded.  We can also
                 // apply this optimization to non-atomic loops: even though backtracking could be necessary, such backtracking would be handled within the processing
                 // of a single starting position.  Lazy loops similarly benefit, as a failed match will result in exploring the exact same search space as with
@@ -587,7 +587,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Remove unnecessary atomic nodes, and make appropriate descendents of the atomic node themselves atomic.
+        /// Remove unnecessary atomic nodes, and make appropriate descendants of the atomic node themselves atomic.
         /// </summary>
         /// <remarks>
         /// e.g. (?>(?>(?>a*))) => (?>a*)

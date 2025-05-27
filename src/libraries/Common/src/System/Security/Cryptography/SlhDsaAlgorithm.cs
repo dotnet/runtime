@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     ///   Represents a specific algorithm within the SHL-DSA family.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class SlhDsaAlgorithm
     {
         /// <summary>
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography
         /// </value>
         public static SlhDsaAlgorithm SlhDsaShake256f { get; } = new SlhDsaAlgorithm("SLH-DSA-SHAKE-256f", 32, 49856, Oids.SlhDsaShake256f);
 
-        internal static SlhDsaAlgorithm? GetAlgorithmFromOid(string oid)
+        internal static SlhDsaAlgorithm? GetAlgorithmFromOid(string? oid)
         {
             return oid switch
             {

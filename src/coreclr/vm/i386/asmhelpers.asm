@@ -90,11 +90,9 @@ EXTERN g_chained_lookup_miss_counter:DWORD
 EXTERN g_dispatch_cache_chain_success_counter:DWORD
 endif
 
-ifdef FEATURE_EH_FUNCLETS
 EXTERN @IL_Throw_x86@8:PROC
 EXTERN @IL_ThrowExact_x86@8:PROC
 EXTERN @IL_Rethrow_x86@4:PROC
-endif ; FEATURE_EH_FUNCLETS
 
 UNREFERENCED macro arg
     local unref
@@ -1894,7 +1892,6 @@ _BackPatchWorkerAsmStub@0 proc public
     ret
 _BackPatchWorkerAsmStub@0 endp
 
-ifdef FEATURE_EH_FUNCLETS
 ;==========================================================================
 ; Capture a transition block with register values and call the IL_Throw
 ; implementation written in C.
@@ -1942,6 +1939,5 @@ FASTCALL_FUNC IL_Rethrow, 0
     STUB_EPILOG
     ret     4
 FASTCALL_ENDFUNC IL_Rethrow
-endif ; FEATURE_EH_FUNCLETS
 
     end

@@ -26,12 +26,6 @@
 //
 //    For CEE_NEWOBJ, newobjThis should be the temp grabbed for the allocated
 //    uninitialized object.
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
-
 var_types Compiler::impImportCall(OPCODE                  opcode,
                                   CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                   CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -511,7 +505,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         //-------------------------------------------------------------------------
         // Set more flags
 
-        PREFIX_ASSUME(call != nullptr);
+        assert(call != nullptr);
 
         if (mflags & CORINFO_FLG_NOGCCHECK)
         {
@@ -1573,9 +1567,6 @@ DONE_CALL:
 
     return callRetTyp;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // impThrowIfNull: Remove redundandant boxing from ArgumentNullException_ThrowIfNull
@@ -3342,7 +3333,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend)
     {
         GenTree* node = gtNewOperNode(GT_RETURN_SUSPEND, TYP_VOID, impPopStack().val);
         node->SetHasOrderingSideEffect();
@@ -3350,7 +3341,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
         return node;
     }
 
-    if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+    if (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
     {
         // These are marked intrinsics simply to match them by name in
         // the Await pattern optimization. Make sure we keep pIntrinsicName assigned
@@ -8528,8 +8519,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // Note different embedding would be needed for NAOT/R2R,
         // but we have ruled those out above.
         //
-        GenTree* const instParam =
-            gtNewIconEmbHndNode(instantiatingStub, nullptr, GTF_ICON_METHOD_HDL, instantiatingStub);
+        GenTree* const instParam = gtNewIconEmbMethHndNode(instantiatingStub);
         call->gtArgs.InsertInstParam(this, instParam);
     }
 
@@ -11068,13 +11058,16 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                             }
+                        }
+                        else if (strcmp(className, "AsyncHelpers") == 0)
+                        {
+                            if (strcmp(methodName, "AsyncSuspend") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncSuspend;
+                            }
                             else if (strcmp(methodName, "Await") == 0)
                             {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_Await;
-                            }
-                            else if (strcmp(methodName, "AsyncSuspend") == 0)
-                            {
-                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_AsyncSuspend;
+                                result = NI_System_Runtime_CompilerServices_AsyncHelpers_Await;
                             }
                         }
                         else if (strcmp(className, "StaticsHelpers") == 0)

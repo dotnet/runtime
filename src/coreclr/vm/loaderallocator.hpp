@@ -877,7 +877,15 @@ public:
     virtual void UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle) {};
     virtual void CleanupDependentHandlesToNativeObjects() {};
 #endif
+
+    friend struct ::cdac_data<LoaderAllocator>;
 };  // class LoaderAllocator
+
+template<>
+struct cdac_data<LoaderAllocator>
+{
+    static constexpr size_t ReferenceCount = offsetof(LoaderAllocator, m_cReferences);
+};
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
 

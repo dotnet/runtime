@@ -394,6 +394,33 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 }
 
 //------------------------------------------------------------------------
+// IsProfitableToSetZeroFlag: Checks if it's profitable to optimize an shift
+// and rotate operations to set the zero flag.
+//
+// Arguments:
+//    op - The operation node to check.
+//
+// Return value:
+//    true if it's profitable to set the zero flag; otherwise false.
+//
+bool Lowering::IsProfitableToSetZeroFlag(GenTree* op) const
+{
+#ifdef TARGET_XARCH
+    if (op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_ROL))
+    {
+        // BMI2 instructions (SHLX, SARX, SHRX, RORX) do not set zero flag.
+        if (!op->AsOp()->gtGetOp2()->OperIsConst())
+        {
+            return false;
+        }
+    }
+
+#endif // TARGET_XARCH
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerNode: this is the main entry point for Lowering.
 //
 // Arguments:
@@ -550,13 +577,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return nextNode;
             }
 
-            nextNode = LowerCast(node);
-            if (nextNode != nullptr)
-            {
-                return nextNode;
-            }
+            LowerCast(node);
+            break;
         }
-        break;
 
         case GT_BITCAST:
         {
@@ -4208,7 +4231,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
     LIR::Use use;
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
-        BlockRange().TryGetUse(cmp, &use))
+        BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();
@@ -9694,7 +9717,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 //
 void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
-// LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
+// LA, RISC-V and ARM32 more likely to receive a terrible performance hit from
 // unaligned accesses making this optimization questionable.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.OptimizationEnabled())
@@ -10162,7 +10185,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #endif
 
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
-        // address containment in some cases so we end up creating trivial (reg + offfset)
+        // address containment in some cases so we end up creating trivial (reg + offset)
         // or (reg + reg) LEAs that are not necessary.
 
 #if defined(TARGET_ARM64)

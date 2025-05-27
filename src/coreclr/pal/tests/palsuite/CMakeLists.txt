@@ -263,7 +263,6 @@ add_executable_clr(paltests
   file_io/errorpathnotfound/test2/test2.cpp
   file_io/FILECanonicalizePath/FILECanonicalizePath.cpp
   file_io/FlushFileBuffers/test1/FlushFileBuffers.cpp
-  file_io/GetConsoleOutputCP/test1/GetConsoleOutputCP.cpp
   file_io/GetFileAttributesA/test1/GetFileAttributesA.cpp
   file_io/GetFileAttributesExW/test1/test1.cpp
   file_io/GetFileAttributesExW/test2/test2.cpp
@@ -316,7 +315,6 @@ add_executable_clr(paltests
   loader/LoadLibraryW/test5/loadlibraryw.cpp
   #locale_info/CompareStringA/test1/test1.cpp
   #locale_info/CompareStringW/test1/test1.cpp
-  locale_info/GetACP/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test1/test1.cpp
   #locale_info/GetLocaleInfoW/test2/test2.cpp
   locale_info/MultiByteToWideChar/test1/test1.cpp
@@ -355,7 +353,6 @@ add_executable_clr(paltests
   miscellaneous/GetEnvironmentVariableW/test6/test6.cpp
   miscellaneous/GetLastError/test1/test.cpp
   miscellaneous/GetSystemInfo/test1/test.cpp
-  miscellaneous/GetTickCount/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test1/test.cpp
   miscellaneous/InterlockedCompareExchange/test2/test.cpp
   miscellaneous/InterlockedCompareExchange64/test1/test.cpp
@@ -378,8 +375,6 @@ add_executable_clr(paltests
   #miscellaneous/IsBadWritePtr/test1/test.cpp
   #miscellaneous/IsBadWritePtr/test2/test2.cpp
   #miscellaneous/IsBadWritePtr/test3/test3.cpp
-  miscellaneous/queryperformancecounter/test1/test1.cpp
-  miscellaneous/queryperformancefrequency/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test1/test1.cpp
   miscellaneous/SetEnvironmentVariableA/test2/test2.cpp
   miscellaneous/SetEnvironmentVariableA/test3/test3.cpp

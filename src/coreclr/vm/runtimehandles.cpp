@@ -1143,6 +1143,50 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CompareCanonicalHandles, ReflectClassBas
 }
 FCIMPLEND
 
+FCIMPL1(Object*, RuntimeTypeHandle::InternalAllocNoChecks_FastPath, MethodTable* pMT)
+{
+    FCALL_CONTRACT;
+
+    _ASSERTE(pMT != nullptr);
+
+    if (!GCHeapUtilities::UseThreadAllocationContexts())
+    {
+        return NULL;
+    }
+
+    if (pMT->HasFinalizer())
+    {
+        return NULL;
+    }
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (pMT->RequiresAlign8())
+    {
+        return NULL;
+    }
+#endif
+
+    SIZE_T size = pMT->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    ee_alloc_context* allocContext = &t_runtime_thread_locals.alloc_context;
+    BYTE* allocPtr = allocContext->m_GCAllocContext.alloc_ptr;
+    BYTE* limit = allocContext->getCombinedLimit();
+
+    if ((SIZE_T)(limit - allocPtr) < size)
+    {
+        return NULL; // Fall back to slow path in managed
+    }
+
+    allocContext->m_GCAllocContext.alloc_ptr = allocPtr + size;
+    Object* obj = reinterpret_cast<Object*>(allocPtr);
+    obj->SetMethodTable(pMT);
+    _ASSERTE(obj->HasEmptySyncBlockInfo());
+
+    return obj;
+}
+FCIMPLEND
+
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsGenericVariable, PTR_ReflectClassBaseObject pTypeUNSAFE)
 {
     FCALL_CONTRACT;
