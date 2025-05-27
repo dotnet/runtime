@@ -1658,7 +1658,7 @@ public:
     }
 
     // same as above, but with allowCreate = FALSE
-    // for rare cases where we cannot allow GC, but we know that the other varaint is already created.
+    // for rare cases where we cannot allow GC, but we know that the other variant is already created.
     MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
     {
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
