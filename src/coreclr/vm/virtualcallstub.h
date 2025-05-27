@@ -11,15 +11,7 @@
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
 
-#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-#define CHAIN_LOOKUP
-#endif // FEATURE_VIRTUAL_STUB_DISPATCH
-
-#if defined(TARGET_X86)
-// If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
-// of stub-based interface dispatch.
-//#define STUB_LOGGING
-#endif
+#include "switches.h"
 
 bool UseCachedInterfaceDispatch();
 
@@ -159,9 +151,10 @@ extern "C" void ResolveWorkerChainLookupAsmStub();    // for chaining of entries
 
 #ifdef TARGET_X86
 extern "C" void BackPatchWorkerAsmStub();             // backpatch a call site to point to a different stub
-#ifdef TARGET_UNIX
 extern "C" void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
-#endif // TARGET_UNIX
+#ifdef CHAIN_LOOKUP
+extern "C" ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem);
+#endif
 #endif // TARGET_X86
 
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
@@ -501,8 +494,11 @@ private:
 #endif
                                    );
 
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
+#if defined(TARGET_X86)
     friend void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
+#ifdef CHAIN_LOOKUP
+    friend ResolveCacheElem* __fastcall VSD_PromoteChainEntry(ResolveCacheElem *pElem);
+#endif
 #endif
 
     //These are the entrypoints that the stubs actually end up calling via the

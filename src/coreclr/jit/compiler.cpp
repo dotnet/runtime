@@ -488,8 +488,9 @@ Compiler::Compiler(ArenaAllocator*       arena,
     info.compILCodeSize   = methodInfo->ILCodeSize;
     info.compILImportSize = 0;
 
-    info.compHasNextCallRetAddr = false;
-    info.compIsVarArgs          = false;
+    info.compHasNextCallRetAddr    = false;
+    info.compIsVarArgs             = false;
+    info.compUsesAsyncContinuation = false;
 }
 
 //------------------------------------------------------------------------
@@ -3159,6 +3160,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             printf("OPTIONS: Jit invoked for AOT\n");
         }
+
+        if (compIsAsync())
+        {
+            printf("OPTIONS: compilation is an async state machine\n");
+        }
     }
 #endif
 
@@ -3200,7 +3206,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmAllInt |= RBM_HIGHINT;
         rbmIntCalleeTrash |= RBM_HIGHINT;
         cntCalleeTrashInt += CNT_CALLEE_TRASH_HIGHINT;
-        regIntLast = REG_R23;
+        regIntLast = REG_R31;
     }
 #endif // TARGET_AMD64
 
@@ -4653,6 +4659,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_FIND_LOOPS, &Compiler::optFindLoopsPhase);
 
+        // Re-establish profile consistency, now that inlining and morph have run.
+        //
+        DoPhase(this, PHASE_REPAIR_PROFILE_POST_MORPH, &Compiler::fgRepairProfile);
+
         // Invert loops
         //
         DoPhase(this, PHASE_INVERT_LOOPS, &Compiler::optInvertLoops);
@@ -4962,9 +4972,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_PRE_LAYOUT, &Compiler::optOptimizePreLayout);
 
-        // Run profile repair
+        // Ensure profile is consistent before starting backend phases
         //
-        DoPhase(this, PHASE_REPAIR_PROFILE, &Compiler::fgRepairProfile);
+        DoPhase(this, PHASE_REPAIR_PROFILE_PRE_LAYOUT, &Compiler::fgRepairProfile);
     }
 
 #ifdef DEBUG
@@ -5001,6 +5011,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
 #endif // TARGET_ARM
+
+    if (compIsAsync())
+    {
+        DoPhase(this, PHASE_ASYNC, &Compiler::TransformAsync);
+    }
 
     // Assign registers to variables, etc.
 
@@ -5995,6 +6010,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     if (enableAvailableIsas)
     {
+        CORINFO_InstructionSetFlags currentInstructionSetFlags = compileFlags->GetInstructionSetFlags();
         CORINFO_InstructionSetFlags instructionSetFlags;
 
         // We need to assume, by default, that all flags coming from the VM are invalid.
@@ -6008,6 +6024,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         // needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
+        if (info.compMatchedVM)
+        {
+            // Keep the existing VectorT* ISAs.
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            }
+        }
+
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
@@ -6062,7 +6087,29 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve);
         }
+
+        if (JitConfig.EnableArm64Sve2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
+        }
 #elif defined(TARGET_XARCH)
+        if (info.compMatchedVM)
+        {
+            // Keep the existing VectorT* ISAs.
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT128))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
+            }
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT256))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT256);
+            }
+            if (currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT512))
+            {
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT512);
+            }
+        }
+
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
@@ -7794,12 +7841,7 @@ START:
             pParam->pPrevComp = JitTls::GetCompiler();
             JitTls::SetCompiler(pParam->pComp);
 
-            // PREFIX_ASSUME gets turned into ASSERT_CHECK and we cannot have it here
-#if defined(_PREFAST_) || defined(_PREFIX_)
-            PREFIX_ASSUME(pParam->pComp != NULL);
-#else
             assert(pParam->pComp != nullptr);
-#endif
 
 #ifdef DEBUG
             pParam->pComp->jitFallbackCompile = pParam->jitFallbackCompile;
@@ -9217,16 +9259,12 @@ void Compiler::PrintPerMethodLoopHoistStats()
 void Compiler::RecordStateAtEndOfInlining()
 {
 #if defined(DEBUG)
-
-    m_compCyclesAtEndOfInlining    = 0;
-    m_compTickCountAtEndOfInlining = 0;
-    bool b                         = CycleTimer::GetThreadCyclesS(&m_compCyclesAtEndOfInlining);
-    if (!b)
+    LARGE_INTEGER lpCycles;
+    BOOL          result = QueryPerformanceCounter(&lpCycles);
+    if (result == TRUE)
     {
-        return; // We don't have a thread cycle counter.
+        m_compCyclesAtEndOfInlining = (int64_t)lpCycles.QuadPart;
     }
-    m_compTickCountAtEndOfInlining = GetTickCount();
-
 #endif // defined(DEBUG)
 }
 
@@ -9237,19 +9275,24 @@ void Compiler::RecordStateAtEndOfInlining()
 void Compiler::RecordStateAtEndOfCompilation()
 {
 #if defined(DEBUG)
-
-    // Common portion
     m_compCycles = 0;
-    uint64_t compCyclesAtEnd;
-    bool     b = CycleTimer::GetThreadCyclesS(&compCyclesAtEnd);
-    if (!b)
+
+    LARGE_INTEGER lpCycles;
+    BOOL          result = QueryPerformanceCounter(&lpCycles);
+    if (result == TRUE)
     {
-        return; // We don't have a thread cycle counter.
+        if ((int64_t)lpCycles.QuadPart > m_compCyclesAtEndOfInlining)
+        {
+            LARGE_INTEGER lpFreq;
+            result = QueryPerformanceFrequency(&lpFreq);
+            if (result == TRUE)
+            {
+                m_compCycles = (int64_t)lpCycles.QuadPart - m_compCyclesAtEndOfInlining;
+                m_compCycles *= 1000000;
+                m_compCycles /= (int64_t)lpFreq.QuadPart;
+            }
+        }
     }
-    assert(compCyclesAtEnd >= m_compCyclesAtEndOfInlining);
-
-    m_compCycles = compCyclesAtEnd - m_compCyclesAtEndOfInlining;
-
 #endif // defined(DEBUG)
 }
 
@@ -9352,6 +9395,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  * The following don't require a Compiler* to work:
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
  *      dBlockList                  : Display a BasicBlockList*.
+ *      dIsa                        : Display a CORINFO_InstructionSet
+ *      dIsaFlags                   : Display a CORINFO_InstructionSetFlags
  *
  * The following find an object in the IR and return it, as well as setting a global variable with the value that can
  * be used in the debugger (e.g., in the watch window, or as a way to get an address for data breakpoints).
@@ -9435,6 +9480,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Functions which don't require a Compiler*
 #pragma comment(linker, "/include:dRegMask")
 #pragma comment(linker, "/include:dBlockList")
+#pragma comment(linker, "/include:dIsa")
+#pragma comment(linker, "/include:dIsaFlags")
 
 // Functions which search for objects in the IR
 #pragma comment(linker, "/include:dFindTreeInTree")
@@ -10315,6 +10362,41 @@ JITDBGAPI void __cdecl dBlockList(BasicBlockList* list)
     {
         printf(FMT_BB " ", list->block->bbNum);
         list = list->next;
+    }
+    printf("\n");
+}
+
+JITDBGAPI void __cdecl dIsa(const CORINFO_InstructionSet isa)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dIsa %u\n", sequenceNumber++);
+    printf("%s\n", InstructionSetToString(isa));
+}
+
+JITDBGAPI void __cdecl dIsaFlags(const CORINFO_InstructionSetFlags& isaFlags)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== dIsaFlags %u\n", sequenceNumber++);
+    if (isaFlags.IsEmpty())
+    {
+        printf("<empty>\n");
+    }
+    else
+    {
+        bool first = true;
+        // The flags start at '1'. We don't know the last flag, so compute the maximum.
+        // It would be better if CORINFO_InstructionSet defined InstructionSet_FIRST and InstructionSet_LAST,
+        // or even better, if CORINFO_InstructionSetFlags defined an iterator over the instruction sets in the flags.
+        CORINFO_InstructionSet isaFirst = (CORINFO_InstructionSet)1;
+        CORINFO_InstructionSet isaLast  = (CORINFO_InstructionSet)(sizeof(CORINFO_InstructionSetFlags) * 8 - 1);
+        for (CORINFO_InstructionSet isa = isaFirst; isa <= isaLast; isa = (CORINFO_InstructionSet)((int)isa + 1))
+        {
+            if (isaFlags.HasInstructionSet(isa))
+            {
+                printf("%s%s", first ? "" : " ", InstructionSetToString(isa));
+                first = false;
+            }
+        }
     }
     printf("\n");
 }

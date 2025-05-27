@@ -222,8 +222,8 @@ enum insFlags : uint64_t
     Encoding_REX2  = 1ULL << 44,
 
     // APX: EVEX.ND:
-    INS_Flags_Has_NDD  = 1ULL << 45,    
-    
+    INS_Flags_Has_NDD  = 1ULL << 45,
+
     // APX: EVEX.NF:
     INS_Flags_Has_NF  = 1ULL << 46,
 
@@ -438,16 +438,16 @@ enum insSvePattern : unsigned
 enum insSvePrfop : unsigned
 {
     SVE_PRFOP_PLDL1KEEP = 0b0000,
-    SVE_PRFOP_PLDL1STRM = 0b0001, 
-    SVE_PRFOP_PLDL2KEEP = 0b0010, 
-    SVE_PRFOP_PLDL2STRM = 0b0011, 
-    SVE_PRFOP_PLDL3KEEP = 0b0100, 
-    SVE_PRFOP_PLDL3STRM = 0b0101, 
-    SVE_PRFOP_PSTL1KEEP = 0b1000, 
-    SVE_PRFOP_PSTL1STRM = 0b1001, 
-    SVE_PRFOP_PSTL2KEEP = 0b1010, 
-    SVE_PRFOP_PSTL2STRM = 0b1011, 
-    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PLDL1STRM = 0b0001,
+    SVE_PRFOP_PLDL2KEEP = 0b0010,
+    SVE_PRFOP_PLDL2STRM = 0b0011,
+    SVE_PRFOP_PLDL3KEEP = 0b0100,
+    SVE_PRFOP_PLDL3STRM = 0b0101,
+    SVE_PRFOP_PSTL1KEEP = 0b1000,
+    SVE_PRFOP_PSTL1STRM = 0b1001,
+    SVE_PRFOP_PSTL2KEEP = 0b1010,
+    SVE_PRFOP_PSTL2STRM = 0b1011,
+    SVE_PRFOP_PSTL3KEEP = 0b1100,
     SVE_PRFOP_PSTL3STRM = 0b1101,
 
     SVE_PRFOP_CONST6    = 0b0110,
@@ -532,6 +532,7 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };

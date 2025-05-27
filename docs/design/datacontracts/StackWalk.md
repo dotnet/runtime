@@ -16,6 +16,9 @@ IEnumerable<IStackDataFrameHandle> CreateStackWalk(ThreadData threadData);
 byte[] GetRawContext(IStackDataFrameHandle stackDataFrameHandle);
 // Gets the Frame address at the given stack dataframe. Returns TargetPointer.Null if the current dataframe does not have a valid Frame.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
+
+// Gets the Frame name associated with the given Frame identifier. If no matching Frame name found returns an empty string.
+string GetFrameName(TargetPointer frameIdentifier);
 ```
 
 ## Version 1
@@ -323,3 +326,8 @@ If the Frame is not valid, returns `TargetPointer.Null`.
 TargetPointer GetFrameAddress(IStackDataFrameHandle stackDataFrameHandle);
 ```
 
+
+`GetFrameName` gets the name associated with a FrameIdentifier (pointer sized value) from the Globals stored in the contract descriptor. If no associated Frame name is found, it returns an empty string.
+```csharp
+string GetFrameName(TargetPointer frameIdentifier);
+```

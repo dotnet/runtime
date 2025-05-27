@@ -353,9 +353,12 @@ namespace Internal.Cryptography
             };
         }
 
+        public static AttributeAsn[] NormalizeAttributeSet(AttributeAsn[] setItems) =>
+            NormalizeAttributeSet(setItems, out _);
+
         public static AttributeAsn[] NormalizeAttributeSet(
             AttributeAsn[] setItems,
-            Action<byte[]>? encodedValueProcessor = null)
+            out byte[] encodedValue)
         {
             byte[] normalizedValue;
 
@@ -370,7 +373,7 @@ namespace Internal.Cryptography
             writer.PopSetOf();
             normalizedValue = writer.Encode();
 
-            encodedValueProcessor?.Invoke(normalizedValue);
+            encodedValue = normalizedValue;
 
             try
             {

@@ -1099,7 +1099,23 @@ namespace System.Net
                 TaskCompletionSource<Stream> getStreamTcs = new();
                 TaskCompletionSource completeTcs = new();
                 _sendRequestTask = SendRequest(async: true, new RequestStreamContent(getStreamTcs, completeTcs));
-                _requestStream = new RequestStream(await getStreamTcs.Task.ConfigureAwait(false), completeTcs);
+                Task<Stream> getStreamTask = getStreamTcs.Task;
+                try
+                {
+                    Task result = await Task.WhenAny(getStreamTask, _sendRequestTask).ConfigureAwait(false);
+                    if (result == _sendRequestTask)
+                    {
+                        await _sendRequestTask.ConfigureAwait(false); // Propagate the exception
+                        // If we successfully completed the request without getting the stream,
+                        // return a null stream to avoid blocking.
+                        return Stream.Null;
+                    }
+                    _requestStream = new RequestStream(await getStreamTask.ConfigureAwait(false), completeTcs);
+                }
+                catch (Exception ex)
+                {
+                    throw WebException.CreateCompatibleException(ex);
+                }
             }
             else
             {

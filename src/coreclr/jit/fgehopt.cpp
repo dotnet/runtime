@@ -292,6 +292,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
         return;
     }
 
+    JITDUMP("\nUpdating ACDs before removing EH#%u\n", XTnum);
+
     EHblkDsc* const      ebd = ehGetDsc(XTnum);
     AddCodeDscMap* const map = fgGetAddCodeDscMap();
     for (AddCodeDsc* const add : AddCodeDscMap::ValueIteration(map))
@@ -411,6 +413,8 @@ void Compiler::fgUpdateACDsBeforeEHTableEntryRemoval(unsigned XTnum)
             JITDUMPEXEC(add->Dump());
         }
     }
+
+    JITDUMP("... done updating ACDs\n");
 }
 
 //------------------------------------------------------------------------
@@ -1644,27 +1648,28 @@ PhaseStatus Compiler::fgCloneFinally()
 
             for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
-                if (block->hasProfileWeight())
-                {
-                    weight_t const blockWeight = block->bbWeight;
-                    block->setBBProfileWeight(blockWeight * originalScale);
-                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
+                weight_t const blockWeight = block->bbWeight;
+                block->setBBProfileWeight(blockWeight * originalScale);
+                JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
-                    BasicBlock* const clonedBlock = blockMap[block];
-                    clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
-                    JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
-                }
+                BasicBlock* const clonedBlock = blockMap[block];
+                clonedBlock->setBBProfileWeight(blockWeight * clonedScale);
+                JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", clonedBlock->bbNum, clonedBlock->bbWeight);
+            }
+
+            if (!retargetedAllCalls)
+            {
+                JITDUMP(
+                    "Reduced flow out of EH%u needs to be propagated to continuation block(s). Data %s inconsistent.\n",
+                    XTnum, fgPgoConsistent ? "is now" : "was already");
+                fgPgoConsistent = false;
             }
         }
 
         // Update flow into normalCallFinallyReturn
         if (normalCallFinallyReturn->hasProfileWeight())
         {
-            normalCallFinallyReturn->bbWeight = BB_ZERO_WEIGHT;
-            for (FlowEdge* const predEdge : normalCallFinallyReturn->PredEdges())
-            {
-                normalCallFinallyReturn->increaseBBProfileWeight(predEdge->getLikelyWeight());
-            }
+            normalCallFinallyReturn->setBBProfileWeight(normalCallFinallyReturn->computeIncomingWeight());
         }
 
         // Done!
@@ -1884,9 +1889,12 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
 
         // Remove the GT_END_LFIN from the continuation,
         // Note we only expect to see one such statement.
+        //
         bool foundEndLFin = false;
+        bool isEmpty      = true;
         for (Statement* const stmt : continuation->Statements())
         {
+            isEmpty       = false;
             GenTree* expr = stmt->GetRootNode();
             if (expr->gtOper == GT_END_LFIN)
             {
@@ -1895,6 +1903,16 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
                 foundEndLFin = true;
             }
         }
+
+        // If the continuation is unreachable, morph may
+        // have changed the continuation to an empty BBJ_THROW.
+        // Tolerate.
+        //
+        if (isEmpty && continuation->KindIs(BBJ_THROW))
+        {
+            return;
+        }
+
         assert(foundEndLFin);
     }
 #endif // FEATURE_EH_WINDOWS_X86
@@ -2185,33 +2203,13 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     //
     if (block->hasProfileWeight())
     {
-        // Add weight to the canonical call finally pair.
+        // Add weight to the canonical call-finally.
         //
-        weight_t const canonicalWeight =
-            canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
-        weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+        canonicalCallFinally->increaseBBProfileWeight(block->bbWeight);
 
-        canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
-
-        BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->Next();
-
-        weight_t const canonicalLeaveWeight =
-            canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
-        weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
-
-        canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
-
-        // Remove weight from the old call finally pair.
+        // Remove weight from the old call-finally.
         //
-        if (callFinally->hasProfileWeight())
-        {
-            callFinally->decreaseBBProfileWeight(block->bbWeight);
-        }
-
-        if (leaveBlock->hasProfileWeight())
-        {
-            leaveBlock->decreaseBBProfileWeight(block->bbWeight);
-        }
+        callFinally->decreaseBBProfileWeight(block->bbWeight);
     }
 
     return true;

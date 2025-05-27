@@ -345,7 +345,7 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
         pCode++;
     }
     // is this an indirect jump?
-    // pcalau12i $t7, imm20; ld.d $t7, $t7, imm12; jirl $r0, $t7, 0
+    // pcalau12i $rd, imm20; ld.d $rd, $rj, imm12; jirl $rd, $rj, 0
     if ((pCode[0] & 0xfe000000) == 0x1a000000 &&
         (pCode[1] & 0xffc00000) == 0x28c00000 &&
         (pCode[2] & 0xfc000000) == 0x4c000000)

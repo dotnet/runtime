@@ -45,6 +45,7 @@ internal static class ReflectionTest
         TestTypesInMethodSignatures.Run();
 
         TestAttributeInheritance.Run();
+        Test113750Regression.Run();
         TestStringConstructor.Run();
         TestAssemblyAndModuleAttributes.Run();
         TestAttributeExpressions.Run();
@@ -1199,6 +1200,22 @@ internal static class ReflectionTest
             {
                 _i = i;
             }
+        }
+    }
+
+    class Test113750Regression
+    {
+        class Atom;
+
+        public static void Run()
+        {
+            var arr = Array.CreateInstance(GetAtom(), 0);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static Type GetAtom() => typeof(Atom);
+
+            if (!(arr is Atom[]))
+                throw new Exception();
         }
     }
 

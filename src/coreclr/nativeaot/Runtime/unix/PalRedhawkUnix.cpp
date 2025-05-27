@@ -526,7 +526,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDL
     vm_prot_t prot, max_prot;
     kern_return_t ret;
 
-    // Allocate two contiguous ranges of memory: the first range will contain the trampolines
+    // Allocate two contiguous ranges of memory: the first range will contain the stubs
     // and the second range will contain their data.
     do
     {

@@ -26,6 +26,10 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i, measurement.Value);
                 TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
 
+                measurement = new Measurement<int>(i, tagsArray.AsEnumerable());
+                Assert.Equal(i, measurement.Value);
+                TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);
+
                 measurement = new Measurement<int>(i, tagsArray);
                 Assert.Equal(i, measurement.Value);
                 TagListTests.ValidateTags(new TagList(measurement.Tags), tagsArray);

@@ -450,6 +450,7 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
+    GTF_VAR_CONNECTED     = 0x00100000, // GT_STORE_LCL_VAR -- this store was modelled in the connection graph during escape analysis
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -4237,6 +4238,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_GUARDED_DEVIRT_CHAIN    = 0x00080000, // this call is a candidate for chained guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00100000, // this is a call to an allocator with side effects
     GTF_CALL_M_SUPPRESS_GC_TRANSITION  = 0x00200000, // suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+    GTF_CALL_M_ASYNC                   = 0x00400000, // this call is a runtime async method call and thus a suspension point
     GTF_CALL_M_EXPANDED_EARLY          = 0x00800000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x01000000, // ldvirtftn on an interface type
     GTF_CALL_M_CAST_CAN_BE_EXPANDED    = 0x02000000, // this cast (helper call) can be expanded if it's profitable. To be removed.
@@ -4562,6 +4564,7 @@ enum class WellKnownArg : unsigned
     ThisPointer,
     VarArgsCookie,
     InstParam,
+    AsyncContinuation,
     RetBuffer,
     PInvokeFrame,
     WrapperDelegateCell,
@@ -5017,6 +5020,13 @@ struct GenTreeCall final : public GenTree
         gtReturnTypeDesc.Reset();
 #endif
     }
+
+    void SetIsAsync()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_ASYNC;
+    }
+
+    bool IsAsync() const;
 
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get i'th return register allocated to this call node.
@@ -7373,8 +7383,6 @@ struct GenTreeIndexAddr : public GenTreeOp
 
     CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
 
-    BasicBlock* gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
-
     var_types gtElemType;   // The element type of the array.
     unsigned  gtElemSize;   // size of elements in the array
     unsigned  gtLenOffset;  // The offset from the array's base address to its length.
@@ -7390,7 +7398,6 @@ struct GenTreeIndexAddr : public GenTreeOp
                      bool                 boundsCheck)
         : GenTreeOp(GT_INDEX_ADDR, TYP_BYREF, arr, ind)
         , gtStructElemClass(structElemClass)
-        , gtIndRngFailBB(nullptr)
         , gtElemType(elemType)
         , gtElemSize(elemSize)
         , gtLenOffset(lenOffset)
@@ -7587,8 +7594,7 @@ public:
 //
 struct GenTreeBoundsChk : public GenTreeOp
 {
-    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for index-out-of-range
-    SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
+    SpecialCodeKind gtThrowKind; // Kind of throw block to branch to on failure
 
     // Store some information about the array element type that was in the GT_INDEX_ADDR node before morphing.
     // Note that this information is also stored in the ARR_ADDR node of the morphed tree, but that can be hard
@@ -7597,7 +7603,6 @@ struct GenTreeBoundsChk : public GenTreeOp
 
     GenTreeBoundsChk(GenTree* index, GenTree* length, SpecialCodeKind kind)
         : GenTreeOp(GT_BOUNDS_CHECK, TYP_VOID, index, length)
-        , gtIndRngFailBB(nullptr)
         , gtThrowKind(kind)
         , gtInxType(TYP_UNKNOWN)
     {
@@ -7895,9 +7900,7 @@ public:
         BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
 
-#ifndef JIT32_GCENCODER
     bool gtBlkOpGcUnsafe;
-#endif
 
     bool ContainsReferences()
     {
@@ -7935,11 +7938,9 @@ public:
         assert(layout != nullptr);
         assert(layout->GetSize() != 0);
 
-        m_layout    = layout;
-        gtBlkOpKind = BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
+        m_layout        = layout;
+        gtBlkOpKind     = BlkOpKindInvalid;
         gtBlkOpGcUnsafe = false;
-#endif
     }
 
 #if DEBUGGABLE_GENTREE
@@ -9421,7 +9422,7 @@ enum insCC : unsigned
 };
 #endif
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 struct GenTreeCCMP final : public GenTreeOpCC
 {
     insCflags gtFlagsVal;

@@ -93,6 +93,7 @@ static size_t streaming_loop_tick(EventPipeSession *const session) {
 	bool ok;
 	if (!ep_session_get_streaming_enabled (session)){
 		session->streaming_thread = NULL;
+		ep_session_dec_ref (session);
 		return 1; // done
 	}
 	EP_GCX_PREEMP_ENTER
@@ -126,6 +127,7 @@ session_create_streaming_thread (EventPipeSession *session)
 	if (!ep_rt_thread_create ((void *)streaming_thread, (void *)session, EP_THREAD_TYPE_SESSION, &thread_id))
 		EP_UNREACHABLE ("Unable to create stream flushing thread.");
 #else
+	ep_session_inc_ref (session);
 	ep_rt_volatile_store_uint32_t (&session->started, 1);
 	ep_rt_queue_job ((void *)streaming_loop_tick, (void *)session);
 #endif
@@ -184,6 +186,7 @@ ep_session_alloc (
 
 	EventPipeSession *instance = ep_rt_object_alloc (EventPipeSession);
 	ep_raise_error_if_nok (instance != NULL);
+	ep_session_inc_ref (instance);
 
 	instance->providers = ep_session_provider_list_alloc (providers, providers_len);
 	ep_raise_error_if_nok (instance->providers != NULL);
@@ -247,7 +250,7 @@ ep_on_exit:
 ep_on_error:
 	ep_file_stream_writer_free (file_stream_writer);
 	ep_ipc_stream_writer_free (ipc_stream_writer);
-	ep_session_free (instance);
+	ep_session_dec_ref (instance);
 
 	instance = NULL;
 	ep_exit_error_handler ();
@@ -296,11 +299,20 @@ ep_on_error:
 }
 
 void
-ep_session_free (EventPipeSession *session)
+ep_session_inc_ref (EventPipeSession *session)
+{
+	ep_rt_atomic_inc_uint32_t (&session->ref_count);
+}
+
+void
+ep_session_dec_ref (EventPipeSession *session)
 {
 	ep_return_void_if_nok (session != NULL);
 
 	EP_ASSERT (!ep_session_get_streaming_enabled (session));
+
+	if (ep_rt_atomic_dec_uint32_t (&session->ref_count) != 0)
+		return;
 
 	ep_rt_wait_event_free (&session->rt_thread_shutdown_event);
 

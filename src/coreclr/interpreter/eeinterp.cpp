@@ -26,7 +26,10 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
         return;
     }
     g_interpHost = jitHost;
-    // TODO Interp intialization
+
+    assert(!InterpConfig.IsInitialized());
+    InterpConfig.Initialize(jitHost);
+
     g_interpInitialized = true;
 }
 /*****************************************************************************/
@@ -64,11 +67,9 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     {
         const char *methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
 
-        // TODO: replace this by something like the JIT does to support multiple methods being specified and we don't
-        // keep fetching it on each call to compileMethod
-        const char *methodToInterpret = g_interpHost->getStringConfigValue("Interpreter");
+        // TODO: replace this by something like the JIT does to support multiple methods being specified
+        const char *methodToInterpret = InterpConfig.Interpreter();
         doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
-        g_interpHost->freeStringConfigValue(methodToInterpret);
         if (doInterpret)
             g_interpModule = methodInfo->scope;
     }
@@ -78,12 +79,12 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         return CORJIT_SKIPPED;
     }
 
-    InterpCompiler compiler(compHnd, methodInfo, false /* verbose */);
+    InterpCompiler compiler(compHnd, methodInfo);
     InterpMethod *pMethod = compiler.CompileMethod();
 
     int32_t IRCodeSize;
     int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
- 
+
     // FIXME this shouldn't be here
     compHnd->setMethodAttribs(methodInfo->ftn, CORINFO_FLG_INTERPRETER);
 
@@ -104,6 +105,9 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
 
     *entryAddress = (uint8_t*)args.hotCodeBlock;
     *nativeSizeOfCode = sizeOfCode;
+
+    // We can't do this until we've called allocMem
+    compiler.BuildGCInfo(pMethod);
 
     return CORJIT_OK;
 }

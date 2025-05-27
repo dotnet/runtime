@@ -9,6 +9,7 @@
     <Compile Include="*.cs" />
     <Compile Include="../NativeLibrary/NativeLibraryToLoad/NativeLibraryToLoad.cs" />
     <CMakeProjectReference Include="../NativeLibrary/NativeLibraryToLoad/CMakeLists.txt" />
+    <CMakeProjectReference Include="NativeLibraryWithDependency/CMakeLists.txt" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -18,9 +19,17 @@
   <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
     <ItemGroup>
       <NativeLibrariesToMove Include="$(OutDir)/libNativeLibrary.*" />
+      <NativeLibrariesToMove Include="$(OutDir)/libNativeLibraryWithDependency.*" />
       <NativeLibrariesToMove Include="$(OutDir)/NativeLibrary.*" />
+      <NativeLibrariesToMove Include="$(OutDir)/NativeLibraryWithDependency.*" />
     </ItemGroup>
-    <Move SourceFiles="@(NativeLibrariesToMove)" DestinationFiles="@(NativeLibrariesToMove -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')"/>
+    <ItemGroup>
+      <NativeLibrariesToCopy Include="@(NativeLibrariesToMove)" Condition="'%(Filename)' == 'NativeLibrary' or '%(Filename)' == 'libNativeLibrary'" />
+    </ItemGroup>
+    <!-- NativeLibrary has multiple copies so tests can load different ones without using a cached load -->
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)-copy%(Extension)')" />
+    <Copy SourceFiles="@(NativeLibrariesToCopy)" DestinationFiles="@(NativeLibrariesToCopy -> '$(LibrarySubdirectory)/%(Filename)-default-flags%(Extension)')" />
+    <Move SourceFiles="@(NativeLibrariesToMove)" DestinationFiles="@(NativeLibrariesToMove -> '$(LibrarySubdirectory)/%(Filename)%(Extension)')" />
   </Target>
 
   <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">

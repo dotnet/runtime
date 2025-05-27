@@ -4787,20 +4787,12 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
     weight_t       incomingLikelyWeight = 0;
     unsigned       missingLikelyWeight  = 0;
     bool           foundPreds           = false;
-    bool           foundEHPreds         = false;
 
     for (FlowEdge* const predEdge : block->PredEdges())
     {
         if (predEdge->hasLikelihood())
         {
-            if (BasicBlock::sameHndRegion(block, predEdge->getSourceBlock()))
-            {
-                incomingLikelyWeight += predEdge->getLikelyWeight();
-            }
-            else
-            {
-                foundEHPreds = true;
-            }
+            incomingLikelyWeight += predEdge->getLikelyWeight();
         }
         else
         {
@@ -4812,29 +4804,11 @@ bool Compiler::fgDebugCheckIncomingProfileData(BasicBlock* block, ProfileChecks 
         foundPreds = true;
     }
 
-    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
-    // so special-case BBJ_CALLFINALLYRET incoming flow.
-    //
-    if (block->isBBCallFinallyPairTail())
-    {
-        incomingLikelyWeight = block->Prev()->bbWeight;
-        foundEHPreds         = false;
-    }
-
-    // We almost certainly won't get the likelihoods on a BBJ_EHFINALLYRET right,
-    // so special-case BBJ_CALLFINALLYRET incoming flow.
-    //
-    if (block->isBBCallFinallyPairTail())
-    {
-        incomingLikelyWeight = block->Prev()->bbWeight;
-        foundEHPreds         = false;
-    }
-
     bool likelyWeightsValid = true;
 
     // If we have EH preds we may not have consistent incoming flow.
     //
-    if (foundPreds && !foundEHPreds)
+    if (foundPreds)
     {
         if (verifyLikelyWeights)
         {
@@ -4890,7 +4864,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingLikelihood = 0;

@@ -44,12 +44,7 @@ namespace
             // if we haven't found a matching token, it must be a static field with layout -- ignore it
             if (pfwalk->m_MD != fd) continue;
 
-            if (!fExplicitOffsets)
-            {
-                // ulOffset is the sequence
-                pfwalk->m_sequence = ulOffset;
-            }
-            else
+            if (fExplicitOffsets)
             {
                 // ulOffset is the explicit offset
                 pfwalk->m_placement.m_offset = ulOffset;
@@ -1046,7 +1041,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
     if (fHasNonTrivialParent)
     {
         CONSISTENCY_CHECK(fParentHasLayout);
-        PREFAST_ASSUME(pParentLayoutInfo != NULL);  // See if (fParentHasLayout) branch above
+        _ASSERTE(pParentLayoutInfo != NULL);  // See if (fParentHasLayout) branch above
 
         UINT numChildCTMFields = cInstanceFields;
 

@@ -207,6 +207,7 @@ typedef uint8_t CODE_LOCATION;
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 16) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (b, a) \
     {
+#define FCIMPL2_LL FCIMPL2_DD
 #define FCIMPL2_FI(_rettype, _method, a, b) \
     FCIMPL_RENAME_ARGSIZE(_rettype, _method, 8) \
     EXTERN_C _rettype F_CALL_CONV _method##_FCall (a, b) \
@@ -249,6 +250,7 @@ typedef uint8_t CODE_LOCATION;
 #define FCIMPL2_DD(_rettype, _method, a, b) \
     EXTERN_C _rettype F_CALL_CONV _method (a, b) \
     {
+#define FCIMPL2_LL FCIMPL2_DD
 #define FCIMPL2_FI(_rettype, _method, a, b) \
     EXTERN_C _rettype F_CALL_CONV _method (a, b) \
     {

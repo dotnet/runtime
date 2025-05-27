@@ -81,7 +81,7 @@
 #include "grammar_before.cpp"
 
 
-#line 85 "asmparse.cpp"
+#line 85 "prebuilt\\asmparse.cpp"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -445,7 +445,7 @@ union YYSTYPE
         CustomDescr*  cad;
         unsigned short opcode;
 
-#line 449 "asmparse.cpp"
+#line 449 "prebuilt\\asmparse.cpp"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1375,89 +1375,89 @@ static const yytype_int16 yyrline[] =
 {
        0,   189,   189,   190,   193,   194,   195,   199,   200,   201,
      202,   203,   204,   205,   206,   207,   208,   209,   210,   211,
-     212,   222,   223,   226,   229,   230,   231,   232,   233,   234,
-     237,   238,   241,   242,   245,   246,   248,   253,   254,   257,
-     258,   259,   262,   265,   266,   269,   270,   271,   275,   276,
-     277,   278,   279,   284,   285,   286,   287,   290,   293,   294,
-     298,   299,   303,   304,   305,   306,   309,   310,   311,   313,
-     316,   319,   325,   328,   329,   333,   339,   340,   342,   345,
-     346,   352,   355,   356,   359,   363,   364,   372,   373,   374,
-     375,   377,   379,   384,   385,   386,   393,   397,   398,   399,
-     400,   401,   402,   405,   408,   412,   415,   418,   424,   427,
-     428,   429,   430,   431,   432,   433,   434,   435,   436,   437,
-     438,   439,   440,   441,   442,   443,   444,   445,   446,   447,
-     448,   449,   450,   451,   452,   453,   456,   457,   460,   461,
-     464,   465,   468,   469,   473,   474,   477,   478,   481,   482,
-     485,   486,   487,   488,   489,   490,   491,   494,   495,   498,
-     499,   502,   503,   506,   509,   510,   513,   517,   521,   522,
-     523,   524,   525,   526,   527,   528,   529,   530,   531,   532,
-     538,   547,   548,   549,   554,   560,   561,   562,   569,   574,
-     575,   576,   577,   578,   579,   580,   581,   593,   595,   596,
-     597,   598,   599,   600,   601,   604,   605,   608,   609,   612,
-     613,   617,   634,   640,   656,   661,   662,   663,   666,   667,
-     668,   669,   672,   673,   674,   675,   676,   677,   678,   679,
-     682,   685,   690,   694,   698,   700,   702,   707,   708,   712,
-     713,   714,   717,   718,   721,   722,   723,   724,   725,   726,
-     727,   728,   732,   738,   739,   740,   743,   744,   748,   749,
-     750,   751,   752,   753,   754,   758,   764,   765,   768,   769,
-     772,   775,   791,   792,   793,   794,   795,   796,   797,   798,
-     799,   800,   801,   802,   803,   804,   805,   806,   807,   808,
-     809,   810,   811,   814,   817,   822,   823,   824,   825,   826,
-     827,   828,   829,   830,   831,   832,   833,   834,   835,   836,
-     837,   840,   841,   842,   845,   846,   847,   848,   849,   852,
-     853,   854,   855,   856,   857,   858,   859,   860,   861,   862,
-     863,   864,   865,   866,   867,   870,   874,   875,   878,   879,
-     880,   881,   883,   886,   887,   888,   889,   890,   891,   892,
-     893,   894,   895,   896,   906,   916,   918,   921,   928,   929,
-     934,   940,   941,   943,   964,   967,   971,   974,   975,   978,
-     979,   980,   984,   989,   990,   991,   992,   996,   997,   999,
-    1003,  1007,  1012,  1016,  1020,  1021,  1022,  1027,  1030,  1031,
-    1034,  1035,  1036,  1039,  1040,  1043,  1044,  1047,  1048,  1053,
-    1054,  1055,  1056,  1063,  1070,  1077,  1084,  1092,  1100,  1101,
-    1102,  1103,  1104,  1105,  1109,  1112,  1114,  1116,  1118,  1120,
-    1122,  1124,  1126,  1128,  1130,  1132,  1134,  1136,  1138,  1140,
-    1142,  1144,  1146,  1150,  1153,  1154,  1157,  1158,  1162,  1163,
-    1164,  1169,  1170,  1171,  1173,  1175,  1177,  1178,  1179,  1183,
-    1187,  1191,  1195,  1199,  1203,  1207,  1211,  1215,  1219,  1223,
-    1227,  1231,  1235,  1239,  1243,  1247,  1251,  1258,  1259,  1261,
-    1265,  1266,  1268,  1272,  1273,  1277,  1278,  1281,  1282,  1285,
-    1286,  1289,  1290,  1294,  1295,  1296,  1300,  1301,  1302,  1304,
-    1308,  1309,  1313,  1319,  1322,  1325,  1328,  1331,  1334,  1337,
-    1345,  1348,  1351,  1354,  1357,  1360,  1363,  1367,  1368,  1369,
-    1370,  1371,  1372,  1373,  1374,  1383,  1384,  1385,  1392,  1400,
-    1408,  1414,  1420,  1426,  1430,  1431,  1433,  1435,  1439,  1445,
-    1448,  1449,  1450,  1451,  1452,  1456,  1457,  1460,  1461,  1464,
-    1465,  1469,  1470,  1473,  1474,  1477,  1478,  1479,  1483,  1484,
-    1485,  1486,  1487,  1488,  1489,  1490,  1493,  1499,  1506,  1507,
-    1510,  1511,  1512,  1513,  1517,  1518,  1525,  1531,  1533,  1536,
-    1538,  1539,  1541,  1543,  1544,  1545,  1546,  1547,  1548,  1549,
-    1550,  1551,  1552,  1553,  1554,  1555,  1556,  1557,  1558,  1559,
-    1561,  1563,  1568,  1573,  1576,  1578,  1580,  1581,  1582,  1583,
-    1584,  1586,  1588,  1590,  1591,  1593,  1596,  1600,  1601,  1602,
-    1603,  1605,  1606,  1607,  1608,  1609,  1610,  1611,  1612,  1615,
-    1616,  1619,  1620,  1621,  1622,  1623,  1624,  1625,  1626,  1627,
-    1628,  1629,  1630,  1631,  1632,  1633,  1634,  1635,  1636,  1637,
-    1638,  1639,  1640,  1641,  1642,  1643,  1644,  1645,  1646,  1647,
-    1648,  1649,  1650,  1651,  1652,  1653,  1654,  1655,  1656,  1657,
-    1658,  1659,  1660,  1661,  1662,  1663,  1664,  1665,  1666,  1667,
-    1671,  1677,  1678,  1679,  1680,  1681,  1682,  1683,  1684,  1685,
-    1687,  1689,  1696,  1703,  1709,  1715,  1730,  1745,  1746,  1747,
-    1748,  1749,  1750,  1751,  1754,  1755,  1756,  1757,  1758,  1759,
-    1760,  1761,  1762,  1763,  1764,  1765,  1766,  1767,  1768,  1769,
-    1770,  1771,  1774,  1775,  1778,  1779,  1780,  1781,  1784,  1788,
-    1790,  1792,  1793,  1794,  1796,  1805,  1806,  1807,  1810,  1813,
-    1818,  1819,  1823,  1824,  1827,  1830,  1831,  1834,  1837,  1840,
-    1843,  1847,  1853,  1859,  1865,  1873,  1874,  1875,  1876,  1877,
-    1878,  1879,  1880,  1881,  1882,  1883,  1884,  1885,  1886,  1887,
-    1891,  1892,  1895,  1898,  1900,  1903,  1905,  1909,  1912,  1916,
-    1919,  1923,  1926,  1932,  1934,  1937,  1938,  1941,  1942,  1945,
-    1948,  1951,  1952,  1953,  1954,  1955,  1956,  1957,  1958,  1959,
-    1960,  1963,  1964,  1967,  1968,  1969,  1972,  1973,  1976,  1977,
-    1979,  1980,  1981,  1982,  1985,  1988,  1991,  1994,  1996,  2000,
-    2001,  2004,  2005,  2006,  2007,  2010,  2013,  2016,  2017,  2018,
-    2019,  2020,  2021,  2022,  2023,  2024,  2025,  2028,  2029,  2032,
-    2033,  2034,  2035,  2037,  2039,  2040,  2043,  2044,  2048,  2049,
-    2050,  2053,  2054,  2057,  2058,  2059,  2060
+     212,   215,   216,   219,   222,   223,   224,   225,   226,   227,
+     230,   231,   234,   235,   238,   239,   241,   246,   247,   250,
+     251,   252,   255,   258,   259,   262,   263,   264,   268,   269,
+     270,   271,   272,   277,   278,   279,   280,   283,   286,   287,
+     291,   292,   296,   297,   298,   299,   302,   303,   304,   306,
+     309,   312,   318,   321,   322,   326,   332,   333,   335,   338,
+     339,   345,   348,   349,   352,   356,   357,   365,   366,   367,
+     368,   370,   372,   377,   378,   379,   386,   390,   391,   392,
+     393,   394,   395,   398,   401,   405,   408,   411,   417,   420,
+     421,   422,   423,   424,   425,   426,   427,   428,   429,   430,
+     431,   432,   433,   434,   435,   436,   437,   438,   439,   440,
+     441,   442,   443,   444,   445,   446,   449,   450,   453,   454,
+     457,   458,   461,   462,   466,   467,   470,   471,   474,   475,
+     478,   479,   480,   481,   482,   483,   484,   487,   488,   491,
+     492,   495,   496,   499,   502,   503,   506,   510,   514,   515,
+     516,   517,   518,   519,   520,   521,   522,   523,   524,   525,
+     531,   540,   541,   542,   547,   553,   554,   555,   562,   567,
+     568,   569,   570,   571,   572,   573,   574,   586,   588,   589,
+     590,   591,   592,   593,   594,   597,   598,   601,   602,   605,
+     606,   610,   627,   633,   649,   654,   655,   656,   659,   660,
+     661,   662,   665,   666,   667,   668,   669,   670,   671,   672,
+     675,   678,   683,   687,   691,   693,   695,   700,   701,   705,
+     706,   707,   710,   711,   714,   715,   716,   717,   718,   719,
+     720,   721,   725,   731,   732,   733,   736,   737,   741,   742,
+     743,   744,   745,   746,   747,   751,   757,   758,   761,   762,
+     765,   768,   784,   785,   786,   787,   788,   789,   790,   791,
+     792,   793,   794,   795,   796,   797,   798,   799,   800,   801,
+     802,   803,   804,   807,   810,   815,   816,   817,   818,   819,
+     820,   821,   822,   823,   824,   825,   826,   827,   828,   829,
+     830,   833,   834,   835,   838,   839,   840,   841,   842,   845,
+     846,   847,   848,   849,   850,   851,   852,   853,   854,   855,
+     856,   857,   858,   859,   860,   863,   867,   868,   871,   872,
+     873,   874,   876,   879,   880,   881,   882,   883,   884,   885,
+     886,   887,   888,   889,   899,   909,   911,   914,   921,   922,
+     927,   933,   934,   936,   957,   960,   964,   967,   968,   971,
+     972,   973,   977,   982,   983,   984,   985,   989,   990,   992,
+     996,  1000,  1005,  1009,  1013,  1014,  1015,  1020,  1023,  1024,
+    1027,  1028,  1029,  1032,  1033,  1036,  1037,  1040,  1041,  1046,
+    1047,  1048,  1049,  1056,  1063,  1070,  1077,  1085,  1093,  1094,
+    1095,  1096,  1097,  1098,  1102,  1105,  1107,  1109,  1111,  1113,
+    1115,  1117,  1119,  1121,  1123,  1125,  1127,  1129,  1131,  1133,
+    1135,  1137,  1139,  1143,  1146,  1147,  1150,  1151,  1155,  1156,
+    1157,  1162,  1163,  1164,  1166,  1168,  1170,  1171,  1172,  1176,
+    1180,  1184,  1188,  1192,  1196,  1200,  1204,  1208,  1212,  1216,
+    1220,  1224,  1228,  1232,  1236,  1240,  1244,  1251,  1252,  1254,
+    1258,  1259,  1261,  1265,  1266,  1270,  1271,  1274,  1275,  1278,
+    1279,  1282,  1283,  1287,  1288,  1289,  1293,  1294,  1295,  1297,
+    1301,  1302,  1306,  1312,  1315,  1318,  1321,  1324,  1327,  1330,
+    1338,  1341,  1344,  1347,  1350,  1353,  1356,  1360,  1361,  1362,
+    1363,  1364,  1365,  1366,  1367,  1376,  1377,  1378,  1385,  1393,
+    1401,  1407,  1413,  1419,  1423,  1424,  1426,  1428,  1432,  1438,
+    1441,  1442,  1443,  1444,  1445,  1449,  1450,  1453,  1454,  1457,
+    1458,  1462,  1463,  1466,  1467,  1470,  1471,  1472,  1476,  1477,
+    1478,  1479,  1480,  1481,  1482,  1483,  1486,  1492,  1499,  1500,
+    1503,  1504,  1505,  1506,  1510,  1511,  1518,  1524,  1526,  1529,
+    1531,  1532,  1534,  1536,  1537,  1538,  1539,  1540,  1541,  1542,
+    1543,  1544,  1545,  1546,  1547,  1548,  1549,  1550,  1551,  1552,
+    1554,  1556,  1561,  1566,  1569,  1571,  1573,  1574,  1575,  1576,
+    1577,  1579,  1581,  1583,  1584,  1586,  1589,  1593,  1594,  1595,
+    1596,  1598,  1599,  1600,  1601,  1602,  1603,  1604,  1605,  1608,
+    1609,  1612,  1613,  1614,  1615,  1616,  1617,  1618,  1619,  1620,
+    1621,  1622,  1623,  1624,  1625,  1626,  1627,  1628,  1629,  1630,
+    1631,  1632,  1633,  1634,  1635,  1636,  1637,  1638,  1639,  1640,
+    1641,  1642,  1643,  1644,  1645,  1646,  1647,  1648,  1649,  1650,
+    1651,  1652,  1653,  1654,  1655,  1656,  1657,  1658,  1659,  1660,
+    1664,  1670,  1671,  1672,  1673,  1674,  1675,  1676,  1677,  1678,
+    1680,  1682,  1689,  1696,  1702,  1708,  1723,  1738,  1739,  1740,
+    1741,  1742,  1743,  1744,  1747,  1748,  1749,  1750,  1751,  1752,
+    1753,  1754,  1755,  1756,  1757,  1758,  1759,  1760,  1761,  1762,
+    1763,  1764,  1767,  1768,  1771,  1772,  1773,  1774,  1777,  1781,
+    1783,  1785,  1786,  1787,  1789,  1798,  1799,  1800,  1803,  1806,
+    1811,  1812,  1816,  1817,  1820,  1823,  1824,  1827,  1830,  1833,
+    1836,  1840,  1846,  1852,  1858,  1866,  1867,  1868,  1869,  1870,
+    1871,  1872,  1873,  1874,  1875,  1876,  1877,  1878,  1879,  1880,
+    1884,  1885,  1888,  1891,  1893,  1896,  1898,  1902,  1905,  1909,
+    1912,  1916,  1919,  1925,  1927,  1930,  1931,  1934,  1935,  1938,
+    1941,  1944,  1945,  1946,  1947,  1948,  1949,  1950,  1951,  1952,
+    1953,  1956,  1957,  1960,  1961,  1962,  1965,  1966,  1969,  1970,
+    1972,  1973,  1974,  1975,  1978,  1981,  1984,  1987,  1989,  1993,
+    1994,  1997,  1998,  1999,  2000,  2003,  2006,  2009,  2010,  2011,
+    2012,  2013,  2014,  2015,  2016,  2017,  2018,  2021,  2022,  2025,
+    2026,  2027,  2028,  2030,  2032,  2033,  2036,  2037,  2041,  2042,
+    2043,  2046,  2047,  2050,  2051,  2052,  2053
 };
 #endif
 
@@ -3538,13 +3538,13 @@ yyreduce:
   case 4: /* decl: classHead '{' classDecls '}'  */
 #line 193 "asmparse.y"
                                                                                 { PASM->EndClass(); }
-#line 3542 "asmparse.cpp"
+#line 3542 "prebuilt\\asmparse.cpp"
     break;
 
   case 5: /* decl: nameSpaceHead '{' decls '}'  */
 #line 194 "asmparse.y"
                                                                                 { PASM->EndNameSpace(); }
-#line 3548 "asmparse.cpp"
+#line 3548 "prebuilt\\asmparse.cpp"
     break;
 
   case 6: /* decl: methodHead methodDecls '}'  */
@@ -3553,957 +3553,950 @@ yyreduce:
                                                                                   {  PASM->m_pCurMethod->m_ulLines[1] = PASM->m_ulCurLine;
                                                                                      PASM->m_pCurMethod->m_ulColumns[1]=PASM->m_ulCurColumn;}
                                                                                   PASM->EndMethod(); }
-#line 3557 "asmparse.cpp"
+#line 3557 "prebuilt\\asmparse.cpp"
     break;
 
   case 13: /* decl: assemblyHead '{' assemblyDecls '}'  */
 #line 205 "asmparse.y"
                                                                                 { PASMM->EndAssembly(); }
-#line 3563 "asmparse.cpp"
+#line 3563 "prebuilt\\asmparse.cpp"
     break;
 
   case 14: /* decl: assemblyRefHead '{' assemblyRefDecls '}'  */
 #line 206 "asmparse.y"
                                                                                 { PASMM->EndAssembly(); }
-#line 3569 "asmparse.cpp"
+#line 3569 "prebuilt\\asmparse.cpp"
     break;
 
   case 15: /* decl: exptypeHead '{' exptypeDecls '}'  */
 #line 207 "asmparse.y"
                                                                                 { PASMM->EndComType(); }
-#line 3575 "asmparse.cpp"
+#line 3575 "prebuilt\\asmparse.cpp"
     break;
 
   case 16: /* decl: manifestResHead '{' manifestResDecls '}'  */
 #line 208 "asmparse.y"
                                                                                 { PASMM->EndManifestRes(); }
-#line 3581 "asmparse.cpp"
+#line 3581 "prebuilt\\asmparse.cpp"
     break;
 
   case 20: /* decl: _SUBSYSTEM int32  */
 #line 212 "asmparse.y"
                                                                                 {
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22011) // Suppress PREFast warning about integer overflow/underflow
-#endif
                                                                                   PASM->m_dwSubsystem = (yyvsp[0].int32);
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
                                                                                 }
-#line 3596 "asmparse.cpp"
+#line 3589 "prebuilt\\asmparse.cpp"
     break;
 
   case 21: /* decl: _CORFLAGS int32  */
-#line 222 "asmparse.y"
+#line 215 "asmparse.y"
                                                                                 { PASM->m_dwComImageFlags = (yyvsp[0].int32); }
-#line 3602 "asmparse.cpp"
+#line 3595 "prebuilt\\asmparse.cpp"
     break;
 
   case 22: /* decl: _FILE ALIGNMENT_ int32  */
-#line 223 "asmparse.y"
+#line 216 "asmparse.y"
                                                                                 { PASM->m_dwFileAlignment = (yyvsp[0].int32);
                                                                                   if(((yyvsp[0].int32) & ((yyvsp[0].int32) - 1))||((yyvsp[0].int32) < 0x200)||((yyvsp[0].int32) > 0x10000))
                                                                                     PASM->report->error("Invalid file alignment, must be power of 2 from 0x200 to 0x10000\n");}
-#line 3610 "asmparse.cpp"
+#line 3603 "prebuilt\\asmparse.cpp"
     break;
 
   case 23: /* decl: _IMAGEBASE int64  */
-#line 226 "asmparse.y"
+#line 219 "asmparse.y"
                                                                                 { PASM->m_stBaseAddress = (ULONGLONG)(*((yyvsp[0].int64))); delete (yyvsp[0].int64);
                                                                                   if(PASM->m_stBaseAddress & 0xFFFF)
                                                                                     PASM->report->error("Invalid image base, must be 0x10000-aligned\n");}
-#line 3618 "asmparse.cpp"
+#line 3611 "prebuilt\\asmparse.cpp"
     break;
 
   case 24: /* decl: _STACKRESERVE int64  */
-#line 229 "asmparse.y"
+#line 222 "asmparse.y"
                                                                                 { PASM->m_stSizeOfStackReserve = (size_t)(*((yyvsp[0].int64))); delete (yyvsp[0].int64); }
-#line 3624 "asmparse.cpp"
+#line 3617 "prebuilt\\asmparse.cpp"
     break;
 
   case 29: /* decl: _MSCORLIB  */
-#line 234 "asmparse.y"
+#line 227 "asmparse.y"
                                                                                 { PASM->m_fIsMscorlib = TRUE; }
-#line 3630 "asmparse.cpp"
+#line 3623 "prebuilt\\asmparse.cpp"
     break;
 
   case 32: /* compQstring: QSTRING  */
-#line 241 "asmparse.y"
+#line 234 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 3636 "asmparse.cpp"
+#line 3629 "prebuilt\\asmparse.cpp"
     break;
 
   case 33: /* compQstring: compQstring '+' QSTRING  */
-#line 242 "asmparse.y"
+#line 235 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 3642 "asmparse.cpp"
+#line 3635 "prebuilt\\asmparse.cpp"
     break;
 
   case 34: /* languageDecl: _LANGUAGE SQSTRING  */
-#line 245 "asmparse.y"
+#line 238 "asmparse.y"
                                                                                 { LPCSTRToGuid((yyvsp[0].string),&(PASM->m_guidLang)); }
-#line 3648 "asmparse.cpp"
+#line 3641 "prebuilt\\asmparse.cpp"
     break;
 
   case 35: /* languageDecl: _LANGUAGE SQSTRING ',' SQSTRING  */
-#line 246 "asmparse.y"
+#line 239 "asmparse.y"
                                                                                 { LPCSTRToGuid((yyvsp[-2].string),&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid((yyvsp[0].string),&(PASM->m_guidLangVendor));}
-#line 3655 "asmparse.cpp"
+#line 3648 "prebuilt\\asmparse.cpp"
     break;
 
   case 36: /* languageDecl: _LANGUAGE SQSTRING ',' SQSTRING ',' SQSTRING  */
-#line 248 "asmparse.y"
+#line 241 "asmparse.y"
                                                                                 { LPCSTRToGuid((yyvsp[-4].string),&(PASM->m_guidLang));
                                                                                   LPCSTRToGuid((yyvsp[-2].string),&(PASM->m_guidLangVendor));
                                                                                   LPCSTRToGuid((yyvsp[-2].string),&(PASM->m_guidDoc));}
-#line 3663 "asmparse.cpp"
+#line 3656 "prebuilt\\asmparse.cpp"
     break;
 
   case 37: /* id: ID  */
-#line 253 "asmparse.y"
+#line 246 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 3669 "asmparse.cpp"
+#line 3662 "prebuilt\\asmparse.cpp"
     break;
 
   case 38: /* id: SQSTRING  */
-#line 254 "asmparse.y"
+#line 247 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 3675 "asmparse.cpp"
+#line 3668 "prebuilt\\asmparse.cpp"
     break;
 
   case 39: /* dottedName: id  */
-#line 257 "asmparse.y"
+#line 250 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 3681 "asmparse.cpp"
+#line 3674 "prebuilt\\asmparse.cpp"
     break;
 
   case 40: /* dottedName: DOTTEDNAME  */
-#line 258 "asmparse.y"
+#line 251 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 3687 "asmparse.cpp"
+#line 3680 "prebuilt\\asmparse.cpp"
     break;
 
   case 41: /* dottedName: dottedName '.' dottedName  */
-#line 259 "asmparse.y"
+#line 252 "asmparse.y"
                                                               { (yyval.string) = newStringWDel((yyvsp[-2].string), '.', (yyvsp[0].string)); }
-#line 3693 "asmparse.cpp"
+#line 3686 "prebuilt\\asmparse.cpp"
     break;
 
   case 42: /* int32: INT32_V  */
-#line 262 "asmparse.y"
+#line 255 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[0].int32); }
-#line 3699 "asmparse.cpp"
+#line 3692 "prebuilt\\asmparse.cpp"
     break;
 
   case 43: /* int64: INT64_V  */
-#line 265 "asmparse.y"
+#line 258 "asmparse.y"
                                                               { (yyval.int64) = (yyvsp[0].int64); }
-#line 3705 "asmparse.cpp"
+#line 3698 "prebuilt\\asmparse.cpp"
     break;
 
   case 44: /* int64: INT32_V  */
-#line 266 "asmparse.y"
+#line 259 "asmparse.y"
                                                               { (yyval.int64) = neg ? new int64_t((yyvsp[0].int32)) : new int64_t((unsigned)(yyvsp[0].int32)); }
-#line 3711 "asmparse.cpp"
+#line 3704 "prebuilt\\asmparse.cpp"
     break;
 
   case 45: /* float64: FLOAT64  */
-#line 269 "asmparse.y"
+#line 262 "asmparse.y"
                                                               { (yyval.float64) = (yyvsp[0].float64); }
-#line 3717 "asmparse.cpp"
+#line 3710 "prebuilt\\asmparse.cpp"
     break;
 
   case 46: /* float64: FLOAT32_ '(' int32 ')'  */
-#line 270 "asmparse.y"
+#line 263 "asmparse.y"
                                                               { float f; *((int32_t*) (&f)) = (yyvsp[-1].int32); (yyval.float64) = new double(f); }
-#line 3723 "asmparse.cpp"
+#line 3716 "prebuilt\\asmparse.cpp"
     break;
 
   case 47: /* float64: FLOAT64_ '(' int64 ')'  */
-#line 271 "asmparse.y"
+#line 264 "asmparse.y"
                                                               { (yyval.float64) = (double*) (yyvsp[-1].int64); }
-#line 3729 "asmparse.cpp"
+#line 3722 "prebuilt\\asmparse.cpp"
     break;
 
   case 48: /* typedefDecl: _TYPEDEF type AS_ dottedName  */
-#line 275 "asmparse.y"
+#line 268 "asmparse.y"
                                                                                 { PASM->AddTypeDef((yyvsp[-2].binstr),(yyvsp[0].string)); }
-#line 3735 "asmparse.cpp"
+#line 3728 "prebuilt\\asmparse.cpp"
     break;
 
   case 49: /* typedefDecl: _TYPEDEF className AS_ dottedName  */
-#line 276 "asmparse.y"
+#line 269 "asmparse.y"
                                                                                 { PASM->AddTypeDef((yyvsp[-2].token),(yyvsp[0].string)); }
-#line 3741 "asmparse.cpp"
+#line 3734 "prebuilt\\asmparse.cpp"
     break;
 
   case 50: /* typedefDecl: _TYPEDEF memberRef AS_ dottedName  */
-#line 277 "asmparse.y"
+#line 270 "asmparse.y"
                                                                                 { PASM->AddTypeDef((yyvsp[-2].token),(yyvsp[0].string)); }
-#line 3747 "asmparse.cpp"
+#line 3740 "prebuilt\\asmparse.cpp"
     break;
 
   case 51: /* typedefDecl: _TYPEDEF customDescr AS_ dottedName  */
-#line 278 "asmparse.y"
+#line 271 "asmparse.y"
                                                                                 { (yyvsp[-2].cad)->tkOwner = 0; PASM->AddTypeDef((yyvsp[-2].cad),(yyvsp[0].string)); }
-#line 3753 "asmparse.cpp"
+#line 3746 "prebuilt\\asmparse.cpp"
     break;
 
   case 52: /* typedefDecl: _TYPEDEF customDescrWithOwner AS_ dottedName  */
-#line 279 "asmparse.y"
+#line 272 "asmparse.y"
                                                                                 { PASM->AddTypeDef((yyvsp[-2].cad),(yyvsp[0].string)); }
-#line 3759 "asmparse.cpp"
+#line 3752 "prebuilt\\asmparse.cpp"
     break;
 
   case 53: /* compControl: P_DEFINE dottedName  */
-#line 284 "asmparse.y"
+#line 277 "asmparse.y"
                                                                                 { DefineVar((yyvsp[0].string), NULL); }
-#line 3765 "asmparse.cpp"
+#line 3758 "prebuilt\\asmparse.cpp"
     break;
 
   case 54: /* compControl: P_DEFINE dottedName compQstring  */
-#line 285 "asmparse.y"
+#line 278 "asmparse.y"
                                                                                 { DefineVar((yyvsp[-1].string), (yyvsp[0].binstr)); }
-#line 3771 "asmparse.cpp"
+#line 3764 "prebuilt\\asmparse.cpp"
     break;
 
   case 55: /* compControl: P_UNDEF dottedName  */
-#line 286 "asmparse.y"
+#line 279 "asmparse.y"
                                                                                 { UndefVar((yyvsp[0].string)); }
-#line 3777 "asmparse.cpp"
+#line 3770 "prebuilt\\asmparse.cpp"
     break;
 
   case 56: /* compControl: P_IFDEF dottedName  */
-#line 287 "asmparse.y"
+#line 280 "asmparse.y"
                                                                                 { SkipToken = !IsVarDefined((yyvsp[0].string));
                                                                                   IfEndif++;
                                                                                 }
-#line 3785 "asmparse.cpp"
+#line 3778 "prebuilt\\asmparse.cpp"
     break;
 
   case 57: /* compControl: P_IFNDEF dottedName  */
-#line 290 "asmparse.y"
+#line 283 "asmparse.y"
                                                                                 { SkipToken = IsVarDefined((yyvsp[0].string));
                                                                                   IfEndif++;
                                                                                 }
-#line 3793 "asmparse.cpp"
+#line 3786 "prebuilt\\asmparse.cpp"
     break;
 
   case 58: /* compControl: P_ELSE  */
-#line 293 "asmparse.y"
+#line 286 "asmparse.y"
                                                                                 { if(IfEndif == 1) SkipToken = !SkipToken;}
-#line 3799 "asmparse.cpp"
+#line 3792 "prebuilt\\asmparse.cpp"
     break;
 
   case 59: /* compControl: P_ENDIF  */
-#line 294 "asmparse.y"
+#line 287 "asmparse.y"
                                                                                 { if(IfEndif == 0)
                                                                                     PASM->report->error("Unmatched #endif\n");
                                                                                   else IfEndif--;
                                                                                 }
-#line 3808 "asmparse.cpp"
+#line 3801 "prebuilt\\asmparse.cpp"
     break;
 
   case 60: /* compControl: P_INCLUDE QSTRING  */
-#line 298 "asmparse.y"
+#line 291 "asmparse.y"
                                                                                 { _ASSERTE(!"yylex should have dealt with this"); }
-#line 3814 "asmparse.cpp"
+#line 3807 "prebuilt\\asmparse.cpp"
     break;
 
   case 61: /* compControl: ';'  */
-#line 299 "asmparse.y"
+#line 292 "asmparse.y"
                                                                                 { }
-#line 3820 "asmparse.cpp"
+#line 3813 "prebuilt\\asmparse.cpp"
     break;
 
   case 62: /* customDescr: _CUSTOM customType  */
-#line 303 "asmparse.y"
+#line 296 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[0].token), NULL); }
-#line 3826 "asmparse.cpp"
+#line 3819 "prebuilt\\asmparse.cpp"
     break;
 
   case 63: /* customDescr: _CUSTOM customType '=' compQstring  */
-#line 304 "asmparse.y"
+#line 297 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].token), (yyvsp[0].binstr)); }
-#line 3832 "asmparse.cpp"
+#line 3825 "prebuilt\\asmparse.cpp"
     break;
 
   case 64: /* customDescr: _CUSTOM customType '=' '{' customBlobDescr '}'  */
-#line 305 "asmparse.y"
+#line 298 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-4].token), (yyvsp[-1].binstr)); }
-#line 3838 "asmparse.cpp"
+#line 3831 "prebuilt\\asmparse.cpp"
     break;
 
   case 65: /* customDescr: customHead bytes ')'  */
-#line 306 "asmparse.y"
+#line 299 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].int32), (yyvsp[-1].binstr)); }
-#line 3844 "asmparse.cpp"
+#line 3837 "prebuilt\\asmparse.cpp"
     break;
 
   case 66: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType  */
-#line 309 "asmparse.y"
+#line 302 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr((yyvsp[-2].token), (yyvsp[0].token), NULL); }
-#line 3850 "asmparse.cpp"
+#line 3843 "prebuilt\\asmparse.cpp"
     break;
 
   case 67: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType '=' compQstring  */
-#line 310 "asmparse.y"
+#line 303 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr((yyvsp[-4].token), (yyvsp[-2].token), (yyvsp[0].binstr)); }
-#line 3856 "asmparse.cpp"
+#line 3849 "prebuilt\\asmparse.cpp"
     break;
 
   case 68: /* customDescrWithOwner: _CUSTOM '(' ownerType ')' customType '=' '{' customBlobDescr '}'  */
-#line 312 "asmparse.y"
+#line 305 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr((yyvsp[-6].token), (yyvsp[-4].token), (yyvsp[-1].binstr)); }
-#line 3862 "asmparse.cpp"
+#line 3855 "prebuilt\\asmparse.cpp"
     break;
 
   case 69: /* customDescrWithOwner: customHeadWithOwner bytes ')'  */
-#line 313 "asmparse.y"
+#line 306 "asmparse.y"
                                                                                 { (yyval.cad) = new CustomDescr(PASM->m_tkCurrentCVOwner, (yyvsp[-2].int32), (yyvsp[-1].binstr)); }
-#line 3868 "asmparse.cpp"
+#line 3861 "prebuilt\\asmparse.cpp"
     break;
 
   case 70: /* customHead: _CUSTOM customType '=' '('  */
-#line 316 "asmparse.y"
+#line 309 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-2].token); bParsingByteArray = TRUE; }
-#line 3874 "asmparse.cpp"
+#line 3867 "prebuilt\\asmparse.cpp"
     break;
 
   case 71: /* customHeadWithOwner: _CUSTOM '(' ownerType ')' customType '=' '('  */
-#line 320 "asmparse.y"
+#line 313 "asmparse.y"
                                                                                 { PASM->m_pCustomDescrList = NULL;
                                                                                   PASM->m_tkCurrentCVOwner = (yyvsp[-4].token);
                                                                                   (yyval.int32) = (yyvsp[-2].token); bParsingByteArray = TRUE; }
-#line 3882 "asmparse.cpp"
+#line 3875 "prebuilt\\asmparse.cpp"
     break;
 
   case 72: /* customType: methodRef  */
-#line 325 "asmparse.y"
+#line 318 "asmparse.y"
                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 3888 "asmparse.cpp"
+#line 3881 "prebuilt\\asmparse.cpp"
     break;
 
   case 73: /* ownerType: typeSpec  */
-#line 328 "asmparse.y"
+#line 321 "asmparse.y"
                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 3894 "asmparse.cpp"
+#line 3887 "prebuilt\\asmparse.cpp"
     break;
 
   case 74: /* ownerType: memberRef  */
-#line 329 "asmparse.y"
+#line 322 "asmparse.y"
                                                             { (yyval.token) = (yyvsp[0].token); }
-#line 3900 "asmparse.cpp"
+#line 3893 "prebuilt\\asmparse.cpp"
     break;
 
   case 75: /* customBlobDescr: customBlobArgs customBlobNVPairs  */
-#line 333 "asmparse.y"
+#line 326 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                                   (yyval.binstr)->appendInt16(VAL16(nCustomBlobNVPairs));
                                                                                   (yyval.binstr)->append((yyvsp[0].binstr));
                                                                                   nCustomBlobNVPairs = 0; }
-#line 3909 "asmparse.cpp"
+#line 3902 "prebuilt\\asmparse.cpp"
     break;
 
   case 76: /* customBlobArgs: %empty  */
-#line 339 "asmparse.y"
+#line 332 "asmparse.y"
                                                                                 { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt16(VAL16(0x0001)); }
-#line 3915 "asmparse.cpp"
+#line 3908 "prebuilt\\asmparse.cpp"
     break;
 
   case 77: /* customBlobArgs: customBlobArgs serInit  */
-#line 340 "asmparse.y"
+#line 333 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                                   AppendFieldToCustomBlob((yyval.binstr),(yyvsp[0].binstr)); }
-#line 3922 "asmparse.cpp"
+#line 3915 "prebuilt\\asmparse.cpp"
     break;
 
   case 78: /* customBlobArgs: customBlobArgs compControl  */
-#line 342 "asmparse.y"
+#line 335 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 3928 "asmparse.cpp"
+#line 3921 "prebuilt\\asmparse.cpp"
     break;
 
   case 79: /* customBlobNVPairs: %empty  */
-#line 345 "asmparse.y"
+#line 338 "asmparse.y"
                                                                                 { (yyval.binstr) = new BinStr(); }
-#line 3934 "asmparse.cpp"
+#line 3927 "prebuilt\\asmparse.cpp"
     break;
 
   case 80: /* customBlobNVPairs: customBlobNVPairs fieldOrProp serializType dottedName '=' serInit  */
-#line 347 "asmparse.y"
+#line 340 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-5].binstr); (yyval.binstr)->appendInt8((yyvsp[-4].int32));
                                                                                   (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                                   AppendStringWithLength((yyval.binstr),(yyvsp[-2].string));
                                                                                   AppendFieldToCustomBlob((yyval.binstr),(yyvsp[0].binstr));
                                                                                   nCustomBlobNVPairs++; }
-#line 3944 "asmparse.cpp"
+#line 3937 "prebuilt\\asmparse.cpp"
     break;
 
   case 81: /* customBlobNVPairs: customBlobNVPairs compControl  */
-#line 352 "asmparse.y"
+#line 345 "asmparse.y"
                                                                                 { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 3950 "asmparse.cpp"
+#line 3943 "prebuilt\\asmparse.cpp"
     break;
 
   case 82: /* fieldOrProp: FIELD_  */
-#line 355 "asmparse.y"
+#line 348 "asmparse.y"
                                                                                 { (yyval.int32) = SERIALIZATION_TYPE_FIELD; }
-#line 3956 "asmparse.cpp"
+#line 3949 "prebuilt\\asmparse.cpp"
     break;
 
   case 83: /* fieldOrProp: PROPERTY_  */
-#line 356 "asmparse.y"
+#line 349 "asmparse.y"
                                                                                 { (yyval.int32) = SERIALIZATION_TYPE_PROPERTY; }
-#line 3962 "asmparse.cpp"
+#line 3955 "prebuilt\\asmparse.cpp"
     break;
 
   case 84: /* customAttrDecl: customDescr  */
-#line 359 "asmparse.y"
+#line 352 "asmparse.y"
                                                                                 { if((yyvsp[0].cad)->tkOwner && !(yyvsp[0].cad)->tkInterfacePair)
                                                                                     PASM->DefineCV((yyvsp[0].cad));
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH((yyvsp[0].cad)); }
-#line 3971 "asmparse.cpp"
+#line 3964 "prebuilt\\asmparse.cpp"
     break;
 
   case 85: /* customAttrDecl: customDescrWithOwner  */
-#line 363 "asmparse.y"
+#line 356 "asmparse.y"
                                                                                 { PASM->DefineCV((yyvsp[0].cad)); }
-#line 3977 "asmparse.cpp"
+#line 3970 "prebuilt\\asmparse.cpp"
     break;
 
   case 86: /* customAttrDecl: TYPEDEF_CA  */
-#line 364 "asmparse.y"
+#line 357 "asmparse.y"
                                                                                 { CustomDescr* pNew = new CustomDescr((yyvsp[0].tdd)->m_pCA);
                                                                                   if(pNew->tkOwner == 0) pNew->tkOwner = PASM->m_tkCurrentCVOwner;
                                                                                   if(pNew->tkOwner)
                                                                                     PASM->DefineCV(pNew);
                                                                                   else if(PASM->m_pCustomDescrList)
                                                                                     PASM->m_pCustomDescrList->PUSH(pNew); }
-#line 3988 "asmparse.cpp"
+#line 3981 "prebuilt\\asmparse.cpp"
     break;
 
   case 87: /* serializType: simpleType  */
-#line 372 "asmparse.y"
+#line 365 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 3994 "asmparse.cpp"
+#line 3987 "prebuilt\\asmparse.cpp"
     break;
 
   case 88: /* serializType: TYPE_  */
-#line 373 "asmparse.y"
+#line 366 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE); }
-#line 4000 "asmparse.cpp"
+#line 3993 "prebuilt\\asmparse.cpp"
     break;
 
   case 89: /* serializType: OBJECT_  */
-#line 374 "asmparse.y"
+#line 367 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TAGGED_OBJECT); }
-#line 4006 "asmparse.cpp"
+#line 3999 "prebuilt\\asmparse.cpp"
     break;
 
   case 90: /* serializType: ENUM_ CLASS_ SQSTRING  */
-#line 375 "asmparse.y"
+#line 368 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); }
-#line 4013 "asmparse.cpp"
+#line 4006 "prebuilt\\asmparse.cpp"
     break;
 
   case 91: /* serializType: ENUM_ className  */
-#line 377 "asmparse.y"
+#line 370 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[0].token))); }
-#line 4020 "asmparse.cpp"
+#line 4013 "prebuilt\\asmparse.cpp"
     break;
 
   case 92: /* serializType: serializType '[' ']'  */
-#line 379 "asmparse.y"
+#line 372 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 4026 "asmparse.cpp"
+#line 4019 "prebuilt\\asmparse.cpp"
     break;
 
   case 93: /* moduleHead: _MODULE  */
-#line 384 "asmparse.y"
+#line 377 "asmparse.y"
                                                                                 { PASMM->SetModuleName(NULL); PASM->m_tkCurrentCVOwner=1; }
-#line 4032 "asmparse.cpp"
+#line 4025 "prebuilt\\asmparse.cpp"
     break;
 
   case 94: /* moduleHead: _MODULE dottedName  */
-#line 385 "asmparse.y"
+#line 378 "asmparse.y"
                                                                                 { PASMM->SetModuleName((yyvsp[0].string)); PASM->m_tkCurrentCVOwner=1; }
-#line 4038 "asmparse.cpp"
+#line 4031 "prebuilt\\asmparse.cpp"
     break;
 
   case 95: /* moduleHead: _MODULE EXTERN_ dottedName  */
-#line 386 "asmparse.y"
+#line 379 "asmparse.y"
                                                                                 { BinStr* pbs = new BinStr();
                                                                                   unsigned L = (unsigned)strlen((yyvsp[0].string));
                                                                                   memcpy((char*)(pbs->getBuff(L)),(yyvsp[0].string),L);
                                                                                   PASM->EmitImport(pbs); delete pbs;}
-#line 4047 "asmparse.cpp"
+#line 4040 "prebuilt\\asmparse.cpp"
     break;
 
   case 96: /* vtfixupDecl: _VTFIXUP '[' int32 ']' vtfixupAttr AT_ id  */
-#line 393 "asmparse.y"
+#line 386 "asmparse.y"
                                                                                 { /*PASM->SetDataSection(); PASM->EmitDataLabel($7);*/
                                                                                   PASM->m_VTFList.PUSH(new VTFEntry((USHORT)(yyvsp[-4].int32), (USHORT)(yyvsp[-2].int32), (yyvsp[0].string))); }
-#line 4054 "asmparse.cpp"
+#line 4047 "prebuilt\\asmparse.cpp"
     break;
 
   case 97: /* vtfixupAttr: %empty  */
-#line 397 "asmparse.y"
+#line 390 "asmparse.y"
                                                                                 { (yyval.int32) = 0; }
-#line 4060 "asmparse.cpp"
+#line 4053 "prebuilt\\asmparse.cpp"
     break;
 
   case 98: /* vtfixupAttr: vtfixupAttr INT32_  */
-#line 398 "asmparse.y"
+#line 391 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_32BIT; }
-#line 4066 "asmparse.cpp"
+#line 4059 "prebuilt\\asmparse.cpp"
     break;
 
   case 99: /* vtfixupAttr: vtfixupAttr INT64_  */
-#line 399 "asmparse.y"
+#line 392 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_64BIT; }
-#line 4072 "asmparse.cpp"
+#line 4065 "prebuilt\\asmparse.cpp"
     break;
 
   case 100: /* vtfixupAttr: vtfixupAttr FROMUNMANAGED_  */
-#line 400 "asmparse.y"
+#line 393 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_FROM_UNMANAGED; }
-#line 4078 "asmparse.cpp"
+#line 4071 "prebuilt\\asmparse.cpp"
     break;
 
   case 101: /* vtfixupAttr: vtfixupAttr CALLMOSTDERIVED_  */
-#line 401 "asmparse.y"
+#line 394 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_CALL_MOST_DERIVED; }
-#line 4084 "asmparse.cpp"
+#line 4077 "prebuilt\\asmparse.cpp"
     break;
 
   case 102: /* vtfixupAttr: vtfixupAttr RETAINAPPDOMAIN_  */
-#line 402 "asmparse.y"
+#line 395 "asmparse.y"
                                                                                 { (yyval.int32) = (yyvsp[-1].int32) | COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN; }
-#line 4090 "asmparse.cpp"
+#line 4083 "prebuilt\\asmparse.cpp"
     break;
 
   case 103: /* vtableDecl: vtableHead bytes ')'  */
-#line 405 "asmparse.y"
+#line 398 "asmparse.y"
                                                                                 { PASM->m_pVTable = (yyvsp[-1].binstr); }
-#line 4096 "asmparse.cpp"
+#line 4089 "prebuilt\\asmparse.cpp"
     break;
 
   case 104: /* vtableHead: _VTABLE '=' '('  */
-#line 408 "asmparse.y"
+#line 401 "asmparse.y"
                                                                                 { bParsingByteArray = TRUE; }
-#line 4102 "asmparse.cpp"
+#line 4095 "prebuilt\\asmparse.cpp"
     break;
 
   case 105: /* nameSpaceHead: _NAMESPACE dottedName  */
-#line 412 "asmparse.y"
+#line 405 "asmparse.y"
                                                                                 { PASM->StartNameSpace((yyvsp[0].string)); }
-#line 4108 "asmparse.cpp"
+#line 4101 "prebuilt\\asmparse.cpp"
     break;
 
   case 106: /* _class: _CLASS  */
-#line 415 "asmparse.y"
+#line 408 "asmparse.y"
                                                                                 { newclass = TRUE; }
-#line 4114 "asmparse.cpp"
+#line 4107 "prebuilt\\asmparse.cpp"
     break;
 
   case 107: /* classHeadBegin: _class classAttr dottedName typarsClause  */
-#line 418 "asmparse.y"
+#line 411 "asmparse.y"
                                                                                 { if((yyvsp[0].typarlist)) FixupConstraints();
                                                                                   PASM->StartClass((yyvsp[-1].string), (yyvsp[-2].classAttr), (yyvsp[0].typarlist));
                                                                                   TyParFixupList.RESET(false);
                                                                                   newclass = FALSE;
                                                                                 }
-#line 4124 "asmparse.cpp"
+#line 4117 "prebuilt\\asmparse.cpp"
     break;
 
   case 108: /* classHead: classHeadBegin extendsClause implClause  */
-#line 424 "asmparse.y"
+#line 417 "asmparse.y"
                                                                                 { PASM->AddClass(); }
-#line 4130 "asmparse.cpp"
+#line 4123 "prebuilt\\asmparse.cpp"
     break;
 
   case 109: /* classAttr: %empty  */
-#line 427 "asmparse.y"
+#line 420 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) 0; }
-#line 4136 "asmparse.cpp"
+#line 4129 "prebuilt\\asmparse.cpp"
     break;
 
   case 110: /* classAttr: classAttr PUBLIC_  */
-#line 428 "asmparse.y"
+#line 421 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdVisibilityMask) | tdPublic); }
-#line 4142 "asmparse.cpp"
+#line 4135 "prebuilt\\asmparse.cpp"
     break;
 
   case 111: /* classAttr: classAttr PRIVATE_  */
-#line 429 "asmparse.y"
+#line 422 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdVisibilityMask) | tdNotPublic); }
-#line 4148 "asmparse.cpp"
+#line 4141 "prebuilt\\asmparse.cpp"
     break;
 
   case 112: /* classAttr: classAttr VALUE_  */
-#line 430 "asmparse.y"
+#line 423 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | 0x80000000 | tdSealed); }
-#line 4154 "asmparse.cpp"
+#line 4147 "prebuilt\\asmparse.cpp"
     break;
 
   case 113: /* classAttr: classAttr ENUM_  */
-#line 431 "asmparse.y"
+#line 424 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | 0x40000000); }
-#line 4160 "asmparse.cpp"
+#line 4153 "prebuilt\\asmparse.cpp"
     break;
 
   case 114: /* classAttr: classAttr INTERFACE_  */
-#line 432 "asmparse.y"
+#line 425 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdInterface | tdAbstract); }
-#line 4166 "asmparse.cpp"
+#line 4159 "prebuilt\\asmparse.cpp"
     break;
 
   case 115: /* classAttr: classAttr SEALED_  */
-#line 433 "asmparse.y"
+#line 426 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSealed); }
-#line 4172 "asmparse.cpp"
+#line 4165 "prebuilt\\asmparse.cpp"
     break;
 
   case 116: /* classAttr: classAttr ABSTRACT_  */
-#line 434 "asmparse.y"
+#line 427 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdAbstract); }
-#line 4178 "asmparse.cpp"
+#line 4171 "prebuilt\\asmparse.cpp"
     break;
 
   case 117: /* classAttr: classAttr AUTO_  */
-#line 435 "asmparse.y"
+#line 428 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdAutoLayout); }
-#line 4184 "asmparse.cpp"
+#line 4177 "prebuilt\\asmparse.cpp"
     break;
 
   case 118: /* classAttr: classAttr SEQUENTIAL_  */
-#line 436 "asmparse.y"
+#line 429 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdSequentialLayout); }
-#line 4190 "asmparse.cpp"
+#line 4183 "prebuilt\\asmparse.cpp"
     break;
 
   case 119: /* classAttr: classAttr EXPLICIT_  */
-#line 437 "asmparse.y"
+#line 430 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdLayoutMask) | tdExplicitLayout); }
-#line 4196 "asmparse.cpp"
+#line 4189 "prebuilt\\asmparse.cpp"
     break;
 
   case 120: /* classAttr: classAttr ANSI_  */
-#line 438 "asmparse.y"
+#line 431 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdAnsiClass); }
-#line 4202 "asmparse.cpp"
+#line 4195 "prebuilt\\asmparse.cpp"
     break;
 
   case 121: /* classAttr: classAttr UNICODE_  */
-#line 439 "asmparse.y"
+#line 432 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdUnicodeClass); }
-#line 4208 "asmparse.cpp"
+#line 4201 "prebuilt\\asmparse.cpp"
     break;
 
   case 122: /* classAttr: classAttr AUTOCHAR_  */
-#line 440 "asmparse.y"
+#line 433 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-1].classAttr) & ~tdStringFormatMask) | tdAutoClass); }
-#line 4214 "asmparse.cpp"
+#line 4207 "prebuilt\\asmparse.cpp"
     break;
 
   case 123: /* classAttr: classAttr IMPORT_  */
-#line 441 "asmparse.y"
+#line 434 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdImport); }
-#line 4220 "asmparse.cpp"
+#line 4213 "prebuilt\\asmparse.cpp"
     break;
 
   case 124: /* classAttr: classAttr SERIALIZABLE_  */
-#line 442 "asmparse.y"
+#line 435 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSerializable); }
-#line 4226 "asmparse.cpp"
+#line 4219 "prebuilt\\asmparse.cpp"
     break;
 
   case 125: /* classAttr: classAttr WINDOWSRUNTIME_  */
-#line 443 "asmparse.y"
+#line 436 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdWindowsRuntime); }
-#line 4232 "asmparse.cpp"
+#line 4225 "prebuilt\\asmparse.cpp"
     break;
 
   case 126: /* classAttr: classAttr NESTED_ PUBLIC_  */
-#line 444 "asmparse.y"
+#line 437 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedPublic); }
-#line 4238 "asmparse.cpp"
+#line 4231 "prebuilt\\asmparse.cpp"
     break;
 
   case 127: /* classAttr: classAttr NESTED_ PRIVATE_  */
-#line 445 "asmparse.y"
+#line 438 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedPrivate); }
-#line 4244 "asmparse.cpp"
+#line 4237 "prebuilt\\asmparse.cpp"
     break;
 
   case 128: /* classAttr: classAttr NESTED_ FAMILY_  */
-#line 446 "asmparse.y"
+#line 439 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamily); }
-#line 4250 "asmparse.cpp"
+#line 4243 "prebuilt\\asmparse.cpp"
     break;
 
   case 129: /* classAttr: classAttr NESTED_ ASSEMBLY_  */
-#line 447 "asmparse.y"
+#line 440 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedAssembly); }
-#line 4256 "asmparse.cpp"
+#line 4249 "prebuilt\\asmparse.cpp"
     break;
 
   case 130: /* classAttr: classAttr NESTED_ FAMANDASSEM_  */
-#line 448 "asmparse.y"
+#line 441 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamANDAssem); }
-#line 4262 "asmparse.cpp"
+#line 4255 "prebuilt\\asmparse.cpp"
     break;
 
   case 131: /* classAttr: classAttr NESTED_ FAMORASSEM_  */
-#line 449 "asmparse.y"
+#line 442 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) (((yyvsp[-2].classAttr) & ~tdVisibilityMask) | tdNestedFamORAssem); }
-#line 4268 "asmparse.cpp"
+#line 4261 "prebuilt\\asmparse.cpp"
     break;
 
   case 132: /* classAttr: classAttr BEFOREFIELDINIT_  */
-#line 450 "asmparse.y"
+#line 443 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdBeforeFieldInit); }
-#line 4274 "asmparse.cpp"
+#line 4267 "prebuilt\\asmparse.cpp"
     break;
 
   case 133: /* classAttr: classAttr SPECIALNAME_  */
-#line 451 "asmparse.y"
+#line 444 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr) | tdSpecialName); }
-#line 4280 "asmparse.cpp"
+#line 4273 "prebuilt\\asmparse.cpp"
     break;
 
   case 134: /* classAttr: classAttr RTSPECIALNAME_  */
-#line 452 "asmparse.y"
+#line 445 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].classAttr)); }
-#line 4286 "asmparse.cpp"
+#line 4279 "prebuilt\\asmparse.cpp"
     break;
 
   case 135: /* classAttr: classAttr FLAGS_ '(' int32 ')'  */
-#line 453 "asmparse.y"
+#line 446 "asmparse.y"
                                                             { (yyval.classAttr) = (CorRegTypeAttr) ((yyvsp[-1].int32)); }
-#line 4292 "asmparse.cpp"
+#line 4285 "prebuilt\\asmparse.cpp"
     break;
 
   case 137: /* extendsClause: EXTENDS_ typeSpec  */
-#line 457 "asmparse.y"
+#line 450 "asmparse.y"
                                                                             { PASM->m_crExtends = (yyvsp[0].token); }
-#line 4298 "asmparse.cpp"
+#line 4291 "prebuilt\\asmparse.cpp"
     break;
 
   case 142: /* implList: implList ',' typeSpec  */
-#line 468 "asmparse.y"
+#line 461 "asmparse.y"
                                                             { PASM->AddToImplList((yyvsp[0].token)); }
-#line 4304 "asmparse.cpp"
+#line 4297 "prebuilt\\asmparse.cpp"
     break;
 
   case 143: /* implList: typeSpec  */
-#line 469 "asmparse.y"
+#line 462 "asmparse.y"
                                                             { PASM->AddToImplList((yyvsp[0].token)); }
-#line 4310 "asmparse.cpp"
+#line 4303 "prebuilt\\asmparse.cpp"
     break;
 
   case 144: /* typeList: %empty  */
-#line 473 "asmparse.y"
+#line 466 "asmparse.y"
                                                             { (yyval.binstr) = new BinStr(); }
-#line 4316 "asmparse.cpp"
+#line 4309 "prebuilt\\asmparse.cpp"
     break;
 
   case 145: /* typeList: typeListNotEmpty  */
-#line 474 "asmparse.y"
+#line 467 "asmparse.y"
                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 4322 "asmparse.cpp"
+#line 4315 "prebuilt\\asmparse.cpp"
     break;
 
   case 146: /* typeListNotEmpty: typeSpec  */
-#line 477 "asmparse.y"
+#line 470 "asmparse.y"
                                                             { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[0].token)); }
-#line 4328 "asmparse.cpp"
+#line 4321 "prebuilt\\asmparse.cpp"
     break;
 
   case 147: /* typeListNotEmpty: typeListNotEmpty ',' typeSpec  */
-#line 478 "asmparse.y"
+#line 471 "asmparse.y"
                                                             { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->appendInt32((yyvsp[0].token)); }
-#line 4334 "asmparse.cpp"
+#line 4327 "prebuilt\\asmparse.cpp"
     break;
 
   case 148: /* typarsClause: %empty  */
-#line 481 "asmparse.y"
+#line 474 "asmparse.y"
                                                             { (yyval.typarlist) = NULL; PASM->m_TyParList = NULL;}
-#line 4340 "asmparse.cpp"
+#line 4333 "prebuilt\\asmparse.cpp"
     break;
 
   case 149: /* typarsClause: '<' typars '>'  */
-#line 482 "asmparse.y"
+#line 475 "asmparse.y"
                                                             { (yyval.typarlist) = (yyvsp[-1].typarlist);   PASM->m_TyParList = (yyvsp[-1].typarlist);}
-#line 4346 "asmparse.cpp"
+#line 4339 "prebuilt\\asmparse.cpp"
     break;
 
   case 150: /* typarAttrib: '+'  */
-#line 485 "asmparse.y"
+#line 478 "asmparse.y"
                                                             { (yyval.int32) = gpCovariant; }
-#line 4352 "asmparse.cpp"
+#line 4345 "prebuilt\\asmparse.cpp"
     break;
 
   case 151: /* typarAttrib: '-'  */
-#line 486 "asmparse.y"
+#line 479 "asmparse.y"
                                                             { (yyval.int32) = gpContravariant; }
-#line 4358 "asmparse.cpp"
+#line 4351 "prebuilt\\asmparse.cpp"
     break;
 
   case 152: /* typarAttrib: CLASS_  */
-#line 487 "asmparse.y"
+#line 480 "asmparse.y"
                                                             { (yyval.int32) = gpReferenceTypeConstraint; }
-#line 4364 "asmparse.cpp"
+#line 4357 "prebuilt\\asmparse.cpp"
     break;
 
   case 153: /* typarAttrib: VALUETYPE_  */
-#line 488 "asmparse.y"
+#line 481 "asmparse.y"
                                                             { (yyval.int32) = gpNotNullableValueTypeConstraint; }
-#line 4370 "asmparse.cpp"
+#line 4363 "prebuilt\\asmparse.cpp"
     break;
 
   case 154: /* typarAttrib: BYREFLIKE_  */
-#line 489 "asmparse.y"
+#line 482 "asmparse.y"
                                                             { (yyval.int32) = gpAllowByRefLike; }
-#line 4376 "asmparse.cpp"
+#line 4369 "prebuilt\\asmparse.cpp"
     break;
 
   case 155: /* typarAttrib: _CTOR  */
-#line 490 "asmparse.y"
+#line 483 "asmparse.y"
                                                             { (yyval.int32) = gpDefaultConstructorConstraint; }
-#line 4382 "asmparse.cpp"
+#line 4375 "prebuilt\\asmparse.cpp"
     break;
 
   case 156: /* typarAttrib: FLAGS_ '(' int32 ')'  */
-#line 491 "asmparse.y"
+#line 484 "asmparse.y"
                                                             { (yyval.int32) = (CorGenericParamAttr)(yyvsp[-1].int32); }
-#line 4388 "asmparse.cpp"
+#line 4381 "prebuilt\\asmparse.cpp"
     break;
 
   case 157: /* typarAttribs: %empty  */
-#line 494 "asmparse.y"
+#line 487 "asmparse.y"
                                                             { (yyval.int32) = 0; }
-#line 4394 "asmparse.cpp"
+#line 4387 "prebuilt\\asmparse.cpp"
     break;
 
   case 158: /* typarAttribs: typarAttrib typarAttribs  */
-#line 495 "asmparse.y"
+#line 488 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-1].int32) | (yyvsp[0].int32); }
-#line 4400 "asmparse.cpp"
+#line 4393 "prebuilt\\asmparse.cpp"
     break;
 
   case 159: /* typars: typarAttribs tyBound dottedName typarsRest  */
-#line 498 "asmparse.y"
+#line 491 "asmparse.y"
                                                                      {(yyval.typarlist) = new TyParList((yyvsp[-3].int32), (yyvsp[-2].binstr), (yyvsp[-1].string), (yyvsp[0].typarlist));}
-#line 4406 "asmparse.cpp"
+#line 4399 "prebuilt\\asmparse.cpp"
     break;
 
   case 160: /* typars: typarAttribs dottedName typarsRest  */
-#line 499 "asmparse.y"
+#line 492 "asmparse.y"
                                                                {(yyval.typarlist) = new TyParList((yyvsp[-2].int32), NULL, (yyvsp[-1].string), (yyvsp[0].typarlist));}
-#line 4412 "asmparse.cpp"
+#line 4405 "prebuilt\\asmparse.cpp"
     break;
 
   case 161: /* typarsRest: %empty  */
-#line 502 "asmparse.y"
+#line 495 "asmparse.y"
                                                             { (yyval.typarlist) = NULL; }
-#line 4418 "asmparse.cpp"
+#line 4411 "prebuilt\\asmparse.cpp"
     break;
 
   case 162: /* typarsRest: ',' typars  */
-#line 503 "asmparse.y"
+#line 496 "asmparse.y"
                                                             { (yyval.typarlist) = (yyvsp[0].typarlist); }
-#line 4424 "asmparse.cpp"
+#line 4417 "prebuilt\\asmparse.cpp"
     break;
 
   case 163: /* tyBound: '(' typeList ')'  */
-#line 506 "asmparse.y"
+#line 499 "asmparse.y"
                                                             { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 4430 "asmparse.cpp"
+#line 4423 "prebuilt\\asmparse.cpp"
     break;
 
   case 164: /* genArity: %empty  */
-#line 509 "asmparse.y"
+#line 502 "asmparse.y"
                                                             { (yyval.int32)= 0; }
-#line 4436 "asmparse.cpp"
+#line 4429 "prebuilt\\asmparse.cpp"
     break;
 
   case 165: /* genArity: genArityNotEmpty  */
-#line 510 "asmparse.y"
+#line 503 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[0].int32); }
-#line 4442 "asmparse.cpp"
+#line 4435 "prebuilt\\asmparse.cpp"
     break;
 
   case 166: /* genArityNotEmpty: '<' '[' int32 ']' '>'  */
-#line 513 "asmparse.y"
+#line 506 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-2].int32); }
-#line 4448 "asmparse.cpp"
+#line 4441 "prebuilt\\asmparse.cpp"
     break;
 
   case 167: /* classDecl: methodHead methodDecls '}'  */
-#line 517 "asmparse.y"
+#line 510 "asmparse.y"
                                                             { if(PASM->m_pCurMethod->m_ulLines[1] ==0)
                                                               {  PASM->m_pCurMethod->m_ulLines[1] = PASM->m_ulCurLine;
                                                                  PASM->m_pCurMethod->m_ulColumns[1]=PASM->m_ulCurColumn;}
                                                               PASM->EndMethod(); }
-#line 4457 "asmparse.cpp"
+#line 4450 "prebuilt\\asmparse.cpp"
     break;
 
   case 168: /* classDecl: classHead '{' classDecls '}'  */
-#line 521 "asmparse.y"
+#line 514 "asmparse.y"
                                                             { PASM->EndClass(); }
-#line 4463 "asmparse.cpp"
+#line 4456 "prebuilt\\asmparse.cpp"
     break;
 
   case 169: /* classDecl: eventHead '{' eventDecls '}'  */
-#line 522 "asmparse.y"
+#line 515 "asmparse.y"
                                                             { PASM->EndEvent(); }
-#line 4469 "asmparse.cpp"
+#line 4462 "prebuilt\\asmparse.cpp"
     break;
 
   case 170: /* classDecl: propHead '{' propDecls '}'  */
-#line 523 "asmparse.y"
+#line 516 "asmparse.y"
                                                             { PASM->EndProp(); }
-#line 4475 "asmparse.cpp"
+#line 4468 "prebuilt\\asmparse.cpp"
     break;
 
   case 176: /* classDecl: _SIZE int32  */
-#line 529 "asmparse.y"
+#line 522 "asmparse.y"
                                                                 { PASM->m_pCurClass->m_ulSize = (yyvsp[0].int32); }
-#line 4481 "asmparse.cpp"
+#line 4474 "prebuilt\\asmparse.cpp"
     break;
 
   case 177: /* classDecl: _PACK int32  */
-#line 530 "asmparse.y"
+#line 523 "asmparse.y"
                                                                 { PASM->m_pCurClass->m_ulPack = (yyvsp[0].int32); }
-#line 4487 "asmparse.cpp"
+#line 4480 "prebuilt\\asmparse.cpp"
     break;
 
   case 178: /* classDecl: exportHead '{' exptypeDecls '}'  */
-#line 531 "asmparse.y"
+#line 524 "asmparse.y"
                                                                 { PASMM->EndComType(); }
-#line 4493 "asmparse.cpp"
+#line 4486 "prebuilt\\asmparse.cpp"
     break;
 
   case 179: /* classDecl: _OVERRIDE typeSpec DCOLON methodName WITH_ callConv type typeSpec DCOLON methodName '(' sigArgs0 ')'  */
-#line 533 "asmparse.y"
+#line 526 "asmparse.y"
                                                                 { BinStr *sig1 = parser->MakeSig((yyvsp[-7].int32), (yyvsp[-6].binstr), (yyvsp[-1].binstr));
                                                                   BinStr *sig2 = new BinStr(); sig2->append(sig1);
                                                                   PASM->AddMethodImpl((yyvsp[-11].token),(yyvsp[-9].string),sig1,(yyvsp[-5].token),(yyvsp[-3].string),sig2);
                                                                   PASM->ResetArgNameList();
                                                                 }
-#line 4503 "asmparse.cpp"
+#line 4496 "prebuilt\\asmparse.cpp"
     break;
 
   case 180: /* classDecl: _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')' WITH_ METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'  */
-#line 539 "asmparse.y"
+#line 532 "asmparse.y"
                                                                  { PASM->AddMethodImpl((yyvsp[-17].token),(yyvsp[-15].string),
                                                                       ((yyvsp[-14].int32)==0 ? parser->MakeSig((yyvsp[-19].int32),(yyvsp[-18].binstr),(yyvsp[-12].binstr)) :
                                                                       parser->MakeSig((yyvsp[-19].int32)| IMAGE_CEE_CS_CALLCONV_GENERIC,(yyvsp[-18].binstr),(yyvsp[-12].binstr),(yyvsp[-14].int32))),
@@ -4512,192 +4505,192 @@ yyreduce:
                                                                       parser->MakeSig((yyvsp[-8].int32)| IMAGE_CEE_CS_CALLCONV_GENERIC,(yyvsp[-7].binstr),(yyvsp[-1].binstr),(yyvsp[-3].int32))));
                                                                    PASM->ResetArgNameList();
                                                                  }
-#line 4516 "asmparse.cpp"
+#line 4509 "prebuilt\\asmparse.cpp"
     break;
 
   case 183: /* classDecl: _PARAM TYPE_ '[' int32 ']'  */
-#line 549 "asmparse.y"
+#line 542 "asmparse.y"
                                                             { if(((yyvsp[-1].int32) > 0) && ((yyvsp[-1].int32) <= (int)PASM->m_pCurClass->m_NumTyPars))
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurClass->m_TyPars[(yyvsp[-1].int32)-1].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter index out of range\n");
                                                             }
-#line 4526 "asmparse.cpp"
+#line 4519 "prebuilt\\asmparse.cpp"
     break;
 
   case 184: /* classDecl: _PARAM TYPE_ dottedName  */
-#line 554 "asmparse.y"
+#line 547 "asmparse.y"
                                                             { int n = PASM->m_pCurClass->FindTyPar((yyvsp[0].string));
                                                               if(n >= 0)
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurClass->m_TyPars[n].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter '%s' undefined\n",(yyvsp[0].string));
                                                             }
-#line 4537 "asmparse.cpp"
+#line 4530 "prebuilt\\asmparse.cpp"
     break;
 
   case 185: /* classDecl: _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec  */
-#line 560 "asmparse.y"
+#line 553 "asmparse.y"
                                                                         { PASM->AddGenericParamConstraint((yyvsp[-3].int32), 0, (yyvsp[0].token)); }
-#line 4543 "asmparse.cpp"
+#line 4536 "prebuilt\\asmparse.cpp"
     break;
 
   case 186: /* classDecl: _PARAM CONSTRAINT_ dottedName ',' typeSpec  */
-#line 561 "asmparse.y"
+#line 554 "asmparse.y"
                                                                         { PASM->AddGenericParamConstraint(0, (yyvsp[-2].string), (yyvsp[0].token)); }
-#line 4549 "asmparse.cpp"
+#line 4542 "prebuilt\\asmparse.cpp"
     break;
 
   case 187: /* classDecl: _INTERFACEIMPL TYPE_ typeSpec customDescr  */
-#line 562 "asmparse.y"
+#line 555 "asmparse.y"
                                                                       { (yyvsp[0].cad)->tkInterfacePair = (yyvsp[-1].token);
                                                                         if(PASM->m_pCustomDescrList)
                                                                             PASM->m_pCustomDescrList->PUSH((yyvsp[0].cad));
                                                                       }
-#line 4558 "asmparse.cpp"
+#line 4551 "prebuilt\\asmparse.cpp"
     break;
 
   case 188: /* fieldDecl: _FIELD repeatOpt fieldAttr type dottedName atOpt initOpt  */
-#line 570 "asmparse.y"
+#line 563 "asmparse.y"
                                                             { (yyvsp[-3].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                               PASM->AddField((yyvsp[-2].string), (yyvsp[-3].binstr), (yyvsp[-4].fieldAttr), (yyvsp[-1].string), (yyvsp[0].binstr), (yyvsp[-5].int32)); }
-#line 4565 "asmparse.cpp"
+#line 4558 "prebuilt\\asmparse.cpp"
     break;
 
   case 189: /* fieldAttr: %empty  */
-#line 574 "asmparse.y"
+#line 567 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) 0; }
-#line 4571 "asmparse.cpp"
+#line 4564 "prebuilt\\asmparse.cpp"
     break;
 
   case 190: /* fieldAttr: fieldAttr STATIC_  */
-#line 575 "asmparse.y"
+#line 568 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdStatic); }
-#line 4577 "asmparse.cpp"
+#line 4570 "prebuilt\\asmparse.cpp"
     break;
 
   case 191: /* fieldAttr: fieldAttr PUBLIC_  */
-#line 576 "asmparse.y"
+#line 569 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPublic); }
-#line 4583 "asmparse.cpp"
+#line 4576 "prebuilt\\asmparse.cpp"
     break;
 
   case 192: /* fieldAttr: fieldAttr PRIVATE_  */
-#line 577 "asmparse.y"
+#line 570 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPrivate); }
-#line 4589 "asmparse.cpp"
+#line 4582 "prebuilt\\asmparse.cpp"
     break;
 
   case 193: /* fieldAttr: fieldAttr FAMILY_  */
-#line 578 "asmparse.y"
+#line 571 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamily); }
-#line 4595 "asmparse.cpp"
+#line 4588 "prebuilt\\asmparse.cpp"
     break;
 
   case 194: /* fieldAttr: fieldAttr INITONLY_  */
-#line 579 "asmparse.y"
+#line 572 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdInitOnly); }
-#line 4601 "asmparse.cpp"
+#line 4594 "prebuilt\\asmparse.cpp"
     break;
 
   case 195: /* fieldAttr: fieldAttr RTSPECIALNAME_  */
-#line 580 "asmparse.y"
+#line 573 "asmparse.y"
                                                             { (yyval.fieldAttr) = (yyvsp[-1].fieldAttr); }
-#line 4607 "asmparse.cpp"
+#line 4600 "prebuilt\\asmparse.cpp"
     break;
 
   case 196: /* fieldAttr: fieldAttr SPECIALNAME_  */
-#line 581 "asmparse.y"
+#line 574 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdSpecialName); }
-#line 4613 "asmparse.cpp"
+#line 4606 "prebuilt\\asmparse.cpp"
     break;
 
   case 197: /* fieldAttr: fieldAttr MARSHAL_ '(' marshalBlob ')'  */
-#line 594 "asmparse.y"
+#line 587 "asmparse.y"
                                                             { PASM->m_pMarshal = (yyvsp[-1].binstr); }
-#line 4619 "asmparse.cpp"
+#line 4612 "prebuilt\\asmparse.cpp"
     break;
 
   case 198: /* fieldAttr: fieldAttr ASSEMBLY_  */
-#line 595 "asmparse.y"
+#line 588 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdAssembly); }
-#line 4625 "asmparse.cpp"
+#line 4618 "prebuilt\\asmparse.cpp"
     break;
 
   case 199: /* fieldAttr: fieldAttr FAMANDASSEM_  */
-#line 596 "asmparse.y"
+#line 589 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamANDAssem); }
-#line 4631 "asmparse.cpp"
+#line 4624 "prebuilt\\asmparse.cpp"
     break;
 
   case 200: /* fieldAttr: fieldAttr FAMORASSEM_  */
-#line 597 "asmparse.y"
+#line 590 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdFamORAssem); }
-#line 4637 "asmparse.cpp"
+#line 4630 "prebuilt\\asmparse.cpp"
     break;
 
   case 201: /* fieldAttr: fieldAttr PRIVATESCOPE_  */
-#line 598 "asmparse.y"
+#line 591 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) (((yyvsp[-1].fieldAttr) & ~mdMemberAccessMask) | fdPrivateScope); }
-#line 4643 "asmparse.cpp"
+#line 4636 "prebuilt\\asmparse.cpp"
     break;
 
   case 202: /* fieldAttr: fieldAttr LITERAL_  */
-#line 599 "asmparse.y"
+#line 592 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdLiteral); }
-#line 4649 "asmparse.cpp"
+#line 4642 "prebuilt\\asmparse.cpp"
     break;
 
   case 203: /* fieldAttr: fieldAttr NOTSERIALIZED_  */
-#line 600 "asmparse.y"
+#line 593 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].fieldAttr) | fdNotSerialized); }
-#line 4655 "asmparse.cpp"
+#line 4648 "prebuilt\\asmparse.cpp"
     break;
 
   case 204: /* fieldAttr: fieldAttr FLAGS_ '(' int32 ')'  */
-#line 601 "asmparse.y"
+#line 594 "asmparse.y"
                                                             { (yyval.fieldAttr) = (CorFieldAttr) ((yyvsp[-1].int32)); }
-#line 4661 "asmparse.cpp"
+#line 4654 "prebuilt\\asmparse.cpp"
     break;
 
   case 205: /* atOpt: %empty  */
-#line 604 "asmparse.y"
+#line 597 "asmparse.y"
                                                             { (yyval.string) = 0; }
-#line 4667 "asmparse.cpp"
+#line 4660 "prebuilt\\asmparse.cpp"
     break;
 
   case 206: /* atOpt: AT_ id  */
-#line 605 "asmparse.y"
+#line 598 "asmparse.y"
                                                             { (yyval.string) = (yyvsp[0].string); }
-#line 4673 "asmparse.cpp"
+#line 4666 "prebuilt\\asmparse.cpp"
     break;
 
   case 207: /* initOpt: %empty  */
-#line 608 "asmparse.y"
+#line 601 "asmparse.y"
                                                             { (yyval.binstr) = NULL; }
-#line 4679 "asmparse.cpp"
+#line 4672 "prebuilt\\asmparse.cpp"
     break;
 
   case 208: /* initOpt: '=' fieldInit  */
-#line 609 "asmparse.y"
+#line 602 "asmparse.y"
                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 4685 "asmparse.cpp"
+#line 4678 "prebuilt\\asmparse.cpp"
     break;
 
   case 209: /* repeatOpt: %empty  */
-#line 612 "asmparse.y"
+#line 605 "asmparse.y"
                                                             { (yyval.int32) = 0xFFFFFFFF; }
-#line 4691 "asmparse.cpp"
+#line 4684 "prebuilt\\asmparse.cpp"
     break;
 
   case 210: /* repeatOpt: '[' int32 ']'  */
-#line 613 "asmparse.y"
+#line 606 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-1].int32); }
-#line 4697 "asmparse.cpp"
+#line 4690 "prebuilt\\asmparse.cpp"
     break;
 
   case 211: /* methodRef: callConv type typeSpec DCOLON methodName tyArgs0 '(' sigArgs0 ')'  */
-#line 618 "asmparse.y"
+#line 611 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if ((yyvsp[-3].binstr) == NULL)
                                                                {
@@ -4714,21 +4707,21 @@ yyreduce:
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, (yyvsp[-3].binstr)));
                                                                }
                                                              }
-#line 4718 "asmparse.cpp"
+#line 4711 "prebuilt\\asmparse.cpp"
     break;
 
   case 212: /* methodRef: callConv type typeSpec DCOLON methodName genArityNotEmpty '(' sigArgs0 ')'  */
-#line 635 "asmparse.y"
+#line 628 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if((iCallConv)&&(((yyvsp[-8].int32) & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                (yyval.token) = PASM->MakeMemberRef((yyvsp[-6].token), (yyvsp[-4].string),
                                                                  parser->MakeSig((yyvsp[-8].int32) | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, (yyvsp[-7].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32)));
                                                              }
-#line 4728 "asmparse.cpp"
+#line 4721 "prebuilt\\asmparse.cpp"
     break;
 
   case 213: /* methodRef: callConv type methodName tyArgs0 '(' sigArgs0 ')'  */
-#line 641 "asmparse.y"
+#line 634 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if ((yyvsp[-3].binstr) == NULL)
                                                                {
@@ -4744,300 +4737,300 @@ yyreduce:
                                                                    parser->MakeSig(IMAGE_CEE_CS_CALLCONV_INSTANTIATION, 0, (yyvsp[-3].binstr)));
                                                                }
                                                              }
-#line 4748 "asmparse.cpp"
+#line 4741 "prebuilt\\asmparse.cpp"
     break;
 
   case 214: /* methodRef: callConv type methodName genArityNotEmpty '(' sigArgs0 ')'  */
-#line 657 "asmparse.y"
+#line 650 "asmparse.y"
                                                              { PASM->ResetArgNameList();
                                                                if((iCallConv)&&(((yyvsp[-6].int32) & iCallConv) != iCallConv)) parser->warn("'instance' added to method's calling convention\n");
                                                                (yyval.token) = PASM->MakeMemberRef(mdTokenNil, (yyvsp[-4].string), parser->MakeSig((yyvsp[-6].int32) | IMAGE_CEE_CS_CALLCONV_GENERIC|iCallConv, (yyvsp[-5].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32)));
                                                              }
-#line 4757 "asmparse.cpp"
+#line 4750 "prebuilt\\asmparse.cpp"
     break;
 
   case 215: /* methodRef: mdtoken  */
-#line 661 "asmparse.y"
+#line 654 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].token); }
-#line 4763 "asmparse.cpp"
+#line 4756 "prebuilt\\asmparse.cpp"
     break;
 
   case 216: /* methodRef: TYPEDEF_M  */
-#line 662 "asmparse.y"
+#line 655 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
-#line 4769 "asmparse.cpp"
+#line 4762 "prebuilt\\asmparse.cpp"
     break;
 
   case 217: /* methodRef: TYPEDEF_MR  */
-#line 663 "asmparse.y"
+#line 656 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
-#line 4775 "asmparse.cpp"
+#line 4768 "prebuilt\\asmparse.cpp"
     break;
 
   case 218: /* callConv: INSTANCE_ callConv  */
-#line 666 "asmparse.y"
+#line 659 "asmparse.y"
                                                               { (yyval.int32) = ((yyvsp[0].int32) | IMAGE_CEE_CS_CALLCONV_HASTHIS); }
-#line 4781 "asmparse.cpp"
+#line 4774 "prebuilt\\asmparse.cpp"
     break;
 
   case 219: /* callConv: EXPLICIT_ callConv  */
-#line 667 "asmparse.y"
+#line 660 "asmparse.y"
                                                               { (yyval.int32) = ((yyvsp[0].int32) | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS); }
-#line 4787 "asmparse.cpp"
+#line 4780 "prebuilt\\asmparse.cpp"
     break;
 
   case 220: /* callConv: callKind  */
-#line 668 "asmparse.y"
+#line 661 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[0].int32); }
-#line 4793 "asmparse.cpp"
+#line 4786 "prebuilt\\asmparse.cpp"
     break;
 
   case 221: /* callConv: CALLCONV_ '(' int32 ')'  */
-#line 669 "asmparse.y"
+#line 662 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[-1].int32); }
-#line 4799 "asmparse.cpp"
+#line 4792 "prebuilt\\asmparse.cpp"
     break;
 
   case 222: /* callKind: %empty  */
-#line 672 "asmparse.y"
+#line 665 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_DEFAULT; }
-#line 4805 "asmparse.cpp"
+#line 4798 "prebuilt\\asmparse.cpp"
     break;
 
   case 223: /* callKind: DEFAULT_  */
-#line 673 "asmparse.y"
+#line 666 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_DEFAULT; }
-#line 4811 "asmparse.cpp"
+#line 4804 "prebuilt\\asmparse.cpp"
     break;
 
   case 224: /* callKind: VARARG_  */
-#line 674 "asmparse.y"
+#line 667 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_VARARG; }
-#line 4817 "asmparse.cpp"
+#line 4810 "prebuilt\\asmparse.cpp"
     break;
 
   case 225: /* callKind: UNMANAGED_ CDECL_  */
-#line 675 "asmparse.y"
+#line 668 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_C; }
-#line 4823 "asmparse.cpp"
+#line 4816 "prebuilt\\asmparse.cpp"
     break;
 
   case 226: /* callKind: UNMANAGED_ STDCALL_  */
-#line 676 "asmparse.y"
+#line 669 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_STDCALL; }
-#line 4829 "asmparse.cpp"
+#line 4822 "prebuilt\\asmparse.cpp"
     break;
 
   case 227: /* callKind: UNMANAGED_ THISCALL_  */
-#line 677 "asmparse.y"
+#line 670 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_THISCALL; }
-#line 4835 "asmparse.cpp"
+#line 4828 "prebuilt\\asmparse.cpp"
     break;
 
   case 228: /* callKind: UNMANAGED_ FASTCALL_  */
-#line 678 "asmparse.y"
+#line 671 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_FASTCALL; }
-#line 4841 "asmparse.cpp"
+#line 4834 "prebuilt\\asmparse.cpp"
     break;
 
   case 229: /* callKind: UNMANAGED_  */
-#line 679 "asmparse.y"
+#line 672 "asmparse.y"
                                                               { (yyval.int32) = IMAGE_CEE_CS_CALLCONV_UNMANAGED; }
-#line 4847 "asmparse.cpp"
+#line 4840 "prebuilt\\asmparse.cpp"
     break;
 
   case 230: /* mdtoken: MDTOKEN_ '(' int32 ')'  */
-#line 682 "asmparse.y"
+#line 675 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[-1].int32); }
-#line 4853 "asmparse.cpp"
+#line 4846 "prebuilt\\asmparse.cpp"
     break;
 
   case 231: /* memberRef: methodSpec methodRef  */
-#line 685 "asmparse.y"
+#line 678 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].token);
                                                                PASM->delArgNameList(PASM->m_firstArgName);
                                                                PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                                PASM->SetMemberRefFixup((yyvsp[0].token),iOpcodeLen); }
-#line 4863 "asmparse.cpp"
+#line 4856 "prebuilt\\asmparse.cpp"
     break;
 
   case 232: /* memberRef: FIELD_ type typeSpec DCOLON dottedName  */
-#line 691 "asmparse.y"
+#line 684 "asmparse.y"
                                                              { (yyvsp[-3].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                (yyval.token) = PASM->MakeMemberRef((yyvsp[-2].token), (yyvsp[0].string), (yyvsp[-3].binstr));
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4871 "asmparse.cpp"
+#line 4864 "prebuilt\\asmparse.cpp"
     break;
 
   case 233: /* memberRef: FIELD_ type dottedName  */
-#line 695 "asmparse.y"
+#line 688 "asmparse.y"
                                                              { (yyvsp[-1].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                (yyval.token) = PASM->MakeMemberRef(mdTokenNil, (yyvsp[0].string), (yyvsp[-1].binstr));
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4879 "asmparse.cpp"
+#line 4872 "prebuilt\\asmparse.cpp"
     break;
 
   case 234: /* memberRef: FIELD_ TYPEDEF_F  */
-#line 698 "asmparse.y"
+#line 691 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4886 "asmparse.cpp"
+#line 4879 "prebuilt\\asmparse.cpp"
     break;
 
   case 235: /* memberRef: FIELD_ TYPEDEF_MR  */
-#line 700 "asmparse.y"
+#line 693 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4893 "asmparse.cpp"
+#line 4886 "prebuilt\\asmparse.cpp"
     break;
 
   case 236: /* memberRef: mdtoken  */
-#line 702 "asmparse.y"
+#line 695 "asmparse.y"
                                                              { (yyval.token) = (yyvsp[0].token);
                                                                PASM->SetMemberRefFixup((yyval.token),iOpcodeLen); }
-#line 4900 "asmparse.cpp"
+#line 4893 "prebuilt\\asmparse.cpp"
     break;
 
   case 237: /* eventHead: _EVENT eventAttr typeSpec dottedName  */
-#line 707 "asmparse.y"
+#line 700 "asmparse.y"
                                                                  { PASM->ResetEvent((yyvsp[0].string), (yyvsp[-1].token), (yyvsp[-2].eventAttr)); }
-#line 4906 "asmparse.cpp"
+#line 4899 "prebuilt\\asmparse.cpp"
     break;
 
   case 238: /* eventHead: _EVENT eventAttr dottedName  */
-#line 708 "asmparse.y"
+#line 701 "asmparse.y"
                                                                  { PASM->ResetEvent((yyvsp[0].string), mdTypeRefNil, (yyvsp[-1].eventAttr)); }
-#line 4912 "asmparse.cpp"
+#line 4905 "prebuilt\\asmparse.cpp"
     break;
 
   case 239: /* eventAttr: %empty  */
-#line 712 "asmparse.y"
+#line 705 "asmparse.y"
                                                             { (yyval.eventAttr) = (CorEventAttr) 0; }
-#line 4918 "asmparse.cpp"
+#line 4911 "prebuilt\\asmparse.cpp"
     break;
 
   case 240: /* eventAttr: eventAttr RTSPECIALNAME_  */
-#line 713 "asmparse.y"
+#line 706 "asmparse.y"
                                                             { (yyval.eventAttr) = (yyvsp[-1].eventAttr); }
-#line 4924 "asmparse.cpp"
+#line 4917 "prebuilt\\asmparse.cpp"
     break;
 
   case 241: /* eventAttr: eventAttr SPECIALNAME_  */
-#line 714 "asmparse.y"
+#line 707 "asmparse.y"
                                                             { (yyval.eventAttr) = (CorEventAttr) ((yyvsp[-1].eventAttr) | evSpecialName); }
-#line 4930 "asmparse.cpp"
+#line 4923 "prebuilt\\asmparse.cpp"
     break;
 
   case 244: /* eventDecl: _ADDON methodRef  */
-#line 721 "asmparse.y"
+#line 714 "asmparse.y"
                                                            { PASM->SetEventMethod(0, (yyvsp[0].token)); }
-#line 4936 "asmparse.cpp"
+#line 4929 "prebuilt\\asmparse.cpp"
     break;
 
   case 245: /* eventDecl: _REMOVEON methodRef  */
-#line 722 "asmparse.y"
+#line 715 "asmparse.y"
                                                            { PASM->SetEventMethod(1, (yyvsp[0].token)); }
-#line 4942 "asmparse.cpp"
+#line 4935 "prebuilt\\asmparse.cpp"
     break;
 
   case 246: /* eventDecl: _FIRE methodRef  */
-#line 723 "asmparse.y"
+#line 716 "asmparse.y"
                                                            { PASM->SetEventMethod(2, (yyvsp[0].token)); }
-#line 4948 "asmparse.cpp"
+#line 4941 "prebuilt\\asmparse.cpp"
     break;
 
   case 247: /* eventDecl: _OTHER methodRef  */
-#line 724 "asmparse.y"
+#line 717 "asmparse.y"
                                                            { PASM->SetEventMethod(3, (yyvsp[0].token)); }
-#line 4954 "asmparse.cpp"
+#line 4947 "prebuilt\\asmparse.cpp"
     break;
 
   case 252: /* propHead: _PROPERTY propAttr callConv type dottedName '(' sigArgs0 ')' initOpt  */
-#line 733 "asmparse.y"
+#line 726 "asmparse.y"
                                                             { PASM->ResetProp((yyvsp[-4].string),
                                                               parser->MakeSig((IMAGE_CEE_CS_CALLCONV_PROPERTY |
                                                               ((yyvsp[-6].int32) & IMAGE_CEE_CS_CALLCONV_HASTHIS)),(yyvsp[-5].binstr),(yyvsp[-2].binstr)), (yyvsp[-7].propAttr), (yyvsp[0].binstr));}
-#line 4962 "asmparse.cpp"
+#line 4955 "prebuilt\\asmparse.cpp"
     break;
 
   case 253: /* propAttr: %empty  */
-#line 738 "asmparse.y"
+#line 731 "asmparse.y"
                                                             { (yyval.propAttr) = (CorPropertyAttr) 0; }
-#line 4968 "asmparse.cpp"
+#line 4961 "prebuilt\\asmparse.cpp"
     break;
 
   case 254: /* propAttr: propAttr RTSPECIALNAME_  */
-#line 739 "asmparse.y"
+#line 732 "asmparse.y"
                                                             { (yyval.propAttr) = (yyvsp[-1].propAttr); }
-#line 4974 "asmparse.cpp"
+#line 4967 "prebuilt\\asmparse.cpp"
     break;
 
   case 255: /* propAttr: propAttr SPECIALNAME_  */
-#line 740 "asmparse.y"
+#line 733 "asmparse.y"
                                                             { (yyval.propAttr) = (CorPropertyAttr) ((yyvsp[-1].propAttr) | prSpecialName); }
-#line 4980 "asmparse.cpp"
+#line 4973 "prebuilt\\asmparse.cpp"
     break;
 
   case 258: /* propDecl: _SET methodRef  */
-#line 748 "asmparse.y"
+#line 741 "asmparse.y"
                                                             { PASM->SetPropMethod(0, (yyvsp[0].token)); }
-#line 4986 "asmparse.cpp"
+#line 4979 "prebuilt\\asmparse.cpp"
     break;
 
   case 259: /* propDecl: _GET methodRef  */
-#line 749 "asmparse.y"
+#line 742 "asmparse.y"
                                                             { PASM->SetPropMethod(1, (yyvsp[0].token)); }
-#line 4992 "asmparse.cpp"
+#line 4985 "prebuilt\\asmparse.cpp"
     break;
 
   case 260: /* propDecl: _OTHER methodRef  */
-#line 750 "asmparse.y"
+#line 743 "asmparse.y"
                                                             { PASM->SetPropMethod(2, (yyvsp[0].token)); }
-#line 4998 "asmparse.cpp"
+#line 4991 "prebuilt\\asmparse.cpp"
     break;
 
   case 265: /* methodHeadPart1: _METHOD  */
-#line 758 "asmparse.y"
+#line 751 "asmparse.y"
                                                             { PASM->ResetForNextMethod();
                                                               uMethodBeginLine = PASM->m_ulCurLine;
                                                               uMethodBeginColumn=PASM->m_ulCurColumn;
                                                             }
-#line 5007 "asmparse.cpp"
+#line 5000 "prebuilt\\asmparse.cpp"
     break;
 
   case 266: /* marshalClause: %empty  */
-#line 764 "asmparse.y"
+#line 757 "asmparse.y"
                                                             { (yyval.binstr) = NULL; }
-#line 5013 "asmparse.cpp"
+#line 5006 "prebuilt\\asmparse.cpp"
     break;
 
   case 267: /* marshalClause: MARSHAL_ '(' marshalBlob ')'  */
-#line 765 "asmparse.y"
+#line 758 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 5019 "asmparse.cpp"
+#line 5012 "prebuilt\\asmparse.cpp"
     break;
 
   case 268: /* marshalBlob: nativeType  */
-#line 768 "asmparse.y"
+#line 761 "asmparse.y"
                                                             { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 5025 "asmparse.cpp"
+#line 5018 "prebuilt\\asmparse.cpp"
     break;
 
   case 269: /* marshalBlob: marshalBlobHead hexbytes '}'  */
-#line 769 "asmparse.y"
+#line 762 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 5031 "asmparse.cpp"
+#line 5024 "prebuilt\\asmparse.cpp"
     break;
 
   case 270: /* marshalBlobHead: '{'  */
-#line 772 "asmparse.y"
+#line 765 "asmparse.y"
                                                              { bParsingByteArray = TRUE; }
-#line 5037 "asmparse.cpp"
+#line 5030 "prebuilt\\asmparse.cpp"
     break;
 
   case 271: /* methodHead: methodHeadPart1 methAttr callConv paramAttr type marshalClause methodName typarsClause '(' sigArgs0 ')' implAttr '{'  */
-#line 776 "asmparse.y"
+#line 769 "asmparse.y"
                                                             { BinStr* sig;
                                                               if ((yyvsp[-5].typarlist) == NULL) sig = parser->MakeSig((yyvsp[-10].int32), (yyvsp[-8].binstr), (yyvsp[-3].binstr));
                                                               else {
@@ -5051,450 +5044,450 @@ yyreduce:
                                                               PASM->m_pCurMethod->m_ulLines[0] = uMethodBeginLine;
                                                               PASM->m_pCurMethod->m_ulColumns[0]=uMethodBeginColumn;
                                                             }
-#line 5055 "asmparse.cpp"
+#line 5048 "prebuilt\\asmparse.cpp"
     break;
 
   case 272: /* methAttr: %empty  */
-#line 791 "asmparse.y"
+#line 784 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) 0; }
-#line 5061 "asmparse.cpp"
+#line 5054 "prebuilt\\asmparse.cpp"
     break;
 
   case 273: /* methAttr: methAttr STATIC_  */
-#line 792 "asmparse.y"
+#line 785 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdStatic); }
-#line 5067 "asmparse.cpp"
+#line 5060 "prebuilt\\asmparse.cpp"
     break;
 
   case 274: /* methAttr: methAttr PUBLIC_  */
-#line 793 "asmparse.y"
+#line 786 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPublic); }
-#line 5073 "asmparse.cpp"
+#line 5066 "prebuilt\\asmparse.cpp"
     break;
 
   case 275: /* methAttr: methAttr PRIVATE_  */
-#line 794 "asmparse.y"
+#line 787 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPrivate); }
-#line 5079 "asmparse.cpp"
+#line 5072 "prebuilt\\asmparse.cpp"
     break;
 
   case 276: /* methAttr: methAttr FAMILY_  */
-#line 795 "asmparse.y"
+#line 788 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamily); }
-#line 5085 "asmparse.cpp"
+#line 5078 "prebuilt\\asmparse.cpp"
     break;
 
   case 277: /* methAttr: methAttr FINAL_  */
-#line 796 "asmparse.y"
+#line 789 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdFinal); }
-#line 5091 "asmparse.cpp"
+#line 5084 "prebuilt\\asmparse.cpp"
     break;
 
   case 278: /* methAttr: methAttr SPECIALNAME_  */
-#line 797 "asmparse.y"
+#line 790 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdSpecialName); }
-#line 5097 "asmparse.cpp"
+#line 5090 "prebuilt\\asmparse.cpp"
     break;
 
   case 279: /* methAttr: methAttr VIRTUAL_  */
-#line 798 "asmparse.y"
+#line 791 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdVirtual); }
-#line 5103 "asmparse.cpp"
+#line 5096 "prebuilt\\asmparse.cpp"
     break;
 
   case 280: /* methAttr: methAttr STRICT_  */
-#line 799 "asmparse.y"
+#line 792 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdCheckAccessOnOverride); }
-#line 5109 "asmparse.cpp"
+#line 5102 "prebuilt\\asmparse.cpp"
     break;
 
   case 281: /* methAttr: methAttr ABSTRACT_  */
-#line 800 "asmparse.y"
+#line 793 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdAbstract); }
-#line 5115 "asmparse.cpp"
+#line 5108 "prebuilt\\asmparse.cpp"
     break;
 
   case 282: /* methAttr: methAttr ASSEMBLY_  */
-#line 801 "asmparse.y"
+#line 794 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdAssem); }
-#line 5121 "asmparse.cpp"
+#line 5114 "prebuilt\\asmparse.cpp"
     break;
 
   case 283: /* methAttr: methAttr FAMANDASSEM_  */
-#line 802 "asmparse.y"
+#line 795 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamANDAssem); }
-#line 5127 "asmparse.cpp"
+#line 5120 "prebuilt\\asmparse.cpp"
     break;
 
   case 284: /* methAttr: methAttr FAMORASSEM_  */
-#line 803 "asmparse.y"
+#line 796 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdFamORAssem); }
-#line 5133 "asmparse.cpp"
+#line 5126 "prebuilt\\asmparse.cpp"
     break;
 
   case 285: /* methAttr: methAttr PRIVATESCOPE_  */
-#line 804 "asmparse.y"
+#line 797 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) (((yyvsp[-1].methAttr) & ~mdMemberAccessMask) | mdPrivateScope); }
-#line 5139 "asmparse.cpp"
+#line 5132 "prebuilt\\asmparse.cpp"
     break;
 
   case 286: /* methAttr: methAttr HIDEBYSIG_  */
-#line 805 "asmparse.y"
+#line 798 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdHideBySig); }
-#line 5145 "asmparse.cpp"
+#line 5138 "prebuilt\\asmparse.cpp"
     break;
 
   case 287: /* methAttr: methAttr NEWSLOT_  */
-#line 806 "asmparse.y"
+#line 799 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdNewSlot); }
-#line 5151 "asmparse.cpp"
+#line 5144 "prebuilt\\asmparse.cpp"
     break;
 
   case 288: /* methAttr: methAttr RTSPECIALNAME_  */
-#line 807 "asmparse.y"
+#line 800 "asmparse.y"
                                                             { (yyval.methAttr) = (yyvsp[-1].methAttr); }
-#line 5157 "asmparse.cpp"
+#line 5150 "prebuilt\\asmparse.cpp"
     break;
 
   case 289: /* methAttr: methAttr UNMANAGEDEXP_  */
-#line 808 "asmparse.y"
+#line 801 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdUnmanagedExport); }
-#line 5163 "asmparse.cpp"
+#line 5156 "prebuilt\\asmparse.cpp"
     break;
 
   case 290: /* methAttr: methAttr REQSECOBJ_  */
-#line 809 "asmparse.y"
+#line 802 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].methAttr) | mdRequireSecObject); }
-#line 5169 "asmparse.cpp"
+#line 5162 "prebuilt\\asmparse.cpp"
     break;
 
   case 291: /* methAttr: methAttr FLAGS_ '(' int32 ')'  */
-#line 810 "asmparse.y"
+#line 803 "asmparse.y"
                                                             { (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-1].int32)); }
-#line 5175 "asmparse.cpp"
+#line 5168 "prebuilt\\asmparse.cpp"
     break;
 
   case 292: /* methAttr: methAttr PINVOKEIMPL_ '(' compQstring AS_ compQstring pinvAttr ')'  */
-#line 812 "asmparse.y"
+#line 805 "asmparse.y"
                                                             { PASM->SetPinvoke((yyvsp[-4].binstr),0,(yyvsp[-2].binstr),(yyvsp[-1].pinvAttr));
                                                               (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-7].methAttr) | mdPinvokeImpl); }
-#line 5182 "asmparse.cpp"
+#line 5175 "prebuilt\\asmparse.cpp"
     break;
 
   case 293: /* methAttr: methAttr PINVOKEIMPL_ '(' compQstring pinvAttr ')'  */
-#line 815 "asmparse.y"
+#line 808 "asmparse.y"
                                                             { PASM->SetPinvoke((yyvsp[-2].binstr),0,NULL,(yyvsp[-1].pinvAttr));
                                                               (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-5].methAttr) | mdPinvokeImpl); }
-#line 5189 "asmparse.cpp"
+#line 5182 "prebuilt\\asmparse.cpp"
     break;
 
   case 294: /* methAttr: methAttr PINVOKEIMPL_ '(' pinvAttr ')'  */
-#line 818 "asmparse.y"
+#line 811 "asmparse.y"
                                                             { PASM->SetPinvoke(new BinStr(),0,NULL,(yyvsp[-1].pinvAttr));
                                                               (yyval.methAttr) = (CorMethodAttr) ((yyvsp[-4].methAttr) | mdPinvokeImpl); }
-#line 5196 "asmparse.cpp"
+#line 5189 "prebuilt\\asmparse.cpp"
     break;
 
   case 295: /* pinvAttr: %empty  */
-#line 822 "asmparse.y"
+#line 815 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) 0; }
-#line 5202 "asmparse.cpp"
+#line 5195 "prebuilt\\asmparse.cpp"
     break;
 
   case 296: /* pinvAttr: pinvAttr NOMANGLE_  */
-#line 823 "asmparse.y"
+#line 816 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmNoMangle); }
-#line 5208 "asmparse.cpp"
+#line 5201 "prebuilt\\asmparse.cpp"
     break;
 
   case 297: /* pinvAttr: pinvAttr ANSI_  */
-#line 824 "asmparse.y"
+#line 817 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetAnsi); }
-#line 5214 "asmparse.cpp"
+#line 5207 "prebuilt\\asmparse.cpp"
     break;
 
   case 298: /* pinvAttr: pinvAttr UNICODE_  */
-#line 825 "asmparse.y"
+#line 818 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetUnicode); }
-#line 5220 "asmparse.cpp"
+#line 5213 "prebuilt\\asmparse.cpp"
     break;
 
   case 299: /* pinvAttr: pinvAttr AUTOCHAR_  */
-#line 826 "asmparse.y"
+#line 819 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCharSetAuto); }
-#line 5226 "asmparse.cpp"
+#line 5219 "prebuilt\\asmparse.cpp"
     break;
 
   case 300: /* pinvAttr: pinvAttr LASTERR_  */
-#line 827 "asmparse.y"
+#line 820 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmSupportsLastError); }
-#line 5232 "asmparse.cpp"
+#line 5225 "prebuilt\\asmparse.cpp"
     break;
 
   case 301: /* pinvAttr: pinvAttr WINAPI_  */
-#line 828 "asmparse.y"
+#line 821 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvWinapi); }
-#line 5238 "asmparse.cpp"
+#line 5231 "prebuilt\\asmparse.cpp"
     break;
 
   case 302: /* pinvAttr: pinvAttr CDECL_  */
-#line 829 "asmparse.y"
+#line 822 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvCdecl); }
-#line 5244 "asmparse.cpp"
+#line 5237 "prebuilt\\asmparse.cpp"
     break;
 
   case 303: /* pinvAttr: pinvAttr STDCALL_  */
-#line 830 "asmparse.y"
+#line 823 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvStdcall); }
-#line 5250 "asmparse.cpp"
+#line 5243 "prebuilt\\asmparse.cpp"
     break;
 
   case 304: /* pinvAttr: pinvAttr THISCALL_  */
-#line 831 "asmparse.y"
+#line 824 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvThiscall); }
-#line 5256 "asmparse.cpp"
+#line 5249 "prebuilt\\asmparse.cpp"
     break;
 
   case 305: /* pinvAttr: pinvAttr FASTCALL_  */
-#line 832 "asmparse.y"
+#line 825 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].pinvAttr) | pmCallConvFastcall); }
-#line 5262 "asmparse.cpp"
+#line 5255 "prebuilt\\asmparse.cpp"
     break;
 
   case 306: /* pinvAttr: pinvAttr BESTFIT_ ':' ON_  */
-#line 833 "asmparse.y"
+#line 826 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmBestFitEnabled); }
-#line 5268 "asmparse.cpp"
+#line 5261 "prebuilt\\asmparse.cpp"
     break;
 
   case 307: /* pinvAttr: pinvAttr BESTFIT_ ':' OFF_  */
-#line 834 "asmparse.y"
+#line 827 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmBestFitDisabled); }
-#line 5274 "asmparse.cpp"
+#line 5267 "prebuilt\\asmparse.cpp"
     break;
 
   case 308: /* pinvAttr: pinvAttr CHARMAPERROR_ ':' ON_  */
-#line 835 "asmparse.y"
+#line 828 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmThrowOnUnmappableCharEnabled); }
-#line 5280 "asmparse.cpp"
+#line 5273 "prebuilt\\asmparse.cpp"
     break;
 
   case 309: /* pinvAttr: pinvAttr CHARMAPERROR_ ':' OFF_  */
-#line 836 "asmparse.y"
+#line 829 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-3].pinvAttr) | pmThrowOnUnmappableCharDisabled); }
-#line 5286 "asmparse.cpp"
+#line 5279 "prebuilt\\asmparse.cpp"
     break;
 
   case 310: /* pinvAttr: pinvAttr FLAGS_ '(' int32 ')'  */
-#line 837 "asmparse.y"
+#line 830 "asmparse.y"
                                                             { (yyval.pinvAttr) = (CorPinvokeMap) ((yyvsp[-1].int32)); }
-#line 5292 "asmparse.cpp"
+#line 5285 "prebuilt\\asmparse.cpp"
     break;
 
   case 311: /* methodName: _CTOR  */
-#line 840 "asmparse.y"
+#line 833 "asmparse.y"
                                                             { (yyval.string) = newString(COR_CTOR_METHOD_NAME); }
-#line 5298 "asmparse.cpp"
+#line 5291 "prebuilt\\asmparse.cpp"
     break;
 
   case 312: /* methodName: _CCTOR  */
-#line 841 "asmparse.y"
+#line 834 "asmparse.y"
                                                             { (yyval.string) = newString(COR_CCTOR_METHOD_NAME); }
-#line 5304 "asmparse.cpp"
+#line 5297 "prebuilt\\asmparse.cpp"
     break;
 
   case 313: /* methodName: dottedName  */
-#line 842 "asmparse.y"
+#line 835 "asmparse.y"
                                                             { (yyval.string) = (yyvsp[0].string); }
-#line 5310 "asmparse.cpp"
+#line 5303 "prebuilt\\asmparse.cpp"
     break;
 
   case 314: /* paramAttr: %empty  */
-#line 845 "asmparse.y"
+#line 838 "asmparse.y"
                                                             { (yyval.int32) = 0; }
-#line 5316 "asmparse.cpp"
+#line 5309 "prebuilt\\asmparse.cpp"
     break;
 
   case 315: /* paramAttr: paramAttr '[' IN_ ']'  */
-#line 846 "asmparse.y"
+#line 839 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-3].int32) | pdIn; }
-#line 5322 "asmparse.cpp"
+#line 5315 "prebuilt\\asmparse.cpp"
     break;
 
   case 316: /* paramAttr: paramAttr '[' OUT_ ']'  */
-#line 847 "asmparse.y"
+#line 840 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-3].int32) | pdOut; }
-#line 5328 "asmparse.cpp"
+#line 5321 "prebuilt\\asmparse.cpp"
     break;
 
   case 317: /* paramAttr: paramAttr '[' OPT_ ']'  */
-#line 848 "asmparse.y"
+#line 841 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-3].int32) | pdOptional; }
-#line 5334 "asmparse.cpp"
+#line 5327 "prebuilt\\asmparse.cpp"
     break;
 
   case 318: /* paramAttr: paramAttr '[' int32 ']'  */
-#line 849 "asmparse.y"
+#line 842 "asmparse.y"
                                                             { (yyval.int32) = (yyvsp[-1].int32) + 1; }
-#line 5340 "asmparse.cpp"
+#line 5333 "prebuilt\\asmparse.cpp"
     break;
 
   case 319: /* implAttr: %empty  */
-#line 852 "asmparse.y"
+#line 845 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) (miIL | miManaged); }
-#line 5346 "asmparse.cpp"
+#line 5339 "prebuilt\\asmparse.cpp"
     break;
 
   case 320: /* implAttr: implAttr NATIVE_  */
-#line 853 "asmparse.y"
+#line 846 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miNative); }
-#line 5352 "asmparse.cpp"
+#line 5345 "prebuilt\\asmparse.cpp"
     break;
 
   case 321: /* implAttr: implAttr CIL_  */
-#line 854 "asmparse.y"
+#line 847 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miIL); }
-#line 5358 "asmparse.cpp"
+#line 5351 "prebuilt\\asmparse.cpp"
     break;
 
   case 322: /* implAttr: implAttr OPTIL_  */
-#line 855 "asmparse.y"
+#line 848 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFF4) | miOPTIL); }
-#line 5364 "asmparse.cpp"
+#line 5357 "prebuilt\\asmparse.cpp"
     break;
 
   case 323: /* implAttr: implAttr MANAGED_  */
-#line 856 "asmparse.y"
+#line 849 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFFB) | miManaged); }
-#line 5370 "asmparse.cpp"
+#line 5363 "prebuilt\\asmparse.cpp"
     break;
 
   case 324: /* implAttr: implAttr UNMANAGED_  */
-#line 857 "asmparse.y"
+#line 850 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) (((yyvsp[-1].implAttr) & 0xFFFB) | miUnmanaged); }
-#line 5376 "asmparse.cpp"
+#line 5369 "prebuilt\\asmparse.cpp"
     break;
 
   case 325: /* implAttr: implAttr FORWARDREF_  */
-#line 858 "asmparse.y"
+#line 851 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miForwardRef); }
-#line 5382 "asmparse.cpp"
+#line 5375 "prebuilt\\asmparse.cpp"
     break;
 
   case 326: /* implAttr: implAttr PRESERVESIG_  */
-#line 859 "asmparse.y"
+#line 852 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miPreserveSig); }
-#line 5388 "asmparse.cpp"
+#line 5381 "prebuilt\\asmparse.cpp"
     break;
 
   case 327: /* implAttr: implAttr RUNTIME_  */
-#line 860 "asmparse.y"
+#line 853 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miRuntime); }
-#line 5394 "asmparse.cpp"
+#line 5387 "prebuilt\\asmparse.cpp"
     break;
 
   case 328: /* implAttr: implAttr INTERNALCALL_  */
-#line 861 "asmparse.y"
+#line 854 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miInternalCall); }
-#line 5400 "asmparse.cpp"
+#line 5393 "prebuilt\\asmparse.cpp"
     break;
 
   case 329: /* implAttr: implAttr SYNCHRONIZED_  */
-#line 862 "asmparse.y"
+#line 855 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miSynchronized); }
-#line 5406 "asmparse.cpp"
+#line 5399 "prebuilt\\asmparse.cpp"
     break;
 
   case 330: /* implAttr: implAttr NOINLINING_  */
-#line 863 "asmparse.y"
+#line 856 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miNoInlining); }
-#line 5412 "asmparse.cpp"
+#line 5405 "prebuilt\\asmparse.cpp"
     break;
 
   case 331: /* implAttr: implAttr AGGRESSIVEINLINING_  */
-#line 864 "asmparse.y"
+#line 857 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAggressiveInlining); }
-#line 5418 "asmparse.cpp"
+#line 5411 "prebuilt\\asmparse.cpp"
     break;
 
   case 332: /* implAttr: implAttr NOOPTIMIZATION_  */
-#line 865 "asmparse.y"
+#line 858 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miNoOptimization); }
-#line 5424 "asmparse.cpp"
+#line 5417 "prebuilt\\asmparse.cpp"
     break;
 
   case 333: /* implAttr: implAttr AGGRESSIVEOPTIMIZATION_  */
-#line 866 "asmparse.y"
+#line 859 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].implAttr) | miAggressiveOptimization); }
-#line 5430 "asmparse.cpp"
+#line 5423 "prebuilt\\asmparse.cpp"
     break;
 
   case 334: /* implAttr: implAttr FLAGS_ '(' int32 ')'  */
-#line 867 "asmparse.y"
+#line 860 "asmparse.y"
                                                             { (yyval.implAttr) = (CorMethodImpl) ((yyvsp[-1].int32)); }
-#line 5436 "asmparse.cpp"
+#line 5429 "prebuilt\\asmparse.cpp"
     break;
 
   case 335: /* localsHead: _LOCALS  */
-#line 870 "asmparse.y"
+#line 863 "asmparse.y"
                                                             { PASM->delArgNameList(PASM->m_firstArgName); PASM->m_firstArgName = NULL;PASM->m_lastArgName = NULL;
                                                             }
-#line 5443 "asmparse.cpp"
+#line 5436 "prebuilt\\asmparse.cpp"
     break;
 
   case 338: /* methodDecl: _EMITBYTE int32  */
-#line 878 "asmparse.y"
+#line 871 "asmparse.y"
                                                             { PASM->EmitByte((yyvsp[0].int32)); }
-#line 5449 "asmparse.cpp"
+#line 5442 "prebuilt\\asmparse.cpp"
     break;
 
   case 339: /* methodDecl: sehBlock  */
-#line 879 "asmparse.y"
+#line 872 "asmparse.y"
                                                             { delete PASM->m_SEHD; PASM->m_SEHD = PASM->m_SEHDstack.POP(); }
-#line 5455 "asmparse.cpp"
+#line 5448 "prebuilt\\asmparse.cpp"
     break;
 
   case 340: /* methodDecl: _MAXSTACK int32  */
-#line 880 "asmparse.y"
+#line 873 "asmparse.y"
                                                             { PASM->EmitMaxStack((yyvsp[0].int32)); }
-#line 5461 "asmparse.cpp"
+#line 5454 "prebuilt\\asmparse.cpp"
     break;
 
   case 341: /* methodDecl: localsHead '(' sigArgs0 ')'  */
-#line 881 "asmparse.y"
+#line 874 "asmparse.y"
                                                             { PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, (yyvsp[-1].binstr)));
                                                             }
-#line 5468 "asmparse.cpp"
+#line 5461 "prebuilt\\asmparse.cpp"
     break;
 
   case 342: /* methodDecl: localsHead INIT_ '(' sigArgs0 ')'  */
-#line 883 "asmparse.y"
+#line 876 "asmparse.y"
                                                             { PASM->EmitZeroInit();
                                                               PASM->EmitLocals(parser->MakeSig(IMAGE_CEE_CS_CALLCONV_LOCAL_SIG, 0, (yyvsp[-1].binstr)));
                                                             }
-#line 5476 "asmparse.cpp"
+#line 5469 "prebuilt\\asmparse.cpp"
     break;
 
   case 343: /* methodDecl: _ENTRYPOINT  */
-#line 886 "asmparse.y"
+#line 879 "asmparse.y"
                                                             { PASM->EmitEntryPoint(); }
-#line 5482 "asmparse.cpp"
+#line 5475 "prebuilt\\asmparse.cpp"
     break;
 
   case 344: /* methodDecl: _ZEROINIT  */
-#line 887 "asmparse.y"
+#line 880 "asmparse.y"
                                                             { PASM->EmitZeroInit(); }
-#line 5488 "asmparse.cpp"
+#line 5481 "prebuilt\\asmparse.cpp"
     break;
 
   case 347: /* methodDecl: id ':'  */
-#line 890 "asmparse.y"
+#line 883 "asmparse.y"
                                                             { PASM->AddLabel(PASM->m_CurPC,(yyvsp[-1].string)); /*PASM->EmitLabel($1);*/ }
-#line 5494 "asmparse.cpp"
+#line 5487 "prebuilt\\asmparse.cpp"
     break;
 
   case 353: /* methodDecl: _EXPORT '[' int32 ']'  */
-#line 896 "asmparse.y"
+#line 889 "asmparse.y"
                                                             { if(PASM->m_pCurMethod->m_dwExportOrdinal == 0xFFFFFFFF)
                                                               {
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = (yyvsp[-1].int32);
@@ -5505,11 +5498,11 @@ yyreduce:
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
                                                             }
-#line 5509 "asmparse.cpp"
+#line 5502 "prebuilt\\asmparse.cpp"
     break;
 
   case 354: /* methodDecl: _EXPORT '[' int32 ']' AS_ id  */
-#line 906 "asmparse.y"
+#line 899 "asmparse.y"
                                                             { if(PASM->m_pCurMethod->m_dwExportOrdinal == 0xFFFFFFFF)
                                                               {
                                                                 PASM->m_pCurMethod->m_dwExportOrdinal = (yyvsp[-3].int32);
@@ -5520,68 +5513,68 @@ yyreduce:
                                                               else
                                                                 PASM->report->warn("Duplicate .export directive, ignored\n");
                                                             }
-#line 5524 "asmparse.cpp"
+#line 5517 "prebuilt\\asmparse.cpp"
     break;
 
   case 355: /* methodDecl: _VTENTRY int32 ':' int32  */
-#line 916 "asmparse.y"
+#line 909 "asmparse.y"
                                                             { PASM->m_pCurMethod->m_wVTEntry = (WORD)(yyvsp[-2].int32);
                                                               PASM->m_pCurMethod->m_wVTSlot = (WORD)(yyvsp[0].int32); }
-#line 5531 "asmparse.cpp"
+#line 5524 "prebuilt\\asmparse.cpp"
     break;
 
   case 356: /* methodDecl: _OVERRIDE typeSpec DCOLON methodName  */
-#line 919 "asmparse.y"
+#line 912 "asmparse.y"
                                                             { PASM->AddMethodImpl((yyvsp[-2].token),(yyvsp[0].string),NULL,mdTokenNil,NULL,NULL); }
-#line 5537 "asmparse.cpp"
+#line 5530 "prebuilt\\asmparse.cpp"
     break;
 
   case 357: /* methodDecl: _OVERRIDE METHOD_ callConv type typeSpec DCOLON methodName genArity '(' sigArgs0 ')'  */
-#line 922 "asmparse.y"
+#line 915 "asmparse.y"
                                                             { PASM->AddMethodImpl((yyvsp[-6].token),(yyvsp[-4].string),
                                                               ((yyvsp[-3].int32)==0 ? parser->MakeSig((yyvsp[-8].int32),(yyvsp[-7].binstr),(yyvsp[-1].binstr)) :
                                                               parser->MakeSig((yyvsp[-8].int32)| IMAGE_CEE_CS_CALLCONV_GENERIC,(yyvsp[-7].binstr),(yyvsp[-1].binstr),(yyvsp[-3].int32)))
                                                               ,mdTokenNil,NULL,NULL);
                                                               PASM->ResetArgNameList();
                                                             }
-#line 5548 "asmparse.cpp"
+#line 5541 "prebuilt\\asmparse.cpp"
     break;
 
   case 359: /* methodDecl: _PARAM TYPE_ '[' int32 ']'  */
-#line 929 "asmparse.y"
+#line 922 "asmparse.y"
                                                             { if(((yyvsp[-1].int32) > 0) && ((yyvsp[-1].int32) <= (int)PASM->m_pCurMethod->m_NumTyPars))
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurMethod->m_TyPars[(yyvsp[-1].int32)-1].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter index out of range\n");
                                                             }
-#line 5558 "asmparse.cpp"
+#line 5551 "prebuilt\\asmparse.cpp"
     break;
 
   case 360: /* methodDecl: _PARAM TYPE_ dottedName  */
-#line 934 "asmparse.y"
+#line 927 "asmparse.y"
                                                             { int n = PASM->m_pCurMethod->FindTyPar((yyvsp[0].string));
                                                               if(n >= 0)
                                                                 PASM->m_pCustomDescrList = PASM->m_pCurMethod->m_TyPars[n].CAList();
                                                               else
                                                                 PASM->report->error("Type parameter '%s' undefined\n",(yyvsp[0].string));
                                                             }
-#line 5569 "asmparse.cpp"
+#line 5562 "prebuilt\\asmparse.cpp"
     break;
 
   case 361: /* methodDecl: _PARAM CONSTRAINT_ '[' int32 ']' ',' typeSpec  */
-#line 940 "asmparse.y"
+#line 933 "asmparse.y"
                                                                         { PASM->m_pCurMethod->AddGenericParamConstraint((yyvsp[-3].int32), 0, (yyvsp[0].token)); }
-#line 5575 "asmparse.cpp"
+#line 5568 "prebuilt\\asmparse.cpp"
     break;
 
   case 362: /* methodDecl: _PARAM CONSTRAINT_ dottedName ',' typeSpec  */
-#line 941 "asmparse.y"
+#line 934 "asmparse.y"
                                                                         { PASM->m_pCurMethod->AddGenericParamConstraint(0, (yyvsp[-2].string), (yyvsp[0].token)); }
-#line 5581 "asmparse.cpp"
+#line 5574 "prebuilt\\asmparse.cpp"
     break;
 
   case 363: /* methodDecl: _PARAM '[' int32 ']' initOpt  */
-#line 944 "asmparse.y"
+#line 937 "asmparse.y"
                                                             { if( (yyvsp[-2].int32) ) {
                                                                 ARG_NAME_LIST* pAN=PASM->findArg(PASM->m_pCurMethod->m_firstArgName, (yyvsp[-2].int32) - 1);
                                                                 if(pAN)
@@ -5600,241 +5593,241 @@ yyreduce:
                                                               }
                                                               PASM->m_tkCurrentCVOwner = 0;
                                                             }
-#line 5604 "asmparse.cpp"
+#line 5597 "prebuilt\\asmparse.cpp"
     break;
 
   case 364: /* scopeBlock: scopeOpen methodDecls '}'  */
-#line 964 "asmparse.y"
+#line 957 "asmparse.y"
                                                             { PASM->m_pCurMethod->CloseScope(); }
-#line 5610 "asmparse.cpp"
+#line 5603 "prebuilt\\asmparse.cpp"
     break;
 
   case 365: /* scopeOpen: '{'  */
-#line 967 "asmparse.y"
+#line 960 "asmparse.y"
                                                             { PASM->m_pCurMethod->OpenScope(); }
-#line 5616 "asmparse.cpp"
+#line 5609 "prebuilt\\asmparse.cpp"
     break;
 
   case 369: /* tryBlock: tryHead scopeBlock  */
-#line 978 "asmparse.y"
+#line 971 "asmparse.y"
                                                             { PASM->m_SEHD->tryTo = PASM->m_CurPC; }
-#line 5622 "asmparse.cpp"
+#line 5615 "prebuilt\\asmparse.cpp"
     break;
 
   case 370: /* tryBlock: tryHead id TO_ id  */
-#line 979 "asmparse.y"
+#line 972 "asmparse.y"
                                                             { PASM->SetTryLabels((yyvsp[-2].string), (yyvsp[0].string)); }
-#line 5628 "asmparse.cpp"
+#line 5621 "prebuilt\\asmparse.cpp"
     break;
 
   case 371: /* tryBlock: tryHead int32 TO_ int32  */
-#line 980 "asmparse.y"
+#line 973 "asmparse.y"
                                                             { if(PASM->m_SEHD) {PASM->m_SEHD->tryFrom = (yyvsp[-2].int32);
                                                               PASM->m_SEHD->tryTo = (yyvsp[0].int32);} }
-#line 5635 "asmparse.cpp"
+#line 5628 "prebuilt\\asmparse.cpp"
     break;
 
   case 372: /* tryHead: _TRY  */
-#line 984 "asmparse.y"
+#line 977 "asmparse.y"
                                                             { PASM->NewSEHDescriptor();
                                                               PASM->m_SEHD->tryFrom = PASM->m_CurPC; }
-#line 5642 "asmparse.cpp"
+#line 5635 "prebuilt\\asmparse.cpp"
     break;
 
   case 373: /* sehClause: catchClause handlerBlock  */
-#line 989 "asmparse.y"
+#line 982 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5648 "asmparse.cpp"
+#line 5641 "prebuilt\\asmparse.cpp"
     break;
 
   case 374: /* sehClause: filterClause handlerBlock  */
-#line 990 "asmparse.y"
+#line 983 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5654 "asmparse.cpp"
+#line 5647 "prebuilt\\asmparse.cpp"
     break;
 
   case 375: /* sehClause: finallyClause handlerBlock  */
-#line 991 "asmparse.y"
+#line 984 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5660 "asmparse.cpp"
+#line 5653 "prebuilt\\asmparse.cpp"
     break;
 
   case 376: /* sehClause: faultClause handlerBlock  */
-#line 992 "asmparse.y"
+#line 985 "asmparse.y"
                                                              { PASM->EmitTry(); }
-#line 5666 "asmparse.cpp"
+#line 5659 "prebuilt\\asmparse.cpp"
     break;
 
   case 377: /* filterClause: filterHead scopeBlock  */
-#line 996 "asmparse.y"
+#line 989 "asmparse.y"
                                                              { PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5672 "asmparse.cpp"
+#line 5665 "prebuilt\\asmparse.cpp"
     break;
 
   case 378: /* filterClause: filterHead id  */
-#line 997 "asmparse.y"
+#line 990 "asmparse.y"
                                                              { PASM->SetFilterLabel((yyvsp[0].string));
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5679 "asmparse.cpp"
+#line 5672 "prebuilt\\asmparse.cpp"
     break;
 
   case 379: /* filterClause: filterHead int32  */
-#line 999 "asmparse.y"
+#line 992 "asmparse.y"
                                                              { PASM->m_SEHD->sehFilter = (yyvsp[0].int32);
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5686 "asmparse.cpp"
+#line 5679 "prebuilt\\asmparse.cpp"
     break;
 
   case 380: /* filterHead: FILTER_  */
-#line 1003 "asmparse.y"
+#line 996 "asmparse.y"
                                                              { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FILTER;
                                                                PASM->m_SEHD->sehFilter = PASM->m_CurPC; }
-#line 5693 "asmparse.cpp"
+#line 5686 "prebuilt\\asmparse.cpp"
     break;
 
   case 381: /* catchClause: CATCH_ typeSpec  */
-#line 1007 "asmparse.y"
+#line 1000 "asmparse.y"
                                                             {  PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_NONE;
                                                                PASM->SetCatchClass((yyvsp[0].token));
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5701 "asmparse.cpp"
+#line 5694 "prebuilt\\asmparse.cpp"
     break;
 
   case 382: /* finallyClause: FINALLY_  */
-#line 1012 "asmparse.y"
+#line 1005 "asmparse.y"
                                                              { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FINALLY;
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5708 "asmparse.cpp"
+#line 5701 "prebuilt\\asmparse.cpp"
     break;
 
   case 383: /* faultClause: FAULT_  */
-#line 1016 "asmparse.y"
+#line 1009 "asmparse.y"
                                                              { PASM->m_SEHD->sehClause = COR_ILEXCEPTION_CLAUSE_FAULT;
                                                                PASM->m_SEHD->sehHandler = PASM->m_CurPC; }
-#line 5715 "asmparse.cpp"
+#line 5708 "prebuilt\\asmparse.cpp"
     break;
 
   case 384: /* handlerBlock: scopeBlock  */
-#line 1020 "asmparse.y"
+#line 1013 "asmparse.y"
                                                              { PASM->m_SEHD->sehHandlerTo = PASM->m_CurPC; }
-#line 5721 "asmparse.cpp"
+#line 5714 "prebuilt\\asmparse.cpp"
     break;
 
   case 385: /* handlerBlock: HANDLER_ id TO_ id  */
-#line 1021 "asmparse.y"
+#line 1014 "asmparse.y"
                                                              { PASM->SetHandlerLabels((yyvsp[-2].string), (yyvsp[0].string)); }
-#line 5727 "asmparse.cpp"
+#line 5720 "prebuilt\\asmparse.cpp"
     break;
 
   case 386: /* handlerBlock: HANDLER_ int32 TO_ int32  */
-#line 1022 "asmparse.y"
+#line 1015 "asmparse.y"
                                                              { PASM->m_SEHD->sehHandler = (yyvsp[-2].int32);
                                                                PASM->m_SEHD->sehHandlerTo = (yyvsp[0].int32); }
-#line 5734 "asmparse.cpp"
+#line 5727 "prebuilt\\asmparse.cpp"
     break;
 
   case 388: /* ddHead: _DATA tls id '='  */
-#line 1030 "asmparse.y"
+#line 1023 "asmparse.y"
                                                              { PASM->EmitDataLabel((yyvsp[-1].string)); }
-#line 5740 "asmparse.cpp"
+#line 5733 "prebuilt\\asmparse.cpp"
     break;
 
   case 390: /* tls: %empty  */
-#line 1034 "asmparse.y"
+#line 1027 "asmparse.y"
                                                              { PASM->SetDataSection(); }
-#line 5746 "asmparse.cpp"
+#line 5739 "prebuilt\\asmparse.cpp"
     break;
 
   case 391: /* tls: TLS_  */
-#line 1035 "asmparse.y"
+#line 1028 "asmparse.y"
                                                              { PASM->SetTLSSection(); }
-#line 5752 "asmparse.cpp"
+#line 5745 "prebuilt\\asmparse.cpp"
     break;
 
   case 392: /* tls: CIL_  */
-#line 1036 "asmparse.y"
+#line 1029 "asmparse.y"
                                                              { PASM->SetILSection(); }
-#line 5758 "asmparse.cpp"
+#line 5751 "prebuilt\\asmparse.cpp"
     break;
 
   case 397: /* ddItemCount: %empty  */
-#line 1047 "asmparse.y"
+#line 1040 "asmparse.y"
                                                              { (yyval.int32) = 1; }
-#line 5764 "asmparse.cpp"
+#line 5757 "prebuilt\\asmparse.cpp"
     break;
 
   case 398: /* ddItemCount: '[' int32 ']'  */
-#line 1048 "asmparse.y"
+#line 1041 "asmparse.y"
                                                              { (yyval.int32) = (yyvsp[-1].int32);
                                                                if((yyvsp[-1].int32) <= 0) { PASM->report->error("Illegal item count: %d\n",(yyvsp[-1].int32));
                                                                   if(!PASM->OnErrGo) (yyval.int32) = 1; }}
-#line 5772 "asmparse.cpp"
+#line 5765 "prebuilt\\asmparse.cpp"
     break;
 
   case 399: /* ddItem: CHAR_ '*' '(' compQstring ')'  */
-#line 1053 "asmparse.y"
+#line 1046 "asmparse.y"
                                                              { PASM->EmitDataString((yyvsp[-1].binstr)); }
-#line 5778 "asmparse.cpp"
+#line 5771 "prebuilt\\asmparse.cpp"
     break;
 
   case 400: /* ddItem: '&' '(' id ')'  */
-#line 1054 "asmparse.y"
+#line 1047 "asmparse.y"
                                                              { PASM->EmitDD((yyvsp[-1].string)); }
-#line 5784 "asmparse.cpp"
+#line 5777 "prebuilt\\asmparse.cpp"
     break;
 
   case 401: /* ddItem: bytearrayhead bytes ')'  */
-#line 1055 "asmparse.y"
+#line 1048 "asmparse.y"
                                                              { PASM->EmitData((yyvsp[-1].binstr)->ptr(),(yyvsp[-1].binstr)->length()); }
-#line 5790 "asmparse.cpp"
+#line 5783 "prebuilt\\asmparse.cpp"
     break;
 
   case 402: /* ddItem: FLOAT32_ '(' float64 ')' ddItemCount  */
-#line 1057 "asmparse.y"
+#line 1050 "asmparse.y"
                                                              { float f = (float) (*(yyvsp[-2].float64)); float* p = new (nothrow) float[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i < (yyvsp[0].int32); i++) p[i] = f;
                                                                  PASM->EmitData(p, sizeof(float)*(yyvsp[0].int32)); delete (yyvsp[-2].float64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(float)*(yyvsp[0].int32)); }
-#line 5801 "asmparse.cpp"
+#line 5794 "prebuilt\\asmparse.cpp"
     break;
 
   case 403: /* ddItem: FLOAT64_ '(' float64 ')' ddItemCount  */
-#line 1064 "asmparse.y"
+#line 1057 "asmparse.y"
                                                              { double* p = new (nothrow) double[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = *((yyvsp[-2].float64));
                                                                  PASM->EmitData(p, sizeof(double)*(yyvsp[0].int32)); delete (yyvsp[-2].float64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(double)*(yyvsp[0].int32)); }
-#line 5812 "asmparse.cpp"
+#line 5805 "prebuilt\\asmparse.cpp"
     break;
 
   case 404: /* ddItem: INT64_ '(' int64 ')' ddItemCount  */
-#line 1071 "asmparse.y"
+#line 1064 "asmparse.y"
                                                              { int64_t* p = new (nothrow) int64_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = *((yyvsp[-2].int64));
                                                                  PASM->EmitData(p, sizeof(int64_t)*(yyvsp[0].int32)); delete (yyvsp[-2].int64); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int64_t)*(yyvsp[0].int32)); }
-#line 5823 "asmparse.cpp"
+#line 5816 "prebuilt\\asmparse.cpp"
     break;
 
   case 405: /* ddItem: INT32_ '(' int32 ')' ddItemCount  */
-#line 1078 "asmparse.y"
+#line 1071 "asmparse.y"
                                                              { int32_t* p = new (nothrow) int32_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
                                                                  for(int i=0; i<(yyvsp[0].int32); i++) p[i] = (yyvsp[-2].int32);
                                                                  PASM->EmitData(p, sizeof(int32_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int32_t)*(yyvsp[0].int32)); }
-#line 5834 "asmparse.cpp"
+#line 5827 "prebuilt\\asmparse.cpp"
     break;
 
   case 406: /* ddItem: INT16_ '(' int32 ')' ddItemCount  */
-#line 1085 "asmparse.y"
+#line 1078 "asmparse.y"
                                                              { int16_t i = (int16_t) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
                                                                int16_t* p = new (nothrow) int16_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
@@ -5842,11 +5835,11 @@ yyreduce:
                                                                  PASM->EmitData(p, sizeof(int16_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int16_t)*(yyvsp[0].int32)); }
-#line 5846 "asmparse.cpp"
+#line 5839 "prebuilt\\asmparse.cpp"
     break;
 
   case 407: /* ddItem: INT8_ '(' int32 ')' ddItemCount  */
-#line 1093 "asmparse.y"
+#line 1086 "asmparse.y"
                                                              { int8_t i = (int8_t) (yyvsp[-2].int32); FAIL_UNLESS(i == (yyvsp[-2].int32), ("Value %d too big\n", (yyvsp[-2].int32)));
                                                                int8_t* p = new (nothrow) int8_t[(yyvsp[0].int32)];
                                                                if(p != NULL) {
@@ -5854,726 +5847,726 @@ yyreduce:
                                                                  PASM->EmitData(p, sizeof(int8_t)*(yyvsp[0].int32)); delete [] p;
                                                                } else PASM->report->error("Out of memory emitting data block %d bytes\n",
                                                                      sizeof(int8_t)*(yyvsp[0].int32)); }
-#line 5858 "asmparse.cpp"
+#line 5851 "prebuilt\\asmparse.cpp"
     break;
 
   case 408: /* ddItem: FLOAT32_ ddItemCount  */
-#line 1100 "asmparse.y"
+#line 1093 "asmparse.y"
                                                              { PASM->EmitData(NULL, sizeof(float)*(yyvsp[0].int32)); }
-#line 5864 "asmparse.cpp"
+#line 5857 "prebuilt\\asmparse.cpp"
     break;
 
   case 409: /* ddItem: FLOAT64_ ddItemCount  */
-#line 1101 "asmparse.y"
+#line 1094 "asmparse.y"
                                                              { PASM->EmitData(NULL, sizeof(double)*(yyvsp[0].int32)); }
-#line 5870 "asmparse.cpp"
+#line 5863 "prebuilt\\asmparse.cpp"
     break;
 
   case 410: /* ddItem: INT64_ ddItemCount  */
-#line 1102 "asmparse.y"
+#line 1095 "asmparse.y"
                                                              { PASM->EmitData(NULL, sizeof(int64_t)*(yyvsp[0].int32)); }
-#line 5876 "asmparse.cpp"
+#line 5869 "prebuilt\\asmparse.cpp"
     break;
 
   case 411: /* ddItem: INT32_ ddItemCount  */
-#line 1103 "asmparse.y"
+#line 1096 "asmparse.y"
                                                              { PASM->EmitData(NULL, sizeof(int32_t)*(yyvsp[0].int32)); }
-#line 5882 "asmparse.cpp"
+#line 5875 "prebuilt\\asmparse.cpp"
     break;
 
   case 412: /* ddItem: INT16_ ddItemCount  */
-#line 1104 "asmparse.y"
+#line 1097 "asmparse.y"
                                                              { PASM->EmitData(NULL, sizeof(int16_t)*(yyvsp[0].int32)); }
-#line 5888 "asmparse.cpp"
+#line 5881 "prebuilt\\asmparse.cpp"
     break;
 
   case 413: /* ddItem: INT8_ ddItemCount  */
-#line 1105 "asmparse.y"
+#line 1098 "asmparse.y"
                                                              { PASM->EmitData(NULL, sizeof(int8_t)*(yyvsp[0].int32)); }
-#line 5894 "asmparse.cpp"
+#line 5887 "prebuilt\\asmparse.cpp"
     break;
 
   case 414: /* fieldSerInit: FLOAT32_ '(' float64 ')'  */
-#line 1109 "asmparse.y"
+#line 1102 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
                                                                float f = (float)(*(yyvsp[-1].float64));
                                                                (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[-1].float64); }
-#line 5902 "asmparse.cpp"
+#line 5895 "prebuilt\\asmparse.cpp"
     break;
 
   case 415: /* fieldSerInit: FLOAT64_ '(' float64 ')'  */
-#line 1112 "asmparse.y"
+#line 1105 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].float64)); delete (yyvsp[-1].float64); }
-#line 5909 "asmparse.cpp"
+#line 5902 "prebuilt\\asmparse.cpp"
     break;
 
   case 416: /* fieldSerInit: FLOAT32_ '(' int32 ')'  */
-#line 1114 "asmparse.y"
+#line 1107 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4);
                                                                (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5916 "asmparse.cpp"
+#line 5909 "prebuilt\\asmparse.cpp"
     break;
 
   case 417: /* fieldSerInit: FLOAT64_ '(' int64 ')'  */
-#line 1116 "asmparse.y"
+#line 1109 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5923 "asmparse.cpp"
+#line 5916 "prebuilt\\asmparse.cpp"
     break;
 
   case 418: /* fieldSerInit: INT64_ '(' int64 ')'  */
-#line 1118 "asmparse.y"
+#line 1111 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5930 "asmparse.cpp"
+#line 5923 "prebuilt\\asmparse.cpp"
     break;
 
   case 419: /* fieldSerInit: INT32_ '(' int32 ')'  */
-#line 1120 "asmparse.y"
+#line 1113 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I4);
                                                                (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5937 "asmparse.cpp"
+#line 5930 "prebuilt\\asmparse.cpp"
     break;
 
   case 420: /* fieldSerInit: INT16_ '(' int32 ')'  */
-#line 1122 "asmparse.y"
+#line 1115 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I2);
                                                                (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 5944 "asmparse.cpp"
+#line 5937 "prebuilt\\asmparse.cpp"
     break;
 
   case 421: /* fieldSerInit: INT8_ '(' int32 ')'  */
-#line 1124 "asmparse.y"
+#line 1117 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I1);
                                                                (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
-#line 5951 "asmparse.cpp"
+#line 5944 "prebuilt\\asmparse.cpp"
     break;
 
   case 422: /* fieldSerInit: UNSIGNED_ INT64_ '(' int64 ')'  */
-#line 1126 "asmparse.y"
+#line 1119 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5958 "asmparse.cpp"
+#line 5951 "prebuilt\\asmparse.cpp"
     break;
 
   case 423: /* fieldSerInit: UNSIGNED_ INT32_ '(' int32 ')'  */
-#line 1128 "asmparse.y"
+#line 1121 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4);
                                                                (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5965 "asmparse.cpp"
+#line 5958 "prebuilt\\asmparse.cpp"
     break;
 
   case 424: /* fieldSerInit: UNSIGNED_ INT16_ '(' int32 ')'  */
-#line 1130 "asmparse.y"
+#line 1123 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2);
                                                                (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 5972 "asmparse.cpp"
+#line 5965 "prebuilt\\asmparse.cpp"
     break;
 
   case 425: /* fieldSerInit: UNSIGNED_ INT8_ '(' int32 ')'  */
-#line 1132 "asmparse.y"
+#line 1125 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1);
                                                                (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
-#line 5979 "asmparse.cpp"
+#line 5972 "prebuilt\\asmparse.cpp"
     break;
 
   case 426: /* fieldSerInit: UINT64_ '(' int64 ')'  */
-#line 1134 "asmparse.y"
+#line 1127 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[-1].int64)); delete (yyvsp[-1].int64); }
-#line 5986 "asmparse.cpp"
+#line 5979 "prebuilt\\asmparse.cpp"
     break;
 
   case 427: /* fieldSerInit: UINT32_ '(' int32 ')'  */
-#line 1136 "asmparse.y"
+#line 1129 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4);
                                                                (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 5993 "asmparse.cpp"
+#line 5986 "prebuilt\\asmparse.cpp"
     break;
 
   case 428: /* fieldSerInit: UINT16_ '(' int32 ')'  */
-#line 1138 "asmparse.y"
+#line 1131 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2);
                                                                (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 6000 "asmparse.cpp"
+#line 5993 "prebuilt\\asmparse.cpp"
     break;
 
   case 429: /* fieldSerInit: UINT8_ '(' int32 ')'  */
-#line 1140 "asmparse.y"
+#line 1133 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1);
                                                                (yyval.binstr)->appendInt8((yyvsp[-1].int32)); }
-#line 6007 "asmparse.cpp"
+#line 6000 "prebuilt\\asmparse.cpp"
     break;
 
   case 430: /* fieldSerInit: CHAR_ '(' int32 ')'  */
-#line 1142 "asmparse.y"
+#line 1135 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CHAR);
                                                                (yyval.binstr)->appendInt16((yyvsp[-1].int32)); }
-#line 6014 "asmparse.cpp"
+#line 6007 "prebuilt\\asmparse.cpp"
     break;
 
   case 431: /* fieldSerInit: BOOL_ '(' truefalse ')'  */
-#line 1144 "asmparse.y"
+#line 1137 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_BOOLEAN);
                                                                (yyval.binstr)->appendInt8((yyvsp[-1].int32));}
-#line 6021 "asmparse.cpp"
+#line 6014 "prebuilt\\asmparse.cpp"
     break;
 
   case 432: /* fieldSerInit: bytearrayhead bytes ')'  */
-#line 1146 "asmparse.y"
+#line 1139 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING);
                                                                (yyval.binstr)->append((yyvsp[-1].binstr)); delete (yyvsp[-1].binstr);}
-#line 6028 "asmparse.cpp"
+#line 6021 "prebuilt\\asmparse.cpp"
     break;
 
   case 433: /* bytearrayhead: BYTEARRAY_ '('  */
-#line 1150 "asmparse.y"
+#line 1143 "asmparse.y"
                                                              { bParsingByteArray = TRUE; }
-#line 6034 "asmparse.cpp"
+#line 6027 "prebuilt\\asmparse.cpp"
     break;
 
   case 434: /* bytes: %empty  */
-#line 1153 "asmparse.y"
+#line 1146 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6040 "asmparse.cpp"
+#line 6033 "prebuilt\\asmparse.cpp"
     break;
 
   case 435: /* bytes: hexbytes  */
-#line 1154 "asmparse.y"
+#line 1147 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6046 "asmparse.cpp"
+#line 6039 "prebuilt\\asmparse.cpp"
     break;
 
   case 436: /* hexbytes: HEXBYTE  */
-#line 1157 "asmparse.y"
+#line 1150 "asmparse.y"
                                                              { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(i); }
-#line 6052 "asmparse.cpp"
+#line 6045 "prebuilt\\asmparse.cpp"
     break;
 
   case 437: /* hexbytes: hexbytes HEXBYTE  */
-#line 1158 "asmparse.y"
+#line 1151 "asmparse.y"
                                                              { int8_t i = (int8_t) (yyvsp[0].int32); (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(i); }
-#line 6058 "asmparse.cpp"
+#line 6051 "prebuilt\\asmparse.cpp"
     break;
 
   case 438: /* fieldInit: fieldSerInit  */
-#line 1162 "asmparse.y"
+#line 1155 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6064 "asmparse.cpp"
+#line 6057 "prebuilt\\asmparse.cpp"
     break;
 
   case 439: /* fieldInit: compQstring  */
-#line 1163 "asmparse.y"
+#line 1156 "asmparse.y"
                                                              { (yyval.binstr) = BinStrToUnicode((yyvsp[0].binstr),true); (yyval.binstr)->insertInt8(ELEMENT_TYPE_STRING);}
-#line 6070 "asmparse.cpp"
+#line 6063 "prebuilt\\asmparse.cpp"
     break;
 
   case 440: /* fieldInit: NULLREF_  */
-#line 1164 "asmparse.y"
+#line 1157 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CLASS);
                                                                (yyval.binstr)->appendInt32(0); }
-#line 6077 "asmparse.cpp"
+#line 6070 "prebuilt\\asmparse.cpp"
     break;
 
   case 441: /* serInit: fieldSerInit  */
-#line 1169 "asmparse.y"
+#line 1162 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6083 "asmparse.cpp"
+#line 6076 "prebuilt\\asmparse.cpp"
     break;
 
   case 442: /* serInit: STRING_ '(' NULLREF_ ')'  */
-#line 1170 "asmparse.y"
+#line 1163 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); (yyval.binstr)->appendInt8(0xFF); }
-#line 6089 "asmparse.cpp"
+#line 6082 "prebuilt\\asmparse.cpp"
     break;
 
   case 443: /* serInit: STRING_ '(' SQSTRING ')'  */
-#line 1171 "asmparse.y"
+#line 1164 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING);
                                                                AppendStringWithLength((yyval.binstr),(yyvsp[-1].string)); delete [] (yyvsp[-1].string);}
-#line 6096 "asmparse.cpp"
+#line 6089 "prebuilt\\asmparse.cpp"
     break;
 
   case 444: /* serInit: TYPE_ '(' CLASS_ SQSTRING ')'  */
-#line 1173 "asmparse.y"
+#line 1166 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE);
                                                                AppendStringWithLength((yyval.binstr),(yyvsp[-1].string)); delete [] (yyvsp[-1].string);}
-#line 6103 "asmparse.cpp"
+#line 6096 "prebuilt\\asmparse.cpp"
     break;
 
   case 445: /* serInit: TYPE_ '(' className ')'  */
-#line 1175 "asmparse.y"
+#line 1168 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE);
                                                                AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[-1].token)));}
-#line 6110 "asmparse.cpp"
+#line 6103 "prebuilt\\asmparse.cpp"
     break;
 
   case 446: /* serInit: TYPE_ '(' NULLREF_ ')'  */
-#line 1177 "asmparse.y"
+#line 1170 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_TYPE); (yyval.binstr)->appendInt8(0xFF); }
-#line 6116 "asmparse.cpp"
+#line 6109 "prebuilt\\asmparse.cpp"
     break;
 
   case 447: /* serInit: OBJECT_ '(' serInit ')'  */
-#line 1178 "asmparse.y"
+#line 1171 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);}
-#line 6122 "asmparse.cpp"
+#line 6115 "prebuilt\\asmparse.cpp"
     break;
 
   case 448: /* serInit: FLOAT32_ '[' int32 ']' '(' f32seq ')'  */
-#line 1180 "asmparse.y"
+#line 1173 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_R4);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6130 "asmparse.cpp"
+#line 6123 "prebuilt\\asmparse.cpp"
     break;
 
   case 449: /* serInit: FLOAT64_ '[' int32 ']' '(' f64seq ')'  */
-#line 1184 "asmparse.y"
+#line 1177 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_R8);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6138 "asmparse.cpp"
+#line 6131 "prebuilt\\asmparse.cpp"
     break;
 
   case 450: /* serInit: INT64_ '[' int32 ']' '(' i64seq ')'  */
-#line 1188 "asmparse.y"
+#line 1181 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_I8);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6146 "asmparse.cpp"
+#line 6139 "prebuilt\\asmparse.cpp"
     break;
 
   case 451: /* serInit: INT32_ '[' int32 ']' '(' i32seq ')'  */
-#line 1192 "asmparse.y"
+#line 1185 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_I4);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6154 "asmparse.cpp"
+#line 6147 "prebuilt\\asmparse.cpp"
     break;
 
   case 452: /* serInit: INT16_ '[' int32 ']' '(' i16seq ')'  */
-#line 1196 "asmparse.y"
+#line 1189 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_I2);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6162 "asmparse.cpp"
+#line 6155 "prebuilt\\asmparse.cpp"
     break;
 
   case 453: /* serInit: INT8_ '[' int32 ']' '(' i8seq ')'  */
-#line 1200 "asmparse.y"
+#line 1193 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_I1);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6170 "asmparse.cpp"
+#line 6163 "prebuilt\\asmparse.cpp"
     break;
 
   case 454: /* serInit: UINT64_ '[' int32 ']' '(' i64seq ')'  */
-#line 1204 "asmparse.y"
+#line 1197 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U8);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6178 "asmparse.cpp"
+#line 6171 "prebuilt\\asmparse.cpp"
     break;
 
   case 455: /* serInit: UINT32_ '[' int32 ']' '(' i32seq ')'  */
-#line 1208 "asmparse.y"
+#line 1201 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U4);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6186 "asmparse.cpp"
+#line 6179 "prebuilt\\asmparse.cpp"
     break;
 
   case 456: /* serInit: UINT16_ '[' int32 ']' '(' i16seq ')'  */
-#line 1212 "asmparse.y"
+#line 1205 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U2);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6194 "asmparse.cpp"
+#line 6187 "prebuilt\\asmparse.cpp"
     break;
 
   case 457: /* serInit: UINT8_ '[' int32 ']' '(' i8seq ')'  */
-#line 1216 "asmparse.y"
+#line 1209 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U1);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6202 "asmparse.cpp"
+#line 6195 "prebuilt\\asmparse.cpp"
     break;
 
   case 458: /* serInit: UNSIGNED_ INT64_ '[' int32 ']' '(' i64seq ')'  */
-#line 1220 "asmparse.y"
+#line 1213 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U8);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6210 "asmparse.cpp"
+#line 6203 "prebuilt\\asmparse.cpp"
     break;
 
   case 459: /* serInit: UNSIGNED_ INT32_ '[' int32 ']' '(' i32seq ')'  */
-#line 1224 "asmparse.y"
+#line 1217 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U4);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6218 "asmparse.cpp"
+#line 6211 "prebuilt\\asmparse.cpp"
     break;
 
   case 460: /* serInit: UNSIGNED_ INT16_ '[' int32 ']' '(' i16seq ')'  */
-#line 1228 "asmparse.y"
+#line 1221 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U2);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6226 "asmparse.cpp"
+#line 6219 "prebuilt\\asmparse.cpp"
     break;
 
   case 461: /* serInit: UNSIGNED_ INT8_ '[' int32 ']' '(' i8seq ')'  */
-#line 1232 "asmparse.y"
+#line 1225 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_U1);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6234 "asmparse.cpp"
+#line 6227 "prebuilt\\asmparse.cpp"
     break;
 
   case 462: /* serInit: CHAR_ '[' int32 ']' '(' i16seq ')'  */
-#line 1236 "asmparse.y"
+#line 1229 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_CHAR);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6242 "asmparse.cpp"
+#line 6235 "prebuilt\\asmparse.cpp"
     break;
 
   case 463: /* serInit: BOOL_ '[' int32 ']' '(' boolSeq ')'  */
-#line 1240 "asmparse.y"
+#line 1233 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_BOOLEAN);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6250 "asmparse.cpp"
+#line 6243 "prebuilt\\asmparse.cpp"
     break;
 
   case 464: /* serInit: STRING_ '[' int32 ']' '(' sqstringSeq ')'  */
-#line 1244 "asmparse.y"
+#line 1237 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_STRING);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6258 "asmparse.cpp"
+#line 6251 "prebuilt\\asmparse.cpp"
     break;
 
   case 465: /* serInit: TYPE_ '[' int32 ']' '(' classSeq ')'  */
-#line 1248 "asmparse.y"
+#line 1241 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TYPE);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6266 "asmparse.cpp"
+#line 6259 "prebuilt\\asmparse.cpp"
     break;
 
   case 466: /* serInit: OBJECT_ '[' int32 ']' '(' objSeq ')'  */
-#line 1252 "asmparse.y"
+#line 1245 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt32((yyvsp[-4].int32));
                                                                (yyval.binstr)->insertInt8(SERIALIZATION_TYPE_TAGGED_OBJECT);
                                                                (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 6274 "asmparse.cpp"
+#line 6267 "prebuilt\\asmparse.cpp"
     break;
 
   case 467: /* f32seq: %empty  */
-#line 1258 "asmparse.y"
+#line 1251 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6280 "asmparse.cpp"
+#line 6273 "prebuilt\\asmparse.cpp"
     break;
 
   case 468: /* f32seq: f32seq float64  */
-#line 1259 "asmparse.y"
+#line 1252 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                float f = (float) (*(yyvsp[0].float64)); (yyval.binstr)->appendInt32(*((int32_t*)&f)); delete (yyvsp[0].float64); }
-#line 6287 "asmparse.cpp"
+#line 6280 "prebuilt\\asmparse.cpp"
     break;
 
   case 469: /* f32seq: f32seq int32  */
-#line 1261 "asmparse.y"
+#line 1254 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
-#line 6294 "asmparse.cpp"
+#line 6287 "prebuilt\\asmparse.cpp"
     break;
 
   case 470: /* f64seq: %empty  */
-#line 1265 "asmparse.y"
+#line 1258 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6300 "asmparse.cpp"
+#line 6293 "prebuilt\\asmparse.cpp"
     break;
 
   case 471: /* f64seq: f64seq float64  */
-#line 1266 "asmparse.y"
+#line 1259 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].float64)); delete (yyvsp[0].float64); }
-#line 6307 "asmparse.cpp"
+#line 6300 "prebuilt\\asmparse.cpp"
     break;
 
   case 472: /* f64seq: f64seq int64  */
-#line 1268 "asmparse.y"
+#line 1261 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
-#line 6314 "asmparse.cpp"
+#line 6307 "prebuilt\\asmparse.cpp"
     break;
 
   case 473: /* i64seq: %empty  */
-#line 1272 "asmparse.y"
+#line 1265 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6320 "asmparse.cpp"
+#line 6313 "prebuilt\\asmparse.cpp"
     break;
 
   case 474: /* i64seq: i64seq int64  */
-#line 1273 "asmparse.y"
+#line 1266 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                (yyval.binstr)->appendInt64((int64_t *)(yyvsp[0].int64)); delete (yyvsp[0].int64); }
-#line 6327 "asmparse.cpp"
+#line 6320 "prebuilt\\asmparse.cpp"
     break;
 
   case 475: /* i32seq: %empty  */
-#line 1277 "asmparse.y"
+#line 1270 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6333 "asmparse.cpp"
+#line 6326 "prebuilt\\asmparse.cpp"
     break;
 
   case 476: /* i32seq: i32seq int32  */
-#line 1278 "asmparse.y"
+#line 1271 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt32((yyvsp[0].int32));}
-#line 6339 "asmparse.cpp"
+#line 6332 "prebuilt\\asmparse.cpp"
     break;
 
   case 477: /* i16seq: %empty  */
-#line 1281 "asmparse.y"
+#line 1274 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6345 "asmparse.cpp"
+#line 6338 "prebuilt\\asmparse.cpp"
     break;
 
   case 478: /* i16seq: i16seq int32  */
-#line 1282 "asmparse.y"
+#line 1275 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt16((yyvsp[0].int32));}
-#line 6351 "asmparse.cpp"
+#line 6344 "prebuilt\\asmparse.cpp"
     break;
 
   case 479: /* i8seq: %empty  */
-#line 1285 "asmparse.y"
+#line 1278 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6357 "asmparse.cpp"
+#line 6350 "prebuilt\\asmparse.cpp"
     break;
 
   case 480: /* i8seq: i8seq int32  */
-#line 1286 "asmparse.y"
+#line 1279 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8((yyvsp[0].int32)); }
-#line 6363 "asmparse.cpp"
+#line 6356 "prebuilt\\asmparse.cpp"
     break;
 
   case 481: /* boolSeq: %empty  */
-#line 1289 "asmparse.y"
+#line 1282 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6369 "asmparse.cpp"
+#line 6362 "prebuilt\\asmparse.cpp"
     break;
 
   case 482: /* boolSeq: boolSeq truefalse  */
-#line 1290 "asmparse.y"
+#line 1283 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                (yyval.binstr)->appendInt8((yyvsp[0].int32));}
-#line 6376 "asmparse.cpp"
+#line 6369 "prebuilt\\asmparse.cpp"
     break;
 
   case 483: /* sqstringSeq: %empty  */
-#line 1294 "asmparse.y"
+#line 1287 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6382 "asmparse.cpp"
+#line 6375 "prebuilt\\asmparse.cpp"
     break;
 
   case 484: /* sqstringSeq: sqstringSeq NULLREF_  */
-#line 1295 "asmparse.y"
+#line 1288 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(0xFF); }
-#line 6388 "asmparse.cpp"
+#line 6381 "prebuilt\\asmparse.cpp"
     break;
 
   case 485: /* sqstringSeq: sqstringSeq SQSTRING  */
-#line 1296 "asmparse.y"
+#line 1289 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); delete [] (yyvsp[0].string);}
-#line 6395 "asmparse.cpp"
+#line 6388 "prebuilt\\asmparse.cpp"
     break;
 
   case 486: /* classSeq: %empty  */
-#line 1300 "asmparse.y"
+#line 1293 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6401 "asmparse.cpp"
+#line 6394 "prebuilt\\asmparse.cpp"
     break;
 
   case 487: /* classSeq: classSeq NULLREF_  */
-#line 1301 "asmparse.y"
+#line 1294 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->appendInt8(0xFF); }
-#line 6407 "asmparse.cpp"
+#line 6400 "prebuilt\\asmparse.cpp"
     break;
 
   case 488: /* classSeq: classSeq CLASS_ SQSTRING  */
-#line 1302 "asmparse.y"
+#line 1295 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-2].binstr);
                                                                AppendStringWithLength((yyval.binstr),(yyvsp[0].string)); delete [] (yyvsp[0].string);}
-#line 6414 "asmparse.cpp"
+#line 6407 "prebuilt\\asmparse.cpp"
     break;
 
   case 489: /* classSeq: classSeq className  */
-#line 1304 "asmparse.y"
+#line 1297 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr);
                                                                AppendStringWithLength((yyval.binstr),PASM->ReflectionNotation((yyvsp[0].token)));}
-#line 6421 "asmparse.cpp"
+#line 6414 "prebuilt\\asmparse.cpp"
     break;
 
   case 490: /* objSeq: %empty  */
-#line 1308 "asmparse.y"
+#line 1301 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6427 "asmparse.cpp"
+#line 6420 "prebuilt\\asmparse.cpp"
     break;
 
   case 491: /* objSeq: objSeq serInit  */
-#line 1309 "asmparse.y"
+#line 1302 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 6433 "asmparse.cpp"
+#line 6426 "prebuilt\\asmparse.cpp"
     break;
 
   case 492: /* methodSpec: METHOD_  */
-#line 1313 "asmparse.y"
+#line 1306 "asmparse.y"
                                                              { parser->m_ANSFirst.PUSH(PASM->m_firstArgName);
                                                                parser->m_ANSLast.PUSH(PASM->m_lastArgName);
                                                                PASM->m_firstArgName = NULL;
                                                                PASM->m_lastArgName = NULL; }
-#line 6442 "asmparse.cpp"
+#line 6435 "prebuilt\\asmparse.cpp"
     break;
 
   case 493: /* instr_none: INSTR_NONE  */
-#line 1319 "asmparse.y"
+#line 1312 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6448 "asmparse.cpp"
+#line 6441 "prebuilt\\asmparse.cpp"
     break;
 
   case 494: /* instr_var: INSTR_VAR  */
-#line 1322 "asmparse.y"
+#line 1315 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6454 "asmparse.cpp"
+#line 6447 "prebuilt\\asmparse.cpp"
     break;
 
   case 495: /* instr_i: INSTR_I  */
-#line 1325 "asmparse.y"
+#line 1318 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6460 "asmparse.cpp"
+#line 6453 "prebuilt\\asmparse.cpp"
     break;
 
   case 496: /* instr_i8: INSTR_I8  */
-#line 1328 "asmparse.y"
+#line 1321 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6466 "asmparse.cpp"
+#line 6459 "prebuilt\\asmparse.cpp"
     break;
 
   case 497: /* instr_r: INSTR_R  */
-#line 1331 "asmparse.y"
+#line 1324 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6472 "asmparse.cpp"
+#line 6465 "prebuilt\\asmparse.cpp"
     break;
 
   case 498: /* instr_brtarget: INSTR_BRTARGET  */
-#line 1334 "asmparse.y"
+#line 1327 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6478 "asmparse.cpp"
+#line 6471 "prebuilt\\asmparse.cpp"
     break;
 
   case 499: /* instr_method: INSTR_METHOD  */
-#line 1337 "asmparse.y"
+#line 1330 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode));
                                                                if((!PASM->OnErrGo)&&
                                                                (((yyvsp[0].opcode) == CEE_NEWOBJ)||
                                                                 ((yyvsp[0].opcode) == CEE_CALLVIRT)))
                                                                   iCallConv = IMAGE_CEE_CS_CALLCONV_HASTHIS;
                                                              }
-#line 6489 "asmparse.cpp"
+#line 6482 "prebuilt\\asmparse.cpp"
     break;
 
   case 500: /* instr_field: INSTR_FIELD  */
-#line 1345 "asmparse.y"
+#line 1338 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6495 "asmparse.cpp"
+#line 6488 "prebuilt\\asmparse.cpp"
     break;
 
   case 501: /* instr_type: INSTR_TYPE  */
-#line 1348 "asmparse.y"
+#line 1341 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6501 "asmparse.cpp"
+#line 6494 "prebuilt\\asmparse.cpp"
     break;
 
   case 502: /* instr_string: INSTR_STRING  */
-#line 1351 "asmparse.y"
+#line 1344 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6507 "asmparse.cpp"
+#line 6500 "prebuilt\\asmparse.cpp"
     break;
 
   case 503: /* instr_sig: INSTR_SIG  */
-#line 1354 "asmparse.y"
+#line 1347 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6513 "asmparse.cpp"
+#line 6506 "prebuilt\\asmparse.cpp"
     break;
 
   case 504: /* instr_tok: INSTR_TOK  */
-#line 1357 "asmparse.y"
+#line 1350 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); iOpcodeLen = PASM->OpcodeLen((yyval.instr)); }
-#line 6519 "asmparse.cpp"
+#line 6512 "prebuilt\\asmparse.cpp"
     break;
 
   case 505: /* instr_switch: INSTR_SWITCH  */
-#line 1360 "asmparse.y"
+#line 1353 "asmparse.y"
                                                              { (yyval.instr) = SetupInstr((yyvsp[0].opcode)); }
-#line 6525 "asmparse.cpp"
+#line 6518 "prebuilt\\asmparse.cpp"
     break;
 
   case 506: /* instr_r_head: instr_r '('  */
-#line 1363 "asmparse.y"
+#line 1356 "asmparse.y"
                                                              { (yyval.instr) = (yyvsp[-1].instr); bParsingByteArray = TRUE; }
-#line 6531 "asmparse.cpp"
+#line 6524 "prebuilt\\asmparse.cpp"
     break;
 
   case 507: /* instr: instr_none  */
-#line 1367 "asmparse.y"
+#line 1360 "asmparse.y"
                                                              { PASM->EmitOpcode((yyvsp[0].instr)); }
-#line 6537 "asmparse.cpp"
+#line 6530 "prebuilt\\asmparse.cpp"
     break;
 
   case 508: /* instr: instr_var int32  */
-#line 1368 "asmparse.y"
+#line 1361 "asmparse.y"
                                                              { PASM->EmitInstrVar((yyvsp[-1].instr), (yyvsp[0].int32)); }
-#line 6543 "asmparse.cpp"
+#line 6536 "prebuilt\\asmparse.cpp"
     break;
 
   case 509: /* instr: instr_var id  */
-#line 1369 "asmparse.y"
+#line 1362 "asmparse.y"
                                                              { PASM->EmitInstrVarByName((yyvsp[-1].instr), (yyvsp[0].string)); }
-#line 6549 "asmparse.cpp"
+#line 6542 "prebuilt\\asmparse.cpp"
     break;
 
   case 510: /* instr: instr_i int32  */
-#line 1370 "asmparse.y"
+#line 1363 "asmparse.y"
                                                              { PASM->EmitInstrI((yyvsp[-1].instr), (yyvsp[0].int32)); }
-#line 6555 "asmparse.cpp"
+#line 6548 "prebuilt\\asmparse.cpp"
     break;
 
   case 511: /* instr: instr_i8 int64  */
-#line 1371 "asmparse.y"
+#line 1364 "asmparse.y"
                                                              { PASM->EmitInstrI8((yyvsp[-1].instr), (yyvsp[0].int64)); }
-#line 6561 "asmparse.cpp"
+#line 6554 "prebuilt\\asmparse.cpp"
     break;
 
   case 512: /* instr: instr_r float64  */
-#line 1372 "asmparse.y"
+#line 1365 "asmparse.y"
                                                              { PASM->EmitInstrR((yyvsp[-1].instr), (yyvsp[0].float64)); delete ((yyvsp[0].float64));}
-#line 6567 "asmparse.cpp"
+#line 6560 "prebuilt\\asmparse.cpp"
     break;
 
   case 513: /* instr: instr_r int64  */
-#line 1373 "asmparse.y"
+#line 1366 "asmparse.y"
                                                              { double f = (double) (*(yyvsp[0].int64)); PASM->EmitInstrR((yyvsp[-1].instr), &f); }
-#line 6573 "asmparse.cpp"
+#line 6566 "prebuilt\\asmparse.cpp"
     break;
 
   case 514: /* instr: instr_r_head bytes ')'  */
-#line 1374 "asmparse.y"
+#line 1367 "asmparse.y"
                                                              { unsigned L = (yyvsp[-1].binstr)->length();
                                                                FAIL_UNLESS(L >= sizeof(float), ("%d hexbytes, must be at least %d\n",
                                                                            L,sizeof(float)));
@@ -6583,34 +6576,34 @@ yyreduce:
                                                                                     : (double)(*(float *)((yyvsp[-1].binstr)->ptr()));
                                                                    PASM->EmitInstrR((yyvsp[-2].instr),&f); }
                                                                delete (yyvsp[-1].binstr); }
-#line 6587 "asmparse.cpp"
+#line 6580 "prebuilt\\asmparse.cpp"
     break;
 
   case 515: /* instr: instr_brtarget int32  */
-#line 1383 "asmparse.y"
+#line 1376 "asmparse.y"
                                                              { PASM->EmitInstrBrOffset((yyvsp[-1].instr), (yyvsp[0].int32)); }
-#line 6593 "asmparse.cpp"
+#line 6586 "prebuilt\\asmparse.cpp"
     break;
 
   case 516: /* instr: instr_brtarget id  */
-#line 1384 "asmparse.y"
+#line 1377 "asmparse.y"
                                                              { PASM->EmitInstrBrTarget((yyvsp[-1].instr), (yyvsp[0].string)); }
-#line 6599 "asmparse.cpp"
+#line 6592 "prebuilt\\asmparse.cpp"
     break;
 
   case 517: /* instr: instr_method methodRef  */
-#line 1386 "asmparse.y"
+#line 1379 "asmparse.y"
                                                              { PASM->SetMemberRefFixup((yyvsp[0].token),PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),(yyvsp[0].token));
                                                                PASM->m_tkCurrentCVOwner = (yyvsp[0].token);
                                                                PASM->m_pCustomDescrList = NULL;
                                                                iCallConv = 0;
                                                              }
-#line 6610 "asmparse.cpp"
+#line 6603 "prebuilt\\asmparse.cpp"
     break;
 
   case 518: /* instr: instr_field type typeSpec DCOLON dottedName  */
-#line 1393 "asmparse.y"
+#line 1386 "asmparse.y"
                                                              { (yyvsp[-3].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef((yyvsp[-2].token), (yyvsp[0].string), (yyvsp[-3].binstr));
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-4].instr)));
@@ -6618,11 +6611,11 @@ yyreduce:
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6622 "asmparse.cpp"
+#line 6615 "prebuilt\\asmparse.cpp"
     break;
 
   case 519: /* instr: instr_field type dottedName  */
-#line 1401 "asmparse.y"
+#line 1394 "asmparse.y"
                                                              { (yyvsp[-1].binstr)->insertInt8(IMAGE_CEE_CS_CALLCONV_FIELD);
                                                                mdToken mr = PASM->MakeMemberRef(mdTokenNil, (yyvsp[0].string), (yyvsp[-1].binstr));
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-2].instr)));
@@ -6630,1067 +6623,1067 @@ yyreduce:
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6634 "asmparse.cpp"
+#line 6627 "prebuilt\\asmparse.cpp"
     break;
 
   case 520: /* instr: instr_field mdtoken  */
-#line 1408 "asmparse.y"
+#line 1401 "asmparse.y"
                                                              { mdToken mr = (yyvsp[0].token);
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),mr);
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6645 "asmparse.cpp"
+#line 6638 "prebuilt\\asmparse.cpp"
     break;
 
   case 521: /* instr: instr_field TYPEDEF_F  */
-#line 1414 "asmparse.y"
+#line 1407 "asmparse.y"
                                                              { mdToken mr = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),mr);
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6656 "asmparse.cpp"
+#line 6649 "prebuilt\\asmparse.cpp"
     break;
 
   case 522: /* instr: instr_field TYPEDEF_MR  */
-#line 1420 "asmparse.y"
+#line 1413 "asmparse.y"
                                                              { mdToken mr = (yyvsp[0].tdd)->m_tkTypeSpec;
                                                                PASM->SetMemberRefFixup(mr, PASM->OpcodeLen((yyvsp[-1].instr)));
                                                                PASM->EmitInstrI((yyvsp[-1].instr),mr);
                                                                PASM->m_tkCurrentCVOwner = mr;
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6667 "asmparse.cpp"
+#line 6660 "prebuilt\\asmparse.cpp"
     break;
 
   case 523: /* instr: instr_type typeSpec  */
-#line 1426 "asmparse.y"
+#line 1419 "asmparse.y"
                                                              { PASM->EmitInstrI((yyvsp[-1].instr), (yyvsp[0].token));
                                                                PASM->m_tkCurrentCVOwner = (yyvsp[0].token);
                                                                PASM->m_pCustomDescrList = NULL;
                                                              }
-#line 6676 "asmparse.cpp"
+#line 6669 "prebuilt\\asmparse.cpp"
     break;
 
   case 524: /* instr: instr_string compQstring  */
-#line 1430 "asmparse.y"
+#line 1423 "asmparse.y"
                                                              { PASM->EmitInstrStringLiteral((yyvsp[-1].instr), (yyvsp[0].binstr),TRUE); }
-#line 6682 "asmparse.cpp"
+#line 6675 "prebuilt\\asmparse.cpp"
     break;
 
   case 525: /* instr: instr_string ANSI_ '(' compQstring ')'  */
-#line 1432 "asmparse.y"
+#line 1425 "asmparse.y"
                                                              { PASM->EmitInstrStringLiteral((yyvsp[-4].instr), (yyvsp[-1].binstr),FALSE); }
-#line 6688 "asmparse.cpp"
+#line 6681 "prebuilt\\asmparse.cpp"
     break;
 
   case 526: /* instr: instr_string bytearrayhead bytes ')'  */
-#line 1434 "asmparse.y"
+#line 1427 "asmparse.y"
                                                              { PASM->EmitInstrStringLiteral((yyvsp[-3].instr), (yyvsp[-1].binstr),FALSE,TRUE); }
-#line 6694 "asmparse.cpp"
+#line 6687 "prebuilt\\asmparse.cpp"
     break;
 
   case 527: /* instr: instr_sig callConv type '(' sigArgs0 ')'  */
-#line 1436 "asmparse.y"
+#line 1429 "asmparse.y"
                                                              { PASM->EmitInstrSig((yyvsp[-5].instr), parser->MakeSig((yyvsp[-4].int32), (yyvsp[-3].binstr), (yyvsp[-1].binstr)));
                                                                PASM->ResetArgNameList();
                                                              }
-#line 6702 "asmparse.cpp"
+#line 6695 "prebuilt\\asmparse.cpp"
     break;
 
   case 528: /* instr: instr_tok ownerType  */
-#line 1440 "asmparse.y"
+#line 1433 "asmparse.y"
                                                              { PASM->EmitInstrI((yyvsp[-1].instr),(yyvsp[0].token));
                                                                PASM->m_tkCurrentCVOwner = (yyvsp[0].token);
                                                                PASM->m_pCustomDescrList = NULL;
                                                                iOpcodeLen = 0;
                                                              }
-#line 6712 "asmparse.cpp"
+#line 6705 "prebuilt\\asmparse.cpp"
     break;
 
   case 529: /* instr: instr_switch '(' labels ')'  */
-#line 1445 "asmparse.y"
+#line 1438 "asmparse.y"
                                                              { PASM->EmitInstrSwitch((yyvsp[-3].instr), (yyvsp[-1].labels)); }
-#line 6718 "asmparse.cpp"
+#line 6711 "prebuilt\\asmparse.cpp"
     break;
 
   case 530: /* labels: %empty  */
-#line 1448 "asmparse.y"
+#line 1441 "asmparse.y"
                                                               { (yyval.labels) = 0; }
-#line 6724 "asmparse.cpp"
+#line 6717 "prebuilt\\asmparse.cpp"
     break;
 
   case 531: /* labels: id ',' labels  */
-#line 1449 "asmparse.y"
+#line 1442 "asmparse.y"
                                                               { (yyval.labels) = new Labels((yyvsp[-2].string), (yyvsp[0].labels), TRUE); }
-#line 6730 "asmparse.cpp"
+#line 6723 "prebuilt\\asmparse.cpp"
     break;
 
   case 532: /* labels: int32 ',' labels  */
-#line 1450 "asmparse.y"
+#line 1443 "asmparse.y"
                                                               { (yyval.labels) = new Labels((char *)(UINT_PTR)(yyvsp[-2].int32), (yyvsp[0].labels), FALSE); }
-#line 6736 "asmparse.cpp"
+#line 6729 "prebuilt\\asmparse.cpp"
     break;
 
   case 533: /* labels: id  */
-#line 1451 "asmparse.y"
+#line 1444 "asmparse.y"
                                                               { (yyval.labels) = new Labels((yyvsp[0].string), NULL, TRUE); }
-#line 6742 "asmparse.cpp"
+#line 6735 "prebuilt\\asmparse.cpp"
     break;
 
   case 534: /* labels: int32  */
-#line 1452 "asmparse.y"
+#line 1445 "asmparse.y"
                                                               { (yyval.labels) = new Labels((char *)(UINT_PTR)(yyvsp[0].int32), NULL, FALSE); }
-#line 6748 "asmparse.cpp"
+#line 6741 "prebuilt\\asmparse.cpp"
     break;
 
   case 535: /* tyArgs0: %empty  */
-#line 1456 "asmparse.y"
+#line 1449 "asmparse.y"
                                                              { (yyval.binstr) = NULL; }
-#line 6754 "asmparse.cpp"
+#line 6747 "prebuilt\\asmparse.cpp"
     break;
 
   case 536: /* tyArgs0: '<' tyArgs1 '>'  */
-#line 1457 "asmparse.y"
+#line 1450 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-1].binstr); }
-#line 6760 "asmparse.cpp"
+#line 6753 "prebuilt\\asmparse.cpp"
     break;
 
   case 537: /* tyArgs1: %empty  */
-#line 1460 "asmparse.y"
+#line 1453 "asmparse.y"
                                                              { (yyval.binstr) = NULL; }
-#line 6766 "asmparse.cpp"
+#line 6759 "prebuilt\\asmparse.cpp"
     break;
 
   case 538: /* tyArgs1: tyArgs2  */
-#line 1461 "asmparse.y"
+#line 1454 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6772 "asmparse.cpp"
+#line 6765 "prebuilt\\asmparse.cpp"
     break;
 
   case 539: /* tyArgs2: type  */
-#line 1464 "asmparse.y"
+#line 1457 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6778 "asmparse.cpp"
+#line 6771 "prebuilt\\asmparse.cpp"
     break;
 
   case 540: /* tyArgs2: tyArgs2 ',' type  */
-#line 1465 "asmparse.y"
+#line 1458 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 6784 "asmparse.cpp"
+#line 6777 "prebuilt\\asmparse.cpp"
     break;
 
   case 541: /* sigArgs0: %empty  */
-#line 1469 "asmparse.y"
+#line 1462 "asmparse.y"
                                                              { (yyval.binstr) = new BinStr(); }
-#line 6790 "asmparse.cpp"
+#line 6783 "prebuilt\\asmparse.cpp"
     break;
 
   case 542: /* sigArgs0: sigArgs1  */
-#line 1470 "asmparse.y"
+#line 1463 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr);}
-#line 6796 "asmparse.cpp"
+#line 6789 "prebuilt\\asmparse.cpp"
     break;
 
   case 543: /* sigArgs1: sigArg  */
-#line 1473 "asmparse.y"
+#line 1466 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 6802 "asmparse.cpp"
+#line 6795 "prebuilt\\asmparse.cpp"
     break;
 
   case 544: /* sigArgs1: sigArgs1 ',' sigArg  */
-#line 1474 "asmparse.y"
+#line 1467 "asmparse.y"
                                                              { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 6808 "asmparse.cpp"
+#line 6801 "prebuilt\\asmparse.cpp"
     break;
 
   case 545: /* sigArg: ELLIPSIS  */
-#line 1477 "asmparse.y"
+#line 1470 "asmparse.y"
                                                                { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_SENTINEL); }
-#line 6814 "asmparse.cpp"
+#line 6807 "prebuilt\\asmparse.cpp"
     break;
 
   case 546: /* sigArg: paramAttr type marshalClause  */
-#line 1478 "asmparse.y"
+#line 1471 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[-1].binstr)); PASM->addArgName(NULL, (yyvsp[-1].binstr), (yyvsp[0].binstr), (yyvsp[-2].int32)); }
-#line 6820 "asmparse.cpp"
+#line 6813 "prebuilt\\asmparse.cpp"
     break;
 
   case 547: /* sigArg: paramAttr type marshalClause id  */
-#line 1479 "asmparse.y"
+#line 1472 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[-2].binstr)); PASM->addArgName((yyvsp[0].string), (yyvsp[-2].binstr), (yyvsp[-1].binstr), (yyvsp[-3].int32));}
-#line 6826 "asmparse.cpp"
+#line 6819 "prebuilt\\asmparse.cpp"
     break;
 
   case 548: /* className: '[' dottedName ']' slashedName  */
-#line 1483 "asmparse.y"
+#line 1476 "asmparse.y"
                                                               { (yyval.token) = PASM->ResolveClassRef(PASM->GetAsmRef((yyvsp[-2].string)), (yyvsp[0].string), NULL); delete[] (yyvsp[-2].string);}
-#line 6832 "asmparse.cpp"
+#line 6825 "prebuilt\\asmparse.cpp"
     break;
 
   case 549: /* className: '[' mdtoken ']' slashedName  */
-#line 1484 "asmparse.y"
+#line 1477 "asmparse.y"
                                                               { (yyval.token) = PASM->ResolveClassRef((yyvsp[-2].token), (yyvsp[0].string), NULL); }
-#line 6838 "asmparse.cpp"
+#line 6831 "prebuilt\\asmparse.cpp"
     break;
 
   case 550: /* className: '[' '*' ']' slashedName  */
-#line 1485 "asmparse.y"
+#line 1478 "asmparse.y"
                                                               { (yyval.token) = PASM->ResolveClassRef(mdTokenNil, (yyvsp[0].string), NULL); }
-#line 6844 "asmparse.cpp"
+#line 6837 "prebuilt\\asmparse.cpp"
     break;
 
   case 551: /* className: '[' _MODULE dottedName ']' slashedName  */
-#line 1486 "asmparse.y"
+#line 1479 "asmparse.y"
                                                                    { (yyval.token) = PASM->ResolveClassRef(PASM->GetModRef((yyvsp[-2].string)),(yyvsp[0].string), NULL); delete[] (yyvsp[-2].string);}
-#line 6850 "asmparse.cpp"
+#line 6843 "prebuilt\\asmparse.cpp"
     break;
 
   case 552: /* className: slashedName  */
-#line 1487 "asmparse.y"
+#line 1480 "asmparse.y"
                                                               { (yyval.token) = PASM->ResolveClassRef(1,(yyvsp[0].string),NULL); }
-#line 6856 "asmparse.cpp"
+#line 6849 "prebuilt\\asmparse.cpp"
     break;
 
   case 553: /* className: mdtoken  */
-#line 1488 "asmparse.y"
+#line 1481 "asmparse.y"
                                                               { (yyval.token) = (yyvsp[0].token); }
-#line 6862 "asmparse.cpp"
+#line 6855 "prebuilt\\asmparse.cpp"
     break;
 
   case 554: /* className: TYPEDEF_T  */
-#line 1489 "asmparse.y"
+#line 1482 "asmparse.y"
                                                               { (yyval.token) = (yyvsp[0].tdd)->m_tkTypeSpec; }
-#line 6868 "asmparse.cpp"
+#line 6861 "prebuilt\\asmparse.cpp"
     break;
 
   case 555: /* className: _THIS  */
-#line 1490 "asmparse.y"
+#line 1483 "asmparse.y"
                                                               { if(PASM->m_pCurClass != NULL) (yyval.token) = PASM->m_pCurClass->m_cl;
                                                                 else { (yyval.token) = 0; PASM->report->error(".this outside class scope\n"); }
                                                               }
-#line 6876 "asmparse.cpp"
+#line 6869 "prebuilt\\asmparse.cpp"
     break;
 
   case 556: /* className: _BASE  */
-#line 1493 "asmparse.y"
+#line 1486 "asmparse.y"
                                                               { if(PASM->m_pCurClass != NULL) {
                                                                   (yyval.token) = PASM->m_pCurClass->m_crExtends;
                                                                   if(RidFromToken((yyval.token)) == 0)
                                                                     PASM->report->error(".base undefined\n");
                                                                 } else { (yyval.token) = 0; PASM->report->error(".base outside class scope\n"); }
                                                               }
-#line 6887 "asmparse.cpp"
+#line 6880 "prebuilt\\asmparse.cpp"
     break;
 
   case 557: /* className: _NESTER  */
-#line 1499 "asmparse.y"
+#line 1492 "asmparse.y"
                                                               { if(PASM->m_pCurClass != NULL) {
                                                                   if(PASM->m_pCurClass->m_pEncloser != NULL) (yyval.token) = PASM->m_pCurClass->m_pEncloser->m_cl;
                                                                   else { (yyval.token) = 0; PASM->report->error(".nester undefined\n"); }
                                                                 } else { (yyval.token) = 0; PASM->report->error(".nester outside class scope\n"); }
                                                               }
-#line 6897 "asmparse.cpp"
+#line 6890 "prebuilt\\asmparse.cpp"
     break;
 
   case 558: /* slashedName: dottedName  */
-#line 1506 "asmparse.y"
+#line 1499 "asmparse.y"
                                                               { (yyval.string) = (yyvsp[0].string); }
-#line 6903 "asmparse.cpp"
+#line 6896 "prebuilt\\asmparse.cpp"
     break;
 
   case 559: /* slashedName: slashedName '/' dottedName  */
-#line 1507 "asmparse.y"
+#line 1500 "asmparse.y"
                                                               { (yyval.string) = newStringWDel((yyvsp[-2].string), NESTING_SEP, (yyvsp[0].string)); }
-#line 6909 "asmparse.cpp"
+#line 6902 "prebuilt\\asmparse.cpp"
     break;
 
   case 560: /* typeSpec: className  */
-#line 1510 "asmparse.y"
+#line 1503 "asmparse.y"
                                                               { (yyval.token) = (yyvsp[0].token);}
-#line 6915 "asmparse.cpp"
+#line 6908 "prebuilt\\asmparse.cpp"
     break;
 
   case 561: /* typeSpec: '[' dottedName ']'  */
-#line 1511 "asmparse.y"
+#line 1504 "asmparse.y"
                                                               { (yyval.token) = PASM->GetAsmRef((yyvsp[-1].string)); delete[] (yyvsp[-1].string);}
-#line 6921 "asmparse.cpp"
+#line 6914 "prebuilt\\asmparse.cpp"
     break;
 
   case 562: /* typeSpec: '[' _MODULE dottedName ']'  */
-#line 1512 "asmparse.y"
+#line 1505 "asmparse.y"
                                                               { (yyval.token) = PASM->GetModRef((yyvsp[-1].string)); delete[] (yyvsp[-1].string);}
-#line 6927 "asmparse.cpp"
+#line 6920 "prebuilt\\asmparse.cpp"
     break;
 
   case 563: /* typeSpec: type  */
-#line 1513 "asmparse.y"
+#line 1506 "asmparse.y"
                                                               { (yyval.token) = PASM->ResolveTypeSpec((yyvsp[0].binstr)); }
-#line 6933 "asmparse.cpp"
+#line 6926 "prebuilt\\asmparse.cpp"
     break;
 
   case 564: /* nativeType: %empty  */
-#line 1517 "asmparse.y"
+#line 1510 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); }
-#line 6939 "asmparse.cpp"
+#line 6932 "prebuilt\\asmparse.cpp"
     break;
 
   case 565: /* nativeType: CUSTOM_ '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'  */
-#line 1519 "asmparse.y"
+#line 1512 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_CUSTOMMARSHALER);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-7].binstr)->length()); (yyval.binstr)->append((yyvsp[-7].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-5].binstr)->length()); (yyval.binstr)->append((yyvsp[-5].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-3].binstr)->length()); (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].binstr)->length()); (yyval.binstr)->append((yyvsp[-1].binstr));
                                                                 PASM->report->warn("Deprecated 4-string form of custom marshaler, first two strings ignored\n");}
-#line 6950 "asmparse.cpp"
+#line 6943 "prebuilt\\asmparse.cpp"
     break;
 
   case 566: /* nativeType: CUSTOM_ '(' compQstring ',' compQstring ')'  */
-#line 1526 "asmparse.y"
+#line 1519 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_CUSTOMMARSHALER);
                                                                 corEmitInt((yyval.binstr),0);
                                                                 corEmitInt((yyval.binstr),0);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-3].binstr)->length()); (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].binstr)->length()); (yyval.binstr)->append((yyvsp[-1].binstr)); }
-#line 6960 "asmparse.cpp"
+#line 6953 "prebuilt\\asmparse.cpp"
     break;
 
   case 567: /* nativeType: FIXED_ SYSSTRING_ '[' int32 ']'  */
-#line 1531 "asmparse.y"
+#line 1524 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FIXEDSYSSTRING);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32)); }
-#line 6967 "asmparse.cpp"
+#line 6960 "prebuilt\\asmparse.cpp"
     break;
 
   case 568: /* nativeType: FIXED_ ARRAY_ '[' int32 ']' nativeType  */
-#line 1534 "asmparse.y"
+#line 1527 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FIXEDARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-2].int32)); (yyval.binstr)->append((yyvsp[0].binstr)); }
-#line 6974 "asmparse.cpp"
+#line 6967 "prebuilt\\asmparse.cpp"
     break;
 
   case 569: /* nativeType: VARIANT_  */
-#line 1536 "asmparse.y"
+#line 1529 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VARIANT);
                                                                 PASM->report->warn("Deprecated native type 'variant'\n"); }
-#line 6981 "asmparse.cpp"
+#line 6974 "prebuilt\\asmparse.cpp"
     break;
 
   case 570: /* nativeType: CURRENCY_  */
-#line 1538 "asmparse.y"
+#line 1531 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_CURRENCY); }
-#line 6987 "asmparse.cpp"
+#line 6980 "prebuilt\\asmparse.cpp"
     break;
 
   case 571: /* nativeType: SYSCHAR_  */
-#line 1539 "asmparse.y"
+#line 1532 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_SYSCHAR);
                                                                 PASM->report->warn("Deprecated native type 'syschar'\n"); }
-#line 6994 "asmparse.cpp"
+#line 6987 "prebuilt\\asmparse.cpp"
     break;
 
   case 572: /* nativeType: VOID_  */
-#line 1541 "asmparse.y"
+#line 1534 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VOID);
                                                                 PASM->report->warn("Deprecated native type 'void'\n"); }
-#line 7001 "asmparse.cpp"
+#line 6994 "prebuilt\\asmparse.cpp"
     break;
 
   case 573: /* nativeType: BOOL_  */
-#line 1543 "asmparse.y"
+#line 1536 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BOOLEAN); }
-#line 7007 "asmparse.cpp"
+#line 7000 "prebuilt\\asmparse.cpp"
     break;
 
   case 574: /* nativeType: INT8_  */
-#line 1544 "asmparse.y"
+#line 1537 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I1); }
-#line 7013 "asmparse.cpp"
+#line 7006 "prebuilt\\asmparse.cpp"
     break;
 
   case 575: /* nativeType: INT16_  */
-#line 1545 "asmparse.y"
+#line 1538 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I2); }
-#line 7019 "asmparse.cpp"
+#line 7012 "prebuilt\\asmparse.cpp"
     break;
 
   case 576: /* nativeType: INT32_  */
-#line 1546 "asmparse.y"
+#line 1539 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I4); }
-#line 7025 "asmparse.cpp"
+#line 7018 "prebuilt\\asmparse.cpp"
     break;
 
   case 577: /* nativeType: INT64_  */
-#line 1547 "asmparse.y"
+#line 1540 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_I8); }
-#line 7031 "asmparse.cpp"
+#line 7024 "prebuilt\\asmparse.cpp"
     break;
 
   case 578: /* nativeType: FLOAT32_  */
-#line 1548 "asmparse.y"
+#line 1541 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_R4); }
-#line 7037 "asmparse.cpp"
+#line 7030 "prebuilt\\asmparse.cpp"
     break;
 
   case 579: /* nativeType: FLOAT64_  */
-#line 1549 "asmparse.y"
+#line 1542 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_R8); }
-#line 7043 "asmparse.cpp"
+#line 7036 "prebuilt\\asmparse.cpp"
     break;
 
   case 580: /* nativeType: ERROR_  */
-#line 1550 "asmparse.y"
+#line 1543 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ERROR); }
-#line 7049 "asmparse.cpp"
+#line 7042 "prebuilt\\asmparse.cpp"
     break;
 
   case 581: /* nativeType: UNSIGNED_ INT8_  */
-#line 1551 "asmparse.y"
+#line 1544 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U1); }
-#line 7055 "asmparse.cpp"
+#line 7048 "prebuilt\\asmparse.cpp"
     break;
 
   case 582: /* nativeType: UNSIGNED_ INT16_  */
-#line 1552 "asmparse.y"
+#line 1545 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U2); }
-#line 7061 "asmparse.cpp"
+#line 7054 "prebuilt\\asmparse.cpp"
     break;
 
   case 583: /* nativeType: UNSIGNED_ INT32_  */
-#line 1553 "asmparse.y"
+#line 1546 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U4); }
-#line 7067 "asmparse.cpp"
+#line 7060 "prebuilt\\asmparse.cpp"
     break;
 
   case 584: /* nativeType: UNSIGNED_ INT64_  */
-#line 1554 "asmparse.y"
+#line 1547 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U8); }
-#line 7073 "asmparse.cpp"
+#line 7066 "prebuilt\\asmparse.cpp"
     break;
 
   case 585: /* nativeType: UINT8_  */
-#line 1555 "asmparse.y"
+#line 1548 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U1); }
-#line 7079 "asmparse.cpp"
+#line 7072 "prebuilt\\asmparse.cpp"
     break;
 
   case 586: /* nativeType: UINT16_  */
-#line 1556 "asmparse.y"
+#line 1549 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U2); }
-#line 7085 "asmparse.cpp"
+#line 7078 "prebuilt\\asmparse.cpp"
     break;
 
   case 587: /* nativeType: UINT32_  */
-#line 1557 "asmparse.y"
+#line 1550 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U4); }
-#line 7091 "asmparse.cpp"
+#line 7084 "prebuilt\\asmparse.cpp"
     break;
 
   case 588: /* nativeType: UINT64_  */
-#line 1558 "asmparse.y"
+#line 1551 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_U8); }
-#line 7097 "asmparse.cpp"
+#line 7090 "prebuilt\\asmparse.cpp"
     break;
 
   case 589: /* nativeType: nativeType '*'  */
-#line 1559 "asmparse.y"
+#line 1552 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(NATIVE_TYPE_PTR);
                                                                 PASM->report->warn("Deprecated native type '*'\n"); }
-#line 7104 "asmparse.cpp"
+#line 7097 "prebuilt\\asmparse.cpp"
     break;
 
   case 590: /* nativeType: nativeType '[' ']'  */
-#line 1561 "asmparse.y"
+#line 1554 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY); }
-#line 7111 "asmparse.cpp"
+#line 7104 "prebuilt\\asmparse.cpp"
     break;
 
   case 591: /* nativeType: nativeType '[' int32 ']'  */
-#line 1563 "asmparse.y"
+#line 1556 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-3].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt((yyval.binstr),0);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32));
                                                                 corEmitInt((yyval.binstr),0); }
-#line 7121 "asmparse.cpp"
+#line 7114 "prebuilt\\asmparse.cpp"
     break;
 
   case 592: /* nativeType: nativeType '[' int32 '+' int32 ']'  */
-#line 1568 "asmparse.y"
+#line 1561 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-5].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32));
                                                                 corEmitInt((yyval.binstr),(yyvsp[-3].int32));
                                                                 corEmitInt((yyval.binstr),ntaSizeParamIndexSpecified); }
-#line 7131 "asmparse.cpp"
+#line 7124 "prebuilt\\asmparse.cpp"
     break;
 
   case 593: /* nativeType: nativeType '[' '+' int32 ']'  */
-#line 1573 "asmparse.y"
+#line 1566 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-4].binstr); if((yyval.binstr)->length()==0) (yyval.binstr)->appendInt8(NATIVE_TYPE_MAX);
                                                                 (yyval.binstr)->insertInt8(NATIVE_TYPE_ARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-1].int32)); }
-#line 7139 "asmparse.cpp"
+#line 7132 "prebuilt\\asmparse.cpp"
     break;
 
   case 594: /* nativeType: DECIMAL_  */
-#line 1576 "asmparse.y"
+#line 1569 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_DECIMAL);
                                                                 PASM->report->warn("Deprecated native type 'decimal'\n"); }
-#line 7146 "asmparse.cpp"
+#line 7139 "prebuilt\\asmparse.cpp"
     break;
 
   case 595: /* nativeType: DATE_  */
-#line 1578 "asmparse.y"
+#line 1571 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_DATE);
                                                                 PASM->report->warn("Deprecated native type 'date'\n"); }
-#line 7153 "asmparse.cpp"
+#line 7146 "prebuilt\\asmparse.cpp"
     break;
 
   case 596: /* nativeType: BSTR_  */
-#line 1580 "asmparse.y"
+#line 1573 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BSTR); }
-#line 7159 "asmparse.cpp"
+#line 7152 "prebuilt\\asmparse.cpp"
     break;
 
   case 597: /* nativeType: LPSTR_  */
-#line 1581 "asmparse.y"
+#line 1574 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPSTR); }
-#line 7165 "asmparse.cpp"
+#line 7158 "prebuilt\\asmparse.cpp"
     break;
 
   case 598: /* nativeType: LPWSTR_  */
-#line 1582 "asmparse.y"
+#line 1575 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPWSTR); }
-#line 7171 "asmparse.cpp"
+#line 7164 "prebuilt\\asmparse.cpp"
     break;
 
   case 599: /* nativeType: LPTSTR_  */
-#line 1583 "asmparse.y"
+#line 1576 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPTSTR); }
-#line 7177 "asmparse.cpp"
+#line 7170 "prebuilt\\asmparse.cpp"
     break;
 
   case 600: /* nativeType: OBJECTREF_  */
-#line 1584 "asmparse.y"
+#line 1577 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_OBJECTREF);
                                                                 PASM->report->warn("Deprecated native type 'objectref'\n"); }
-#line 7184 "asmparse.cpp"
+#line 7177 "prebuilt\\asmparse.cpp"
     break;
 
   case 601: /* nativeType: IUNKNOWN_ iidParamIndex  */
-#line 1586 "asmparse.y"
+#line 1579 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_IUNKNOWN);
                                                                 if((yyvsp[0].int32) != -1) corEmitInt((yyval.binstr),(yyvsp[0].int32)); }
-#line 7191 "asmparse.cpp"
+#line 7184 "prebuilt\\asmparse.cpp"
     break;
 
   case 602: /* nativeType: IDISPATCH_ iidParamIndex  */
-#line 1588 "asmparse.y"
+#line 1581 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_IDISPATCH);
                                                                 if((yyvsp[0].int32) != -1) corEmitInt((yyval.binstr),(yyvsp[0].int32)); }
-#line 7198 "asmparse.cpp"
+#line 7191 "prebuilt\\asmparse.cpp"
     break;
 
   case 603: /* nativeType: STRUCT_  */
-#line 1590 "asmparse.y"
+#line 1583 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_STRUCT); }
-#line 7204 "asmparse.cpp"
+#line 7197 "prebuilt\\asmparse.cpp"
     break;
 
   case 604: /* nativeType: INTERFACE_ iidParamIndex  */
-#line 1591 "asmparse.y"
+#line 1584 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_INTF);
                                                                 if((yyvsp[0].int32) != -1) corEmitInt((yyval.binstr),(yyvsp[0].int32)); }
-#line 7211 "asmparse.cpp"
+#line 7204 "prebuilt\\asmparse.cpp"
     break;
 
   case 605: /* nativeType: SAFEARRAY_ variantType  */
-#line 1593 "asmparse.y"
+#line 1586 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_SAFEARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[0].int32));
                                                                 corEmitInt((yyval.binstr),0);}
-#line 7219 "asmparse.cpp"
+#line 7212 "prebuilt\\asmparse.cpp"
     break;
 
   case 606: /* nativeType: SAFEARRAY_ variantType ',' compQstring  */
-#line 1596 "asmparse.y"
+#line 1589 "asmparse.y"
                                                                  { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_SAFEARRAY);
                                                                 corEmitInt((yyval.binstr),(yyvsp[-2].int32));
                                                                 corEmitInt((yyval.binstr),(yyvsp[0].binstr)->length()); (yyval.binstr)->append((yyvsp[0].binstr)); }
-#line 7227 "asmparse.cpp"
+#line 7220 "prebuilt\\asmparse.cpp"
     break;
 
   case 607: /* nativeType: INT_  */
-#line 1600 "asmparse.y"
+#line 1593 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_INT); }
-#line 7233 "asmparse.cpp"
+#line 7226 "prebuilt\\asmparse.cpp"
     break;
 
   case 608: /* nativeType: UNSIGNED_ INT_  */
-#line 1601 "asmparse.y"
+#line 1594 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_UINT); }
-#line 7239 "asmparse.cpp"
+#line 7232 "prebuilt\\asmparse.cpp"
     break;
 
   case 609: /* nativeType: UINT_  */
-#line 1602 "asmparse.y"
+#line 1595 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_UINT); }
-#line 7245 "asmparse.cpp"
+#line 7238 "prebuilt\\asmparse.cpp"
     break;
 
   case 610: /* nativeType: NESTED_ STRUCT_  */
-#line 1603 "asmparse.y"
+#line 1596 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_NESTEDSTRUCT);
                                                                 PASM->report->warn("Deprecated native type 'nested struct'\n"); }
-#line 7252 "asmparse.cpp"
+#line 7245 "prebuilt\\asmparse.cpp"
     break;
 
   case 611: /* nativeType: BYVALSTR_  */
-#line 1605 "asmparse.y"
+#line 1598 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_BYVALSTR); }
-#line 7258 "asmparse.cpp"
+#line 7251 "prebuilt\\asmparse.cpp"
     break;
 
   case 612: /* nativeType: ANSI_ BSTR_  */
-#line 1606 "asmparse.y"
+#line 1599 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ANSIBSTR); }
-#line 7264 "asmparse.cpp"
+#line 7257 "prebuilt\\asmparse.cpp"
     break;
 
   case 613: /* nativeType: TBSTR_  */
-#line 1607 "asmparse.y"
+#line 1600 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_TBSTR); }
-#line 7270 "asmparse.cpp"
+#line 7263 "prebuilt\\asmparse.cpp"
     break;
 
   case 614: /* nativeType: VARIANT_ BOOL_  */
-#line 1608 "asmparse.y"
+#line 1601 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_VARIANTBOOL); }
-#line 7276 "asmparse.cpp"
+#line 7269 "prebuilt\\asmparse.cpp"
     break;
 
   case 615: /* nativeType: METHOD_  */
-#line 1609 "asmparse.y"
+#line 1602 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_FUNC); }
-#line 7282 "asmparse.cpp"
+#line 7275 "prebuilt\\asmparse.cpp"
     break;
 
   case 616: /* nativeType: AS_ ANY_  */
-#line 1610 "asmparse.y"
+#line 1603 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_ASANY); }
-#line 7288 "asmparse.cpp"
+#line 7281 "prebuilt\\asmparse.cpp"
     break;
 
   case 617: /* nativeType: LPSTRUCT_  */
-#line 1611 "asmparse.y"
+#line 1604 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(NATIVE_TYPE_LPSTRUCT); }
-#line 7294 "asmparse.cpp"
+#line 7287 "prebuilt\\asmparse.cpp"
     break;
 
   case 618: /* nativeType: TYPEDEF_TS  */
-#line 1612 "asmparse.y"
+#line 1605 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[0].tdd)->m_pbsTypeSpec); }
-#line 7300 "asmparse.cpp"
+#line 7293 "prebuilt\\asmparse.cpp"
     break;
 
   case 619: /* iidParamIndex: %empty  */
-#line 1615 "asmparse.y"
+#line 1608 "asmparse.y"
                                                               { (yyval.int32) = -1; }
-#line 7306 "asmparse.cpp"
+#line 7299 "prebuilt\\asmparse.cpp"
     break;
 
   case 620: /* iidParamIndex: '(' IIDPARAM_ '=' int32 ')'  */
-#line 1616 "asmparse.y"
+#line 1609 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[-1].int32); }
-#line 7312 "asmparse.cpp"
+#line 7305 "prebuilt\\asmparse.cpp"
     break;
 
   case 621: /* variantType: %empty  */
-#line 1619 "asmparse.y"
+#line 1612 "asmparse.y"
                                                               { (yyval.int32) = VT_EMPTY; }
-#line 7318 "asmparse.cpp"
+#line 7311 "prebuilt\\asmparse.cpp"
     break;
 
   case 622: /* variantType: NULL_  */
-#line 1620 "asmparse.y"
+#line 1613 "asmparse.y"
                                                               { (yyval.int32) = VT_NULL; }
-#line 7324 "asmparse.cpp"
+#line 7317 "prebuilt\\asmparse.cpp"
     break;
 
   case 623: /* variantType: VARIANT_  */
-#line 1621 "asmparse.y"
+#line 1614 "asmparse.y"
                                                               { (yyval.int32) = VT_VARIANT; }
-#line 7330 "asmparse.cpp"
+#line 7323 "prebuilt\\asmparse.cpp"
     break;
 
   case 624: /* variantType: CURRENCY_  */
-#line 1622 "asmparse.y"
+#line 1615 "asmparse.y"
                                                               { (yyval.int32) = VT_CY; }
-#line 7336 "asmparse.cpp"
+#line 7329 "prebuilt\\asmparse.cpp"
     break;
 
   case 625: /* variantType: VOID_  */
-#line 1623 "asmparse.y"
+#line 1616 "asmparse.y"
                                                               { (yyval.int32) = VT_VOID; }
-#line 7342 "asmparse.cpp"
+#line 7335 "prebuilt\\asmparse.cpp"
     break;
 
   case 626: /* variantType: BOOL_  */
-#line 1624 "asmparse.y"
+#line 1617 "asmparse.y"
                                                               { (yyval.int32) = VT_BOOL; }
-#line 7348 "asmparse.cpp"
+#line 7341 "prebuilt\\asmparse.cpp"
     break;
 
   case 627: /* variantType: INT8_  */
-#line 1625 "asmparse.y"
+#line 1618 "asmparse.y"
                                                               { (yyval.int32) = VT_I1; }
-#line 7354 "asmparse.cpp"
+#line 7347 "prebuilt\\asmparse.cpp"
     break;
 
   case 628: /* variantType: INT16_  */
-#line 1626 "asmparse.y"
+#line 1619 "asmparse.y"
                                                               { (yyval.int32) = VT_I2; }
-#line 7360 "asmparse.cpp"
+#line 7353 "prebuilt\\asmparse.cpp"
     break;
 
   case 629: /* variantType: INT32_  */
-#line 1627 "asmparse.y"
+#line 1620 "asmparse.y"
                                                               { (yyval.int32) = VT_I4; }
-#line 7366 "asmparse.cpp"
+#line 7359 "prebuilt\\asmparse.cpp"
     break;
 
   case 630: /* variantType: INT64_  */
-#line 1628 "asmparse.y"
+#line 1621 "asmparse.y"
                                                               { (yyval.int32) = VT_I8; }
-#line 7372 "asmparse.cpp"
+#line 7365 "prebuilt\\asmparse.cpp"
     break;
 
   case 631: /* variantType: FLOAT32_  */
-#line 1629 "asmparse.y"
+#line 1622 "asmparse.y"
                                                               { (yyval.int32) = VT_R4; }
-#line 7378 "asmparse.cpp"
+#line 7371 "prebuilt\\asmparse.cpp"
     break;
 
   case 632: /* variantType: FLOAT64_  */
-#line 1630 "asmparse.y"
+#line 1623 "asmparse.y"
                                                               { (yyval.int32) = VT_R8; }
-#line 7384 "asmparse.cpp"
+#line 7377 "prebuilt\\asmparse.cpp"
     break;
 
   case 633: /* variantType: UNSIGNED_ INT8_  */
-#line 1631 "asmparse.y"
+#line 1624 "asmparse.y"
                                                               { (yyval.int32) = VT_UI1; }
-#line 7390 "asmparse.cpp"
+#line 7383 "prebuilt\\asmparse.cpp"
     break;
 
   case 634: /* variantType: UNSIGNED_ INT16_  */
-#line 1632 "asmparse.y"
+#line 1625 "asmparse.y"
                                                               { (yyval.int32) = VT_UI2; }
-#line 7396 "asmparse.cpp"
+#line 7389 "prebuilt\\asmparse.cpp"
     break;
 
   case 635: /* variantType: UNSIGNED_ INT32_  */
-#line 1633 "asmparse.y"
+#line 1626 "asmparse.y"
                                                               { (yyval.int32) = VT_UI4; }
-#line 7402 "asmparse.cpp"
+#line 7395 "prebuilt\\asmparse.cpp"
     break;
 
   case 636: /* variantType: UNSIGNED_ INT64_  */
-#line 1634 "asmparse.y"
+#line 1627 "asmparse.y"
                                                               { (yyval.int32) = VT_UI8; }
-#line 7408 "asmparse.cpp"
+#line 7401 "prebuilt\\asmparse.cpp"
     break;
 
   case 637: /* variantType: UINT8_  */
-#line 1635 "asmparse.y"
+#line 1628 "asmparse.y"
                                                               { (yyval.int32) = VT_UI1; }
-#line 7414 "asmparse.cpp"
+#line 7407 "prebuilt\\asmparse.cpp"
     break;
 
   case 638: /* variantType: UINT16_  */
-#line 1636 "asmparse.y"
+#line 1629 "asmparse.y"
                                                               { (yyval.int32) = VT_UI2; }
-#line 7420 "asmparse.cpp"
+#line 7413 "prebuilt\\asmparse.cpp"
     break;
 
   case 639: /* variantType: UINT32_  */
-#line 1637 "asmparse.y"
+#line 1630 "asmparse.y"
                                                               { (yyval.int32) = VT_UI4; }
-#line 7426 "asmparse.cpp"
+#line 7419 "prebuilt\\asmparse.cpp"
     break;
 
   case 640: /* variantType: UINT64_  */
-#line 1638 "asmparse.y"
+#line 1631 "asmparse.y"
                                                               { (yyval.int32) = VT_UI8; }
-#line 7432 "asmparse.cpp"
+#line 7425 "prebuilt\\asmparse.cpp"
     break;
 
   case 641: /* variantType: '*'  */
-#line 1639 "asmparse.y"
+#line 1632 "asmparse.y"
                                                               { (yyval.int32) = VT_PTR; }
-#line 7438 "asmparse.cpp"
+#line 7431 "prebuilt\\asmparse.cpp"
     break;
 
   case 642: /* variantType: variantType '[' ']'  */
-#line 1640 "asmparse.y"
+#line 1633 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[-2].int32) | VT_ARRAY; }
-#line 7444 "asmparse.cpp"
+#line 7437 "prebuilt\\asmparse.cpp"
     break;
 
   case 643: /* variantType: variantType VECTOR_  */
-#line 1641 "asmparse.y"
+#line 1634 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[-1].int32) | VT_VECTOR; }
-#line 7450 "asmparse.cpp"
+#line 7443 "prebuilt\\asmparse.cpp"
     break;
 
   case 644: /* variantType: variantType '&'  */
-#line 1642 "asmparse.y"
+#line 1635 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[-1].int32) | VT_BYREF; }
-#line 7456 "asmparse.cpp"
+#line 7449 "prebuilt\\asmparse.cpp"
     break;
 
   case 645: /* variantType: DECIMAL_  */
-#line 1643 "asmparse.y"
+#line 1636 "asmparse.y"
                                                               { (yyval.int32) = VT_DECIMAL; }
-#line 7462 "asmparse.cpp"
+#line 7455 "prebuilt\\asmparse.cpp"
     break;
 
   case 646: /* variantType: DATE_  */
-#line 1644 "asmparse.y"
+#line 1637 "asmparse.y"
                                                               { (yyval.int32) = VT_DATE; }
-#line 7468 "asmparse.cpp"
+#line 7461 "prebuilt\\asmparse.cpp"
     break;
 
   case 647: /* variantType: BSTR_  */
-#line 1645 "asmparse.y"
+#line 1638 "asmparse.y"
                                                               { (yyval.int32) = VT_BSTR; }
-#line 7474 "asmparse.cpp"
+#line 7467 "prebuilt\\asmparse.cpp"
     break;
 
   case 648: /* variantType: LPSTR_  */
-#line 1646 "asmparse.y"
+#line 1639 "asmparse.y"
                                                               { (yyval.int32) = VT_LPSTR; }
-#line 7480 "asmparse.cpp"
+#line 7473 "prebuilt\\asmparse.cpp"
     break;
 
   case 649: /* variantType: LPWSTR_  */
-#line 1647 "asmparse.y"
+#line 1640 "asmparse.y"
                                                               { (yyval.int32) = VT_LPWSTR; }
-#line 7486 "asmparse.cpp"
+#line 7479 "prebuilt\\asmparse.cpp"
     break;
 
   case 650: /* variantType: IUNKNOWN_  */
-#line 1648 "asmparse.y"
+#line 1641 "asmparse.y"
                                                               { (yyval.int32) = VT_UNKNOWN; }
-#line 7492 "asmparse.cpp"
+#line 7485 "prebuilt\\asmparse.cpp"
     break;
 
   case 651: /* variantType: IDISPATCH_  */
-#line 1649 "asmparse.y"
+#line 1642 "asmparse.y"
                                                               { (yyval.int32) = VT_DISPATCH; }
-#line 7498 "asmparse.cpp"
+#line 7491 "prebuilt\\asmparse.cpp"
     break;
 
   case 652: /* variantType: SAFEARRAY_  */
-#line 1650 "asmparse.y"
+#line 1643 "asmparse.y"
                                                               { (yyval.int32) = VT_SAFEARRAY; }
-#line 7504 "asmparse.cpp"
+#line 7497 "prebuilt\\asmparse.cpp"
     break;
 
   case 653: /* variantType: INT_  */
-#line 1651 "asmparse.y"
+#line 1644 "asmparse.y"
                                                               { (yyval.int32) = VT_INT; }
-#line 7510 "asmparse.cpp"
+#line 7503 "prebuilt\\asmparse.cpp"
     break;
 
   case 654: /* variantType: UNSIGNED_ INT_  */
-#line 1652 "asmparse.y"
+#line 1645 "asmparse.y"
                                                               { (yyval.int32) = VT_UINT; }
-#line 7516 "asmparse.cpp"
+#line 7509 "prebuilt\\asmparse.cpp"
     break;
 
   case 655: /* variantType: UINT_  */
-#line 1653 "asmparse.y"
+#line 1646 "asmparse.y"
                                                               { (yyval.int32) = VT_UINT; }
-#line 7522 "asmparse.cpp"
+#line 7515 "prebuilt\\asmparse.cpp"
     break;
 
   case 656: /* variantType: ERROR_  */
-#line 1654 "asmparse.y"
+#line 1647 "asmparse.y"
                                                               { (yyval.int32) = VT_ERROR; }
-#line 7528 "asmparse.cpp"
+#line 7521 "prebuilt\\asmparse.cpp"
     break;
 
   case 657: /* variantType: HRESULT_  */
-#line 1655 "asmparse.y"
+#line 1648 "asmparse.y"
                                                               { (yyval.int32) = VT_HRESULT; }
-#line 7534 "asmparse.cpp"
+#line 7527 "prebuilt\\asmparse.cpp"
     break;
 
   case 658: /* variantType: CARRAY_  */
-#line 1656 "asmparse.y"
+#line 1649 "asmparse.y"
                                                               { (yyval.int32) = VT_CARRAY; }
-#line 7540 "asmparse.cpp"
+#line 7533 "prebuilt\\asmparse.cpp"
     break;
 
   case 659: /* variantType: USERDEFINED_  */
-#line 1657 "asmparse.y"
+#line 1650 "asmparse.y"
                                                               { (yyval.int32) = VT_USERDEFINED; }
-#line 7546 "asmparse.cpp"
+#line 7539 "prebuilt\\asmparse.cpp"
     break;
 
   case 660: /* variantType: RECORD_  */
-#line 1658 "asmparse.y"
+#line 1651 "asmparse.y"
                                                               { (yyval.int32) = VT_RECORD; }
-#line 7552 "asmparse.cpp"
+#line 7545 "prebuilt\\asmparse.cpp"
     break;
 
   case 661: /* variantType: FILETIME_  */
-#line 1659 "asmparse.y"
+#line 1652 "asmparse.y"
                                                               { (yyval.int32) = VT_FILETIME; }
-#line 7558 "asmparse.cpp"
+#line 7551 "prebuilt\\asmparse.cpp"
     break;
 
   case 662: /* variantType: BLOB_  */
-#line 1660 "asmparse.y"
+#line 1653 "asmparse.y"
                                                               { (yyval.int32) = VT_BLOB; }
-#line 7564 "asmparse.cpp"
+#line 7557 "prebuilt\\asmparse.cpp"
     break;
 
   case 663: /* variantType: STREAM_  */
-#line 1661 "asmparse.y"
+#line 1654 "asmparse.y"
                                                               { (yyval.int32) = VT_STREAM; }
-#line 7570 "asmparse.cpp"
+#line 7563 "prebuilt\\asmparse.cpp"
     break;
 
   case 664: /* variantType: STORAGE_  */
-#line 1662 "asmparse.y"
+#line 1655 "asmparse.y"
                                                               { (yyval.int32) = VT_STORAGE; }
-#line 7576 "asmparse.cpp"
+#line 7569 "prebuilt\\asmparse.cpp"
     break;
 
   case 665: /* variantType: STREAMED_OBJECT_  */
-#line 1663 "asmparse.y"
+#line 1656 "asmparse.y"
                                                               { (yyval.int32) = VT_STREAMED_OBJECT; }
-#line 7582 "asmparse.cpp"
+#line 7575 "prebuilt\\asmparse.cpp"
     break;
 
   case 666: /* variantType: STORED_OBJECT_  */
-#line 1664 "asmparse.y"
+#line 1657 "asmparse.y"
                                                               { (yyval.int32) = VT_STORED_OBJECT; }
-#line 7588 "asmparse.cpp"
+#line 7581 "prebuilt\\asmparse.cpp"
     break;
 
   case 667: /* variantType: BLOB_OBJECT_  */
-#line 1665 "asmparse.y"
+#line 1658 "asmparse.y"
                                                               { (yyval.int32) = VT_BLOB_OBJECT; }
-#line 7594 "asmparse.cpp"
+#line 7587 "prebuilt\\asmparse.cpp"
     break;
 
   case 668: /* variantType: CF_  */
-#line 1666 "asmparse.y"
+#line 1659 "asmparse.y"
                                                               { (yyval.int32) = VT_CF; }
-#line 7600 "asmparse.cpp"
+#line 7593 "prebuilt\\asmparse.cpp"
     break;
 
   case 669: /* variantType: CLSID_  */
-#line 1667 "asmparse.y"
+#line 1660 "asmparse.y"
                                                               { (yyval.int32) = VT_CLSID; }
-#line 7606 "asmparse.cpp"
+#line 7599 "prebuilt\\asmparse.cpp"
     break;
 
   case 670: /* type: CLASS_ className  */
-#line 1671 "asmparse.y"
+#line 1664 "asmparse.y"
                                                               { if((yyvsp[0].token) == PASM->m_tkSysString)
                                                                 {     (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); }
                                                                 else if((yyvsp[0].token) == PASM->m_tkSysObject)
                                                                 {     (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_OBJECT); }
                                                                 else
                                                                  (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_CLASS, (yyvsp[0].token)); }
-#line 7617 "asmparse.cpp"
+#line 7610 "prebuilt\\asmparse.cpp"
     break;
 
   case 671: /* type: OBJECT_  */
-#line 1677 "asmparse.y"
+#line 1670 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_OBJECT); }
-#line 7623 "asmparse.cpp"
+#line 7616 "prebuilt\\asmparse.cpp"
     break;
 
   case 672: /* type: VALUE_ CLASS_ className  */
-#line 1678 "asmparse.y"
+#line 1671 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, (yyvsp[0].token)); }
-#line 7629 "asmparse.cpp"
+#line 7622 "prebuilt\\asmparse.cpp"
     break;
 
   case 673: /* type: VALUETYPE_ className  */
-#line 1679 "asmparse.y"
+#line 1672 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, (yyvsp[0].token)); }
-#line 7635 "asmparse.cpp"
+#line 7628 "prebuilt\\asmparse.cpp"
     break;
 
   case 674: /* type: type '[' ']'  */
-#line 1680 "asmparse.y"
+#line 1673 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SZARRAY); }
-#line 7641 "asmparse.cpp"
+#line 7634 "prebuilt\\asmparse.cpp"
     break;
 
   case 675: /* type: type '[' bounds1 ']'  */
-#line 1681 "asmparse.y"
+#line 1674 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, (yyvsp[-3].binstr), (yyvsp[-1].binstr)); }
-#line 7647 "asmparse.cpp"
+#line 7640 "prebuilt\\asmparse.cpp"
     break;
 
   case 676: /* type: type '&'  */
-#line 1682 "asmparse.y"
+#line 1675 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_BYREF); }
-#line 7653 "asmparse.cpp"
+#line 7646 "prebuilt\\asmparse.cpp"
     break;
 
   case 677: /* type: type '*'  */
-#line 1683 "asmparse.y"
+#line 1676 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_PTR); }
-#line 7659 "asmparse.cpp"
+#line 7652 "prebuilt\\asmparse.cpp"
     break;
 
   case 678: /* type: type PINNED_  */
-#line 1684 "asmparse.y"
+#line 1677 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-1].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_PINNED); }
-#line 7665 "asmparse.cpp"
+#line 7658 "prebuilt\\asmparse.cpp"
     break;
 
   case 679: /* type: type MODREQ_ '(' typeSpec ')'  */
-#line 1685 "asmparse.y"
+#line 1678 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_CMOD_REQD, (yyvsp[-1].token));
                                                                 (yyval.binstr)->append((yyvsp[-4].binstr)); }
-#line 7672 "asmparse.cpp"
+#line 7665 "prebuilt\\asmparse.cpp"
     break;
 
   case 680: /* type: type MODOPT_ '(' typeSpec ')'  */
-#line 1687 "asmparse.y"
+#line 1680 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeTypeClass(ELEMENT_TYPE_CMOD_OPT, (yyvsp[-1].token));
                                                                 (yyval.binstr)->append((yyvsp[-4].binstr)); }
-#line 7679 "asmparse.cpp"
+#line 7672 "prebuilt\\asmparse.cpp"
     break;
 
   case 681: /* type: methodSpec callConv type '*' '(' sigArgs0 ')'  */
-#line 1690 "asmparse.y"
+#line 1683 "asmparse.y"
                                                               { (yyval.binstr) = parser->MakeSig((yyvsp[-5].int32), (yyvsp[-4].binstr), (yyvsp[-1].binstr));
                                                                 (yyval.binstr)->insertInt8(ELEMENT_TYPE_FNPTR);
                                                                 PASM->delArgNameList(PASM->m_firstArgName);
                                                                 PASM->m_firstArgName = parser->m_ANSFirst.POP();
                                                                 PASM->m_lastArgName = parser->m_ANSLast.POP();
                                                               }
-#line 7690 "asmparse.cpp"
+#line 7683 "prebuilt\\asmparse.cpp"
     break;
 
   case 682: /* type: type '<' tyArgs1 '>'  */
-#line 1696 "asmparse.y"
+#line 1689 "asmparse.y"
                                                               { if((yyvsp[-1].binstr) == NULL) (yyval.binstr) = (yyvsp[-3].binstr);
                                                                 else {
                                                                   (yyval.binstr) = new BinStr();
@@ -7698,33 +7691,33 @@ yyreduce:
                                                                   (yyval.binstr)->append((yyvsp[-3].binstr));
                                                                   corEmitInt((yyval.binstr), corCountArgs((yyvsp[-1].binstr)));
                                                                   (yyval.binstr)->append((yyvsp[-1].binstr)); delete (yyvsp[-3].binstr); delete (yyvsp[-1].binstr); }}
-#line 7702 "asmparse.cpp"
+#line 7695 "prebuilt\\asmparse.cpp"
     break;
 
   case 683: /* type: '!' '!' int32  */
-#line 1703 "asmparse.y"
+#line 1696 "asmparse.y"
                                                               { //if(PASM->m_pCurMethod)  {
                                                                 //  if(($3 < 0)||((DWORD)$3 >= PASM->m_pCurMethod->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid method type parameter '%d'\n",$3);
                                                                   (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_MVAR); corEmitInt((yyval.binstr), (yyvsp[0].int32));
                                                                 //} else PASM->report->error("Method type parameter '%d' outside method scope\n",$3);
                                                               }
-#line 7713 "asmparse.cpp"
+#line 7706 "prebuilt\\asmparse.cpp"
     break;
 
   case 684: /* type: '!' int32  */
-#line 1709 "asmparse.y"
+#line 1702 "asmparse.y"
                                                               { //if(PASM->m_pCurClass)  {
                                                                 //  if(($2 < 0)||((DWORD)$2 >= PASM->m_pCurClass->m_NumTyPars))
                                                                 //    PASM->report->error("Invalid type parameter '%d'\n",$2);
                                                                   (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_VAR); corEmitInt((yyval.binstr), (yyvsp[0].int32));
                                                                 //} else PASM->report->error("Type parameter '%d' outside class scope\n",$2);
                                                               }
-#line 7724 "asmparse.cpp"
+#line 7717 "prebuilt\\asmparse.cpp"
     break;
 
   case 685: /* type: '!' '!' dottedName  */
-#line 1715 "asmparse.y"
+#line 1708 "asmparse.y"
                                                               { int eltype = ELEMENT_TYPE_MVAR;
                                                                 int n=-1;
                                                                 if(PASM->m_pCurMethod) n = PASM->m_pCurMethod->FindTyPar((yyvsp[0].string));
@@ -7740,11 +7733,11 @@ yyreduce:
                                                                 n = 0x1FFFFFFF; }
                                                                 (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(eltype); corEmitInt((yyval.binstr),n);
                                                               }
-#line 7744 "asmparse.cpp"
+#line 7737 "prebuilt\\asmparse.cpp"
     break;
 
   case 686: /* type: '!' dottedName  */
-#line 1730 "asmparse.y"
+#line 1723 "asmparse.y"
                                                               { int eltype = ELEMENT_TYPE_VAR;
                                                                 int n=-1;
                                                                 if(PASM->m_pCurClass && !newclass) n = PASM->m_pCurClass->FindTyPar((yyvsp[0].string));
@@ -7760,926 +7753,926 @@ yyreduce:
                                                                 n = 0x1FFFFFFF; }
                                                                 (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(eltype); corEmitInt((yyval.binstr),n);
                                                               }
-#line 7764 "asmparse.cpp"
+#line 7757 "prebuilt\\asmparse.cpp"
     break;
 
   case 687: /* type: TYPEDREF_  */
-#line 1745 "asmparse.y"
+#line 1738 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_TYPEDBYREF); }
-#line 7770 "asmparse.cpp"
+#line 7763 "prebuilt\\asmparse.cpp"
     break;
 
   case 688: /* type: VOID_  */
-#line 1746 "asmparse.y"
+#line 1739 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_VOID); }
-#line 7776 "asmparse.cpp"
+#line 7769 "prebuilt\\asmparse.cpp"
     break;
 
   case 689: /* type: NATIVE_ INT_  */
-#line 1747 "asmparse.y"
+#line 1740 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I); }
-#line 7782 "asmparse.cpp"
+#line 7775 "prebuilt\\asmparse.cpp"
     break;
 
   case 690: /* type: NATIVE_ UNSIGNED_ INT_  */
-#line 1748 "asmparse.y"
+#line 1741 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U); }
-#line 7788 "asmparse.cpp"
+#line 7781 "prebuilt\\asmparse.cpp"
     break;
 
   case 691: /* type: NATIVE_ UINT_  */
-#line 1749 "asmparse.y"
+#line 1742 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U); }
-#line 7794 "asmparse.cpp"
+#line 7787 "prebuilt\\asmparse.cpp"
     break;
 
   case 692: /* type: simpleType  */
-#line 1750 "asmparse.y"
+#line 1743 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 7800 "asmparse.cpp"
+#line 7793 "prebuilt\\asmparse.cpp"
     break;
 
   case 693: /* type: ELLIPSIS type  */
-#line 1751 "asmparse.y"
+#line 1744 "asmparse.y"
                                                                { (yyval.binstr) = (yyvsp[0].binstr); (yyval.binstr)->insertInt8(ELEMENT_TYPE_SENTINEL); }
-#line 7806 "asmparse.cpp"
+#line 7799 "prebuilt\\asmparse.cpp"
     break;
 
   case 694: /* simpleType: CHAR_  */
-#line 1754 "asmparse.y"
+#line 1747 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_CHAR); }
-#line 7812 "asmparse.cpp"
+#line 7805 "prebuilt\\asmparse.cpp"
     break;
 
   case 695: /* simpleType: STRING_  */
-#line 1755 "asmparse.y"
+#line 1748 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_STRING); }
-#line 7818 "asmparse.cpp"
+#line 7811 "prebuilt\\asmparse.cpp"
     break;
 
   case 696: /* simpleType: BOOL_  */
-#line 1756 "asmparse.y"
+#line 1749 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_BOOLEAN); }
-#line 7824 "asmparse.cpp"
+#line 7817 "prebuilt\\asmparse.cpp"
     break;
 
   case 697: /* simpleType: INT8_  */
-#line 1757 "asmparse.y"
+#line 1750 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I1); }
-#line 7830 "asmparse.cpp"
+#line 7823 "prebuilt\\asmparse.cpp"
     break;
 
   case 698: /* simpleType: INT16_  */
-#line 1758 "asmparse.y"
+#line 1751 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I2); }
-#line 7836 "asmparse.cpp"
+#line 7829 "prebuilt\\asmparse.cpp"
     break;
 
   case 699: /* simpleType: INT32_  */
-#line 1759 "asmparse.y"
+#line 1752 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I4); }
-#line 7842 "asmparse.cpp"
+#line 7835 "prebuilt\\asmparse.cpp"
     break;
 
   case 700: /* simpleType: INT64_  */
-#line 1760 "asmparse.y"
+#line 1753 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_I8); }
-#line 7848 "asmparse.cpp"
+#line 7841 "prebuilt\\asmparse.cpp"
     break;
 
   case 701: /* simpleType: FLOAT32_  */
-#line 1761 "asmparse.y"
+#line 1754 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R4); }
-#line 7854 "asmparse.cpp"
+#line 7847 "prebuilt\\asmparse.cpp"
     break;
 
   case 702: /* simpleType: FLOAT64_  */
-#line 1762 "asmparse.y"
+#line 1755 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_R8); }
-#line 7860 "asmparse.cpp"
+#line 7853 "prebuilt\\asmparse.cpp"
     break;
 
   case 703: /* simpleType: UNSIGNED_ INT8_  */
-#line 1763 "asmparse.y"
+#line 1756 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1); }
-#line 7866 "asmparse.cpp"
+#line 7859 "prebuilt\\asmparse.cpp"
     break;
 
   case 704: /* simpleType: UNSIGNED_ INT16_  */
-#line 1764 "asmparse.y"
+#line 1757 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2); }
-#line 7872 "asmparse.cpp"
+#line 7865 "prebuilt\\asmparse.cpp"
     break;
 
   case 705: /* simpleType: UNSIGNED_ INT32_  */
-#line 1765 "asmparse.y"
+#line 1758 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4); }
-#line 7878 "asmparse.cpp"
+#line 7871 "prebuilt\\asmparse.cpp"
     break;
 
   case 706: /* simpleType: UNSIGNED_ INT64_  */
-#line 1766 "asmparse.y"
+#line 1759 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8); }
-#line 7884 "asmparse.cpp"
+#line 7877 "prebuilt\\asmparse.cpp"
     break;
 
   case 707: /* simpleType: UINT8_  */
-#line 1767 "asmparse.y"
+#line 1760 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U1); }
-#line 7890 "asmparse.cpp"
+#line 7883 "prebuilt\\asmparse.cpp"
     break;
 
   case 708: /* simpleType: UINT16_  */
-#line 1768 "asmparse.y"
+#line 1761 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U2); }
-#line 7896 "asmparse.cpp"
+#line 7889 "prebuilt\\asmparse.cpp"
     break;
 
   case 709: /* simpleType: UINT32_  */
-#line 1769 "asmparse.y"
+#line 1762 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U4); }
-#line 7902 "asmparse.cpp"
+#line 7895 "prebuilt\\asmparse.cpp"
     break;
 
   case 710: /* simpleType: UINT64_  */
-#line 1770 "asmparse.y"
+#line 1763 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt8(ELEMENT_TYPE_U8); }
-#line 7908 "asmparse.cpp"
+#line 7901 "prebuilt\\asmparse.cpp"
     break;
 
   case 711: /* simpleType: TYPEDEF_TS  */
-#line 1771 "asmparse.y"
+#line 1764 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->append((yyvsp[0].tdd)->m_pbsTypeSpec); }
-#line 7914 "asmparse.cpp"
+#line 7907 "prebuilt\\asmparse.cpp"
     break;
 
   case 712: /* bounds1: bound  */
-#line 1774 "asmparse.y"
+#line 1767 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); }
-#line 7920 "asmparse.cpp"
+#line 7913 "prebuilt\\asmparse.cpp"
     break;
 
   case 713: /* bounds1: bounds1 ',' bound  */
-#line 1775 "asmparse.y"
+#line 1768 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyvsp[-2].binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr); }
-#line 7926 "asmparse.cpp"
+#line 7919 "prebuilt\\asmparse.cpp"
     break;
 
   case 714: /* bound: %empty  */
-#line 1778 "asmparse.y"
+#line 1771 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0x7FFFFFFF); (yyval.binstr)->appendInt32(0x7FFFFFFF);  }
-#line 7932 "asmparse.cpp"
+#line 7925 "prebuilt\\asmparse.cpp"
     break;
 
   case 715: /* bound: ELLIPSIS  */
-#line 1779 "asmparse.y"
+#line 1772 "asmparse.y"
                                                                { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0x7FFFFFFF); (yyval.binstr)->appendInt32(0x7FFFFFFF);  }
-#line 7938 "asmparse.cpp"
+#line 7931 "prebuilt\\asmparse.cpp"
     break;
 
   case 716: /* bound: int32  */
-#line 1780 "asmparse.y"
+#line 1773 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32(0); (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
-#line 7944 "asmparse.cpp"
+#line 7937 "prebuilt\\asmparse.cpp"
     break;
 
   case 717: /* bound: int32 ELLIPSIS int32  */
-#line 1781 "asmparse.y"
+#line 1774 "asmparse.y"
                                                                { FAIL_UNLESS((yyvsp[-2].int32) <= (yyvsp[0].int32), ("lower bound %d must be <= upper bound %d\n", (yyvsp[-2].int32), (yyvsp[0].int32)));
                                                                 if ((yyvsp[-2].int32) > (yyvsp[0].int32)) { YYERROR; };
                                                                 (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[-2].int32)); (yyval.binstr)->appendInt32((yyvsp[0].int32)-(yyvsp[-2].int32)+1); }
-#line 7952 "asmparse.cpp"
+#line 7945 "prebuilt\\asmparse.cpp"
     break;
 
   case 718: /* bound: int32 ELLIPSIS  */
-#line 1784 "asmparse.y"
+#line 1777 "asmparse.y"
                                                                { (yyval.binstr) = new BinStr(); (yyval.binstr)->appendInt32((yyvsp[-1].int32)); (yyval.binstr)->appendInt32(0x7FFFFFFF); }
-#line 7958 "asmparse.cpp"
+#line 7951 "prebuilt\\asmparse.cpp"
     break;
 
   case 719: /* secDecl: _PERMISSION secAction typeSpec '(' nameValPairs ')'  */
-#line 1789 "asmparse.y"
+#line 1782 "asmparse.y"
                                                               { PASM->AddPermissionDecl((yyvsp[-4].secAct), (yyvsp[-3].token), (yyvsp[-1].pair)); }
-#line 7964 "asmparse.cpp"
+#line 7957 "prebuilt\\asmparse.cpp"
     break;
 
   case 720: /* secDecl: _PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'  */
-#line 1791 "asmparse.y"
+#line 1784 "asmparse.y"
                                                               { PASM->AddPermissionDecl((yyvsp[-5].secAct), (yyvsp[-4].token), (yyvsp[-1].binstr)); }
-#line 7970 "asmparse.cpp"
+#line 7963 "prebuilt\\asmparse.cpp"
     break;
 
   case 721: /* secDecl: _PERMISSION secAction typeSpec  */
-#line 1792 "asmparse.y"
+#line 1785 "asmparse.y"
                                                               { PASM->AddPermissionDecl((yyvsp[-1].secAct), (yyvsp[0].token), (NVPair *)NULL); }
-#line 7976 "asmparse.cpp"
+#line 7969 "prebuilt\\asmparse.cpp"
     break;
 
   case 722: /* secDecl: psetHead bytes ')'  */
-#line 1793 "asmparse.y"
+#line 1786 "asmparse.y"
                                                               { PASM->AddPermissionSetDecl((yyvsp[-2].secAct), (yyvsp[-1].binstr)); }
-#line 7982 "asmparse.cpp"
+#line 7975 "prebuilt\\asmparse.cpp"
     break;
 
   case 723: /* secDecl: _PERMISSIONSET secAction compQstring  */
-#line 1795 "asmparse.y"
+#line 1788 "asmparse.y"
                                                               { PASM->AddPermissionSetDecl((yyvsp[-1].secAct),BinStrToUnicode((yyvsp[0].binstr),true));}
-#line 7988 "asmparse.cpp"
+#line 7981 "prebuilt\\asmparse.cpp"
     break;
 
   case 724: /* secDecl: _PERMISSIONSET secAction '=' '{' secAttrSetBlob '}'  */
-#line 1797 "asmparse.y"
+#line 1790 "asmparse.y"
                                                               { BinStr* ret = new BinStr();
                                                                 ret->insertInt8('.');
                                                                 corEmitInt(ret, nSecAttrBlobs);
                                                                 ret->append((yyvsp[-1].binstr));
                                                                 PASM->AddPermissionSetDecl((yyvsp[-4].secAct),ret);
                                                                 nSecAttrBlobs = 0; }
-#line 7999 "asmparse.cpp"
+#line 7992 "prebuilt\\asmparse.cpp"
     break;
 
   case 725: /* secAttrSetBlob: %empty  */
-#line 1805 "asmparse.y"
+#line 1798 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr(); nSecAttrBlobs = 0;}
-#line 8005 "asmparse.cpp"
+#line 7998 "prebuilt\\asmparse.cpp"
     break;
 
   case 726: /* secAttrSetBlob: secAttrBlob  */
-#line 1806 "asmparse.y"
+#line 1799 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[0].binstr); nSecAttrBlobs = 1; }
-#line 8011 "asmparse.cpp"
+#line 8004 "prebuilt\\asmparse.cpp"
     break;
 
   case 727: /* secAttrSetBlob: secAttrBlob ',' secAttrSetBlob  */
-#line 1807 "asmparse.y"
+#line 1800 "asmparse.y"
                                                               { (yyval.binstr) = (yyvsp[-2].binstr); (yyval.binstr)->append((yyvsp[0].binstr)); nSecAttrBlobs++; }
-#line 8017 "asmparse.cpp"
+#line 8010 "prebuilt\\asmparse.cpp"
     break;
 
   case 728: /* secAttrBlob: typeSpec '=' '{' customBlobNVPairs '}'  */
-#line 1811 "asmparse.y"
+#line 1804 "asmparse.y"
                                                               { (yyval.binstr) = PASM->EncodeSecAttr(PASM->ReflectionNotation((yyvsp[-4].token)),(yyvsp[-1].binstr),nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; }
-#line 8024 "asmparse.cpp"
+#line 8017 "prebuilt\\asmparse.cpp"
     break;
 
   case 729: /* secAttrBlob: CLASS_ SQSTRING '=' '{' customBlobNVPairs '}'  */
-#line 1814 "asmparse.y"
+#line 1807 "asmparse.y"
                                                               { (yyval.binstr) = PASM->EncodeSecAttr((yyvsp[-4].string),(yyvsp[-1].binstr),nCustomBlobNVPairs);
                                                                 nCustomBlobNVPairs = 0; }
-#line 8031 "asmparse.cpp"
+#line 8024 "prebuilt\\asmparse.cpp"
     break;
 
   case 730: /* psetHead: _PERMISSIONSET secAction '=' '('  */
-#line 1818 "asmparse.y"
+#line 1811 "asmparse.y"
                                                               { (yyval.secAct) = (yyvsp[-2].secAct); bParsingByteArray = TRUE; }
-#line 8037 "asmparse.cpp"
+#line 8030 "prebuilt\\asmparse.cpp"
     break;
 
   case 731: /* psetHead: _PERMISSIONSET secAction BYTEARRAY_ '('  */
-#line 1820 "asmparse.y"
+#line 1813 "asmparse.y"
                                                               { (yyval.secAct) = (yyvsp[-2].secAct); bParsingByteArray = TRUE; }
-#line 8043 "asmparse.cpp"
+#line 8036 "prebuilt\\asmparse.cpp"
     break;
 
   case 732: /* nameValPairs: nameValPair  */
-#line 1823 "asmparse.y"
+#line 1816 "asmparse.y"
                                                               { (yyval.pair) = (yyvsp[0].pair); }
-#line 8049 "asmparse.cpp"
+#line 8042 "prebuilt\\asmparse.cpp"
     break;
 
   case 733: /* nameValPairs: nameValPair ',' nameValPairs  */
-#line 1824 "asmparse.y"
+#line 1817 "asmparse.y"
                                                               { (yyval.pair) = (yyvsp[-2].pair)->Concat((yyvsp[0].pair)); }
-#line 8055 "asmparse.cpp"
+#line 8048 "prebuilt\\asmparse.cpp"
     break;
 
   case 734: /* nameValPair: compQstring '=' caValue  */
-#line 1827 "asmparse.y"
+#line 1820 "asmparse.y"
                                                               { (yyvsp[-2].binstr)->appendInt8(0); (yyval.pair) = new NVPair((yyvsp[-2].binstr), (yyvsp[0].binstr)); }
-#line 8061 "asmparse.cpp"
+#line 8054 "prebuilt\\asmparse.cpp"
     break;
 
   case 735: /* truefalse: TRUE_  */
-#line 1830 "asmparse.y"
+#line 1823 "asmparse.y"
                                                               { (yyval.int32) = 1; }
-#line 8067 "asmparse.cpp"
+#line 8060 "prebuilt\\asmparse.cpp"
     break;
 
   case 736: /* truefalse: FALSE_  */
-#line 1831 "asmparse.y"
+#line 1824 "asmparse.y"
                                                               { (yyval.int32) = 0; }
-#line 8073 "asmparse.cpp"
+#line 8066 "prebuilt\\asmparse.cpp"
     break;
 
   case 737: /* caValue: truefalse  */
-#line 1834 "asmparse.y"
+#line 1827 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_BOOLEAN);
                                                                 (yyval.binstr)->appendInt8((yyvsp[0].int32)); }
-#line 8081 "asmparse.cpp"
+#line 8074 "prebuilt\\asmparse.cpp"
     break;
 
   case 738: /* caValue: int32  */
-#line 1837 "asmparse.y"
+#line 1830 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_I4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[0].int32)); }
-#line 8089 "asmparse.cpp"
+#line 8082 "prebuilt\\asmparse.cpp"
     break;
 
   case 739: /* caValue: INT32_ '(' int32 ')'  */
-#line 1840 "asmparse.y"
+#line 1833 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_I4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8097 "asmparse.cpp"
+#line 8090 "prebuilt\\asmparse.cpp"
     break;
 
   case 740: /* caValue: compQstring  */
-#line 1843 "asmparse.y"
+#line 1836 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_STRING);
                                                                 (yyval.binstr)->append((yyvsp[0].binstr)); delete (yyvsp[0].binstr);
                                                                 (yyval.binstr)->appendInt8(0); }
-#line 8106 "asmparse.cpp"
+#line 8099 "prebuilt\\asmparse.cpp"
     break;
 
   case 741: /* caValue: className '(' INT8_ ':' int32 ')'  */
-#line 1847 "asmparse.y"
+#line 1840 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-5].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(1);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8117 "asmparse.cpp"
+#line 8110 "prebuilt\\asmparse.cpp"
     break;
 
   case 742: /* caValue: className '(' INT16_ ':' int32 ')'  */
-#line 1853 "asmparse.y"
+#line 1846 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-5].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(2);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8128 "asmparse.cpp"
+#line 8121 "prebuilt\\asmparse.cpp"
     break;
 
   case 743: /* caValue: className '(' INT32_ ':' int32 ')'  */
-#line 1859 "asmparse.y"
+#line 1852 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-5].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8139 "asmparse.cpp"
+#line 8132 "prebuilt\\asmparse.cpp"
     break;
 
   case 744: /* caValue: className '(' int32 ')'  */
-#line 1865 "asmparse.y"
+#line 1858 "asmparse.y"
                                                               { (yyval.binstr) = new BinStr();
                                                                 (yyval.binstr)->appendInt8(SERIALIZATION_TYPE_ENUM);
                                                                 char* sz = PASM->ReflectionNotation((yyvsp[-3].token));
                                                                 strcpy_s((char *)(yyval.binstr)->getBuff((unsigned)strlen(sz) + 1), strlen(sz) + 1,sz);
                                                                 (yyval.binstr)->appendInt8(4);
                                                                 (yyval.binstr)->appendInt32((yyvsp[-1].int32)); }
-#line 8150 "asmparse.cpp"
+#line 8143 "prebuilt\\asmparse.cpp"
     break;
 
   case 745: /* secAction: REQUEST_  */
-#line 1873 "asmparse.y"
+#line 1866 "asmparse.y"
                                                               { (yyval.secAct) = dclRequest; }
-#line 8156 "asmparse.cpp"
+#line 8149 "prebuilt\\asmparse.cpp"
     break;
 
   case 746: /* secAction: DEMAND_  */
-#line 1874 "asmparse.y"
+#line 1867 "asmparse.y"
                                                               { (yyval.secAct) = dclDemand; }
-#line 8162 "asmparse.cpp"
+#line 8155 "prebuilt\\asmparse.cpp"
     break;
 
   case 747: /* secAction: ASSERT_  */
-#line 1875 "asmparse.y"
+#line 1868 "asmparse.y"
                                                               { (yyval.secAct) = dclAssert; }
-#line 8168 "asmparse.cpp"
+#line 8161 "prebuilt\\asmparse.cpp"
     break;
 
   case 748: /* secAction: DENY_  */
-#line 1876 "asmparse.y"
+#line 1869 "asmparse.y"
                                                               { (yyval.secAct) = dclDeny; }
-#line 8174 "asmparse.cpp"
+#line 8167 "prebuilt\\asmparse.cpp"
     break;
 
   case 749: /* secAction: PERMITONLY_  */
-#line 1877 "asmparse.y"
+#line 1870 "asmparse.y"
                                                               { (yyval.secAct) = dclPermitOnly; }
-#line 8180 "asmparse.cpp"
+#line 8173 "prebuilt\\asmparse.cpp"
     break;
 
   case 750: /* secAction: LINKCHECK_  */
-#line 1878 "asmparse.y"
+#line 1871 "asmparse.y"
                                                               { (yyval.secAct) = dclLinktimeCheck; }
-#line 8186 "asmparse.cpp"
+#line 8179 "prebuilt\\asmparse.cpp"
     break;
 
   case 751: /* secAction: INHERITCHECK_  */
-#line 1879 "asmparse.y"
+#line 1872 "asmparse.y"
                                                               { (yyval.secAct) = dclInheritanceCheck; }
-#line 8192 "asmparse.cpp"
+#line 8185 "prebuilt\\asmparse.cpp"
     break;
 
   case 752: /* secAction: REQMIN_  */
-#line 1880 "asmparse.y"
+#line 1873 "asmparse.y"
                                                               { (yyval.secAct) = dclRequestMinimum; }
-#line 8198 "asmparse.cpp"
+#line 8191 "prebuilt\\asmparse.cpp"
     break;
 
   case 753: /* secAction: REQOPT_  */
-#line 1881 "asmparse.y"
+#line 1874 "asmparse.y"
                                                               { (yyval.secAct) = dclRequestOptional; }
-#line 8204 "asmparse.cpp"
+#line 8197 "prebuilt\\asmparse.cpp"
     break;
 
   case 754: /* secAction: REQREFUSE_  */
-#line 1882 "asmparse.y"
+#line 1875 "asmparse.y"
                                                               { (yyval.secAct) = dclRequestRefuse; }
-#line 8210 "asmparse.cpp"
+#line 8203 "prebuilt\\asmparse.cpp"
     break;
 
   case 755: /* secAction: PREJITGRANT_  */
-#line 1883 "asmparse.y"
+#line 1876 "asmparse.y"
                                                               { (yyval.secAct) = dclPrejitGrant; }
-#line 8216 "asmparse.cpp"
+#line 8209 "prebuilt\\asmparse.cpp"
     break;
 
   case 756: /* secAction: PREJITDENY_  */
-#line 1884 "asmparse.y"
+#line 1877 "asmparse.y"
                                                               { (yyval.secAct) = dclPrejitDenied; }
-#line 8222 "asmparse.cpp"
+#line 8215 "prebuilt\\asmparse.cpp"
     break;
 
   case 757: /* secAction: NONCASDEMAND_  */
-#line 1885 "asmparse.y"
+#line 1878 "asmparse.y"
                                                               { (yyval.secAct) = dclNonCasDemand; }
-#line 8228 "asmparse.cpp"
+#line 8221 "prebuilt\\asmparse.cpp"
     break;
 
   case 758: /* secAction: NONCASLINKDEMAND_  */
-#line 1886 "asmparse.y"
+#line 1879 "asmparse.y"
                                                               { (yyval.secAct) = dclNonCasLinkDemand; }
-#line 8234 "asmparse.cpp"
+#line 8227 "prebuilt\\asmparse.cpp"
     break;
 
   case 759: /* secAction: NONCASINHERITANCE_  */
-#line 1887 "asmparse.y"
+#line 1880 "asmparse.y"
                                                               { (yyval.secAct) = dclNonCasInheritance; }
-#line 8240 "asmparse.cpp"
+#line 8233 "prebuilt\\asmparse.cpp"
     break;
 
   case 760: /* esHead: _LINE  */
-#line 1891 "asmparse.y"
+#line 1884 "asmparse.y"
                                                               { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = FALSE; }
-#line 8246 "asmparse.cpp"
+#line 8239 "prebuilt\\asmparse.cpp"
     break;
 
   case 761: /* esHead: P_LINE  */
-#line 1892 "asmparse.y"
+#line 1885 "asmparse.y"
                                                               { PASM->ResetLineNumbers(); nCurrPC = PASM->m_CurPC; PENV->bExternSource = TRUE; PENV->bExternSourceAutoincrement = TRUE; }
-#line 8252 "asmparse.cpp"
+#line 8245 "prebuilt\\asmparse.cpp"
     break;
 
   case 762: /* extSourceSpec: esHead int32 SQSTRING  */
-#line 1895 "asmparse.y"
+#line 1888 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-1].int32);
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8260 "asmparse.cpp"
+#line 8253 "prebuilt\\asmparse.cpp"
     break;
 
   case 763: /* extSourceSpec: esHead int32  */
-#line 1898 "asmparse.y"
+#line 1891 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[0].int32);
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd  = static_cast<unsigned>(-1); }
-#line 8267 "asmparse.cpp"
+#line 8260 "prebuilt\\asmparse.cpp"
     break;
 
   case 764: /* extSourceSpec: esHead int32 ':' int32 SQSTRING  */
-#line 1900 "asmparse.y"
+#line 1893 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-3].int32);
                                                                 PENV->nExtCol=(yyvsp[-1].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8275 "asmparse.cpp"
+#line 8268 "prebuilt\\asmparse.cpp"
     break;
 
   case 765: /* extSourceSpec: esHead int32 ':' int32  */
-#line 1903 "asmparse.y"
+#line 1896 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-2].int32);
                                                                 PENV->nExtCol=(yyvsp[0].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);}
-#line 8282 "asmparse.cpp"
+#line 8275 "prebuilt\\asmparse.cpp"
     break;
 
   case 766: /* extSourceSpec: esHead int32 ':' int32 ',' int32 SQSTRING  */
-#line 1906 "asmparse.y"
+#line 1899 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-5].int32);
                                                                 PENV->nExtCol=(yyvsp[-3].int32); PENV->nExtColEnd = (yyvsp[-1].int32);
                                                                 PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8290 "asmparse.cpp"
+#line 8283 "prebuilt\\asmparse.cpp"
     break;
 
   case 767: /* extSourceSpec: esHead int32 ':' int32 ',' int32  */
-#line 1910 "asmparse.y"
+#line 1903 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-4].int32);
                                                                 PENV->nExtCol=(yyvsp[-2].int32); PENV->nExtColEnd = (yyvsp[0].int32); }
-#line 8297 "asmparse.cpp"
+#line 8290 "prebuilt\\asmparse.cpp"
     break;
 
   case 768: /* extSourceSpec: esHead int32 ',' int32 ':' int32 SQSTRING  */
-#line 1913 "asmparse.y"
+#line 1906 "asmparse.y"
                                                               { PENV->nExtLine = (yyvsp[-5].int32); PENV->nExtLineEnd = (yyvsp[-3].int32);
                                                                 PENV->nExtCol=(yyvsp[-1].int32); PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8305 "asmparse.cpp"
+#line 8298 "prebuilt\\asmparse.cpp"
     break;
 
   case 769: /* extSourceSpec: esHead int32 ',' int32 ':' int32  */
-#line 1917 "asmparse.y"
+#line 1910 "asmparse.y"
                                                               { PENV->nExtLine = (yyvsp[-4].int32); PENV->nExtLineEnd = (yyvsp[-2].int32);
                                                                 PENV->nExtCol=(yyvsp[0].int32); PENV->nExtColEnd = static_cast<unsigned>(-1); }
-#line 8312 "asmparse.cpp"
+#line 8305 "prebuilt\\asmparse.cpp"
     break;
 
   case 770: /* extSourceSpec: esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING  */
-#line 1920 "asmparse.y"
+#line 1913 "asmparse.y"
                                                               { PENV->nExtLine = (yyvsp[-7].int32); PENV->nExtLineEnd = (yyvsp[-5].int32);
                                                                 PENV->nExtCol=(yyvsp[-3].int32); PENV->nExtColEnd = (yyvsp[-1].int32);
                                                                 PASM->SetSourceFileName((yyvsp[0].string));}
-#line 8320 "asmparse.cpp"
+#line 8313 "prebuilt\\asmparse.cpp"
     break;
 
   case 771: /* extSourceSpec: esHead int32 ',' int32 ':' int32 ',' int32  */
-#line 1924 "asmparse.y"
+#line 1917 "asmparse.y"
                                                               { PENV->nExtLine = (yyvsp[-6].int32); PENV->nExtLineEnd = (yyvsp[-4].int32);
                                                                 PENV->nExtCol=(yyvsp[-2].int32); PENV->nExtColEnd = (yyvsp[0].int32); }
-#line 8327 "asmparse.cpp"
+#line 8320 "prebuilt\\asmparse.cpp"
     break;
 
   case 772: /* extSourceSpec: esHead int32 QSTRING  */
-#line 1926 "asmparse.y"
+#line 1919 "asmparse.y"
                                                               { PENV->nExtLine = PENV->nExtLineEnd = (yyvsp[-1].int32) - 1;
                                                                 PENV->nExtCol = 0; PENV->nExtColEnd = static_cast<unsigned>(-1);
                                                                 PASM->SetSourceFileName((yyvsp[0].binstr));}
-#line 8335 "asmparse.cpp"
+#line 8328 "prebuilt\\asmparse.cpp"
     break;
 
   case 773: /* fileDecl: _FILE fileAttr dottedName fileEntry hashHead bytes ')' fileEntry  */
-#line 1933 "asmparse.y"
+#line 1926 "asmparse.y"
                                                               { PASMM->AddFile((yyvsp[-5].string), (yyvsp[-6].fileAttr)|(yyvsp[-4].fileAttr)|(yyvsp[0].fileAttr), (yyvsp[-2].binstr)); }
-#line 8341 "asmparse.cpp"
+#line 8334 "prebuilt\\asmparse.cpp"
     break;
 
   case 774: /* fileDecl: _FILE fileAttr dottedName fileEntry  */
-#line 1934 "asmparse.y"
+#line 1927 "asmparse.y"
                                                               { PASMM->AddFile((yyvsp[-1].string), (yyvsp[-2].fileAttr)|(yyvsp[0].fileAttr), NULL); }
-#line 8347 "asmparse.cpp"
+#line 8340 "prebuilt\\asmparse.cpp"
     break;
 
   case 775: /* fileAttr: %empty  */
-#line 1937 "asmparse.y"
+#line 1930 "asmparse.y"
                                                               { (yyval.fileAttr) = (CorFileFlags) 0; }
-#line 8353 "asmparse.cpp"
+#line 8346 "prebuilt\\asmparse.cpp"
     break;
 
   case 776: /* fileAttr: fileAttr NOMETADATA_  */
-#line 1938 "asmparse.y"
+#line 1931 "asmparse.y"
                                                               { (yyval.fileAttr) = (CorFileFlags) ((yyvsp[-1].fileAttr) | ffContainsNoMetaData); }
-#line 8359 "asmparse.cpp"
+#line 8352 "prebuilt\\asmparse.cpp"
     break;
 
   case 777: /* fileEntry: %empty  */
-#line 1941 "asmparse.y"
+#line 1934 "asmparse.y"
                                                               { (yyval.fileAttr) = (CorFileFlags) 0; }
-#line 8365 "asmparse.cpp"
+#line 8358 "prebuilt\\asmparse.cpp"
     break;
 
   case 778: /* fileEntry: _ENTRYPOINT  */
-#line 1942 "asmparse.y"
+#line 1935 "asmparse.y"
                                                               { (yyval.fileAttr) = (CorFileFlags) 0x80000000; }
-#line 8371 "asmparse.cpp"
+#line 8364 "prebuilt\\asmparse.cpp"
     break;
 
   case 779: /* hashHead: _HASH '=' '('  */
-#line 1945 "asmparse.y"
+#line 1938 "asmparse.y"
                                                               { bParsingByteArray = TRUE; }
-#line 8377 "asmparse.cpp"
+#line 8370 "prebuilt\\asmparse.cpp"
     break;
 
   case 780: /* assemblyHead: _ASSEMBLY asmAttr dottedName  */
-#line 1948 "asmparse.y"
+#line 1941 "asmparse.y"
                                                               { PASMM->StartAssembly((yyvsp[0].string), NULL, (DWORD)(yyvsp[-1].asmAttr), FALSE); }
-#line 8383 "asmparse.cpp"
+#line 8376 "prebuilt\\asmparse.cpp"
     break;
 
   case 781: /* asmAttr: %empty  */
-#line 1951 "asmparse.y"
+#line 1944 "asmparse.y"
                                                               { (yyval.asmAttr) = (CorAssemblyFlags) 0; }
-#line 8389 "asmparse.cpp"
+#line 8382 "prebuilt\\asmparse.cpp"
     break;
 
   case 782: /* asmAttr: asmAttr RETARGETABLE_  */
-#line 1952 "asmparse.y"
+#line 1945 "asmparse.y"
                                                               { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afRetargetable); }
-#line 8395 "asmparse.cpp"
+#line 8388 "prebuilt\\asmparse.cpp"
     break;
 
   case 783: /* asmAttr: asmAttr WINDOWSRUNTIME_  */
-#line 1953 "asmparse.y"
+#line 1946 "asmparse.y"
                                                               { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afContentType_WindowsRuntime); }
-#line 8401 "asmparse.cpp"
+#line 8394 "prebuilt\\asmparse.cpp"
     break;
 
   case 784: /* asmAttr: asmAttr NOPLATFORM_  */
-#line 1954 "asmparse.y"
+#line 1947 "asmparse.y"
                                                               { (yyval.asmAttr) = (CorAssemblyFlags) ((yyvsp[-1].asmAttr) | afPA_NoPlatform); }
-#line 8407 "asmparse.cpp"
+#line 8400 "prebuilt\\asmparse.cpp"
     break;
 
   case 785: /* asmAttr: asmAttr LEGACY_ LIBRARY_  */
-#line 1955 "asmparse.y"
+#line 1948 "asmparse.y"
                                                               { (yyval.asmAttr) = (yyvsp[-2].asmAttr); }
-#line 8413 "asmparse.cpp"
+#line 8406 "prebuilt\\asmparse.cpp"
     break;
 
   case 786: /* asmAttr: asmAttr CIL_  */
-#line 1956 "asmparse.y"
+#line 1949 "asmparse.y"
                                                               { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_MSIL); }
-#line 8419 "asmparse.cpp"
+#line 8412 "prebuilt\\asmparse.cpp"
     break;
 
   case 787: /* asmAttr: asmAttr X86_  */
-#line 1957 "asmparse.y"
+#line 1950 "asmparse.y"
                                                               { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_x86); }
-#line 8425 "asmparse.cpp"
+#line 8418 "prebuilt\\asmparse.cpp"
     break;
 
   case 788: /* asmAttr: asmAttr AMD64_  */
-#line 1958 "asmparse.y"
+#line 1951 "asmparse.y"
                                                               { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_AMD64); }
-#line 8431 "asmparse.cpp"
+#line 8424 "prebuilt\\asmparse.cpp"
     break;
 
   case 789: /* asmAttr: asmAttr ARM_  */
-#line 1959 "asmparse.y"
+#line 1952 "asmparse.y"
                                                               { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_ARM); }
-#line 8437 "asmparse.cpp"
+#line 8430 "prebuilt\\asmparse.cpp"
     break;
 
   case 790: /* asmAttr: asmAttr ARM64_  */
-#line 1960 "asmparse.y"
+#line 1953 "asmparse.y"
                                                               { SET_PA((yyval.asmAttr),(yyvsp[-1].asmAttr),afPA_ARM64); }
-#line 8443 "asmparse.cpp"
+#line 8436 "prebuilt\\asmparse.cpp"
     break;
 
   case 793: /* assemblyDecl: _HASH ALGORITHM_ int32  */
-#line 1967 "asmparse.y"
+#line 1960 "asmparse.y"
                                                               { PASMM->SetAssemblyHashAlg((yyvsp[0].int32)); }
-#line 8449 "asmparse.cpp"
+#line 8442 "prebuilt\\asmparse.cpp"
     break;
 
   case 796: /* intOrWildcard: int32  */
-#line 1972 "asmparse.y"
+#line 1965 "asmparse.y"
                                                               { (yyval.int32) = (yyvsp[0].int32); }
-#line 8455 "asmparse.cpp"
+#line 8448 "prebuilt\\asmparse.cpp"
     break;
 
   case 797: /* intOrWildcard: '*'  */
-#line 1973 "asmparse.y"
+#line 1966 "asmparse.y"
                                                               { (yyval.int32) = 0xFFFF; }
-#line 8461 "asmparse.cpp"
+#line 8454 "prebuilt\\asmparse.cpp"
     break;
 
   case 798: /* asmOrRefDecl: publicKeyHead bytes ')'  */
-#line 1976 "asmparse.y"
+#line 1969 "asmparse.y"
                                                               { PASMM->SetAssemblyPublicKey((yyvsp[-1].binstr)); }
-#line 8467 "asmparse.cpp"
+#line 8460 "prebuilt\\asmparse.cpp"
     break;
 
   case 799: /* asmOrRefDecl: _VER intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard  */
-#line 1978 "asmparse.y"
+#line 1971 "asmparse.y"
                                                               { PASMM->SetAssemblyVer((USHORT)(yyvsp[-6].int32), (USHORT)(yyvsp[-4].int32), (USHORT)(yyvsp[-2].int32), (USHORT)(yyvsp[0].int32)); }
-#line 8473 "asmparse.cpp"
+#line 8466 "prebuilt\\asmparse.cpp"
     break;
 
   case 800: /* asmOrRefDecl: _LOCALE compQstring  */
-#line 1979 "asmparse.y"
+#line 1972 "asmparse.y"
                                                               { (yyvsp[0].binstr)->appendInt8(0); PASMM->SetAssemblyLocale((yyvsp[0].binstr),TRUE); }
-#line 8479 "asmparse.cpp"
+#line 8472 "prebuilt\\asmparse.cpp"
     break;
 
   case 801: /* asmOrRefDecl: localeHead bytes ')'  */
-#line 1980 "asmparse.y"
+#line 1973 "asmparse.y"
                                                               { PASMM->SetAssemblyLocale((yyvsp[-1].binstr),FALSE); }
-#line 8485 "asmparse.cpp"
+#line 8478 "prebuilt\\asmparse.cpp"
     break;
 
   case 804: /* publicKeyHead: _PUBLICKEY '=' '('  */
-#line 1985 "asmparse.y"
+#line 1978 "asmparse.y"
                                                               { bParsingByteArray = TRUE; }
-#line 8491 "asmparse.cpp"
+#line 8484 "prebuilt\\asmparse.cpp"
     break;
 
   case 805: /* publicKeyTokenHead: _PUBLICKEYTOKEN '=' '('  */
-#line 1988 "asmparse.y"
+#line 1981 "asmparse.y"
                                                               { bParsingByteArray = TRUE; }
-#line 8497 "asmparse.cpp"
+#line 8490 "prebuilt\\asmparse.cpp"
     break;
 
   case 806: /* localeHead: _LOCALE '=' '('  */
-#line 1991 "asmparse.y"
+#line 1984 "asmparse.y"
                                                               { bParsingByteArray = TRUE; }
-#line 8503 "asmparse.cpp"
+#line 8496 "prebuilt\\asmparse.cpp"
     break;
 
   case 807: /* assemblyRefHead: _ASSEMBLY EXTERN_ asmAttr dottedName  */
-#line 1995 "asmparse.y"
+#line 1988 "asmparse.y"
                                                               { PASMM->StartAssembly((yyvsp[0].string), NULL, (yyvsp[-1].asmAttr), TRUE); }
-#line 8509 "asmparse.cpp"
+#line 8502 "prebuilt\\asmparse.cpp"
     break;
 
   case 808: /* assemblyRefHead: _ASSEMBLY EXTERN_ asmAttr dottedName AS_ dottedName  */
-#line 1997 "asmparse.y"
+#line 1990 "asmparse.y"
                                                               { PASMM->StartAssembly((yyvsp[-2].string), (yyvsp[0].string), (yyvsp[-3].asmAttr), TRUE); }
-#line 8515 "asmparse.cpp"
+#line 8508 "prebuilt\\asmparse.cpp"
     break;
 
   case 811: /* assemblyRefDecl: hashHead bytes ')'  */
-#line 2004 "asmparse.y"
+#line 1997 "asmparse.y"
                                                               { PASMM->SetAssemblyHashBlob((yyvsp[-1].binstr)); }
-#line 8521 "asmparse.cpp"
+#line 8514 "prebuilt\\asmparse.cpp"
     break;
 
   case 813: /* assemblyRefDecl: publicKeyTokenHead bytes ')'  */
-#line 2006 "asmparse.y"
+#line 1999 "asmparse.y"
                                                               { PASMM->SetAssemblyPublicKeyToken((yyvsp[-1].binstr)); }
-#line 8527 "asmparse.cpp"
+#line 8520 "prebuilt\\asmparse.cpp"
     break;
 
   case 814: /* assemblyRefDecl: AUTO_  */
-#line 2007 "asmparse.y"
+#line 2000 "asmparse.y"
                                                               { PASMM->SetAssemblyAutodetect(); }
-#line 8533 "asmparse.cpp"
+#line 8526 "prebuilt\\asmparse.cpp"
     break;
 
   case 815: /* exptypeHead: _CLASS EXTERN_ exptAttr dottedName  */
-#line 2010 "asmparse.y"
+#line 2003 "asmparse.y"
                                                               { PASMM->StartComType((yyvsp[0].string), (yyvsp[-1].exptAttr));}
-#line 8539 "asmparse.cpp"
+#line 8532 "prebuilt\\asmparse.cpp"
     break;
 
   case 816: /* exportHead: _EXPORT exptAttr dottedName  */
-#line 2013 "asmparse.y"
+#line 2006 "asmparse.y"
                                                                               { PASMM->StartComType((yyvsp[0].string), (yyvsp[-1].exptAttr)); }
-#line 8545 "asmparse.cpp"
+#line 8538 "prebuilt\\asmparse.cpp"
     break;
 
   case 817: /* exptAttr: %empty  */
-#line 2016 "asmparse.y"
+#line 2009 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) 0; }
-#line 8551 "asmparse.cpp"
+#line 8544 "prebuilt\\asmparse.cpp"
     break;
 
   case 818: /* exptAttr: exptAttr PRIVATE_  */
-#line 2017 "asmparse.y"
+#line 2010 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdNotPublic); }
-#line 8557 "asmparse.cpp"
+#line 8550 "prebuilt\\asmparse.cpp"
     break;
 
   case 819: /* exptAttr: exptAttr PUBLIC_  */
-#line 2018 "asmparse.y"
+#line 2011 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdPublic); }
-#line 8563 "asmparse.cpp"
+#line 8556 "prebuilt\\asmparse.cpp"
     break;
 
   case 820: /* exptAttr: exptAttr FORWARDER_  */
-#line 2019 "asmparse.y"
+#line 2012 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-1].exptAttr) | tdForwarder); }
-#line 8569 "asmparse.cpp"
+#line 8562 "prebuilt\\asmparse.cpp"
     break;
 
   case 821: /* exptAttr: exptAttr NESTED_ PUBLIC_  */
-#line 2020 "asmparse.y"
+#line 2013 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedPublic); }
-#line 8575 "asmparse.cpp"
+#line 8568 "prebuilt\\asmparse.cpp"
     break;
 
   case 822: /* exptAttr: exptAttr NESTED_ PRIVATE_  */
-#line 2021 "asmparse.y"
+#line 2014 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedPrivate); }
-#line 8581 "asmparse.cpp"
+#line 8574 "prebuilt\\asmparse.cpp"
     break;
 
   case 823: /* exptAttr: exptAttr NESTED_ FAMILY_  */
-#line 2022 "asmparse.y"
+#line 2015 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamily); }
-#line 8587 "asmparse.cpp"
+#line 8580 "prebuilt\\asmparse.cpp"
     break;
 
   case 824: /* exptAttr: exptAttr NESTED_ ASSEMBLY_  */
-#line 2023 "asmparse.y"
+#line 2016 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedAssembly); }
-#line 8593 "asmparse.cpp"
+#line 8586 "prebuilt\\asmparse.cpp"
     break;
 
   case 825: /* exptAttr: exptAttr NESTED_ FAMANDASSEM_  */
-#line 2024 "asmparse.y"
+#line 2017 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamANDAssem); }
-#line 8599 "asmparse.cpp"
+#line 8592 "prebuilt\\asmparse.cpp"
     break;
 
   case 826: /* exptAttr: exptAttr NESTED_ FAMORASSEM_  */
-#line 2025 "asmparse.y"
+#line 2018 "asmparse.y"
                                                               { (yyval.exptAttr) = (CorTypeAttr) ((yyvsp[-2].exptAttr) | tdNestedFamORAssem); }
-#line 8605 "asmparse.cpp"
+#line 8598 "prebuilt\\asmparse.cpp"
     break;
 
   case 829: /* exptypeDecl: _FILE dottedName  */
-#line 2032 "asmparse.y"
+#line 2025 "asmparse.y"
                                                               { PASMM->SetComTypeFile((yyvsp[0].string)); }
-#line 8611 "asmparse.cpp"
+#line 8604 "prebuilt\\asmparse.cpp"
     break;
 
   case 830: /* exptypeDecl: _CLASS EXTERN_ slashedName  */
-#line 2033 "asmparse.y"
+#line 2026 "asmparse.y"
                                                                { PASMM->SetComTypeComType((yyvsp[0].string)); }
-#line 8617 "asmparse.cpp"
+#line 8610 "prebuilt\\asmparse.cpp"
     break;
 
   case 831: /* exptypeDecl: _ASSEMBLY EXTERN_ dottedName  */
-#line 2034 "asmparse.y"
+#line 2027 "asmparse.y"
                                                               { PASMM->SetComTypeAsmRef((yyvsp[0].string)); }
-#line 8623 "asmparse.cpp"
+#line 8616 "prebuilt\\asmparse.cpp"
     break;
 
   case 832: /* exptypeDecl: MDTOKEN_ '(' int32 ')'  */
-#line 2035 "asmparse.y"
+#line 2028 "asmparse.y"
                                                               { if(!PASMM->SetComTypeImplementationTok((yyvsp[-1].int32)))
                                                                   PASM->report->error("Invalid implementation of exported type\n"); }
-#line 8630 "asmparse.cpp"
+#line 8623 "prebuilt\\asmparse.cpp"
     break;
 
   case 833: /* exptypeDecl: _CLASS int32  */
-#line 2037 "asmparse.y"
+#line 2030 "asmparse.y"
                                                               { if(!PASMM->SetComTypeClassTok((yyvsp[0].int32)))
                                                                   PASM->report->error("Invalid TypeDefID of exported type\n"); }
-#line 8637 "asmparse.cpp"
+#line 8630 "prebuilt\\asmparse.cpp"
     break;
 
   case 836: /* manifestResHead: _MRESOURCE manresAttr dottedName  */
-#line 2043 "asmparse.y"
+#line 2036 "asmparse.y"
                                                               { PASMM->StartManifestRes((yyvsp[0].string), (yyvsp[0].string), (yyvsp[-1].manresAttr)); }
-#line 8643 "asmparse.cpp"
+#line 8636 "prebuilt\\asmparse.cpp"
     break;
 
   case 837: /* manifestResHead: _MRESOURCE manresAttr dottedName AS_ dottedName  */
-#line 2045 "asmparse.y"
+#line 2038 "asmparse.y"
                                                               { PASMM->StartManifestRes((yyvsp[-2].string), (yyvsp[0].string), (yyvsp[-3].manresAttr)); }
-#line 8649 "asmparse.cpp"
+#line 8642 "prebuilt\\asmparse.cpp"
     break;
 
   case 838: /* manresAttr: %empty  */
-#line 2048 "asmparse.y"
+#line 2041 "asmparse.y"
                                                               { (yyval.manresAttr) = (CorManifestResourceFlags) 0; }
-#line 8655 "asmparse.cpp"
+#line 8648 "prebuilt\\asmparse.cpp"
     break;
 
   case 839: /* manresAttr: manresAttr PUBLIC_  */
-#line 2049 "asmparse.y"
+#line 2042 "asmparse.y"
                                                               { (yyval.manresAttr) = (CorManifestResourceFlags) ((yyvsp[-1].manresAttr) | mrPublic); }
-#line 8661 "asmparse.cpp"
+#line 8654 "prebuilt\\asmparse.cpp"
     break;
 
   case 840: /* manresAttr: manresAttr PRIVATE_  */
-#line 2050 "asmparse.y"
+#line 2043 "asmparse.y"
                                                               { (yyval.manresAttr) = (CorManifestResourceFlags) ((yyvsp[-1].manresAttr) | mrPrivate); }
-#line 8667 "asmparse.cpp"
+#line 8660 "prebuilt\\asmparse.cpp"
     break;
 
   case 843: /* manifestResDecl: _FILE dottedName AT_ int32  */
-#line 2057 "asmparse.y"
+#line 2050 "asmparse.y"
                                                               { PASMM->SetManifestResFile((yyvsp[-2].string), (ULONG)(yyvsp[0].int32)); }
-#line 8673 "asmparse.cpp"
+#line 8666 "prebuilt\\asmparse.cpp"
     break;
 
   case 844: /* manifestResDecl: _ASSEMBLY EXTERN_ dottedName  */
-#line 2058 "asmparse.y"
+#line 2051 "asmparse.y"
                                                               { PASMM->SetManifestResAsmRef((yyvsp[0].string)); }
-#line 8679 "asmparse.cpp"
+#line 8672 "prebuilt\\asmparse.cpp"
     break;
 
 
-#line 8683 "asmparse.cpp"
+#line 8676 "prebuilt\\asmparse.cpp"
 
       default: break;
     }
@@ -8872,7 +8865,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 2063 "asmparse.y"
+#line 2056 "asmparse.y"
 
 
 #include "grammar_after.cpp"

@@ -415,13 +415,13 @@ namespace System.Numerics
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
         /// <returns>A new <see cref="Vector2" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements initialized to zero.</returns>
         [Intrinsic]
-        internal static Vector2 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector2();
+        public static Vector2 CreateScalar(float x) => Vector128.CreateScalar(x).AsVector2();
 
         /// <summary>Creates a vector with <see cref="X" /> initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="x">The value to assign to the <see cref="X" /> field.</param>
         /// <returns>A new <see cref="Vector2" /> with <see cref="X" /> initialized <paramref name="x" /> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        internal static Vector2 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector2();
+        public static Vector2 CreateScalarUnsafe(float x) => Vector128.CreateScalarUnsafe(x).AsVector2();
 
         /// <summary>
         /// Returns the z-value of the cross product of two vectors.
@@ -715,11 +715,11 @@ namespace System.Numerics
             return Unsafe.ReadUnaligned<Vector2>(in address);
         }
 
-        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
+        /// <inheritdoc cref="Vector4.Log(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Log(Vector2 vector) => Vector128.Log(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
-        /// <inheritdoc cref="Vector4.Log(Vector4)" />
+        /// <inheritdoc cref="Vector4.Log2(Vector4)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Log2(Vector2 vector) => Vector128.Log2(Vector4.Create(vector, 1.0f, 1.0f).AsVector128()).AsVector2();
 
@@ -901,10 +901,8 @@ namespace System.Numerics
         /// <param name="position">The vector to transform.</param>
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector2 Transform(Vector2 position, Matrix3x2 matrix) => Transform(position, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector2 Transform(Vector2 position, in Matrix3x2.Impl matrix)
+        public static Vector2 Transform(Vector2 position, Matrix3x2 matrix)
         {
             Vector2 result = matrix.X * position.X;
             result = MultiplyAddEstimate(matrix.Y, Create(position.Y), result);
@@ -916,7 +914,7 @@ namespace System.Numerics
         /// <param name="matrix">The transformation matrix.</param>
         /// <returns>The transformed vector.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector2 Transform(Vector2 position, Matrix4x4 matrix) => Vector4.Transform(position, in matrix.AsImpl()).AsVector128().AsVector2();
+        public static Vector2 Transform(Vector2 position, Matrix4x4 matrix) => Vector4.Transform(position, matrix).AsVector2();
 
         /// <summary>Transforms a vector by the specified Quaternion rotation value.</summary>
         /// <param name="value">The vector to rotate.</param>
@@ -929,10 +927,8 @@ namespace System.Numerics
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix) => TransformNormal(normal, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector2 TransformNormal(Vector2 normal, in Matrix3x2.Impl matrix)
+        public static Vector2 TransformNormal(Vector2 normal, Matrix3x2 matrix)
         {
             Vector2 result = matrix.X * normal.X;
             result = MultiplyAddEstimate(matrix.Y, Create(normal.Y), result);
@@ -943,10 +939,8 @@ namespace System.Numerics
         /// <param name="normal">The source vector.</param>
         /// <param name="matrix">The matrix.</param>
         /// <returns>The transformed vector.</returns>
-        public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix) => TransformNormal(normal, in matrix.AsImpl());
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vector2 TransformNormal(Vector2 normal, in Matrix4x4.Impl matrix)
+        public static Vector2 TransformNormal(Vector2 normal, Matrix4x4 matrix)
         {
             Vector4 result = matrix.X * normal.X;
             result = Vector4.MultiplyAddEstimate(matrix.Y, Vector4.Create(normal.Y), result);

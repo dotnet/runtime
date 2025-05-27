@@ -910,22 +910,26 @@ MethodTableBuilder::MethodSignature::GetMethodAttributes() const
     STANDARD_VM_CONTRACT;
 
     IMDInternalImport * pIMD = GetModule()->GetMDImport();
+    DWORD cSig;
+    PCCOR_SIGNATURE pSig;
     if (TypeFromToken(GetToken()) == mdtMethodDef)
     {
-        DWORD cSig;
-        if (FAILED(pIMD->GetNameAndSigOfMethodDef(GetToken(), &m_pSig, &cSig, &m_szName)))
+        if (FAILED(pIMD->GetNameAndSigOfMethodDef(GetToken(), &pSig, &cSig, &m_szName)))
         {   // We have empty name or signature on error, do nothing
         }
-        m_cSig = static_cast<size_t>(cSig);
     }
     else
     {
         CONSISTENCY_CHECK(TypeFromToken(m_tok) == mdtMemberRef);
-        DWORD cSig;
-        if (FAILED(pIMD->GetNameAndSigOfMemberRef(GetToken(), &m_pSig, &cSig, &m_szName)))
+        if (FAILED(pIMD->GetNameAndSigOfMemberRef(GetToken(), &pSig, &cSig, &m_szName)))
         {   // We have empty name or signature on error, do nothing
         }
+    }
+    // Don't overwrite signature that may have already been provided for AsyncThunk method
+    if (m_cSig == 0)
+    {
         m_cSig = static_cast<size_t>(cSig);
+        m_pSig = pSig;
     }
 }
 
@@ -988,9 +992,14 @@ MethodTableBuilder::bmtRTMethod::bmtRTMethod(
     MethodDesc *    pMD)
     : m_pOwningType(pOwningType),
       m_pMD(pMD),
-      m_methodSig(pMD->GetModule(),
-                  pMD->GetMemberDef(),
-                  &pOwningType->GetSubstitution())
+      m_methodSig(pMD->IsAsyncVariantMethod()
+       ? MethodSignature(pMD->GetModule(),
+                         pMD->GetMemberDef(),
+                         pMD->GetSignature(),
+                         &pOwningType->GetSubstitution())
+       : MethodSignature(pMD->GetModule(),
+                         pMD->GetMemberDef(),
+                         &pOwningType->GetSubstitution()))
 {
     CONTRACTL
     {
@@ -1015,9 +1024,45 @@ MethodTableBuilder::bmtMDMethod::bmtMDMethod(
       m_dwImplAttrs(dwImplAttrs),
       m_dwRVA(dwRVA),
       m_type(type),
+      m_asyncMethodKind(AsyncMethodKind::NotAsync),
       m_implType(implType),
       m_methodSig(pOwningType->GetModule(),
                   tok,
+                  &pOwningType->GetSubstitution()),
+      m_pMD(NULL),
+      m_pUnboxedMD(NULL),
+      m_slotIndex(INVALID_SLOT_INDEX),
+      m_unboxedSlotIndex(INVALID_SLOT_INDEX)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+    }
+
+    MethodTableBuilder::bmtMDMethod::bmtMDMethod(
+    bmtMDType * pOwningType,
+    mdMethodDef tok,
+    DWORD dwDeclAttrs,
+    DWORD dwImplAttrs,
+    DWORD dwRVA,
+    Signature sig,
+    AsyncMethodKind asyncMethodKind,
+    MethodClassification type,
+    METHOD_IMPL_TYPE implType)
+    : m_pOwningType(pOwningType),
+      m_dwDeclAttrs(dwDeclAttrs),
+      m_dwImplAttrs(dwImplAttrs),
+      m_dwRVA(dwRVA),
+      m_type(type),
+      m_asyncMethodKind(asyncMethodKind),
+      m_implType(implType),
+      m_methodSig(pOwningType->GetModule(),
+                  tok,
+                  sig,
                   &pOwningType->GetSubstitution()),
       m_pMD(NULL),
       m_pUnboxedMD(NULL),
@@ -1225,10 +1270,6 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
     m_pImplTable = pST;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
 //---------------------------------------------------------------------------------------
 //
 // Builds the method table, allocates MethodDesc, handles overloaded members, attempts to compress
@@ -2018,7 +2059,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (HasParent())
         {
             MethodTable * pParentClass = GetParentMethodTable();
-            PREFIX_ASSUME(pParentClass != NULL);
+            _ASSERTE(pParentClass != NULL);
             isTrackedReference = pParentClass->IsTrackedReferenceWithFinalizer();
         }
 
@@ -2073,10 +2114,6 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
     return GetHalfBakedMethodTable();
 } // MethodTableBuilder::BuildMethodTableThrowing
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
-
 
 //---------------------------------------------------------------------------------------
 //
@@ -2108,7 +2145,7 @@ MethodTableBuilder::ResolveInterfaces(
     if (HasParent())
     {
         MethodTable * pParentClass = GetParentMethodTable();
-        PREFIX_ASSUME(pParentClass != NULL);
+        _ASSERTE(pParentClass != NULL);
 
         bmtParent->NumParentPointerSeries  = pParentClass->ContainsGCPointers() ?
             (DWORD)CGCDesc::GetCGCDescFromMT(pParentClass)->GetNumSeries() : 0;
@@ -2641,10 +2678,6 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
     return hr;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
 //---------------------------------------------------------------------------------------
 //
 // Used by BuildMethodTable
@@ -2701,6 +2734,10 @@ MethodTableBuilder::EnumerateClassMethods()
         BuildMethodTableThrowException(IDS_CLASSLOAD_TOO_MANY_METHODS);
 
     bmtMethod->m_cMaxDeclaredMethods = (SLOT_INDEX)cMethAndGaps;
+#ifdef FEATURE_RUNTIME_ASYNC
+    // TODO: (async) the index is uint16 and can potentially overflow. This needs to be more robust.
+    bmtMethod->m_cMaxDeclaredMethods *= 2;
+#endif
     bmtMethod->m_cDeclaredMethods = 0;
     bmtMethod->m_rgDeclaredMethods = new (GetStackingAllocator())
         bmtMDMethod *[bmtMethod->m_cMaxDeclaredMethods];
@@ -2729,7 +2766,7 @@ MethodTableBuilder::EnumerateClassMethods()
         {
             BuildMethodTableThrowException(BFA_METHOD_TOKEN_OUT_OF_RANGE);
         }
-        if (!bmtProp->fNoSanityChecks && FAILED(pMDInternalImport->GetSigOfMethodDef(tok, &cMemberSignature, &pMemberSignature)))
+        if (FAILED(pMDInternalImport->GetSigOfMethodDef(tok, &cMemberSignature, &pMemberSignature)))
         {
             BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
         }
@@ -2774,6 +2811,14 @@ MethodTableBuilder::EnumerateClassMethods()
                 BuildMethodTableThrowException(hr, BFA_BAD_SIGNATURE, mdMethodDefNil);
             }
         }
+
+        SigParser sig(pMemberSignature, cMemberSignature);
+
+        ULONG offsetOfAsyncDetails = 0;
+        bool returnsValueTask = false;
+        MethodReturnKind returnKind = IsDelegate() ?
+            MethodReturnKind::NormalMethod :
+            ClassifyMethodReturnKind(sig, GetModule(), &offsetOfAsyncDetails, &returnsValueTask);
 
         bool hasGenericMethodArgsComputed = false;
         bool hasGenericMethodArgs = this->GetModule()->m_pMethodIsGenericMap->IsGeneric(tok, &hasGenericMethodArgsComputed);
@@ -3310,28 +3355,161 @@ MethodTableBuilder::EnumerateClassMethods()
         // Create a new bmtMDMethod representing this method and add it to the
         // declared method list.
         //
-
-        bmtMDMethod * pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
-            bmtInternal->pType,
-            tok,
-            dwMemberAttrs,
-            dwImplFlags,
-            dwMethodRVA,
-            type,
-            implType);
-
-        bmtMethod->AddDeclaredMethod(pNewMethod);
-
-        //
-        // Update the count of the various types of methods.
-        //
-
-        bmtVT->dwMaxVtableSize++;
-
-        // Increment the number of non-abstract declared methods
-        if (!IsMdAbstract(dwMemberAttrs))
+        bmtMDMethod *pDeclaredMethod = NULL;
+        for (int insertCount = 0; insertCount < 2; insertCount++)
         {
-            bmtMethod->dwNumDeclaredNonAbstractMethods++;
+            bmtMDMethod * pNewMethod;
+            if (insertCount == 0)
+            {
+                pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
+                    bmtInternal->pType,
+                    tok,
+                    dwMemberAttrs,
+                    dwImplFlags,
+                    dwMethodRVA,
+                    type,
+                    implType);
+
+                if (IsTaskReturning(returnKind))
+                {
+                    // ordinary Task-returning method:
+                    //    Declare a TaskReturning method and add an Async variant that is a thunk to the TaskReturing one.
+                    //
+                    // IsMiAsync Task-returning method:
+                    //    Declare a RuntimeAsync method and add an Async variant with the actual implementation.
+                    //    The RuntimeAsync method becomes a thunk to the implementation helper.
+                    pNewMethod->SetAsyncMethodKind(IsMiAsync(dwImplFlags) ? AsyncMethodKind::RuntimeAsync : AsyncMethodKind::TaskReturning);
+                }
+                else
+                {
+                    if (IsMiAsync(dwImplFlags))
+                    {
+                        // Explicitly-async methods have special semantics that is useful in the implementation of runtime async itself.
+                        // It should not be valid to declare such methods outside of runtime infrastructure.
+                        if (!IsTypeDefOrRefImplementedInSystemModule(GetModule(), this->GetCl()))
+                        {
+                            BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
+                        }
+
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::AsyncExplicitImpl);
+                    }
+                    else
+                    {
+                        pNewMethod->SetAsyncMethodKind(AsyncMethodKind::NotAsync);
+                    }
+                }
+
+                pDeclaredMethod = pNewMethod;
+            }
+            else
+            {
+                ULONG cAsyncThunkMemberSignature = cMemberSignature;
+                AsyncMethodKind asyncKind;
+                ULONG originalTokenOffsetFromAsyncDetailsOffset;
+                ULONG newTokenOffsetFromAsyncDetailsOffset;
+                ULONG originalPrefixSize;
+                ULONG originalSuffixSize;
+                ULONG newSuffixSize;
+                ULONG newPrefixSize;
+
+                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                {
+                    cAsyncThunkMemberSignature += 1;
+                    originalTokenOffsetFromAsyncDetailsOffset = 1;
+                    newTokenOffsetFromAsyncDetailsOffset = 1;
+                    asyncKind = IsMiAsync(dwImplFlags) ? AsyncMethodKind::AsyncVariantImpl : AsyncMethodKind::AsyncVariantThunk;
+                    originalPrefixSize = 1;
+                    newPrefixSize = 1;
+                    originalSuffixSize = 0;
+                    newSuffixSize = 1;
+                }
+                else if (returnKind == MethodReturnKind::GenericTaskReturningMethod)
+                {
+                    cAsyncThunkMemberSignature -= 2;
+                    originalTokenOffsetFromAsyncDetailsOffset = 2;
+                    newTokenOffsetFromAsyncDetailsOffset = 1;
+                    asyncKind = IsMiAsync(dwImplFlags)? AsyncMethodKind::AsyncVariantImpl : AsyncMethodKind::AsyncVariantThunk;
+                    originalPrefixSize = 2;
+                    newPrefixSize = 1;
+                    originalSuffixSize = 1;
+                    newSuffixSize = 0;
+                }
+                else
+                {
+                    UNREACHABLE();
+                }
+
+                BYTE* pNewMemberSignature = AllocateFromHighFrequencyHeap(S_SIZE_T(cAsyncThunkMemberSignature));
+                ULONG tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + originalTokenOffsetFromAsyncDetailsOffset]);
+                ULONG originalTokenOffset = offsetOfAsyncDetails + originalTokenOffsetFromAsyncDetailsOffset;
+                ULONG newTokenOffset = offsetOfAsyncDetails + newTokenOffsetFromAsyncDetailsOffset;
+                ULONG originalRemainingSigOffset = offsetOfAsyncDetails + originalPrefixSize + tokenLen + originalSuffixSize;
+                ULONG newRemainingSigOffset = offsetOfAsyncDetails + newPrefixSize + tokenLen + newSuffixSize;
+
+                ULONG initialCopyLen = offsetOfAsyncDetails;
+                memcpy(pNewMemberSignature, pMemberSignature, initialCopyLen);
+                memcpy(pNewMemberSignature + newTokenOffset, pMemberSignature + originalTokenOffset, tokenLen);
+
+                _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
+                memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
+
+                BYTE elemTypeClassOrValuetype = returnsValueTask ? (BYTE)ELEMENT_TYPE_VALUETYPE : (BYTE)ELEMENT_TYPE_CLASS;
+
+                // for more info about constructing the signature of an async variant see comments in AsyncMethodKind
+                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                {
+                    // Incoming sig will look like ... E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                    // and needs to be translated to ELEMENT_TYPE_CMOD_REQD <TokenOfTask> E_T_VOID
+
+                    // Replace the E_T_CLASS/E_T_VALUETYPE with ELEMENT_TYPE_CMOD_REQD, and then add the E_T_VOID
+                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
+                    pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
+                }
+                else
+                {
+                    _ASSERTE(returnKind == MethodReturnKind::GenericTaskReturningMethod);
+                    // Incoming sig will look something like ... E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 E_T_I4 ....
+                    // And needs to be translated to ELEMENT_TYPE_CMOD_REQD <TokenOfTask> E_T_I4
+
+                    // Replace the ELEMENT_TYPE_GENERICINST with ELEMENT_TYPE_CMOD_REQD, and then remove the 1 which specifies the generic arg count for Task<T>
+                    pNewMemberSignature[offsetOfAsyncDetails] = ELEMENT_TYPE_CMOD_REQD;
+                }
+
+                Signature newMemberSig(pNewMemberSignature, cAsyncThunkMemberSignature);
+                pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
+                    bmtInternal->pType,
+                    tok,
+                    dwMemberAttrs,
+                    dwImplFlags,
+                    dwMethodRVA,
+                    newMemberSig,
+                    asyncKind,
+                    type,
+                    implType);
+
+                pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
+                pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
+            }
+
+            bmtMethod->AddDeclaredMethod(pNewMethod);
+
+            //
+            // Update the count of the various types of methods.
+            //
+
+            bmtVT->dwMaxVtableSize++;
+
+            // Increment the number of non-abstract declared methods
+            if (!IsMdAbstract(dwMemberAttrs))
+            {
+                bmtMethod->dwNumDeclaredNonAbstractMethods++;
+            }
+
+            // Normal methods only insert a single method
+            if (!IsTaskReturning(returnKind))
+            {
+                break;
+            }
         }
     }
 
@@ -3369,9 +3547,6 @@ MethodTableBuilder::EnumerateClassMethods()
     }
 #endif // FEATURE_COMINTEROP
 } // MethodTableBuilder::EnumerateClassMethods
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 //
@@ -3764,11 +3939,6 @@ static BOOL IsSelfRef(MethodTable * pMT)
 //
 // Go thru all fields and initialize their FieldDescs.
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
-
 VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                                                  const LayoutRawFieldInfo* pLayoutRawFieldInfos,
                                                  bmtInternalInfo* bmtInternal,
@@ -4421,36 +4591,25 @@ IS_VALUETYPE:
                     }
                 }
 
-                // Set the field offset
-                DWORD rva;
-                IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
-
                 // The PE should be loaded by now.
                 _ASSERT(GetModule()->GetPEAssembly()->IsLoaded());
 
-                DWORD fldSize;
-                if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)
+#ifdef FEATURE_METADATA_UPDATER
+                // This is a special case for EnC. The RVA field is not actually in the image, but
+                // is instead registered in a dynamic map. We need to set the RVA to a special
+                // value so when the address is looked up, it will be found in the dynamic map.
+                if (GetModule()->GetDynamicRvaField(pFD->GetMemberDef()) != (TADDR)NULL)
                 {
-                    if (IsSelfRef(pByValueClass))
-                    {
-                        _ASSERTE(bmtFP->fHasSelfReferencingStaticValueTypeField_WithRVA);
-
-                        // We do not known the size yet
-                        _ASSERTE(bmtFP->NumInstanceFieldBytes == 0);
-                        // We will check just the RVA with size 0 now, the full size verification will happen in code:VerifySelfReferencingStaticValueTypeFields_WithRVA
-                        fldSize = 0;
-                    }
-                    else
-                    {
-                        fldSize = pByValueClass->GetNumInstanceFieldBytes();
-                    }
+                    pFD->SetDynamicRVA();
                 }
                 else
+#endif // FEATURE_METADATA_UPDATER
                 {
-                    fldSize = GetSizeForCorElementType(FieldDescElementType);
+                    // Set the field offset
+                    DWORD rva;
+                    IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
+                    pFD->SetOffsetRVA(rva);
                 }
-
-                pFD->SetOffsetRVA(rva);
             }
             else if (fIsThreadStatic)
             {
@@ -4547,10 +4706,6 @@ IS_VALUETYPE:
 
     return;
 } // MethodTableBuilder::InitializeFieldDescs
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //*******************************************************************************
 // Verify self-referencing static ValueType fields with RVA (when the size of the ValueType is known).
@@ -5162,6 +5317,9 @@ MethodTableBuilder::InitNewMethodDesc(
     if (NeedsNativeCodeSlot(pMethod))
         pNewMD->SetHasNativeCodeSlot();
 
+    if (pMethod->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
+        pNewMD->SetHasAsyncMethodData();
+
     // Now we know the classification we can allocate the correct type of
     // method desc and perform any classification specific initialization.
 
@@ -5189,6 +5347,13 @@ MethodTableBuilder::InitNewMethodDesc(
     strcpy_s((char *) pszDebugMethodNameCopy, len, pszDebugMethodName);
 #endif // _DEBUG
 
+    Signature sig;
+    if (pMethod->IsAsyncVariant())
+    {
+        // async variants do not get the default signature from metadata
+        sig = pMethod->GetMethodSignature().GetSignatureClass();
+    }
+
     // Do the init specific to each classification of MethodDesc & assign some common fields
     InitMethodDesc(pNewMD,
                    pMethod->GetMethodType(),
@@ -5198,7 +5363,9 @@ MethodTableBuilder::InitNewMethodDesc(
                    FALSE,    // fEnC
                    pMethod->GetRVA(),
                    GetMDImport(),
-                   pName
+                   pName,
+                   sig,
+                   pMethod->GetAsyncMethodKind()
                    COMMA_INDEBUG(pszDebugMethodNameCopy)
                    COMMA_INDEBUG(GetDebugClassName())
                    COMMA_INDEBUG("") // FIX this happens on global methods, give better info
@@ -5479,7 +5646,7 @@ MethodTableBuilder::PlaceVirtualMethods()
 // that the name+signature corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
 // Always returns the first match that it finds. Affects the ambiguities in code:#ProcessInexactMethodImpls_Ambiguities
 MethodTableBuilder::bmtMethodHandle
-MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, bool searchForStaticMethods)
+MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, AsyncVariantLookup variantLookup, bool searchForStaticMethods)
 {
     STANDARD_VM_CONTRACT;
 
@@ -5509,6 +5676,27 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
 
             // Type Equivalence is forbidden in MethodImpl MemberRefs
             if (declSig.Equivalent(pCurDeclMethod->GetMethodSignature().GetSignatureWithoutSubstitution()))
+            {
+                declMethod = slotIt->Decl();
+                break;
+            }
+        }
+    }
+
+    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant && !declMethod.IsNull())
+    {
+        bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
+        // Other varian may not exist. For example we return Task and the base is generic and returns T.
+        // Then we return Null.
+        declMethod = {};
+        for (; !slotIt.AtEnd(); slotIt.Next())
+        {
+            bmtRTMethod* slotDeclMethod = slotIt->Decl().AsRTMethod();
+
+            if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
+                (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
+                (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
+                (slotDeclMethod->GetMethodDesc()->IsAsyncVariantMethod() != declRTMethod->GetMethodDesc()->IsAsyncVariantMethod()))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -5584,6 +5772,10 @@ MethodTableBuilder::ProcessInexactMethodImpls()
             continue;
         }
 
+        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
+            AsyncVariantLookup::MatchingAsyncVariant :
+            AsyncVariantLookup::AsyncOtherVariant;
+
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -5638,7 +5830,7 @@ MethodTableBuilder::ProcessInexactMethodImpls()
                 pItfEntry = &bmtInterface->pInterfaceMap[i];
 
                 // Search for declmethod on this interface
-                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig);
+                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, asyncVariantOfDeclToFind);
 
                 // If we didn't find a match, continue on to next interface in the equivalence set
                 if (declMethod.IsNull())
@@ -5725,6 +5917,10 @@ MethodTableBuilder::ProcessMethodImpls()
             continue;
         }
 
+        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
+            AsyncVariantLookup::MatchingAsyncVariant :
+            AsyncVariantLookup::AsyncOtherVariant;
+
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -5766,7 +5962,7 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         CONSISTENCY_CHECK(TypeFromToken(mdDecl) == mdtMethodDef);
-                        declMethod = bmtMethod->FindDeclaredMethodByToken(mdDecl);
+                        declMethod = bmtMethod->FindDeclaredMethodByToken(mdDecl, asyncVariantOfDeclToFind);
                     }
                     else
                     {   // We can't call GetDescFromMemberDefOrRef here because this
@@ -5900,12 +6096,20 @@ MethodTableBuilder::ProcessMethodImpls()
                                 }
 
                                 // 3. Find the matching method.
-                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, isVirtualStaticOverride); // Search for statics when the impl is non-virtual
+                                declMethod = FindDeclMethodOnInterfaceEntry(pItfEntry, declSig, asyncVariantOfDeclToFind, isVirtualStaticOverride); // Search for statics when the impl is non-virtual
                             }
                             else
                             {
                                 GetHalfBakedClass()->SetHasVTableMethodImpl();
-                                declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig);
+                                declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig, asyncVariantOfDeclToFind);
+                            }
+
+                            if (declMethod.IsNull() && asyncVariantOfDeclToFind == AsyncVariantLookup::AsyncOtherVariant)
+                            {
+                                // when implementing/overriding, we may see a Task-returning method
+                                // which matches a T-returning method in the interface/base, which would not have variants.
+                                // in such case the async variant of the Task-returning method does not implement/override anything.
+                                continue;
                             }
 
                             if (declMethod.IsNull())
@@ -5956,7 +6160,7 @@ MethodTableBuilder::ProcessMethodImpls()
 }
 
 
-MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig)
+MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInHierarchy(const DeclaredMethodIterator& it, MethodTable * pDeclMT, MethodSignature &declSig, AsyncVariantLookup variantLookup)
 {
     bmtRTType * pDeclType = NULL;
     bmtMethodHandle declMethod;
@@ -6042,6 +6246,19 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                         FALSE,
                         iPass == 0 ? &newVisited : NULL))
                     {
+                        if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
+                        {
+                            if (pCurMD->IsTaskReturningMethod() || pCurMD->IsAsyncVariantMethod())
+                            {
+                                pCurMD = pCurMD->GetAsyncOtherVariant();
+                            }
+                            else
+                            {
+                                declMethod = {};
+                                break;
+                            }
+                        }
+
                         declMethod = (*bmtParent->pSlotTable)[pCurMD->GetSlot()].Decl();
                         break;
                     }
@@ -6069,7 +6286,9 @@ MethodTableBuilder::InitMethodDesc(
     BOOL                fEnC,
     DWORD               RVA,        // Only needed for NDirect case
     IMDInternalImport * pIMDII,     // Needed for NDirect, EEImpl(Delegate) cases
-    LPCSTR              pMethodName // Only needed for mcEEImpl (Delegate) case
+    LPCSTR              pMethodName, // Only needed for mcEEImpl (Delegate) case
+    Signature           sig, // Only needed for the Async thunk case
+    AsyncMethodKind     asyncKind
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodName)
     COMMA_INDEBUG(LPCUTF8 pszDebugClassName)
     COMMA_INDEBUG(LPCUTF8 pszDebugMethodSignature)
@@ -6227,6 +6446,20 @@ MethodTableBuilder::InitMethodDesc(
     if (IsMiSynchronized(dwImplFlags))
 #endif // !_DEBUG
         pNewMD->SetSynchronized();
+
+    if (asyncKind != AsyncMethodKind::NotAsync)
+    {
+        AsyncMethodData* pAsyncMethodData = pNewMD->GetAddrOfAsyncMethodData();
+        pAsyncMethodData->kind = asyncKind;
+        if (asyncKind == AsyncMethodKind::AsyncVariantThunk || asyncKind == AsyncMethodKind::AsyncVariantImpl)
+        {
+            pAsyncMethodData->sig = sig;
+        }
+        else
+        {
+            _ASSERTE(sig.GetRawSig() == NULL);
+        }
+    }
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = (LPUTF8)pszDebugMethodName;
@@ -6960,6 +7193,9 @@ VOID MethodTableBuilder::AllocAndInitMethodDescs()
         if (NeedsNativeCodeSlot(*it))
             size += sizeof(MethodDesc::NativeCodeSlot);
 
+        if (it->GetAsyncMethodKind() != AsyncMethodKind::NotAsync)
+            size += sizeof(AsyncMethodData);
+
         // See comment in AllocAndInitMethodDescChunk
         if (NeedsTightlyBoundUnboxingStub(*it))
         {
@@ -7025,16 +7261,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     COUNT_T methodDescCount = 0;
 
     SIZE_T offset = sizeof(MethodDescChunk);
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22019) // Suppress PREFast warning about integer underflow
-#endif // _PREFAST_
     for (COUNT_T i = 0; i < count; i++)
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
-
     {
         bmtMDMethod * pMDMethod = (*bmtMethod)[static_cast<SLOT_INDEX>(startIndex + i)];
 
@@ -7042,15 +7269,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
         pMD->SetChunkIndex(pChunk);
         InitNewMethodDesc(pMDMethod, pMD);
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22018) // Suppress PREFast warning about integer underflow
-#endif // _PREFAST_
         offset += pMD->SizeOf();
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
         methodDescCount++;
 
@@ -7086,6 +7305,21 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
 
             if (bmtGenerics->GetNumGenericArgs() == 0) {
                 pUnboxedMD->SetHasNonVtableSlot();
+
+                // By settings HasNonVTableSlot, the following chunks of data have been shifted around.
+                // This is an example of the fragility noted in the memcpy comment above
+                if (pUnboxedMD->HasNativeCodeSlot())
+                {
+                    *pUnboxedMD->GetAddrOfNativeCodeSlot() = *pMD->GetAddrOfNativeCodeSlot();
+                }
+                if (pUnboxedMD->HasMethodImplSlot())
+                {
+                    *pUnboxedMD->GetMethodImpl() = *pMD->GetMethodImpl();
+                }
+                if (pUnboxedMD->HasAsyncMethodData())
+                {
+                    *pUnboxedMD->GetAddrOfAsyncMethodData() = *pMD->GetAddrOfAsyncMethodData();
+                }
             }
 
             //////////////////////////////////////////////////////////
@@ -7131,7 +7365,6 @@ BOOL
 MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
 {
     LIMITED_METHOD_CONTRACT;
-
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Keep in-sync with MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
@@ -7870,7 +8103,6 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
         bmtFP->NumRegularStaticFieldsOfSize[i]    = 0;
     }
 
-
     if (dwCumulativeStaticFieldPos > FIELD_OFFSET_LAST_REAL_OFFSET)
         BuildMethodTableThrowException(IDS_CLASSLOAD_GENERAL);
 
@@ -7894,8 +8126,8 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     for (i = 0; i < bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields; i++)
     {
         FieldDesc * pCurField   = &pFieldDescList[bmtEnumFields->dwNumInstanceFields+i];
-        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR&)pCurField->m_pMTOfEnclosingClass; // log2(field size)
-        DWORD dwOffset          = (DWORD) pCurField->m_dwOffset; // offset or type of field
+        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR)pCurField->m_pMTOfEnclosingClass; // log2(field size)
+        DWORD dwOffset          = (DWORD) pCurField->GetOffsetRaw(); // offset or type of field
 
         switch (dwOffset)
         {
@@ -7903,7 +8135,7 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
             // Place GC reference static field
             pCurField->SetOffset(dwCumulativeStaticGCFieldPos + dwGCOffset);
             dwCumulativeStaticGCFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -7911,7 +8143,7 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
             // Place boxed GC reference static field
             pCurField->SetOffset(dwCumulativeStaticBoxFieldPos + dwGCOffset);
             dwCumulativeStaticBoxFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -7921,15 +8153,16 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
                                  (bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize] << dwLog2FieldSize) +
                                  dwNonGCOffset);
             bmtFP->NumRegularStaticFieldsOfSize[dwLog2FieldSize]++;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at non GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Field placed at non GC offset\n"));
             break;
 
         default:
             // RVA field
+            LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: RVA field\n"));
             break;
         }
 
-        LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Offset of %s: 0x%x\n", pCurField->m_debugName, pCurField->GetOffsetRaw()));
     }
 
     _ASSERTE(dwNonGCOffset == 0 || (dwNonGCOffset == sizeof(TADDR) * 2));
@@ -7937,14 +8170,13 @@ VOID MethodTableBuilder::PlaceRegularStaticFields()
     LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Static field bytes needed %i\n", bmtProp->dwNonGCRegularStaticFieldBytes));
 }
 
-
 VOID MethodTableBuilder::PlaceThreadStaticFields()
 {
     STANDARD_VM_CONTRACT;
 
     DWORD i;
 
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Placing ThreadStatics for %s\n", this->GetDebugClassName()));
+    LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Placing ThreadStatics for %s\n", this->GetDebugClassName()));
 
     //
     // Place gc refs and value types first, as they need to have handles created for them.
@@ -7998,8 +8230,8 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     for (i = 0; i < bmtEnumFields->dwNumThreadStaticFields; i++)
     {
         FieldDesc * pCurField   = &pFieldDescList[bmtEnumFields->dwNumInstanceFields + bmtEnumFields->dwNumStaticFields - bmtEnumFields->dwNumThreadStaticFields + i];
-        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR&)pCurField->m_pMTOfEnclosingClass; // log2(field size)
-        DWORD dwOffset          = (DWORD) pCurField->m_dwOffset; // offset or type of field
+        DWORD dwLog2FieldSize   = (DWORD)(DWORD_PTR)pCurField->m_pMTOfEnclosingClass; // log2(field size)
+        DWORD dwOffset          = (DWORD) pCurField->GetOffsetRaw(); // offset or type of field
 
         switch (dwOffset)
         {
@@ -8007,7 +8239,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
             // Place GC reference static field
             pCurField->SetOffset(dwCumulativeStaticGCFieldPos + dwGCOffset);
             dwCumulativeStaticGCFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -8015,7 +8247,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
             // Place boxed GC reference static field
             pCurField->SetOffset(dwCumulativeStaticBoxFieldPos + dwGCOffset);
             dwCumulativeStaticBoxFieldPos += 1<<LOG2_PTRSIZE;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at GC offset\n"));
 
             break;
 
@@ -8025,15 +8257,16 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
                                  (bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize] << dwLog2FieldSize) +
                                  dwNonGCOffset);
             bmtFP->NumThreadStaticFieldsOfSize[dwLog2FieldSize]++;
-            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at non GC offset 0x%x\n", pCurField->GetOffset()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Field placed at non GC offset\n"));
             break;
 
         default:
             // RVA field
+            LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: RVA field\n"));
             break;
         }
 
-        LOG((LF_CLASSLOADER, LL_INFO1000000, "Offset of %s: %i\n", pCurField->m_debugName, pCurField->GetOffset()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: Offset of %s: 0x%x\n", pCurField->m_debugName, pCurField->GetOffsetRaw()));
     }
 
     if (dwCumulativeStaticFieldPos != 0)
@@ -8045,7 +8278,7 @@ VOID MethodTableBuilder::PlaceThreadStaticFields()
     {
         bmtProp->dwNonGCThreadStaticFieldBytes = 0;
     }
-    LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: ThreadStatic field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCThreadStaticFieldBytes));
+    LOG((LF_CLASSLOADER, LL_INFO10000, "THREAD STATICS: ThreadStatic field bytes needed (0 is normal for non dynamic case)%i\n", bmtProp->dwNonGCThreadStaticFieldBytes));
 }
 
 //*******************************************************************************
@@ -8549,7 +8782,7 @@ MethodTableBuilder::HandleExplicitLayout(
     }
 
     CQuickBytes qb;
-    PREFIX_ASSUME(sizeof(bmtFieldLayoutTag) == 1);
+    _ASSERTE(sizeof(bmtFieldLayoutTag) == 1);
     bmtFieldLayoutTag *pFieldLayout = (bmtFieldLayoutTag*)qb.AllocThrows(instanceSliceSize * sizeof(bmtFieldLayoutTag));
     for (i=0; i < instanceSliceSize; i++)
     {
@@ -10496,11 +10729,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 //
 // Setup the method table
 //
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif // _PREFAST_
-
 VOID
 MethodTableBuilder::SetupMethodTable2(
         Module * pLoaderModule)
@@ -11084,9 +11312,6 @@ MethodTableBuilder::SetupMethodTable2(
     // additional information in the bmtMFDescs structure. Now it's time to add
     // this information as an optional extension to the MethodTable.
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 // Returns true if there is at least one default implementation for this interface method
 // We don't care about conflicts at this stage in order to avoid impact type load performance

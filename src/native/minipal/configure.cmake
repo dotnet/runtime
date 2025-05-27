@@ -2,7 +2,6 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 include(CheckSymbolExists)
 
-check_include_files("windows.h" HAVE_WINDOWS_H)
 check_include_files("windows.h;bcrypt.h" HAVE_BCRYPT_H)
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_include_files("asm/hwprobe.h" HAVE_HWPROBE_H)
