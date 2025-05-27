@@ -14,9 +14,9 @@ using Xunit;
  as a result of internal interrupt handling.
 */
 
-public class Test_wait_intrerrupted_user_apc
+public class Test_wait_interrupted_user_apc
 {
-    public static bool Run115178Test => TestLibrary.Utilities.IsMonoRuntime && TestLibrary.Utilities.IsWindows;
+    public static bool Run115178Test => TestLibrary.Utilities.IsWindows;
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr GetCurrentProcess();
@@ -197,11 +197,98 @@ public class Test_wait_intrerrupted_user_apc
         GC.KeepAlive(callback);
     }
 
+    private static void RunTestInterruptInfiniteWait()
+    {
+        Console.WriteLine($"Running RunTestInterruptInfiniteWait test.");
+
+        var enterWait = new ManualResetEventSlim(false);
+        var leaveWait = new ManualResetEventSlim(false);
+
+        apcExecuted.Reset();
+        waitEvent.Reset();
+
+        var waitThread = new Thread(() =>
+        {
+            Console.WriteLine($"Starting thread waiting on event.");
+
+            IntPtr pseudoHandle = GetCurrentThread();
+            if (!DuplicateHandle(
+                    GetCurrentProcess(),
+                    GetCurrentThread(),
+                    GetCurrentProcess(),
+                    out threadHandle,
+                    0,
+                    false,
+                    2))
+            {
+                Console.WriteLine($"Error duplicating handle, error code: {Marshal.GetLastWin32Error()}");
+                result = 6;
+            }
+
+            enterWait.Set();
+
+            try
+            {
+                var signaled = waitEvent.Wait(Timeout.Infinite);
+                if (!signaled)
+                {
+                    Console.WriteLine($"Error waiting on event, unknown user APC canceled wait.");
+                    result = 7;
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex is ThreadInterruptedException)
+                {
+                    Console.WriteLine($"Thread was interrupted as expected.");
+                }
+                else
+                {
+                    Console.WriteLine($"Unexpected exception: {ex.Message}");
+                    result = 8;
+                }
+            }
+
+            Console.WriteLine($"Stopping thread waiting on event.");
+            leaveWait.Set();
+        });
+
+        waitThread.Start();
+
+        ApcCallback callback = OnApcCallback;
+        IntPtr pfnAPC = Marshal.GetFunctionPointerForDelegate(callback);
+
+        Console.WriteLine($"Waiting for thread to enter wait...");
+        enterWait.Wait(Timeout.Infinite);
+
+        Console.WriteLine($"Queue user APC.");
+        QueueUserAPC(pfnAPC, threadHandle, UIntPtr.Zero);
+
+        Console.WriteLine($"Waiting for APC to execute...");
+        apcExecuted.Wait(Timeout.Infinite);
+
+        Console.WriteLine($"Interrupting thread wait...");
+        waitThread.Interrupt();
+
+        Thread.Sleep(200);
+
+        Console.WriteLine($"Signaling wait event.");
+        waitEvent.Set();
+
+        Console.WriteLine($"Waiting for thread to leave wait...");
+        leaveWait.Wait(Timeout.Infinite);
+
+        Console.WriteLine($"RunTestInterruptInfiniteWait test executed.");
+
+        GC.KeepAlive(callback);
+    }
+
     [ConditionalFact(nameof(Run115178Test))]
     public static int TestEntryPoint()
     {
         RunTestUsingInfiniteWait();
         RunTestUsingTimedWait();
+        RunTestInterruptInfiniteWait();
         return result;
     }
 }
