@@ -5550,7 +5550,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 // TODO-RISCV64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
                 if (EA_SIZE(attr) == EA_4BYTE && !dst->OperIs(GT_BIT_EXTRACT))
-                    emitIns_R_R_I(INS_slliw, attr, dstReg, dstReg, 0);
+                    emitIns_R_R(INS_sext_w, attr, dstReg, dstReg);
             }
             break;
 
