@@ -340,7 +340,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         calls. Necessary for all applications as this is how the main method is
         called.
 
-    2.  `LazyMachStateCaptureState`/`HelperMethodFrameRestoreState` – Needed to
+    2.  `LazyMachStateCaptureState` – Needed to
         support a GC occurring with an FCALL or HCALL on the stack. (Incorrect
         implementations will cause unpredictable crashes during or after garbage
         collection)

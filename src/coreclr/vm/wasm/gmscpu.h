@@ -17,7 +17,6 @@
         BOOL   isValid()    { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
         TADDR  GetRetAddr() { LIMITED_METHOD_DAC_CONTRACT; return 0; }
     
-        friend class HelperMethodFrame;
         friend class CheckAsmOffsets;
         friend struct LazyMachState;
     };
@@ -38,12 +37,7 @@
         // Normally this is called with funCallDepth=1 and testFtn = 0 so that
         // it returns the state of the processor after the function that called 'captureState()'
         void setLazyStateFromUnwind(MachState* copy);
-        static void unwindLazyState(LazyMachState* baseState,
-                                    MachState* lazyState,
-                                    DWORD threadId,
-                                    int funCallDepth = 1);
-    
-        friend class HelperMethodFrame;
+
         friend class CheckAsmOffsets;
     };
     

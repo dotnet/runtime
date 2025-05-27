@@ -317,13 +317,8 @@ bool Thread::DetectHandleILStubsForDebugger()
     {
         while (pFrame != FRAME_TOP)
         {
-            // Check for HMF's.  See the comment at the beginning of this function.
-            if (pFrame->GetFrameIdentifier() == FrameIdentifier::HelperMethodFrame)
-            {
-                break;
-            }
             // If there is an entry frame (i.e. U2M managed), we should break.
-            else if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
+            if (pFrame->GetFrameType() == Frame::TYPE_ENTRY)
             {
                 break;
             }
@@ -1470,10 +1465,6 @@ Thread::Thread()
 #endif
 
     m_dwAVInRuntimeImplOkayCount = 0;
-
-#ifdef _DEBUG
-    m_pHelperMethodFrameCallerList = (HelperMethodFrameCallerList*)-1;
-#endif
 
     m_pExceptionDuringStartup = NULL;
 

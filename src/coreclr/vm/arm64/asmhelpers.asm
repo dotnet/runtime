@@ -136,67 +136,6 @@
         ; the register here.  That's what this macro does.
         ;
 
-        MACRO
-            RestoreRegMS $regIndex, $reg
-
-        ; Incoming:
-        ;
-        ; x0 = address of MachState
-        ;
-        ; $regIndex: Index of the register (x19-x29). For x19, index is 19.
-        ;            For x20, index is 20, and so on.
-        ;
-        ; $reg: Register name (e.g. x19, x20, etc)
-        ;
-        ; Get the address of the specified captured register from machine state
-        add     x2, x0, #(MachState__captureX19_X29 + (($regIndex-19)*8))
-
-        ; Get the content of specified preserved register pointer from machine state
-        ldr     x3, [x0, #(MachState__ptrX19_X29 + (($regIndex-19)*8))]
-
-        cmp     x2, x3
-        bne     %FT0
-        ldr     $reg, [x2]
-0
-
-        MEND
-
-; EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-;         INDEBUG_COMMA(HelperMethodFrame *pFrame)
-;         MachState *pState
-;         )
-        LEAF_ENTRY HelperMethodFrameRestoreState
-
-#ifdef _DEBUG
-        mov x0, x1
-#endif
-
-        ; If machine state is invalid, then simply exit
-        ldr w1, [x0, #MachState__isValid]
-        cmp w1, #0
-        beq Done
-
-        RestoreRegMS 19, X19
-        RestoreRegMS 20, X20
-        RestoreRegMS 21, X21
-        RestoreRegMS 22, X22
-        RestoreRegMS 23, X23
-        RestoreRegMS 24, X24
-        RestoreRegMS 25, X25
-        RestoreRegMS 26, X26
-        RestoreRegMS 27, X27
-        RestoreRegMS 28, X28
-        RestoreRegMS 29, X29
-
-Done
-        ; Its imperative that the return value of HelperMethodFrameRestoreState is zero
-        ; as it is used in the state machine to loop until it becomes zero.
-        ; Refer to HELPER_METHOD_FRAME_END macro for details.
-        mov x0,#0
-        ret lr
-
-        LEAF_END
-
 ; ------------------------------------------------------------------
 ; The call in ndirect import precode points to this function.
         NESTED_ENTRY NDirectImportThunk

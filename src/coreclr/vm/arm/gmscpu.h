@@ -16,16 +16,10 @@
 
 #define __gmscpu_h__
 
-#ifdef _DEBUG
-class HelperMethodFrame;
-struct MachState;
-EXTERN_C MachState* __stdcall HelperMethodFrameConfirmState(HelperMethodFrame* frame, void* esiVal, void* ediVal, void* ebxVal, void* ebpVal);
-#endif
-
-    // A MachState indicates the register state of the processor at some point in time (usually
-    // just before or after a call is made).  It can be made one of two ways.  Either explicitly
-    // (when you for some reason know the values of all the registers), or implicitly using the
-    // GET_STATE macros.
+// A MachState indicates the register state of the processor at some point in time (usually
+// just before or after a call is made).  It can be made one of two ways.  Either explicitly
+// (when you for some reason know the values of all the registers), or implicitly using the
+// GET_STATE macros.
 
 typedef DPTR(struct MachState) PTR_MachState;
 struct MachState {
@@ -33,7 +27,6 @@ struct MachState {
     BOOL   isValid()    { LIMITED_METHOD_DAC_CONTRACT; return _isValid; }
     TADDR  GetRetAddr() { LIMITED_METHOD_DAC_CONTRACT; return _pc; }
 
-    friend class HelperMethodFrame;
     friend class CheckAsmOffsets;
     friend struct LazyMachState;
 
@@ -48,9 +41,6 @@ protected:
 	//
 	// 2) HelperMethodFrame::UpdateRegdisplay is invoked by our StackWalker that initializes
 	//    the regdisplay with the updated register state.
-	//
-	// 3) HelperMethodFrameRestoreState is invoked when the HMF state machine exits and it
-	//    restores the values of unmodified registers.
 
     TADDR      captureR4_R11[8];  // Registers R4..R11 at the time of capture
 
@@ -78,12 +68,7 @@ struct LazyMachState : public MachState {
     // Normally this is called with funCallDepth=1 and testFtn = 0 so that
     // it returns the state of the processor after the function that called 'captureState()'
     void setLazyStateFromUnwind(MachState* copy);
-    static void unwindLazyState(LazyMachState* baseState,
-                                MachState* lazyState,
-                                DWORD threadId,
-                                int funCallDepth = 1);
 
-    friend class HelperMethodFrame;
     friend class CheckAsmOffsets;
 private:
     TADDR            captureSp;         // Stack pointer at the time of capture

@@ -801,7 +801,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/cgenamd64.cpp
         ${ARCH_SOURCES_DIR}/excepamd64.cpp
-        ${ARCH_SOURCES_DIR}/gmsamd64.cpp
         ${ARCH_SOURCES_DIR}/stublinkeramd64.cpp
     )
 

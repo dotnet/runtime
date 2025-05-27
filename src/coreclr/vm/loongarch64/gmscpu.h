@@ -36,10 +36,6 @@ struct LazyMachState : public MachState{
     TADDR          captureIp;         // Instruction pointer at the time of capture
 
     void setLazyStateFromUnwind(MachState* copy);
-    static void unwindLazyState(LazyMachState* baseState,
-                                MachState* lazyState,
-                                DWORD threadId,
-                                int funCallDepth = 1);
 };
 
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)

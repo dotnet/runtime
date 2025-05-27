@@ -1671,7 +1671,6 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
         {
         case Frame::TYPE_ENTRY: // We now ignore entry + exit frames.
         case Frame::TYPE_EXIT:
-        case Frame::TYPE_HELPER_METHOD_FRAME:
         case Frame::TYPE_INTERNAL:
 
             /* If we have a specific interception type, use it. However, if this
