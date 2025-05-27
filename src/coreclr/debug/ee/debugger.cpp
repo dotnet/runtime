@@ -15075,14 +15075,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW;
     }
 
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pThread->m_hasPendingActivation)
-    {
-        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
-        return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
-    }
-#endif  
-
     bool fInException = pEvalInfo->evalDuringException;
 
     // The thread has to be at a GC safe place for now, just in case the func eval causes a collection. Processing an
@@ -16740,6 +16732,7 @@ Debugger::EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame *
         }
     }
 }
+
 #endif // #ifdef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -16827,6 +16820,7 @@ void Debugger::SendSetThreadContextNeeded(CONTEXT *context, DebuggerSteppingInfo
     LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
     _ASSERTE(!"We failed to SetThreadContext from out of process!");
 }
+
 BOOL Debugger::IsOutOfProcessSetContextEnabled()
 {
     return m_fOutOfProcessSetContextEnabled;
@@ -16843,16 +16837,6 @@ BOOL Debugger::IsOutOfProcessSetContextEnabled()
 }
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 #endif // DACCESS_COMPILE
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
-{
-    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
-    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
-    DebuggerController::EnableSingleStep(pThread);
-    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
-}
-#endif //FEATURE_SPECIAL_USER_MODE_APC
-#endif // DACCESS_COMPILE
+
 #endif //DEBUGGING_SUPPORTED
 
