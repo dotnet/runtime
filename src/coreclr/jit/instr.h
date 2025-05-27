@@ -17,7 +17,7 @@
 /*****************************************************************************/
 
 // clang-format off
-enum instruction : uint32_t
+enum instruction : unsigned
 {
 #if defined(TARGET_XARCH)
     #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,

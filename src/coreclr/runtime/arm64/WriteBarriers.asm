@@ -296,7 +296,7 @@ NotInHeap
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, 16
+        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, x16
         tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, CmpXchgRetry
 #endif
 
@@ -354,7 +354,7 @@ NoBarrierCmpXchg
     LEAF_ENTRY RhpCheckedXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, 16
+        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, x16
         tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, ExchangeRetry
 #endif
 

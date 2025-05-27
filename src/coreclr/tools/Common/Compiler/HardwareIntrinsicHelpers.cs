@@ -369,7 +369,7 @@ namespace ILCompiler
             public const long Zba = (1L << 0);
             public const long Zbb = (1L << 1);
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
             {
                 if ((flags & Zba) != 0)
                     builder.AddSupportedInstructionSet("zba");

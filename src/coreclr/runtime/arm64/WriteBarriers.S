@@ -310,8 +310,8 @@ LEAF_END RhpAssignRef, _TEXT
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, 16
-        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(CmpXchgRetry)
+        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, x16
+        tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(CmpXchgRetry)
 #endif
 
         mov    x10, x2
@@ -344,7 +344,7 @@ LOCAL_LABEL(CmpXchgNoUpdate):
         mov     x0, x10
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(NoBarrierCmpXchg)
+        tbnz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(NoBarrierCmpXchg)
         InterlockedOperationBarrier
 LOCAL_LABEL(NoBarrierCmpXchg):
 #endif
@@ -372,8 +372,8 @@ LOCAL_LABEL(NoBarrierCmpXchg):
     LEAF_ENTRY RhpCheckedXchg, _TEXT
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, 16
-        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(ExchangeRetry)
+        PREPARE_EXTERNAL_VAR_INDIRECT g_cpuFeatures, x16
+        tbz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(ExchangeRetry)
 #endif
 
         swpal  x1, x10, [x0]                   // exchange
@@ -400,7 +400,7 @@ LOCAL_LABEL(DoCardsXchg):
         mov     x0, x10
 
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
-        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(NoBarrierXchg)
+        tbnz    x16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, LOCAL_LABEL(NoBarrierXchg)
         InterlockedOperationBarrier
 LOCAL_LABEL(NoBarrierXchg):
 #endif

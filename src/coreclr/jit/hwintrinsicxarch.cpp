@@ -75,7 +75,7 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX512FP16:
             return InstructionSet_AVX512FP16_X64;
         case InstructionSet_AVX512VBMI2:
-            return InstructionSet_VBMI2_X64;
+            return InstructionSet_AVX512VBMI2_X64;
         case InstructionSet_AVX512VP2INTERSECT:
             return InstructionSet_AVX512VP2INTERSECT_X64;
         case InstructionSet_AVX512VPOPCNTDQ:
@@ -233,7 +233,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                     }
                     else if (strcmp(className + 7, "f16") == 0)
                     {
-                        return InstructionSet_AVX512Bf16;
+                        return InstructionSet_AVX512BF16;
                     }
                     else if (strcmp(className + 7, "W") == 0)
                     {
@@ -252,7 +252,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
                     }
                     else if (strcmp(className + 7, "p16") == 0)
                     {
-                        return InstructionSet_AVX512Fp16;
+                        return InstructionSet_AVX512FP16;
                     }
                 }
                 else if (className[6] == 'V')
@@ -403,7 +403,7 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
             return InstructionSet_ILLEGAL;
         }
     }
-    else if (strncmp(className, "WaitPkg") == 0)
+    else if (strcmp(className, "WaitPkg") == 0)
     {
         return InstructionSet_WAITPKG;
     }

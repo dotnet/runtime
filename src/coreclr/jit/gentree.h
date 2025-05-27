@@ -1501,7 +1501,7 @@ public:
     bool isRMWHWIntrinsic(Compiler* comp);
 #if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
-    bool isEmbeddedBroadcastCompatibleHWIntrinsic() const;
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const;
 #endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
@@ -1526,7 +1526,7 @@ public:
         return false;
     }
 
-    bool isEmbeddedBroadcastCompatibleHWIntrinsic() const
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic(Compiler* comp) const
     {
         return false;
     }

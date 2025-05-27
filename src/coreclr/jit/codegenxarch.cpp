@@ -9552,10 +9552,10 @@ void CodeGen::genAmd64EmitterUnitTestsAvx10v2()
     theEmitter->emitIns_R_R(INS_vucomxss, EA_16BYTE, REG_XMM0, REG_XMM1);
 
     // VMOVD
-    theEmitter->emitIns_R_R(INS_vmovd, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vmovd_simd, EA_16BYTE, REG_XMM0, REG_XMM1);
 
     // VMOVW
-    theEmitter->emitIns_R_R(INS_vmovw, EA_16BYTE, REG_XMM0, REG_XMM1);
+    theEmitter->emitIns_R_R(INS_vmovw_simd, EA_16BYTE, REG_XMM0, REG_XMM1);
 }
 
 /*****************************************************************************

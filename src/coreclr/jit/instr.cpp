@@ -357,7 +357,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
 
 bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
 {
-    if (emitter::HasEvexEncoding(ins))
+    if (GetEmitter()->IsEvexEncodableInstruction(ins))
     {
         insTupleType tupleType = emitter::insTupleTypeInfo(ins);
         return (tupleType & INS_TT_IS_BROADCAST) != 0;
