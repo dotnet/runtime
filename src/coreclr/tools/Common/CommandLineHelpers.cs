@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
+using ILCompiler.Reflection.ReadyToRun.x86;
 
 namespace System.CommandLine
 {
@@ -129,15 +130,13 @@ namespace System.CommandLine
             return command;
         }
 
-        public static RootCommand UseExtendedHelp(this RootCommand command, Func<HelpContext, IEnumerable<Func<HelpContext, bool>>> customizer)
+        public static RootCommand UseExtendedHelp(this RootCommand command, Action<ParseResult> customizer)
         {
             foreach (Option option in command.Options)
             {
                 if (option is HelpOption helpOption)
                 {
-                    HelpBuilder builder = new();
-                    builder.CustomizeLayout(customizer);
-                    helpOption.Action = new HelpAction { Builder = builder };
+                    helpOption.Action = new CustomizedHelpAction(helpOption, customizer);
                     break;
                 }
             }
@@ -426,6 +425,27 @@ namespace System.CommandLine
 
             newTokens = null;
             return false;
+        }
+
+        private sealed class CustomizedHelpAction : SynchronousCommandLineAction
+        {
+            private readonly HelpAction _helpAction;
+            private readonly Action<ParseResult> _customizer;
+
+            public CustomizedHelpAction(HelpOption helpOption, Action<ParseResult> customizer)
+            {
+                _helpAction = (HelpAction)helpOption.Action;
+                _customizer = customizer;
+            }
+
+            public override int Invoke(ParseResult parseResult)
+            {
+                int result = _helpAction.Invoke(parseResult);
+
+                _customizer.Invoke(parseResult);
+
+                return result;
+            }
         }
     }
 }
