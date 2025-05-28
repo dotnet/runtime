@@ -74,11 +74,11 @@ public record struct InfoHdr
     private enum InfoHdrAdjust : byte
     {
 
-        SET_FRAMESIZE = 0,                                            // 0x00
-        SET_ARGCOUNT = SET_FRAMESIZE + SET_FRAMESIZE_MAX + 1,      // 0x08
-        SET_PROLOGSIZE = SET_ARGCOUNT + SET_ARGCOUNT_MAX + 1,      // 0x11
-        SET_EPILOGSIZE = SET_PROLOGSIZE + SET_PROLOGSIZE_MAX + 1,      // 0x22
-        SET_EPILOGCNT = SET_EPILOGSIZE + SET_EPILOGSIZE_MAX + 1,      // 0x2d
+        SET_FRAMESIZE = 0, // 0x00
+        SET_ARGCOUNT = SET_FRAMESIZE + SET_FRAMESIZE_MAX + 1, // 0x08
+        SET_PROLOGSIZE = SET_ARGCOUNT + SET_ARGCOUNT_MAX + 1, // 0x11
+        SET_EPILOGSIZE = SET_PROLOGSIZE + SET_PROLOGSIZE_MAX + 1, // 0x22
+        SET_EPILOGCNT = SET_EPILOGSIZE + SET_EPILOGSIZE_MAX + 1, // 0x2d
         SET_UNTRACKED = SET_EPILOGCNT + (SET_EPILOGCNT_MAX + 1) * 2, // 0x37
 
         FIRST_FLIP = SET_UNTRACKED + SET_UNTRACKED_MAX + 1,
