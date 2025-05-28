@@ -55,5 +55,17 @@ namespace System.Runtime.ExceptionServices
 
             AppContext.OnUnhandledException(exception);
         }
+
+        /// <summary>
+        /// .NET runtime is going to call `fatalErrorHandler` set by this method before its own
+        /// fatal error handling (creating .NET runtime-specific crash dump, etc.).
+        /// </summary>
+        /// <exception cref="ArgumentNullException">If fatalErrorHandler is null</exception>
+        /// <exception cref="InvalidOperationException">If a handler is already set</exception>
+        [System.CLSCompliantAttribute(false)]
+        public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> fatalErrorHandler)
+        {
+
+        }
     }
 }

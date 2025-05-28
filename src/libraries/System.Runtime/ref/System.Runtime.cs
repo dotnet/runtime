@@ -14133,6 +14133,8 @@ namespace System.Runtime.ExceptionServices
     {
         public static void SetUnhandledExceptionHandler(System.Func<System.Exception,bool> handler) { }
         public static void RaiseAppDomainUnhandledExceptionEvent(object exception) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> fatalErrorHandler) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
