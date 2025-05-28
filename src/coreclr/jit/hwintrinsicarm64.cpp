@@ -2883,6 +2883,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = impPopStack().val;
 
+            // TODO: For AOT, always do the gtNewSimdHWIntrinsicNode as we don't know the vector size.
+
             // Where possible, import a constant vector to allow for optimisations.
             if (op1->IsIntegralConst())
             {
