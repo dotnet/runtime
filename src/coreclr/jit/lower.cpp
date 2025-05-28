@@ -1763,7 +1763,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
 void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg)
 {
     GenTree** ppArg = &callArg->NodeRef();
-    GenTree* arg = *ppArg;
+    GenTree*  arg   = *ppArg;
 
     assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
     assert(!call->IsFastTailCall());
@@ -1819,8 +1819,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
 
             unsigned int newLcl =
-                StoreFieldListToNewLocal(comp->typGetObjLayout(callArg->GetSignatureClassHandle()),
-                                         arg->AsFieldList());
+                StoreFieldListToNewLocal(comp->typGetObjLayout(callArg->GetSignatureClassHandle()), arg->AsFieldList());
             stackNode     = comp->gtNewLclFldNode(newLcl, TYP_STRUCT, stackSeg.Offset, stackLayout);
             registersNode = comp->gtNewLclFldNode(newLcl, TYP_STRUCT, 0, registersLayout);
             BlockRange().InsertBefore(arg, stackNode);
@@ -1931,8 +1930,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
         {
             const ABIPassingSegment& seg = abiInfo.Segment(i);
             GenTree*                 fldNode =
-                comp->gtNewLclFldNode(lcl->GetLclNum(), seg.GetRegisterType(callArg->GetSignatureLayout()),
-                                      seg.Offset);
+                comp->gtNewLclFldNode(lcl->GetLclNum(), seg.GetRegisterType(callArg->GetSignatureLayout()), seg.Offset);
             registersNode->AsFieldList()->AddFieldLIR(comp, fldNode, seg.Offset, fldNode->TypeGet());
             BlockRange().InsertBefore(registersNode, fldNode);
         }
