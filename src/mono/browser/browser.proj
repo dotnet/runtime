@@ -30,7 +30,7 @@
     <WasmEnableJsInteropByValue Condition="'$(WasmEnableJsInteropByValue)' == ''">false</WasmEnableJsInteropByValue>
     <WasmPerfTracing Condition="'$(WasmPerfTracing)' == ''">false</WasmPerfTracing>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
-    <EmccCmd>emcc</EmccCmd>
+    <EmccCmd>emcc -g</EmccCmd>
     <WasmObjDir>$(ArtifactsObjDir)wasm</WasmObjDir>
     <_EmccDefaultsRspPath>$(NativeBinDir)src\emcc-default.rsp</_EmccDefaultsRspPath>
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
@@ -122,7 +122,7 @@
         <UseWasm64 Condition="'$(WasmEnableMemory64)' == 'true'">--target=wasm64</UseWasm64>
     </PropertyGroup>
     
-    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c $(UseWasm64) @$(_WasmTimezonesSourcesRsp) -sWASM_ASYNC_COMPILATION=0"
+    <RunWithEmSdkEnv Command="$(EmccCmd) -xc -c $(UseWasm64) @$(_WasmTimezonesSourcesRsp) -sUSE_CLOSURE_COMPILER=1"
           WorkingDirectory="$(WasmObjDir)"
           EmSdkPath="$(EMSDK_PATH)"
           ConsoleToMsBuild="true"
@@ -392,11 +392,11 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sWASM_ASYNC_COMPILATION=0 -g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sUSE_CLOSURE_COMPILER=1 -g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(WasmEnableMemory64)' == 'true'">$(CMakeConfigurationLinkFlags) -DMEMORY64 --target=wasm64</CMakeConfigurationEmccFlags>
 
-      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationEmccFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
+      <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationLinkFlags) -s ASSERTIONS=1 </CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
       
       <!-- -lexports.js has the magical property of disabling minification of export names -->
