@@ -23,10 +23,16 @@ struct CodeBlockHandle
     TargetPointer GetMethodDesc(CodeBlockHandle codeInfoHandle);
     // Get the instruction pointer address of the start of the code block
     TargetCodePointer GetStartAddress(CodeBlockHandle codeInfoHandle);
+    // Get the instruction pointer address of the start of the funclet containing the code block
+    TargetCodePointer GetFuncletStartAddress(CodeBlockHandle codeInfoHandle);
     // Gets the unwind info of the code block at the specified code pointer
-    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle, TargetCodePointer ip);
-    // Gets the base address the UnwindInfo of codeInfoHandle is relative to.
+    TargetPointer GetUnwindInfo(CodeBlockHandle codeInfoHandle);
+    // Gets the base address the UnwindInfo of codeInfoHandle is relative to
     TargetPointer GetUnwindInfoBaseAddress(CodeBlockHandle codeInfoHandle);
+    // Gets the GCInfo associated with the code block and its version
+    void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
+    // Gets the offset of the codeInfoHandle inside of the code block
+    TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
 ```
 
 ## Version 1
@@ -59,6 +65,7 @@ Data descriptors used:
 | `RealCodeHeader` | `MethodDesc` | Pointer to the corresponding `MethodDesc` |
 | `RealCodeHeader` | `NumUnwindInfos` | Number of Unwind Infos |
 | `RealCodeHeader` | `UnwindInfos` | Start address of Unwind Infos |
+| `RealCodeHeader` | `GCInfo` | Pointer to the GCInfo encoding |
 | `Module` | `ReadyToRunInfo` | Pointer to the `ReadyToRunInfo` for the module |
 | `ReadyToRunInfo` | `CompositeInfo` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | Number of `RuntimeFunctions` |
@@ -220,7 +227,7 @@ class CodeBlock
 }
 ```
 
-The `GetMethodDesc` and `GetStartAddress` APIs extract fields of the `CodeBlock`:
+The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fields of the `CodeBlock`:
 
 ```csharp
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
@@ -234,9 +241,15 @@ The `GetMethodDesc` and `GetStartAddress` APIs extract fields of the `CodeBlock`
         /* find CodeBlock info for codeInfoHandle.Address*/
         return info.StartAddress;
     }
+
+    TargetNUInt IExecutionManager.GetRelativeOffset(CodeBlockHandle codeInfoHandle)
+    {
+        /* find CodeBlock info for codeInfoHandle.Address*/
+        return info.RelativeOffset;
+    }
 ```
 
-`GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
+`IExecutionManager.GetUnwindInfo` gets the Windows style unwind data in the form of `RUNTIME_FUNCTION` which has a platform dependent implementation. The ExecutionManager delegates to the JitManager implementations as the unwind infos (`RUNTIME_FUNCTION`) are stored differently on jitted and R2R code.
 
 * For jitted code (`EEJitManager`) a list of sorted `RUNTIME_FUNCTION` are stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. The correct `RUNTIME_FUNCTION` is found by binary searching the list based on IP.
 
@@ -244,6 +257,15 @@ The `GetMethodDesc` and `GetStartAddress` APIs extract fields of the `CodeBlock`
 
 Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, these values are relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
 `GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlockHandle`.
+
+`IExecutionManager.GetGCInfo` gets a pointer to the relevant GCInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the GCInfo is stored differently on jitted and R2R code.
+
+* For jitted code (`EEJitManager`) a pointer to the `GCInfo` is stored on the `RealCodeHeader` which is accessed in the same was as `GetMethodInfo` described above. This can simply be returned as is.
+
+* For R2R code (`ReadyToRunJitManager`), the `GCInfo` is stored directly after the `UnwindData`. This in turn is found by looking up the `UnwindInfo` (`RUNTIME_FUNCTION`) and reading the `UnwindData` offset. We find the `UnwindInfo` as described above in `IExecutionManager.GetUnwindInfo`. Once we have the relevant unwind data, we calculate the size of the unwind data and return a pointer to the following byte (first byte of the GCInfo).
+// TODO(cdacX86): Add information on finding the size of the unwind info.
+
+`IExecutionManager.GetFuncletStartAddress` finds the start of the code blocks funclet. This will be different than the methods start address `GetStartAddress` if the current code block is inside of a funclet. To find the funclet start address, we get the unwind info corresponding to the code block using `IExecutionManager.GetUnwindInfo`. We then parse the unwind info to find the begin address (relative to the unwind info base address) and return the unwind info base address + unwind info begin address.
 
 ### RangeSectionMap
 
