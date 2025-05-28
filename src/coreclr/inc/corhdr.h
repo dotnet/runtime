@@ -326,6 +326,10 @@ typedef enum CorTypeAttr
     tdHasSecurity           =   0x00040000,     // Class has security associate with it.
 } CorTypeAttr;
 
+enum class CorExtendedLayoutKind
+{
+    CStruct = 0, // C-style struct
+};
 
 // Macros for accessing the members of the CorTypeAttr.
 #define IsTdNotPublic(x)                    (((x) & tdVisibilityMask) == tdNotPublic)
