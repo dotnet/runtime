@@ -1042,7 +1042,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             intrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_ConvertToDoubleScalar : NI_AdvSimd_Arm64_ConvertToDouble;
 
-            intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(simdSize, intrinsic);
+            intrinsic = GenTreeHWIntrinsic::GetScalableHWIntrinsicId(retType, intrinsic);
 
             op1     = impSIMDPopStack();
             retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
@@ -1672,7 +1672,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_CreateSequence:
         {
-            assert(Compiler::UseSveForVectorT());
+            assert(Compiler::UseSveForType(retType));
 
             op2     = impPopStack().val;
             op1     = impPopStack().val;
@@ -1682,7 +1682,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_ToScalar:
         {
-            if (UseSveForVectorT())
+            if (UseSveForType(retType))
             {
                 op1 = impSIMDPopStack();
 
