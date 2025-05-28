@@ -48,15 +48,25 @@ namespace HostActivation.Tests
         [Fact]
         public void Info_NoSDK()
         {
+            string expectedSdksOutput =
+                """
+                .NET SDKs installed:
+                  No SDKs were found
+                """;
+            string expectedRuntimesOutput =
+                $"""
+                .NET runtimes installed:
+                {GetListRuntimesOutput(TestContext.BuiltDotNet.BinPath, [TestContext.MicrosoftNETCoreAppVersion], "  ")}
+                """;
             TestContext.BuiltDotNet.Exec("--info")
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
+                .And.HaveStdOutContaining(expectedSdksOutput)
+                .And.HaveStdOutContaining(expectedRuntimesOutput)
                 .And.HaveStdOutMatching($@"Architecture:\s*{TestContext.BuildArchitecture}")
-                .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}")
-                .And.HaveStdOutContaining("No SDKs were found");
+                .And.HaveStdOutMatching($@"RID:\s*{TestContext.BuildRID}");
         }
-
 
         [Fact]
         public void Info_Utf8Path()
@@ -86,12 +96,18 @@ namespace HostActivation.Tests
                 .And.HaveStdOut(expectedOutput);
         }
 
-        [Fact]
-        public void ListRuntimes_OtherArchitecture()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ListRuntimes_OtherArchitecture(bool useRegisteredLocation)
         {
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.DotNet.GreatestVersionHostFxrFilePath))
             {
-                registeredInstallLocationOverride.SetInstallLocation(SharedState.OtherArchInstallLocations);
+                if (useRegisteredLocation)
+                {
+                    registeredInstallLocationOverride.SetInstallLocation(SharedState.OtherArchInstallLocations);
+                }
+
                 foreach ((string arch, string installLocation) in SharedState.OtherArchInstallLocations)
                 {
                     // Verify exact match of command output. The output of --list-runtimes is intended to be machine-readable
@@ -99,6 +115,7 @@ namespace HostActivation.Tests
                     string expectedOutput = GetListRuntimesOutput(installLocation, SharedState.InstalledVersions);
                     SharedState.DotNet.Exec("--list-runtimes", "--arch", arch)
                         .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                        .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : installLocation)
                         .CaptureStdOut()
                         .Execute()
                         .Should().Pass()
@@ -138,12 +155,18 @@ namespace HostActivation.Tests
                 .And.HaveStdOut(expectedOutput);
         }
 
-        [Fact]
-        public void ListSdks_OtherArchitecture()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ListSdks_OtherArchitecture(bool useRegisteredLocation)
         {
             using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(SharedState.DotNet.GreatestVersionHostFxrFilePath))
             {
-                registeredInstallLocationOverride.SetInstallLocation(SharedState.OtherArchInstallLocations);
+                if (useRegisteredLocation)
+                {
+                    registeredInstallLocationOverride.SetInstallLocation(SharedState.OtherArchInstallLocations);
+                }
+
                 foreach ((string arch, string installLocation) in SharedState.OtherArchInstallLocations)
                 {
                     // Verify exact match of command output. The output of --list-sdks is intended to be machine-readable
@@ -151,6 +174,7 @@ namespace HostActivation.Tests
                     string expectedOutput = GetListSdksOutput(installLocation, SharedState.InstalledVersions);
                     SharedState.DotNet.Exec("--list-sdks", "--arch", arch)
                         .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                        .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : installLocation)
                         .CaptureStdOut()
                         .Execute()
                         .Should().Pass()
