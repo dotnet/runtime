@@ -21,7 +21,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 class Lowering final : public Phase
 {
-
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
         : Phase(compiler, PHASE_LOWERING)

@@ -1991,10 +1991,10 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 ClassLayout* Lowering::SliceLayout(ClassLayout* layout, unsigned offset, unsigned size)
 {
     ClassLayoutBuilder builder(comp, size);
-    INDEBUG(builder.SetName(comp->printfAlloc("%s[%03u..%03u)", layout->GetShortClassName(), offset, offset + size),
-                            comp->printfAlloc("%s[%03u..%03u)", layout->GetClassName(), offset, offset + size)));
+    INDEBUG(builder.SetName(comp->printfAlloc("%s[%03u..%03u)", layout->GetClassName(), offset, offset + size),
+                            comp->printfAlloc("%s[%03u..%03u)", layout->GetShortClassName(), offset, offset + size)));
 
-    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0))
+    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && layout->HasGCPtr())
     {
         for (unsigned i = 0; i < size; i += TARGET_POINTER_SIZE)
         {
@@ -2259,9 +2259,9 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
 //   argument values. However, there are constraints on how the PUTARG nodes
 //   can appear:
 //
-//   - No other GT_CALL nodes are allowed between a PUTARG_REG
-//   node and the call. For FEATURE_FIXED_OUT_ARGS this condition is also true
-//   for PUTARG_STK.
+//   - No other GT_CALL nodes are allowed between a PUTARG_REG node and the
+//   call. For FEATURE_FIXED_OUT_ARGS this condition is also true for
+//   PUTARG_STK.
 //   - For !FEATURE_FIXED_OUT_ARGS, the PUTARG_STK nodes must come in push
 //   order.
 //
