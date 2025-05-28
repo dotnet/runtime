@@ -3674,30 +3674,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 
     preheader->CopyFlags(exprBb, BBF_COPY_PROPAGATE);
 
-    Statement* hoistStmt = gtNewStmt(hoist);
-
-    // Simply append the statement at the end of the preHead's list.
-    Statement* firstStmt = preheader->firstStmt();
-    if (firstStmt != nullptr)
-    {
-        /* append after last statement */
-
-        Statement* lastStmt = preheader->lastStmt();
-        assert(lastStmt->GetNextStmt() == nullptr);
-
-        lastStmt->SetNextStmt(hoistStmt);
-        hoistStmt->SetPrevStmt(lastStmt);
-        firstStmt->SetPrevStmt(hoistStmt);
-    }
-    else
-    {
-        /* Empty pre-header - store the single statement in the block */
-
-        preheader->bbStmtList = hoistStmt;
-        hoistStmt->SetPrevStmt(hoistStmt);
-    }
-
-    hoistStmt->SetNextStmt(nullptr);
+    fgInsertStmtAtEnd(preheader, fgNewStmtFromTree(hoist));
 
 #ifdef DEBUG
     if (verbose)
@@ -3707,12 +3684,6 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
         printf("\n");
     }
 #endif
-
-    if (fgNodeThreading == NodeThreading::AllTrees)
-    {
-        gtSetStmtInfo(hoistStmt);
-        fgSetStmtSeq(hoistStmt);
-    }
 
 #ifdef DEBUG
     if (m_nodeTestData != nullptr)
@@ -4304,15 +4275,20 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 }
 
 //------------------------------------------------------------------------
-// optCopyLoopMemoryDependence: record that tree's loop memory dependence
+// optCopyLoopMemoryDependence: Recursively record that tree's loop memory dependence
 //   is the same as some other tree.
 //
 // Arguments:
 //   fromTree -- tree to copy dependence from
 //   toTree -- tree in question
 //
+// Remarks:
+//   This requires 'toTree' to be in its own statement
+//
 void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 {
+    assert(fromTree->OperGet() == toTree->OperGet());
+
     NodeToLoopMemoryBlockMap* const map      = GetNodeToLoopMemoryBlockMap();
     BasicBlock*                     mapBlock = nullptr;
 
@@ -4320,6 +4296,20 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
     {
         map->Set(toTree, mapBlock);
     }
+
+    GenTreeOperandIterator fromIterCur = fromTree->OperandsBegin();
+    GenTreeOperandIterator fromIterEnd = fromTree->OperandsEnd();
+    GenTreeOperandIterator toIterCur   = toTree->OperandsBegin();
+    GenTreeOperandIterator toIterEnd   = toTree->OperandsEnd();
+
+    while (fromIterCur != fromIterEnd)
+    {
+        optCopyLoopMemoryDependence(*fromIterCur, *toIterCur);
+        ++fromIterCur;
+        ++toIterCur;
+    }
+
+    assert(toIterCur == toIterEnd);
 }
 
 //------------------------------------------------------------------------
