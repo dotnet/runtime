@@ -1,0 +1,36 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Xunit;
+
+namespace ExtendedLayoutTests;
+
+public static class ExtendedLayout
+{
+    [Fact]
+    public static void ExtendedLayout_NoExtendedLayoutAttribute()
+    {
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            _ = new NoExtendedAttributeOnType();
+        });
+    }
+
+    [Fact]
+    public static void ExtendedLayout_InvalidKind()
+    {
+        Assert.Throws<TypeLoadException>(() =>
+        {
+            _ = new ExtendedLayoutInvalidKind();
+        });
+    }
+
+    [Fact]
+    public static void ExtendedLayout_InlineArray_Ignored()
+    {
+        Assert.Equal(sizeof(int), Unsafe.SizeOf<InlineArrayOnExtendedLayout>());
+    }
+}

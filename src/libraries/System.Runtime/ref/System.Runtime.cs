@@ -12777,6 +12777,7 @@ namespace System.Reflection
         VisibilityMask = 7,
         SequentialLayout = 8,
         ExplicitLayout = 16,
+        ExtendedLayout = 24,
         LayoutMask = 24,
         ClassSemanticsMask = 32,
         Interface = 32,
@@ -14269,6 +14270,7 @@ namespace System.Runtime.InteropServices
     public enum LayoutKind
     {
         Sequential = 0,
+        Extended = 1,
         Explicit = 2,
         Auto = 3,
     }
