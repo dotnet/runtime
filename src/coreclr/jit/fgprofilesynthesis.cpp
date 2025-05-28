@@ -152,7 +152,7 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSingleEdge = true;
     for (BasicBlock* const block : m_comp->Blocks())
     {
-        if (!block->KindIs(BBJ_ALWAYS, BBJ_RETURN))
+        if (block->NumSucc() > 1)
         {
             m_comp->fgPgoSingleEdge = false;
             break;
