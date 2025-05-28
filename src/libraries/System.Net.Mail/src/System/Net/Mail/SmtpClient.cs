@@ -539,7 +539,7 @@ namespace System.Net.Mail
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                 exception = ProcessException(e, ref canceled, forceWrapExceptions, _timedOut);
-                Exception ProcessException(Exception e, ref bool canceled, bool forceWrapExceptions, bool timedOut)
+                Exception? ProcessException(Exception e, ref bool canceled, bool forceWrapExceptions, bool timedOut)
                 {
                     if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
                     {
@@ -548,14 +548,13 @@ namespace System.Net.Mail
 
                     canceled = e is OperationCanceledException;
 
+                    Abort();
+
                     // If the operation was canceled, we should not report an error
                     if (canceled)
                     {
-                        Abort();
-                        return null!; // Return null but ensure the compiler is happy with the non-nullable return type
+                        return null;
                     }
-
-                    Abort();
                     if (timedOut)
                     {
                         return ExceptionDispatchInfo.SetCurrentStackTrace(new SmtpException(SR.net_timeout));
