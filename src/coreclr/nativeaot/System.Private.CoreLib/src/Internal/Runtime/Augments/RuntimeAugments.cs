@@ -716,10 +716,7 @@ namespace Internal.Runtime.Augments
 
         public static IntPtr AllocateThunk(object thunksHeap)
         {
-            IntPtr newThunk = ((ThunksHeap)thunksHeap).AllocateThunk(out Exception exception);
-            if (newThunk == IntPtr.Zero)
-                throw exception;
-            return newThunk;
+            return ((ThunksHeap)thunksHeap).AllocateThunk();
         }
 
         public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)

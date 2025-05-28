@@ -352,6 +352,7 @@ typedef int32_t HRESULT;
 
 #define S_OK  0x0
 #define E_FAIL 0x80004005
+#define E_OUTOFMEMORY 0x8007000E
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 #endif // !defined(_INC_WINDOWS)

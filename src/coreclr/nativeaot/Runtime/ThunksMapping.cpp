@@ -100,17 +100,14 @@ FCIMPL0(int, RhpGetThunkBlockSize)
 }
 FCIMPLEND
 
-EXTERN_C void* QCALLTYPE RhAllocateThunksMapping(int* isOOM)
+EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 {
-    *isOOM = 0;
-
 #ifdef WIN32
 
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_READWRITE);
     if (pNewMapping == NULL)
     {
-        *isOOM = 1;
-        return NULL;
+        return E_OUTOFMEMORY;
     }
 
     void * pThunksSection = pNewMapping;
@@ -126,8 +123,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping(int* isOOM)
     void * pNewMapping = PalVirtualAlloc(THUNKS_MAP_SIZE * 2, PAGE_EXECUTE_READ);
     if (pNewMapping == NULL)
     {
-        *isOOM = 1;
-        return NULL;
+        return E_OUTOFMEMORY;
     }
 
     void * pThunksSection = pNewMapping;
@@ -137,7 +133,7 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping(int* isOOM)
         !PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READWRITE))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 
 #if defined(HOST_APPLE) && defined(HOST_ARM64)
@@ -314,13 +310,14 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping(int* isOOM)
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
         PalVirtualFree(pNewMapping, THUNKS_MAP_SIZE * 2);
-        return NULL;
+        return E_FAIL;
     }
 #endif
 
     PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
 
-    return pThunksSection;
+    *ppThunksSection = pThunksSection;
+    return S_OK;
 }
 
 // FEATURE_RX_THUNKS

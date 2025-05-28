@@ -365,10 +365,9 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL1(void*, RhAllocateThunksMapping, int * isOOM)
+FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 {
-    *isOOM = 0;
-    return NULL;
+    return S_FAIL;
 }
 FCIMPLEND
 
