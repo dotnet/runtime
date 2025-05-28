@@ -27,6 +27,8 @@ resources:
     - repository: performance
       type: git
       name: internal/dotnet-performance
+      ref: refs/heads/improvement/build-time-measurements-maui
+
 
 variables:
 - template: /eng/pipelines/common/variables.yml
