@@ -6,6 +6,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
+using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -75,6 +76,7 @@ internal readonly struct StackWalk_1 : IStackWalk
 
     private bool Next(StackWalkData handle)
     {
+        IPlatformAgnosticContext prevContext = handle.Context.Clone();
         switch (handle.State)
         {
             case StackWalkState.SW_FRAMELESS:
@@ -102,12 +104,12 @@ internal readonly struct StackWalk_1 : IStackWalk
             case StackWalkState.SW_COMPLETE:
                 return false;
         }
-        UpdateState(handle);
+        UpdateState(handle, prevContext);
 
         return handle.State is not (StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE);
     }
 
-    private void UpdateState(StackWalkData handle)
+    private void UpdateState(StackWalkData handle, IPlatformAgnosticContext prevContext)
     {
         // If we are complete or in a bad state, no updating is required.
         if (handle.State is StackWalkState.SW_ERROR or StackWalkState.SW_COMPLETE)
@@ -117,6 +119,23 @@ internal readonly struct StackWalk_1 : IStackWalk
 
         bool isManaged = IsManaged(handle.Context.InstructionPointer, out _);
         bool validFrame = handle.FrameIter.IsValid();
+
+        if (_arch == RuntimeInfoArchitecture.X86 && IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? cbh))
+        {
+            IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+            if (!eman.IsFunclet(cbh.Value))
+            {
+                eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddress, out uint _);
+                uint relOffset = (uint)eman.GetRelativeOffset(cbh.Value).Value;
+                GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
+                if (gcInfo.HasReversePInvoke)
+                {
+                    handle.State = StackWalkState.SW_FRAME;
+                    return;
+                }
+            }
+        }
 
         if (isManaged)
         {
@@ -160,8 +179,8 @@ internal readonly struct StackWalk_1 : IStackWalk
         IPlatformAgnosticContext parentContext = handle.Context.Clone();
         parentContext.Unwind(_target);
 
-        if (handle.FrameIter.CurrentFrameAddress.Value >= parentContext.StackPointer.Value)
-            return false;
+        long stackDifference = (long)parentContext.StackPointer.Value - (long)handle.FrameIter.CurrentFrameAddress.Value;
+        Console.WriteLine(stackDifference);
 
         while (handle.FrameIter.IsValid() &&
                handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value)

@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextHolder) : BaseFrameHandler(target, contextHolder), IPlatformFrameHandler
 {
-    private readonly ContextHolder<X86Context> _holder = contextHolder;
+    private readonly ContextHolder<X86Context> _context = contextHolder;
 
     void IPlatformFrameHandler.HandleFaultingExceptionFrame(FaultingExceptionFrame frame)
     {
@@ -17,11 +17,11 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
         {
             throw new InvalidOperationException("Unexpected null context pointer on FaultingExceptionFrame");
         }
-        _holder.ReadFromAddress(_target, targetContext);
+        _context.ReadFromAddress(_target, targetContext);
 
         // Clear the CONTEXT_XSTATE, since the X86Context contains just plain CONTEXT structure
         // that does not support holding any extended state.
-        _holder.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
+        _context.Context.ContextFlags &= ~(uint)(ContextFlagsValues.CONTEXT_XSTATE & ContextFlagsValues.CONTEXT_AREA_MASK);
     }
 
     void IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)

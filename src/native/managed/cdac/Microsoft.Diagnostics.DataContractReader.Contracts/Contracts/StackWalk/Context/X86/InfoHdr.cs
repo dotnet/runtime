@@ -387,6 +387,7 @@ public record struct InfoHdr
     public const uint HAS_UNTRACKED = 0xFFFFFFFF;
     public const uint HAS_GS_COOKIE_OFFSET = 0xFFFFFFFF;
     public const uint HAS_SYNC_OFFSET = 0xFFFFFFFF;
+    public const uint INVALID_REV_PINVOKE_OFFSET = unchecked((uint)-1);
     public const uint HAS_REV_PINVOKE_FRAME_OFFSET = unchecked((uint)-2);
     public const uint HAS_NOGCREGIONS = 0xFFFFFFFF;
     private const uint YES = HAS_VARPTR;
