@@ -2446,8 +2446,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
                                       simdSize, mustExpand);
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
-        // The special import may have switched the type of the node.
-        nodeRetType = retNode->gtType;
+        if (retNode != nullptr)
+        {
+            // The special import may have switched the type of the node.
+            nodeRetType = retNode->gtType;
+        }
 #endif
     }
 
