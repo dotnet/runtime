@@ -4282,9 +4282,6 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 //   fromTree -- tree to copy dependence from
 //   toTree -- tree in question
 //
-// Remarks:
-//   This requires 'toTree' to be in its own statement
-//
 void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 {
     assert(fromTree->OperGet() == toTree->OperGet());

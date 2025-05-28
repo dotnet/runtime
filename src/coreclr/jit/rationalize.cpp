@@ -131,7 +131,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                 unreached();
 #endif // FEATURE_HW_INTRINSICS
             }
-            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
+            arg = NewCallArg::Struct(operand, sigTyp, comp->typGetObjLayout(clsHnd));
         }
         else
         {
