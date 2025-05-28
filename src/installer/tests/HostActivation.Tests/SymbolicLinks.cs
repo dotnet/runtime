@@ -92,7 +92,7 @@ namespace HostActivation.Tests
             }
 
             // Symlink all of the above into a single directory
-            var targetPath = Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath));
+            var targetPath = Path.Combine(testDir.Location, symlinkRelativePath);
             Directory.CreateDirectory(targetPath);
             var symlinks = new List<SymLink>();
             try
@@ -100,15 +100,15 @@ namespace HostActivation.Tests
                 foreach (var file in Directory.EnumerateFiles(appFilesDir))
                 {
                     var fileName = Path.GetFileName(file);
-                    var symlinkPath = Path.Combine(targetPath, symlinkRelativePath, fileName);
+                    var symlinkPath = Path.Combine(targetPath, fileName);
                     Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
                     symlinks.Add(new SymLink(file, symlinkPath));
                 }
                 symlinks.Add(new SymLink(
                     Path.Combine(appHostDir, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)),
-                    Path.Combine(targetPath, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe))));
+                    Path.Combine(targetPath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe))));
 
-                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                var result = Command.Create(Path.Combine(targetPath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .DotNetRoot(TestContext.BuiltDotNet.BinPath)
