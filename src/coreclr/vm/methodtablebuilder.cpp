@@ -140,10 +140,6 @@ MethodTableBuilder::CreateClass( Module *pModule,
 
     pEEClass->m_dwAttrClass = dwAttrClass;
 
-    // MDVal check: can't be both tdSequentialLayout and tdExplicitLayout
-    if((dwAttrClass & tdLayoutMask) == tdLayoutMask)
-        COMPlusThrowHR(COR_E_TYPELOAD);
-
     if (IsTdInterface(dwAttrClass))
     {
         // MDVal check: must have nil tkExtends and must be tdAbstract
