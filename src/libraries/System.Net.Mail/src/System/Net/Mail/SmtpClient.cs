@@ -548,6 +548,13 @@ namespace System.Net.Mail
 
                     canceled = e is OperationCanceledException;
 
+                    // If the operation was canceled, we should not report an error
+                    if (canceled)
+                    {
+                        Abort();
+                        return null!; // Return null but ensure the compiler is happy with the non-nullable return type
+                    }
+
                     Abort();
                     if (timedOut)
                     {

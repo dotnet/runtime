@@ -327,19 +327,7 @@ namespace System.Net.Mail.Tests
             await Task.Delay(500);
             serverMre.Set();
 
-            try
-            {
-                await sendTask.WaitAsync(TestHelper.PassingTestTimeout);
-                Assert.Fail("Expected exception was not thrown");
-            }
-            catch (SmtpException ex)
-            {
-                Assert.IsAssignableFrom<OperationCanceledException>(ex.InnerException);
-            }
-            catch (OperationCanceledException)
-            {
-                // This is also acceptable
-            }
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
 
             // We should still be able to send mail on the SmtpClient instance
             await Task.Run(() => client.SendMailAsync(message)).WaitAsync(TestHelper.PassingTestTimeout);
@@ -382,7 +370,7 @@ namespace System.Net.Mail.Tests
             AsyncCompletedEventArgs e = await tcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
             Assert.True(e.Cancelled, "SendAsync should have been canceled");
             _output.WriteLine(e.Error?.ToString() ?? "No error");
-            Assert.IsAssignableFrom<OperationCanceledException>(e.Error.InnerException);
+            Assert.Null(e.Error);
 
             // We should still be able to send mail on the SmtpClient instance
             await client.SendMailAsync(message).WaitAsync(TestHelper.PassingTestTimeout);
