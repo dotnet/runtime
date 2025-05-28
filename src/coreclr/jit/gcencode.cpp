@@ -375,7 +375,7 @@ void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
 // find . -name regen.txt | xargs cat | grep CallSite | sort | uniq -c | sort -r | head -80
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
-static FILE*     logFile = NULL;
+static FILE*  logFile = NULL;
 minipal_mutex logFileLock;
 #endif
 
