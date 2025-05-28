@@ -394,6 +394,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ref TValue FindValue(TKey key)
         {
             if (key == null)
