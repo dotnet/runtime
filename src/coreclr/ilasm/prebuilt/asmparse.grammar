@@ -1,3 +1,14 @@
+E:\source\runtime\.dotnet
+
+  Determining projects to restore...
+  Restored E:\source\runtime\src\coreclr\ilasm\GrammarExtractor\GrammarExtractor.csproj (in 595 ms).
+  7 of 8 projects are up-to-date for restore.
+  ILLink.RoslynAnalyzer -> E:\source\runtime\artifacts\bin\ILLink.RoslynAnalyzer\Debug\netstandard2.0\ILLink.RoslynAnalyzer.dll
+  ILLink.CodeFixProvider -> E:\source\runtime\artifacts\bin\ILLink.CodeFixProvider\Debug\netstandard2.0\ILLink.CodeFixProvider.dll
+  Mono.Linker -> E:\source\runtime\artifacts\bin\Mono.Linker\ref\Debug\net10.0\illink.dll
+  Mono.Linker -> E:\source\runtime\artifacts\bin\Mono.Linker\Debug\net10.0\illink.dll
+  ILLink.Tasks -> E:\source\runtime\artifacts\bin\ILLink.Tasks\Debug\net\ILLink.Tasks.dll
+  GrammarExtractor -> E:\source\runtime\artifacts\bin\GrammarExtractor\x64\Debug\GrammarExtractor.dll
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -84,6 +95,7 @@ id                      : ID
                         | 'nooptimization' 
                         | 'aggressiveoptimization' 
                         | 'async' 
+                        | 'extended' 
                         | SQSTRING 
                         ;
 
@@ -230,6 +242,7 @@ classAttr               : /* EMPTY */
                         | classAttr 'auto' 
                         | classAttr 'sequential' 
                         | classAttr 'explicit' 
+                        | classAttr 'extended' 
                         | classAttr 'ansi' 
                         | classAttr 'unicode' 
                         | classAttr 'autochar' 
