@@ -824,8 +824,6 @@ public class X86Unwinder(Target target)
 
     private uint SKIP_LEA_EAX_ESP(int val, TargetPointer baseAddress, uint offset)
     {
-
-#if DEBUG
         ushort wOpcode = ReadShortAt(baseAddress + offset);
         if (CheckInstrWord(wOpcode, X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET))
         {
@@ -838,7 +836,6 @@ public class X86Unwinder(Target target)
             Debug.Assert(val == _target.Read<int>(baseAddress + offset + 3));
             Debug.Assert(!CAN_COMPRESS(val));
         }
-#endif
 
         uint delta = 3u + (CAN_COMPRESS(-val) ? 1u : 4u);
         return offset + delta;
