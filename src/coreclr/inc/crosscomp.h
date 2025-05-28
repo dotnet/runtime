@@ -721,7 +721,11 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 #define DAC_CS_MAX_SIZE 64
 #elif defined(TARGET_WINDOWS)
+#ifdef TARGET_64BIT
 #define DAC_CS_MAX_SIZE 40
+#else
+#define DAC_CS_MAX_SIZE 24
+#endif // TARGET_64BIT
 #else
 // Fallback to a conservative default value
 #define DAC_CS_MAX_SIZE 128
