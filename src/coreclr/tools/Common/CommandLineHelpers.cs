@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
+
 namespace System.CommandLine
 {
     internal sealed class CommandLineException : Exception
