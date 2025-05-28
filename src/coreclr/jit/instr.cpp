@@ -2726,9 +2726,9 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 //    reg1 - The first register to push/pop.
 //    reg2 - The second register to push/pop.
 //
-void CodeGen::instGen_Push2Pop2Ppx(instruction ins, regNumber   reg1, regNumber   reg2)
+void CodeGen::instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2)
 {
-    GetEmitter()->emitIns_R_R(ins, EA_PTRSIZE, reg1, reg2, (insOpts) (INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+    GetEmitter()->emitIns_R_R(ins, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
 }
 #endif // defined(TARGET_AMD64)
 

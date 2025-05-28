@@ -16829,7 +16829,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         {
             code = AddRexWPrefix(id, code);
         }
-}
+    }
 #endif // TARGET_AMD64
     else
     {

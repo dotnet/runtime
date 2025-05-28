@@ -1595,9 +1595,7 @@ public:
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
 
 #if defined(TARGET_AMD64)
-    void instGen_Push2Pop2Ppx(instruction ins,
-                           regNumber   reg1,
-                           regNumber   reg2);
+    void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);
 #endif // defined(TARGET_AMD64)
 
 #ifdef TARGET_XARCH

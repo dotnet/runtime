@@ -9401,8 +9401,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
 
     theEmitter->emitIns_R_R(INS_push2, EA_PTRSIZE, REG_R16, REG_R17, INS_OPTS_EVEX_nd);
     theEmitter->emitIns_R_R(INS_pop2, EA_PTRSIZE, REG_R16, REG_R17, INS_OPTS_EVEX_nd);
-    theEmitter->emitIns_R_R(INS_push2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts) (INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
-    theEmitter->emitIns_R_R(INS_pop2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts) (INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+    theEmitter->emitIns_R_R(INS_push2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+    theEmitter->emitIns_R_R(INS_pop2, EA_PTRSIZE, REG_R17, REG_R18, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
     theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_R11, INS_OPTS_APX_ppx);
     theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_R11, INS_OPTS_APX_ppx);
     theEmitter->emitIns_R(INS_push, EA_PTRSIZE, REG_R17, INS_OPTS_APX_ppx);
@@ -10311,7 +10311,7 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // DEBUG
 
 #ifdef TARGET_AMD64
-    if(compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
     {
         // This is not a funclet or an On-Stack Replacement.
         assert((compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT) && !compiler->opts.IsOSR());
@@ -10323,7 +10323,7 @@ void CodeGen::genPushCalleeSavedRegisters()
         // To use PP2, the stack needs to be pre-aligned
         // If isFramePointerUsed() is true, we have already pushed the frame pointer and stack is aligned.
         // Else, We need to issue a single push to align the stack.
-        if(!isFramePointerUsed() && (rsPushRegs != RBM_NONE))
+        if (!isFramePointerUsed() && (rsPushRegs != RBM_NONE))
         {
             if ((rsPushRegs & RBM_FPBASE) != 0)
             {
@@ -10357,7 +10357,8 @@ void CodeGen::genPushCalleeSavedRegisters()
             regNumber reg1 = regStack.Pop();
             regNumber reg2 = regStack.Pop();
 
-            GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2, (insOpts) (INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+            GetEmitter()->emitIns_R_R(INS_push2, EA_PTRSIZE, reg1, reg2,
+                                      (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
             compiler->unwindPush(reg1);
             compiler->unwindPush(reg2);
         }
@@ -10421,7 +10422,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         return;
     }
 
-    if(compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
+    if (compiler->canUseApxEncoding() && compiler->canUseEvexEncoding() && JitConfig.EnableApxPPX())
     {
         regMaskTP      rsPopRegs = regSet.rsGetModifiedIntCalleeSavedRegsMask();
         const unsigned popCount  = genPopCalleeSavedRegistersFromMaskAPX(rsPopRegs);
@@ -10437,7 +10438,6 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     const unsigned popCount  = genPopCalleeSavedRegistersFromMask(rsPopRegs);
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
-
 
 //------------------------------------------------------------------------
 // genPopCalleeSavedRegistersFromMask: pop specified set of callee saves
@@ -10527,7 +10527,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs)
     // We need to align the stack to 16 bytes to use push2/pop2.
     // If isFramePointerUsed() is true, we will pop the frame pointer and stack will be aligned.
     // Else, We need to issue a single pop after the last pop2 to align the stack.
-    if(!isFramePointerUsed() && (rsPopRegs != RBM_NONE))
+    if (!isFramePointerUsed() && (rsPopRegs != RBM_NONE))
     {
         if ((rsPopRegs & RBM_FPBASE) != 0)
         {
@@ -10540,7 +10540,6 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs)
         }
     }
 
-
     // All registers to be restored as pushed to an ArrayStack
     ArrayStack<regNumber> regStack(compiler->getAllocator(CMK_Codegen));
     while (rsPopRegs != RBM_NONE)
@@ -10550,7 +10549,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs)
     }
 
     int index = 0;
-    if(regStack.Height() % 2 == 1)
+    if (regStack.Height() % 2 == 1)
     {
         // We have an odd number of registers to pop, so we need to pop the last one
         // separately..
@@ -10563,7 +10562,7 @@ unsigned CodeGen::genPopCalleeSavedRegistersFromMaskAPX(regMaskTP rsPopRegs)
     {
         regNumber reg1 = regStack.Bottom(index++);
         regNumber reg2 = regStack.Bottom(index++);
-        GetEmitter()->emitIns_R_R(INS_pop2, EA_PTRSIZE, reg1, reg2, (insOpts) (INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
+        GetEmitter()->emitIns_R_R(INS_pop2, EA_PTRSIZE, reg1, reg2, (insOpts)(INS_OPTS_EVEX_nd | INS_OPTS_APX_ppx));
         popCount += 2;
     }
     assert(regStack.Height() == index);

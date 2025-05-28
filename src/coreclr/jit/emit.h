@@ -848,7 +848,8 @@ protected:
                                      */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
-        // We repurpose _idCustom6 for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 since these instructions have no NF.
+        // We repurpose _idCustom6 for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 since these instructions have no
+        // NF.
 #define _idApxPpxContext _idCustom6 /* bits used for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 */
 
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
