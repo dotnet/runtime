@@ -117,7 +117,7 @@
         int32(0x00000000) // CStruct
     }
 
-    .field public valuetype NestedSequentialType y
+    .field public valuetype NestedAutoLayoutType y
 }
 
 .class flags(0x18) public value beforefieldinit EmptyCStruct

@@ -8767,13 +8767,10 @@ VOID MethodTableBuilder::HandleCStructLayout(MethodTable** pByValueClassCache)
 
     CONSISTENCY_CHECK(pLayoutInfo != nullptr);
 
-    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeSequentialFieldLayout(
+    bmtFP->NumInstanceFieldBytes = pLayoutInfo->InitializeCStructFieldLayout(
         GetHalfBakedClass()->GetFieldDescList(),
         pByValueClassCache,
-        bmtEnumFields->dwNumDeclaredFields,
-        bmtLayout->packingSize,
-        bmtLayout->classSize,
-        GetParentMethodTable()
+        bmtEnumFields->dwNumDeclaredFields
     );
 }
 

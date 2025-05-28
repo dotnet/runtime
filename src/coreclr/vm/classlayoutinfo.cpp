@@ -622,7 +622,7 @@ ULONG EEClassLayoutInfo::InitializeCStructFieldLayout(
     BYTE fieldsAlignmentRequirement;
     InitializeLayoutFieldInfoArray(pFields, cFields, pByValueClassCache, DEFAULT_PACKING_SIZE, pInfoArray, &numInstanceFields, &fieldsAlignmentRequirement);
 
-    BYTE alignmentRequirement = max(max<BYTE>(1, DEFAULT_PACKING_SIZE), fieldsAlignmentRequirement);
+    BYTE alignmentRequirement = max<BYTE>(1, fieldsAlignmentRequirement);
 
     SetAlignmentRequirement(alignmentRequirement);
     SetPackingSize(DEFAULT_PACKING_SIZE);

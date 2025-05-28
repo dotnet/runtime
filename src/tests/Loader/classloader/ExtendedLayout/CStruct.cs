@@ -30,15 +30,9 @@ public static class CStructTests
     [Fact]
     public static void ReferenceFields_ThrowTypeLoadException()
     {
-        Assert.Throws<TypeLoadException>(() =>
-        {
-            _ = new CStructWithReferenceFields();
-        });
+        Assert.Throws<TypeLoadException>(() => typeof(CStructWithReferenceFields));
 
-        Assert.Throws<TypeLoadException>(() =>
-        {
-            _ = new CStructWithMixedFields();
-        });
+        Assert.Throws<TypeLoadException>(() => typeof(CStructWithMixedFields));
     }
 
     [Fact]
@@ -72,10 +66,7 @@ public static class CStructTests
     [Fact]
     public static void NestedAutoLayout_ThrowTypeLoadException()
     {
-        Assert.Throws<TypeLoadException>(() =>
-        {
-            _ = new CStructCustomAutoStructField();
-        });
+        Assert.Throws<TypeLoadException>(() => typeof(CStructCustomAutoStructField));
     }
 
     [Fact]

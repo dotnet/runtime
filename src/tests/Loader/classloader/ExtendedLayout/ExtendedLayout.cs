@@ -13,19 +13,13 @@ public static class ExtendedLayout
     [Fact]
     public static void ExtendedLayout_NoExtendedLayoutAttribute()
     {
-        Assert.Throws<TypeLoadException>(() =>
-        {
-            _ = new NoExtendedAttributeOnType();
-        });
+        Assert.Throws<TypeLoadException>(() => typeof(NoExtendedAttributeOnType));
     }
 
     [Fact]
     public static void ExtendedLayout_InvalidKind()
     {
-        Assert.Throws<TypeLoadException>(() =>
-        {
-            _ = new ExtendedLayoutInvalidKind();
-        });
+        Assert.Throws<TypeLoadException>(() => typeof(ExtendedLayoutInvalidKind));
     }
 
     [Fact]
