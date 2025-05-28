@@ -455,12 +455,14 @@ public class InterpreterTest
         TestThrowWithinFinally();
         TestFinallyWithInnerTryBeforeCatch();
         TestFuncletAccessToLocals();
+        TestFinallyRefLocal();
     }
 
     public static void TestFuncletAccessToLocals()
     {
         int a = 7;
         int b = 3;
+        MyStruct2 str = new MyStruct2(2);
 
         try
         {
@@ -497,6 +499,25 @@ public class InterpreterTest
         {
             Console.WriteLine(8);
             Console.WriteLine(e2.Message);
+        }
+    }
+
+    public static bool TestFilter(ref TestStruct2 s)
+    {
+        return s.a == 1;
+    }
+
+    public static void TestFinallyRefLocal()
+    {
+        TestStruct2 s;
+        s.a = 1;
+        s.b = 2;
+        try
+        {
+            throw null;
+        }
+        catch (Exception e) when (TestFilter(ref s))
+        {
         }
     }
 

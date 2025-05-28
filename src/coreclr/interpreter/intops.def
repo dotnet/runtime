@@ -282,8 +282,8 @@ OPDEF(INTOP_CALLVIRT, "callvirt", 4, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ, "newobj", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
-OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 5, 1, 0, InterpOpThreeInts)
-OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 6, 1, 1, InterpOpThreeInts)
+OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpTwoInts)
+OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpTwoInts)
 
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 

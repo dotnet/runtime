@@ -768,8 +768,8 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
         if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
         {
-            // This code assumes that instructions for the same IL offset are emitted in an sequence without
-            // any other IL offsets in between.
+            // This code assumes that instructions for the same IL offset are emitted in a single run without
+            // any other IL offsets in between and that they don't repeat again after the run ends.
 #ifdef _DEBUG
             for (int i = 0; i < m_ILToNativeMapSize; i++)
             {
@@ -1072,6 +1072,8 @@ void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset)
 {
     InterpBasicBlock* pStartBB = m_ppOffsetToBB[startILOffset];
+    assert(pStartBB != NULL);
+
     InterpBasicBlock* pEndBB = pStartBB;
     for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
     {
@@ -1559,7 +1561,7 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             if (target >= codeSize)
                 return false;
             pLeaveTargetBB = GetBB(target);
-            if (opcode == CEE_LEAVE_S || opcode == CEE_LEAVE)
+            if (opcode == CEE_LEAVE_S)
             {
                 CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pLeaveTargetBB);
             }
@@ -1571,7 +1573,7 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             if (target >= codeSize)
                 return false;
             pLeaveTargetBB = GetBB(target);
-            if (opcode == CEE_LEAVE_S || opcode == CEE_LEAVE)
+            if (opcode == CEE_LEAVE)
             {
                 CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pLeaveTargetBB);
             }
@@ -1820,6 +1822,7 @@ void InterpCompiler::EmitLoadVar(int32_t var)
 
     if (m_pCBB->clauseType == BBClauseFilter)
     {
+        assert(m_pVars[var].ILGlobal);
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
@@ -2394,13 +2397,10 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
                     assert(0);
                     break;
             }
-            void *helperFtnSlot;
-            void *helperFtn = m_compHnd->getHelperFtn(pFieldInfo->helper, &helperFtnSlot);
             // Call helper to obtain thread static base address
             AddIns(INTOP_CALL_HELPER_PP);
-            m_pLastNewIns->data[0] = GetDataItemIndex(helperFtn);
-            m_pLastNewIns->data[1] = GetDataItemIndex(helperFtnSlot);
-            m_pLastNewIns->data[2] = GetDataItemIndex(helperArg);
+            m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(helperArg);
             PushInterpType(InterpTypeByRef, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
@@ -2450,6 +2450,21 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        m_pVars[var].indirects++;
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = var;
+        m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+        m_pStackPointer--;
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        return;
+    }
+
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
     m_pVars[var].indirects++;
@@ -2535,7 +2550,7 @@ retry_emit:
             if (m_pCBB->emitState == BBStateEmitting)
                 m_pCBB->emitState = BBStateEmitted;
             // If the new bblock was already emitted, skip its instructions
-            if ((pNewBB->emitState == BBStateEmitted))
+            if (pNewBB->emitState == BBStateEmitted)
             {
                 if (linkBBlocks)
                 {
@@ -4230,13 +4245,13 @@ retry_emit:
             case CEE_ISINST:
             {
                 CHECK_STACK(1);
-                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
-                void* helperFtnSlot = nullptr;
-                void *helperFtn = m_compHnd->getHelperFtn(CORINFO_HELP_ISINSTANCEOFANY, &helperFtnSlot);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
+
+                CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, false /* throwing */);
                 AddIns(INTOP_CALL_HELPER_PP_2);
-                m_pLastNewIns->data[0] = GetDataItemIndex(helperFtn);
-                m_pLastNewIns->data[1] = GetDataItemIndex(helperFtnSlot);
-                m_pLastNewIns->data[2] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(castingHelper);
+                m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hClass);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 m_pStackPointer--;
                 PushInterpType(InterpTypeI, NULL);

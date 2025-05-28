@@ -90,9 +90,6 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     const int32_t *ip;
     int8_t *stack;
 
-    // When executing a filter funclet, this points to the parent frame of the filter
-    int8_t *frame = NULL;
-
     InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
     assert(pMethod->CheckIntegrity());
 
@@ -111,6 +108,13 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
         //   parent frame are still alive. All accesses to the locals and arguments
         //   in this case use the pExceptionClauseArgs->pFrame->pStack as a frame pointer.
         // * Catch and finally funclets are running in the parent frame directly
+
+        if (pExceptionClauseArgs->isFilter)
+        {
+            // Since filters run in their own frame, we need to clear the global variables
+            // so that GC doesn't pick garbage in variables that were not yet written to.
+            memset(pFrame->pStack, 0, pMethod->allocaSize);
+        }
 
         // Start executing at the beginning of the exception clause
         ip = pExceptionClauseArgs->ip;
@@ -1088,24 +1092,28 @@ MAIN_LOOP:
                 case INTOP_CALL_HELPER_PP_2:
                 {
                     int base = (*ip == INTOP_CALL_HELPER_PP) ? 2 : 3;
-                    void* helperFtn = pMethod->pDataItems[ip[base]];
-                    void** helperFtnSlot = (void**)pMethod->pDataItems[ip[base + 1]];
-                    void* helperArg = pMethod->pDataItems[ip[base + 2]];
 
-                    if (!helperFtn)
-                        helperFtn = *helperFtnSlot;
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[base]];
+                    HELPER_FTN_PP helperFtn = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helperFtn = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helperFtn = (HELPER_FTN_PP)helperDirectOrIndirect;
+
+                    void* helperArg = pMethod->pDataItems[ip[base + 1]];
+
                     // This can call either native or compiled managed code. For an interpreter
                     // only configuration, this might be problematic, at least performance wise.
 
                     if (*ip == INTOP_CALL_HELPER_PP)
                     {
                         LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP)helperFtn)(helperArg);
-                        ip += 5;
+                        ip += 4;
                     }
                     else
                     {
                         LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP_2)helperFtn)(helperArg, LOCAL_VAR(ip[2], void*));
-                        ip += 6;
+                        ip += 5;
                     }
 
                     break;
