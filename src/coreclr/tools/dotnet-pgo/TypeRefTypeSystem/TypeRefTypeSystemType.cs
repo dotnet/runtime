@@ -258,6 +258,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             throw new InvalidOperationException();
         }
 
-        public override bool IsExtendedLayout => IsExplicitLayout || IsSequentialLayout;
+        public override bool IsExtendedLayout => throw new NotImplementedException();
+
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo() => throw new NotImplementedException();
     }
 }

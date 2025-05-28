@@ -45,6 +45,11 @@ namespace Internal.TypeSystem
             get => _typeDef.IsExtendedLayout;
         }
 
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            return _typeDef.GetExtendedLayoutInfo();
+        }
+
         public override bool IsBeforeFieldInit
         {
             get

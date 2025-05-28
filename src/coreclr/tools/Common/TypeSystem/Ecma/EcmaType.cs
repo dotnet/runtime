@@ -575,6 +575,23 @@ namespace Internal.TypeSystem.Ecma
             };
         }
 
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            Debug.Assert(this.IsExtendedLayout);
+
+            var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                "System.Runtime.InteropServices", "ExtendedLayoutAttribute"));
+
+            var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
+
+            ExtendedLayoutKind extendedLayoutKind = value is int intValue ? (ExtendedLayoutKind)intValue : ExtendedLayoutKind.None;
+
+            return new ExtendedLayoutInfo
+            {
+                Kind = extendedLayoutKind
+            };
+        }
+
         public override bool IsExplicitLayout
         {
             get

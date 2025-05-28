@@ -110,11 +110,24 @@ namespace Internal.TypeSystem
         }
 
         public abstract int GetInlineArrayLength();
+
+        public abstract ExtendedLayoutInfo GetExtendedLayoutInfo();
     }
 
     public struct ClassLayoutMetadata
     {
         public int PackingSize;
         public int Size;
+    }
+
+    public struct ExtendedLayoutInfo
+    {
+        public ExtendedLayoutKind Kind;
+    }
+
+    public enum ExtendedLayoutKind
+    {
+        None = -1,
+        CStruct = 0
     }
 }

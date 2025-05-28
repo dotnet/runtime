@@ -347,6 +347,11 @@ namespace ILCompiler
             {
                 return Array.Empty<FieldDesc>();
             }
+
+            public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+            {
+                return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
+            }
         }
 
         /// <summary>

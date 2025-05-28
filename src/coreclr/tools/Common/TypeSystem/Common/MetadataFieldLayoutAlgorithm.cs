@@ -63,8 +63,15 @@ namespace Internal.TypeSystem
             // hierarchy); otherwise, from System.Object
             // If the current type isn't ValueType or System.Object and has a layout and the parent type isn't
             // ValueType or System.Object then both need to have layout.
+            //
+            // ExtendedLayout is not supported on non value-types.
             if (!type.IsValueType && type.HasLayout())
             {
+                if (type.IsExtendedLayout)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                }
+
                 MetadataType baseType = type.MetadataBaseType;
                 if (!baseType.IsObject && !baseType.HasLayout())
                 {
@@ -490,6 +497,94 @@ namespace Internal.TypeSystem
             computedLayout.LayoutAbiStable = layoutAbiStable;
 
             return computedLayout;
+        }
+
+        private static ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            if (type.ContainsGCPointers || !type.IsValueType)
+            {
+                // CStruct layout algorithm does not support GC pointers.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            var offsets = new FieldAndOffset[numInstanceFields];
+
+            LayoutInt cumulativeInstanceFieldPos = LayoutInt.Zero;
+            LayoutInt largestAlignmentRequirement = LayoutInt.One;
+            int fieldOrdinal = 0;
+            int packingSize = type.Context.Target.MaximumAlignment;
+            bool layoutAbiStable = true;
+            bool hasAutoLayoutField = false;
+            bool hasInt128Field = false;
+            bool hasVectorTField = false;
+
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                var fieldSizeAndAlignment = ComputeFieldSizeAndAlignment(field.FieldType.UnderlyingType, hasLayout: true, packingSize, out ComputedFieldData fieldData);
+                if (!fieldData.LayoutAbiStable)
+                    layoutAbiStable = false;
+                if (fieldData.HasAutoLayout)
+                    hasAutoLayoutField = true;
+                if (fieldData.HasInt128Field)
+                    hasInt128Field = true;
+                if (fieldData.HasVectorTField)
+                    hasVectorTField = true;
+
+                largestAlignmentRequirement = LayoutInt.Max(fieldSizeAndAlignment.Alignment, largestAlignmentRequirement);
+
+                cumulativeInstanceFieldPos = AlignUpInstanceFieldOffset(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Alignment, type.Context.Target);
+                offsets[fieldOrdinal] = new FieldAndOffset(field, cumulativeInstanceFieldPos);
+                cumulativeInstanceFieldPos = LayoutInt.AddThrowing(cumulativeInstanceFieldPos, fieldSizeAndAlignment.Size, type);
+
+                fieldOrdinal++;
+            }
+
+            if (hasAutoLayoutField)
+            {
+                // CStruct does not support auto layout fields, Int128 or VectorT fields.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
+            SizeAndAlignment instanceByteSizeAndAlignment;
+            var instanceSizeAndAlignment = ComputeInstanceSize(
+                type,
+                cumulativeInstanceFieldPos,
+                largestAlignmentRequirement,
+                classLayoutSize: 0, // CStruct does not use the size from metadata.
+                out instanceByteSizeAndAlignment);
+
+            ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
+            {
+                IsAutoLayoutOrHasAutoLayoutFields = false,
+                IsInt128OrHasInt128Fields = hasInt128Field,
+                IsVectorTOrHasVectorTFields = hasVectorTField,
+                FieldAlignment = instanceSizeAndAlignment.Alignment,
+                FieldSize = instanceSizeAndAlignment.Size,
+                ByteCountUnaligned = instanceByteSizeAndAlignment.Size,
+                ByteCountAlignment = instanceByteSizeAndAlignment.Alignment,
+                Offsets = offsets,
+                LayoutAbiStable = layoutAbiStable
+            };
+
+            return computedLayout;
+        }
+
+        protected ComputedInstanceFieldLayout ComputeExtendedFieldLayout(MetadataType type, int numInstanceFields)
+        {
+            ExtendedLayoutInfo extendedLayoutInfo = type.GetExtendedLayoutInfo();
+
+            if (extendedLayoutInfo.Kind == ExtendedLayoutKind.CStruct)
+            {
+                return ComputeCStructFieldLayout(type, numInstanceFields);
+            }
+            else
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+                return default;
+            }
         }
 
         private static void AdjustForInlineArray(

@@ -41,7 +41,11 @@ namespace ILCompiler
 
         protected override ComputedInstanceFieldLayout ComputeInstanceFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.IsExplicitLayout)
+            if (type.IsExtendedLayout)
+            {
+                return ComputeExtendedFieldLayout(type, numInstanceFields);
+            }
+            else if (type.IsExplicitLayout)
             {
                 return ComputeExplicitFieldLayout(type, numInstanceFields);
             }

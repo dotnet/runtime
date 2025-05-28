@@ -187,6 +187,11 @@ namespace Internal.TypeSystem.Interop
             return result;
         }
 
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;

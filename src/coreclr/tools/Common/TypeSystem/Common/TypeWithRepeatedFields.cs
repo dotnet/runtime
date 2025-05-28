@@ -123,5 +123,7 @@ namespace Internal.TypeSystem
         public override TypeSystemContext Context => MetadataType.Context;
 
         public override IEnumerable<MethodDesc> GetMethods() => MethodDesc.EmptyMethods;
+
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo() => MetadataType.GetExtendedLayoutInfo();
     }
 }

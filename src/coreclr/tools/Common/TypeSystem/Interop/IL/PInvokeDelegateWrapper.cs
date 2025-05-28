@@ -275,6 +275,11 @@ namespace Internal.TypeSystem.Interop
 
             return _methods[(int)kind];
         }
+
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
+        }
     }
 
     public enum PInvokeDelegateWrapperMethodKind : byte
