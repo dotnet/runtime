@@ -21,6 +21,14 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/coreclr/pal/tests/**
+
 schedules:
   - cron: "0 9,18,1 * * *" # run at 9:00, 18:00 and 01:00 (UTC) which is 2:00, 11:00 and 18:00 (PST).
     displayName: runtime-coreclr-outerloop default schedule
@@ -43,6 +51,7 @@ extends:
       # Debug builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: ne(variables['Build.Reason'], 'PullRequest')
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: debug
@@ -68,6 +77,7 @@ extends:
       # Release builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: ne(variables['Build.Reason'], 'PullRequest')
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
@@ -91,6 +101,7 @@ extends:
       # Checked builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: ne(variables['Build.Reason'], 'PullRequest')
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
@@ -121,6 +132,7 @@ extends:
       # Checked test builds
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: ne(variables['Build.Reason'], 'PullRequest')
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
           buildConfig: checked
@@ -132,6 +144,7 @@ extends:
       # Checked JIT test runs
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: ne(variables['Build.Reason'], 'PullRequest')
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
@@ -151,6 +164,7 @@ extends:
       # Checked R2R test runs
       #
       - template: /eng/pipelines/common/platform-matrix.yml
+        condition: ne(variables['Build.Reason'], 'PullRequest')
         parameters:
           jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
           buildConfig: checked
