@@ -1722,6 +1722,8 @@ VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionConte
     //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
     CALL_MANAGED_METHOD_NORET(args)
     GCPROTECT_END();
+
+    UNREACHABLE();
 }
 
 VOID DECLSPEC_NORETURN DispatchRethrownManagedException()
