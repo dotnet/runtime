@@ -521,9 +521,12 @@ EMSCRIPTEN_KEEPALIVE char * mono_wasm_method_get_name_ex (MonoMethod *method) {
 	MONO_ENTER_GC_UNSAFE;
 	const char *method_name = mono_method_get_name (method);
 	// starts with .ctor or .cctor
-	if (mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (res) < 7) {
+	if (!method_name) {
+		res = strdup ("<unknown>");
+	} else if (method_name && mono_method_get_flags (method, NULL) & 0x0800 /* METHOD_ATTRIBUTE_SPECIAL_NAME */ && strlen (method_name) < 7) {
 		res = (char *) malloc (128);
 		snprintf (res, 128,"%s.%s", mono_class_get_name (mono_method_get_class (method)), method_name);
+		res[127] = '\0';
 	} else {
 		res = strdup (method_name);
 	}

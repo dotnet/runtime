@@ -1736,6 +1736,7 @@ int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
     size_t data = !direct
         ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
         : (size_t)direct;
+    assert(data);
     return GetDataItemIndex((void*)data);
 }
 
@@ -1889,7 +1890,8 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
 
 static int32_t GetLdindForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_LDIND_I1;
         case InterpTypeU1: return INTOP_LDIND_U1;
         case InterpTypeI2: return INTOP_LDIND_I2;
@@ -1909,7 +1911,8 @@ static int32_t GetLdindForType(InterpType interpType)
 
 static int32_t GetStindForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_STIND_I1;
         case InterpTypeU1: return INTOP_STIND_U1;
         case InterpTypeI2: return INTOP_STIND_I2;
@@ -1921,6 +1924,24 @@ static int32_t GetStindForType(InterpType interpType)
         case InterpTypeO: return INTOP_STIND_O;
         case InterpTypeVT: return INTOP_STIND_VT;
         case InterpTypeByRef: return INTOP_STIND_I;
+        default:
+            assert(0);
+    }
+    return -1;
+}
+
+static int32_t GetStelemForType(InterpType interpType)
+{
+    switch (interpType)
+    {
+        case InterpTypeI1: return INTOP_STELEM_I1;
+        case InterpTypeU1: return INTOP_STELEM_U1;
+        case InterpTypeI2: return INTOP_STELEM_I2;
+        case InterpTypeU2: return INTOP_STELEM_U2;
+        case InterpTypeI4: return INTOP_STELEM_I4;
+        case InterpTypeI8: return INTOP_STELEM_I8;
+        case InterpTypeR4: return INTOP_STELEM_R4;
+        case InterpTypeR8: return INTOP_STELEM_R8;
         default:
             assert(0);
     }
@@ -1978,6 +1999,23 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
     else
         m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
 
+}
+
+void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
+{
+    m_pStackPointer -= 2;
+    AddIns(opcode);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    PushInterpType(interpType, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitStelem(InterpType interpType)
+{
+    m_pStackPointer -= 3;
+    int32_t opcode = GetStelemForType(interpType);
+    AddIns(opcode);
+    m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
 }
 
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
@@ -2388,6 +2426,25 @@ retry_emit:
                 EmitStoreVar(numArgs + *m_ip - CEE_STLOC_0);
                 m_ip++;
                 break;
+
+            case CEE_LDOBJ:
+            case CEE_STOBJ:
+            {
+                CHECK_STACK(*m_ip == CEE_LDOBJ ? 1 : 2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
+                InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
+                if (*m_ip == CEE_LDOBJ)
+                {
+                    EmitLdind(interpType, resolvedToken.hClass, 0);
+                }
+                else
+                {
+                    EmitStind(interpType, resolvedToken.hClass, 0, false);
+                }
+                m_ip += 5;
+                break;
+            }
 
             case CEE_RET:
             {
@@ -3463,12 +3520,21 @@ retry_emit:
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                         m_ip++;
                         break;
+                    case CEE_SIZEOF:
+                    {
+                        CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                        AddIns(INTOP_LDC_I4);
+                        m_pLastNewIns->data[0] = m_compHnd->getClassSize(clsHnd);
+                        PushStackType(StackTypeI4, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip += 5;
+                        break;
+                    }
                     default:
                         assert(0);
                         break;
                 }
                 break;
-
             case CEE_THROW:
                 AddIns(INTOP_THROW);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
@@ -3508,6 +3574,197 @@ retry_emit:
                 m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                 m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
                 m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
+            case CEE_NEWARR:
+            {
+                CHECK_STACK(1);
+
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Newarr, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE arrayClsHnd = resolvedToken.hClass;
+                CorInfoHelpFunc helpFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
+
+                m_pStackPointer--;
+
+                AddIns(INTOP_NEWARR);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+
+                PushInterpType(InterpTypeO, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDLEN:
+            {
+                CHECK_STACK(1);
+                EmitLdind(InterpTypeI4, NULL, OFFSETOF__CORINFO_Array__length);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I1:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U1:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I2:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U2:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I8:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I, InterpTypeI);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_R4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_R8:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I1:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI1);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I2:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI2);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I4:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I8:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI8);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_R4:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeR4);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_R8:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeR8);
+                m_ip++;
+                break;
+            }
+
+            case CEE_LDTOKEN:
+            {
+                AddIns(INTOP_LDTOKEN);
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                PushStackType(StackTypeVT, clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                // see jit/importer.cpp CEE_LDTOKEN
+                CorInfoHelpFunc helper;
+                if (resolvedToken.hClass)
+                {
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
+                }
+                else if (resolvedToken.hMethod)
+                {
+                    helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
+                }
+                else if (resolvedToken.hField)
+                {
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
+                }
+                else
+                {
+                    helper = CORINFO_HELP_FAIL_FAST;
+                    assert(!"Token not resolved or resolved to unexpected type");
+                }
+
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helper);
                 m_ip += 5;
                 break;
             }

@@ -1486,7 +1486,7 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     {
         overflows = false;
     }
-    else if (expr->OperIs(GT_IND))
+    else if (expr->OperIs(GT_IND, GT_ARR_LENGTH))
     {
         overflows = false;
     }
@@ -1643,6 +1643,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     {
         // TODO: consider computing range for CastOp and intersect it with this.
         range = GetRangeFromType(expr->AsCast()->CastToType());
+    }
+    else if (expr->OperIs(GT_ARR_LENGTH))
+    {
+        // Better than keUnknown
+        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
     }
     else
     {

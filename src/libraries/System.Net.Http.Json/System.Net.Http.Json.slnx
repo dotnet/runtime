@@ -1,0 +1,59 @@
+<Solution>
+  <Folder Name="/gen/">
+    <Project Path="../System.Runtime.InteropServices/gen/ComInterfaceGenerator/ComInterfaceGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/DownlevelLibraryImportGenerator/DownlevelLibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/LibraryImportGenerator/LibraryImportGenerator.csproj" />
+    <Project Path="../System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Microsoft.Interop.SourceGeneration.csproj" />
+    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn3.11.csproj" />
+    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
+    <Project Path="../System.Text.Json/gen/System.Text.Json.SourceGeneration.Roslyn4.4.csproj" />
+    <Project Path="../System.Text.RegularExpressions/gen/System.Text.RegularExpressions.Generator.csproj" />
+  </Folder>
+  <Folder Name="/ref/">
+    <Project Path="../Microsoft.Win32.Primitives/ref/Microsoft.Win32.Primitives.csproj" />
+    <Project Path="../System.Collections.Concurrent/ref/System.Collections.Concurrent.csproj" />
+    <Project Path="../System.Collections.NonGeneric/ref/System.Collections.NonGeneric.csproj" />
+    <Project Path="../System.Collections/ref/System.Collections.csproj" />
+    <Project Path="../System.Diagnostics.DiagnosticSource/ref/System.Diagnostics.DiagnosticSource.csproj" />
+    <Project Path="../System.Formats.Asn1/ref/System.Formats.Asn1.csproj" />
+    <Project Path="../System.IO.Pipelines/ref/System.IO.Pipelines.csproj" />
+    <Project Path="../System.Memory/ref/System.Memory.csproj" />
+    <Project Path="../System.Net.Http/ref/System.Net.Http.csproj" />
+    <Project Path="../System.Net.Primitives/ref/System.Net.Primitives.csproj" />
+    <Project Path="../System.Net.Security/ref/System.Net.Security.csproj" />
+    <Project Path="../System.Net.Sockets/ref/System.Net.Sockets.csproj" />
+    <Project Path="../System.Runtime.InteropServices/ref/System.Runtime.InteropServices.csproj" />
+    <Project Path="../System.Runtime.Numerics/ref/System.Runtime.Numerics.csproj" />
+    <Project Path="../System.Runtime/ref/System.Runtime.csproj" />
+    <Project Path="../System.Security.Cryptography/ref/System.Security.Cryptography.csproj" />
+    <Project Path="../System.Text.Encodings.Web/ref/System.Text.Encodings.Web.csproj" />
+    <Project Path="../System.Text.Json/ref/System.Text.Json.csproj" />
+    <Project Path="ref/System.Net.Http.Json.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="../Microsoft.Bcl.AsyncInterfaces/src/Microsoft.Bcl.AsyncInterfaces.csproj" />
+    <Project Path="../Microsoft.Bcl.Cryptography/src/Microsoft.Bcl.Cryptography.csproj" />
+    <Project Path="../System.Formats.Asn1/src/System.Formats.Asn1.csproj" />
+    <Project Path="../System.IO.Pipelines/src/System.IO.Pipelines.csproj" />
+    <Project Path="../System.Text.Encodings.Web/src/System.Text.Encodings.Web.csproj" />
+    <Project Path="../System.Text.Json/src/System.Text.Json.csproj" />
+    <Project Path="src/System.Net.Http.Json.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../Common/tests/TestUtilities/TestUtilities.csproj" />
+    <Project Path="tests/FunctionalTests/System.Net.Http.Json.Functional.Tests.csproj" />
+    <Project Path="tests/UnitTests/System.Net.Http.Json.Unit.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/" />
+  <Folder Name="/tools/gen/">
+    <Project Path="../../tools/illink/src/ILLink.CodeFix/ILLink.CodeFixProvider.csproj" />
+    <Project Path="../../tools/illink/src/ILLink.RoslynAnalyzer/ILLink.RoslynAnalyzer.csproj" />
+  </Folder>
+  <Folder Name="/tools/ref/">
+    <Project Path="../../tools/illink/src/linker/ref/Mono.Linker.csproj" />
+  </Folder>
+  <Folder Name="/tools/src/">
+    <Project Path="../../tools/illink/src/ILLink.Tasks/ILLink.Tasks.csproj" />
+    <Project Path="../../tools/illink/src/linker/Mono.Linker.csproj" />
+  </Folder>
+</Solution>
