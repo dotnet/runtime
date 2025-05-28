@@ -119,10 +119,6 @@ export type MonoConfig = {
     debugLevel?: number,
 
     /**
-     * Delay of the purge of the cached resources in milliseconds. Default is 10000 (10 seconds).
-     */
-    cachedResourcesPurgeDelay?: number,
-    /**
      * Configures use of the `integrity` directive for fetching assets
      */
     disableIntegrityCheck?: boolean,
