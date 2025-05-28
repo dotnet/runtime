@@ -59,7 +59,6 @@ enum HWIntrinsicCategory : uint8_t
     // These are Arm64 that share some features in a given category (e.g. immediate operand value range)
     HW_Category_ShiftLeftByImmediate,
     HW_Category_ShiftRightByImmediate,
-    HW_Category_RotateByImmediate,
     HW_Category_SIMDByIndexedElement,
 
     // Helper intrinsics

@@ -1980,7 +1980,6 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 case HW_Category_SIMDByIndexedElement:
                 case HW_Category_ShiftLeftByImmediate:
                 case HW_Category_ShiftRightByImmediate:
-                case HW_Category_RotateByImmediate:
                 case HW_Category_Scalar:
                 case HW_Category_Helper:
                     break;

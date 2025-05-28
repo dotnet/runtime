@@ -3758,7 +3758,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
     if ((intrin.category == HW_Category_ShiftLeftByImmediate) ||
-        (intrin.category == HW_Category_ShiftRightByImmediate) || (intrin.category == HW_Category_RotateByImmediate) ||
+        (intrin.category == HW_Category_ShiftRightByImmediate) ||
         ((intrin.category == HW_Category_SIMDByIndexedElement) && hasImmediateOperand))
     {
         switch (intrin.numOperands)

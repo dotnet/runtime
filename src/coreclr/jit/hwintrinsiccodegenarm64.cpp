@@ -424,8 +424,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
         }
         else if ((intrin.category == HW_Category_ShiftLeftByImmediate) ||
-                 (intrin.category == HW_Category_ShiftRightByImmediate) ||
-                 (intrin.category == HW_Category_RotateByImmediate))
+                 (intrin.category == HW_Category_ShiftRightByImmediate))
         {
             assert(hasImmediateOperand);
 
