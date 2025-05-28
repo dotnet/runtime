@@ -68,6 +68,79 @@ namespace HostActivation.Tests
         [Theory]
         [InlineData("a/b/SymlinkToFrameworkDependentApp")]
         [InlineData("a/SymlinkToFrameworkDependentApp")]
+        public void Symlink_split_files_fx(string symlinkRelativePath)
+        {
+            using var testDir = TestArtifact.Create("symlink");
+
+            // Split the app into two directories, one for the apphost and one for the rest of the files
+            var appHostDir = Path.Combine(testDir.Location, "apphost");
+            var appFilesDir = Path.Combine(testDir.Location, "appfiles");
+            Directory.CreateDirectory(appHostDir);
+            Directory.CreateDirectory(appFilesDir);
+
+            File.Copy(
+                Path.Combine(sharedTestState.FrameworkDependentApp.Location, sharedTestState.FrameworkDependentApp.AppExe),
+                Path.Combine(appHostDir, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)));
+
+            foreach (var file in Directory.EnumerateFiles(sharedTestState.FrameworkDependentApp.Location))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName != sharedTestState.FrameworkDependentApp.AppExe)
+                {
+                    File.Copy(file, Path.Combine(appFilesDir, fileName));
+                }
+            }
+
+            // Symlink all of the above into a single directory
+            var targetPath = Path.Combine(testDir.Location, Path.GetDirectoryName(symlinkRelativePath));
+            Directory.CreateDirectory(targetPath);
+            var symlinks = new List<SymLink>();
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(appFilesDir))
+                {
+                    var fileName = Path.GetFileName(file);
+                    var symlinkPath = Path.Combine(targetPath, symlinkRelativePath, fileName);
+                    Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
+                    symlinks.Add(new SymLink(file, symlinkPath));
+                }
+                symlinks.Add(new SymLink(
+                    Path.Combine(appHostDir, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)),
+                    Path.Combine(targetPath, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe))));
+
+                var result = Command.Create(Path.Combine(testDir.Location, symlinkRelativePath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .DotNetRoot(TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Windows, the apphost will look next to the symlink for the app dll and find the symlinks
+                    result
+                        .Should().Pass()
+                        .And.HaveStdOutContaining("Hello World");
+                }
+                else
+                {
+                    // On Unix, the apphost will not find the app files next to the symlink
+                    result
+                        .Should().Fail()
+                        .And.HaveStdErrContaining("The application to execute does not exist");
+                }
+            }
+            finally
+            {
+                foreach (var symlink in symlinks)
+                {
+                    symlink.Dispose();
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("a/b/SymlinkToFrameworkDependentApp")]
+        [InlineData("a/SymlinkToFrameworkDependentApp")]
         public void Symlink_all_files_self_contained(string symlinkRelativePath)
         {
             using var testDir = TestArtifact.Create("symlink");
