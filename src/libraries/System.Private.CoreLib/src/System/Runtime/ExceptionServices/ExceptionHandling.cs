@@ -8,6 +8,7 @@ namespace System.Runtime.ExceptionServices
     public static class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
+        private static bool s_crashHandlerSet;
 
         internal static bool IsHandledByGlobalHandler(Exception ex)
         {
@@ -65,7 +66,14 @@ namespace System.Runtime.ExceptionServices
         [System.CLSCompliantAttribute(false)]
         public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> fatalErrorHandler)
         {
+            ArgumentNullException.ThrowIfNull(fatalErrorHandler);
 
+            if (Interlocked.CompareExchange(ref s_crashHandlerSet, true, false))
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondFatalHandler);
+            }
+
+            // set the handler here. (QCall)
         }
     }
 }
