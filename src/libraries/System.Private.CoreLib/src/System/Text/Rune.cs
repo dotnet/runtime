@@ -944,8 +944,10 @@ namespace System.Text
                 {
                     return true;
                 }
+
                 result = ReplacementChar;
             }
+
             return false;
         }
 
@@ -956,6 +958,7 @@ namespace System.Text
             {
                 ThrowHelper.ThrowFormatInvalidString();
             }
+
             return result;
         }
 
