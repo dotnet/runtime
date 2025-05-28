@@ -9,9 +9,10 @@
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
-#ifndef POWER_BUILTINS_H
-#define POWER_BUILTINS_H
+#ifndef POWER_INTRINS_H
+#define POWER_INTRINS_H
 
+#if defined (__clang__)
 /*
  * These stubs fix clang incompatibilities with GCC builtins.
  */
@@ -27,5 +28,7 @@ static inline __vector unsigned long long __attribute__((overloadable))
 vec_ld(int __a, const __vector unsigned long long* __b) {
     return (__vector unsigned long long)__builtin_altivec_lvx(__a, __b);
 }
+
+#endif
 
 #endif
