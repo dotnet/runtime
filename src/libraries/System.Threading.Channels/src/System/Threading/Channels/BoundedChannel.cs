@@ -170,17 +170,7 @@ namespace System.Threading.Channels
                     }
 
                     // If we're able to use the singleton reader, do so.
-                    if (!cancellationToken.CanBeCanceled)
-                    {
-                        BlockedReadAsyncOperation<T> singleton = _readerSingleton;
-                        if (singleton.TryOwnAndReset())
-                        {
-                            ChannelUtilities.Enqueue(ref parent._blockedReadersHead, singleton);
-                            return singleton.ValueTaskOfT;
-                        }
-                    }
-
-                    // Otherwise, queue a reader.  Note that in addition to checking whether synchronous continuations were requested,
+                    // Otherwise, create a new reader. Note that in addition to checking whether synchronous continuations were requested,
                     // we also check whether the supplied cancellation token can be canceled.  The writer calls UnregisterCancellation
                     // while holding the lock, and if a callback needs to be unregistered and is currently running, it needs to wait
                     // for that callback to complete so that the subsequent code knows it won't be contending with another thread
@@ -188,7 +178,9 @@ namespace System.Threading.Channels
                     // cancellation callback could end up running arbitrary code, including code that called back into the reader or
                     // writer and tried to take the same lock held by the thread running UnregisterCancellation... deadlock.  As such,
                     // we only allow synchronous continuations here if both a) the caller requested it and the token isn't cancelable.
-                    var reader = new BlockedReadAsyncOperation<T>(parent._runContinuationsAsynchronously || cancellationToken.CanBeCanceled, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
+                    BlockedReadAsyncOperation<T> reader =
+                        !cancellationToken.CanBeCanceled && _readerSingleton.TryOwnAndReset() ? _readerSingleton :
+                        new(parent._runContinuationsAsynchronously || cancellationToken.CanBeCanceled, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
                     ChannelUtilities.Enqueue(ref parent._blockedReadersHead, reader);
                     return reader.ValueTaskOfT;
                 }
@@ -224,25 +216,9 @@ namespace System.Threading.Channels
                     // there's a blocked reader task and return it.
 
                     // If we're able to use the singleton waiter, do so.
-                    if (!cancellationToken.CanBeCanceled)
-                    {
-                        WaitingReadAsyncOperation singleton = _waiterSingleton;
-                        if (singleton.TryOwnAndReset())
-                        {
-                            ChannelUtilities.Enqueue(ref parent._waitingReadersHead, singleton);
-                            return singleton.ValueTaskOfT;
-                        }
-                    }
-
-                    // Otherwise, queue a reader.  Note that in addition to checking whether synchronous continuations were requested,
-                    // we also check whether the supplied cancellation token can be canceled.  The writer calls UnregisterCancellation
-                    // while holding the lock, and if a callback needs to be unregistered and is currently running, it needs to wait
-                    // for that callback to complete so that the subsequent code knows it won't be contending with another thread
-                    // trying to complete the operation.  However, if we allowed a synchronous continuation from this operation, that
-                    // cancellation callback could end up running arbitrary code, including code that called back into the reader or
-                    // writer and tried to take the same lock held by the thread running UnregisterCancellation... deadlock.  As such,
-                    // we only allow synchronous continuations here if both a) the caller requested it and the token isn't cancelable.
-                    var waiter = new WaitingReadAsyncOperation(parent._runContinuationsAsynchronously || cancellationToken.CanBeCanceled, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
+                    WaitingReadAsyncOperation waiter =
+                        !cancellationToken.CanBeCanceled && _waiterSingleton.TryOwnAndReset() ? _waiterSingleton :
+                        new(parent._runContinuationsAsynchronously || cancellationToken.CanBeCanceled, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
                     ChannelUtilities.Enqueue(ref parent._waitingReadersHead, waiter);
                     return waiter.ValueTaskOfT;
                 }
@@ -511,18 +487,10 @@ namespace System.Threading.Channels
                     // We're still allowed to write, but there's no space, so ensure a waiter is queued and return it.
 
                     // If we're able to use the singleton waiter, do so.
-                    if (!cancellationToken.CanBeCanceled)
-                    {
-                        WaitingWriteAsyncOperation singleton = _waiterSingleton;
-                        if (singleton.TryOwnAndReset())
-                        {
-                            ChannelUtilities.Enqueue(ref parent._waitingWritersHead, singleton);
-                            return singleton.ValueTaskOfT;
-                        }
-                    }
-
-                    // Otherwise, queue a waiter.
-                    var waiter = new WaitingWriteAsyncOperation(runContinuationsAsynchronously: true, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
+                    // Otherwise, create a new waiter.
+                    WaitingWriteAsyncOperation waiter =
+                        !cancellationToken.CanBeCanceled && _waiterSingleton.TryOwnAndReset() ? _waiterSingleton :
+                        new(runContinuationsAsynchronously: true, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
                     ChannelUtilities.Enqueue(ref parent._waitingWritersHead, waiter);
                     return waiter.ValueTaskOfT;
                 }
@@ -596,24 +564,10 @@ namespace System.Threading.Channels
                     else if (parent._mode == BoundedChannelFullMode.Wait)
                     {
                         // The channel is full and we're in a wait mode.  We need to queue a writer.
-
-                        // If we're able to use the singleton writer, do so.
-                        if (!cancellationToken.CanBeCanceled)
-                        {
-                            BlockedWriteAsyncOperation<T> singleton = _writerSingleton;
-                            if (singleton.TryOwnAndReset())
-                            {
-                                singleton.Item = item;
-                                ChannelUtilities.Enqueue(ref parent._blockedWritersHead, singleton);
-                                return singleton.ValueTask;
-                            }
-                        }
-
-                        // Otherwise, queue a new writer.
-                        var writer = new BlockedWriteAsyncOperation<T>(runContinuationsAsynchronously: true, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate)
-                        {
-                            Item = item
-                        };
+                        BlockedWriteAsyncOperation<T> writer =
+                            !cancellationToken.CanBeCanceled && _writerSingleton.TryOwnAndReset() ? _writerSingleton :
+                            new(runContinuationsAsynchronously: true, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
+                        writer.Item = item;
                         ChannelUtilities.Enqueue(ref parent._blockedWritersHead, writer);
                         return writer.ValueTask;
                     }

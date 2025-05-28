@@ -97,19 +97,10 @@ namespace System.Threading.Channels
                         return ChannelUtilities.GetInvalidCompletionValueTask<T>(parent._doneWriting);
                     }
 
-                    // If we're able to use the singleton reader, do so.
-                    if (!cancellationToken.CanBeCanceled)
-                    {
-                        BlockedReadAsyncOperation<T> singleton = _readerSingleton;
-                        if (singleton.TryOwnAndReset())
-                        {
-                            ChannelUtilities.Enqueue(ref parent._blockedReadersHead, singleton);
-                            return singleton.ValueTaskOfT;
-                        }
-                    }
-
-                    // Otherwise, create and queue a reader.
-                    var reader = new BlockedReadAsyncOperation<T>(parent._runContinuationsAsynchronously, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
+                    // If we're able to use the singleton reader, do so. Otherwise, create a new reader.
+                    BlockedReadAsyncOperation<T> reader =
+                        !cancellationToken.CanBeCanceled && _readerSingleton.TryOwnAndReset() ? _readerSingleton :
+                        new BlockedReadAsyncOperation<T>(parent._runContinuationsAsynchronously, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
                     ChannelUtilities.Enqueue(ref parent._blockedReadersHead, reader);
                     return reader.ValueTaskOfT;
                 }
@@ -174,19 +165,10 @@ namespace System.Threading.Channels
                             default;
                     }
 
-                    // If we're able to use the singleton waiter, do so.
-                    if (!cancellationToken.CanBeCanceled)
-                    {
-                        WaitingReadAsyncOperation singleton = _waiterSingleton;
-                        if (singleton.TryOwnAndReset())
-                        {
-                            ChannelUtilities.Enqueue(ref parent._waitingReadersHead, singleton);
-                            return singleton.ValueTaskOfT;
-                        }
-                    }
-
-                    // Otherwise, create and queue a waiter.
-                    var waiter = new WaitingReadAsyncOperation(parent._runContinuationsAsynchronously, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
+                    // If we're able to use the singleton waiter, do so. Otherwise, create a new waiter.
+                    WaitingReadAsyncOperation waiter =
+                        !cancellationToken.CanBeCanceled && _waiterSingleton.TryOwnAndReset() ? _waiterSingleton :
+                        new(parent._runContinuationsAsynchronously, cancellationToken, cancellationCallback: _parent.CancellationCallbackDelegate);
                     ChannelUtilities.Enqueue(ref parent._waitingReadersHead, waiter);
                     return waiter.ValueTaskOfT;
                 }

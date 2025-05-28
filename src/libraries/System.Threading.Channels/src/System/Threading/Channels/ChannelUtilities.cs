@@ -178,7 +178,7 @@ namespace System.Threading.Channels
             }
         }
 
-        /// <summary>Iterates through the linked list, failing each operation.</summary>
+        /// <summary>Iterates through the linked list, setting the result of each operation.</summary>
         /// <param name="head">The head of the queue of operations to complete.</param>
         /// <param name="result">The result with which to complete each operations.</param>
         internal static void SetOperations<TAsyncOp, TResult>(ref TAsyncOp? head, TResult result)
@@ -234,6 +234,29 @@ namespace System.Threading.Channels
             }
 
             head = null;
+        }
+
+        /// <summary>Counts the number of operations in the list.</summary>
+        /// <param name="head">The head of the queue of operations to count.</param>
+        internal static long CountOperations<TAsyncOp>(TAsyncOp? head)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
+        {
+            TAsyncOp? current = head;
+            long count = 0;
+
+            if (current is not null)
+            {
+                do
+                {
+                    count++;
+
+                    Debug.Assert(current is not null);
+                    current = current.Next;
+                }
+                while (current != head);
+            }
+
+            return count;
         }
 
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>
