@@ -1208,14 +1208,14 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 #elif defined(TARGET_ARM64)
     if (CPUCompileFlags.IsSet(InstructionSet_Sve_Arm64))
     {
-#ifdef _DEBUG
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseSveForVectorT) != 0)
-        {
-            // For testing purpose, pretend the vector length is 32 bytes
-            numInstanceFieldBytes = 32;
-        }
-        else
-#endif
+//#ifdef _DEBUG
+//        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseSveForVectorT) != 0)
+//        {
+//            // For testing purpose, pretend the vector length is 32 bytes
+//            numInstanceFieldBytes = 32;
+//        }
+//        else
+//#endif
         {
             numInstanceFieldBytes = (uint32_t)GetSveLengthFromOS();
         }

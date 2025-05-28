@@ -2615,7 +2615,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         // In test mode, if UseSveForVectorT=1, then mimic that
         // we are generating for VL > 16B
-        compVectorTLength = 32;
+        compVectorTLength = 16; //32;
     }
     else
 #endif // DEBUG
