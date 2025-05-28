@@ -579,12 +579,25 @@ namespace Internal.TypeSystem.Ecma
         {
             Debug.Assert(this.IsExtendedLayout);
 
-            var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
-                "System.Runtime.InteropServices", "ExtendedLayoutAttribute"));
+            var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
 
-            var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
+            if (attrHandle.IsNil)
+            {
+                ThrowHelper.ThrowTypeLoadException(this);
+            }
 
-            ExtendedLayoutKind extendedLayoutKind = value is int intValue ? (ExtendedLayoutKind)intValue : ExtendedLayoutKind.None;
+            var attr = MetadataReader.GetCustomAttribute(attrHandle);
+
+            var attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(_module));
+
+            if (attrValue.FixedArguments is not [{ Value: int kind }])
+            {
+                ThrowHelper.ThrowTypeLoadException(this);
+                return default;
+            }
+
+            ExtendedLayoutKind extendedLayoutKind = kind is int intValue ? (ExtendedLayoutKind)intValue : ExtendedLayoutKind.None;
 
             return new ExtendedLayoutInfo
             {
