@@ -21,14 +21,6 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
-pr:
-  branches:
-    include:
-      - main
-  paths:
-    include:
-      - src/coreclr/pal/tests/*
-
 schedules:
   - cron: "0 9,18,1 * * *" # run at 9:00, 18:00 and 01:00 (UTC) which is 2:00, 11:00 and 18:00 (PST).
     displayName: runtime-coreclr-outerloop default schedule
