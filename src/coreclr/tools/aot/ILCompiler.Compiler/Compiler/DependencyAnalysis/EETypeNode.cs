@@ -661,7 +661,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (!ConstructedEETypeNode.CreationAllowed(_type))
+            //if (!ConstructedEETypeNode.CreationAllowed(_type))
             {
                 // If necessary MethodTable is the highest load level for this type, ask the metadata manager
                 // if we have any dependencies due to presence of the EEType.
