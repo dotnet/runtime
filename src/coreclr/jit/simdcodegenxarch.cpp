@@ -431,7 +431,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
     {
         // We should never save to register for zmm.
         assert(op1->TypeGet() == TYP_SIMD32);
-        GetEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, tgtReg, op1Reg, 0x01);
+        GetEmitter()->emitIns_R_R_I(INS_vextractf32x4, EA_32BYTE, tgtReg, op1Reg, 0x01);
         genProduceReg(node);
     }
     else
@@ -447,7 +447,7 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
             // We want to store this to the upper 16 bytes of this localVar's home.
             int offs = 16;
 
-            GetEmitter()->emitIns_S_R_I(INS_vextractf128, EA_32BYTE, varNum, offs, op1Reg, 0x01);
+            GetEmitter()->emitIns_S_R_I(INS_vextractf32x4, EA_32BYTE, varNum, offs, op1Reg, 0x01);
         }
         else
         {
@@ -488,7 +488,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     {
         // We should never save to register for zmm.
         assert(op1->TypeGet() == TYP_SIMD32);
-        GetEmitter()->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, srcReg, 0x01);
+        GetEmitter()->emitIns_R_R_R_I(INS_vinsertf32x4, EA_32BYTE, lclVarReg, lclVarReg, srcReg, 0x01);
     }
     else
     {
@@ -500,7 +500,7 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
         {
             // We will load this from the upper 16 bytes of this localVar's home.
             int offs = 16;
-            GetEmitter()->emitIns_R_R_S_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, varNum, offs, 0x01);
+            GetEmitter()->emitIns_R_R_S_I(INS_vinsertf32x4, EA_32BYTE, lclVarReg, lclVarReg, varNum, offs, 0x01);
         }
         else
         {

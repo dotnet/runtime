@@ -34,7 +34,7 @@
 #define MAX_SIGNATURE_LENGTH        256       // unused
 #define MAX_LABEL_SIZE              256       //64
 #define MAX_CALL_SIG_SIZE           32        // unused
-#define MAX_SCOPE_LENGTH            _MAX_PATH // follow the RegMeta::SetModuleProps limitation
+#define MAX_SCOPE_LENGTH            MAX_PATH  // follow the RegMeta::SetModuleProps limitation
 
 #define MAX_NAMESPACE_LENGTH        1024      //256    //64
 #define MAX_MEMBER_NAME_LENGTH      1024      //256    //64

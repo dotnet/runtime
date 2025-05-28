@@ -756,7 +756,30 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     }
     else
     {
-        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+        instruction ins = INS_movbe;
+#ifdef TARGET_AMD64
+        bool needsEvex = false;
+
+        if (GetEmitter()->IsExtendedGPReg(tree->GetRegNum()))
+        {
+            needsEvex = true;
+        }
+        else if (operand->isIndir())
+        {
+            GenTreeIndir* indir = operand->AsIndir();
+            if (indir->HasBase() && GetEmitter()->IsExtendedGPReg(indir->Base()->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+            else if (indir->HasIndex() && GetEmitter()->IsExtendedGPReg(indir->Index()->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+        }
+
+        ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(operand), tree, operand);
     }
 
     if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
@@ -4001,7 +4024,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
         //       this probably needs to be changed.
 
         // Load
-        genCodeForLoadOffset(INS_movdqu, EA_16BYTE, xmmTmpReg, src, offset);
+        genCodeForLoadOffset(INS_movdqu32, EA_16BYTE, xmmTmpReg, src, offset);
         // Store
         genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
 
@@ -5679,6 +5702,22 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                 if (data->OperIs(GT_BSWAP, GT_BSWAP16))
                 {
                     ins = INS_movbe;
+#ifdef TARGET_AMD64
+                    bool needsEvex = false;
+                    if (GetEmitter()->IsExtendedGPReg(data->gtGetOp1()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (tree->HasBase() && GetEmitter()->IsExtendedGPReg(tree->Base()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (tree->HasIndex() && GetEmitter()->IsExtendedGPReg(tree->Index()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif // TARGET_AMD64
                 }
 #if defined(FEATURE_HW_INTRINSICS)
                 else if (data->OperIsHWIntrinsic())
@@ -5700,7 +5739,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX2_ConvertToUInt32:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(baseType);
 #if defined(TARGET_X86)
                             if (varTypeIsLong(baseType))
@@ -5731,7 +5770,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX10v1_V512_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
 
                             if (intrinsicId == NI_SSE2_Extract)
@@ -5808,7 +5847,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
                             break;
                         }
@@ -7331,9 +7370,11 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         //   addsd    xmm0, xmm0
         //.LABEL
         //
-        regNumber argReg  = treeNode->gtGetOp1()->GetRegNum();
-        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
+        regNumber argReg = treeNode->gtGetOp1()->GetRegNum();
+        // Get the APXIncompatible register first
         regNumber tmpReg2 = internalRegisters.Extract(treeNode);
+        // tmpReg1 can be EGPR
+        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
 
         inst_Mov(TYP_LONG, tmpReg1, argReg, /* canSkip */ false, EA_8BYTE);
         inst_RV_SH(INS_shr, EA_8BYTE, tmpReg1, 1);
@@ -8491,7 +8532,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 
     if (type == TYP_STRUCT)
     {
-        ins = INS_movdqu;
+        ins = INS_movdqu32;
         // This should be changed!
         attr = EA_16BYTE;
         size = 16;
@@ -9360,7 +9401,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     // // Legacy instructions
     theEmitter->emitIns_R_ARX(INS_add, EA_4BYTE, REG_R16, REG_R17, REG_R18, 1, 0);
 
-    theEmitter->emitIns_AR_R(INS_movnti, EA_8BYTE, REG_R17, REG_R16, 10);
+    theEmitter->emitIns_AR_R(INS_movnti64, EA_8BYTE, REG_R17, REG_R16, 10);
     theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R17, REG_R16, REG_R18);
 
     theEmitter->emitIns_Mov(INS_kmovb_gpr, EA_4BYTE, REG_R16, REG_K0, false);
@@ -9388,8 +9429,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R_R(INS_pext, EA_4BYTE, REG_R16, REG_R18, REG_R17);
     theEmitter->emitIns_R_R_R(INS_pext, EA_8BYTE, REG_R16, REG_R18, REG_R17);
 
-    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM0, false);
-    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM16, false);
+    theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM0, false);
+    theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
     theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM0, false);
     theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM16, false);
 }
@@ -11253,29 +11294,45 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
             //   ...
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
-            //   mov      qword ptr [ebp/esp-OFFS], rax
-            //
+
             // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg, INS_OPTS_NONE);
 
-            int i = 0;
-            if (maxSimdSize > XMM_REGSIZE_BYTES)
+            assert((blkSize % XMM_REGSIZE_BYTES) == 0);
+
+            int regSize      = (int)compiler->roundDownSIMDSize(blkSize);
+            int lenRemaining = blkSize;
+            while (lenRemaining > 0)
             {
-                for (; i <= blkSize - maxSimdSize; i += maxSimdSize)
+                // Overlap with the previously zeroed memory if we can clear the remainder
+                // with just single store. Example: say we have 112 bytes to clear:
+                //
+                // Option 1 (no overlapping):
+                //   movups  zmmword ptr [+0]
+                //   movups  ymmword ptr [+64]
+                //   movups  xmmword ptr [+96]
+                //
+                // Option 2 (overlapping):
+                //   movups  zmmword ptr [+0]
+                //   movups  zmmword ptr [+48]
+                //
+                if ((regSize > lenRemaining) && !isPow2(lenRemaining))
                 {
-                    // We previously aligned data to 16 bytes which might not be aligned to maxSimdSize
-                    emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(maxSimdSize), zeroSIMDReg, frameReg,
-                                       alignedLclLo + i);
+                    lenRemaining = regSize;
                 }
-                // Remainder will be handled by the xmm loop below
-            }
 
-            for (; i < blkSize; i += XMM_REGSIZE_BYTES)
-            {
-                emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);
-            }
+                // Use the largest SIMD register size that fits in the remaining length
+                regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
+                assert(regSize >= XMM_REGSIZE_BYTES);
 
-            assert(i == blkSize);
+                // frameReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
+                instruction ins    = regSize > XMM_REGSIZE_BYTES ? simdUnalignedMovIns() : simdMov;
+                const int   offset = blkSize - lenRemaining;
+                emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + offset);
+
+                lenRemaining -= regSize;
+            }
+            assert(lenRemaining == 0);
         }
         else
         {

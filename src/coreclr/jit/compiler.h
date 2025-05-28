@@ -3003,6 +3003,7 @@ public:
     GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
+    GenTree* gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd);
     GenTree* gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);
     GenTree* gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd);
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
@@ -6161,6 +6162,7 @@ public:
     bool fgHeadMerge(BasicBlock* block, bool early);
     bool fgTryOneHeadMerge(BasicBlock* block, bool early);
     bool gtTreeContainsTailCall(GenTree* tree);
+    bool gtTreeContainsAsyncCall(GenTree* tree);
     bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
 
     enum FG_RELOCATE_TYPE
@@ -6909,6 +6911,9 @@ private:
     TypeProducerKind gtGetTypeProducerKind(GenTree* tree);
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
+
+    template<GenTreeFlags RequiredFlagsToDescendIntoTree, typename Predicate>
+    GenTree* gtFindNodeInTree(GenTree* tree, Predicate predicate);
 
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
