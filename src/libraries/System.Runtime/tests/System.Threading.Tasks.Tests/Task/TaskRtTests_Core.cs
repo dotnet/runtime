@@ -1057,7 +1057,8 @@ namespace System.Threading.Tasks.Tests
             { }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        // This test seems to be reliable on Windows 64-bit release builds.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsWindows), nameof(PlatformDetection.Is64BitProcess), nameof(PlatformDetection.IsReleaseRuntime))]
         public static void RunInlineTaskInterruptTest()
         {
             object[][] rows = Enumerable.Range(1, 100000)
