@@ -149,14 +149,14 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    OldTimeStamp = minipal_lowres_ticks();
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hSemaphore,
 								ChildThreadWaitTime,
         							Alertable);
 
-    NewTimeStamp = minipal_lowres_ticks();
+    NewTimeStamp = minipal_hires_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -171,7 +171,7 @@ DWORD PALAPI WaiterProc_WFSOExSemaphoreTest(LPVOID lpParameter)
     }
 
 
-    ThreadWaitDelta_WFSOExSemaphoreTest = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExSemaphoreTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
 
     ret = CloseHandle(hSemaphore);
     if (!ret)

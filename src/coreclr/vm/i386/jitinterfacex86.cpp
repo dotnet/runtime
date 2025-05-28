@@ -407,15 +407,8 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // array header or alignment.
     sl.Emit16(0xfa81);
 
-
-        // The large object heap is 8 byte aligned, so for double arrays we
-        // want to bias toward putting things in the large object heap
     unsigned maxElems =  0xffff - 256;
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((flags & ALIGN8) && g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold() < maxElems)
-        maxElems = g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold();
-#endif // FEATURE_DOUBLE_ALIGNMENT_HINT
     if (flags & OBJ_ARRAY)
     {
         //Since we know that the array elements are sizeof(OBJECTREF), set maxElems exactly here (use the

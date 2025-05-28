@@ -1538,7 +1538,6 @@ void AsyncTransformation::CopyReturnValueOnResumption(GenTreeCall*              
 
     assert(callDefInfo.DefinitionNode != nullptr);
     LclVarDsc* resultLcl = m_comp->lvaGetDesc(callDefInfo.DefinitionNode);
-    assert(varTypeIsStruct(resultLcl) == varTypeIsStruct(call->gtReturnType));
 
     // TODO-TP: We can use liveness to avoid generating a lot of this IR.
     if (call->gtReturnType == TYP_STRUCT)
