@@ -33,6 +33,9 @@ struct CodeBlockHandle
     void GetGCInfo(CodeBlockHandle codeInfoHandle, out TargetPointer gcInfo, out uint gcVersion);
     // Gets the offset of the codeInfoHandle inside of the code block
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
+
+    // Extension Methods (implemented in terms of other APIs)
+    bool IsFunclet(CodeBlockHandle codeInfoHandle);
 ```
 
 ## Version 1
@@ -266,6 +269,8 @@ Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, thes
 // TODO(cdacX86): Add information on finding the size of the unwind info.
 
 `IExecutionManager.GetFuncletStartAddress` finds the start of the code blocks funclet. This will be different than the methods start address `GetStartAddress` if the current code block is inside of a funclet. To find the funclet start address, we get the unwind info corresponding to the code block using `IExecutionManager.GetUnwindInfo`. We then parse the unwind info to find the begin address (relative to the unwind info base address) and return the unwind info base address + unwind info begin address.
+
+`IsFunclet` is implemented in terms of `IExecutionManager.GetStartAddress` and `IExecutionManager.GetFuncletStartAddress`. If the values are the same, the code block handle is not a funclet. If they are different, it is a funclet.
 
 ### RangeSectionMap
 
