@@ -1424,7 +1424,7 @@ const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) con
     }
     else if (isVectorRegister(reg))
     {
-        if (size == EA_16BYTE)
+        if ((size == EA_16BYTE) && !Compiler::UseSveForVectorT())
         {
             rn = qRegNames[reg - REG_V0];
         }

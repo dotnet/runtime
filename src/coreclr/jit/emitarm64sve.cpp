@@ -2663,7 +2663,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
         case INS_sve_ldr:
             assert(insOptsNone(opt));
-            assert(isScalableVectorSize(size));
+            assert(isScalableVectorSize(size) || (size == EA_16BYTE));
             assert(isGeneralRegister(reg2)); // nnnnn
             assert(isValidSimm<9>(imm));     // iii
                                              // iiiiii
@@ -2703,7 +2703,7 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
 
         case INS_sve_str:
             assert(insOptsNone(opt));
-            assert(isScalableVectorSize(size));
+            assert(isScalableVectorSize(size) || (size == EA_16BYTE));
             assert(isGeneralRegister(reg2)); // nnnnn
             assert(isValidSimm<9>(imm));     // iii
                                              // iiiiii
@@ -14228,7 +14228,7 @@ void emitter::emitInsSveSanityCheck(instrDesc* id)
         case IF_SVE_IE_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE load vector register
         case IF_SVE_JH_2A: // ..........iiiiii ...iiinnnnnttttt -- SVE store vector register
             assert(insOptsNone(id->idInsOpt()));
-            assert(isScalableVectorSize(id->idOpSize()));
+            assert(isScalableVectorSize(id->idOpSize()) || (id->idOpSize() == EA_16BYTE));
             assert(isVectorRegister(id->idReg1()));      // ttttt
             assert(isGeneralRegisterOrZR(id->idReg2())); // nnnnn
             assert(isValidSimm<9>(emitGetInsSC(id)));    // iii

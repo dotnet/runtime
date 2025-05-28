@@ -3041,7 +3041,9 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
     }
     emitAttr attr = emitActualTypeSize(targetType);
-    if (attr == EA_SCALABLE)
+    bool isScalable = (attr == EA_SCALABLE) || (Compiler::UseSveForType(targetType));
+
+    if (isScalable)
     {
         // TODO-VL: Should we check the baseType or it doesn't matter because it is just reg->reg move
         GetEmitter()->emitIns_Mov(INS_sve_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired,
