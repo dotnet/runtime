@@ -73,7 +73,7 @@ using namespace CorUnix;
 /* static variables ***********************************************************/
 
 /* critical section that regulates access to the module list */
-minipal_critsect module_critsec;
+minipal_mutex module_critsec;
 
 /* always the first, in the in-load-order list */
 MODSTRUCT exe_module;
@@ -1009,7 +1009,7 @@ BOOL LOADInitializeModules()
 {
     _ASSERTE(exe_module.prev == nullptr);
 
-    minipal_critsect_init(&module_critsec);
+    minipal_mutex_init(&module_critsec);
 
     // Initialize module for main executable
     TRACE("Initializing module for main executable\n");
@@ -1863,7 +1863,7 @@ void LockModuleList()
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    minipal_critsect_enter(&module_critsec);
+    minipal_mutex_enter(&module_critsec);
 }
 
 /*++
@@ -1885,5 +1885,5 @@ void UnlockModuleList()
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : nullptr);
 
-    minipal_critsect_leave(&module_critsec);
+    minipal_mutex_leave(&module_critsec);
 }

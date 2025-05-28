@@ -2710,26 +2710,26 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
 // Lock abstraction code (hides difference in lock implementation between left and right side).
 #ifdef RIGHT_SIDE_COMPILE
 
-// On the right side we use a minipal_critsect.
+// On the right side we use a minipal_mutex.
 
 void DbgTransportLock::Init()
 {
-    minipal_critsect_init(&m_sLock);
+    minipal_mutex_init(&m_sLock);
 }
 
 void DbgTransportLock::Destroy()
 {
-    minipal_critsect_destroy(&m_sLock);
+    minipal_mutex_destroy(&m_sLock);
 }
 
 void DbgTransportLock::Enter()
 {
-    minipal_critsect_enter(&m_sLock);
+    minipal_mutex_enter(&m_sLock);
 }
 
 void DbgTransportLock::Leave()
 {
-    minipal_critsect_leave(&m_sLock);
+    minipal_mutex_leave(&m_sLock);
 }
 
 #else // RIGHT_SIDE_COMPILE

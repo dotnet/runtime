@@ -23,7 +23,7 @@ Abstract:
 
 #include "corunix.hpp"
 #include "pal/thread.hpp"
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 /* Pseudo handles constant for current thread and process */
 extern const HANDLE hPseudoCurrentProcess;
@@ -71,7 +71,7 @@ namespace CorUnix
         DWORD m_dwTableGrowthRate;
         HANDLE_TABLE_ENTRY* m_rghteHandleTable;
 
-        minipal_critsect m_csLock;
+        minipal_mutex m_mtxLock;
         bool m_fLockInitialized;
 
         bool ValidateHandle(HANDLE h);
@@ -94,7 +94,7 @@ namespace CorUnix
         {
             if (m_fLockInitialized)
             {
-                minipal_critsect_destroy(&m_csLock);
+                minipal_mutex_destroy(&m_mtxLock);
             }
 
             if (NULL != m_rghteHandleTable)
@@ -137,7 +137,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            minipal_critsect_enter(&m_csLock);
+            minipal_mutex_enter(&m_mtxLock);
         };
 
         void
@@ -145,7 +145,7 @@ namespace CorUnix
             CPalThread *pThread
             )
         {
-            minipal_critsect_leave(&m_csLock);
+            minipal_mutex_leave(&m_mtxLock);
         };
     };
 

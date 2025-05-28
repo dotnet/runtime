@@ -30,7 +30,7 @@ namespace CorUnix
     {
     protected:
 
-        minipal_critsect m_csListLock;
+        minipal_mutex m_csListLock;
         bool m_fListLockInitialized;
         LIST_ENTRY m_leNamedObjects;
         LIST_ENTRY m_leAnonymousObjects;

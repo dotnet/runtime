@@ -28,7 +28,7 @@ namespace CorUnix
     {
     private:
 
-        minipal_critsect m_cs;
+        minipal_mutex m_cs;
         bool m_fInitialized;
 
     public:
@@ -43,7 +43,7 @@ namespace CorUnix
         {
             if (m_fInitialized)
             {
-                minipal_critsect_destroy(&m_cs);
+                minipal_mutex_destroy(&m_cs);
             }
         };
 
@@ -54,7 +54,7 @@ namespace CorUnix
         {
             PAL_ERROR palError = NO_ERROR;
 
-            minipal_critsect_init(&m_cs);
+            minipal_mutex_init(&m_cs);
             m_fInitialized = TRUE;
 
             return palError;
@@ -66,7 +66,7 @@ namespace CorUnix
             IDataLock **pDataLock
             )
         {
-            minipal_critsect_enter(&m_cs);
+            minipal_mutex_enter(&m_cs);
             *pDataLock = static_cast<IDataLock*>(this);
         };
 
@@ -77,7 +77,7 @@ namespace CorUnix
             bool fDataChanged
             )
         {
-            minipal_critsect_leave(&m_cs);
+            minipal_mutex_leave(&m_cs);
         };
 
     };

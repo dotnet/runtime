@@ -528,7 +528,7 @@ inline void RSLock::Init(const char * szTag, int eAttr, ERSLockLevel level)
 
     _ASSERTE(IsInit());
 
-    bool init = minipal_critsect_init(&m_lock);
+    bool init = minipal_mutex_init(&m_lock);
     _ASSERTE(init);
 }
 
@@ -536,7 +536,7 @@ inline void RSLock::Init(const char * szTag, int eAttr, ERSLockLevel level)
 inline void RSLock::Destroy()
 {
     CONSISTENCY_CHECK_MSGF(IsInit(), ("RSLock '%s' not inited", m_szTag));
-    minipal_critsect_destroy(&m_lock);
+    minipal_mutex_destroy(&m_lock);
 
 #ifdef _DEBUG
     m_eAttr = cLockUninit; // No longer initialized.
@@ -554,7 +554,7 @@ inline void RSLock::Lock()
     pThread->NotifyTakeLock(this);
 #endif
 
-    minipal_critsect_enter(&m_lock);
+    minipal_mutex_enter(&m_lock);
 #ifdef _DEBUG
     m_tidOwner = ::GetCurrentThreadId();
     m_count++;
@@ -585,7 +585,7 @@ inline void RSLock::Unlock()
     pThread->NotifyReleaseLock(this);
 #endif
 
-    minipal_critsect_leave(&m_lock);
+    minipal_mutex_leave(&m_lock);
 }
 
 template <class T>

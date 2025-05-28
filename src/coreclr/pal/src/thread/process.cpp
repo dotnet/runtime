@@ -157,7 +157,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-minipal_critsect g_csProcess;
+minipal_mutex g_csProcess;
 
 //
 // List and count of active threads
@@ -2786,14 +2786,14 @@ CorUnix::InitializeProcessData(
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
-    minipal_critsect_init(&g_csProcess);
+    minipal_mutex_init(&g_csProcess);
     fLockInitialized = TRUE;
 
     if (NO_ERROR != palError)
     {
         if (fLockInitialized)
         {
-            minipal_critsect_destroy(&g_csProcess);
+            minipal_mutex_destroy(&g_csProcess);
         }
     }
 
@@ -3010,7 +3010,7 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    minipal_critsect_enter(&g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     /* Free the application directory */
     free(g_lpwstrAppDir);
@@ -3018,7 +3018,7 @@ PROCCleanupInitialProcess(VOID)
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    minipal_critsect_leave(&g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3046,7 +3046,7 @@ CorUnix::PROCAddThread(
 {
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    minipal_critsect_enter(&g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     pTargetThread->SetNext(pGThreadList);
     pGThreadList = pTargetThread;
@@ -3055,7 +3055,7 @@ CorUnix::PROCAddThread(
     TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
           pTargetThread, pTargetThread->GetThreadId());
 
-    minipal_critsect_leave(&g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3081,7 +3081,7 @@ CorUnix::PROCRemoveThread(
 
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    minipal_critsect_enter(&g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     curThread = pGThreadList;
 
@@ -3122,7 +3122,7 @@ CorUnix::PROCRemoveThread(
     WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
 
 EXIT:
-    minipal_critsect_leave(&g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3167,7 +3167,7 @@ PROCProcessLock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    minipal_critsect_enter(&g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 }
 
 
@@ -3191,7 +3191,7 @@ PROCProcessUnlock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    minipal_critsect_leave(&g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES

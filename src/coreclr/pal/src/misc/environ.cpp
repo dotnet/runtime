@@ -37,7 +37,7 @@ char **palEnvironment = nullptr;
 int palEnvironmentCount = 0;
 int palEnvironmentCapacity = 0;
 
-minipal_critsect gcsEnvironment;
+minipal_mutex gcsEnvironment;
 
 /*++
 Function:
@@ -113,7 +113,7 @@ GetEnvironmentVariableA(
         // the environment variable value without EnvironGetenv making an
         // intermediate copy. We will just copy the string to the output
         // buffer anyway, so just stay in the critical section until then.
-        minipal_critsect_enter(&gcsEnvironment);
+        minipal_mutex_enter(&gcsEnvironment);
 
         value = EnvironGetenv(lpName, /* copyValue */ FALSE);
 
@@ -133,7 +133,7 @@ GetEnvironmentVariableA(
             SetLastError(ERROR_SUCCESS);
         }
 
-        minipal_critsect_leave(&gcsEnvironment);
+        minipal_mutex_leave(&gcsEnvironment);
     }
 
     if (value == nullptr)
@@ -400,7 +400,7 @@ GetEnvironmentStringsW(
     ENTRY("GetEnvironmentStringsW()\n");
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_critsect_enter(&gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     envNum = 0;
     len    = 0;
@@ -432,7 +432,7 @@ GetEnvironmentStringsW(
     *tempEnviron = 0; /* Put an extra null at the end */
 
  EXIT:
-    minipal_critsect_leave(&gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
 
     LOGEXIT("GetEnvironmentStringsW returning %p\n", wenviron);
     PERF_EXIT(GetEnvironmentStringsW);
@@ -609,7 +609,7 @@ Return Values
 BOOL ResizeEnvironment(int newSize)
 {
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_critsect_enter(&gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     BOOL ret = FALSE;
     if (newSize >= palEnvironmentCount)
@@ -629,7 +629,7 @@ BOOL ResizeEnvironment(int newSize)
         ASSERT("ResizeEnvironment: newSize < current palEnvironmentCount!\n");
     }
 
-    minipal_critsect_leave(&gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
     return ret;
 }
 
@@ -651,7 +651,7 @@ void EnvironUnsetenv(const char *name)
     int nameLength = strlen(name);
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_critsect_enter(&gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     for (int i = 0; palEnvironment[i] != nullptr; ++i)
     {
@@ -679,7 +679,7 @@ void EnvironUnsetenv(const char *name)
         }
     }
 
-    minipal_critsect_leave(&gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
 }
 
 /*++
@@ -745,7 +745,7 @@ BOOL EnvironPutenv(const char* entry, BOOL deleteIfEmpty)
     {
         // See if we are replacing an item or adding one.
 
-        minipal_critsect_enter(&gcsEnvironment);
+        minipal_mutex_enter(&gcsEnvironment);
         fOwningCS = true;
 
         int i;
@@ -800,7 +800,7 @@ done:
 
     if (fOwningCS)
     {
-        minipal_critsect_leave(&gcsEnvironment);
+        minipal_mutex_leave(&gcsEnvironment);
     }
 
     return result;
@@ -882,7 +882,7 @@ Return Value
 char* EnvironGetenv(const char* name, BOOL copyValue)
 {
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_critsect_enter(&gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     char* retValue = FindEnvVarValue(name);
 
@@ -891,7 +891,7 @@ char* EnvironGetenv(const char* name, BOOL copyValue)
         retValue = strdup(retValue);
     }
 
-    minipal_critsect_leave(&gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
     return retValue;
 }
 
@@ -938,10 +938,10 @@ EnvironInitialize(void)
 {
     BOOL ret = FALSE;
 
-    minipal_critsect_init(&gcsEnvironment);
+    minipal_mutex_init(&gcsEnvironment);
 
     CPalThread * pthrCurrent = InternalGetCurrentThread();
-    minipal_critsect_enter(&gcsEnvironment);
+    minipal_mutex_enter(&gcsEnvironment);
 
     char** sourceEnviron = EnvironGetSystemEnvironment();
 
@@ -973,7 +973,7 @@ EnvironInitialize(void)
         palEnvironment[variableCount] = nullptr;
     }
 
-    minipal_critsect_leave(&gcsEnvironment);
+    minipal_mutex_leave(&gcsEnvironment);
     return ret;
 }
 

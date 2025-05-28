@@ -110,7 +110,7 @@ BOOL g_useDefaultBaseAddr = FALSE;
 
 /* critical section to protect access to init_count. This is allocated on the
    very first PAL_Initialize call, and is freed afterward. */
-static minipal_critsect* init_critsec = NULL;
+static minipal_mutex* init_critsec = NULL;
 
 static DWORD g_initializeDLLFlags = PAL_INITIALIZE_DLL;
 
@@ -316,23 +316,23 @@ Initialize(
                                                  // initializing the critical section.
         if(nullptr == init_critsec)
         {
-            static minipal_critsect temp_critsec;
+            static minipal_mutex temp_critsec;
 
             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
-            minipal_critsect_init(&temp_critsec);
+            minipal_mutex_init(&temp_critsec);
 
             if(nullptr != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, nullptr))
             {
                 // Another thread got in before us! shouldn't happen, if the PAL
                 // isn't initialized there shouldn't be any other threads
                 WARN("Another thread initialized the critical section\n");
-                minipal_critsect_destroy(&temp_critsec);
+                minipal_mutex_destroy(&temp_critsec);
             }
         }
         pthread_mutex_unlock(&init_critsec_mutex);
     }
 
-    minipal_critsect_enter(init_critsec);
+    minipal_mutex_enter(init_critsec);
 
     if (init_count == 0)
     {
@@ -667,7 +667,7 @@ CLEANUP0a:
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
-    minipal_critsect_leave(init_critsec);
+    minipal_mutex_leave(init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
     {
@@ -879,7 +879,7 @@ BOOL PALInitLock(void)
         return FALSE;
     }
 
-    minipal_critsect_enter(init_critsec);
+    minipal_mutex_enter(init_critsec);
     return TRUE;
 }
 
@@ -898,7 +898,7 @@ void PALInitUnlock(void)
         return;
     }
 
-    minipal_critsect_leave(init_critsec);
+    minipal_mutex_leave(init_critsec);
 }
 
 /* Internal functions *********************************************************/

@@ -14,7 +14,7 @@
 #include <cstddef>
 #include <string.h>
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 #ifdef TARGET_UNIX
 #include <pthread.h>

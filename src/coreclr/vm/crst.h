@@ -87,7 +87,7 @@
 #include "util.hpp"
 #include "debugmacros.h"
 #include "log.h"
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 #define ShutDown_Start                          0x00000001
 #define ShutDown_Finalize1                      0x00000002
@@ -125,7 +125,7 @@ class CrstBase
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
     // The debugger transport code uses a holder for its Crst, but it needs to share the holder implementation
     // with its right side code as well (which can't see the Crst implementation and actually uses a
-    // minipal_critsect as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
+    // minipal_mutex as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
     // Leave() in order to build a shared holder class.
     friend class DbgTransportLock;
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
@@ -283,7 +283,7 @@ protected:
     void DebugDestroy();
 #endif
 
-    tgt_minipal_critsect m_criticalsection;
+    tgt_minipal_mutex m_lock;
 
     typedef enum
     {

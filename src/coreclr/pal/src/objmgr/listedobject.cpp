@@ -157,7 +157,7 @@ CListedObject::AcquireObjectDestructionLock(
         pthr
         );
 
-    minipal_critsect_enter(m_pcsObjListLock);
+    minipal_mutex_enter(m_pcsObjListLock);
 
     LOGEXIT("CListedObject::AcquireObjectDestructionLock\n");
 }
@@ -195,7 +195,7 @@ CListedObject::ReleaseObjectDestructionLock(
         RemoveEntryList(&m_le);
     }
 
-    minipal_critsect_leave(m_pcsObjListLock);
+    minipal_mutex_leave(m_pcsObjListLock);
 }
 
 /*++

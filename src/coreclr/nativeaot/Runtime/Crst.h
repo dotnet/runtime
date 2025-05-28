@@ -51,7 +51,7 @@ public:
 #endif // _DEBUG
 
 private:
-    minipal_critsect    m_sCritSec;
+    minipal_mutex    m_Lock;
 #if defined(_DEBUG)
     EEThreadId          m_uiOwnerId;
 #endif // _DEBUG

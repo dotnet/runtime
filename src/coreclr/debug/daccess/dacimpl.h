@@ -13,7 +13,7 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 #include "gcinterface.dac.h"
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
@@ -27,7 +27,7 @@
 #include <unordered_map>
 #pragma pop_macro("return")
 #endif //DAC_HASHTABLE
-extern minipal_critsect g_dacCritSec;
+extern minipal_mutex g_dacMutex;
 
 // Convert between CLRDATA_ADDRESS and TADDR.
 // Note that CLRDATA_ADDRESS is sign-extended (for compat with Windbg and OS conventions).  Converting
@@ -3810,7 +3810,7 @@ public:
 //----------------------------------------------------------------------------
 
 #define DAC_ENTER() \
-    minipal_critsect_enter(&g_dacCritSec); \
+    minipal_mutex_enter(&g_dacMutex); \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
     g_dacImpl = this;
 
@@ -3818,10 +3818,10 @@ public:
 // the process's host instance cache hasn't been flushed
 // since the child was created.
 #define DAC_ENTER_SUB(dac) \
-    minipal_critsect_enter(&g_dacCritSec); \
+    minipal_mutex_enter(&g_dacMutex); \
     if (dac->m_instanceAge != m_instanceAge) \
     { \
-        minipal_critsect_leave(&g_dacCritSec); \
+        minipal_mutex_leave(&g_dacMutex); \
         return E_INVALIDARG; \
     } \
     ClrDataAccess* __prevDacImpl = g_dacImpl; \
@@ -3829,7 +3829,7 @@ public:
 
 #define DAC_LEAVE() \
     g_dacImpl = __prevDacImpl; \
-    minipal_critsect_leave(&g_dacCritSec)
+    minipal_mutex_leave(&g_dacMutex)
 
 
 #define SOSHelperEnter() \

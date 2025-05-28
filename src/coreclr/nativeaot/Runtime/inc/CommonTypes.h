@@ -14,7 +14,7 @@
 #include <windows.h>
 #endif // HOST_WINDOWS
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 // Implement pure virtual for Unix (for -p:LinkStandardCPlusPlusLibrary=false the default),
 // to avoid linker requiring __cxa_pure_virtual.

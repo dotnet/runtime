@@ -7,7 +7,7 @@
 #ifndef _Logging
 #define _Logging
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 //
 // General purpose logging macros
@@ -67,7 +67,7 @@ private:
     static UINT32           s_logLevel;
     static HANDLE           s_logFile;
     static char*            s_logFilePath;
-    static minipal_critsect s_critSec;
+    static minipal_mutex s_critSec;
 
 public:
     static void Initialize();

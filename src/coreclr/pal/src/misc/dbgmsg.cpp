@@ -125,7 +125,7 @@ static const char INDENT_CHAR = '.';
 static BOOL DBG_get_indent(DBG_LEVEL_ID level, const char *format,
                            char *indent_string);
 
-static minipal_critsect fprintf_crit_section;
+static minipal_mutex fprintf_crit_section;
 
 /* Function definitions */
 
@@ -360,7 +360,7 @@ BOOL DBG_init_channels(void)
         }
     }
 
-    minipal_critsect_init(&fprintf_crit_section);
+    minipal_mutex_init(&fprintf_crit_section);
 
     return TRUE;
 }
@@ -386,7 +386,7 @@ void DBG_close_channels()
 
     output_file = NULL;
 
-    minipal_critsect_destroy(&fprintf_crit_section);
+    minipal_mutex_destroy(&fprintf_crit_section);
 
     /* if necessary, release TLS key for entry nesting level */
     if(0 != max_entry_level)
@@ -538,9 +538,9 @@ int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
        avoid holding a libc lock while another thread is calling
        SuspendThread on this one. */
 
-    minipal_critsect_enter(&fprintf_crit_section);
+    minipal_mutex_enter(&fprintf_crit_section);
     fprintf( output_file, "%s%s", indent, buffer );
-    minipal_critsect_leave(&fprintf_crit_section);
+    minipal_mutex_leave(&fprintf_crit_section);
 
     /* flush the output to file */
     if ( fflush(output_file) != 0 )

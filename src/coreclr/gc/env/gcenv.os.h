@@ -6,7 +6,7 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 #define NUMA_NODE_UNDEFINED UINT16_MAX
 
@@ -15,31 +15,31 @@ bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* 
 // Critical section used by the GC
 class CLRCriticalSection final
 {
-    minipal_critsect m_cs;
+    minipal_mutex m_cs;
 
 public:
     // Initialize the critical section
     bool Initialize()
     {
-        return minipal_critsect_init(&m_cs);
+        return minipal_mutex_init(&m_cs);
     }
 
     // Destroy the critical section
     void Destroy()
     {
-        minipal_critsect_destroy(&m_cs);
+        minipal_mutex_destroy(&m_cs);
     }
 
     // Enter the critical section. Blocks until the section can be entered.
     void Enter()
     {
-        minipal_critsect_enter(&m_cs);
+        minipal_mutex_enter(&m_cs);
     }
 
     // Leave the critical section
     void Leave()
     {
-        minipal_critsect_leave(&m_cs);
+        minipal_mutex_leave(&m_cs);
     }
 };
 

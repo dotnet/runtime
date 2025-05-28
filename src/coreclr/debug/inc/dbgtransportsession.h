@@ -10,7 +10,7 @@
 #include <crst.h>
 #endif // !RIGHT_SIDE_COMPILE
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 #include <minipal/guid.h>
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -281,7 +281,7 @@ public:
 
 private:
 #ifdef RIGHT_SIDE_COMPILE
-    minipal_critsect    m_sLock;
+    minipal_mutex       m_sLock;
 #else // RIGHT_SIDE_COMPILE
     CrstExplicitInit    m_sLock;
 #endif // RIGHT_SIDE_COMPILE

@@ -59,7 +59,7 @@ CListedObjectManager::Initialize(
     InitializeListHead(&m_leNamedObjects);
     InitializeListHead(&m_leAnonymousObjects);
 
-    minipal_critsect_init(&m_csListLock);
+    minipal_mutex_init(&m_csListLock);
     m_fListLockInitialized = TRUE;
 
     palError = m_HandleManager.Initialize();
@@ -96,7 +96,7 @@ CListedObjectManager::Shutdown(
         pthr
         );
 
-    minipal_critsect_enter(&m_csListLock);
+    minipal_mutex_enter(&m_csListLock);
 
     while (!IsListEmpty(&m_leAnonymousObjects))
     {
@@ -112,7 +112,7 @@ CListedObjectManager::Shutdown(
         pshmobj->CleanupForProcessShutdown(pthr);
     }
 
-    minipal_critsect_leave(&m_csListLock);
+    minipal_mutex_leave(&m_csListLock);
 
     LOGEXIT("CListedObjectManager::Shutdown returns %d\n", NO_ERROR);
 
@@ -245,7 +245,7 @@ CListedObjectManager::RegisterObject(
 
     potObj = pobjToRegister->GetObjectType();
 
-    minipal_critsect_enter(&m_csListLock);
+    minipal_mutex_enter(&m_csListLock);
 
     if (0 != poa->sObjectName.GetStringLength())
     {
@@ -335,7 +335,7 @@ CListedObjectManager::RegisterObject(
 
 RegisterObjectExit:
 
-    minipal_critsect_leave(&m_csListLock);
+    minipal_mutex_leave(&m_csListLock);
 
     if (NULL != pobjToRegister)
     {
@@ -396,7 +396,7 @@ CListedObjectManager::LocateObject(
 
     TRACE("Searching for object name %S\n", psObjectToLocate->GetString());
 
-    minipal_critsect_enter(&m_csListLock);
+    minipal_mutex_enter(&m_csListLock);
 
     //
     // Search the local named object list for this object
@@ -461,7 +461,7 @@ CListedObjectManager::LocateObject(
 
 LocateObjectExit:
 
-    minipal_critsect_leave(&m_csListLock);
+    minipal_mutex_leave(&m_csListLock);
 
     LOGEXIT("CListedObjectManager::LocateObject returns %d\n", palError);
 

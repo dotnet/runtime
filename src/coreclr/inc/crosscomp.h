@@ -6,10 +6,15 @@
 
 #pragma once
 
-#include <minipal/critsect.h>
+#include <minipal/mutex.h>
 
 #if (!defined(HOST_64BIT) && defined(TARGET_64BIT)) || (defined(HOST_64BIT) && !defined(TARGET_64BIT))
 #define CROSSBITNESS_COMPILE
+
+#ifndef CROSS_COMPILE
+#define CROSS_COMPILE
+#endif // !CROSS_COMPILE
+
 #endif
 
 #if defined(TARGET_WINDOWS) && !defined(HOST_WINDOWS) && !defined(CROSS_COMPILE)
@@ -715,41 +720,41 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #endif
 
 #if defined(TARGET_APPLE)
-#define DAC_CS_MAX_SIZE 96
+#define DAC_MUTEX_MAX_SIZE 96
 #elif defined(TARGET_FREEBSD)
-#define DAC_CS_MAX_SIZE 16
+#define DAC_MUTEX_MAX_SIZE 16
 #elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
-#define DAC_CS_MAX_SIZE 64
+#define DAC_MUTEX_MAX_SIZE 64
 #elif defined(TARGET_WINDOWS)
 #ifdef TARGET_64BIT
-#define DAC_CS_MAX_SIZE 40
+#define DAC_MUTEX_MAX_SIZE 40
 #else
-#define DAC_CS_MAX_SIZE 24
+#define DAC_MUTEX_MAX_SIZE 24
 #endif // TARGET_64BIT
 #else
 // Fallback to a conservative default value
-#define DAC_CS_MAX_SIZE 128
+#define DAC_MUTEX_MAX_SIZE 128
 #endif
 
 #ifndef CROSS_COMPILE
-static_assert(DAC_CS_MAX_SIZE >= sizeof(minipal_critsect), "DAC_CS_MAX_SIZE must be greater than or equal to the size of minipal_critsect");
+static_assert(DAC_MUTEX_MAX_SIZE >= sizeof(minipal_mutex), "DAC_MUTEX_MAX_SIZE must be greater than or equal to the size of minipal_mutex");
 #endif // !CROSS_COMPILE
 
-// This type is used to ensure a consistent size of critical sections
+// This type is used to ensure a consistent size of mutexes
 // contained with our Crst types.
 // We have this requirement for cross OS compiling the DAC.
-struct tgt_minipal_critsect final
+struct tgt_minipal_mutex final
 {
     union
     {
         // DAC builds want to have the data layout of the target system.
-        // Make sure that the host minipal_critsect does not influence
+        // Make sure that the host minipal_mutex does not influence
         // the target data layout
 #ifndef DACCESS_COMPILE
-        minipal_critsect _cs;
+        minipal_mutex _mtx;
 #endif // !DACCESS_COMPILE
 
         // This is unused padding to ensure struct size.
-        alignas(void*) BYTE _dacPadding[DAC_CS_MAX_SIZE];
+        alignas(void*) BYTE _dacPadding[DAC_MUTEX_MAX_SIZE];
     };
 };

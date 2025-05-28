@@ -141,8 +141,8 @@ namespace CorUnix
 
     CPalSynchronizationManager * CPalSynchronizationManager::s_pObjSynchMgr = NULL;
     Volatile<LONG> CPalSynchronizationManager::s_lInitStatus = SynchMgrStatusIdle;
-    minipal_critsect CPalSynchronizationManager::s_csSynchProcessLock;
-    minipal_critsect CPalSynchronizationManager::s_csMonitoredProcessesLock;
+    minipal_mutex CPalSynchronizationManager::s_csSynchProcessLock;
+    minipal_mutex CPalSynchronizationManager::s_csMonitoredProcessesLock;
 
     CPalSynchronizationManager::CPalSynchronizationManager()
         : m_dwWorkerThreadTid(0),
@@ -1298,8 +1298,8 @@ namespace CorUnix
             goto I_exit;
         }
 
-        minipal_critsect_init(&s_csSynchProcessLock);
-        minipal_critsect_init(&s_csMonitoredProcessesLock);
+        minipal_mutex_init(&s_csSynchProcessLock);
+        minipal_mutex_init(&s_csMonitoredProcessesLock);
 
         pSynchManager = new(std::nothrow) CPalSynchronizationManager();
         if (NULL == pSynchManager)
@@ -2343,7 +2343,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        minipal_critsect_enter(&s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         fMonitoredProcessesLock = true;
 
@@ -2392,7 +2392,7 @@ namespace CorUnix
         }
 
         // Unlock
-        minipal_critsect_leave(&s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (fWakeUpWorker)
@@ -2412,7 +2412,7 @@ namespace CorUnix
     RPFM_exit:
         if (fMonitoredProcessesLock)
         {
-            minipal_critsect_leave(&s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         return palErr;
@@ -2437,7 +2437,7 @@ namespace CorUnix
 
         VALIDATEOBJECT(psdSynchData);
 
-        minipal_critsect_enter(&s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         pmpln = m_pmplnMonitoredProcesses;
         while (pmpln)
@@ -2476,7 +2476,7 @@ namespace CorUnix
             palErr = ERROR_NOT_FOUND;
         }
 
-        minipal_critsect_leave(&s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         return palErr;
     }
 
@@ -2535,7 +2535,7 @@ namespace CorUnix
         //       lock is needed in order to support object promotion.
 
         // Grab the monitored processes lock
-        minipal_critsect_enter(&s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = true;
 
         lInitialNodeCount = m_lMonitoredProcessesCount;
@@ -2580,7 +2580,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        minipal_critsect_leave(&s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
         fMonitoredProcessesLock = false;
 
         if (lRemovingCount > 0)
@@ -2590,7 +2590,7 @@ namespace CorUnix
             fLocalSynchLock = true;
 
             // Acquire the monitored processes lock
-            minipal_critsect_enter(&s_csMonitoredProcessesLock);
+            minipal_mutex_enter(&s_csMonitoredProcessesLock);
             fMonitoredProcessesLock = true;
 
             // Start from the beginning of the exited processes list
@@ -2650,7 +2650,7 @@ namespace CorUnix
 
         if (fMonitoredProcessesLock)
         {
-            minipal_critsect_leave(&s_csMonitoredProcessesLock);
+            minipal_mutex_leave(&s_csMonitoredProcessesLock);
         }
 
         if (fLocalSynchLock)
@@ -2676,7 +2676,7 @@ namespace CorUnix
         MonitoredProcessesListNode * pNode;
 
         // Grab the monitored processes lock
-        minipal_critsect_enter(&s_csMonitoredProcessesLock);
+        minipal_mutex_enter(&s_csMonitoredProcessesLock);
 
         while (m_pmplnMonitoredProcesses)
         {
@@ -2688,7 +2688,7 @@ namespace CorUnix
         }
 
         // Release the monitored processes lock
-        minipal_critsect_leave(&s_csMonitoredProcessesLock);
+        minipal_mutex_leave(&s_csMonitoredProcessesLock);
     }
 
     /*++

@@ -2039,7 +2039,7 @@ CPalThread::RunPreCreateInitializers(
     // First, perform initialization of CPalThread private members
     //
 
-    minipal_critsect_init(&m_csLock);
+    minipal_mutex_init(&m_mtxLock);
     m_fLockInitialized = TRUE;
 
     iError = pthread_mutex_init(&m_startMutex, NULL);
@@ -2098,7 +2098,7 @@ CPalThread::~CPalThread()
 
     if (m_fLockInitialized)
     {
-        minipal_critsect_destroy(&m_csLock);
+        minipal_mutex_destroy(&m_mtxLock);
     }
 
     if (m_fStartItemsInitialized)

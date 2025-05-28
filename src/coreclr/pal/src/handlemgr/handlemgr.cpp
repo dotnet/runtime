@@ -40,7 +40,7 @@ CSimpleHandleManager::Initialize(
 {
     PAL_ERROR palError = NO_ERROR;
 
-    minipal_critsect_init(&m_csLock);
+    minipal_mutex_init(&m_mtxLock);
     m_fLockInitialized = TRUE;
 
     m_dwTableGrowthRate = c_BasicGrowthRate;
