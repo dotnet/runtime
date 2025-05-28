@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -326,7 +327,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 ["runtimeOptions"] = runtimeOptions
             };
 
-            FileUtils.WriteJsonWithOptionalUtf8Bom(_path, json.ToString(), withUtf8Bom);
+            if (withUtf8Bom)
+            {
+                FileUtils.WriteAllTextWithUtf8Bom(_path, json.ToString());
+            }
+            else
+            {
+                File.WriteAllText(_path, json.ToString(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            }
         }
     }
 }

@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             {
                 // Read the original deps.json content and write with UTF8 BOM
                 string jsonContent = File.ReadAllText(sharedState.DepsJsonPath, Encoding.UTF8);
-                FileUtils.WriteJsonWithOptionalUtf8Bom(depsJsonWithBom, jsonContent, withUtf8Bom: true);
+                FileUtils.WriteAllTextWithUtf8Bom(depsJsonWithBom, jsonContent);
 
                 // Test that the app can be executed with the BOM deps.json
                 string dependencyPath = Path.Combine(Path.GetDirectoryName(sharedState.DepsJsonPath), $"{SharedTestState.DependencyName}.dll");
