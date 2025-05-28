@@ -212,8 +212,10 @@ namespace System.Net.Http
 
                             if (exception is not null)
                             {
-                                // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/v1.45.0/specification/trace/exceptions.md
-                                activity.AddException(exception);
+                                // Records the exception as per https://github.com/open-telemetry/opentelemetry-specification/blob/v1.45.0/specification/trace/exceptions.md.
+                                // Add the exception event with a timestamp matching the activity's end time 
+                                // to ensure it falls within the activity's duration.
+                                activity.AddException(exception, timestamp: activity.StartTimeUtc + activity.Duration);
                             }
                         }
                     }
