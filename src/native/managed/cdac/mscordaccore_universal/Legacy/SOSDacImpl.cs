@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -12,7 +11,6 @@ using System.Text;
 
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -805,28 +803,6 @@ internal sealed unsafe partial class SOSDacImpl
             if (handle is CodeBlockHandle codeHandle)
             {
                 TargetPointer methodDescAddr = executionManager.GetMethodDesc(codeHandle);
-
-                // TargetCodePointer funcletStart = executionManager.GetFuncletStartAddress(codeHandle);
-                // bool isFunclet = executionManager.IsFunclet(codeHandle);
-                // TargetPointer unwindInfo = executionManager.GetUnwindInfo(codeHandle);
-                // executionManager.GetGCInfo(codeHandle, out TargetPointer gcInfoPtr, out uint gcVersion);
-                // TargetNUInt relOffset = executionManager.GetRelativeOffset(codeHandle);
-                // GCInfo gcInfo = new(_target, gcInfoPtr, (uint)relOffset.Value);
-
-                // using (StreamWriter outputFile = new StreamWriter("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", true))
-                // {
-                //     foreach (int offset in gcInfo.Transitions.Keys)
-                //     {
-                //         // outputFile.WriteLine($"CodeOffset: {offset:x8}");
-                //         foreach (BaseGcTransition gcTransition in gcInfo.Transitions[offset])
-                //         {
-                //             // outputFile.WriteLine(gcTransition);
-                //         }
-                //     }
-                // }
-                // Console.WriteLine(gcInfo.Transitions);
-                // Console.WriteLine($"IP: {ip:x}, MethodDesc: {methodDescAddr.Value:x}, FuncletStart: {funcletStart.Value:x}, IsFunclet: {isFunclet}, UnwindInfo: {unwindInfo.Value:x}");
-                // Console.WriteLine($"GCInfo: {gcInfoPtr.Value:x}, GCVersion: {gcVersion}");
 
                 try
                 {

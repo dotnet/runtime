@@ -77,12 +77,6 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
                 contextStruct.FillFromBuffer(contextBuf);
                 localContextStruct.FillFromBuffer(localContextBuf);
 
-                using (StreamWriter outputFile = new StreamWriter("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", true))
-                {
-                    outputFile.WriteLine($"cDAC: {contextStruct}");
-                    outputFile.WriteLine($" DAC: {localContextStruct}");
-                }
-
                 Debug.Assert(contextStruct.Equals(localContextStruct));
             }
         }
