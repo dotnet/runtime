@@ -218,22 +218,19 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class Arm64IntrinsicConstants
         {
-            public const int AdvSimd = 0x0001;
-            public const int Aes = 0x0002;
-            public const int Crc32 = 0x0004;
-            public const int Dp = 0x0008;
-            public const int Rdm = 0x0010;
-            public const int Sha1 = 0x0020;
-            public const int Sha256 = 0x0040;
-            public const int Atomics = 0x0080;
-            public const int Rcpc = 0x0100;
-            public const int Rcpc2 = 0x0200;
-            public const int Sve = 0x0400;
+            public const int Aes = 0x0001;
+            public const int Crc32 = 0x0002;
+            public const int Dp = 0x0004;
+            public const int Rdm = 0x0008;
+            public const int Sha1 = 0x0010;
+            public const int Sha256 = 0x0020;
+            public const int Atomics = 0x0040;
+            public const int Rcpc = 0x0800;
+            public const int Rcpc2 = 0x0100;
+            public const int Sve = 0x0200;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
-                if ((flags & AdvSimd) != 0)
-                    builder.AddSupportedInstructionSet("neon");
                 if ((flags & Aes) != 0)
                     builder.AddSupportedInstructionSet("aes");
                 if ((flags & Crc32) != 0)
@@ -264,8 +261,8 @@ namespace ILCompiler
                     // Baseline ISAs - they're always available
                     InstructionSet.ARM64_ArmBase => 0,
                     InstructionSet.ARM64_ArmBase_Arm64 => 0,
-                    InstructionSet.ARM64_AdvSimd => AdvSimd,
-                    InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd,
+                    InstructionSet.ARM64_AdvSimd => 0,
+                    InstructionSet.ARM64_AdvSimd_Arm64 => 0,
 
                     // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.ARM64_Aes => Aes,
@@ -287,7 +284,7 @@ namespace ILCompiler
                     InstructionSet.ARM64_Sve_Arm64 => Sve,
 
                     // Vector<T> Sizes
-                    InstructionSet.ARM64_VectorT128 => AdvSimd,
+                    InstructionSet.ARM64_VectorT128 => 0,
 
                     _ => throw new NotSupportedException(((InstructionSet_ARM64)instructionSet).ToString())
                 };

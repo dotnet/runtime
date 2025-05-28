@@ -25,8 +25,8 @@ namespace Internal.ReadyToRunConstants
                         {
                             case InstructionSet.ARM64_ArmBase: return ReadyToRunInstructionSet.ArmBase;
                             case InstructionSet.ARM64_ArmBase_Arm64: return ReadyToRunInstructionSet.ArmBase;
-                            case InstructionSet.ARM64_AdvSimd: return ReadyToRunInstructionSet.AdvSimd;
-                            case InstructionSet.ARM64_AdvSimd_Arm64: return ReadyToRunInstructionSet.AdvSimd;
+                            case InstructionSet.ARM64_AdvSimd: return ReadyToRunInstructionSet.ArmBase;
+                            case InstructionSet.ARM64_AdvSimd_Arm64: return ReadyToRunInstructionSet.ArmBase;
                             case InstructionSet.ARM64_Aes: return ReadyToRunInstructionSet.Aes;
                             case InstructionSet.ARM64_Aes_Arm64: return ReadyToRunInstructionSet.Aes;
                             case InstructionSet.ARM64_Crc32: return ReadyToRunInstructionSet.Crc32;

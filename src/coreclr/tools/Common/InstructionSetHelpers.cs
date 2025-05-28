@@ -24,7 +24,7 @@ namespace System.CommandLine
             // Ready to run images are built with certain instruction set baselines
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
             {
@@ -222,12 +222,9 @@ namespace System.CommandLine
                 if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512))
                 {
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }

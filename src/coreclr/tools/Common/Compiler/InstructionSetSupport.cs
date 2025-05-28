@@ -196,7 +196,10 @@ namespace ILCompiler
             {
                 // Only instruction sets with associated R2R enum values are specifiable
                 if (instructionSet.Specifiable)
-                    support.Add(instructionSet.Name, instructionSet.InstructionSet);
+                {
+                    _ = support.TryAdd(instructionSet.Name, instructionSet.InstructionSet);
+                    Debug.Assert(support[instructionSet.Name] == instructionSet.InstructionSet);
+                }
             }
 
             return support;
@@ -320,15 +323,6 @@ namespace ILCompiler
 
             if ((_architecture == TargetArchitecture.X86) || (_architecture == TargetArchitecture.ARM))
                 unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(_architecture);
-
-            // While it's possible to enable individual AVX-512 ISA's, it is not
-            // optimal to do so, since they aren't totally functional this way,
-            // plus it is extremely rare to encounter hardware that doesn't support
-            // all of them. So, here we ensure that we are enabling all the ISA's
-            // if one is specified in the Crossgen2 or ILC command-lines.
-            //
-            // For more information, check this Github comment:
-            // https://github.com/dotnet/runtime/issues/106450#issuecomment-2299504035
 
             if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx512")))
             {

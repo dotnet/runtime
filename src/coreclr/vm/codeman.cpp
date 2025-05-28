@@ -1256,25 +1256,15 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v1
 
-    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE2))
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
-        // These ISAs are grouped together and if any are disabled then
-        // you lose access to all of them. We recommend modern code just
-        // use EnableHWIntrinsic, but we continue checking the older knobs
-        // for back-compat
         CPUCompileFlags.Set(InstructionSet_X86Base);
     }
 
     // x86-64-v2
 
-    if (((cpuFeatures & XArchIntrinsicConstants_Sse3) != 0) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3) &&
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3_4))
+    if (((cpuFeatures & XArchIntrinsicConstants_Sse3) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableSSE3))
     {
-        // We need to additionally check that EXTERNAL_EnableSSE3_4 is set, as that
-        // is a prexisting config flag that controls the SSE3+ ISAs
         CPUCompileFlags.Set(InstructionSet_SSE3);
     }
 
@@ -1337,33 +1327,14 @@ void EEJitManager::SetCpuInfo()
 
     // x86-64-v4
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512F_VL) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512BW_VL) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512CD_VL) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512DQ_VL))
-        {
-            // These ISAs are likewise grouped together and should be checked
-            // via EnableAVX512
-            CPUCompileFlags.Set(InstructionSet_AVX512);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVX512);
     }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx512Vbmi) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI) &&
-            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
-        {
-            // These ISAs are likewise grouped together and should be checked
-            // via EnableAVX512VBMI
-            CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
     }
 
     // Unversioned
@@ -1401,31 +1372,22 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_GFNI_V512);
     }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v1) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v1))
-        {
-            CPUCompileFlags.Set(InstructionSet_AVX10v1);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVX10v1);
     }
 
-    if ((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0)
+    if (((cpuFeatures & XArchIntrinsicConstants_Avx10v2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX10v2))
-        {
-            CPUCompileFlags.Set(InstructionSet_AVX10v2);
-        }
+        CPUCompileFlags.Set(InstructionSet_AVX10v2);
     }
 
-    #if defined(TARGET_AMD64)
-    if ((cpuFeatures & XArchIntrinsicConstants_Apx) != 0)
+#if defined(TARGET_AMD64)
+    if (((cpuFeatures & XArchIntrinsicConstants_Apx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAPX))
     {
-        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAPX))
-        {
-            CPUCompileFlags.Set(InstructionSet_APX);
-        }
+        CPUCompileFlags.Set(InstructionSet_APX);
     }
-    #endif  // TARGET_AMD64
+#endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)
 
 #if !defined(TARGET_WINDOWS)
@@ -1443,10 +1405,6 @@ void EEJitManager::SetCpuInfo()
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
         CPUCompileFlags.Set(InstructionSet_ArmBase);
-    }
-
-    if (((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64AdvSimd))
-    {
         CPUCompileFlags.Set(InstructionSet_AdvSimd);
     }
 
@@ -3737,7 +3695,7 @@ BOOL InterpreterJitManager::LoadInterpreter()
     m_interpreter = NULL;
 
 // If both JIT and interpret are available, statically link the JIT. Interpreter can be loaded dynamically
-// via config switch for testing purposes. 
+// via config switch for testing purposes.
 #if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
     newInterpreter = InitializeStaticJIT();
 #else // FEATURE_STATICALLY_LINKED && !FEATURE_JIT

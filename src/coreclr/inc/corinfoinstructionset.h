@@ -924,7 +924,6 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
     {
 #ifdef TARGET_ARM64
         case READYTORUN_INSTRUCTION_ArmBase: return InstructionSet_ArmBase;
-        case READYTORUN_INSTRUCTION_AdvSimd: return InstructionSet_AdvSimd;
         case READYTORUN_INSTRUCTION_Aes: return InstructionSet_Aes;
         case READYTORUN_INSTRUCTION_Crc32: return InstructionSet_Crc32;
         case READYTORUN_INSTRUCTION_Dp: return InstructionSet_Dp;

@@ -697,14 +697,12 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableVPCLMULQDQ,             W("EnableVPCLMUL
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableMOVBE,                  W("EnableMOVBE"),               1, "Allows MOVBE+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnablePOPCNT,                 W("EnablePOPCNT"),              1, "Allows POPCNT+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3,                   W("EnableSSE3"),                1, "Allows SSE3+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3_4,                 W("EnableSSE3_4"),              1, "Allows SSE3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE41,                  W("EnableSSE41"),               1, "Allows SSE4.1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE42,                  W("EnableSSE42"),               1, "Allows SSE4.2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSSE3,                  W("EnableSSSE3"),               1, "Allows SSSE3+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableX86Serialize,           W("EnableX86Serialize"),        1, "Allows X86Serialize+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAPX,                    W("EnableAPX"),                 0, "Allows APX+ features to be disabled")
 #elif defined(TARGET_ARM64)
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64AdvSimd,           W("EnableArm64AdvSimd"),        1, "Allows Arm64 AdvSimd+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Aes,               W("EnableArm64Aes"),            1, "Allows Arm64 Aes+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Atomics,           W("EnableArm64Atomics"),        1, "Allows Arm64 Atomics+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Crc32,             W("EnableArm64Crc32"),          1, "Allows Arm64 Crc32+ hardware intrinsics to be disabled")
@@ -720,28 +718,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sve2,              W("EnableArm64Sv
 #elif defined(TARGET_RISCV64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zba,             W("EnableRiscV64Zba"),          1, "Allows RiscV64 Zba hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableRiscV64Zbb,             W("EnableRiscV64Zbb"),          1, "Allows RiscV64 Zbb hardware intrinsics to be disabled")
-#endif
-
-//
-// These are "legacy" ISA enablement knobs that aren't recommended for use anymore
-//
-#if defined(TARGET_AMD64) || defined(TARGET_X86)
-// These have been superceded by EnableAVX512 as you get all of them or none of them
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW,               W("EnableAVX512BW"),            1, "Allows AVX512BW+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW_VL,            W("EnableAVX512BW_VL"),         1, "Allows AVX512BW_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD,               W("EnableAVX512CD"),            1, "Allows AVX512CD+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD_VL,            W("EnableAVX512CD_VL"),         1, "Allows AVX512CD_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ,               W("EnableAVX512DQ"),            1, "Allows AVX512DQ+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ_VL,            W("EnableAVX512DQ_VL"),         1, "Allows AVX512DQ_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,                W("EnableAVX512F"),             1, "Allows AVX512F+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,             W("EnableAVX512F_VL"),          1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
-
-// These have been superceded by EnableAVX512VBMI as you get all of them or none of them
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512VBMI_VL,          W("EnableAVX512VBMI_VL"),       1, "Allows AVX512VBMI_VL+ hardware intrinsics to be disabled")
-
-// These have been superceded by EnableHWIntrinsic as they are part of the baseline
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE,                    W("EnableSSE"),                 1, "Allows SSE+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE2,                   W("EnableSSE2"),                1, "Allows SSE2+ hardware intrinsics to be disabled")
 #endif
 
 ///

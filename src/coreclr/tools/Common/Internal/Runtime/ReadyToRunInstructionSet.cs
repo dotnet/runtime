@@ -26,7 +26,6 @@ namespace Internal.ReadyToRunConstants
         Pclmulqdq=14,
         Popcnt=15,
         ArmBase=16,
-        AdvSimd=17,
         Crc32=18,
         Sha1=19,
         Sha256=20,
