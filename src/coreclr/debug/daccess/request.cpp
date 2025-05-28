@@ -5076,7 +5076,7 @@ namespace
 TADDR ClrDataAccess::GetIdentityForManagedObjectWrapper(TADDR mow)
 {
     PTR_ManagedObjectWrapper pMOW = dac_cast<PTR_ManagedObjectWrapper>(mow);
-    // Replicate the logic for ManagedObjectWrapper.As(IID_IUnknown)
+    // Replicate the logic for _wrapper.As(IID_IUnknown)
     if ((pMOW->GetFlags() & InteropLib::Com::CreateComInterfaceFlagsEx::CallerDefinedIUnknown) == InteropLib::Com::CreateComInterfaceFlagsEx::None)
     {
         // We have the standard IUnknown implementation, so grab it from its known location.
@@ -5173,7 +5173,7 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
                 for (unsigned int i = 0; i < count; i++)
                 {
                     MOWHOLDERREF pMOWRef = (MOWHOLDERREF)pListItems->GetAt(i);
-                    PTR_ManagedObjectWrapper pMOW = PTR_ManagedObjectWrapper(dac_cast<TADDR>(pMOWRef->ManagedObjectWrapper));
+                    PTR_ManagedObjectWrapper pMOW = PTR_ManagedObjectWrapper(dac_cast<TADDR>(pMOWRef->_wrapper));
 
                     // Now that we have the managed object wrapper, we need to figure out the COM identity of it.
                     TADDR pComIdentity = GetIdentityForManagedObjectWrapper(dac_cast<TADDR>(pMOW));

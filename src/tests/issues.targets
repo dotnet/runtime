@@ -1083,9 +1083,6 @@
 
     <!-- NativeAOT x86 specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'x86'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/perf/doublealign/Arrays/**">
-            <Issue>https://github.com/dotnet/runtime/issues/101284</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/Tailcall/ExplicitTailCallNoSO/**">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Tailcalls</Issue>
         </ExcludeList>

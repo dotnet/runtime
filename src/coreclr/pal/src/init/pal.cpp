@@ -538,17 +538,6 @@ Initialize(
         // InitializeProcessCommandLine took ownership of this memory.
         command_line = nullptr;
 
-#ifdef PAL_PERF
-        // Initialize the Profiling structure
-        if(FALSE == PERFInitialize(command_line, exe_path))
-        {
-            ERROR("Performance profiling initial failed\n");
-            palError = ERROR_PALINIT_PERF;
-            goto CLEANUP2;
-        }
-        PERFAllocThreadInfo();
-#endif
-
         if (!LOADSetExeName(exe_path))
         {
             ERROR("Unable to set exe name\n");
@@ -681,15 +670,6 @@ CLEANUP0a:
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
-#ifdef PAL_PERF
-    if( retval == 0)
-    {
-         PERFEnableProcessProfile();
-         PERFEnableThreadProfile(FALSE);
-         PERFCalibrate("Overhead of PERF entry/exit");
-    }
-#endif
-
     InternalLeaveCriticalSection(pThread, init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
