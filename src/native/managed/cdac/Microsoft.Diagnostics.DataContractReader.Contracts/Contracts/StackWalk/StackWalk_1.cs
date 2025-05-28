@@ -120,19 +120,33 @@ internal readonly struct StackWalk_1 : IStackWalk
         bool isManaged = IsManaged(handle.Context.InstructionPointer, out _);
         bool validFrame = handle.FrameIter.IsValid();
 
-        if (_arch == RuntimeInfoArchitecture.X86 && IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? cbh))
-        {
-            IExecutionManager eman = _target.Contracts.ExecutionManager;
+        //
+        // Platform specific checks
+        //
 
-            if (!eman.IsFunclet(cbh.Value))
+        // x86 Specific Checks
+        if (_arch == RuntimeInfoArchitecture.X86)
+        {
+            if (IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? cbh))
             {
-                eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddress, out uint _);
-                uint relOffset = (uint)eman.GetRelativeOffset(cbh.Value).Value;
-                GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
-                if (gcInfo.HasReversePInvoke)
+                IExecutionManager eman = _target.Contracts.ExecutionManager;
+
+                if (!eman.IsFunclet(cbh.Value))
                 {
-                    handle.State = StackWalkState.SW_FRAME;
-                    return;
+                    eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddress, out uint _);
+                    uint relOffset = (uint)eman.GetRelativeOffset(cbh.Value).Value;
+                    GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
+                    if (gcInfo.HasReversePInvoke)
+                    {
+                        // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
+                        // frame, that means that the method was called from managed code without any native frames in between.
+                        // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
+                        // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
+                        // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
+                        Debug.Assert(handle.FrameIter.IsInlineCallFrameWithActiveCall());
+                        handle.State = StackWalkState.SW_FRAME;
+                        return;
+                    }
                 }
             }
         }
@@ -178,9 +192,6 @@ internal readonly struct StackWalk_1 : IStackWalk
         // get the caller context
         IPlatformAgnosticContext parentContext = handle.Context.Clone();
         parentContext.Unwind(_target);
-
-        long stackDifference = (long)parentContext.StackPointer.Value - (long)handle.FrameIter.CurrentFrameAddress.Value;
-        Console.WriteLine(stackDifference);
 
         while (handle.FrameIter.IsValid() &&
                handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value)
