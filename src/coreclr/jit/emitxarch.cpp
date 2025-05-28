@@ -18142,7 +18142,9 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
     {
         case INS_TT_FULL:
         {
-            assert(inputSize == 4 || inputSize == 8);
+            instruction ins = id->idIns();
+            assert((inputSize == 4 || inputSize == 8) || IsAVXVNNIINT8Instruction(ins) ||
+                   IsAVXVNNIINT16Instruction(ins));
             if (HasEmbeddedBroadcast(id))
             {
                 // N = input size in bytes

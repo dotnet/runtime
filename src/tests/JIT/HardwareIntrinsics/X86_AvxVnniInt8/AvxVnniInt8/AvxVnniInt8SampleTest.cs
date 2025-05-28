@@ -40,10 +40,6 @@ namespace IntelHardwareIntrinsicTest._AvxVnniInt8
             if (AvxVnniInt8.IsSupported)
             {
                 Console.WriteLine("AvxVnniInt8 supported");
-                Vector128<uint> v1 = Vector128.Create<uint>(5);
-                Vector128<byte> v2 = Vector128.Create<byte>(5);
-                Vector128<byte> v3 = Vector128.Create<byte>(5);
-                v1 = getMWA(v1, v2, v3);
             }
             else {
                 Console.WriteLine("AvxVnniInt8 not supported");
