@@ -14,17 +14,6 @@ namespace System.IO.Hashing
 {
     public sealed partial class XxHash64
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ulong Avalanche(ulong hash)
-        {
-            hash ^= hash >> 33;
-            hash *= Prime64_2;
-            hash ^= hash >> 29;
-            hash *= Prime64_3;
-            hash ^= hash >> 32;
-            return hash;
-        }
-
         private struct State
         {
             private ulong _acc1;

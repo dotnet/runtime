@@ -246,7 +246,7 @@ namespace System.IO.Hashing
 
             const ulong BitFlipL = DefaultSecretUInt64_8 ^ DefaultSecretUInt64_9;
             const ulong BitFlipH = DefaultSecretUInt64_10 ^ DefaultSecretUInt64_11;
-            return new Hash128(XxHash64.Avalanche(seed ^ BitFlipL), XxHash64.Avalanche(seed ^ BitFlipH));
+            return new Hash128(Avalanche(seed ^ BitFlipL), Avalanche(seed ^ BitFlipH));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -271,7 +271,7 @@ namespace System.IO.Hashing
             ulong keyedLo = combinedl ^ bitflipl;
             ulong keyedHi = combinedh ^ bitfliph;
 
-            return new Hash128(XxHash64.Avalanche(keyedLo), XxHash64.Avalanche(keyedHi));
+            return new Hash128(Avalanche(keyedLo), Avalanche(keyedHi));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -295,7 +295,7 @@ namespace System.IO.Hashing
             m128Low = XorShift(m128Low, 35);
             m128Low *= 0x9FB21C651E98DF25UL;
             m128Low = XorShift(m128Low, 28);
-            m128High = Avalanche(m128High);
+            m128High = FastAvalanche(m128High);
 
             return new Hash128(m128Low, m128High);
         }
@@ -322,8 +322,8 @@ namespace System.IO.Hashing
             ulong h128High = Multiply64To128(m128Low, Prime64_2, out ulong h128Low);
             h128High += m128High * (ulong)Prime64_2;
 
-            h128Low = Avalanche(h128Low);
-            h128High = Avalanche(h128High);
+            h128Low = FastAvalanche(h128Low);
+            h128High = FastAvalanche(h128High);
             return new Hash128(h128Low, h128High);
         }
 
@@ -365,8 +365,8 @@ namespace System.IO.Hashing
             Mix32Bytes(ref accLow, ref accHigh, source + (32 * 2), source + (32 * 2) + 16, DefaultSecretUInt64_8, DefaultSecretUInt64_9, DefaultSecretUInt64_10, DefaultSecretUInt64_11, seed);
             Mix32Bytes(ref accLow, ref accHigh, source + (32 * 3), source + (32 * 3) + 16, DefaultSecretUInt64_12, DefaultSecretUInt64_13, DefaultSecretUInt64_14, DefaultSecretUInt64_15, seed);
 
-            accLow = Avalanche(accLow);
-            accHigh = Avalanche(accHigh);
+            accLow = FastAvalanche(accLow);
+            accHigh = FastAvalanche(accHigh);
 
             uint bound = ((length - (32 * 4)) / 32);
             if (bound != 0)
@@ -418,8 +418,8 @@ namespace System.IO.Hashing
             ulong h128High = (accLow * Prime64_1)
                           + (accHigh * Prime64_4)
                           + ((length - seed) * Prime64_2);
-            h128Low = Avalanche(h128Low);
-            h128High = 0ul - Avalanche(h128High);
+            h128Low = FastAvalanche(h128Low);
+            h128High = 0ul - FastAvalanche(h128High);
             return new Hash128(h128Low, h128High);
         }
 

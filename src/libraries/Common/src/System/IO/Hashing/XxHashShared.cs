@@ -426,7 +426,7 @@ namespace System.IO.Hashing
             result64 += Multiply64To128ThenFold(accumulators[4] ^ ReadUInt64LE(secret + 32), accumulators[5] ^ ReadUInt64LE(secret + 40));
             result64 += Multiply64To128ThenFold(accumulators[6] ^ ReadUInt64LE(secret + 48), accumulators[7] ^ ReadUInt64LE(secret + 56));
 
-            return Avalanche(result64);
+            return FastAvalanche(result64);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -439,9 +439,20 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ulong Multiply32To64(uint v1, uint v2) => (ulong)v1 * v2;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static ulong Avalanche(ulong hash)
+        {
+            hash ^= hash >> 33;
+            hash *= Prime64_2;
+            hash ^= hash >> 29;
+            hash *= Prime64_3;
+            hash ^= hash >> 32;
+            return hash;
+        }
+
         /// <summary>"This is a fast avalanche stage, suitable when input bits are already partially mixed."</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ulong Avalanche(ulong hash)
+        public static ulong FastAvalanche(ulong hash)
         {
             hash = XorShift(hash, 37);
             hash *= 0x165667919E3779F9;
