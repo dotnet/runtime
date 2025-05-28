@@ -1023,17 +1023,12 @@ namespace
 {
     pal::architecture get_requested_architecture(int argc, const pal::char_t* argv[])
     {
-        // Default to current architecture if architecture is not specified
-        if (argc < 3 || pal::strcasecmp(_X("--arch"), argv[2]) != 0)
+        // Expected format: --arch <arch>
+        // Default to current architecture if architecture is not specified in the expected format
+        if (argc < 2 || pal::strcasecmp(_X("--arch"), argv[0]) != 0)
             return get_current_arch();
 
-        if (argc < 4)
-        {
-            trace::error(_X("Architecture should be specified when using --arch"));
-            return pal::architecture::__last;
-        }
-
-        pal::string_t arch_arg = argv[3];
+        pal::string_t arch_arg = argv[1];
         for (int i = 0; i < static_cast<int>(pal::architecture::__last); ++i)
         {
             pal::architecture arch = static_cast<pal::architecture>(i);
@@ -1052,13 +1047,17 @@ int fx_muxer_t::handle_cli(
     const pal::char_t* argv[],
     const pal::string_t& app_candidate)
 {
+    // Should have already checked for and bailed out on no args
+    assert(argc > 1);
+
     // Check for commands that don't depend on the CLI SDK to be loaded
     bool list_sdks = pal::strcasecmp(_X("--list-sdks"), argv[1]) == 0;
     bool list_runtimes = !list_sdks && pal::strcasecmp(_X("--list-runtimes"), argv[1]) == 0;
 
     if (list_sdks || list_runtimes)
     {
-        pal::architecture arch = get_requested_architecture(argc, argv);
+        // Skip over first two args: <executable> --list-sdks|--list-runtimes
+        pal::architecture arch = get_requested_architecture(argc - 2, argv + 2);
         if (arch == pal::architecture::__last)
             return StatusCode::InvalidArgFailure;
 

@@ -107,6 +107,8 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
 
 /*static*/ bool framework_info::print_all_frameworks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace)
 {
+    assert(leading_whitespace != nullptr);
+
     std::vector<framework_info> framework_infos;
     get_all_framework_infos(dotnet_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
     for (framework_info info : framework_infos)

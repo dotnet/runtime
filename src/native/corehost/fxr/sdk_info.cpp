@@ -105,6 +105,8 @@ void sdk_info::get_all_sdk_infos(
 
 /*static*/ bool sdk_info::print_all_sdks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace)
 {
+    assert(leading_whitespace != nullptr);
+
     std::vector<sdk_info> sdk_infos;
     get_all_sdk_infos(dotnet_dir, &sdk_infos);
     for (sdk_info info : sdk_infos)
