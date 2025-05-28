@@ -24240,6 +24240,49 @@ GenTree* Compiler::gtNewSimdMaxNode(
             return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x05), minMaxIntrinsic, simdBaseJitType,
                                             simdSize);
         }
+        if (IsBaselineVector512IsaSupportedOpportunistically())
+        {
+            // If AVX512 is supported, we can use vrangeps/vrangepd to correctly handle the Vector.Max(-0.0, 0.0) = 0.0 case.
+            // We still need to check for NaN as vrangeps/vrangepd does not handle NaN as specified in IEEE 754 2019.
+            //
+            // This can be represented as the following managed code:
+            //      Vector128<float> nanMask = Vector128.IsNaN(op1) | Vector128.IsNaN(op2);
+            //      Vector128<float> rangeResult = Avx512DQ.VL.Range(op1, op2, 0x5);
+            //      return Vector128.ConditionalSelect(nanMask, Vector128.Create(float.NaN), rangeResult);
+            //
+            // 0x5 is the control byte:
+            //      Imm8[1:0] = 01b : Select Max value
+            //      Imm8[3:2] = 01b : Select sign(Compare_Result)
+
+            GenTree* op1Dup1    = fgMakeMultiUse(&op1);
+            GenTree* op2Dup1    = fgMakeMultiUse(&op2);
+            GenTree* op1NaNMask = gtNewSimdIsNaNNode(type, op1, simdBaseJitType, simdSize);
+            GenTree* op2NaNMask = gtNewSimdIsNaNNode(type, op2, simdBaseJitType, simdSize);
+            GenTree* nanMask    = gtNewSimdBinOpNode(GT_OR, type, op1NaNMask, op2NaNMask, simdBaseJitType, simdSize);
+            GenTree* rangeOp    = gtNewSimdHWIntrinsicNode(type, op1Dup1, op2Dup1, gtNewIconNode(0x5),
+                                                        simdSize == 64 ? NI_AVX512DQ_Range : NI_AVX512DQ_VL_Range,
+                                                           simdBaseJitType, simdSize);
+            GenTreeVecCon* vecCon = gtNewVconNode(type);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                for (unsigned i = 0; i < (simdSize / sizeof(float)); i++)
+                {
+                    vecCon->gtSimdVal.f32[i] = nanf("");
+                }
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+                for (unsigned i = 0; i < (simdSize / sizeof(double)); i++)
+                {
+                    vecCon->gtSimdVal.f64[i] = nan("");
+                }
+            }
+            return gtNewSimdCndSelNode(type, nanMask, vecCon, rangeOp, simdBaseJitType, simdSize);
+        }
+
+
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
