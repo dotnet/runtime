@@ -24,8 +24,11 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
         _enablePerTestCleanup = true;
     }
 
-    [Fact]
-    public async Task BlazorEventPipeTestWithCpuSamples()
+    [Theory]
+    [InlineData(Configuration.Debug, false)]
+    [InlineData(Configuration.Release, false)]
+    [InlineData(Configuration.Release, true)]
+    public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
         string extraProperties = @"
                 <WasmPerfInstrumentation>all,interval=0</WasmPerfInstrumentation>
@@ -33,11 +36,11 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 <WBTDevServer>true</WBTDevServer>
             ";
 
-        ProjectInfo info = CopyTestAsset(Configuration.Release, aot: false, TestAsset.BlazorBasicTestApp, "blazor_cpu_samples", extraProperties: extraProperties);
+        ProjectInfo info = CopyTestAsset(config, aot, TestAsset.BlazorBasicTestApp, "blazor_cpu_samples", extraProperties: extraProperties);
 
         UpdateCounterPage();
 
-        BuildProject(info, Configuration.Release, new BuildOptions(AssertAppBundle: false));
+        BuildProject(info, config, new BuildOptions(AssertAppBundle: false));
 
         async Task CpuProfileTest(IPage page)
         {
@@ -53,7 +56,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
         // Run the test using the custom handler
         await RunForBuildWithDotnetRun(new BlazorRunOptions(
-            Configuration: Configuration.Release,
+            Configuration: config,
             Test: CpuProfileTest,
             TimeoutSeconds: 60,
             CheckCounter: false,
@@ -62,7 +65,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 ["DEVSERVER_UPLOAD_PATH"] = info.LogPath
             }
         ));
-
 
         var methodFound = false;
         using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
