@@ -790,6 +790,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("exception.message", tags.Keys);
                     Assert.Contains("exception.stacktrace", tags.Keys);
                     Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
 
                     // Whether System.Net.Quic uses System.Net.Dns is an implementation detail.
                     if (version != HttpVersion30)
@@ -816,6 +817,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Contains("exception.message", tags.Keys);
                     Assert.Contains("exception.stacktrace", tags.Keys);
                     Assert.Equal(typeof(HttpRequestException).FullName, tags["exception.type"]);
+                    Assert.InRange(evt.Timestamp - req.StartTimeUtc, new TimeSpan(1), req.Duration);
 
                     if (version != HttpVersion30)
                     {
