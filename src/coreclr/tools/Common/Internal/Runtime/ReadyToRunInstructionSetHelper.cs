@@ -25,8 +25,8 @@ namespace Internal.ReadyToRunConstants
                         {
                             case InstructionSet.ARM64_ArmBase: return ReadyToRunInstructionSet.ArmBase;
                             case InstructionSet.ARM64_ArmBase_Arm64: return ReadyToRunInstructionSet.ArmBase;
-                            case InstructionSet.ARM64_AdvSimd: return ReadyToRunInstructionSet.ArmBase;
-                            case InstructionSet.ARM64_AdvSimd_Arm64: return ReadyToRunInstructionSet.ArmBase;
+                            case InstructionSet.ARM64_AdvSimd: return ReadyToRunInstructionSet.AdvSimd;
+                            case InstructionSet.ARM64_AdvSimd_Arm64: return ReadyToRunInstructionSet.AdvSimd;
                             case InstructionSet.ARM64_Aes: return ReadyToRunInstructionSet.Aes;
                             case InstructionSet.ARM64_Aes_Arm64: return ReadyToRunInstructionSet.Aes;
                             case InstructionSet.ARM64_Crc32: return ReadyToRunInstructionSet.Crc32;
@@ -109,8 +109,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_MOVBE: return ReadyToRunInstructionSet.Movbe;
                             case InstructionSet.X64_X86Serialize: return ReadyToRunInstructionSet.X86Serialize;
                             case InstructionSet.X64_X86Serialize_X64: return ReadyToRunInstructionSet.X86Serialize;
-                            case InstructionSet.X64_AVX512: return ReadyToRunInstructionSet.Avx512;
-                            case InstructionSet.X64_AVX512_X64: return ReadyToRunInstructionSet.Avx512;
+                            case InstructionSet.X64_AVX512: return ReadyToRunInstructionSet.Evex;
+                            case InstructionSet.X64_AVX512_X64: return ReadyToRunInstructionSet.Evex;
                             case InstructionSet.X64_AVX512VBMI: return ReadyToRunInstructionSet.Avx512Vbmi;
                             case InstructionSet.X64_AVX512VBMI_X64: return ReadyToRunInstructionSet.Avx512Vbmi;
                             case InstructionSet.X64_AVX10v1: return ReadyToRunInstructionSet.Avx10v1;
@@ -172,7 +172,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_MOVBE: return ReadyToRunInstructionSet.Movbe;
                             case InstructionSet.X86_X86Serialize: return ReadyToRunInstructionSet.X86Serialize;
                             case InstructionSet.X86_X86Serialize_X64: return null;
-                            case InstructionSet.X86_AVX512: return ReadyToRunInstructionSet.Avx512;
+                            case InstructionSet.X86_AVX512: return ReadyToRunInstructionSet.Evex;
                             case InstructionSet.X86_AVX512_X64: return null;
                             case InstructionSet.X86_AVX512VBMI: return ReadyToRunInstructionSet.Avx512Vbmi;
                             case InstructionSet.X86_AVX512VBMI_X64: return null;

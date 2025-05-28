@@ -35,7 +35,7 @@ namespace System.CommandLine
                 }
                 else
                 {
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
                 }
             }
 

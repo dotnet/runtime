@@ -28,8 +28,8 @@
 definearch         ,X86   ,32Bit                ,X64, X64
 
 instructionset     ,X86   ,X86Base              ,           ,22 ,X86Base               ,base
-instructionset     ,X86   ,Sse                  ,X86Base    ,22 ,X86Base               ,base
-instructionset     ,X86   ,Sse2                 ,X86Base    ,22 ,X86Base               ,base
+instructionset     ,X86   ,Sse                  ,           ,1  ,X86Base               ,base
+instructionset     ,X86   ,Sse2                 ,           ,2  ,X86Base               ,base
 instructionset     ,X86   ,Sse3                 ,           ,3  ,SSE3                  ,sse3
 instructionset     ,X86   ,Ssse3                ,           ,4  ,SSSE3                 ,ssse3
 instructionset     ,X86   ,Sse41                ,           ,5  ,SSE41                 ,sse4.1
@@ -51,24 +51,25 @@ instructionset     ,X86   ,                     ,           ,   ,Vector512      
 instructionset     ,X86   ,AvxVnni              ,           ,25 ,AVXVNNI               ,avxvnni
 instructionset     ,X86   ,                     ,Movbe      ,27 ,MOVBE                 ,movbe
 instructionset     ,X86   ,X86Serialize         ,           ,28 ,X86Serialize          ,serialize
-instructionset     ,X86   ,Avx512F              ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512F_VL           ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512BW             ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512BW_VL          ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512CD             ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512CD_VL          ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512DQ             ,Avx512     ,29 ,AVX512                ,avx512
-instructionset     ,X86   ,Avx512DQ_VL          ,Avx512     ,29 ,AVX512                ,avx512
+instructionset     ,X86   ,                     ,Evex       ,47 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512F              ,           ,29 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512F_VL           ,           ,30 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512BW             ,           ,31 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512BW_VL          ,           ,32 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512CD             ,           ,33 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512CD_VL          ,           ,34 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512DQ             ,           ,35 ,AVX512                ,avx512
+instructionset     ,X86   ,Avx512DQ_VL          ,           ,36 ,AVX512                ,avx512
 instructionset     ,X86   ,Avx512Vbmi           ,           ,37 ,AVX512VBMI            ,avx512vbmi
-instructionset     ,X86   ,Avx512Vbmi_VL        ,Avx512Vbmi ,37 ,AVX512VBMI            ,avx512vbmi
+instructionset     ,X86   ,Avx512Vbmi_VL        ,           ,38 ,AVX512VBMI            ,avx512vbmi
 instructionset     ,X86   ,Avx10v1              ,           ,44 ,AVX10v1               ,avx10v1
-instructionset     ,X86   ,Avx10v1_V512         ,Avx10v1    ,44 ,AVX10v1               ,avx10v1
+instructionset     ,X86   ,Avx10v1_V512         ,           ,46 ,AVX10v1               ,avx10v1
 instructionset     ,X86   ,                     ,VectorT128 ,39 ,VectorT128            ,vectort128
 instructionset     ,X86   ,                     ,VectorT256 ,40 ,VectorT256            ,vectort256
 instructionset     ,X86   ,                     ,VectorT512 ,41 ,VectorT512            ,vectort512
 instructionset     ,X86   ,                     ,Apx        ,48 ,APX                   ,apx
 instructionset     ,X86   ,Avx10v2              ,           ,51 ,AVX10v2               ,avx10v2
-instructionset     ,X86   ,Avx10v2_V512         ,Avx10v2    ,51 ,AVX10v2               ,avx10v2
+instructionset     ,X86   ,Avx10v2_V512         ,           ,52 ,AVX10v2               ,avx10v2
 instructionset     ,X86   ,Gfni                 ,           ,53 ,GFNI                  ,gfni
 instructionset     ,X86   ,Gfni_V256            ,           ,54 ,GFNI_V256             ,gfni_v256
 instructionset     ,X86   ,Gfni_V512            ,           ,55 ,GFNI_V512             ,gfni_v512
@@ -164,7 +165,7 @@ copyinstructionsets,X86   ,X64
 definearch         ,ARM64 ,64Bit     ,Arm64, Arm64
 
 instructionset     ,ARM64 ,ArmBase               ,        ,16 ,ArmBase               ,base
-instructionset     ,ARM64 ,AdvSimd               ,ArmBase ,16 ,AdvSimd               ,neon
+instructionset     ,ARM64 ,AdvSimd               ,        ,17 ,AdvSimd               ,neon
 instructionset     ,ARM64 ,Aes                   ,        ,9  ,Aes                   ,aes
 instructionset     ,ARM64 ,Crc32                 ,        ,18 ,Crc32                 ,crc
 instructionset     ,ARM64 ,Dp                    ,        ,23 ,Dp                    ,dotprod

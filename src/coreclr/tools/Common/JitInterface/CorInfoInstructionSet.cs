@@ -1161,6 +1161,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X64_AVXVNNI, true);
                     yield return new InstructionSetInfo("movbe", "", InstructionSet.X64_MOVBE, true);
                     yield return new InstructionSetInfo("serialize", "X86Serialize", InstructionSet.X64_X86Serialize, true);
+                    yield return new InstructionSetInfo("avx512", "", InstructionSet.X64_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512F", InstructionSet.X64_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512F_VL", InstructionSet.X64_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512BW", InstructionSet.X64_AVX512, true);
@@ -1209,6 +1210,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X86_AVXVNNI, true);
                     yield return new InstructionSetInfo("movbe", "", InstructionSet.X86_MOVBE, true);
                     yield return new InstructionSetInfo("serialize", "X86Serialize", InstructionSet.X86_X86Serialize, true);
+                    yield return new InstructionSetInfo("avx512", "", InstructionSet.X86_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512F", InstructionSet.X86_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512F_VL", InstructionSet.X86_AVX512, true);
                     yield return new InstructionSetInfo("avx512", "Avx512BW", InstructionSet.X86_AVX512, true);

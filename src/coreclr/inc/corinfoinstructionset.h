@@ -924,6 +924,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
     {
 #ifdef TARGET_ARM64
         case READYTORUN_INSTRUCTION_ArmBase: return InstructionSet_ArmBase;
+        case READYTORUN_INSTRUCTION_AdvSimd: return InstructionSet_AdvSimd;
         case READYTORUN_INSTRUCTION_Aes: return InstructionSet_Aes;
         case READYTORUN_INSTRUCTION_Crc32: return InstructionSet_Crc32;
         case READYTORUN_INSTRUCTION_Dp: return InstructionSet_Dp;
@@ -944,6 +945,8 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
 #endif // TARGET_RISCV64
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
+        case READYTORUN_INSTRUCTION_Sse: return InstructionSet_X86Base;
+        case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
         case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
         case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
@@ -962,20 +965,33 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
         case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
-        case READYTORUN_INSTRUCTION_Avx512: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Evex: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512F: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512F_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512BW: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512BW_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512CD: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512CD_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512DQ: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512DQ_VL: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512Vbmi: return InstructionSet_AVX512VBMI;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi_VL: return InstructionSet_AVX512VBMI;
         case READYTORUN_INSTRUCTION_Avx10v1: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx10v1_V512: return InstructionSet_AVX10v1;
         case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
         case READYTORUN_INSTRUCTION_VectorT256: return InstructionSet_VectorT256;
         case READYTORUN_INSTRUCTION_VectorT512: return InstructionSet_VectorT512;
         case READYTORUN_INSTRUCTION_Apx: return InstructionSet_APX;
         case READYTORUN_INSTRUCTION_Avx10v2: return InstructionSet_AVX10v2;
+        case READYTORUN_INSTRUCTION_Avx10v2_V512: return InstructionSet_AVX10v2;
         case READYTORUN_INSTRUCTION_Gfni: return InstructionSet_GFNI;
         case READYTORUN_INSTRUCTION_Gfni_V256: return InstructionSet_GFNI_V256;
         case READYTORUN_INSTRUCTION_Gfni_V512: return InstructionSet_GFNI_V512;
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
+        case READYTORUN_INSTRUCTION_Sse: return InstructionSet_X86Base;
+        case READYTORUN_INSTRUCTION_Sse2: return InstructionSet_X86Base;
         case READYTORUN_INSTRUCTION_Sse3: return InstructionSet_SSE3;
         case READYTORUN_INSTRUCTION_Ssse3: return InstructionSet_SSSE3;
         case READYTORUN_INSTRUCTION_Sse41: return InstructionSet_SSE41;
@@ -994,14 +1010,25 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_AvxVnni: return InstructionSet_AVXVNNI;
         case READYTORUN_INSTRUCTION_Movbe: return InstructionSet_MOVBE;
         case READYTORUN_INSTRUCTION_X86Serialize: return InstructionSet_X86Serialize;
-        case READYTORUN_INSTRUCTION_Avx512: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Evex: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512F: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512F_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512BW: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512BW_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512CD: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512CD_VL: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512DQ: return InstructionSet_AVX512;
+        case READYTORUN_INSTRUCTION_Avx512DQ_VL: return InstructionSet_AVX512;
         case READYTORUN_INSTRUCTION_Avx512Vbmi: return InstructionSet_AVX512VBMI;
+        case READYTORUN_INSTRUCTION_Avx512Vbmi_VL: return InstructionSet_AVX512VBMI;
         case READYTORUN_INSTRUCTION_Avx10v1: return InstructionSet_AVX10v1;
+        case READYTORUN_INSTRUCTION_Avx10v1_V512: return InstructionSet_AVX10v1;
         case READYTORUN_INSTRUCTION_VectorT128: return InstructionSet_VectorT128;
         case READYTORUN_INSTRUCTION_VectorT256: return InstructionSet_VectorT256;
         case READYTORUN_INSTRUCTION_VectorT512: return InstructionSet_VectorT512;
         case READYTORUN_INSTRUCTION_Apx: return InstructionSet_APX;
         case READYTORUN_INSTRUCTION_Avx10v2: return InstructionSet_AVX10v2;
+        case READYTORUN_INSTRUCTION_Avx10v2_V512: return InstructionSet_AVX10v2;
         case READYTORUN_INSTRUCTION_Gfni: return InstructionSet_GFNI;
         case READYTORUN_INSTRUCTION_Gfni_V256: return InstructionSet_GFNI_V256;
         case READYTORUN_INSTRUCTION_Gfni_V512: return InstructionSet_GFNI_V512;

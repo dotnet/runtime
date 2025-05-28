@@ -416,6 +416,8 @@ int minipal_getcpufeatures(void)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
+    assert(hwCap & HWCAP_ASIMD);
+
     if (hwCap & HWCAP_AES)
         result |= ARM64IntrinsicConstants_Aes;
 
@@ -439,9 +441,6 @@ int minipal_getcpufeatures(void)
 
     if (hwCap & HWCAP_SHA2)
         result |= ARM64IntrinsicConstants_Sha256;
-
-    if (hwCap & HWCAP_ASIMD)
-        result |= ARM64IntrinsicConstants_AdvSimd;
 
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
@@ -487,18 +486,10 @@ int minipal_getcpufeatures(void)
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc2;
 #endif // HAVE_SYSCTLBYNAME
-
-    // Every ARM64 CPU should support SIMD and FP
-    // If the OS have no function to query for CPU capabilities we set just these
-
-    result |= ARM64IntrinsicConstants_AdvSimd;
 #endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)
-    // FP and SIMD support are enabled by default
-    result |= ARM64IntrinsicConstants_AdvSimd;
-
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Aes;

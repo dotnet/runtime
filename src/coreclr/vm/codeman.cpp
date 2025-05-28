@@ -1389,17 +1389,6 @@ void EEJitManager::SetCpuInfo()
     }
 #endif  // TARGET_AMD64
 #elif defined(TARGET_ARM64)
-
-#if !defined(TARGET_WINDOWS)
-    // Linux may still support no AdvSimd
-    if ((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) == 0)
-    {
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("AdvSimd processor support required."));
-    }
-#else
-    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_AdvSimd) != 0);
-#endif
-
     CPUCompileFlags.Set(InstructionSet_VectorT128);
 
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
