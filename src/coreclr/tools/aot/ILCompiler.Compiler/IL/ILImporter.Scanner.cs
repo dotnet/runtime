@@ -941,21 +941,21 @@ namespace Internal.IL
             if (obj is TypeDesc type)
             {
                 // We might also be able to optimize this a little if this is a ldtoken/GetTypeFromHandle/Equals sequence.
-                bool isTypeEquals = false;
-                TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
-                ILReader reader = new ILReader(_ilBytes, _currentOffset);
-                while (!analyzer.IsDefault)
-                {
-                    ILOpcode opcode = reader.ReadILOpcode();
-                    analyzer.Advance(opcode, reader, _methodIL);
-                    reader.Skip(opcode);
+                //bool isTypeEquals = false;
+                //TypeEqualityPatternAnalyzer analyzer = _typeEqualityPatternAnalyzer;
+                //ILReader reader = new ILReader(_ilBytes, _currentOffset);
+                //while (!analyzer.IsDefault)
+                //{
+                //    ILOpcode opcode = reader.ReadILOpcode();
+                //    analyzer.Advance(opcode, reader, _methodIL);
+                //    reader.Skip(opcode);
 
-                    if (analyzer.IsTypeEqualityCheck)
-                    {
-                        isTypeEquals = true;
-                        break;
-                    }
-                }
+                //    if (analyzer.IsTypeEqualityCheck)
+                //    {
+                //        isTypeEquals = true;
+                //        break;
+                //    }
+                //}
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeTypeHandle), "ldtoken");
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GetRuntimeType), "ldtoken");
@@ -968,7 +968,7 @@ namespace Internal.IL
                 else
                 {
                     reference = _compilation.ComputeConstantLookup(
-                        isTypeEquals ? ReadyToRunHelperId.NecessaryTypeHandle : _compilation.GetLdTokenHelperForType(type), type);
+                        ReadyToRunHelperId.NecessaryTypeHandle, type);
                 }
                 _dependencies.Add(reference, "ldtoken");
             }
