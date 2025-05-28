@@ -30,7 +30,9 @@ namespace System.IO.Hashing
         /// <param name="source">The data to hash.</param>
         /// <param name="seed">The seed value for this hash computation.</param>
         /// <returns>The computed XXH3 hash.</returns>
+#if !SYSTEM_PRIVATE_CORELIB
         [CLSCompliant(false)]
+#endif
         public static ulong HashToUInt64(ReadOnlySpan<byte> source, long seed = 0)
         {
             uint length = (uint)source.Length;
@@ -54,6 +56,29 @@ namespace System.IO.Hashing
                 return HashLengthOver240(sourcePtr, length, (ulong)seed);
             }
         }
+
+
+#if SYSTEM_PRIVATE_CORELIB
+        public static int NonRandomizedHashToInt32(byte* sourcePtr, uint length)
+        {
+            // We currently use this function only for large inputs from corelib's String.GetNonRandomizedHashCode,
+            // so we don't need the fast path for small inputs.
+            //
+            // if (length <= 16)
+            // {
+            //     return HashLength0To16(sourcePtr, length, (ulong)seed);
+            // }
+            Debug.Assert(length > 16);
+
+            ulong hash = length switch
+            {
+                <= 128 => HashLength17To128(sourcePtr, length, 0UL),
+                <= MidSizeMaxBytes => HashLength129To240(sourcePtr, length, 0UL),
+                _ => HashLengthOver240(sourcePtr, length, 0UL)
+            };
+            return unchecked((int)hash);
+        }
+#endif
 
         private static ulong HashLength0To16(byte* source, uint length, ulong seed)
         {

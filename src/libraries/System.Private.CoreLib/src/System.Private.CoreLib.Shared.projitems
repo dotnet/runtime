@@ -1531,6 +1531,12 @@
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs">
       <Link>Common\System\Threading\Tasks\TaskToAsyncResult.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\IO\Hashing\XxHash3.cs">
+      <Link>Common\System\IO\Hashing\XxHash3.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\IO\Hashing\XxHashShared.cs">
+      <Link>Common\System\IO\Hashing\XxHashShared.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsMobileLike)' != 'true' and '$(FeatureNativeAot)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Interop.HostPolicy.cs">

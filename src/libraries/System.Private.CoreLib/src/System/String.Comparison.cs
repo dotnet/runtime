@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !MONO && (TARGET_AMD64 || TARGET_ARM64)
+#define USE_XXHASH3
+#endif
+
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -827,34 +831,19 @@ namespace System
         // restructure the comparison so that for odd-length spans, we simulate the null terminator and include
         // it in the hash computation exactly as does str.GetNonRandomizedHashCode().
 
+#if USE_XXHASH3
+#if TARGET_AMD64
+        private const int XxHash3Threshold = 64;
+#else
+        // XxHash3 is less efficient on ARM64 due to the lack of 256/512-bit vectors
+        // We should revisit this if we start using SVE in the hash implementation.
+        private const int XxHash3Threshold = 128;
+#endif
+#endif
+
         internal unsafe int GetNonRandomizedHashCode()
         {
-            fixed (char* src = &_firstChar)
-            {
-                Debug.Assert(src[Length] == '\0', "src[Length] == '\\0'");
-                Debug.Assert(((int)src) % 4 == 0, "Managed string should start at 4 bytes boundary");
-
-                uint hash1 = (5381 << 16) + 5381;
-                uint hash2 = hash1;
-
-                uint* ptr = (uint*)src;
-                int length = Length;
-
-                while (length > 2)
-                {
-                    length -= 4;
-                    hash1 = (BitOperations.RotateLeft(hash1, 5) + hash1) ^ ptr[0];
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptr[1];
-                    ptr += 2;
-                }
-
-                if (length > 0)
-                {
-                    hash2 = (BitOperations.RotateLeft(hash2, 5) + hash2) ^ ptr[0];
-                }
-
-                return (int)(hash1 + (hash2 * 1566083941));
-            }
+            return GetNonRandomizedHashCode(new ReadOnlySpan<char>(ref _firstChar, _stringLength));
         }
 
         internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
@@ -871,6 +860,13 @@ namespace System
                 switch (length)
                 {
                     default:
+#if USE_XXHASH3
+                        if (length >= XxHash3Threshold)
+                        {
+                            uint byteLength = (uint)length * 2; // never overflows
+                            return System.IO.Hashing.XxHash3.NonRandomizedHashToInt32((byte*)src, byteLength);
+                        }
+#endif
                         do
                         {
                             length -= 4;

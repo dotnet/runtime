@@ -14,7 +14,9 @@ using System.Runtime.Intrinsics.X86;
 
 namespace System.IO.Hashing
 {
+#if !SYSTEM_PRIVATE_CORELIB
     /// <summary>Shared implementation of the XXH3 hash algorithm for 64-bit in <see cref="XxHash3"/> and <see cref="XxHash128"/> version.</summary>
+#endif
 #if NET
     [SkipLocalsInit]
 #endif
