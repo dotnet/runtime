@@ -317,6 +317,14 @@ namespace System.Dynamic
             return _data.Class.GetValueIndexCaseSensitive(key) >= 0;
         }
 
+        // This implementation is shared for 'IDictionary<,>.ContainsKey' and 'IReadOnlyDictionary<,>.ContainsKey'.
+        private bool ExpandoContainsKeyNoLock(string key)
+        {
+            ExpandoData data = _data;
+            int index = data.Class.GetValueIndexCaseSensitive(key);
+            return index >= 0 && data[index] != Uninitialized;
+        }
+
         // We create a non-generic type for the debug view for each different collection type
         // that uses DebuggerTypeProxy, instead of defining a generic debug view type and
         // using different instantiations. The reason for this is that support for generics
@@ -661,18 +669,14 @@ namespace System.Dynamic
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            ExpandoData data = _data;
-            int index = data.Class.GetValueIndexCaseSensitive(key);
-            return index >= 0 && data[index] != Uninitialized;
+            return ExpandoContainsKeyNoLock(key);
         }
 
         bool IReadOnlyDictionary<string, object?>.ContainsKey(string key)
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            ExpandoData data = _data;
-            int index = data.Class.GetValueIndexCaseSensitive(key);
-            return index >= 0 && data[index] != Uninitialized;
+            return ExpandoContainsKeyNoLock(key);
         }
 
         bool IDictionary<string, object?>.Remove(string key)
