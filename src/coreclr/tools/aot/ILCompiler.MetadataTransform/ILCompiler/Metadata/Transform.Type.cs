@@ -15,6 +15,8 @@ namespace ILCompiler.Metadata
 {
     internal partial class Transform<TPolicy>
     {
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018;
+
         internal EntityMap<Cts.TypeDesc, MetadataRecord> _types =
             new EntityMap<Cts.TypeDesc, MetadataRecord>(EqualityComparer<Cts.TypeDesc>.Default);
 
@@ -538,6 +540,8 @@ namespace ILCompiler.Metadata
                     result |= TypeAttributes.ExplicitLayout;
                 if (type.IsSequentialLayout)
                     result |= TypeAttributes.SequentialLayout;
+                if (type.IsExtendedLayout)
+                    result |= TypeAttributesExtendedLayout;
                 if (type.IsInterface)
                     result |= TypeAttributes.Interface;
                 if (type.IsSealed)

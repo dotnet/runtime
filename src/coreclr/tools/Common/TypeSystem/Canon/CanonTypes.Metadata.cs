@@ -29,6 +29,8 @@ namespace Internal.TypeSystem
 
         public override bool IsExplicitLayout => false;
 
+        public override bool IsExtendedLayout => false;
+
         public override ModuleDesc Module => _context.SystemModule;
 
         public override bool IsModuleType => false;

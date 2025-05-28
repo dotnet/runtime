@@ -212,6 +212,14 @@ namespace ILCompiler
                 }
             }
 
+            public override bool IsExtendedLayout
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
             public override int GetInlineArrayLength()
             {
                 Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");

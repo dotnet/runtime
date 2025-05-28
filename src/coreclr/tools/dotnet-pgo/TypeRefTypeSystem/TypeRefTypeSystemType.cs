@@ -257,5 +257,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
             throw new InvalidOperationException();
         }
+
+        public override bool IsExtendedLayout => IsExplicitLayout || IsSequentialLayout;
     }
 }

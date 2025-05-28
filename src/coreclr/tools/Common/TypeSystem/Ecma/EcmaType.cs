@@ -18,6 +18,7 @@ namespace Internal.TypeSystem.Ecma
     /// </summary>
     public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018;
         private EcmaModule _module;
         private TypeDefinitionHandle _handle;
 
@@ -578,7 +579,7 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.ExplicitLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout;
             }
         }
 
@@ -586,8 +587,13 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.SequentialLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout;
             }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get => (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
         }
 
         public override bool IsBeforeFieldInit

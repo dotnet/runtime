@@ -91,6 +91,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
