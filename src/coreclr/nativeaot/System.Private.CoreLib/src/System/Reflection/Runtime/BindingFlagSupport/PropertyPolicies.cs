@@ -33,7 +33,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
-            MethodInfo? accessorMethod = GetAccessorMethod(member);
+            MethodInfo? accessorMethod = GetMostAccessibleAccessor(member);
             if (accessorMethod == null)
             {
                 // If we got here, this is a inherited PropertyInfo that only had private accessors and is now refusing to give them out
@@ -98,6 +98,45 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
 
             return accessor;
+        }
+
+        private static MethodInfo? GetMostAccessibleAccessor(PropertyInfo property)
+        {
+            MethodInfo? getter = property.GetMethod;
+            MethodInfo? setter = property.SetMethod;
+
+            if (getter == null)
+                return setter;
+            if (setter == null)
+                return getter;
+
+            // Compare accessibility of getter and setter, returning the most accessible one
+            MethodAttributes getterAccess = getter.Attributes & MethodAttributes.MemberAccessMask;
+            MethodAttributes setterAccess = setter.Attributes & MethodAttributes.MemberAccessMask;
+
+            // Accessibility priority: Public > Family/Assembly (protected/internal) > Private
+            // Return the getter if accessibilities are equal (preserving original behavior)
+            if (IsMoreAccessible(setterAccess, getterAccess))
+                return setter;
+            else
+                return getter;
+        }
+
+        private static bool IsMoreAccessible(MethodAttributes access1, MethodAttributes access2)
+        {
+            // Define accessibility ranking
+            static int GetAccessibilityRank(MethodAttributes access) => access switch
+            {
+                MethodAttributes.Public => 4,
+                MethodAttributes.Family => 3,          // protected
+                MethodAttributes.Assembly => 3,        // internal
+                MethodAttributes.FamORAssem => 3,      // protected internal
+                MethodAttributes.FamANDAssem => 2,     // protected and internal
+                MethodAttributes.Private => 1,
+                _ => 0
+            };
+
+            return GetAccessibilityRank(access1) > GetAccessibilityRank(access2);
         }
     }
 }

@@ -239,5 +239,63 @@ namespace System.Reflection.Tests
                 TestUtils.AssertNewObjectReturnedEachTime(() => p.GetOptionalCustomModifiers());
             }
         }
+
+        [Fact]
+        public static void TestPropertiesWithNonPublicAccessors()
+        {
+            Type t = typeof(PropertyWithNonPublicAccessors).Project();
+            
+            // Get all public instance properties
+            PropertyInfo[] properties = t.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            
+            // Should include properties with public setters even if getters are private
+            Assert.Contains(properties, p => p.Name == nameof(PropertyWithNonPublicAccessors.PublicSetterPrivateGetter));
+            Assert.Contains(properties, p => p.Name == nameof(PropertyWithNonPublicAccessors.PublicGetterPublicSetter));
+            Assert.Contains(properties, p => p.Name == nameof(PropertyWithNonPublicAccessors.OnlyPublicSetter));
+            Assert.Contains(properties, p => p.Name == nameof(PropertyWithNonPublicAccessors.PublicGetterInternalSetter));
+            Assert.Contains(properties, p => p.Name == nameof(PropertyWithNonPublicAccessors.InternalGetterPublicSetter));
+            
+            // Should not include properties where both accessors are non-public
+            Assert.DoesNotContain(properties, p => p.Name == "PrivateGetterPrivateSetter");
+            Assert.DoesNotContain(properties, p => p.Name == "InternalGetterInternalSetter");
+            
+            // Verify specific property details
+            PropertyInfo publicSetterPrivateGetterProp = t.GetProperty(nameof(PropertyWithNonPublicAccessors.PublicSetterPrivateGetter))!;
+            Assert.NotNull(publicSetterPrivateGetterProp);
+            Assert.True(publicSetterPrivateGetterProp.CanWrite);
+            Assert.True(publicSetterPrivateGetterProp.CanRead); // Can read even though getter is private
+            Assert.NotNull(publicSetterPrivateGetterProp.GetSetMethod(false)); // Public setter
+            Assert.Null(publicSetterPrivateGetterProp.GetGetMethod(false)); // Private getter
+            
+            PropertyInfo onlySetterProp = t.GetProperty(nameof(PropertyWithNonPublicAccessors.OnlyPublicSetter))!;
+            Assert.NotNull(onlySetterProp);
+            Assert.True(onlySetterProp.CanWrite);
+            Assert.False(onlySetterProp.CanRead); // No getter at all
+            Assert.NotNull(onlySetterProp.GetSetMethod(false)); // Public setter
+            Assert.Null(onlySetterProp.GetGetMethod(false)); // No getter
+        }
+        
+        [Fact]
+        public static void TestPropertyVisibilityConsistentWithCoreReflection()
+        {
+            // This test ensures MetadataLoadContext behaves the same as regular reflection
+            // for properties with mixed accessor visibility
+            
+            Type regularType = typeof(PropertyWithNonPublicAccessors);
+            Type mlcType = typeof(PropertyWithNonPublicAccessors).Project();
+            
+            PropertyInfo[] regularProps = regularType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            PropertyInfo[] mlcProps = mlcType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            
+            // Same number of public properties should be found
+            Assert.Equal(regularProps.Length, mlcProps.Length);
+            
+            // Same properties should be found by name
+            string[] regularPropNames = Array.ConvertAll(regularProps, p => p.Name);
+            string[] mlcPropNames = Array.ConvertAll(mlcProps, p => p.Name);
+            Array.Sort(regularPropNames);
+            Array.Sort(mlcPropNames);
+            Assert.Equal(regularPropNames, mlcPropNames);
+        }
     }
 }
