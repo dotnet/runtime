@@ -23,6 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "opcode.h"
 #include "jitstd/algorithm.h"
+#include "minipal/time.h"
 
 /*****************************************************************************/
 
@@ -1529,7 +1530,9 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_LMUL:
+            case CORINFO_HELP_LNG2FLT:
             case CORINFO_HELP_LNG2DBL:
+            case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
             case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
@@ -2196,22 +2199,15 @@ double CycleCount::ElapsedTime()
 
 bool PerfCounter::Start()
 {
-    bool result = QueryPerformanceFrequency(&beg) != 0;
-    if (!result)
-    {
-        return result;
-    }
-    freq = (double)beg.QuadPart / 1000.0;
-    (void)QueryPerformanceCounter(&beg);
-    return result;
+    freq = (double)minipal_hires_tick_frequency() / 1000.0;
+    beg  = minipal_hires_ticks();
+    return true;
 }
 
 // Return elapsed time from Start() in millis.
 double PerfCounter::ElapsedTime()
 {
-    LARGE_INTEGER li;
-    (void)QueryPerformanceCounter(&li);
-    return (double)(li.QuadPart - beg.QuadPart) / freq;
+    return (double)(minipal_hires_ticks() - beg) / freq;
 }
 
 #endif
