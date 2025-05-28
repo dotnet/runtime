@@ -109,8 +109,19 @@ struct CloneInfo : public GuardInfo
     bool m_willClone       = false;
 };
 
+struct StoreInfo
+{
+    StoreInfo(unsigned index)
+        : m_index(index)
+        , m_connected(false)
+    {
+    }
+    unsigned m_index;
+    bool     m_connected;
+};
+
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
-typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned>               NodeToIndexMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, StoreInfo>              NodeToIndexMap;
 
 class ObjectAllocator final : public Phase
 {
@@ -118,6 +129,7 @@ class ObjectAllocator final : public Phase
     {
         OAT_NONE,
         OAT_NEWOBJ,
+        OAT_NEWOBJ_HEAP,
         OAT_NEWARR
     };
 
@@ -159,7 +171,8 @@ class ObjectAllocator final : public Phase
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
-    LocalToLocalMap     m_HeapLocalToStackLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackObjLocalMap;
+    LocalToLocalMap     m_HeapLocalToStackArrLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
     unsigned            m_stackAllocationCount;
@@ -173,9 +186,15 @@ class ObjectAllocator final : public Phase
     unsigned        m_maxPseudos;
     unsigned        m_regionsToClone;
 
-    // Struct fields
-    bool           m_trackFields;
-    NodeToIndexMap m_StoreAddressToIndexMap;
+    // Fields
+
+    bool            m_trackStructFields;
+    bool            m_trackObjectFields;
+    unsigned        m_firstFieldIndex;
+    unsigned        m_numFields;
+    NodeToIndexMap  m_StoreAddressToIndexMap;
+    LocalToLocalMap m_FieldIndexToLocalIndexMap;
+    LocalToLocalMap m_LocalIndexToFieldIndexMap;
 
     //===============================================================================
     // Methods
@@ -236,9 +255,12 @@ private:
                                                BasicBlock*          block,
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
-    void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(
-        GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
+    void                 AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void                 UpdateAncestorTypes(GenTree*              tree,
+                                             ArrayStack<GenTree*>* parentStack,
+                                             var_types             newType,
+                                             ClassLayout*          newLayout,
+                                             var_types             newFieldType);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
@@ -271,6 +293,10 @@ private:
     ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
     ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
     ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
+
+    unsigned GetFieldIndexFromLocal(unsigned lclNum);
+    unsigned GetFieldIndexFromLocalIndex(unsigned lclIndex);
+    unsigned GetLocalFromFieldIndex(unsigned fieldIndex);
 
 #ifdef DEBUG
     void DumpIndex(unsigned bvIndex);
