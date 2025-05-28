@@ -15001,14 +15001,6 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW;
     }
 
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-    if (pThread->m_hasPendingActivation)
-    {
-        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
-        return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
-    }
-#endif
-
     bool fInException = pEvalInfo->evalDuringException;
 
     // The thread has to be at a GC safe place for now, just in case the func eval causes a collection. Processing an
@@ -16780,15 +16772,6 @@ void Debugger::ExternalMethodFixupNextStep(PCODE address)
 {
     DebuggerController::DispatchExternalMethodFixup(address);
 }
-#ifdef FEATURE_SPECIAL_USER_MODE_APC
-void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
-{
-    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
-    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
-    DebuggerController::EnableSingleStep(pThread);
-    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
-}
-#endif //FEATURE_SPECIAL_USER_MODE_APC
 #endif //DACCESS_COMPILE
 
 unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)
