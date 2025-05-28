@@ -3003,6 +3003,7 @@ public:
     GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
+    GenTree* gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd);
     GenTree* gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);
     GenTree* gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd);
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
@@ -3132,6 +3133,7 @@ public:
 
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdFalseMaskByteNode(unsigned simdSize);
 #endif
 
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,
@@ -4796,6 +4798,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
+    bool impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
@@ -6158,7 +6161,10 @@ public:
     PhaseStatus fgHeadTailMerge(bool early);
     bool fgHeadMerge(BasicBlock* block, bool early);
     bool fgTryOneHeadMerge(BasicBlock* block, bool early);
+    template<typename Predicate>
+    bool gtTreeContainsCall(GenTree* tree, Predicate pred);
     bool gtTreeContainsTailCall(GenTree* tree);
+    bool gtTreeContainsAsyncCall(GenTree* tree);
     bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
 
     enum FG_RELOCATE_TYPE
@@ -6691,6 +6697,15 @@ private:
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_MASKED_HW_INTRINSICS
+#ifdef TARGET_ARM64
+    bool canMorphVectorOperandToMask(GenTree* node);
+    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
+    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
+    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
