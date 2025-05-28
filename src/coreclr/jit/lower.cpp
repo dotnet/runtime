@@ -1920,7 +1920,8 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
-        stackNode = comp->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, stackSeg.Offset, stackLayout);
+        stackNode =
+            comp->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, lcl->GetLclOffs() + stackSeg.Offset, stackLayout);
         BlockRange().InsertBefore(arg, stackNode);
 
         registersNode = comp->gtNewFieldList();
@@ -1930,7 +1931,8 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
         {
             const ABIPassingSegment& seg = abiInfo.Segment(i);
             GenTree*                 fldNode =
-                comp->gtNewLclFldNode(lcl->GetLclNum(), seg.GetRegisterType(callArg->GetSignatureLayout()), seg.Offset);
+                comp->gtNewLclFldNode(lcl->GetLclNum(), seg.GetRegisterType(callArg->GetSignatureLayout()),
+                                      lcl->GetLclOffs() + seg.Offset);
             registersNode->AsFieldList()->AddFieldLIR(comp, fldNode, seg.Offset, fldNode->TypeGet());
             BlockRange().InsertBefore(registersNode, fldNode);
         }
