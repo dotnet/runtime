@@ -1024,12 +1024,14 @@ struct WalkILOffsetsData
     DWORD prevILOffsetFound = 0;
     DWORD dwILOffsetFound = 0;
     DWORD dwCurrentNativeOffset = 0;
+    int greatestILOffsetFound = 0;
     const DWORD dwSearchNativeOffset;
 
     DWORD dwFinalILOffset = 0;
     const bool skipPrologs;
     bool skipPrologCase = false;
     bool firstCall = true;
+    bool epilogCase = false;
 };
 
 size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void *pContext)
@@ -1044,6 +1046,25 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
     {
         // This is a call instruction mapping, so we don't care about it.
         return 0;
+    }
+
+    if ((int)pOffsetMapping->ilOffset > pWalkData->greatestILOffsetFound)
+    {
+        // Calculate the greatest IL offset found so far. We use this as the IL offset for epilogs
+        pWalkData->greatestILOffsetFound = (int)pOffsetMapping->ilOffset;
+    }
+
+    if (pWalkData->epilogCase)
+    {
+        if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
+        {
+            pWalkData->dwFinalILOffset = pWalkData->greatestILOffsetFound;
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     // The general rule is that we need to find the lowest IL offset that applies to the given native offset
@@ -1084,18 +1105,13 @@ size_t WalkILOffsetsCallback(ICorDebugInfo::OffsetMapping *pOffsetMapping, void 
                 // We were searching for the IL offset, and we found it (unless we were in a PROLOG)
                 if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::EPILOG)
                 {
-                    if (pWalkData->prevILOffsetFound != ICorDebugInfo::NO_MAPPING &&
-                        pWalkData->prevILOffsetFound != ICorDebugInfo::PROLOG && 
-                        pWalkData->prevILOffsetFound != ICorDebugInfo::EPILOG)
+                    // We found we were in an EPILOG. Report the last il offset reported as part of the method.
+                    pWalkData->epilogCase = true;
+                    if (pOffsetMapping->nativeOffset == 0xFFFFFFFF)
                     {
-                        // We found a valid IL offset, so set the final IL offset to the one we found
-                        pWalkData->dwFinalILOffset = pWalkData->prevILOffsetFound;
+                        pWalkData->dwFinalILOffset = pWalkData->greatestILOffsetFound;
+                        return 1;
                     }
-                    else
-                    {
-                        pWalkData->dwFinalILOffset = 0;
-                    }
-                    return 1;
                 }
                 else if (pWalkData->dwILOffsetFound == (DWORD)ICorDebugInfo::NO_MAPPING)
                 {
