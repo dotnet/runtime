@@ -1220,13 +1220,9 @@ CALL_TARGET_IP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
 
-                    // FIXME: Duplicated code from CALL_INTERP_SLOT
                     size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
-                    MethodDesc *pMD = nullptr;
-                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
-                    {
-                        pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
-                    }
+                    assert(targetMethod & INTERP_METHOD_HANDLE_TAG);
+                    MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
 
                     // If we are constructing a type with a component size (i.e. a string) its constructor is a special
                     //  fcall that is basically a static method that returns the new instance.
