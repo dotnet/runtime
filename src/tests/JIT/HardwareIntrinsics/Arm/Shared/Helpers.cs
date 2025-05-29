@@ -9833,6 +9833,546 @@ namespace JIT.HardwareIntrinsics.Arm
             return ConditionalExtract(op1, op2, op3, /* after = */ false, /* replicate = */ true);
         }
 
+        private static byte[] Extract(byte[] op1, byte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            byte[] result = new byte[op1.Length];
+            Array.Fill<byte>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static byte ExtractScalar(byte[] op1, byte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static byte[] ExtractAfterLastActiveElement(byte[] op1, byte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static byte ExtractAfterLastActiveElementScalar(byte[] op1, byte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static byte[] ExtractLastActiveElement(byte[] op1, byte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static byte ExtractLastActiveElementScalar(byte[] op1, byte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static short[] Extract(short[] op1, short[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            short[] result = new short[op1.Length];
+            Array.Fill<short>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static short ExtractScalar(short[] op1, short[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static short[] ExtractAfterLastActiveElement(short[] op1, short[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static short ExtractAfterLastActiveElementScalar(short[] op1, short[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static short[] ExtractLastActiveElement(short[] op1, short[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static short ExtractLastActiveElementScalar(short[] op1, short[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static int[] Extract(int[] op1, int[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            int[] result = new int[op1.Length];
+            Array.Fill<int>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static int ExtractScalar(int[] op1, int[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static int[] ExtractAfterLastActiveElement(int[] op1, int[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static int ExtractAfterLastActiveElementScalar(int[] op1, int[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static int[] ExtractLastActiveElement(int[] op1, int[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static int ExtractLastActiveElementScalar(int[] op1, int[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static long[] Extract(long[] op1, long[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            long[] result = new long[op1.Length];
+            Array.Fill<long>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static long ExtractScalar(long[] op1, long[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static long[] ExtractAfterLastActiveElement(long[] op1, long[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static long ExtractAfterLastActiveElementScalar(long[] op1, long[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static long[] ExtractLastActiveElement(long[] op1, long[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static long ExtractLastActiveElementScalar(long[] op1, long[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static sbyte[] Extract(sbyte[] op1, sbyte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            sbyte[] result = new sbyte[op1.Length];
+            Array.Fill<sbyte>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static sbyte ExtractScalar(sbyte[] op1, sbyte[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static sbyte[] ExtractAfterLastActiveElement(sbyte[] op1, sbyte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static sbyte ExtractAfterLastActiveElementScalar(sbyte[] op1, sbyte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static sbyte[] ExtractLastActiveElement(sbyte[] op1, sbyte[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static sbyte ExtractLastActiveElementScalar(sbyte[] op1, sbyte[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static ushort[] Extract(ushort[] op1, ushort[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            ushort[] result = new ushort[op1.Length];
+            Array.Fill<ushort>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static ushort ExtractScalar(ushort[] op1, ushort[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static ushort[] ExtractAfterLastActiveElement(ushort[] op1, ushort[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static ushort ExtractAfterLastActiveElementScalar(ushort[] op1, ushort[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static ushort[] ExtractLastActiveElement(ushort[] op1, ushort[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static ushort ExtractLastActiveElementScalar(ushort[] op1, ushort[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static uint[] Extract(uint[] op1, uint[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            uint[] result = new uint[op1.Length];
+            Array.Fill<uint>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static uint ExtractScalar(uint[] op1, uint[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static uint[] ExtractAfterLastActiveElement(uint[] op1, uint[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static uint ExtractAfterLastActiveElementScalar(uint[] op1, uint[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static uint[] ExtractLastActiveElement(uint[] op1, uint[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static uint ExtractLastActiveElementScalar(uint[] op1, uint[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static ulong[] Extract(ulong[] op1, ulong[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            ulong[] result = new ulong[op1.Length];
+            Array.Fill<ulong>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static ulong ExtractScalar(ulong[] op1, ulong[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static ulong[] ExtractAfterLastActiveElement(ulong[] op1, ulong[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static ulong ExtractAfterLastActiveElementScalar(ulong[] op1, ulong[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static ulong[] ExtractLastActiveElement(ulong[] op1, ulong[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static ulong ExtractLastActiveElementScalar(ulong[] op1, ulong[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static float[] Extract(float[] op1, float[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            float[] result = new float[op1.Length];
+            Array.Fill<float>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static float ExtractScalar(float[] op1, float[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static float[] ExtractAfterLastActiveElement(float[] op1, float[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static float ExtractAfterLastActiveElementScalar(float[] op1, float[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static float[] ExtractLastActiveElement(float[] op1, float[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static float ExtractLastActiveElementScalar(float[] op1, float[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
+        private static double[] Extract(double[] op1, double[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            double[] result = new double[op1.Length];
+            Array.Fill<double>(result, 0, 0, op1.Length);
+            result[0] = op2[pos];
+
+            return result;
+        }
+
+        private static double ExtractScalar(double[] op1, double[] op2, bool after)
+        {
+            int pos = LastActiveElement(op1);
+            if (after)
+            {
+                pos++;
+                if (pos == op1.Length)
+                {
+                    pos = 0;
+                }
+            }
+
+            return op2[pos];
+        }
+
+        public static double[] ExtractAfterLastActiveElement(double[] op1, double[] op2)
+        {
+            return Extract(op1, op2, /* after = */ true);
+        }
+
+        public static double ExtractAfterLastActiveElementScalar(double[] op1, double[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ true);
+        }
+
+        public static double[] ExtractLastActiveElement(double[] op1, double[] op2)
+        {
+            return Extract(op1, op2, /* after = */ false);
+        }
+
+        public static double ExtractLastActiveElementScalar(double[] op1, double[] op2)
+        {
+            return ExtractScalar(op1, op2, /* after = */ false);
+        }
+
         public static T BitwiseClearXor<T>(T op1, T op2, T op3) where T : IBitwiseOperators<T, T, T>
         {
             return op1 ^ (op2 & ~op3);
