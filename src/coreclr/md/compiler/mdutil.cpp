@@ -16,6 +16,7 @@
 #include "mdcommon.h"
 #include "importhelper.h"
 #include "sstring.h"
+#include <minipal/file.h>
 
 #include <rwutil.h>
 
@@ -242,11 +243,12 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
         // The cache is locked for read, so the list will not change.
 
         // Figure out the size and timestamp of this file
-        WIN32_FILE_ATTRIBUTE_DATA faData;
-        if (!WszGetFileAttributesEx(szName, GetFileExInfoStandard, &faData))
+        minipal_file_attr_t attr;
+        if (!minipal_file_get_attributes_utf16(szName, &attr))
             return E_FAIL;
-        dwLowFileSize = faData.nFileSizeLow;
-        dwLowFileTime = faData.ftLastWriteTime.dwLowDateTime;
+
+        dwLowFileSize = (DWORD)attr.size;
+        dwLowFileTime = (DWORD)attr.lastWriteTime;
 
         // Check the hash first.
         ixHash = HashFileName(szName);

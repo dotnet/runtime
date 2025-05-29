@@ -23,6 +23,7 @@
 #include "pedecoder.h"
 
 #include <log.h>
+#include <minipal/file.h>
 
 //*****************************************************************************
 // Checks the given storage object to see if it is an NT PE image.
@@ -412,11 +413,11 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     // If this was a file...
     if (pbData == NULL)
     {
-        WIN32_FILE_ATTRIBUTE_DATA faData;
-        if (!WszGetFileAttributesEx(szDatabase, GetFileExInfoStandard, &faData))
+        minipal_file_attr_t attr;
+        if (!minipal_file_get_attributes_utf16(szDatabase, &attr))
             IfFailGo(E_FAIL);
-        m_dwDatabaseLFS = faData.nFileSizeLow;
-        m_dwDatabaseLFT = faData.ftLastWriteTime.dwLowDateTime;
+        m_dwDatabaseLFS = (DWORD)attr.size;
+        m_dwDatabaseLFT = (DWORD)attr.lastWriteTime;
     }
 
 ErrExit:
