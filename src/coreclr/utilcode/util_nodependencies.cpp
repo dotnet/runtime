@@ -45,7 +45,7 @@ void InitRunningOnVersionStatus ()
     else
     {
         // The current platform isn't supported. Display a message to this effect and exit.
-        fprintf(stderr, "Platform not supported: Windows 7 is the minimum supported version\n");
+        minipal_log_print_error("Platform not supported: Windows 7 is the minimum supported version\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
 #endif // HOST_WINDOWS

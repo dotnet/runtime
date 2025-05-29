@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="propertyName">The property in the option object which contains an error.</param>
         public void AddError(string error, string? propertyName = null)
         {
-            ThrowHelper.ThrowIfNull(error);
+            ArgumentNullException.ThrowIfNull(error);
             Errors.Add(propertyName is null ? error : $"Property {propertyName}: {error}");
         }
 
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="result">The instance to consume the errors from.</param>
         public void AddResult(ValidateOptionsResult result)
         {
-            ThrowHelper.ThrowIfNull(result);
+            ArgumentNullException.ThrowIfNull(result);
 
             if (result.Failed)
             {

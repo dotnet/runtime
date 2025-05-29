@@ -13,7 +13,11 @@
 #include "virtualcallstub.h"
 #include "jitinterface.h"
 #include "ecall.h"
+#include "writebarriermanager.h"
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -765,9 +769,11 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
 
      pRD->pCurrentContext->X0 = m_Args->X0;
      pRD->pCurrentContext->X1 = m_Args->X1;
+     pRD->pCurrentContext->X2 = m_Args->X2;
 
      pRD->volatileCurrContextPointers.X0 = &m_Args->X0;
      pRD->volatileCurrContextPointers.X1 = &m_Args->X1;
+     pRD->volatileCurrContextPointers.X2 = &m_Args->X2;
 
      pRD->pCurrentContext->X19 = m_Args->X19;
      pRD->pCurrentContext->X20 = m_Args->X20;
@@ -835,29 +841,14 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 #endif // FEATURE_COMINTEROP
 
 #if !defined(DACCESS_COMPILE)
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
-
-extern "C" void STDCALL JIT_PatchedCodeStart();
-extern "C" void STDCALL JIT_PatchedCodeLast();
-
-static void UpdateWriteBarrierState(bool skipEphemeralCheck)
-{
-    BYTE *writeBarrierCodeStart = GetWriteBarrierCodeLocation((void*)JIT_PatchedCodeStart);
-    BYTE *writeBarrierCodeStartRW = writeBarrierCodeStart;
-    ExecutableWriterHolderNoLog<BYTE> writeBarrierWriterHolder;
-    if (IsWriteBarrierCopyEnabled())
-    {
-        writeBarrierWriterHolder.AssignExecutableWriterHolder(writeBarrierCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
-        writeBarrierCodeStartRW = writeBarrierWriterHolder.GetRW();
-    }
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap(), writeBarrierCodeStartRW - writeBarrierCodeStart);
-}
 
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
+
+    g_WriteBarrierManager.Initialize();
 
     // Allocation helpers, faster but non-logging
     if (!((TrackAllocationsEnabled()) ||
@@ -873,18 +864,12 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
         }
     }
-
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
 
-
-#else
-void UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE)
 
 #ifdef TARGET_WINDOWS
@@ -1004,37 +989,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
 {
     return EXCEPTION_CONTINUE_SEARCH;
 }
-
-void FlushWriteBarrierInstructionCache()
-{
-    // this wouldn't be called in arm64, just to comply with gchelpers.h
-}
-
-int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-
-int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-
-int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
-{
-    UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
-    return SWB_PASS;
-}
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
@@ -1447,7 +1401,7 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -1455,6 +1409,15 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
+
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

@@ -25,6 +25,10 @@
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
     LIMITED_METHOD_CONTRACT;
@@ -335,7 +339,6 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->Rsi = NULL;
     pRD->pCurrentContextPointers->Rdi = NULL;
 #endif
-    pRD->pCurrentContextPointers->Rcx = NULL;
 #ifdef UNIX_AMD64_ABI
     pRD->pCurrentContextPointers->Rdx = (PULONG64)&m_Args->Rdx;
 #else // UNIX_AMD64_ABI
@@ -347,18 +350,9 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
     pRD->pCurrentContextPointers->R11 = NULL;
 
     pRD->pCurrentContextPointers->Rax = (PULONG64)&m_Args->Rax;
+    pRD->pCurrentContextPointers->Rcx = (PULONG64)&m_Args->Rcx;
 
     SyncRegDisplayToCurrentContext(pRD);
-
-/*
-    // This only describes the top-most frame
-    pRD->pContext = NULL;
-
-
-    pRD->PCTAddr = dac_cast<TADDR>(m_Args) + offsetof(HijackArgs, Rip);
-    //pRD->pPC  = PTR_SLOT(pRD->PCTAddr);
-    pRD->SP   = (ULONG64)(pRD->PCTAddr + sizeof(TADDR));
-*/
 }
 #endif // FEATURE_HIJACK
 
@@ -694,7 +688,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
 
 #define DYNAMIC_HELPER_ALIGNMENT sizeof(TADDR)
 
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+#define BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     SIZE_T cb = size; \
     SIZE_T cbAligned = ALIGN_UP(cb, DYNAMIC_HELPER_ALIGNMENT); \
     BYTE * pStartRX = (BYTE *)(void*)pAllocator->GetDynamicHelpersHeap()->AllocAlignedMem(cbAligned, DYNAMIC_HELPER_ALIGNMENT); \
@@ -702,6 +696,14 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     BYTE * pStart = startWriterHolder.GetRW(); \
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
+
+#ifdef FEATURE_PERFMAP
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) \
+    BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
+    PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
+#else
+#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
+#endif
 
 #define END_DYNAMIC_HELPER_EMIT() \
     _ASSERTE(pStart + cb == p); \

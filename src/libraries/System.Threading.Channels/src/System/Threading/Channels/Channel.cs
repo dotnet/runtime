@@ -17,10 +17,7 @@ namespace System.Threading.Channels
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateUnbounded<T>(UnboundedChannelOptions options)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             if (options.SingleReader)
             {
@@ -64,10 +61,7 @@ namespace System.Threading.Channels
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateBounded<T>(BoundedChannelOptions options, Action<T>? itemDropped)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
 
             return new BoundedChannel<T>(options.Capacity, options.FullMode, !options.AllowSynchronousContinuations, itemDropped);
         }

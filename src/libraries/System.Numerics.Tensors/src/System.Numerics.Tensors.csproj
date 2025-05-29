@@ -19,20 +19,8 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorHelpers.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.T.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
-    <Compile Include="System\NIndex.cs" />
-    <Compile Include="System\NRange.cs" />
+    <Compile Include="System\Buffers\NIndex.cs" />
+    <Compile Include="System\Buffers\NRange.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IAggregationOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBinaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IBooleanUnaryOperator.cs" />
@@ -44,6 +32,14 @@
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToFourOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryTwoToOneOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ITensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Tensor_1.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorOperation.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acos.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Acosh.cs" />
@@ -170,6 +166,9 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.TrailingZeroCount.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Truncate.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Xor.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpan.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">

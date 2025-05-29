@@ -224,11 +224,15 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
 
-add_library(coreclrpal
-  STATIC
+add_library(coreclrpal_objects
+  OBJECT
   ${SOURCES}
   ${ARCH_SOURCES}
   ${PLATFORM_SOURCES}
+)
+
+add_library(coreclrpal STATIC
+  $<TARGET_OBJECTS:coreclrpal_objects>
   ${LIBUNWIND_OBJECTS}
 )
 

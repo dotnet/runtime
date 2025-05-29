@@ -698,7 +698,9 @@ namespace System.Net.Sockets
             // Delegate to the actual implementation.  The returned Task is unused and ignored, as the whole body is surrounded
             // by a try/catch.  Thus we ignore the result.  We avoid an "async void" method so as to skip the implicit SynchronizationContext
             // interactions async void methods entail.
+#pragma warning disable CA2025
             _ = Core(internalArgs, addressesTask, endPoint.Port, socketType, protocolType, cancellationToken);
+#pragma warning restore
 
             // Determine whether the async operation already completed and stored the results into `this`.
             // If we reached this point and the operation hasn't yet stored the results, then it's considered

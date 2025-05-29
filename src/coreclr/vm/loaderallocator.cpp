@@ -70,6 +70,10 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
+#ifdef FEATURE_INTERPRETER
+    m_pLastUsedInterpreterCodeHeap = NULL;
+    m_pLastUsedInterpreterDynamicCodeHeap = NULL;
+#endif // FEATURE_INTERPRETER
     m_pJumpStubCache = NULL;
     m_IsCollectible = collectible;
 
@@ -370,12 +374,12 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 LoaderAllocator * pLoaderAllocator = pAssembly->GetLoaderAllocator();
                 if (pLoaderAllocator->IsCollectible())
                 {
-                    printf("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
+                    minipal_log_print_info("LA %p ReferencesTo %d\n", pLoaderAllocator, pLoaderAllocator->m_cReferences);
                     LoaderAllocatorSet::Iterator iter = pLoaderAllocator->m_LoaderAllocatorReferences.Begin();
                     while (iter != pLoaderAllocator->m_LoaderAllocatorReferences.End())
                     {
                         LoaderAllocator * pAllocator = *iter;
-                        printf("LARefTo: %p\n", pAllocator);
+                        minipal_log_print_info("LARefTo: %p\n", pAllocator);
                         iter++;
                     }
                 }
@@ -1164,7 +1168,7 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
-                                                                      UnlockedLoaderHeap::HeapKind::Executable
+                                                                      LoaderHeapImplementationKind::Executable
                                                                       );
         initReservedMem += dwExecutableHeapReserveSize;
     }
@@ -1197,39 +1201,29 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       UnlockedLoaderHeap::HeapKind::Executable);
+                                                       LoaderHeapImplementationKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
 
-    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                           2 * GetStubCodePageSize(),
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) InterleavedLoaderHeap(
                                                                            &m_stubPrecodeRangeList,
-                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
-                                                                           StubPrecode::GenerateCodePage,
-                                                                           StubPrecode::CodeSize);
+                                                                           &s_stubPrecodeHeapConfig);
 
 #if defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
     if (IsCollectible())
     {
         m_pDynamicHelpersStubHeap = m_pNewStubPrecodeHeap;
     }
-    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                               2 * GetStubCodePageSize(),
+    m_pDynamicHelpersStubHeap = new (&m_DynamicHelpersHeapInstance) InterleavedLoaderHeap(
                                                                                &m_dynamicHelpersRangeList,
-                                                                               UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                                false /* fUnlocked */,
-                                                                               StubPrecode::GenerateCodePage,
-                                                                               StubPrecode::CodeSize);
+                                                                               &s_stubPrecodeHeapConfig);
 #endif // defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS) && defined(FEATURE_READYTORUN)
 
-    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
-                                                                       2 * GetStubCodePageSize(),
-                                                                       &m_fixupPrecodeRangeList,
-                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) InterleavedLoaderHeap(&m_fixupPrecodeRangeList,
                                                                        false /* fUnlocked */,
-                                                                       FixupPrecode::GenerateCodePage,
-                                                                       FixupPrecode::CodeSize);
+                                                                       &s_fixupStubPrecodeHeapConfig);
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;
@@ -1410,7 +1404,7 @@ void LoaderAllocator::Terminate()
 
     if (m_pFixupPrecodeHeap != NULL)
     {
-        m_pFixupPrecodeHeap->~LoaderHeap();
+        m_pFixupPrecodeHeap->~InterleavedLoaderHeap();
         m_pFixupPrecodeHeap = NULL;
     }
 
@@ -1420,7 +1414,7 @@ void LoaderAllocator::Terminate()
         {
             if (m_pDynamicHelpersStubHeap != m_pNewStubPrecodeHeap)
             {
-                m_pDynamicHelpersStubHeap->~LoaderHeap();
+                m_pDynamicHelpersStubHeap->~InterleavedLoaderHeap();
             }
             m_pDynamicHelpersStubHeap = NULL;
         }
@@ -1435,7 +1429,7 @@ void LoaderAllocator::Terminate()
 
     if (m_pNewStubPrecodeHeap != NULL)
     {
-        m_pNewStubPrecodeHeap->~LoaderHeap();
+        m_pNewStubPrecodeHeap->~InterleavedLoaderHeap();
         m_pNewStubPrecodeHeap = NULL;
     }
 

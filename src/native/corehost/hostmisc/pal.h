@@ -274,6 +274,7 @@ namespace pal
     // Fullpath resolves a fully-qualified path to the target. It may resolve through symlinks, depending on platform.
     bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
+    bool is_directory(const pal::string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
     void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
     void readdir(const string_t& path, std::vector<string_t>* list);

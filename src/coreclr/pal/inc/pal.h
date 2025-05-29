@@ -100,7 +100,6 @@ extern bool g_arm64_atomics_present;
 /******************* ABI-specific glue *******************************/
 
 #define MAX_PATH 260
-#define _MAX_PATH 260
 #define _MAX_DRIVE  3   /* max. length of drive component */
 #define _MAX_DIR    256 /* max. length of path component */
 #define _MAX_FNAME  256 /* max. length of file name component */
@@ -111,9 +110,7 @@ extern bool g_arm64_atomics_present;
 #define MAX_PATH_FNAME MAX_PATH
 #define MAX_LONGPATH   1024  /* max. length of full pathname */
 
-#define MAXSHORT      0x7fff
 #define MAXLONG       0x7fffffff
-#define MAXCHAR       0x7f
 #define MAXDWORD      0xffffffff
 
 //  Sorting IDs.
@@ -419,7 +416,6 @@ PAL_PerfJitDump_Finish();
 #define MB_OKCANCEL             0x00000001L
 #define MB_ABORTRETRYIGNORE     0x00000002L
 
-#define MB_ICONQUESTION         0x00000020L
 #define MB_ICONEXCLAMATION      0x00000030L
 
 #define MB_TASKMODAL            0x00002000L
@@ -1520,22 +1516,22 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 
     struct
     {
-        DWORD64 Egpr16;
-        DWORD64 Egpr17;
-        DWORD64 Egpr18;
-        DWORD64 Egpr19;
-        DWORD64 Egpr20;
-        DWORD64 Egpr21;
-        DWORD64 Egpr22;
-        DWORD64 Egpr23;
-        DWORD64 Egpr24;
-        DWORD64 Egpr25;
-        DWORD64 Egpr26;
-        DWORD64 Egpr27;
-        DWORD64 Egpr28;
-        DWORD64 Egpr29;
-        DWORD64 Egpr30;
-        DWORD64 Egpr31;
+        DWORD64 R16;
+        DWORD64 R17;
+        DWORD64 R18;
+        DWORD64 R19;
+        DWORD64 R20;
+        DWORD64 R21;
+        DWORD64 R22;
+        DWORD64 R23;
+        DWORD64 R24;
+        DWORD64 R25;
+        DWORD64 R26;
+        DWORD64 R27;
+        DWORD64 R28;
+        DWORD64 R29;
+        DWORD64 R30;
+        DWORD64 R31;
     };
 
 } CONTEXT, *PCONTEXT, *LPCONTEXT;
@@ -2914,11 +2910,6 @@ FlushInstructionCache(
 #define MAX_LEADBYTES         12
 #define MAX_DEFAULTCHAR       2
 
-PALIMPORT
-UINT
-PALAPI
-GetACP(void);
-
 typedef struct _cpinfo {
     UINT MaxCharSize;
     BYTE DefaultChar[MAX_DEFAULTCHAR];
@@ -3144,30 +3135,6 @@ RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
     IN DWORD dwFlags);
-
-PALIMPORT
-DWORD
-PALAPI
-GetTickCount();
-
-PALIMPORT
-ULONGLONG
-PALAPI
-GetTickCount64();
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceCounter(
-    OUT LARGE_INTEGER *lpPerformanceCount
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-QueryPerformanceFrequency(
-    OUT LARGE_INTEGER *lpFrequency
-    );
 
 PALIMPORT
 BOOL
@@ -3924,29 +3891,6 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 #define ERANGE          34
 #endif
 
-/****************PAL Perf functions for PInvoke*********************/
-#if PAL_PERF
-PALIMPORT
-VOID
-PALAPI
-PAL_EnableProcessProfile();
-
-PALIMPORT
-VOID
-PALAPI
-PAL_DisableProcessProfile();
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsProcessProfileEnabled();
-
-PALIMPORT
-INT64
-PALAPI
-PAL_GetCpuTickCount();
-#endif // PAL_PERF
-
 /******************* PAL functions for exceptions *******/
 
 #ifdef __cplusplus
@@ -4093,7 +4037,6 @@ public:
 
 typedef BOOL (*PHARDWARE_EXCEPTION_HANDLER)(PAL_SEHException* ex);
 typedef BOOL (*PHARDWARE_EXCEPTION_SAFETY_CHECK_FUNCTION)(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord);
-typedef VOID (*PTERMINATION_REQUEST_HANDLER)(int terminationExitCode);
 typedef DWORD (*PGET_GCMARKER_EXCEPTION_CODE)(LPVOID ip);
 
 PALIMPORT
@@ -4115,12 +4058,6 @@ PALAPI
 PAL_ThrowExceptionFromContext(
     IN CONTEXT* context,
     IN PAL_SEHException* ex);
-
-PALIMPORT
-VOID
-PALAPI
-PAL_SetTerminationRequestHandler(
-    IN PTERMINATION_REQUEST_HANDLER terminationRequestHandler);
 
 PALIMPORT
 VOID

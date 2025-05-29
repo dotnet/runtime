@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <ItemGroup>

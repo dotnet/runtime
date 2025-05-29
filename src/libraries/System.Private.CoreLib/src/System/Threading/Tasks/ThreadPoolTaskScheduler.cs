@@ -114,11 +114,5 @@ namespace System.Threading.Tasks
         {
             ThreadPool.NotifyWorkItemProgress();
         }
-
-        /// <summary>
-        /// This is the only scheduler that returns false for this property, indicating that the task entry codepath is unsafe (CAS free)
-        /// since we know that the underlying scheduler already takes care of atomic transitions from queued to non-queued.
-        /// </summary>
-        internal override bool RequiresAtomicStartTransition => false;
     }
 }

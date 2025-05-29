@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void Algorithms_Equal(MLKemAlgorithm algorithm)
         {
             Assert.True(algorithm.Equals(algorithm), nameof(algorithm.Equals));
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(MLKemAlgorithms))]
+        [MemberData(nameof(MLKemTestData.MLKemAlgorithms), MemberType = typeof(MLKemTestData))]
         public static void Algorithms_GetHashCode(MLKemAlgorithm algorithm)
         {
             Assert.Equal(algorithm.Name.GetHashCode(), algorithm.GetHashCode());
@@ -56,19 +56,6 @@ namespace System.Security.Cryptography.Tests
             Assert.True(MLKemAlgorithm.MLKem512 != MLKemAlgorithm.MLKem768, "MLKemAlgorithm.MLKem512 != MLKemAlgorithm.MLKem768");
             Assert.True(MLKemAlgorithm.MLKem768 != MLKemAlgorithm.MLKem1024, "MLKemAlgorithm.MLKem768 != MLKemAlgorithm.MLKem1024");
             Assert.True(MLKemAlgorithm.MLKem1024 != MLKemAlgorithm.MLKem512, "MLKemAlgorithm.MLKem1024 != MLKemAlgorithm.MLKem512");
-        }
-
-        public static IEnumerable<object[]> MLKemAlgorithms
-        {
-            get
-            {
-                return
-                [
-                    [ MLKemAlgorithm.MLKem512 ],
-                    [ MLKemAlgorithm.MLKem768 ],
-                    [ MLKemAlgorithm.MLKem1024 ],
-                ];
-            }
         }
     }
 }

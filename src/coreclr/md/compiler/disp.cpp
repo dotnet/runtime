@@ -308,7 +308,7 @@ HRESULT Disp::OpenRawScopeOnMemory(        // Return code.
     IfFailGo(pMeta->SetOption(&m_OptionValue));
 
 
-    PREFIX_ASSUME(pMeta != NULL);
+    _ASSERTE(pMeta != NULL);
     // Always initialize the RegMeta's stgdb.
     IfFailGo(pMeta->OpenExistingMD(0 /* szFileName */, const_cast<void*>(pData), cbData, dwOpenFlags));
 
@@ -518,7 +518,7 @@ HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
     IfFailGo(pMeta->SetOption(&m_OptionValue));
 
 
-    PREFIX_ASSUME(pMeta != NULL);
+    _ASSERTE(pMeta != NULL);
     // Always initialize the RegMeta's stgdb.
     // TODO
     IfFailGo(pMeta->OpenExistingMD(pDataSource, dwOpenFlags));

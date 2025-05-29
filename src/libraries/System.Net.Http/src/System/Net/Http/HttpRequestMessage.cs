@@ -141,10 +141,10 @@ namespace System.Net.Http
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
+            ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[512]);
 
             sb.Append("Method: ");
-            sb.Append(_method);
+            sb.Append(_method.ToString());
 
             sb.Append(", RequestUri: '");
             if (_requestUri is null)
@@ -153,17 +153,18 @@ namespace System.Net.Http
             }
             else
             {
-                sb.Append($"{_requestUri}");
+                sb.AppendSpanFormattable(_requestUri);
             }
 
             sb.Append("', Version: ");
-            sb.Append(_version);
+            sb.AppendSpanFormattable(_version);
 
             sb.Append(", Content: ");
             sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
 
-            sb.AppendLine(", Headers:");
-            HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
+            sb.Append(", Headers:");
+            sb.Append(Environment.NewLine);
+            HeaderUtilities.DumpHeaders(ref sb, _headers, _content?.Headers);
 
             return sb.ToString();
         }
