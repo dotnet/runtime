@@ -1188,9 +1188,11 @@ namespace System.IO
             fileLength = 0; // improve the test coverage for InternalReadAllBytesUnknownLengthAsync
 #endif
 
+#pragma warning disable CA2025
             return fileLength > 0 ?
                 InternalReadAllBytesAsync(sfh, (int)fileLength, cancellationToken) :
                 InternalReadAllBytesUnknownLengthAsync(sfh, cancellationToken);
+#pragma warning restore
         }
 
         private static async Task<byte[]> InternalReadAllBytesAsync(SafeFileHandle sfh, int count, CancellationToken cancellationToken)
@@ -1518,9 +1520,9 @@ namespace System.IO
                 return;
             }
 
-            int bytesNeeded = preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize));
+            int bytesNeeded = checked(preambleSize + encoding.GetMaxByteCount(Math.Min(contents.Length, ChunkSize)));
             byte[]? rentedBytes = null;
-            Span<byte> bytes = bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
+            Span<byte> bytes = (uint)bytesNeeded <= 1024 ? stackalloc byte[1024] : (rentedBytes = ArrayPool<byte>.Shared.Rent(bytesNeeded));
 
             try
             {

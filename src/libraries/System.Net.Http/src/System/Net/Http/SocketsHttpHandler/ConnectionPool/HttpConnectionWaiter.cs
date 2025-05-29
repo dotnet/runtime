@@ -19,13 +19,17 @@ namespace System.Net.Http
 
         public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled || Activity.Current?.Source == DiagnosticsHandler.s_activitySource
+            bool withTelemetry = HttpTelemetry.Log.IsEnabled()
+                                || (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled && pool.Settings._metrics!.RequestsQueueDuration.Enabled)
+                                || (GlobalHttpSettings.DiagnosticsHandler.EnableActivityPropagation && Activity.Current?.Source == DiagnosticsHandler.s_activitySource);
+            return withTelemetry
                 ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                 : WaitWithCancellationAsync(async, requestCancellationToken);
         }
 
         private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
+            // The HTTP/3 connection waiting span should include the time spent waiting for an available QUIC stream, therefore H3 telemetry is implemented elsewhere.
             Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
             long startingTimestamp = Stopwatch.GetTimestamp();
@@ -42,14 +46,19 @@ namespace System.Net.Http
             }
             finally
             {
-                TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
-                int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
-
-                pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
-
-                if (HttpTelemetry.Log.IsEnabled())
+                if (HttpTelemetry.Log.IsEnabled() || GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
                 {
-                    HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
+                    int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
+                    if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
+                    {
+                        pool.Settings._metrics!.RequestLeftQueue(request, pool, duration, versionMajor);
+                    }
+
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
+                    }
                 }
             }
         }

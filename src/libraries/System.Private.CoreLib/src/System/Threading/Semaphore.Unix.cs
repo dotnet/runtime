@@ -10,8 +10,22 @@ namespace System.Threading
 {
     public sealed partial class Semaphore
     {
-        private void CreateSemaphoreCore(int initialCount, int maximumCount, string? name, out bool createdNew)
+        private void CreateSemaphoreCore(int initialCount, int maximumCount)
         {
+            ValidateArguments(initialCount, maximumCount);
+            SafeWaitHandle = WaitSubsystem.NewSemaphore(initialCount, maximumCount);
+        }
+
+#pragma warning disable IDE0060 // Unused parameter
+        private void CreateSemaphoreCore(
+            int initialCount,
+            int maximumCount,
+            string? name,
+            NamedWaitHandleOptionsInternal options,
+            out bool createdNew)
+        {
+            ValidateArguments(initialCount, maximumCount);
+
             if (name != null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
@@ -20,8 +34,12 @@ namespace System.Threading
             SafeWaitHandle = WaitSubsystem.NewSemaphore(initialCount, maximumCount);
             createdNew = true;
         }
+#pragma warning restore IDE0060
 
-        private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
+        private static OpenExistingResult OpenExistingWorker(
+            string name,
+            NamedWaitHandleOptionsInternal options,
+            out Semaphore? result)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
         }

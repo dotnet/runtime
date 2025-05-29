@@ -410,12 +410,7 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        if (!SharedMemoryManager::StaticInitialize())
-        {
-            ERROR("Shared memory static initialization failed!\n");
-            palError = ERROR_PALINIT_SHARED_MEMORY_MANAGER;
-            goto CLEANUP1;
-        }
+        SharedMemoryManager::StaticInitialize();
 
         //
         // Initialize global process data
@@ -543,17 +538,6 @@ Initialize(
         // InitializeProcessCommandLine took ownership of this memory.
         command_line = nullptr;
 
-#ifdef PAL_PERF
-        // Initialize the Profiling structure
-        if(FALSE == PERFInitialize(command_line, exe_path))
-        {
-            ERROR("Performance profiling initial failed\n");
-            palError = ERROR_PALINIT_PERF;
-            goto CLEANUP2;
-        }
-        PERFAllocThreadInfo();
-#endif
-
         if (!LOADSetExeName(exe_path))
         {
             ERROR("Unable to set exe name\n");
@@ -607,6 +591,7 @@ Initialize(
             }
         }
 
+#ifndef __wasm__
         if (flags & PAL_INITIALIZE_SYNC_THREAD)
         {
             //
@@ -619,7 +604,7 @@ Initialize(
                 goto CLEANUP13;
             }
         }
-
+#endif
         /* initialize structured exception handling stuff (signals, etc) */
         if (FALSE == SEHInitialize(pThread, flags))
         {
@@ -685,15 +670,6 @@ CLEANUP0a:
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);
 done:
-#ifdef PAL_PERF
-    if( retval == 0)
-    {
-         PERFEnableProcessProfile();
-         PERFEnableThreadProfile(FALSE);
-         PERFCalibrate("Overhead of PERF entry/exit");
-    }
-#endif
-
     InternalLeaveCriticalSection(pThread, init_critsec);
 
     if (fFirstTimeInit && 0 == retval)
@@ -949,6 +925,10 @@ Return value:
 --*/
 static BOOL INIT_IncreaseDescriptorLimit(void)
 {
+#ifdef __wasm__
+    // WebAssembly cannot set limits
+    return TRUE;
+#endif
 #ifndef DONT_SET_RLIMIT_NOFILE
     struct rlimit rlp;
     int result;

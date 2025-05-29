@@ -4,6 +4,8 @@
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
 .assembly ASSEMBLY_NAME { }
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .class public Test_badldsfld extends [mscorlib]System.Object
 {
 .field int32 i
@@ -14,9 +16,12 @@ ret
 }
 .method public static int32 Main()
 {
-.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-    01 00 00 00
-)
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = {}
+.custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+    string('https://github.com/dotnet/runtime/issues/91923')
+    type([TestLibrary]TestLibrary.PlatformDetection)
+    string[1] ('IsAppleMobile')
+}
 .entrypoint
 .try
 {

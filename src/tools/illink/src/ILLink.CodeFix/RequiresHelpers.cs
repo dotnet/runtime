@@ -16,7 +16,7 @@ namespace ILLink.CodeFixProvider
 			if (string.IsNullOrEmpty (symbolDisplayName) || hasPublicAccessibility)
 				return Array.Empty<SyntaxNode> ();
 
-			return new[] { syntaxGenerator.AttributeArgument (syntaxGenerator.LiteralExpression ($"Calls {symbolDisplayName}")) };
+			return [syntaxGenerator.AttributeArgument (syntaxGenerator.LiteralExpression ($"Calls {symbolDisplayName}"))];
 		}
 	}
 }

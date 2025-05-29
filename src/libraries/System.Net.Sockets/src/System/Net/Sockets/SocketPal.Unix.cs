@@ -289,13 +289,13 @@ namespace System.Net.Sockets
             // Pin buffers and set up iovecs.
             int startIndex = bufferIndex, startOffset = offset;
 
-            int maxBuffers = buffers.Count - startIndex;
+            int maxBuffers = checked(buffers.Count - startIndex);
             if (OperatingSystem.IsWasi())
             {
                 // WASI doesn't have iovecs and recvmsg in preview2
                 maxBuffers = Math.Max(maxBuffers, 1);
             }
-            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            bool allocOnStack = (uint)maxBuffers <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[maxBuffers];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
@@ -387,7 +387,7 @@ namespace System.Net.Sockets
                 // WASI doesn't have iovecs and recvmsg in preview2
                 maxBuffers = Math.Max(maxBuffers, 1);
             }
-            bool allocOnStack = maxBuffers <= IovStackThreshold;
+            bool allocOnStack = (uint)maxBuffers <= IovStackThreshold;
 
             // When there are many buffers, reduce the number of pinned buffers based on available bytes.
             int available = int.MaxValue;
@@ -549,7 +549,7 @@ namespace System.Net.Sockets
                 buffersCount = Math.Max(buffersCount, 1);
             }
 
-            bool allocOnStack = buffersCount <= IovStackThreshold;
+            bool allocOnStack = (uint)buffersCount <= IovStackThreshold;
             Span<GCHandle> handles = allocOnStack ? stackalloc GCHandle[IovStackThreshold] : new GCHandle[buffersCount];
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[buffersCount];
             int iovCount = 0;
@@ -1073,7 +1073,7 @@ namespace System.Net.Sockets
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
         {
-            if(OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
+            if (OperatingSystem.IsWasi() && shouldBlock) throw new PlatformNotSupportedException();
 
             handle.IsNonBlocking = !shouldBlock;
             willBlock = shouldBlock;
@@ -1422,7 +1422,7 @@ namespace System.Net.Sockets
         {
             if (err == Interop.Error.SUCCESS)
             {
-                handle.TrackOption(optionLevel, optionName);
+                handle.TrackSocketOption(optionLevel, optionName);
                 return SocketError.Success;
             }
             return GetSocketErrorForErrorCode(err);
@@ -1809,7 +1809,7 @@ namespace System.Net.Sockets
             }
 
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
-            if (count < StackThreshold)
+            if ((uint)count < StackThreshold)
             {
                 Interop.PollEvent* eventsOnStack = stackalloc Interop.PollEvent[count];
                 return SelectViaPoll(

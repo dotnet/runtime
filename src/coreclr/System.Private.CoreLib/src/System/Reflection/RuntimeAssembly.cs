@@ -200,7 +200,7 @@ namespace System.Reflection
                                             int nestedTypeNamesLength,
                                             ObjectHandleOnStack retType);
 
-        internal Type? GetTypeCore(string typeName, ReadOnlySpan<string> nestedTypeNames, bool throwOnError, bool ignoreCase)
+        internal Type? GetTypeCore(string typeName, ReadOnlySpan<string> nestedTypeNames, bool throwOnFileNotFound, bool ignoreCase)
         {
             RuntimeAssembly runtimeAssembly = this;
             Type? type = null;
@@ -224,13 +224,10 @@ namespace System.Reflection
                         ObjectHandleOnStack.Create(ref type));
                 }
             }
-            catch (FileNotFoundException) when (!throwOnError)
+            catch (FileNotFoundException) when (!throwOnFileNotFound)
             {
                 return null;
             }
-
-            if (type == null && throwOnError)
-                throw new TypeLoadException(SR.Format(SR.ClassLoad_General /* TypeLoad_TypeNotFoundInAssembly */, typeName, FullName));
 
             return type;
         }

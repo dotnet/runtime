@@ -37,11 +37,6 @@ CObjectType CorUnix::otSemaphore(
                 NULL,   // No immutable data cleanup routine
                 0,      // No process local data
                 NULL,   // No process local data cleanup routine
-                0,      // Should be SEMAPHORE_ALL_ACCESS; currently ignored (no Win32 security)
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::ObjectCanBeUnsignaled,
                 CObjectType::ThreadReleaseAltersSignalCount,

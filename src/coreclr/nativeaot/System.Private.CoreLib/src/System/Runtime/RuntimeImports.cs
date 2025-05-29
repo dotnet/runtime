@@ -33,16 +33,12 @@ namespace System.Runtime
 #if TARGET_UNIX
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]
-        internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord, IntPtr pContextRecord);
+        internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord);
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetRuntimeVersion")]
         internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
-
-        [LibraryImport(RuntimeLibrary)]
-        [SuppressGCTransition]
-        internal static partial ulong RhpGetTickCount64();
 
         [LibraryImport(RuntimeLibrary)]
         internal static partial IntPtr RhpGetCurrentThread();
@@ -93,9 +89,6 @@ namespace System.Runtime
         {
             RhWaitForPendingFinalizers(allowReentrantWait ? 1 : 0);
         }
-
-        [LibraryImport(RuntimeLibrary)]
-        internal static partial void RhInitializeFinalizerThread();
 
         // Get maximum GC generation number.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -504,8 +497,24 @@ namespace System.Runtime
         internal static extern unsafe void RhUnregisterRefCountedHandleCallback(IntPtr pCalloutMethod, MethodTable* pTypeFilter);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetIUnknownAddRef")]
-        internal static extern IntPtr RhGetIUnknownAddRef();
+        [RuntimeImport(RuntimeLibrary,
+#if TARGET_WINDOWS && TARGET_X86
+            "_RhIUnknown_AddRef@4"
+#else
+            "RhIUnknown_AddRef"
+#endif
+        )]
+        internal static extern uint RhIUnknown_AddRef(nint pThis);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary,
+#if TARGET_WINDOWS && TARGET_X86
+            "_RhUntracked_AddRefRelease@4"
+#else
+            "RhUntracked_AddRefRelease"
+#endif
+        )]
+        internal static extern uint RhUntracked_AddRefRelease(nint pThis);
 
 #if FEATURE_OBJCMARSHAL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

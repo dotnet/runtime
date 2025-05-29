@@ -336,7 +336,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_LMOD,
     CORINFO_HELP_ULDIV,
     CORINFO_HELP_ULMOD,
+    CORINFO_HELP_LNG2FLT,               // Convert a signed int64 to a float
     CORINFO_HELP_LNG2DBL,               // Convert a signed int64 to a double
+    CORINFO_HELP_ULNG2FLT,              // Convert a unsigned int64 to a float
     CORINFO_HELP_ULNG2DBL,              // Convert a unsigned int64 to a double
     CORINFO_HELP_DBL2INT,
     CORINFO_HELP_DBL2INT_OVF,
@@ -405,6 +407,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_THROW,             // Throw an exception object
     CORINFO_HELP_RETHROW,           // Rethrow the currently active exception
+    CORINFO_HELP_THROWEXACT,        // Throw an exception object, preserving stack trace
     CORINFO_HELP_USER_BREAKPOINT,   // For a user program to break to the debugger
     CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
     CORINFO_HELP_OVERFLOW,          // throw an overflow exception
@@ -578,7 +581,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
-    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
+    CORINFO_HELP_PATCHPOINT_FORCED,         // Notify runtime that code has reached a part of the method that needs to transition
 
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
@@ -593,6 +596,10 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_VALIDATE_INDIRECT_CALL,    // CFG: Validate function pointer
     CORINFO_HELP_DISPATCH_INDIRECT_CALL,    // CFG: Validate and dispatch to pointer
+
+    CORINFO_HELP_ALLOC_CONTINUATION,
+    CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
+    CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
     CORINFO_HELP_COUNT,
 };
@@ -668,6 +675,7 @@ enum CorInfoCallConv
     CORINFO_CALLCONV_HASTHIS    = 0x20,
     CORINFO_CALLCONV_EXPLICITTHIS=0x40,
     CORINFO_CALLCONV_PARAMTYPE  = 0x80,     // Passed last. Same as CORINFO_GENERICS_CTXT_FROM_PARAMTYPEARG
+    CORINFO_CALLCONV_ASYNCCALL  = 0x100,    // Is this a call to an async function?
 };
 
 // Represents the calling conventions supported with the extensible calling convention syntax
@@ -715,7 +723,6 @@ enum CorInfoOptions
                                                CORINFO_GENERICS_CTXT_FROM_METHODDESC |
                                                CORINFO_GENERICS_CTXT_FROM_METHODTABLE),
     CORINFO_GENERICS_CTXT_KEEP_ALIVE        = 0x00000100, // Keep the generics context alive throughout the method even if there is no explicit use, and report its location to the CLR
-
 };
 
 //
@@ -786,7 +793,7 @@ enum CorInfoFlag
 enum CorInfoMethodRuntimeFlags
 {
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
-    // unused                       = 0x00000002,
+    CORINFO_FLG_INTERPRETER         = 0x00000002, // The method was compiled by the interpreter
     // unused                       = 0x00000004,
     CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
     CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
@@ -813,13 +820,14 @@ enum CORINFO_ACCESS_FLAGS
 };
 
 // These are the flags set on an CORINFO_EH_CLAUSE
+// Keep values in sync with COR_ILEXCEPTION_CLAUSE flags
 enum CORINFO_EH_CLAUSE_FLAGS
 {
     CORINFO_EH_CLAUSE_NONE      = 0,
     CORINFO_EH_CLAUSE_FILTER    = 0x0001, // If this bit is on, then this EH entry is for a filter
     CORINFO_EH_CLAUSE_FINALLY   = 0x0002, // This clause is a finally clause
     CORINFO_EH_CLAUSE_FAULT     = 0x0004, // This clause is a fault clause
-    CORINFO_EH_CLAUSE_DUPLICATE = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
+    // UNUSED                   = 0x0008,
     CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
@@ -991,6 +999,7 @@ struct CORINFO_SIG_INFO
     unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
+    bool                isAsyncCall()       { return ((callConv & CORINFO_CALLCONV_ASYNCCALL) != 0); }
 };
 
 struct CORINFO_METHOD_INFO
@@ -1197,8 +1206,7 @@ enum CorInfoAccessAllowedHelperArgType
     CORINFO_HELPER_ARG_TYPE_Field   = 1,
     CORINFO_HELPER_ARG_TYPE_Method  = 2,
     CORINFO_HELPER_ARG_TYPE_Class   = 3,
-    CORINFO_HELPER_ARG_TYPE_Module  = 4,
-    CORINFO_HELPER_ARG_TYPE_Const   = 5,
+    CORINFO_HELPER_ARG_TYPE_Const   = 4,
 };
 struct CORINFO_HELPER_ARG
 {
@@ -1396,6 +1404,9 @@ enum CorInfoTokenKind
 
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+    // token comes from runtime async awaiting pattern
+    CORINFO_TOKENKIND_Await = 0x2000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -1650,8 +1661,6 @@ struct CORINFO_EE_INFO
         // Size of the Frame structure when it also contains the secret stub arg
         unsigned    sizeWithSecretStubArg;
 
-        unsigned    offsetOfGSCookie;
-        unsigned    offsetOfFrameVptr;
         unsigned    offsetOfFrameLink;
         unsigned    offsetOfCallSiteSP;
         unsigned    offsetOfCalleeSavedFP;
@@ -1688,6 +1697,43 @@ struct CORINFO_EE_INFO
     CORINFO_RUNTIME_ABI targetAbi;
 
     CORINFO_OS  osType;
+};
+
+enum CorInfoContinuationFlags
+{
+    // Whether or not the continuation expects the result to be boxed and
+    // placed in the GCData array at index 0. Not set if the callee is void.
+    CORINFO_CONTINUATION_RESULT_IN_GCDATA = 1,
+    // If this bit is set the continuation resumes inside a try block and thus
+    // if an exception is being propagated, needs to be resumed. The exception
+    // should be placed at index 0 or 1 depending on whether the continuation
+    // also expects a result.
+    CORINFO_CONTINUATION_NEEDS_EXCEPTION = 2,
+    // If this bit is set the continuation has the IL offset that inspired the
+    // OSR method saved in the beginning of 'Data', or -1 if the continuation
+    // belongs to a tier 0 method.
+    CORINFO_CONTINUATION_OSR_IL_OFFSET_IN_DATA = 4,
+};
+
+struct CORINFO_ASYNC_INFO
+{
+    // Class handle for System.Runtime.CompilerServices.Continuation
+    CORINFO_CLASS_HANDLE continuationClsHnd;
+    // 'Next' field
+    CORINFO_FIELD_HANDLE continuationNextFldHnd;
+    // 'Resume' field
+    CORINFO_FIELD_HANDLE continuationResumeFldHnd;
+    // 'State' field
+    CORINFO_FIELD_HANDLE continuationStateFldHnd;
+    // 'Flags' field
+    CORINFO_FIELD_HANDLE continuationFlagsFldHnd;
+    // 'Data' field
+    CORINFO_FIELD_HANDLE continuationDataFldHnd;
+    // 'GCData' field
+    CORINFO_FIELD_HANDLE continuationGCDataFldHnd;
+    // Whether or not the continuation needs to be allocated through the
+    // helper that also takes a method handle
+    bool continuationsNeedMethodHandle;
 };
 
 // Flags passed from JIT to runtime.
@@ -2483,14 +2529,6 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-    // Get a representation for a stack-allocated boxed value type.
-    //
-    // This differs from getTypeForBox in that it includes an explicit field
-    // for the method table pointer.
-    virtual CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
-            CORINFO_CLASS_HANDLE        cls
-            ) = 0;
-
     // returns the correct box helper for a particular class.  Note
     // that if this returns CORINFO_HELP_BOX, the JIT can assume
     // 'standard' boxing (allocate object and copy), and optimize
@@ -2961,6 +2999,10 @@ public:
             CORINFO_EE_INFO            *pEEInfoOut
             ) = 0;
 
+    virtual void getAsyncInfo(
+        CORINFO_ASYNC_INFO* pAsyncInfoOut
+    ) = 0;
+
     /*********************************************************************************/
     //
     // Diagnostic methods
@@ -3095,11 +3137,6 @@ public:
             CORINFO_MODULE_HANDLE   handle
             ) = 0;
 
-    virtual CORINFO_MODULE_HANDLE embedModuleHandle(
-            CORINFO_MODULE_HANDLE   handle,
-            void                  **ppIndirection = NULL
-            ) = 0;
-
     virtual CORINFO_CLASS_HANDLE embedClassHandle(
             CORINFO_CLASS_HANDLE    handle,
             void                  **ppIndirection = NULL
@@ -3107,11 +3144,6 @@ public:
 
     virtual CORINFO_METHOD_HANDLE embedMethodHandle(
             CORINFO_METHOD_HANDLE   handle,
-            void                  **ppIndirection = NULL
-            ) = 0;
-
-    virtual CORINFO_FIELD_HANDLE embedFieldHandle(
-            CORINFO_FIELD_HANDLE    handle,
             void                  **ppIndirection = NULL
             ) = 0;
 
@@ -3296,6 +3328,8 @@ public:
             CORINFO_TAILCALL_HELPERS* pResult
             ) = 0;
 
+    virtual CORINFO_METHOD_HANDLE getAsyncResumptionStub() = 0;
+
     // Optionally, convert calli to regular method call. This is for PInvoke argument marshalling.
     virtual bool convertPInvokeCalliToCall(
             CORINFO_RESOLVED_TOKEN *    pResolvedToken,
@@ -3350,6 +3384,17 @@ public:
 // So, the value of offset correction is 12
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
+
+//
+// LOONGARCH64 relocation types
+//
+#define IMAGE_REL_LOONGARCH64_PC        0x0003
+#define IMAGE_REL_LOONGARCH64_JIR       0x0004
+
+//
+// RISCV64 relocation types
+//
+#define IMAGE_REL_RISCV64_PC            0x0003
 
 /**********************************************************************************/
 #ifdef TARGET_64BIT

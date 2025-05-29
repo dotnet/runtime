@@ -99,11 +99,6 @@ CObjectType CorUnix::otThread(
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
                 NULL,   // No process local data cleanup routine
-                0,      // THREAD_ALL_ACCESS,
-                CObjectType::SecuritySupported,
-                CObjectType::SecurityInfoNotPersisted,
-                CObjectType::UnnamedObject,
-                CObjectType::LocalDuplicationOnly,
                 CObjectType::WaitableObject,
                 CObjectType::SingleTransitionObject,
                 CObjectType::ThreadReleaseHasNoSideEffects,
@@ -139,7 +134,7 @@ static void InternalEndCurrentThreadWrapper(void *arg)
        will lock its own critical section */
     LOADCallDllMain(DLL_THREAD_DETACH, NULL);
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     pThread->FreeSignalAlternateStack();
 #endif // !HAVE_MACH_EXCEPTIONS
 
@@ -798,10 +793,6 @@ CorUnix::InternalEndCurrentThread(
 {
     PAL_ERROR palError = NO_ERROR;
     ISynchStateController *pSynchStateController = NULL;
-
-#ifdef PAL_PERF
-    PERFDisableThreadProfile(UserCreatedThread != pThread->GetThreadType());
-#endif
 
     //
     // Abandon any objects owned by this thread
@@ -1557,7 +1548,7 @@ CPalThread::ThreadEntry(
     }
 #endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
     if (!pThread->EnsureSignalAlternateStack())
     {
         ASSERT("Cannot allocate alternate stack for SIGSEGV!\n");
@@ -1621,11 +1612,6 @@ CPalThread::ThreadEntry(
            will take the module critical section */
         LOADCallDllMain(DLL_THREAD_ATTACH, NULL);
     }
-
-#ifdef PAL_PERF
-    PERFAllocThreadInfo();
-    PERFEnableThreadProfile(UserCreatedThread != pThread->GetThreadType());
-#endif
 
     /* call the startup routine */
     pfnStartRoutine = pThread->GetStartAddress();
@@ -2280,7 +2266,7 @@ CPalThread::WaitForStartStatus(
     return m_fStartStatus;
 }
 
-#if !HAVE_MACH_EXCEPTIONS
+#if !HAVE_MACH_EXCEPTIONS && HAVE_SIGALTSTACK
 /*++
 Function :
     EnsureSignalAlternateStack

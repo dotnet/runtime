@@ -1053,30 +1053,42 @@ namespace System
         {
             DebugAssertInCtor();
 
-            // Clone the other URI but develop own UriInfo member
-            _info = null!;
-
             _flags = otherUri._flags;
-            if (InFact(Flags.MinimalUriInfoSet))
+
+            if (InFact(Flags.AllUriInfoSet))
             {
-                _flags &= ~(Flags.MinimalUriInfoSet | Flags.AllUriInfoSet | Flags.IndexMask);
-                // Port / Path offset
-                int portIndex = otherUri._info.Offset.Path;
-                if (InFact(Flags.NotDefaultPort))
+                // We can share it now without mutation concern, for since AllUriInfoSet it is immutable.
+                _info = otherUri._info;
+            }
+            else
+            {
+                Debug.Assert(!InFact(Flags.HasUnicode) || otherUri.IsNotAbsoluteUri);
+                // Clone the other URI but develop own UriInfo member
+                // We cannot just reference otherUri._info as this UriInfo will be mutated later
+                // which could be happening concurrently and in a not thread safe manner.
+                _info = null!;
+
+                if (InFact(Flags.MinimalUriInfoSet))
                 {
-                    // Find the start of the port.  Account for non-canonical ports like :00123
-                    while (otherUri._string[portIndex] != ':' && portIndex > otherUri._info.Offset.Host)
+                    _flags &= ~(Flags.MinimalUriInfoSet | Flags.AllUriInfoSet | Flags.IndexMask);
+                    // Port / Path offset
+                    int portIndex = otherUri._info.Offset.Path;
+                    if (InFact(Flags.NotDefaultPort))
                     {
-                        portIndex--;
+                        // Find the start of the port.  Account for non-canonical ports like :00123
+                        while (otherUri._string[portIndex] != ':' && portIndex > otherUri._info.Offset.Host)
+                        {
+                            portIndex--;
+                        }
+                        if (otherUri._string[portIndex] != ':')
+                        {
+                            // Something wrong with the NotDefaultPort flag.  Reset to path index
+                            Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
+                            portIndex = otherUri._info.Offset.Path;
+                        }
                     }
-                    if (otherUri._string[portIndex] != ':')
-                    {
-                        // Something wrong with the NotDefaultPort flag.  Reset to path index
-                        Debug.Fail("Uri failed to locate custom port at index: " + portIndex);
-                        portIndex = otherUri._info.Offset.Path;
-                    }
+                    _flags |= (Flags)portIndex; // Port or path
                 }
-                _flags |= (Flags)portIndex; // Port or path
             }
 
             _syntax = otherUri._syntax;

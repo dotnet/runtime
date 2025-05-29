@@ -349,16 +349,34 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_BITCAST:
             assert(dstCount == 1);
+            // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
             if (!tree->gtGetOp1()->isContained())
             {
-                BuildUse(tree->gtGetOp1());
+                if (varTypeUsesFloatReg(tree) && (varTypeUsesIntReg(tree->gtGetOp1())))
+                {
+                    BuildUse(tree->gtGetOp1(), lowGprRegs);
+                }
+                else
+                {
+                    BuildUse(tree->gtGetOp1());
+                }
+
                 srcCount = 1;
             }
             else
             {
                 srcCount = 0;
             }
-            BuildDef(tree);
+            // TODO-Xarch-apx: Revisit once extended EVEX is available. Currently limiting high GPR for int <-> float
+            if (varTypeUsesFloatReg(tree->gtGetOp1()) && (varTypeUsesIntReg(tree)))
+            {
+                BuildDef(tree, lowGprRegs);
+            }
+            else
+            {
+                BuildDef(tree);
+            }
+
             break;
 
         case GT_NEG:
@@ -422,6 +440,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CMP:
         case GT_TEST:
         case GT_BT:
+#ifdef TARGET_AMD64
+        case GT_CCMP:
+#endif
             srcCount = BuildCmp(tree);
             break;
 
@@ -515,11 +536,9 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
             break;
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
         case GT_STORE_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
@@ -603,6 +622,11 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             assert(dstCount == 1);
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
             break;
 
 #if defined(FEATURE_EH_WINDOWS_X86)
@@ -783,16 +807,15 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 }
 
 // Support for building RefPositions for RMW nodes.
-int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet candidates)
+int LinearScan::BuildRMWUses(
+    GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates)
 {
-    int              srcCount      = 0;
-    SingleTypeRegSet op1Candidates = candidates;
-    SingleTypeRegSet op2Candidates = candidates;
+    int srcCount = 0;
 
 #ifdef TARGET_X86
     if (varTypeIsByte(node))
     {
-        SingleTypeRegSet byteCandidates = (candidates == RBM_NONE) ? allByteRegs() : (candidates & allByteRegs());
+        SingleTypeRegSet byteCandidates = (op1Candidates == RBM_NONE) ? allByteRegs() : (op1Candidates & allByteRegs());
         if (!op1->isContained())
         {
             assert(byteCandidates != RBM_NONE);
@@ -1055,21 +1078,33 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     if (shiftBy->isContained())
     {
         assert(shiftBy->OperIsConst());
-    }
+
 #if defined(TARGET_64BIT)
-    else if (tree->OperIsShift() && !tree->isContained() &&
-             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+        int       shiftByValue = (int)shiftBy->AsIntConCommon()->IconValue();
+        var_types targetType   = tree->TypeGet();
+
+        if ((genActualType(targetType) == TYP_LONG) && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+            tree->OperIs(GT_ROL, GT_ROR) && (shiftByValue > 0) && (shiftByValue < 64))
+        {
+            srcCandidates = ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported());
+            dstCandidates = ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported());
+        }
+
+#endif
+    }
+    else if (!tree->isContained() && (tree->OperIsShift() || source->isContained()) &&
+             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2) && !tree->gtSetFlags())
     {
-        // shlx (as opposed to mov+shl) instructions handles all register forms, but it does not handle contained form
-        // for memory operand. Likewise for sarx and shrx.
-        srcCount += BuildOperandUses(source, srcCandidates);
-        srcCount += BuildOperandUses(shiftBy, srcCandidates);
-        BuildDef(tree, dstCandidates);
+        // We don'thave any specific register requirements here, so skip the logic that
+        // reserves RCX or preferences the source reg.
+        srcCount += BuildOperandUses(source, ForceLowGprForApxIfNeeded(source, srcCandidates, getEvexIsSupported()));
+        srcCount += BuildOperandUses(shiftBy, ForceLowGprForApxIfNeeded(shiftBy, dstCandidates, getEvexIsSupported()));
+        BuildDef(tree, ForceLowGprForApxIfNeeded(tree, dstCandidates, getEvexIsSupported()));
         return srcCount;
     }
-#endif
     else
     {
+        // This ends up being BMI
         srcCandidates = availableIntRegs & ~SRBM_RCX;
         dstCandidates = availableIntRegs & ~SRBM_RCX;
     }
@@ -1088,9 +1123,9 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 #ifdef TARGET_X86
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
     // we can have a three operand form.
-    if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
+    if (tree->OperIs(GT_LSH_HI) || tree->OperIs(GT_RSH_LO))
     {
-        assert((source->OperGet() == GT_LONG) && source->isContained());
+        assert(source->OperIs(GT_LONG) && source->isContained());
 
         GenTree* sourceLo = source->gtGetOp1();
         GenTree* sourceHi = source->gtGetOp2();
@@ -1100,7 +1135,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
 
         if (!tree->isContained())
         {
-            if (tree->OperGet() == GT_LSH_HI)
+            if (tree->OperIs(GT_LSH_HI))
             {
                 setDelayFree(sourceLoUse);
             }
@@ -1121,6 +1156,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         srcCount += BuildOperandUses(source, srcCandidates);
     }
+
     if (!tree->isContained())
     {
         if (!shiftBy->isContained())
@@ -1230,7 +1266,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            for (const ABIPassingSegment& seg : arg.NewAbiInfo.Segments())
+            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
             {
                 if (seg.IsPassedInRegister() && genIsValidFloatReg(seg.GetRegister()))
                 {
@@ -1300,6 +1336,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {
@@ -1569,11 +1610,11 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     if (!dstAddr->isContained())
     {
         useCount++;
-        BuildUse(dstAddr, dstAddrRegMask);
+        BuildUse(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, dstAddrRegMask, getEvexIsSupported()));
     }
     else if (dstAddr->OperIsAddrMode())
     {
-        useCount += BuildAddrUses(dstAddr);
+        useCount += BuildAddrUses(dstAddr, ForceLowGprForApxIfNeeded(dstAddr, RBM_NONE, getEvexIsSupported()));
     }
 
     if (srcAddrOrFill != nullptr)
@@ -1581,11 +1622,12 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         if (!srcAddrOrFill->isContained())
         {
             useCount++;
-            BuildUse(srcAddrOrFill, srcRegMask);
+            BuildUse(srcAddrOrFill, ForceLowGprForApxIfNeeded(srcAddrOrFill, srcRegMask, getEvexIsSupported()));
         }
         else if (srcAddrOrFill->OperIsAddrMode())
         {
-            useCount += BuildAddrUses(srcAddrOrFill);
+            useCount +=
+                BuildAddrUses(srcAddrOrFill, ForceLowGprForApxIfNeeded(srcAddrOrFill, RBM_NONE, getEvexIsSupported()));
         }
     }
 
@@ -1616,7 +1658,6 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
     return useCount;
 }
 
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
 //------------------------------------------------------------------------
 // BuildPutArgStk: Set the NodeInfo for a GT_PUTARG_STK.
 //
@@ -1790,7 +1831,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 
     return srcCount;
 }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 //------------------------------------------------------------------------
 // BuildLclHeap: Set the NodeInfo for a GT_LCLHEAP.
@@ -1897,7 +1937,6 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-
     srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
@@ -1962,7 +2001,33 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
     int srcCount;
     if (op1->isContained())
     {
-        srcCount = BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
+        SingleTypeRegSet op1RegCandidates = RBM_NONE;
+
+        switch (tree->AsIntrinsic()->gtIntrinsicName)
+        {
+            case NI_System_Math_Ceiling:
+            case NI_System_Math_Floor:
+            case NI_System_Math_Truncate:
+            case NI_System_Math_Round:
+            case NI_System_Math_Sqrt:
+            {
+                op1RegCandidates = ForceLowGprForApx(op1);
+                break;
+            }
+            case NI_System_Math_Abs:
+            {
+                op1RegCandidates = ForceLowGprForApxIfNeeded(op1, RBM_NONE, getEvexIsSupported());
+                break;
+            }
+            default:
+            {
+                noway_assert(!"Unsupported math intrinsic");
+                unreached();
+                break;
+            }
+        }
+
+        srcCount = BuildOperandUses(op1, op1RegCandidates);
     }
     else
     {
@@ -1979,39 +2044,47 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// SkipContainedCreateScalarUnsafe: Skips a contained CreateScalarUnsafe node
+// SkipContainedUnaryOp: Skips a contained non-memory or const node
 // and gets the underlying op1 instead
 //
 // Arguments:
 //    node - The node to handle
 //
 // Return Value:
-//    If node is a contained CreateScalarUnsafe, it's op1 is returned;
+//    If node is a contained non-memory or const unary op, its op1 is returned;
 //    otherwise node is returned unchanged.
-static GenTree* SkipContainedCreateScalarUnsafe(GenTree* node)
+static GenTree* SkipContainedUnaryOp(GenTree* node)
 {
-    if (!node->OperIsHWIntrinsic() || !node->isContained())
+    if (!node->isContained())
     {
         return node;
     }
 
-    GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
-    NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-    switch (intrinsicId)
+    if (node->OperIsHWIntrinsic())
     {
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_Vector256_CreateScalarUnsafe:
-        case NI_Vector512_CreateScalarUnsafe:
-        {
-            return hwintrinsic->Op(1);
-        }
+        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
-        default:
+        switch (intrinsicId)
         {
-            return node;
+            case NI_Vector128_CreateScalar:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
+            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector512_CreateScalarUnsafe:
+            {
+                return hwintrinsic->Op(1);
+            }
+
+            default:
+            {
+                break;
+            }
         }
     }
+
+    return node;
 }
 
 //------------------------------------------------------------------------
@@ -2068,8 +2141,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // A contained CreateScalarUnsafe is special in that we're not containing it to load from
-        // memory and it isn't a constant. Instead, its essentially a "transparent" node we're ignoring
+        // In a few cases, we contain an operand that isn't a load from memory or a constant. Instead,
+        // it is essentially a "transparent" node we're ignoring or handling specially in codegen
         // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
         // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
 
@@ -2078,37 +2151,37 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         GenTree* op3    = nullptr;
         GenTree* op4    = nullptr;
         GenTree* op5    = nullptr;
-        GenTree* lastOp = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(numArgs));
+        GenTree* lastOp = SkipContainedUnaryOp(intrinsicTree->Op(numArgs));
 
         switch (numArgs)
         {
             case 5:
             {
-                op5 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(5));
+                op5 = SkipContainedUnaryOp(intrinsicTree->Op(5));
                 FALLTHROUGH;
             }
 
             case 4:
             {
-                op4 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(4));
+                op4 = SkipContainedUnaryOp(intrinsicTree->Op(4));
                 FALLTHROUGH;
             }
 
             case 3:
             {
-                op3 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(3));
+                op3 = SkipContainedUnaryOp(intrinsicTree->Op(3));
                 FALLTHROUGH;
             }
 
             case 2:
             {
-                op2 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(2));
+                op2 = SkipContainedUnaryOp(intrinsicTree->Op(2));
                 FALLTHROUGH;
             }
 
             case 1:
             {
-                op1 = SkipContainedCreateScalarUnsafe(intrinsicTree->Op(1));
+                op1 = SkipContainedUnaryOp(intrinsicTree->Op(1));
                 break;
             }
 
@@ -2119,6 +2192,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
 
         bool buildUses = true;
+
+        // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
+        // is not allocated the same register as the target.
+        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
+
+        const bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
+#ifdef TARGET_AMD64
+        const bool canHWIntrinsicUseApxRegs = isEvexCompatible && getEvexIsSupported();
+#else
+        // We can never use EGPRs on non-64-bit platforms.
+        const bool canHWIntrinsicUseApxRegs = false;
+#endif // TARGET_AMD64
 
         if ((category == HW_Category_IMM) && !HWIntrinsicInfo::NoJmpTableImm(intrinsicId))
         {
@@ -2140,24 +2225,20 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             buildInternalIntRegisterDefForNode(intrinsicTree);
         }
 
-        // Determine whether this is an RMW operation where op2+ must be marked delayFree so that it
-        // is not allocated the same register as the target.
-        bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
-#if defined(TARGET_AMD64)
-        bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
-#endif // TARGET_AMD64
-
         // Create internal temps, and handle any other special requirements.
         // Note that the default case for building uses will handle the RMW flag, but if the uses
         // are built in the individual cases, buildUses is set to false, and any RMW handling (delayFree)
         // must be handled within the case.
         switch (intrinsicId)
         {
+            case NI_Vector128_CreateScalar:
+            case NI_Vector256_CreateScalar:
+            case NI_Vector512_CreateScalar:
             case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector128_ToScalar:
             case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector256_ToScalar:
             case NI_Vector512_CreateScalarUnsafe:
+            case NI_Vector128_ToScalar:
+            case NI_Vector256_ToScalar:
             case NI_Vector512_ToScalar:
             {
                 assert(numArgs == 1);
@@ -2166,21 +2247,44 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     if (op1->isContained())
                     {
-                        srcCount += BuildOperandUses(op1);
+                        SingleTypeRegSet apxAwareRegCandidates =
+                            ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+                        srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
                     }
                     else
                     {
-                        // We will either be in memory and need to be moved
-                        // into a register of the appropriate size or we
-                        // are already in an XMM/YMM/ZMM register and can stay
-                        // where we are.
+                        // CreateScalarUnsafe and ToScalar are essentially no-ops for floating point types and can reuse
+                        // the op1 register. CreateScalar needs to clear the upper elements, so if we have a float and
+                        // can't use insertps to zero the upper elements in-place, we'll need a different target reg.
 
-                        tgtPrefUse = BuildUse(op1);
+                        RefPosition* op1Use = BuildUse(op1);
                         srcCount += 1;
+
+                        if ((baseType == TYP_FLOAT) && HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) &&
+                            !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        {
+                            setDelayFree(op1Use);
+                        }
+                        else
+                        {
+                            tgtPrefUse = op1Use;
+                        }
                     }
 
                     buildUses = false;
                 }
+#if TARGET_X86
+                else if (varTypeIsByte(baseType) && HWIntrinsicInfo::IsVectorToScalar(intrinsicId))
+                {
+                    dstCandidates = allByteRegs();
+                }
+                else if (varTypeIsLong(baseType) && !compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // For SSE2 fallbacks, we will need a temp register to insert the upper half of a long
+                    buildInternalFloatRegisterDefForNode(intrinsicTree);
+                    setInternalRegsDelayFree = true;
+                }
+#endif // TARGET_X86
                 break;
             }
 
@@ -2201,6 +2305,33 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
+            case NI_Vector128_WithElement:
+            case NI_Vector256_WithElement:
+            case NI_Vector512_WithElement:
+            {
+                assert(numArgs == 3);
+
+                assert(!op1->isContained());
+                assert(!op2->OperIsConst());
+
+                // If the index is not a constant
+                // we will use the SIMD temp location to store the vector.
+
+                var_types requiredSimdTempType = intrinsicTree->TypeGet();
+                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+
+                // We then customize the uses as we will effectively be spilling
+                // op1, storing op3 to that spill location based on op2. Then
+                // reloading the updated value to the destination
+
+                srcCount += BuildOperandUses(op1);
+                srcCount += BuildOperandUses(op2);
+                srcCount += BuildOperandUses(op3, varTypeIsByte(baseType) ? allByteRegs() : RBM_NONE);
+
+                buildUses = false;
+                break;
+            }
+
             case NI_Vector128_AsVector128Unsafe:
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
@@ -2214,10 +2345,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector512_GetLower128:
             {
                 assert(numArgs == 1);
-
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
                 if (op1->isContained())
                 {
-                    srcCount += BuildOperandUses(op1);
+                    srcCount += BuildOperandUses(op1, apxAwareRegCandidates);
                 }
                 else
                 {
@@ -2226,7 +2358,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     // are already in an XMM/YMM register and can stay
                     // where we are.
 
-                    tgtPrefUse = BuildUse(op1);
+                    tgtPrefUse = BuildUse(op1, apxAwareRegCandidates);
                     srcCount += 1;
                 }
 
@@ -2260,8 +2392,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     tgtPrefUse = BuildUse(op1, BuildEvexIncompatibleMask(op1));
 
                     srcCount += 1;
-                    srcCount += op2->isContained() ? BuildOperandUses(op2, BuildEvexIncompatibleMask(op2))
-                                                   : BuildDelayFreeUses(op2, op1, BuildEvexIncompatibleMask(op2));
+
+                    SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
+                    if (op2RegCandidates == RBM_NONE)
+                    {
+                        op2RegCandidates = BuildEvexIncompatibleMask(op2);
+                    }
+                    srcCount += op2->isContained() ? BuildOperandUses(op2, op2RegCandidates)
+                                                   : BuildDelayFreeUses(op2, op1, op2RegCandidates);
+
                     srcCount += BuildDelayFreeUses(op3, op1, SRBM_XMM0);
 
                     buildUses = false;
@@ -2313,13 +2452,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // DIV implicitly put op1(lower) to EAX and op2(upper) to EDX
                 srcCount += BuildOperandUses(op1, SRBM_EAX);
                 srcCount += BuildOperandUses(op2, SRBM_EDX);
-
                 if (!op3->isContained())
                 {
                     // For non-contained nodes, we want to make sure we delay free the register for
                     // op3 with respect to both op1 and op2. In other words, op3 shouldn't get same
                     // register that is assigned to either of op1 and op2.
-
                     RefPosition* op3RefPosition;
                     srcCount += BuildDelayFreeUses(op3, op1, RBM_NONE, &op3RefPosition);
                     if ((op3RefPosition != nullptr) && !op3RefPosition->delayRegFree)
@@ -2331,7 +2468,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
                 else
                 {
-                    srcCount += BuildOperandUses(op3);
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op3, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    srcCount += BuildOperandUses(op3, apxAwareRegCandidates);
                 }
 
                 // result put in EAX and EDX
@@ -2347,7 +2486,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 assert(numArgs == 2 || numArgs == 3);
                 srcCount += BuildOperandUses(op1, SRBM_EDX);
-                srcCount += BuildOperandUses(op2);
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
                 if (numArgs == 3)
                 {
                     // op3 reg should be different from target reg to
@@ -2493,7 +2634,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else if (op == emitOp3)
                     {
-                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, emitOp1);
+                        SingleTypeRegSet apxAwareRegCandidates =
+                            ForceLowGprForApxIfNeeded(op, RBM_NONE, canHWIntrinsicUseApxRegs);
+                        srcCount += op->isContained() ? BuildOperandUses(op, apxAwareRegCandidates)
+                                                      : BuildDelayFreeUses(op, emitOp1);
                     }
                 }
 
@@ -2526,7 +2670,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildDelayFreeUses(operand, op1);
                         }
                     }
@@ -2539,7 +2682,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                         for (GenTree* operand : op2->AsHWIntrinsic()->Operands())
                         {
-                            assert(varTypeIsSIMD(operand) || varTypeIsInt(operand));
                             srcCount += BuildOperandUses(operand);
                         }
                     }
@@ -2609,11 +2751,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     }
                     else if (op == emitOp2)
                     {
-                        srcCount += BuildDelayFreeUses(op, emitOp1);
+                        srcCount += BuildDelayFreeUses(op, emitOp1, ForceLowGprForApx(op));
                     }
                     else if (op == emitOp3)
                     {
-                        srcCount += op->isContained() ? BuildOperandUses(op) : BuildDelayFreeUses(op, emitOp1);
+                        srcCount += op->isContained() ? BuildOperandUses(op, ForceLowGprForApx(op))
+                                                      : BuildDelayFreeUses(op, emitOp1);
                     }
                 }
 
@@ -2629,7 +2772,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 tgtPrefUse = BuildUse(op1);
                 srcCount += 1;
                 srcCount += BuildDelayFreeUses(op2, op1);
-                srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
+                srcCount +=
+                    op3->isContained() ? BuildOperandUses(op3, ForceLowGprForApx(op3)) : BuildDelayFreeUses(op3, op1);
 
                 buildUses = false;
                 break;
@@ -2642,8 +2786,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(!isRMW);
 
                 // Any pair of the index, mask, or destination registers should be different
-                srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
-                srcCount += BuildDelayFreeUses(op2, nullptr, BuildEvexIncompatibleMask(op2));
+                SingleTypeRegSet op1RegCandidates = ForceLowGprForApx(op1);
+                if (op1RegCandidates == RBM_NONE)
+                {
+                    op1RegCandidates = BuildEvexIncompatibleMask(op1);
+                }
+                srcCount += BuildOperandUses(op1, op1RegCandidates);
+
+                SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
+                if (op2RegCandidates == RBM_NONE)
+                {
+                    op2RegCandidates = BuildEvexIncompatibleMask(op2);
+                }
+                srcCount += BuildDelayFreeUses(op2, nullptr, op2RegCandidates);
 
                 // op3 should always be contained
                 assert(op3->isContained());
@@ -2660,10 +2815,19 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX2_GatherMaskVector256:
             {
                 assert(!isRMW);
-
                 // Any pair of the index, mask, or destination registers should be different
-                srcCount += BuildOperandUses(op1, BuildEvexIncompatibleMask(op1));
-                srcCount += BuildDelayFreeUses(op2, nullptr, BuildEvexIncompatibleMask(op2));
+                SingleTypeRegSet op1RegCandidates = ForceLowGprForApx(op1);
+                if (op1RegCandidates == RBM_NONE)
+                {
+                    op1RegCandidates = BuildEvexIncompatibleMask(op2);
+                }
+                srcCount += BuildOperandUses(op1, op1RegCandidates);
+                SingleTypeRegSet op2RegCandidates = ForceLowGprForApx(op2);
+                if (op2RegCandidates == RBM_NONE)
+                {
+                    op2RegCandidates = BuildEvexIncompatibleMask(op2);
+                }
+                srcCount += BuildDelayFreeUses(op2, nullptr, op2RegCandidates);
                 srcCount += BuildDelayFreeUses(op3, nullptr, BuildEvexIncompatibleMask(op3));
                 srcCount += BuildDelayFreeUses(op4, nullptr, BuildEvexIncompatibleMask(op4));
 
@@ -2671,6 +2835,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(op5->isContained());
 
                 // get a tmp register for mask that will be cleared by gather instructions
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+                setInternalRegsDelayFree = true;
+
+                buildUses = false;
+                break;
+            }
+
+            case NI_Vector128_op_Division:
+            case NI_Vector256_op_Division:
+            {
+                srcCount = BuildOperandUses(op1, lowSIMDRegs());
+                srcCount += BuildOperandUses(op2, lowSIMDRegs());
+
+                // get a tmp register for div-by-zero check
+                buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
+
+                // get a tmp register for overflow check
                 buildInternalFloatRegisterDefForNode(intrinsicTree, lowSIMDRegs());
                 setInternalRegsDelayFree = true;
 
@@ -2696,6 +2877,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             {
                 op1RegCandidates = BuildEvexIncompatibleMask(op1);
             }
+            op1RegCandidates = ForceLowGprForApxIfNeeded(op1, op1RegCandidates, canHWIntrinsicUseApxRegs);
 #endif // TARGET_AMD64
 
             if (intrinsicTree->OperIsMemoryLoadOrStore())
@@ -2717,9 +2899,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 SingleTypeRegSet op2RegCandidates = RBM_NONE;
 
 #if defined(TARGET_AMD64)
+
                 if (!isEvexCompatible)
                 {
                     op2RegCandidates = BuildEvexIncompatibleMask(op2);
+                }
+                if (!isEvexCompatible || !getEvexIsSupported())
+                {
+                    op2RegCandidates = ForceLowGprForApx(op2, op2RegCandidates);
                 }
 #endif // TARGET_AMD64
 
@@ -2749,7 +2936,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // When op2 is contained and we are not producing a scalar value we
                         // have no concerns of overwriting op2 because they exist in different
                         // register sets.
-
                         srcCount += BuildOperandUses(op2, op2RegCandidates);
                     }
                 }
@@ -2766,6 +2952,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     if (!isEvexCompatible)
                     {
                         op3RegCandidates = BuildEvexIncompatibleMask(op3);
+                    }
+                    if (!isEvexCompatible || !getEvexIsSupported())
+                    {
+                        op3RegCandidates = ForceLowGprForApx(op3, op3RegCandidates);
                     }
 #endif // TARGET_AMD64
 
@@ -2793,11 +2983,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     if (dstCount == 1)
     {
 #if defined(TARGET_AMD64)
+        // TODO-xarch-apx: there might be some problem if we allow EGPR as the dst of some instructions.
         bool isEvexCompatible = intrinsicTree->isEvexCompatibleHWIntrinsic(compiler);
 
         if (!isEvexCompatible)
         {
             dstCandidates = BuildEvexIncompatibleMask(intrinsicTree);
+        }
+
+        // TODO-xarch-apx: revisit this part to check if we can merge this 2 checks.
+        if (!isEvexCompatible || !getEvexIsSupported())
+        {
+            dstCandidates = ForceLowGprForApx(intrinsicTree, dstCandidates);
         }
 #endif
 
@@ -2805,7 +3002,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // Currently dstCount = 2 is only used for DivRem, which has special constriants and handled above
+        // Currently dstCount = 2 is only used for DivRem, which has special constraints and is handled above
         assert((dstCount == 0) ||
                ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem))));
     }
@@ -2826,21 +3023,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 //
 int LinearScan::BuildCast(GenTreeCast* cast)
 {
+
     GenTree* src = cast->gtGetOp1();
 
-    const var_types srcType  = genActualType(src->TypeGet());
+    const var_types srcType  = src->TypeGet();
     const var_types castType = cast->gtCastType;
 
-    if ((srcType == TYP_LONG) && (castType == TYP_DOUBLE) &&
-        !compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+    if (cast->IsUnsigned() && varTypeIsLong(srcType) && varTypeIsFloating(castType) && !getEvexIsSupported())
     {
         // We need two extra temp regs for LONG->DOUBLE cast
-        // if we don't have AVX512F available.
-        buildInternalIntRegisterDefForNode(cast);
+        // if we don't have EVEX unsigned conversions available.
+        // We need to reserve one APXIncompatible register for
+        // cvtt* instruction. Second temp can use EGPR.
+        buildInternalIntRegisterDefForNode(cast, ForceLowGprForApx(cast, availableIntRegs, true));
         buildInternalIntRegisterDefForNode(cast);
     }
 
     SingleTypeRegSet candidates = RBM_NONE;
+
 #ifdef TARGET_X86
     if (varTypeIsByte(castType))
     {
@@ -2857,10 +3057,18 @@ int LinearScan::BuildCast(GenTreeCast* cast)
         // rather require it to be different from operand's reg.
         buildInternalIntRegisterDefForNode(cast);
     }
-#endif
 
+    // skipping eGPR use for cvt*
+    if ((varTypeUsesIntReg(src) || src->isContainedIndir()) && varTypeUsesFloatReg(cast) && !getEvexIsSupported())
+    {
+        candidates = ForceLowGprForApx(cast, candidates, true);
+    }
+#endif
     int srcCount = BuildCastUses(cast, candidates);
     buildInternalRegisterUses();
+#ifdef TARGET_AMD64
+    candidates = RBM_NONE;
+#endif
     BuildDef(cast, candidates);
 
     return srcCount;
@@ -2880,6 +3088,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     // struct typed indirs are expected only on rhs of a block copy,
     // but in this case they must be contained.
     assert(indirTree->TypeGet() != TYP_STRUCT);
+    SingleTypeRegSet useCandidates = RBM_NONE;
 
 #ifdef FEATURE_SIMD
     if (indirTree->TypeIs(TYP_SIMD12) && indirTree->OperIs(GT_STOREIND) &&
@@ -2890,10 +3099,17 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // FEATURE_SIMD
 
-    int srcCount = BuildIndirUses(indirTree);
+#ifdef TARGET_AMD64
+    if (varTypeUsesIntReg(indirTree->Addr()))
+    {
+        useCandidates = ForceLowGprForApxIfNeeded(indirTree->Addr(), useCandidates, getEvexIsSupported());
+    }
+#endif // TARGET_AMD64
+    int srcCount = BuildIndirUses(indirTree, useCandidates);
     if (indirTree->gtOper == GT_STOREIND)
     {
         GenTree* source = indirTree->gtGetOp2();
+
         if (indirTree->AsStoreInd()->IsRMWMemoryOp())
         {
             // Because 'source' is contained, we haven't yet determined its special register requirements, if any.
@@ -2945,7 +3161,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                     CheckAndMoveRMWLastUse(index, dstIndex);
                 }
 #endif // TARGET_X86
-
                 srcCount += BuildBinaryUses(source->AsOp(), srcCandidates);
             }
         }
@@ -3011,6 +3226,7 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
+    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
     int              srcCount      = BuildBinaryUses(tree->AsOp());
     int              dstCount      = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
@@ -3090,7 +3306,7 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
 
     if (sizeOfSIMDVector >= 32)
     {
-        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncoding()));
+        assert((sizeOfSIMDVector == 32) || ((sizeOfSIMDVector == 64) && compiler->canUseEvexEncodingDebugOnly()));
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
@@ -3134,6 +3350,110 @@ inline SingleTypeRegSet LinearScan::BuildEvexIncompatibleMask(GenTree* tree)
 #else
     return RBM_NONE;
 #endif
+}
+
+//------------------------------------------------------------------------------
+// DoesThisUseGPR: Tries to determine if this node needs a GPR.
+//
+// Arguments:
+//    op   - the GenTree node to check
+//
+// Return Value:
+//    true if certain that GPR is necessary.
+//
+inline bool LinearScan::DoesThisUseGPR(GenTree* op)
+{
+    if (varTypeUsesIntReg(op->gtType))
+    {
+        return true;
+    }
+
+    // This always uses GPR for addressing
+    if (op->isContainedIndir())
+    {
+        return true;
+    }
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (!op->isContained() || !op->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    // We are dealing exclusively with HWIntrinsics here
+    return (op->AsHWIntrinsic()->OperIsBroadcastScalar() ||
+            (op->AsHWIntrinsic()->OperIsMemoryLoad() && DoesThisUseGPR(op->AsHWIntrinsic()->Op(1))));
+#endif
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// ForceLowGprForApx: Returns candidates or a mask representing the
+// lower GPR registers for a node that lowers to an instruction that does not
+// have APX support(via REX2 or eEVEX) currently (thus cannot use the eGPR registers).
+// The caller invokes this function when it knows the node is APX incompatible.
+//
+//
+// Arguments:
+//    tree   - tree to check for EVEX lowering compatibility
+//    candidates - currently computed mask for the node
+//    forceLowGpr - if this is true, take out eGPR without checking any other conditions.
+//
+// Return Value:
+//    updated register mask.
+inline SingleTypeRegSet LinearScan::ForceLowGprForApx(GenTree* tree, SingleTypeRegSet candidates, bool forceLowGpr)
+{
+#if defined(TARGET_AMD64)
+
+    if (!getApxIsSupported())
+    {
+        return candidates;
+    }
+
+    if (forceLowGpr || DoesThisUseGPR(tree))
+    {
+        if (candidates == RBM_NONE)
+        {
+            return lowGprRegs;
+        }
+        else
+        {
+            return (candidates & lowGprRegs);
+        }
+    }
+
+    return candidates;
+#else
+    return candidates;
+#endif
+}
+
+//------------------------------------------------------------------------------
+// ForceLowGprForApxIfNeeded: Returns candidates or a mask representing the
+// lower GPR registers for a node that lowers to an instruction that does not
+// have EGPR supports via EVEX.
+//
+//
+// Arguments:
+//    tree   - tree to check for APX compatibility
+//    candidates - currently computed mask for the node
+//    UseApxRegs - if this is true, take out eGPR without checking any other conditions.
+//
+// Return Value:
+//    updated register mask.
+inline SingleTypeRegSet LinearScan::ForceLowGprForApxIfNeeded(GenTree*         tree,
+                                                              SingleTypeRegSet candidates,
+                                                              bool             useApxRegs)
+{
+    // All the HWIntrinsics cannot access EGPRs when EVEX is disabled.
+    if (!useApxRegs)
+    {
+        return ForceLowGprForApx(tree, candidates);
+    }
+    else
+    {
+        return candidates;
+    }
 }
 
 #endif // TARGET_XARCH

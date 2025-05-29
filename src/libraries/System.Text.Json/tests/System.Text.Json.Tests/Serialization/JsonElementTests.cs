@@ -203,6 +203,10 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("""{ "Prop1" : 1, "Prop2": {}, "Prop3": false }""", """{ "Prop1" : 1, "Prop2" : { "c" : null }, "Prop3" : false }""")]
         [InlineData("""{ "Prop1" : 1, "Prop2": {}, "Prop3": false }""", """{ "Prop1" : 1, "Prop3" : true, "Prop2" : {} }""")]
         [InlineData("""{ "Prop3" : null, "Prop1" : 1, "Prop1" : 2 }""", """{ "Prop1" : 2, "Prop1" : 1, "Prop3" : null }""")]
+        [InlineData("""{"test1":null}""", """{"test2":null}""")]
+        [InlineData("""{"test1":null, "test2":null}""", """{"test3":null, "test4":null}""")]
+        [InlineData("""{"test1":null, "test2":null}""", """{"test3":null}""")]
+        [InlineData("""{"test1":null}""", """{"test2":[null]}""")]
         public static void DeepEquals_NotEqualValuesReturnFalse(string value1, string value2)
         {
             JsonElement element1 = JsonDocument.Parse(value1).RootElement;

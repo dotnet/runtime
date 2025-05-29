@@ -681,6 +681,7 @@ namespace System.Text.Json
         public void WriteStringValue(System.Text.Json.JsonEncodedText value) { }
         public void WriteStringValueSegment(System.ReadOnlySpan<byte> value, bool isFinalSegment) { }
         public void WriteStringValueSegment(System.ReadOnlySpan<char> value, bool isFinalSegment) { }
+        public void WriteBase64StringSegment(ReadOnlySpan<byte> value, bool isFinalSegment) { }
     }
 }
 namespace System.Text.Json.Nodes

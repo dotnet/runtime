@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace System.Formats.Nrbf;
 
 /// <summary>
-/// Represents a single dimensional array of <see langword="string" />.
+/// Represents a single-dimensional array of <see langword="string" />.
 /// </summary>
 /// <remarks>
 /// ArraySingleString records are described in <see href="https://learn.microsoft.com/openspecs/windows_protocols/ms-nrbf/3d98fd60-d2b4-448a-ac0b-3cd8dea41f9d">[MS-NRBF] 2.4.3.4</see>.

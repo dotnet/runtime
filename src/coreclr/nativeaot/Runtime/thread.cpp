@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#endif
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
@@ -12,7 +15,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -27,6 +29,8 @@
 #include "stressLog.h"
 #include "RhConfig.h"
 #include "GcEnum.h"
+#include "NativeContext.h"
+#include "minipal/time.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -37,7 +41,7 @@ static Thread* g_RuntimeInitializingThread;
 
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
-    minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
 }
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
@@ -278,18 +282,23 @@ void Thread::Construct()
 
     m_pTransitionFrame = TOP_OF_STACK_MARKER;
     m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
-    m_hPalThread = INVALID_HANDLE_VALUE;
 
     m_threadId = PalGetCurrentOSThreadId();
 
-    HANDLE curProcessPseudo = PalGetCurrentProcess();
-    HANDLE curThreadPseudo  = PalGetCurrentThread();
+#if TARGET_WINDOWS
+    m_hOSThread = INVALID_HANDLE_VALUE;
 
-    // This can fail!  Users of m_hPalThread must be able to handle INVALID_HANDLE_VALUE!!
-    PalDuplicateHandle(curProcessPseudo, curThreadPseudo, curProcessPseudo, &m_hPalThread,
+    HANDLE curProcessPseudo = GetCurrentProcess();
+    HANDLE curThreadPseudo  = GetCurrentThread();
+
+    // This can fail!  Users of m_hOSThread must be able to handle INVALID_HANDLE_VALUE!!
+    DuplicateHandle(curProcessPseudo, curThreadPseudo, curProcessPseudo, &m_hOSThread,
                        0,      // ignored
                        FALSE,  // inherit
                        DUPLICATE_SAME_ACCESS);
+#else
+    m_hOSThread = pthread_self();
+#endif
 
     if (!PalGetMaximumStackBounds(&m_pStackLow, &m_pStackHigh))
         RhFailFast();
@@ -368,8 +377,10 @@ void Thread::Destroy()
 {
     ASSERT(IsDetached());
 
-    if (m_hPalThread != INVALID_HANDLE_VALUE)
-        PalCloseHandle(m_hPalThread);
+#ifdef TARGET_WINDOWS
+    if (m_hOSThread != INVALID_HANDLE_VALUE)
+        CloseHandle(m_hOSThread);
+#endif
 
 #ifdef STRESS_LOG
     ThreadStressLog* ptsl = reinterpret_cast<ThreadStressLog*>(GetThreadStressLog());
@@ -591,12 +602,6 @@ void Thread::Hijack()
     ASSERT(ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread());
     ASSERT_MSG(ThreadStore::GetSuspendingThread() != this, "You may not hijack a thread from itself.");
 
-    if (m_hPalThread == INVALID_HANDLE_VALUE)
-    {
-        // cannot proceed
-        return;
-    }
-
     if (IsGCSpecial())
     {
         // GC threads can not be forced to run preemptively, so we will not try.
@@ -613,10 +618,10 @@ void Thread::Hijack()
 
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may also do nothing if the target thread is in inconvenient state.
-    PalHijack(m_hPalThread, this);
+    PalHijack(this);
 }
 
-void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijack)
+void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, Thread* pThreadToHijack)
 {
     // If we are no longer trying to suspend, no need to do anything.
     // This is just an optimization. It is ok to race with the setting the trap flag here.
@@ -624,7 +629,7 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     if (!ThreadStore::IsTrapThreadsRequested())
         return;
 
-    Thread* pThread = (Thread*) pThreadToHijack;
+    Thread* pThread = pThreadToHijack;
     if (pThread == NULL)
     {
         pThread = ThreadStore::GetCurrentThreadIfAvailable();
@@ -856,12 +861,12 @@ bool Thread::Redirect()
     if (redirectionContext == NULL)
         return false;
 
-    if (!PalGetCompleteThreadContext(m_hPalThread, redirectionContext))
+    if (!PalGetCompleteThreadContext(m_hOSThread, redirectionContext))
         return false;
 
     uintptr_t origIP = redirectionContext->GetIp();
     redirectionContext->SetIp((uintptr_t)RhpSuspendRedirected);
-    if (!PalSetThreadContext(m_hPalThread, redirectionContext))
+    if (!PalSetThreadContext(m_hOSThread, redirectionContext))
         return false;
 
     // the thread will now inevitably try to suspend
@@ -1091,7 +1096,10 @@ bool Thread::IsDetached()
 void Thread::SetDetached()
 {
     ASSERT(!IsStateSet(TSF_Detached));
+    ASSERT(IsStateSet(TSF_Attached));
+
     SetState(TSF_Detached);
+    ClearState(TSF_Attached);
 }
 
 bool Thread::IsActivationPending()

@@ -41,7 +41,7 @@ namespace ILCompiler
                     foreach (var method in _methods)
                         streamWriter.WriteLine($"   {method.GetUnmanagedCallersOnlyExportName()}");
                 }
-                else if(_context.Target.IsApplePlatform)
+                else if (_context.Target.IsApplePlatform)
                 {
                     foreach (string symbol in _exportSymbols)
                         streamWriter.WriteLine($"_{symbol}");

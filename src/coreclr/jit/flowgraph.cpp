@@ -48,6 +48,10 @@ static bool blockNeedsGCPoll(BasicBlock* block)
                         blockMayNeedGCPoll = true;
                     }
                 }
+                else if (tree->OperGet() == GT_GCPOLL)
+                {
+                    blockMayNeedGCPoll = true;
+                }
             }
         }
     }
@@ -590,6 +594,8 @@ PhaseStatus Compiler::fgImport()
         INDEBUG(fgPgoDeferredInconsistency = false);
     }
 
+    fgImportDone = true;
+
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -819,7 +825,7 @@ void Compiler::fgSetPreferredInitCctor()
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
 {
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         CORINFO_RESOLVED_TOKEN resolvedToken;
         memset(&resolvedToken, 0, sizeof(resolvedToken));
@@ -862,6 +868,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 
         case GT_ARR_ADDR:
             return (addr->gtFlags & GTF_ARR_ADDR_NONNULL) == 0;
+
+        case GT_BOX:
+            return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
             return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
@@ -926,6 +935,42 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
     }
 
     return true; // default result: addr could be null.
+}
+
+//------------------------------------------------------------------------------
+// fgAddrCouldBeHeap: Check whether the address tree may represent a heap address.
+//
+// Arguments:
+//    addr - Address to check
+//
+// Return Value:
+//    True if address could be a heap address; false otherwise (i.e. stack, native memory, etc.)
+//
+bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
+{
+    GenTree* op = addr;
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
+    {
+        op = op->AsFieldAddr()->GetFldObj();
+    }
+
+    target_ssize_t offset;
+    gtPeelOffsets(&op, &offset);
+
+    // Ignore the offset for locals
+
+    if (op->OperIs(GT_LCL_ADDR))
+    {
+        return false;
+    }
+
+    if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
+    {
+        // RetBuf is known to be on the stack
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -1030,7 +1075,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
-    if (opts.IsReadyToRun())
+    if (IsAot())
     {
         if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
@@ -1239,10 +1284,9 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
     if (!kind.needsRuntimeLookup)
     {
         CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(info.compClassHnd);
-        if (ptr != NULL)
+        if (ptr != NO_OBJECT_HANDLE)
         {
-            setMethodHasFrozenObjects();
-            tree = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+            tree = gtNewIconEmbObjHndNode(ptr);
         }
         else
         {
@@ -1324,13 +1368,13 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
  *      {
  *          unsigned byte acquired = 0;
  *          try {
- *              JIT_MonEnterWorker(<lock object>, &acquired);
+ *              Monitor.Enter(<lock object>, &acquired);
  *
  *              *** all the preexisting user code goes here ***
  *
- *              JIT_MonExitWorker(<lock object>, &acquired);
+ *              Monitor.ExitIfTaken(<lock object>, &acquired);
  *          } fault {
- *              JIT_MonExitWorker(<lock object>, &acquired);
+ *              Monitor.ExitIfTaken(<lock object>, &acquired);
  *         }
  *      L_return:
  *         ret
@@ -1422,6 +1466,7 @@ void Compiler::fgAddSyncMethodEnterExit()
 
         // Initialize the new entry
 
+        newEntry->ebdID          = impInlineRoot()->compEHID++;
         newEntry->ebdHandlerType = EH_HANDLER_FAULT;
 
         newEntry->ebdTryBeg  = tryBegBB;
@@ -1922,13 +1967,12 @@ public:
     //    True if any returns were impacted.
     //
     // Notes:
-    //    The goal is to set things up favorably for a reasonable layout without
-    //    putting too much burden on fgReorderBlocks; in particular, since that
-    //    method doesn't (currently) shuffle non-profile, non-rare code to create
-    //    fall-through and reduce gotos, this method places each const return
-    //    block immediately after its last predecessor, so that the flow from
-    //    there to it can become fallthrough without requiring any motion to be
-    //    performed by fgReorderBlocks.
+    //    Prematurely optimizing the block layout is unnecessary.
+    //    However, 'ReturnCountHardLimit' is small enough such that
+    //    any throughput savings from skipping this pass are negated
+    //    by the need to emit branches to these blocks in MinOpts.
+    //    If we decide to increase the number of epilogues allowed,
+    //    we should consider removing this pass.
     //
     bool PlaceReturns()
     {
@@ -2405,7 +2449,18 @@ PhaseStatus Compiler::fgAddInternal()
         }
         else
         {
-            merger.SetMaxReturns(MergedReturns::ReturnCountHardLimit);
+            unsigned limit = MergedReturns::ReturnCountHardLimit;
+#ifdef JIT32_GCENCODER
+            // For the jit32 GC encoder the limit is an actual hard limit. In
+            // async functions we will be introducing another return during
+            // the async transformation, so make sure there's a free epilog
+            // for it.
+            if (compIsAsync())
+            {
+                limit--;
+            }
+#endif
+            merger.SetMaxReturns(limit);
         }
     }
 
@@ -2767,6 +2822,58 @@ bool Compiler::fgSimpleLowerCastOfSmpOp(LIR::Range& range, GenTreeCast* cast)
     return false;
 }
 
+//------------------------------------------------------------------------
+// fgSimpleLowerBswap16 : Optimization to remove CAST nodes from operands of small ops that depents on
+// lower bits only (currently only BSWAP16).
+// Example:
+//      BSWAP16(CAST(x)) transforms to BSWAP16(x)
+//
+// Returns:
+//      True or false, representing changes were made.
+//
+// Notes:
+//      This optimization could be done in morph, but it cannot because there are correctness
+//      problems with NOLs (normalized-on-load locals) and how they are handled in VN.
+//      Simple put, you cannot remove a CAST from CAST(LCL_VAR{nol}) in HIR.
+//
+//      Because the optimization happens during rationalization, turning into LIR, it is safe to remove the CAST.
+//
+bool Compiler::fgSimpleLowerBswap16(LIR::Range& range, GenTree* op)
+{
+    assert(op->OperIs(GT_BSWAP16));
+
+    if (opts.OptimizationDisabled())
+        return false;
+
+    // When openrand is a integral cast
+    // When both source and target sizes are at least the operation size
+    bool madeChanges = false;
+
+    if (op->gtGetOp1()->OperIs(GT_CAST))
+    {
+        GenTreeCast* op1 = op->gtGetOp1()->AsCast();
+
+        if (!op1->gtOverflow() && (genTypeSize(op1->CastToType()) >= 2) &&
+            genActualType(op1->CastFromType()) == TYP_INT)
+        {
+            // This cast does not affect the lower 16 bits. It can be removed.
+            op->AsOp()->gtOp1 = op1->CastOp();
+            range.Remove(op1);
+            madeChanges = true;
+        }
+    }
+
+#ifdef DEBUG
+    if (madeChanges)
+    {
+        JITDUMP("Lower - Downcast of Small Op %s:\n", GenTree::OpName(op->OperGet()));
+        DISPTREE(op);
+    }
+#endif // DEBUG
+
+    return madeChanges;
+}
+
 //------------------------------------------------------------------------------
 // fgGetDomSpeculatively: Try determine a more accurate dominator than cached bbIDom
 //
@@ -2877,6 +2984,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     // the handler go to the prolog. Edges coming from with the handler are back-edges, and
     // go to the existing 'block'.
 
+    weight_t incomingWeight = BB_ZERO_WEIGHT;
     for (BasicBlock* const predBlock : block->PredBlocksEditing())
     {
         if (!fgIsIntraHandlerPred(predBlock, block))
@@ -2890,6 +2998,7 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
                 {
                     noway_assert(predBlock->TargetIs(block));
                     fgRedirectTargetEdge(predBlock, newHead);
+                    incomingWeight += predBlock->bbWeight;
                     break;
                 }
 
@@ -2906,6 +3015,12 @@ void Compiler::fgInsertFuncletPrologBlock(BasicBlock* block)
     FlowEdge* const newEdge = fgAddRefPred(block, newHead);
     newHead->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
     assert(newHead->JumpsToNext());
+
+    // Update flow into the header block
+    if (block->hasProfileWeight())
+    {
+        newHead->setBBProfileWeight(incomingWeight);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3796,6 +3911,8 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
     // check changes from being enclosed in a try to being
     // enclosed in a finally.
     //
+    // Filter ACDs should always remain in filter regions.
+    //
     const bool inHnd = acdHndIndex > 0;
     const bool inTry = acdTryIndex > 0;
 
@@ -3805,26 +3922,35 @@ bool Compiler::AddCodeDsc::UpdateKeyDesignator(Compiler* compiler)
     {
         // Non-funclet case
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = inTry ? AcdKeyDesignator::KD_TRY : AcdKeyDesignator::KD_NONE;
     }
     else if (!inTry && !inHnd)
     {
         // Moved outside of all EH regions.
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = AcdKeyDesignator::KD_NONE;
     }
     else if (inTry && (!inHnd || (acdTryIndex < acdHndIndex)))
     {
         // Moved into a parent try region.
         //
+        assert(acdKeyDsg != AcdKeyDesignator::KD_FLT);
         newDsg = AcdKeyDesignator::KD_TRY;
     }
     else
     {
-        // Moved into a parent handler region.
-        // Note this cannot be a filter region.
+        // Moved into a parent or renumbered handler or filter region.
         //
-        newDsg = AcdKeyDesignator::KD_HND;
+        if (acdKeyDsg == AcdKeyDesignator::KD_FLT)
+        {
+            newDsg = AcdKeyDesignator::KD_FLT;
+        }
+        else
+        {
+            newDsg = AcdKeyDesignator::KD_HND;
+        }
     }
 
     bool result = (newDsg != acdKeyDsg);
@@ -3963,7 +4089,7 @@ PhaseStatus Compiler::fgSetBlockOrder()
     BasicBlock::s_nMaxTrees = 0;
 #endif
 
-    if (compCanEncodePtrArgCntMax() && fgHasCycleWithoutGCSafePoint())
+    if (fgHasCycleWithoutGCSafePoint())
     {
         JITDUMP("Marking method as fully interruptible\n");
         SetInterruptible(true);
@@ -4333,7 +4459,7 @@ FlowGraphDfsTree* Compiler::fgComputeDfs()
         fgRunDfs<decltype(visitPreorder), decltype(visitPostorder), decltype(visitEdge), useProfile>(visitPreorder,
                                                                                                      visitPostorder,
                                                                                                      visitEdge);
-    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle);
+    return new (this, CMK_DepthFirstSearch) FlowGraphDfsTree(this, postOrder, numBlocks, hasCycle, useProfile);
 }
 
 // Add explicit instantiations.
@@ -4753,7 +4879,7 @@ FlowGraphNaturalLoops* FlowGraphNaturalLoops::Find(const FlowGraphDfsTree* dfsTr
         BitVecTraits loopTraits = loop->LoopBlockTraits();
         loop->m_blocks          = BitVecOps::MakeEmpty(&loopTraits);
 
-        if (!FindNaturalLoopBlocks(loop, worklist))
+        if (!FindNaturalLoopBlocks(loop, worklist) || !IsLoopCanonicalizable(loop))
         {
             loops->m_improperLoopHeaders++;
 
@@ -4945,6 +5071,40 @@ bool FlowGraphNaturalLoops::FindNaturalLoopBlocks(FlowGraphNaturalLoop* loop, Ar
             {
                 worklist.Push(predBlock);
             }
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// FlowGraphNaturalLoops::IsLoopCanonicalizable:
+//   Check if a loop will be able to be canonicalized if we record it.
+//
+// Parameters:
+//   loop - Loop structure (partially filled by caller)
+//
+// Returns:
+//   True if the loop header can be canonicalized:
+//     - Can have a preheader created
+//     - Exits can be made unique from the loop
+//
+bool FlowGraphNaturalLoops::IsLoopCanonicalizable(FlowGraphNaturalLoop* loop)
+{
+    Compiler* comp = loop->GetDfsTree()->GetCompiler();
+    // The only (known) problematic case is when a backedge is a callfinally edge.
+    if (!comp->bbIsHandlerBeg(loop->GetHeader()))
+    {
+        return true;
+    }
+
+    for (FlowEdge* backedge : loop->BackEdges())
+    {
+        if (backedge->getSourceBlock()->KindIs(BBJ_CALLFINALLY))
+        {
+            // It would not be possible to create a preheader for this loop
+            // since this backedge could not be redirected.
+            return false;
         }
     }
 
@@ -6079,14 +6239,30 @@ bool FlowGraphNaturalLoop::CanDuplicateWithEH(INDEBUG(const char** reason))
             // Check if this is an "outermost" try within the loop.
             // If so, we have more checking to do later on.
             //
-            const bool headerInTry         = header->hasTryIndex();
-            unsigned   blockIndex          = block->getTryIndex();
-            unsigned   outermostBlockIndex = comp->ehTrueEnclosingTryIndexIL(blockIndex);
+            bool const     headerIsInTry     = header->hasTryIndex();
+            unsigned const blockTryIndex     = block->getTryIndex();
+            unsigned const enclosingTryIndex = comp->ehTrueEnclosingTryIndex(blockTryIndex);
 
-            if ((headerInTry && (outermostBlockIndex == header->getTryIndex())) ||
-                (!headerInTry && (outermostBlockIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
+            if ((headerIsInTry && (enclosingTryIndex == header->getTryIndex())) ||
+                (!headerIsInTry && (enclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)))
             {
-                tryRegionsToClone.Push(block);
+                // When we clone a try we also clone its handler.
+                //
+                // This try may be enclosed in a handler whose try begin is in the loop.
+                // If so we'll clone this try when we clone (the handler of) that try.
+                //
+                bool isInHandlerOfInLoopTry = false;
+                if (block->hasHndIndex())
+                {
+                    unsigned const    enclosingHndIndex = block->getHndIndex();
+                    BasicBlock* const associatedTryBeg  = comp->ehGetDsc(enclosingHndIndex)->ebdTryBeg;
+                    isInHandlerOfInLoopTry              = this->ContainsBlock(associatedTryBeg);
+                }
+
+                if (!isInHandlerOfInLoopTry)
+                {
+                    tryRegionsToClone.Push(block);
+                }
             }
         }
 

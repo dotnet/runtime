@@ -567,46 +567,11 @@ namespace Internal.TypeSystem.Ecma
         {
             TypeLayout layout = _typeDefinition.GetLayout();
 
-            ClassLayoutMetadata result;
-            result.PackingSize = layout.PackingSize;
-            result.Size = layout.Size;
-
-            // Skip reading field offsets if this is not explicit layout
-            if (IsExplicitLayout)
+            return new ClassLayoutMetadata
             {
-                var fieldDefinitionHandles = _typeDefinition.GetFields();
-                var numInstanceFields = 0;
-
-                foreach (var handle in fieldDefinitionHandles)
-                {
-                    var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
-                    if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
-                        continue;
-
-                    numInstanceFields++;
-                }
-
-                result.Offsets = new FieldAndOffset[numInstanceFields];
-
-                int index = 0;
-                foreach (var handle in fieldDefinitionHandles)
-                {
-                    var fieldDefinition = MetadataReader.GetFieldDefinition(handle);
-                    if ((fieldDefinition.Attributes & FieldAttributes.Static) != 0)
-                        continue;
-
-                    // Note: GetOffset() returns -1 when offset was not set in the metadata
-                    int specifiedOffset = fieldDefinition.GetOffset();
-                    result.Offsets[index] =
-                        new FieldAndOffset(_module.GetField(handle, this), specifiedOffset == -1 ? FieldAndOffset.InvalidOffset : new LayoutInt(specifiedOffset));
-
-                    index++;
-                }
-            }
-            else
-                result.Offsets = null;
-
-            return result;
+                PackingSize = layout.PackingSize,
+                Size = layout.Size
+            };
         }
 
         public override bool IsExplicitLayout

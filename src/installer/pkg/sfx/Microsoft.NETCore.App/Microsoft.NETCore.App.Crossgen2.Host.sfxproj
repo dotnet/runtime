@@ -4,7 +4,6 @@
   <PropertyGroup>
     <CrossgenPublishProject>$(RepoRoot)src/coreclr/tools/aot/crossgen2/crossgen2_inbuild.csproj</CrossgenPublishProject>
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
-    <IsShipping>false</IsShipping>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NETCore.App.Crossgen2.props" />

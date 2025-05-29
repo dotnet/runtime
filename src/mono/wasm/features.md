@@ -23,7 +23,7 @@ Some of these properties require a unique build of the runtime, which means that
 
 ### Multi-threading
 
-Multi-threading support is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
+Multi-threading experiment is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`, and is currently disabled by default. It requires a unique build of the runtime.
 
 Your HTTPS server and/or proxy must be configured to send HTTP headers similar to `Cross-Origin-Embedder-Policy:require-corp` and `Cross-Origin-Opener-Policy:same-origin` in order to enable multi-threading support in end-user web browsers for security reasons.
 
@@ -54,6 +54,14 @@ If an application uses the [HttpClient](https://learn.microsoft.com/dotnet/api/s
 Because web browsers do not expose direct access to sockets, we are unable to provide our own implementation of HTTP, and HttpClient's behavior and feature set will as a result depend also on the browser you use to run the application.
 
 A prominent limitation is that your application must obey `Cross-Origin Resource Sharing` (CORS) rules in order to perform network requests successfully - see [CORS on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) for more information.
+
+Since Net 10 Preview 3 the HTTP client supports [streaming HTTP response](https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#consuming_a_fetch_as_a_stream) by default because all evergreen browsers now support it.
+
+This is a breaking change because the `response.Content.ReadAsStreamAsync()` is no longer `MemoryStream` but `BrowserHttpReadStream` which doesn't support synchronous operations like `Stream.Read(Span<Byte>)`. If your code uses synchronous operations, you can disable the feature or copy the stream into `MemoryStream` yourself.
+
+If you need to disable it, you can use `<WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>` or `DOTNET_WASM_ENABLE_STREAMING_RESPONSE` env variable to do it for all HTTP requests.
+
+Or you can use `request.Options.Set(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), false);` for individual request.
 
 ### WebSocket
 Applications using the [WebSocketClient](https://learn.microsoft.com/dotnet/api/system.net.websockets.clientwebsocket) managed API will require the browser to support the [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API) API.
@@ -166,7 +174,7 @@ Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../
 - `dotnet.js` - is the main entrypoint with the [JavaScript API](#JavaScript-API). It will load the rest of the runtime.
 - `dotnet.native.js` - is posix emulation layer provided by the [Emscripten](https://github.com/emscripten-core/emscripten) project
 - `dotnet.runtime.js` - is integration of the dotnet with the browser
-- `blazor.boot.json` - contains list of all other assets and their integrity hash and also various configuration flags.
+- `dotnet.boot.js` - contains list of all other assets and their integrity hash and also various configuration flags.
 - `dotnet.native.wasm` - is the compiled binary of the dotnet (Mono) runtime.
 - `System.Private.CoreLib.*` - is NET assembly with the core implementation of dotnet runtime and class library
 - `*.wasm` - are .NET assemblies stored in `WebCIL` format (for better compatibility with firewalls and virus scanners).
@@ -202,7 +210,7 @@ Adding too many files into prefetch could be counterproductive.
 Please benchmark your startup performance on real target devices and with realistic network conditions.
 
 ```html
-<link rel="preload" href="./_framework/blazor.boot.json" as="fetch" crossorigin="use-credentials">
+<link rel="preload" href="./_framework/dotnet.boot.js" as="fetch" crossorigin="use-credentials">
 <link rel="prefetch" href="./_framework/dotnet.native.js" as="fetch" crossorigin="anonymous">
 <link rel="prefetch" href="./_framework/dotnet.runtime.js" as="fetch" crossorigin="anonymous">
 ```
@@ -292,9 +300,6 @@ Mobile browsers typically have strict limits on the amount of memory they can us
 
 A WebAssembly application that works well on desktop PCs browser may take minutes to download or run out of memory before it is able to start on a mobile device, and the same is true for .NET.
 
-### Shell environments - V8
-While our primary target is web browsers, we have partial support for D8/V8 command-line shell, version 11 or higher, sufficient to pass most of our automated tests. Both of these environments may lack support for features that are available in the browser.
-
 ## Choosing the right platform target
 Every end user has different needs, so the right platform for every application may differ.
 
@@ -371,79 +376,63 @@ await dotnet
 
 See also log mask [categories](https://github.com/dotnet/runtime/blob/88633ae045e7741fffa17710dc48e9032e519258/src/mono/mono/utils/mono-logger.c#L273-L308)
 
-### Profiling
-
-You can enable integration with browser profiler via following elements in your .csproj
-```xml
-<PropertyGroup>
-  <WasmProfilers>browser;</WasmProfilers>
-</PropertyGroup>
-```
-
-In Blazor, you can customize the startup in your index.html
-```html
-<script src="_framework/blazor.webassembly.js" autostart="false"></script>
-<script>
-Blazor.start({
-    configureRuntime: function (dotnet) {
-        dotnet.withConfig({
-            browserProfilerOptions: {}
-        });
-    }
-});
-</script>
-```
-
-In simple browser template, you can add following to your `main.js`
-
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({browserProfilerOptions: {}}).run();
-```
-
-### Log Profiling for Memory Troubleshooting
-
-You can enable integration with log profiler via following elements in your .csproj:
+### Diagnostics tools
 
 ```xml
 <PropertyGroup>
-  <WasmProfilers>log;</WasmProfilers>
-  <WasmBuildNative>true</WasmBuildNative>
+  <!-- enables diagnostic server -->
+  <WasmPerfTracing>true</WasmPerfTracing>
+
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  Only when WasmPerfInstrumentation is true
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmPerfInstrumentation>N:Sample</WasmPerfInstrumentation>
+  <!-- alternatively all methods -->
+  <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
+
+  <!-- enables metrics https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics -->
+  <!-- this is existing switch also on other targets -->
+  <MetricsSupport>true</MetricsSupport>
+
+  <!-- enables system events https://learn.microsoft.com/en-us/dotnet/core/deploying/native-aot/diagnostics#observability-and-telemetry -->
+  <!-- this is existing switch also on other targets -->
+  <EventSourceSupport>true</EventSourceSupport>
 </PropertyGroup>
 ```
 
-In simple browser template, you can add following to your `main.js`
+`Timing-Allow-Origin` HTTP header allows for more precise time measurements.
 
-```javascript
-import { dotnet } from './dotnet.js'
-await dotnet.withConfig({
-    logProfilerOptions: {
-        takeHeapshot: "MyApp.Profiling::TakeHeapshot",
-        configuration: "log:alloc,output=output.mlpd"
-    }}).run();
+Then you can trigger collection of a trace from browser dev tools
+
+```js
+globalThis.getDotnetRuntime(0).collectGcDump()
 ```
 
-In order to trigger a heap shot, add the following:
-
-```csharp
-namespace MyApp;
-
-class Profiling
-{
-    [JSExport]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TakeHeapshot() { }
-}
+The .nettrace file could be converted for VS via `dotnet-gcdump convert` or opened in `PerfView.exe` as is.
+```js
+globalThis.getDotnetRuntime(0).collectMetrics({durationSeconds: 60})
 ```
 
-Invoke `MyApp.Profiling.TakeHeapshot()` from your code in order to create a memory heap shot and flush the contents of the profile to the VFS. Make sure to align the namespace and class of the `logProfilerOptions.takeHeapshot` with your class.
+The counters could be opened in VS, `PerfView.exe` tools or via `dotnet-trace report xxx.nettrace topN -n 10`
 
-You can download the mpld file to analyze it.
+```js
+globalThis.getDotnetRuntime(0).collectCpuSamples({durationSeconds: 60})
+```
 
-### Diagnostic tools
+The counters could be opened in VS or in `PerfView.exe`
 
-We have initial implementation of diagnostic server and [event pipe](https://learn.microsoft.com/dotnet/core/diagnostics/eventpipe)
 
-At the moment it requires multi-threaded build of the runtime.
+### Profiling in the browser dev tools
 
-For more details see [diagnostic-server.md](../browser/runtime/diagnostics/diagnostic-server.md)
+You can enable integration with the profiler in browser dev tools via following elements in your .csproj
+```xml
+<PropertyGroup>
+  <!-- enables perf instrumentation for sampling CPU profiler for methods matching callspec
+  See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
+  -->
+  <WasmProfilers>browser:callspec=N:Sample</WasmProfilers>
+  <!-- alternatively all methods -->
+  <WasmProfilers>browser:callspec=all</WasmProfilers>
+</PropertyGroup>
+```

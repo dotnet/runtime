@@ -423,4 +423,7 @@
   <data name="GenericCycleDepthCutoff" xml:space="preserve">
     <value>Number of nested occurrences of a potentially cyclic generic type to cut off</value>
   </data>
+  <data name="EnableCachedInterfaceDispatchSupport" xml:space="preserve">
+    <value>Enable support for cached interface dispatch</value>
+  </data>
 </root>

@@ -542,8 +542,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
             IBuildEngine9? be9 = BuildEngine as IBuildEngine9;
-            if (be9 is not null)
-                allowedParallelism = be9.RequestCores(allowedParallelism);
+            try
+            {
+                if (be9 is not null)
+                    allowedParallelism = be9.RequestCores(allowedParallelism);
+            }
+            catch (NotImplementedException)
+            {
+                // RequestCores is not implemented in TaskHostFactory
+                be9 = null;
+            }
 
             /*
                 From: https://github.com/dotnet/runtime/issues/46146#issuecomment-754021690
@@ -1156,16 +1164,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     $"    mono_aot_register_module ({s});")
                     }}
                     }
-
-                    {{profilers.Join(writer.NewLine, profiler =>
-                    $$$""""
-                    void mono_profiler_init_{{{profiler}}} (const char *desc);
-                    EMSCRIPTEN_KEEPALIVE void mono_wasm_load_profiler_{{{profiler}}} (const char *desc)
-                    {
-                        mono_profiler_init_{{{profiler}}} (desc);
-                    }
-                    """")
-                    }}
 
                     {{parsedAotMode switch
                         {

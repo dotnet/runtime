@@ -45,11 +45,7 @@ extern TADDR g_ClrModuleBase;
 CRITICAL_SECTION g_dacCritSec;
 ClrDataAccess* g_dacImpl;
 
-EXTERN_C
-#ifdef TARGET_UNIX
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
+EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
 {
     static bool g_procInitialized = false;
 
@@ -3245,6 +3241,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface15*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface16)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface16*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5821,7 +5821,7 @@ ClrDataAccess::RawGetMethodName(
                 {
                     // Try to find matching precode entrypoint
                     Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(alignedAddress, TRUE);
-                    if (pPrecode != NULL)
+                    if (pPrecode != NULL && pPrecode->GetType() != PRECODE_UMENTRY_THUNK)
                     {
                         methodDesc = pPrecode->GetMethodDesc();
                         if (methodDesc != NULL)

@@ -25,6 +25,11 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             Builder.EmitUInt(0x00100073);
         }
 
+        public void EmitFENCE_R_RW()
+        {
+            Builder.EmitUInt(0x0230000f);
+        }
+
         public void EmitLI(Register regDst, int offset)
         {
             Debug.Assert((offset >= -2048) && (offset <= 2047));
@@ -111,7 +116,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
             }
             else
             {
-                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_JALR);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RISCV64_PC);
                 EmitPC(Register.X29); // auipc x29, 0
                 EmitJALR(Register.X0, Register.X29, 0); // jalr x0, 0(x29)
             }
@@ -126,7 +131,7 @@ namespace ILCompiler.DependencyAnalysis.RiscV64
 
         public void EmitJMPIfZero(Register regSrc, ISymbolNode symbol)
         {
-            uint offset = symbol.RepresentsIndirectionCell ? 28u : 8u;
+            uint offset = symbol.RepresentsIndirectionCell ? 28u : 12u;
             uint encodedOffset = ((offset & 0x1e) << 7) | ((offset & 0x7e0) << 20) | ((offset & 0x800) >> 4) | ((offset & 0x1000) << 19);
             // bne regSrc, x0, offset
             Builder.EmitUInt((uint)(0x00001063 | ((uint)regSrc << 15) | encodedOffset));

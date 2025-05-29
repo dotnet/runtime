@@ -94,7 +94,7 @@ static bool LOADConvertLibraryPathWideStringToMultibyteString(
     INT *multibyteLibraryPathLengthRef);
 static BOOL LOADValidateModule(MODSTRUCT *module);
 static LPWSTR LOADGetModuleFileName(MODSTRUCT *module);
-static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath);
+static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath, /*OUT*/ BOOL* pIsAlreadyLoaded);
 static NATIVE_LIBRARY_HANDLE LOADLoadLibraryDirect(LPCSTR libraryNameOrPath);
 static BOOL LOADFreeLibrary(MODSTRUCT *module, BOOL fCallDllMain);
 static HMODULE LOADRegisterLibraryDirect(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath, BOOL fDynamic);
@@ -669,7 +669,8 @@ PAL_RegisterModule(
         if (dl_handle)
         {
             // This only creates/adds the module handle and doesn't call DllMain
-            hinstance = LOADAddModule(dl_handle, lpLibFileName);
+            BOOL unused;
+            hinstance = LOADAddModule(dl_handle, lpLibFileName, &unused);
         }
 
         UnlockModuleList();
@@ -1016,11 +1017,13 @@ BOOL LOADInitializeModules()
 
     exe_module.self = (HMODULE)&exe_module;
     exe_module.dl_handle = dlopen(nullptr, RTLD_LAZY);
+#if not defined(__wasm__) // wasm does not support shared libraries
     if (exe_module.dl_handle == nullptr)
     {
         ERROR("Executable module will be broken : dlopen(nullptr) failed\n");
         return FALSE;
     }
+#endif
     exe_module.lib_name = nullptr;
     exe_module.refcount = -1;
     exe_module.next = &exe_module;
@@ -1592,10 +1595,11 @@ Parameters:
 Return value:
     PAL handle to the loaded library, or nullptr upon failure (error is set via SetLastError()).
 */
-static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath)
+static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath, /*OUT*/ BOOL* pIsAlreadyLoaded)
 {
     _ASSERTE(dl_handle != nullptr);
     _ASSERTE(g_running_in_exe || (libraryNameOrPath != nullptr && libraryNameOrPath[0] != '\0'));
+    *pIsAlreadyLoaded = FALSE;
 
 #if !RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     /* search module list for a match. */
@@ -1614,6 +1618,7 @@ static MODSTRUCT *LOADAddModule(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryN
                 module->refcount++;
             }
             dlclose(dl_handle);
+            *pIsAlreadyLoaded = TRUE;
             return module;
         }
         module = module->next;
@@ -1665,7 +1670,8 @@ Return value:
 */
 static HMODULE LOADRegisterLibraryDirect(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR libraryNameOrPath, BOOL fDynamic)
 {
-    MODSTRUCT *module = LOADAddModule(dl_handle, libraryNameOrPath);
+    BOOL isAlreadyLoaded;
+    MODSTRUCT *module = LOADAddModule(dl_handle, libraryNameOrPath, &isAlreadyLoaded);
     if (module == nullptr)
     {
         return nullptr;
@@ -1674,36 +1680,39 @@ static HMODULE LOADRegisterLibraryDirect(NATIVE_LIBRARY_HANDLE dl_handle, LPCSTR
     /* If the module contains a DllMain, call it. */
     if (module->pDllMain)
     {
-        TRACE("Calling DllMain (%p) for module %S\n",
-            module->pDllMain,
-            module->lib_name ? module->lib_name : W16_NULLSTRING);
-
-        if (nullptr == module->hinstance)
+        if (!isAlreadyLoaded)
         {
-            PREGISTER_MODULE registerModule = (PREGISTER_MODULE)dlsym(module->dl_handle, "PAL_RegisterModule");
-            if (registerModule != nullptr)
-            {
-                module->hinstance = registerModule(libraryNameOrPath);
-            }
-            else
-            {
-                // If the target module doesn't have the PAL_RegisterModule export, then use this PAL's
-                // module handle assuming that the target module is referencing this PAL's exported
-                // functions on said handle.
-                module->hinstance = (HINSTANCE)module;
-            }
-        }
+            TRACE("Calling DllMain (%p) for module %S\n",
+                module->pDllMain,
+                module->lib_name ? module->lib_name : W16_NULLSTRING);
 
-        BOOL dllMainRetVal = LOADCallDllMainSafe(module, DLL_PROCESS_ATTACH, fDynamic ? nullptr : (LPVOID)-1);
+            if (nullptr == module->hinstance)
+            {
+                PREGISTER_MODULE registerModule = (PREGISTER_MODULE)dlsym(module->dl_handle, "PAL_RegisterModule");
+                if (registerModule != nullptr)
+                {
+                    module->hinstance = registerModule(libraryNameOrPath);
+                }
+                else
+                {
+                    // If the target module doesn't have the PAL_RegisterModule export, then use this PAL's
+                    // module handle assuming that the target module is referencing this PAL's exported
+                    // functions on said handle.
+                    module->hinstance = (HINSTANCE)module;
+                }
+            }
 
-        // If DlMain(DLL_PROCESS_ATTACH) returns FALSE, we must immediately unload the module
-        if (!dllMainRetVal)
-        {
-            ERROR("DllMain returned FALSE; unloading module.\n");
-            module->pDllMain = nullptr;
-            FreeLibrary((HMODULE)module);
-            SetLastError(ERROR_DLL_INIT_FAILED);
-            module = nullptr;
+            BOOL dllMainRetVal = LOADCallDllMainSafe(module, DLL_PROCESS_ATTACH, fDynamic ? nullptr : (LPVOID)-1);
+
+            // If DlMain(DLL_PROCESS_ATTACH) returns FALSE, we must immediately unload the module
+            if (!dllMainRetVal)
+            {
+                ERROR("DllMain returned FALSE; unloading module.\n");
+                module->pDllMain = nullptr;
+                FreeLibrary((HMODULE)module);
+                SetLastError(ERROR_DLL_INIT_FAILED);
+                module = nullptr;
+            }
         }
     }
     else

@@ -699,6 +699,12 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBL2ULNG_OVF:
                     id = ReadyToRunHelper.Dbl2ULngOvf;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_LNG2FLT:
+                    id = ReadyToRunHelper.Lng2Flt;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_ULNG2FLT:
+                    id = ReadyToRunHelper.ULng2Flt;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_FLTREM:
                     id = ReadyToRunHelper.FltRem;
@@ -833,8 +839,11 @@ namespace Internal.JitInterface
 
                 if (caller.IsNoInlining)
                 {
-                    // Do not tailcall from methods that are marked as noinline (people often use no-inline
+                    // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
                     // to mean "I want to always see this method in stacktrace")
+                    //
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
                     result = false;
                 }
             }

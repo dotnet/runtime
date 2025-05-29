@@ -61,7 +61,6 @@ nativeStringResourceTable_mscorrc
 #memcpy_s
 #sscanf_s
 
-#CopyFileW
 #CreateFileMappingW
 #CreateFileA
 #CreateFileW
@@ -83,7 +82,6 @@ nativeStringResourceTable_mscorrc
 #FreeEnvironmentStringsW
 #FreeLibrary
 #FileTimeToSystemTime
-#GetACP
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
@@ -101,7 +99,6 @@ nativeStringResourceTable_mscorrc
 #GetSystemInfo
 #GetSystemTime
 #GetSystemTimeAsFileTime
-#GetTempFileNameW
 #GetTempPathA
 #GetTempPathW
 #InitializeCriticalSection
@@ -115,8 +112,6 @@ nativeStringResourceTable_mscorrc
 #OutputDebugStringW
 #OpenEventW
 #OutputDebugStringA
-#QueryPerformanceCounter
-#QueryPerformanceFrequency
 #RaiseException
 #RaiseFailFastException
 #ReadFile

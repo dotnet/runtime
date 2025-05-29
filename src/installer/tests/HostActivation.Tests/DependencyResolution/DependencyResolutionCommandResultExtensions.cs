@@ -18,10 +18,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public static AndConstraint<CommandResultAssertions> HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
             string propertyValue = GetAppMockPropertyValue(assertion, propertyName);
+            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
+                assertionChain.ForCondition(propertyValue != null && propertyValue.Contains(value))
                     .FailWith($"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
@@ -33,10 +34,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public static AndConstraint<CommandResultAssertions> NotHaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
             string propertyValue = GetAppMockPropertyValue(assertion, propertyName);
+            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
+                assertionChain.ForCondition(propertyValue != null && !propertyValue.Contains(value))
                     .FailWith($"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
@@ -80,10 +82,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             params string[] values)
         {
             string propertyValue = GetComponentMockPropertyValue(assertion, propertyName);
+            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
+                assertionChain.ForCondition(propertyValue != null && propertyValue.Contains(value))
                     .FailWith($"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");
@@ -98,10 +101,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             params string[] values)
         {
             string propertyValue = GetComponentMockPropertyValue(assertion, propertyName);
+            AssertionChain assertionChain = AssertionChain.GetOrCreate();
 
             foreach (string value in values)
             {
-                Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
+                assertionChain.ForCondition(propertyValue != null && !propertyValue.Contains(value))
                     .FailWith($"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
                         $"{propertyName}='{propertyValue}'" +
                         $"{assertion.GetDiagnosticsInfo()}");

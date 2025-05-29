@@ -149,6 +149,14 @@ bool NearDiffer::InitAsmDiff()
             {
                 coreDisTargetArchitecture = Target_Arm64;
             }
+            else if (0 == _stricmp(TargetArchitecture, "loongarch64"))
+            {
+                coreDisTargetArchitecture = Target_LoongArch64;
+            }
+            else if (0 == _stricmp(TargetArchitecture, "riscv64"))
+            {
+                coreDisTargetArchitecture = Target_RiscV64;
+            }
             else
             {
                 LogError("Illegal target architecture '%s'", TargetArchitecture);

@@ -418,7 +418,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static Attribute[] GetCustomAttributesSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
+        private static Attribute[]? GetCustomAttributesSafe(MemberInfo memberInfo, Type attributeType, bool inherit)
         {
             try
             {
@@ -426,9 +426,9 @@ namespace System.Diagnostics
             }
             catch
             {
-                // Getting the attributes has failed, return an empty array. One of the reasons
+                // Getting the attributes has failed, return null. One of the reasons
                 // can be that the member has attributes defined in an assembly that is missing.
-                return [];
+                return null;
             }
         }
 
@@ -459,7 +459,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                StateMachineAttribute[]? attributes = (StateMachineAttribute[])GetCustomAttributesSafe(candidateMethod, typeof(StateMachineAttribute), inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[]?)GetCustomAttributesSafe(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;

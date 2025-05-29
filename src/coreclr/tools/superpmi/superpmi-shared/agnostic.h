@@ -173,8 +173,6 @@ struct Agnostic_CORINFO_EE_INFO
     {
         DWORD size;
         DWORD sizeWithSecretStubArg;
-        DWORD offsetOfGSCookie;
-        DWORD offsetOfFrameVptr;
         DWORD offsetOfFrameLink;
         DWORD offsetOfCallSiteSP;
         DWORD offsetOfCalleeSavedFP;
@@ -193,6 +191,18 @@ struct Agnostic_CORINFO_EE_INFO
     DWORD maxUncheckedOffsetForNullObject;
     DWORD targetAbi;
     DWORD osType;
+};
+
+struct Agnostic_CORINFO_ASYNC_INFO
+{
+    DWORDLONG continuationClsHnd;
+    DWORDLONG continuationNextFldHnd;
+    DWORDLONG continuationResumeFldHnd;
+    DWORDLONG continuationStateFldHnd;
+    DWORDLONG continuationFlagsFldHnd;
+    DWORDLONG continuationDataFldHnd;
+    DWORDLONG continuationGCDataFldHnd;
+    DWORD continuationsNeedMethodHandle;
 };
 
 struct Agnostic_GetOSRInfo

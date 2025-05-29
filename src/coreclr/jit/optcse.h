@@ -29,6 +29,13 @@ protected:
 #ifdef DEBUG
     jitstd::vector<unsigned>* m_sequence;
 #endif
+#if defined(TARGET_AMD64)
+    unsigned             cntCalleeTrashInt;
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_INT() const
+    {
+        return this->cntCalleeTrashInt;
+    }
+#endif // TARGET_AMD64
 
 public:
     virtual void Initialize()
@@ -355,11 +362,7 @@ struct CSEdsc
     weight_t csdDefWtCnt; // weighted def count
     weight_t csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
-    GenTree*    csdTree;  // treenode containing the 1st occurrence
-    Statement*  csdStmt;  // stmt containing the 1st occurrence
-    BasicBlock* csdBlock; // block containing the 1st occurrence
-
-    treeStmtLst* csdTreeList; // list of matching tree nodes: head
+    treeStmtLst  csdTreeList; // list of matching tree nodes: head
     treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
     // The exception set that is now required for all defs of this CSE.
@@ -493,7 +496,7 @@ public:
     // TODO-CQ: With ValNum CSE's the Expr and its cost can vary.
     GenTree* Expr()
     {
-        return m_CseDsc->csdTree;
+        return m_CseDsc->csdTreeList.tslTree;
     }
     unsigned Cost()
     {

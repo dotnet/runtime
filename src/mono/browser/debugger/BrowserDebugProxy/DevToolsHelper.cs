@@ -518,7 +518,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class ConcurrentExecutionContextDictionary
     {
-        private ConcurrentDictionary<SessionId, ConcurrentBag<ExecutionContext>> contexts = new ();
+        private ConcurrentDictionary<SessionId, ConcurrentBag<ExecutionContext>> contexts = new();
         public ExecutionContext GetCurrentContext(SessionId sessionId)
             => TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context)
                 ? context

@@ -54,12 +54,16 @@
       <AppleBundleDir Condition="'$(AppleBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AppleBundleDir>
 
       <BundleDir>$(AppleBundleDir)</BundleDir>
-      <_MonoHeaderPath Condition="'$(UseNativeAOTRuntime)' != 'true'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(UseNativeAOTRuntime)' != 'true'">
+    <ItemGroup>
+      <RuntimeHeaders Include="$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))"
+                      Condition="'$(UseMonoRuntime)' != 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(AppleAppBuilderRuntime)' == 'MonoVM'">
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)"/>
       <!-- Make sure marshal-ilgen is included in the components list. -->
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' != 'true'" Include="marshal-ilgen" KeepDuplicates="false"/>
@@ -299,7 +303,14 @@
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">NativeAOT</AppleAppBuilderRuntime>
+      <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">CoreCLR</AppleAppBuilderRuntime>
+      <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == ''">MonoVM</AppleAppBuilderRuntime>
+    </PropertyGroup>
+
     <AppleAppBuilderTask
+      Runtime="$(AppleAppBuilderRuntime)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
@@ -317,7 +328,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       IsLibraryMode="$(_IsLibraryMode)"
       MainLibraryFileName="$(MainLibraryFileName)"
-      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      MonoRuntimeHeaders="@(RuntimeHeaders)"
       NativeMainSource="$(NativeMainSource)"
       NativeDependencies="@(NativeDependencies)"
       Optimized="$(Optimized)"
@@ -326,8 +337,7 @@
       RuntimeComponents="@(RuntimeComponents)"
       StripSymbolTable="$(StripDebugSymbols)"
       TargetOS="$(TargetOS)"
-      UseConsoleUITemplate="$(UseConsoleUITemplate)"
-      UseNativeAOTRuntime="$(UseNativeAOTRuntime)">
+      UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>

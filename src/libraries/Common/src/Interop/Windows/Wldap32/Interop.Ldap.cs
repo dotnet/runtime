@@ -14,6 +14,10 @@ internal static partial class Interop
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial int ldap_bind_s(ConnectionHandle ldapHandle, string dn, in SEC_WINNT_AUTH_IDENTITY_EX credentials, BindMethod method);
 
+        [LibraryImport(Libraries.Wldap32, EntryPoint = "ldap_bind_sW", StringMarshalling = StringMarshalling.Utf16)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial int ldap_bind_s(ConnectionHandle ldapHandle, string dn, IntPtr unused, BindMethod method);
+
         [LibraryImport(Libraries.Wldap32, EntryPoint = "ldap_initW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial IntPtr ldap_init(string hostName, int portNumber);

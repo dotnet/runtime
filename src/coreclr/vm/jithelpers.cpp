@@ -52,6 +52,7 @@
 #include "onstackreplacement.h"
 #include "pgo.h"
 #include "pgo_formatprocessing.h"
+#include "patchpointinfo.h"
 
 #ifndef FEATURE_EH_FUNCLETS
 #include "excep.h"
@@ -117,206 +118,14 @@ HCIMPLEND
 #endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
-HCIMPL2(INT32, JIT_Div, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return -dividend;
-        }
-    }
-
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (((UINT32) (divisor + 1)) <= 1)  // Unsigned test for divisor in [-1 .. 0]
-    {
-        if (divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-        else if (divisor == -1)
-        {
-            if (dividend == INT32_MIN)
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return 0;
-        }
-    }
-
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        FCThrow(kDivideByZeroException);
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (divisor == 0)
-        FCThrow(kDivideByZeroException);
-
-    return(dividend % divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return -dividend;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend / (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend / divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    RuntimeExceptionKind ehKind;
-
-    if (Is32BitSigned(divisor))
-    {
-        if ((INT32)divisor == 0)
-        {
-            ehKind = kDivideByZeroException;
-            goto ThrowExcep;
-        }
-
-        if ((INT32)divisor == -1)
-        {
-            // <TODO>TODO, we really should remove this as it lengthens the code path
-            // and the spec really says that it should not throw an exception. </TODO>
-            if ((UINT64) dividend == UI64(0x8000000000000000))
-            {
-                ehKind = kOverflowException;
-                goto ThrowExcep;
-            }
-            return 0;
-        }
-
-        // Check for -ive or +ive numbers in the range -2**31 to 2**31
-        if (Is32BitSigned(dividend))
-            return((INT32)dividend % (INT32)divisor);
-    }
-
-    // For all other combinations fallback to int64 div.
-    return(dividend % divisor);
-
-ThrowExcep:
-    FCThrow(ehKind);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend / (UINT32)divisor);
-    }
-
-    return(dividend / divisor);
-}
-HCIMPLEND
-
-/*********************************************************************/
-HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
-{
-    FCALL_CONTRACT;
-
-    if (Hi32Bits(divisor) == 0)
-    {
-        if ((UINT32)(divisor) == 0)
-        FCThrow(kDivideByZeroException);
-
-        if (Hi32Bits(dividend) == 0)
-            return((UINT32)dividend % (UINT32)divisor);
-    }
-
-    return(dividend % divisor);
-}
-HCIMPLEND
+extern "C" FCDECL2(INT32, JIT_Div, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(INT32, JIT_Mod, INT32 dividend, INT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UDiv, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2(UINT32, JIT_UMod, UINT32 dividend, UINT32 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LDiv, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(INT64, JIT_LMod, INT64 dividend, INT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULDiv, UINT64 dividend, UINT64 divisor);
+extern "C" FCDECL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor);
 
 #if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
@@ -356,10 +165,26 @@ HCIMPLEND
 #include <optsmallperfcritical.h>
 
 /*********************************************************************/
+HCIMPL1_V(float, JIT_ULng2Flt, uint64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL1_V(double, JIT_ULng2Dbl, uint64_t val)
 {
     FCALL_CONTRACT;
     return (double)val;
+}
+HCIMPLEND
+
+/*********************************************************************/
+HCIMPL1_V(float, JIT_Lng2Flt, int64_t val)
+{
+    FCALL_CONTRACT;
+    return (float)val;
 }
 HCIMPLEND
 
@@ -521,9 +346,10 @@ HCIMPLEND
 
 // Define the t_ThreadStatics variable here, so that these helpers can use
 // the most optimal TLS access pattern for the platform when inlining the
-// GetThreadLocalStaticBaseIfExistsAndInitialized function
+// GetThreadLocalStaticBaseIfExistsAndInitialized function.
+// Using compiler specific thread local storage directives due to linkage issues.
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread)  ThreadLocalData t_ThreadStatics;
+__declspec(selectany) __declspec(thread) ThreadLocalData t_ThreadStatics;
 #else
 __thread ThreadLocalData t_ThreadStatics;
 #endif // _MSC_VER
@@ -902,38 +728,14 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 HCIMPLEND
 
 /*********************************************************************/
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
+STRINGREF* ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
-
     Module* module = GetModule(scopeHnd);
     return module->ResolveStringRef(metaTok, ppPinnedString);
 }
-
-/*********************************************************************/
-HCIMPL2(Object *, JIT_StrCns, unsigned rid, CORINFO_MODULE_HANDLE scopeHnd)
-{
-    FCALL_CONTRACT;
-
-    OBJECTHANDLE hndStr = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    // Retrieve the handle to the CLR string object.
-    hndStr = ConstructStringLiteral(scopeHnd, RidToToken(rid, mdtString));
-    HELPER_METHOD_FRAME_END();
-
-    // Don't use ObjectFromHandle; this isn't a real handle
-    return *(Object**)hndStr;
-}
-HCIMPLEND
-
 
 //========================================================================
 //
@@ -1156,101 +958,6 @@ HCIMPLEND
 //      VALUETYPE/BYREF HELPERS
 //
 //========================================================================
-/*************************************************************/
-HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* unboxedData)
-{
-    CONTRACTL {
-        THROWS;
-        DISABLED(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    if (unboxedData == nullptr)
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-
-    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-    ee_alloc_context* eeAllocContext = &t_runtime_thread_locals.alloc_context;
-    gc_alloc_context* allocContext = &eeAllocContext->m_GCAllocContext;
-
-    TypeHandle typeHandle(type);
-    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
-    MethodTable *methodTable = typeHandle.AsMethodTable();
-    // The fast helper should never be called for nullable types.
-    _ASSERTE(!methodTable->IsNullable());
-
-#ifdef FEATURE_64BIT_ALIGNMENT
-    if (methodTable->RequiresAlign8())
-    {
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-#endif
-
-    SIZE_T size = methodTable->GetBaseSize();
-    _ASSERTE(size % DATA_ALIGNMENT == 0);
-
-    BYTE *allocPtr = allocContext->alloc_ptr;
-    _ASSERTE(allocPtr <= eeAllocContext->getCombinedLimit());
-    if (size > static_cast<SIZE_T>(eeAllocContext->getCombinedLimit() - allocPtr))
-    {
-        // Tail call to the slow helper
-        return HCCALL2(JIT_Box, type, unboxedData);
-    }
-
-    allocContext->alloc_ptr = allocPtr + size;
-
-    _ASSERTE(allocPtr != nullptr);
-    Object *object = reinterpret_cast<Object *>(allocPtr);
-    _ASSERTE(object->HasEmptySyncBlockInfo());
-    object->SetMethodTable(methodTable);
-
-    // Copy the data into the object
-    CopyValueClass(object->UnBox(), unboxedData, methodTable);
-
-    return object;
-}
-HCIMPLEND_RAW
-
-/*************************************************************/
-HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF newobj = NULL;
-    HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();    // Set up a frame
-    GCPROTECT_BEGININTERIOR(unboxedData);
-    HELPER_METHOD_POLL();
-
-    // A null can be passed for boxing of a null ref.
-    if (unboxedData == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    TypeHandle clsHnd(type);
-
-    _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
-
-    MethodTable *pMT = clsHnd.AsMethodTable();
-
-    _ASSERTE(pMT->IsFullyLoaded());
-
-    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
-
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GetThread()->DisableStressHeap();
-    }
-#endif // _DEBUG
-
-    newobj = pMT->FastBox(&unboxedData);
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-    return(OBJECTREFToObject(newobj));
-}
-HCIMPLEND
-
 /*************************************************************/
 HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
 {
@@ -1516,282 +1223,6 @@ HCIMPLEND
 
 
 
-//========================================================================
-//
-//      MONITOR HELPERS
-//
-//========================================================================
-
-/*********************************************************************/
-NOINLINE static void JIT_MonEnter_Helper(Object* obj, BYTE* pbLockTaken, LPVOID __me)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    if (objRef == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    GCPROTECT_BEGININTERIOR(pbLockTaken);
-
-    if (GET_THREAD()->CatchAtSafePoint())
-    {
-        GET_THREAD()->PulseGCMode();
-    }
-    objRef->EnterObjMonitor();
-
-    if (pbLockTaken != 0) *pbLockTaken = 1;
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-
-HCIMPL_MONHELPER(JIT_MonEnterWorker_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (obj != nullptr && obj->TryEnterObjMonitorSpinHelper())
-    {
-        MONHELPER_STATE(*pbLockTaken = 1);
-        return;
-    }
-
-    FC_INNER_RETURN_VOID(JIT_MonEnter_Helper(obj, MONHELPER_ARG, GetEEFuncEntryPointMacro(JIT_MonEnter)));
-}
-HCIMPLEND
-
-HCIMPL1(void, JIT_MonEnter_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (obj != nullptr && obj->TryEnterObjMonitorSpinHelper())
-    {
-        return;
-    }
-
-    FC_INNER_RETURN_VOID(JIT_MonEnter_Helper(obj, NULL, GetEEFuncEntryPointMacro(JIT_MonEnter)));
-}
-HCIMPLEND
-
-HCIMPL2(void, JIT_MonReliableEnter_Portable, Object* obj, BYTE* pbLockTaken)
-{
-    FCALL_CONTRACT;
-
-    if (obj != nullptr && obj->TryEnterObjMonitorSpinHelper())
-    {
-        *pbLockTaken = 1;
-        return;
-    }
-
-    FC_INNER_RETURN_VOID(JIT_MonEnter_Helper(obj, pbLockTaken, GetEEFuncEntryPointMacro(JIT_MonReliableEnter)));
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-
-/*********************************************************************/
-NOINLINE static void JIT_MonTryEnter_Helper(Object* obj, INT32 timeOut, BYTE* pbLockTaken)
-{
-    FC_INNER_PROLOG(JIT_MonTryEnter);
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    if (objRef == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    if (timeOut < -1)
-        COMPlusThrow(kArgumentOutOfRangeException);
-
-    GCPROTECT_BEGININTERIOR(pbLockTaken);
-
-    if (GET_THREAD()->CatchAtSafePoint())
-    {
-        GET_THREAD()->PulseGCMode();
-    }
-
-    BOOL result = objRef->TryEnterObjMonitor(timeOut);
-    *pbLockTaken = result != FALSE;
-
-    GCPROTECT_END();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-#include <optsmallperfcritical.h>
-HCIMPL3(void, JIT_MonTryEnter_Portable, Object* obj, INT32 timeOut, BYTE* pbLockTaken)
-{
-    FCALL_CONTRACT;
-
-    AwareLock::EnterHelperResult result;
-    Thread * pCurThread;
-
-    if (obj == NULL)
-    {
-        goto FramedLockHelper;
-    }
-
-    if (timeOut < -1)
-    {
-        goto FramedLockHelper;
-    }
-
-    pCurThread = GetThread();
-
-    if (pCurThread->CatchAtSafePoint())
-    {
-        goto FramedLockHelper;
-    }
-
-    result = obj->EnterObjMonitorHelper(pCurThread);
-    if (result == AwareLock::EnterHelperResult_Entered)
-    {
-        *pbLockTaken = 1;
-        return;
-    }
-    if (result == AwareLock::EnterHelperResult_Contention)
-    {
-        if (timeOut == 0)
-        {
-            return;
-        }
-
-        result = obj->EnterObjMonitorHelperSpin(pCurThread);
-        if (result == AwareLock::EnterHelperResult_Entered)
-        {
-            *pbLockTaken = 1;
-            return;
-        }
-    }
-
-FramedLockHelper:
-    FC_INNER_RETURN_VOID(JIT_MonTryEnter_Helper(obj, timeOut, pbLockTaken));
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-NOINLINE static void JIT_MonExit_Helper(Object* obj, BYTE* pbLockTaken)
-{
-    FC_INNER_PROLOG(JIT_MonExit);
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    if (objRef == NULL)
-        COMPlusThrow(kArgumentNullException);
-
-    if (!objRef->LeaveObjMonitor())
-        COMPlusThrow(kSynchronizationLockException);
-
-    if (pbLockTaken != 0) *pbLockTaken = 0;
-
-    if (GET_THREAD()->IsAbortRequested()) {
-        GET_THREAD()->HandleThreadAbort();
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-NOINLINE static void JIT_MonExit_Signal(Object* obj)
-{
-    FC_INNER_PROLOG(JIT_MonExit);
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // Monitor helpers are used as both hcalls and fcalls, thus we need exact depth.
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT|Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
-
-    // Signal the event
-    SyncBlock *psb = objRef->PassiveGetSyncBlock();
-    if (psb != NULL)
-        psb->QuickGetMonitor()->Signal();
-
-    if (GET_THREAD()->IsAbortRequested()) {
-        GET_THREAD()->HandleThreadAbort();
-    }
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-}
-
-#include <optsmallperfcritical.h>
-FCIMPL1(void, JIT_MonExit_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    AwareLock::LeaveHelperAction action;
-
-    if (obj == NULL)
-    {
-        goto FramedLockHelper;
-    }
-
-    // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThread());
-    if (action == AwareLock::LeaveHelperAction_None)
-    {
-        return;
-    }
-    if (action == AwareLock::LeaveHelperAction_Signal)
-    {
-        FC_INNER_RETURN_VOID(JIT_MonExit_Signal(obj));
-    }
-
-FramedLockHelper:
-    FC_INNER_RETURN_VOID(JIT_MonExit_Helper(obj, NULL));
-}
-HCIMPLEND
-
-HCIMPL_MONHELPER(JIT_MonExitWorker_Portable, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    MONHELPER_STATE(_ASSERTE(pbLockTaken != NULL));
-    MONHELPER_STATE(if (*pbLockTaken == 0) return;)
-
-    AwareLock::LeaveHelperAction action;
-
-    if (obj == NULL)
-    {
-        goto FramedLockHelper;
-    }
-
-    // Handle the simple case without erecting helper frame
-    action = obj->LeaveObjMonitorHelper(GetThread());
-    if (action == AwareLock::LeaveHelperAction_None)
-    {
-        MONHELPER_STATE(*pbLockTaken = 0;)
-        return;
-    }
-    if (action == AwareLock::LeaveHelperAction_Signal)
-    {
-        MONHELPER_STATE(*pbLockTaken = 0;)
-        FC_INNER_RETURN_VOID(JIT_MonExit_Signal(obj));
-    }
-
-FramedLockHelper:
-    FC_INNER_RETURN_VOID(JIT_MonExit_Helper(obj, MONHELPER_ARG));
-}
-HCIMPLEND
-#include <optdefault.h>
 
 //========================================================================
 //
@@ -1810,7 +1241,12 @@ HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86)
+EXTERN_C FCDECL1(void, IL_Throw,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_Throw_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
 HCIMPL1(void, IL_Throw,  Object* obj)
+#endif
 {
     FCALL_CONTRACT;
 
@@ -1821,55 +1257,52 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
+    Thread *pThread = GetThread();
+
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+
 #ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
+    if (oref == 0)
+        DispatchManagedException(kNullReferenceException);
+    else
+    if (!IsException(oref->GetMethodTable()))
     {
-        Thread *pThread = GetThread();
+        GCPROTECT_BEGIN(oref);
 
-        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
-        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
-        RtlCaptureContext(exceptionFrame.GetContext());
-        exceptionFrame.InitAndLink(pThread);
+        WrapNonCompliantException(&oref);
 
-        FC_CAN_TRIGGER_GC();
-
-        if (oref == 0)
-            DispatchManagedException(kNullReferenceException);
-        else
-        if (!IsException(oref->GetMethodTable()))
-        {
-            GCPROTECT_BEGIN(oref);
-
-            WrapNonCompliantException(&oref);
-
-            GCPROTECT_END();
-        }
-        else
-        {   // We know that the object derives from System.Exception
-
-            // If the flag indicating ForeignExceptionRaise has been set,
-            // then do not clear the "_stackTrace" field of the exception object.
-            if (pThread->GetExceptionState()->IsRaisingForeignException())
-            {
-                ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
-            }
-            else
-            {
-                ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
-            }
-        }
-
-        DispatchManagedException(oref, exceptionFrame.GetContext());
-        FC_CAN_TRIGGER_GC_END();
-        UNREACHABLE();
+        GCPROTECT_END();
     }
-#endif // FEATURE_EH_FUNCLETS
+    else
+    {   // We know that the object derives from System.Exception
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+        // If the flag indicating ForeignExceptionRaise has been set,
+        // then do not clear the "_stackTrace" field of the exception object.
+        if (pThread->GetExceptionState()->IsRaisingForeignException())
+        {
+            ((EXCEPTIONREF)oref)->SetStackTraceString(NULL);
+        }
+        else
+        {
+            ((EXCEPTIONREF)oref)->ClearStackTracePreservingRemoteStackTrace();
+        }
+    }
+
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.EnsureInit(NULL);
-    g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
     if (oref == 0)
@@ -1900,53 +1333,62 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     RaiseTheExceptionInternalOnly(oref, FALSE);
 
-    HELPER_METHOD_FRAME_END();
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_Throw");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
 /*************************************************************/
 
+#if defined(TARGET_X86)
+EXTERN_C FCDECL0(void, IL_Rethrow);
+EXTERN_C HCIMPL1(void, IL_Rethrow_x86, TransitionBlock* transitionBlock)
+#else
 HCIMPL0(void, IL_Rethrow)
+#endif
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
-#ifdef FEATURE_EH_FUNCLETS
-    if (g_isNewExceptionHandlingEnabled)
-    {
-        Thread *pThread = GetThread();
+    Thread *pThread = GetThread();
 
-        FrameWithCookie<SoftwareExceptionFrame> exceptionFrame;
-        *(&exceptionFrame)->GetGSCookiePtr() = GetProcessGSCookie();
-        RtlCaptureContext(exceptionFrame.GetContext());
-        exceptionFrame.InitAndLink(pThread);
-
-        ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
-        ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
-
-        FC_CAN_TRIGGER_GC();
-
-        GCPROTECT_BEGIN(exInfo.m_exception);
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
-        DECLARE_ARGHOLDER_ARRAY(args, 2);
-
-        args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
-        args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
-
-        pThread->IncPreventAbort();
-
-        //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
-        CALL_MANAGED_METHOD_NORET(args)
-        GCPROTECT_END();
-
-        FC_CAN_TRIGGER_GC_END();
-        UNREACHABLE();
-    }
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
 #endif
+    exceptionFrame.InitAndLink(pThread);
 
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+    FC_CAN_TRIGGER_GC();
+
+#ifdef FEATURE_EH_FUNCLETS
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, exceptionFrame.GetContext(), ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     OBJECTREF throwable = GetThread()->GetThrowable();
     if (throwable != NULL)
@@ -1960,7 +1402,66 @@ HCIMPL0(void, IL_Rethrow)
         RealCOMPlusThrow(kInvalidProgramException, (UINT)IDS_EE_RETHROW_NOT_ALLOWED);
     }
 
-    HELPER_METHOD_FRAME_END();
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_Rethrow");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
+}
+HCIMPLEND
+
+#if defined(TARGET_X86)
+EXTERN_C FCDECL1(void, IL_ThrowExact,  Object* obj);
+EXTERN_C HCIMPL2(void, IL_ThrowExact_x86,  Object* obj, TransitionBlock* transitionBlock)
+#else
+HCIMPL1(void, IL_ThrowExact, Object* obj)
+#endif
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    OBJECTREF oref = ObjectToOBJECTREF(obj);
+    GetThread()->GetExceptionState()->SetRaisingForeignException();
+
+    Thread *pThread = GetThread();
+    
+    SoftwareExceptionFrame exceptionFrame;
+#ifdef TARGET_X86
+    exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
+#else
+    RtlCaptureContext(exceptionFrame.GetContext());
+#endif
+    exceptionFrame.InitAndLink(pThread);
+
+    FC_CAN_TRIGGER_GC();
+
+#ifdef FEATURE_EH_FUNCLETS
+    DispatchManagedException(oref, exceptionFrame.GetContext());
+#elif defined(TARGET_X86)
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+#if defined(_DEBUG) && defined(TARGET_X86)
+    g_ExceptionEIP = (PVOID)transitionBlock->m_ReturnAddress;
+#endif // defined(_DEBUG) && defined(TARGET_X86)
+
+    RaiseTheExceptionInternalOnly(oref, FALSE);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+#else // FEATURE_EH_FUNCLETS
+    PORTABILITY_ASSERT("IL_ThrowExact");
+#endif // FEATURE_EH_FUNCLETS
+
+    FC_CAN_TRIGGER_GC_END();
+    UNREACHABLE();
 }
 HCIMPLEND
 
@@ -2135,100 +1636,57 @@ HRESULT EEToProfInterfaceImpl::SetEnterLeaveFunctionHooksForJit(FunctionEnter3 *
 //========================================================================
 
 /*************************************************************/
-// Slow helper to tailcall from the fast one
-NOINLINE HCIMPL0(void, JIT_PollGC_Framed)
-{
-    BEGIN_PRESERVE_LAST_ERROR;
-
-    FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-#ifdef _DEBUG
-    BOOL GCOnTransition = FALSE;
-    if (g_pConfig->FastGCStressLevel()) {
-        GCOnTransition = GC_ON_TRANSITIONS (FALSE);
-    }
-#endif // _DEBUG
-    CommonTripThread();         // Indicate we are at a GC safe point
-#ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel()) {
-        GC_ON_TRANSITIONS (GCOnTransition);
-    }
-#endif // _DEBUG
-    HELPER_METHOD_FRAME_END();
-    END_PRESERVE_LAST_ERROR;
-}
-HCIMPLEND
-
-HCIMPL0(VOID, JIT_PollGC)
-{
-    FCALL_CONTRACT;
-
-    // As long as we can have GCPOLL_CALL polls, it would not hurt to check the trap flag.
-    if (!g_TrapReturningThreads)
-        return;
-
-    // Does someone want this thread stopped?
-    if (!GetThread()->CatchAtSafePoint())
-        return;
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    HCCALL0(JIT_PollGC_Framed);
-}
-HCIMPLEND
-
-
-/*************************************************************/
 // This helper is similar to JIT_RareDisableHelper, but has more operations
 // tailored to the post-pinvoke operations.
-extern "C" FCDECL0(VOID, JIT_PInvokeEndRarePath);
+extern "C" VOID JIT_PInvokeEndRarePath();
 
-HCIMPL0(void, JIT_PInvokeEndRarePath)
+void JIT_PInvokeEndRarePath()
 {
-    BEGIN_PRESERVE_LAST_ERROR;
-
-    FCALL_CONTRACT;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
 
-    // We need to disable the implicit FORBID GC region that exists inside an FCALL
-    // in order to call RareDisablePreemptiveGC().
-    FC_CAN_TRIGGER_GC();
+    // We execute RareDisablePreemptiveGC manually before checking any abort conditions
+    // as that operation may run the allocator, etc, and we need to have handled any suspensions requested
+    // by the GC before we reach that point.
     thread->RareDisablePreemptiveGC();
-    FC_CAN_TRIGGER_GC_END();
 
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    thread->HandleThreadAbort();
-    HELPER_METHOD_FRAME_END();
+    if (thread->IsAbortRequested())
+    {
+        // This function is called after a pinvoke finishes, in the rare case that either a GC
+        // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
+        // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
+        // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
+        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
+        // will work correctly.
+        thread->EnablePreemptiveGC();
+        BEGIN_QCALL;
+        thread->HandleThreadAbort();
+        END_QCALL;
+        thread->DisablePreemptiveGC();
+    }
 
     thread->m_pFrame->Pop(thread);
-
-    END_PRESERVE_LAST_ERROR;
 }
-HCIMPLEND
 
 /*************************************************************/
 // For an inlined N/Direct call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 
-extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
+extern "C" VOID JIT_RareDisableHelper();
 
 #if defined(TARGET_ARM) || defined(TARGET_AMD64)
 // The JIT expects this helper to preserve the return value on AMD64 and ARM. We should eventually
 // switch other platforms to the same convention since it produces smaller code.
-extern "C" FCDECL0(VOID, JIT_RareDisableHelperWorker);
+extern "C" VOID JIT_RareDisableHelperWorker();
 
-HCIMPL0(void, JIT_RareDisableHelperWorker)
+void JIT_RareDisableHelperWorker()
 #else
-HCIMPL0(void, JIT_RareDisableHelper)
+void JIT_RareDisableHelper()
 #endif
 {
-    // We do this here (before we set up a frame), because the following scenario
+    // We do this here (before we enter the BEGIN_QCALL macro), because the following scenario
     // We are in the process of doing an inlined pinvoke.  Since we are in preemtive
     // mode, the thread is allowed to continue.  The thread continues and gets a context
     // switch just after it has cleared the preemptive mode bit but before it gets
@@ -2246,27 +1704,29 @@ HCIMPL0(void, JIT_RareDisableHelper)
     // in the first phase.
     //      </TODO>
 
-    BEGIN_PRESERVE_LAST_ERROR;
-
-    FCALL_CONTRACT;
+    PreserveLastErrorHolder preserveLastError;
 
     Thread *thread = GetThread();
-
-    // We need to disable the implicit FORBID GC region that exists inside an FCALL
-    // in order to call RareDisablePreemptiveGC().
-    FC_CAN_TRIGGER_GC();
+    // We execute RareDisablePreemptiveGC manually before checking any abort conditions
+    // as that operation may run the allocator, etc, and we need to be have have handled any suspensions requested
+    // by the GC before we reach that point.
     thread->RareDisablePreemptiveGC();
-    FC_CAN_TRIGGER_GC_END();
 
-    FC_GC_POLL_NOT_NEEDED();
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    thread->HandleThreadAbort();
-    HELPER_METHOD_FRAME_END();
-
-    END_PRESERVE_LAST_ERROR;
+    if (thread->IsAbortRequested())
+    {
+        // This function is called after a pinvoke finishes, in the rare case that either a GC
+        // or ThreadAbort is requested. This means that the pinvoke frame is still on the stack and
+        // enabled, but the thread has been marked as returning to cooperative mode. Thus we can
+        // use that frame to provide GC suspension safety, but we need to manually call EnablePreemptiveGC
+        // and DisablePreemptiveGC to put the function in a state where the BEGIN_QCALL/END_QCALL macros
+        // will work correctly.
+        thread->EnablePreemptiveGC();
+        BEGIN_QCALL;
+        thread->HandleThreadAbort();
+        END_QCALL;
+        thread->DisablePreemptiveGC();
+    }
 }
-HCIMPLEND
 
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
@@ -2322,7 +1782,7 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
      } CONTRACTL_END;
 
 #ifdef _DEBUG
-     printf(">> Logging loop cloning optimization\n");
+     minipal_log_print_info(">> Logging loop cloning optimization\n");
 #endif
 }
 HCIMPLEND
@@ -2333,7 +1793,7 @@ HCIMPLEND
 //
 // Returns the address of the jitted code.
 // Returns NULL if osr method can't be created.
-static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
+static PCODE JitPatchpointWorker(MethodDesc* pMD, const EECodeInfo& codeInfo, int ilOffset)
 {
     STANDARD_VM_CONTRACT;
     PCODE osrVariant = (PCODE)NULL;
@@ -2378,55 +1838,20 @@ static PCODE JitPatchpointWorker(MethodDesc* pMD, EECodeInfo& codeInfo, int ilOf
     return osrVariant;
 }
 
-// Helper method wrapper to set up a frame so we can invoke methods that might GC
-HCIMPL3(PCODE, JIT_Patchpoint_Framed, MethodDesc* pMD, EECodeInfo& codeInfo, int ilOffset)
+static PCODE PatchpointOptimizationPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
 {
-    PCODE result = (PCODE)NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    GCX_PREEMP();
-    result = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-
-    HELPER_METHOD_FRAME_END();
-
-    return result;
-}
-HCIMPLEND
-
-// Jit helper invoked at a patchpoint.
-//
-// Checks to see if this is a known patchpoint, if not,
-// an entry is added to the patchpoint table.
-//
-// When the patchpoint has been hit often enough to trigger
-// a transition, create an OSR method.
-//
-// Currently, counter is a pointer into the Tier0 method stack
-// frame so we have exclusive access.
-
-void JIT_Patchpoint(int* counter, int ilOffset)
-{
-    // BEGIN_PRESERVE_LAST_ERROR;
-    DWORD dwLastError = ::GetLastError();
-
-    // This method may not return normally
-    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    // Patchpoint identity is the helper return address
-    PCODE ip = (PCODE)_ReturnAddress();
+    // See if we have an OSR method for this patchpoint.
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    *pIsNewMethod = false;
+    TADDR ip = codeInfo.GetCodeAddress();
 
-    // Fetch or setup patchpoint info for this patchpoint.
-    EECodeInfo codeInfo(ip);
     MethodDesc* pMD = codeInfo.GetMethodDesc();
-    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
-    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
-    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
-    PCODE osrMethodCode = (PCODE)NULL;
-    bool isNewMethod = false;
 
-    // In the current prototype, counter is shared by all patchpoints
+    // In the current implementation, counter is shared by all patchpoints
     // in a method, so no matter what happens below, we don't want to
     // impair those other patchpoints.
     //
@@ -2437,7 +1862,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     //
     // So we always reset the counter to the bump value.
     //
-    // In the prototype, counter is a location in a stack frame,
+    // In the implementation, counter is a location in a stack frame,
     // so we can update it without worrying about other threads.
     const int counterBump = g_pConfig->OSR_CounterBump();
     *counter = counterBump;
@@ -2446,17 +1871,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     const int ppId = ppInfo->m_patchpointId;
 #endif
 
-    // Is this a patchpoint that was previously marked as invalid? If so, just return to the Tier0 method.
     if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
     {
-        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+        LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                 ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
 
         goto DONE;
     }
-
-    // See if we have an OSR method for this patchpoint.
-    osrMethodCode = ppInfo->m_osrMethodCode;
 
     if (osrMethodCode == (PCODE)NULL)
     {
@@ -2477,7 +1898,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
         if ((ppId < lowId) || (ppId > highId))
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: ignoring patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
                     ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
             goto DONE;
         }
@@ -2514,7 +1935,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         const int hitCount = InterlockedIncrement(&ppInfo->m_patchpointCount);
         const int hitLogLevel = (hitCount == 1) ? LL_INFO10 : LL_INFO1000;
 
-        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "Jit_Patchpoint: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
+        LOG((LF_TIEREDCOMPILATION, hitLogLevel, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) hit %d in Method=0x%pM (%s::%s) [il offset %d] (limit %d)\n",
             ppId, ip, hitCount, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset, hitLimit));
 
         // Defer, if we haven't yet reached the limit
@@ -2527,7 +1948,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         LONG oldFlags = ppInfo->m_flags;
         if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
             goto DONE;
         }
 
@@ -2536,48 +1957,251 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
         if (!triggerTransition)
         {
-            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_Patchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+            LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointOptimizationPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
             goto DONE;
         }
 
-        // Time to create the OSR method.
-        //
-        // We currently do this synchronously. We could instead queue
-        // up a request on some worker thread, like we do for
-        // rejitting, and return control to the Tier0 method. It may
-        // eventually return here, if the patchpoint is hit often
-        // enough.
-        //
-        // There is a chance the async version will create methods
-        // that are never used (just like there is a chance that Tier1
-        // methods are ever called).
-        //
-        // In this prototype we want to expose bugs in the jitted code
-        // for OSR methods, so we stick with synchronous creation.
-        LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
+        MAKE_CURRENT_THREAD_AVAILABLE();
 
-        // Invoke the helper to build the OSR method
-        osrMethodCode = HCCALL3(JIT_Patchpoint_Framed, pMD, codeInfo, ilOffset);
+    #ifdef _DEBUG
+        Thread::ObjectRefFlush(CURRENT_THREAD);
+    #endif
 
-        // If that failed, mark the patchpoint as invalid.
+        DynamicHelperFrame frame(pTransitionBlock, 0);
+        DynamicHelperFrame * pFrame = &frame;
+
+        pFrame->Push(CURRENT_THREAD);
+
+        INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+        GCX_PREEMP();
+
+        osrMethodCode = ppInfo->m_osrMethodCode;
         if (osrMethodCode == (PCODE)NULL)
         {
-            // Unexpected, but not fatal
-            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
-                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+            // Time to create the OSR method.
+            //
+            // We currently do this synchronously. We could instead queue
+            // up a request on some worker thread, like we do for
+            // rejitting, and return control to the Tier0 method. It may
+            // eventually return here, if the patchpoint is hit often
+            // enough.
+            //
+            // There is a chance the async version will create methods
+            // that are never used (just like there is a chance that Tier1
+            // methods are ever called).
+            //
+            // We want to expose bugs in the jitted code
+            // for OSR methods, so we stick with synchronous creation.
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointOptimizationPolicy: patchpoint [%d] (0x%p) TRIGGER at count %d\n", ppId, ip, hitCount));
 
-            InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
-            goto DONE;
+            // Invoke the helper to build the OSR method
+            osrMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+
+            // If that failed, mark the patchpoint as invalid.
+            if (osrMethodCode == (PCODE)NULL)
+            {
+                // Unexpected, but not fatal
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointOptimizationPolicy: patchpoint (0x%p) OSR method creation failed,"
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+
+                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+            }
+            else
+            {
+                *pIsNewMethod = true;
+                ppInfo->m_osrMethodCode = osrMethodCode;
+            }
         }
 
-        // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
-        ppInfo->m_osrMethodCode = osrMethodCode;
-        isNewMethod = true;
+        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+        UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+        pFrame->Pop(CURRENT_THREAD);
+    }
+    return osrMethodCode;
+
+DONE:
+    return (PCODE)NULL;
+}
+
+static PCODE PatchpointRequiredPolicy(TransitionBlock* pTransitionBlock, int* counter, int ilOffset, PerPatchpointInfo * ppInfo, const EECodeInfo& codeInfo, bool *pIsNewMethod)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    *pIsNewMethod = false;
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    TADDR ip = codeInfo.GetCodeAddress();
+
+#ifdef _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    }
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+#ifdef _DEBUG
+    Thread::ObjectRefFlush(CURRENT_THREAD);
+#endif
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    {
+        GCX_PREEMP();
+
+        DWORD backoffs = 0;
+        while (ppInfo->m_osrMethodCode == (PCODE)NULL)
+        {
+            // Invalid patchpoints are fatal, for partial compilation patchpoints
+            //
+            if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "PatchpointRequiredPolicy: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
+                        ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+            }
+
+            // Make sure no other thread is trying to create the OSR method.
+            //
+            LONG oldFlags = ppInfo->m_flags;
+            if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                __SwitchToThread(0, backoffs++);
+                continue;
+            }
+
+            // Make sure we win the race to create the OSR method
+            //
+            LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+            BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
+
+            if (!triggerTransition)
+            {
+                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "PatchpointRequiredPolicy: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
+                __SwitchToThread(0, backoffs++);
+                continue;
+            }
+
+            // Invoke the helper to build the OSR method
+            //
+            // TODO: may not want to optimize this part of the method, if it's truly partial compilation
+            // and can't possibly rejoin into the main flow.
+            //
+            // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
+            //
+            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "PatchpointRequiredPolicy: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
+            PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
+
+            // If that failed, mark the patchpoint as invalid.
+            // This is fatal, for partial compilation patchpoints
+            //
+            if (newMethodCode == (PCODE)NULL)
+            {
+                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "PatchpointRequiredPolicy: patchpoint (0x%p) OSR method creation failed,"
+                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
+                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+                break;
+            }
+
+            // We've successfully created the osr method; make it available.
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
+            ppInfo->m_osrMethodCode = newMethodCode;
+            *pIsNewMethod = true;
+        }
+    }
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    pFrame->Pop(CURRENT_THREAD);
+
+    // If we get here, we have code to transition to...
+    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
+
+    return osrMethodCode;
+}
+
+// Jit helper invoked at a patchpoint.
+//
+// Checks to see if this is a known patchpoint, if not,
+// an entry is added to the patchpoint table.
+//
+// When the patchpoint has been hit often enough to trigger
+// a transition, create an OSR method. OR if the first argument
+// is NULL, always create an OSR method and transition to it.
+//
+// Currently, counter(the first argument) is a pointer into the Tier0 method stack
+// frame if it exists so we have exclusive access.
+
+extern "C" void JIT_PatchpointWorkerWorkerWithPolicy(TransitionBlock * pTransitionBlock)
+{
+    // Manually preserve the last error as we may not return normally from this method.
+    DWORD dwLastError = ::GetLastError();
+
+    // This method may not return normally
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    PTR_PCODE pReturnAddress = (PTR_PCODE)(((BYTE*)pTransitionBlock) + TransitionBlock::GetOffsetOfReturnAddress());
+    PCODE ip = *pReturnAddress;
+    int* counter = *(int**)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
+    int ilOffset = *(int*)GetSecondArgumentRegisterValuePtr(pTransitionBlock);
+    int hitCount = 1; // This will stay at 1 for forced transition scenarios, but will be updated to the actual hit count for normal patch points
+
+    // Patchpoint identity is the helper return address
+
+    // Fetch or setup patchpoint info for this patchpoint.
+    EECodeInfo codeInfo(ip);
+    MethodDesc* pMD = codeInfo.GetMethodDesc();
+    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
+    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
+    PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(codeInfo.GetStartAddress(), ilOffset);
+
+#ifdef _DEBUG
+    const int ppId = ppInfo->m_patchpointId;
+#endif
+
+    bool isNewMethod = false;
+    PCODE osrMethodCode = (PCODE)NULL;
+
+
+    bool patchpointMustFindOptimizedCode = counter == NULL;
+
+    if (patchpointMustFindOptimizedCode)
+    {
+        osrMethodCode = PatchpointRequiredPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
+    }
+    else
+    {
+        osrMethodCode = PatchpointOptimizationPolicy(pTransitionBlock, counter, ilOffset, ppInfo, codeInfo, &isNewMethod);
+    }
+
+    if (osrMethodCode == (PCODE)NULL)
+    {
+        _ASSERTE(!patchpointMustFindOptimizedCode);
+        goto DONE;
     }
 
     // If we get here, we have code to transition to...
-    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     {
         Thread *pThread = GetThread();
@@ -2694,7 +2318,6 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 #endif
 
         // Restore last error (since call below does not return)
-        // END_PRESERVE_LAST_ERROR;
         ::SetLastError(dwLastError);
 
         // Transition!
@@ -2702,248 +2325,12 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     }
 
  DONE:
-
-    // END_PRESERVE_LAST_ERROR;
     ::SetLastError(dwLastError);
 }
-
-// Jit helper invoked at a partial compilation patchpoint.
-//
-// Similar to Jit_Patchpoint, but invoked when execution
-// reaches a point in a method where the continuation
-// was never jitted (eg an exceptional path).
-//
-// Unlike regular patchpoints, partial compilation patchpoints
-// must always transition.
-//
-HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
-{
-    FCALL_CONTRACT;
-
-    // BEGIN_PRESERVE_LAST_ERROR;
-    DWORD dwLastError = ::GetLastError();
-    PerPatchpointInfo* ppInfo = NULL;
-    bool isNewMethod = false;
-    CONTEXT* pFrameContext = NULL;
-
-#if !defined(TARGET_WINDOWS) || !defined(TARGET_AMD64)
-    CONTEXT originalFrameContext;
-    originalFrameContext.ContextFlags = CONTEXT_FULL;
-    pFrameContext = &originalFrameContext;
-#endif
-
-    // Patchpoint identity is the helper return address
-    PCODE ip = (PCODE)_ReturnAddress();
-
-#ifdef _DEBUG
-    // Friendly ID number
-    int ppId = 0;
-#endif
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    // Fetch or setup patchpoint info for this patchpoint.
-    EECodeInfo codeInfo(ip);
-    MethodDesc* pMD = codeInfo.GetMethodDesc();
-    LoaderAllocator* allocator = pMD->GetLoaderAllocator();
-    OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
-    ppInfo = manager->GetPerPatchpointInfo(ip);
-
-#ifdef _DEBUG
-    ppId = ppInfo->m_patchpointId;
-#endif
-
-    // See if we have an OSR method for this patchpoint.
-    DWORD backoffs = 0;
-
-    // Enable GC while we jit or wait for the continuation to be jitted.
-    {
-        GCX_PREEMP();
-
-        while (ppInfo->m_osrMethodCode == (PCODE)NULL)
-        {
-            // Invalid patchpoints are fatal, for partial compilation patchpoints
-            //
-            if ((ppInfo->m_flags & PerPatchpointInfo::patchpoint_invalid) == PerPatchpointInfo::patchpoint_invalid)
-            {
-                LOG((LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_PartialCompilationPatchpoint: invalid patchpoint [%d] (0x%p) in Method=0x%pM (%s::%s) at offset %d\n",
-                        ppId, ip, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, ilOffset));
-                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-            }
-
-            // Make sure no other thread is trying to create the OSR method.
-            //
-            LONG oldFlags = ppInfo->m_flags;
-            if ((oldFlags & PerPatchpointInfo::patchpoint_triggered) == PerPatchpointInfo::patchpoint_triggered)
-            {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-                __SwitchToThread(0, backoffs++);
-                continue;
-            }
-
-            // Make sure we win the race to create the OSR method
-            //
-            LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
-            BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
-
-            if (!triggerTransition)
-            {
-                LOG((LF_TIEREDCOMPILATION, LL_INFO1000, "Jit_PartialCompilationPatchpoint: (lost race) AWAITING OSR method for patchpoint [%d] (0x%p)\n", ppId, ip));
-                __SwitchToThread(0, backoffs++);
-                continue;
-            }
-
-            // Invoke the helper to build the OSR method
-            //
-            // TODO: may not want to optimize this part of the method, if it's truly partial compilation
-            // and can't possibly rejoin into the main flow.
-            //
-            // (but consider: throw path in method with try/catch, OSR method will contain more than just the throw?)
-            //
-            LOG((LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRIGGER\n", ppId, ip));
-            PCODE newMethodCode = JitPatchpointWorker(pMD, codeInfo, ilOffset);
-
-            // If that failed, mark the patchpoint as invalid.
-            // This is fatal, for partial compilation patchpoints
-            //
-            if (newMethodCode == (PCODE)NULL)
-            {
-                STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) OSR method creation failed,"
-                    " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
-                InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
-                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-                break;
-            }
-
-            // We've successfully created the osr method; make it available.
-            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
-            ppInfo->m_osrMethodCode = newMethodCode;
-            isNewMethod = true;
-        }
-    }
-
-    // If we get here, we have code to transition to...
-    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    _ASSERTE(osrMethodCode != (PCODE)NULL);
-
-    Thread *pThread = GetThread();
-
-#ifdef FEATURE_HIJACK
-    // We can't crawl the stack of a thread that currently has a hijack pending
-    // (since the hijack routine won't be recognized by any code manager). So we
-    // Undo any hijack, the EE will re-attempt it later.
-    pThread->UnhijackThread();
-#endif
-
-    // Find context for the original method
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = 0;
-    DWORD contextFlags = CONTEXT_FULL;
-    if (Thread::AreShadowStacksEnabled())
-    {
-        xStateCompactionMask = XSTATE_MASK_CET_U;
-        contextFlags |= CONTEXT_XSTATE;
-    }
-
-    // The initialize call should fail but return contextSize
-    BOOL success = g_pfnInitializeContext2 ?
-        g_pfnInitializeContext2(NULL, contextFlags, NULL, &contextSize, xStateCompactionMask) :
-        InitializeContext(NULL, contextFlags, NULL, &contextSize);
-
-    _ASSERTE(!success && (GetLastError() == ERROR_INSUFFICIENT_BUFFER));
-
-    PVOID pBuffer = _alloca(contextSize);
-    success = g_pfnInitializeContext2 ?
-        g_pfnInitializeContext2(pBuffer, contextFlags, &pFrameContext, &contextSize, xStateCompactionMask) :
-        InitializeContext(pBuffer, contextFlags, &pFrameContext, &contextSize);
-    _ASSERTE(success);
-#else // TARGET_WINDOWS && TARGET_AMD64
-    _ASSERTE(pFrameContext != nullptr);
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-    // Find context for the original method
-    RtlCaptureContext(pFrameContext);
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    if (Thread::AreShadowStacksEnabled())
-    {
-        pFrameContext->ContextFlags |= CONTEXT_XSTATE;
-        SetXStateFeaturesMask(pFrameContext, xStateCompactionMask);
-        SetSSP(pFrameContext, _rdsspq());
-    }
-#endif // TARGET_WINDOWS && TARGET_AMD64
-
-    // Walk back to the original method frame
-    Thread::VirtualUnwindToFirstManagedCallFrame(pFrameContext);
-
-    // Remember original method FP and SP because new method will inherit them.
-    UINT_PTR currentSP = GetSP(pFrameContext);
-    UINT_PTR currentFP = GetFP(pFrameContext);
-
-    // We expect to be back at the right IP
-    if ((UINT_PTR)ip != GetIP(pFrameContext))
-    {
-        // Should be fatal
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_PartialCompilationPatchpoint: patchpoint (0x%p) TRANSITION"
-            " unexpected context IP 0x%p\n", ip, GetIP(pFrameContext));
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-    }
-
-    // Now unwind back to the original method caller frame.
-    EECodeInfo callerCodeInfo(GetIP(pFrameContext));
-    ULONG_PTR establisherFrame = 0;
-    PVOID handlerData = NULL;
-    RtlVirtualUnwind(UNW_FLAG_NHANDLER, callerCodeInfo.GetModuleBase(), GetIP(pFrameContext), callerCodeInfo.GetFunctionEntry(),
-        pFrameContext, &handlerData, &establisherFrame, NULL);
-
-    // Now, set FP and SP back to the values they had just before this helper was called,
-    // since the new method must have access to the original method frame.
-    //
-    // TODO: if we access the patchpointInfo here, we can read out the FP-SP delta from there and
-    // use that to adjust the stack, likely saving some stack space.
-
-#if defined(TARGET_AMD64)
-    // If calls push the return address, we need to simulate that here, so the OSR
-    // method sees the "expected" SP misalgnment on entry.
-    _ASSERTE(currentSP % 16 == 0);
-    currentSP -= 8;
-
-#if defined(TARGET_WINDOWS)
-    DWORD64 ssp = GetSSP(pFrameContext);
-    if (ssp != 0)
-    {
-        SetSSP(pFrameContext, ssp - 8);
-    }
-#endif // TARGET_WINDOWS
-
-    pFrameContext->Rbp = currentFP;
-#endif // TARGET_AMD64
-
-    SetSP(pFrameContext, currentSP);
-
-    // Note we can get here w/o triggering, if there is an existing OSR method and
-    // we hit the patchpoint.
-    const int transitionLogLevel = isNewMethod ? LL_INFO10 : LL_INFO1000;
-    LOG((LF_TIEREDCOMPILATION, transitionLogLevel, "Jit_PartialCompilationPatchpoint: patchpoint [%d] (0x%p) TRANSITION to ip 0x%p\n", ppId, ip, osrMethodCode));
-
-    // Install new entry point as IP
-    SetIP(pFrameContext, osrMethodCode);
-
-    // This method doesn't return normally so we have to manually restore things.
-    HELPER_METHOD_FRAME_END();
-    ENDFORBIDGC();
-    ::SetLastError(dwLastError);
-
-    // Transition!
-    __asan_handle_no_return();
-    ClrRestoreNonvolatileContext(pFrameContext);
-}
-HCIMPLEND
 
 #else
 
-void JIT_Patchpoint(int* counter, int ilOffset)
+HCIMPL2(void, JIT_Patchpoint, int* counter, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -2951,8 +2338,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
     UNREACHABLE();
 }
+HCIMPLEND
 
-HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
+HCIMPL1(VOID, JIT_PatchpointForced, int ilOffset)
 {
     // Stub version if OSR feature is disabled
     //
@@ -3486,7 +2874,7 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
     MethodDesc* pMD = GetMethod(handle);
     if (pMD->IsILStub() && secretArg != NULL)
     {
-        pMD = ((UMEntryThunk*)secretArg)->GetMethod();
+        pMD = ((UMEntryThunkData*)secretArg)->m_pMD;
     }
     frame->pMD = pMD;
 
@@ -3512,20 +2900,25 @@ HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* 
         {
             // If we're in an IL stub, we want to trace the address of the target method,
             // not the next instruction in the stub.
-            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg : (UMEntryThunk*)NULL);
+            JIT_ReversePInvokeEnterRare2(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk : (UMEntryThunk*)NULL);
         }
     }
     else
     {
         // If we're in an IL stub, we want to trace the address of the target method,
         // not the next instruction in the stub.
-        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? (UMEntryThunk*)secretArg  : (UMEntryThunk*)NULL);
+        JIT_ReversePInvokeEnterRare(frame, _ReturnAddress(), GetMethod(handle)->IsILStub() ? ((UMEntryThunkData*)secretArg)->m_pUMEntryThunk  : (UMEntryThunk*)NULL);
     }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -3555,10 +2948,15 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeEnter, ReversePInvokeFrame* frame)
         JIT_ReversePInvokeEnterRare(frame, _ReturnAddress());
     }
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     frame->record.m_pEntryFrame = frame->currentThread->GetFrame();
     frame->record.m_ExReg.Handler = (PEXCEPTION_ROUTINE)FastNExportExceptHandler;
     INSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    frame->m_ExReg.Handler = (PEXCEPTION_ROUTINE)ProcessCLRException;
+    INSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -3573,8 +2971,12 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 
 #ifdef PROFILING_SUPPORTED
@@ -3596,8 +2998,12 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExit, ReversePInvokeFrame* frame)
     // to make this exit faster.
     frame->currentThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(0);
 
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 #ifndef FEATURE_EH_FUNCLETS
     UNINSTALL_EXCEPTION_HANDLING_RECORD(&frame->record.m_ExReg);
+#else
+    UNINSTALL_SEH_RECORD(&frame->m_ExReg);
+#endif
 #endif
 }
 HCIMPLEND_RAW
@@ -3735,17 +3141,4 @@ bool IndirectionAllowedForJitHelper(CorInfoHelpFunc ftnNum)
     }
 
     return true;
-}
-
-/*********************************************************************/
-// Initialize the part of the JIT helpers that require much of the
-// EE infrastructure to be in place.
-/*********************************************************************/
-void InitJITHelpers2()
-{
-    STANDARD_VM_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-    SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
-#endif // TARGET_X86 || TARGET_ARM
 }

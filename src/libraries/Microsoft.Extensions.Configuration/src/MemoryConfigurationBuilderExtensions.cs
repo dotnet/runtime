@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddInMemoryCollection(this IConfigurationBuilder configurationBuilder)
         {
-            ThrowHelper.ThrowIfNull(configurationBuilder);
+            ArgumentNullException.ThrowIfNull(configurationBuilder);
 
             configurationBuilder.Add(new MemoryConfigurationSource());
             return configurationBuilder;
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Configuration
             this IConfigurationBuilder configurationBuilder,
             IEnumerable<KeyValuePair<string, string?>>? initialData)
         {
-            ThrowHelper.ThrowIfNull(configurationBuilder);
+            ArgumentNullException.ThrowIfNull(configurationBuilder);
 
             configurationBuilder.Add(new MemoryConfigurationSource { InitialData = initialData });
             return configurationBuilder;

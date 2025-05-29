@@ -19,6 +19,7 @@
 #include "hostinformation.h"
 #include <minipal/guid.h>
 #include <minipal/strings.h>
+#include <minipal/time.h>
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -570,6 +571,33 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_session_enabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    // no-op
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -872,6 +900,15 @@ ep_rt_thread_create (
 }
 
 static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+    EP_UNREACHABLE ("Not implemented in CoreCLR");
+}
+
+static
 inline
 void
 ep_rt_set_server_name(void)
@@ -954,11 +991,7 @@ ep_rt_perf_counter_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 static
@@ -968,11 +1001,7 @@ ep_rt_perf_frequency_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
 static

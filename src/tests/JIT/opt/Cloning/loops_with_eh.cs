@@ -5,7 +5,6 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-
 // Cheat codes
 //
 // L   - loop
@@ -17,6 +16,8 @@ using Xunit;
 // m   - multiple try exits (TF will remain a try finally)
 // g   - giant finally (TF will remain try finally)
 // p   - regions are serial, not nested
+// TFi - try finally with what follows in the finally
+// I   - inlining
 // 
 // x: we currently cannot clone loops where the try is the first thing
 // as the header and preheader are different regions
@@ -25,6 +26,9 @@ public class LoopsWithEH
 {
     static int[] data;
     static int n;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void SideEffect() { }
 
     static LoopsWithEH()
     {
@@ -178,7 +182,7 @@ public class LoopsWithEH
             {
                 return -1;
             }
-            catch(Exception)
+            catch (Exception)
             {
                 return -2;
             }
@@ -201,7 +205,7 @@ public class LoopsWithEH
             }
             catch (IndexOutOfRangeException)
             {
-                sum +=1;
+                sum += 1;
             }
             catch (Exception)
             {
@@ -536,7 +540,7 @@ public class LoopsWithEH
                 }
             }
         }
-        catch (Exception) 
+        catch (Exception)
         {
             return -1;
         }
@@ -642,7 +646,7 @@ public class LoopsWithEH
                 {
                     sum += data[i];
                 }
-                finally 
+                finally
                 {
                     sum += 1;
                 }
@@ -807,7 +811,7 @@ public class LoopsWithEH
 
     [Fact]
     public static int Test_LxTFxTF() => Sum_LxTFTF(data, n) - 110;
-    
+
     public static int Sum_TFLxTF(int[] data, int n)
     {
         int sum = 0;
@@ -896,7 +900,7 @@ public class LoopsWithEH
                 sum += 1;
             }
         }
-        catch(Exception)
+        catch (Exception)
         {
             return -1;
         }
@@ -935,6 +939,329 @@ public class LoopsWithEH
         {
             sum += 1;
         }
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_TFiL() => Sum_TFiL(data, n) - 91;
+
+    public static int Sum_TFiL(int[] data, int n)
+    {
+        int sum = 0;
+        try
+        {
+            SideEffect();
+        }
+        finally
+        {
+            sum += 1;
+            for (int i = 0; i < n; i++)
+            {
+                sum += data[i];
+            }
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_TFiLxTF() => Sum_TFiLxTF(data, n) - 131;
+
+    public static int Sum_TFiLxTF(int[] data, int n)
+    {
+        int sum = 0;
+        try
+        {
+            SideEffect();
+        }
+        finally
+        {
+            sum += 1;
+            for (int i = 0; i < n; i++)
+            {
+                sum += 1;
+                try
+                {
+                    sum += data[i];
+                }
+                finally
+                {
+                    sum += 1;
+                }
+            }
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_TFiLxTCc() => Sum_TFiLxTCc(data, n) - 111;
+
+    public static int Sum_TFiLxTCc(int[] data, int n)
+    {
+        int sum = 0;
+        try
+        {
+            SideEffect();
+        }
+        finally
+        {
+            sum += 1;
+            for (int i = 0; i < n; i++)
+            {
+                sum += 1;
+                try
+                {
+                    sum += data[i];
+                }
+                catch (Exception)
+                {
+                    sum += 1;
+                }
+            }
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_TFiLxTC() => Sum_TFiLxTC(data, n) - 112;
+
+    public static int Sum_TFiLxTC(int[] data, int n)
+    {
+        int sum = 0;
+        try
+        {
+            SideEffect();
+        }
+        finally
+        {
+            sum += 1;
+            for (int i = 0; i < n; i++)
+            {
+                sum += 1;
+                try
+                {
+                    sum += data[i];
+                }
+                catch (Exception)
+                {
+                    goto after_loop;
+                }
+            }
+
+        after_loop:
+            sum += 1;
+
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_TFTFiLxTC() => Sum_TFTFiLxTC(data, n) - 113;
+
+    public static int Sum_TFTFiLxTC(int[] data, int n)
+    {
+        int sum = 0;
+        try
+        {
+            try
+            {
+                SideEffect();
+            }
+            finally
+            {
+                sum += 1;
+                for (int i = 0; i < n; i++)
+                {
+                    sum += 1;
+                    try
+                    {
+                        sum += data[i];
+                    }
+                    catch (Exception)
+                    {
+                        goto after_loop;
+                    }
+                }
+
+            after_loop:
+                sum += 1;
+            }
+        }
+        finally
+        {
+            sum += 1;
+        }
+
+        return sum;
+    }
+
+
+    [Fact]
+    public static int Test_TFiTFxL() => Sum_TFiTFxL(data, n) - 92;
+
+    public static int Sum_TFiTFxL(int[] data, int n)
+    {
+        int sum = 0;
+
+        try
+        {
+            SideEffect();
+        }
+        finally
+        {
+            try
+            {
+                sum += 1;
+                for (int i = 0; i < n; i++)
+                {
+                    sum += data[i];
+                }
+            }
+            finally
+            {
+                sum += 1;
+            }
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_LTFiTF() => Sum_LTFiTF(data, n) - 130;
+
+    public static int Sum_LTFiTF(int[] data, int n)
+    {
+        int sum = 0;
+
+        for (int i = 0; i < n; i++)
+        {
+            sum += data[i];
+            try
+            {
+                SideEffect();
+            }
+            finally
+            {
+                try
+                {
+                    SideEffect();
+                }
+                finally
+                {
+                    sum += 1;
+                }
+
+                sum += 1;
+            }
+        }
+
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int SomeEH()
+    {
+        int sum = 0;
+
+        try
+        {
+            SideEffect();
+        }
+        finally
+        {
+            try
+            {
+                SideEffect();
+            }
+            finally
+            {
+                sum += 1;
+            }
+
+            sum += 1;
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_LITFiTF() => Sum_LITFiTF(data, n) - 130;
+
+    public static int Sum_LITFiTF(int[] data, int n)
+    {
+        int sum = 0;
+
+        for (int i = 0; i < n; i++)
+        {
+            sum += data[i];
+            sum += SomeEH();
+        }
+
+        return sum;
+    }
+
+    [Fact]
+    public static int Test_TFLTFiTF() => Sum_TFLTFiTF(data, n) - 131;
+
+    public static int Sum_TFLTFiTF(int[] data, int n)
+    {
+        int sum = 0;
+
+        try
+        {
+            for (int i = 0; i < n; i++)
+            {
+                sum += data[i];
+                try
+                {
+                    SideEffect();
+                }
+                finally
+                {
+                    try
+                    {
+                        SideEffect();
+                    }
+                    finally
+                    {
+                        sum += 1;
+                    }
+
+                    sum += 1;
+                }
+            }
+        }
+        finally
+        {
+            SideEffect();
+            sum += 1;
+        }
+        return sum;
+    }
+
+    public static int Test_TFLITFiTF() => Sum_TFLITFiTF(data, n) - 131;
+
+    public static int Sum_TFLITFiTF(int[] data, int n)
+    {
+        int sum = 0;
+
+        try
+        {
+            for (int i = 0; i < n; i++)
+            {
+                sum += data[i];
+                sum += SomeEH();
+            }
+        }
+        finally
+        {
+            SideEffect();
+            sum += 1;
+        }
+
         return sum;
     }
 }

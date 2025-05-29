@@ -338,7 +338,7 @@ inline UINT64 AlignUp(UINT64 value, UINT alignment)
     return (value+alignment-1)&~(UINT64)(alignment-1);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline SIZE_T AlignUp(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;
@@ -399,13 +399,13 @@ inline UINT AlignmentPad(UINT64 value, UINT alignment)
     return (UINT) (AlignUp(value, alignment) - value);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline UINT AlignmentPad(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_WRAPPER;
     return (UINT) (AlignUp(value, alignment) - value);
 }
-#endif // __APPLE__
+#endif // __APPLE__ || __wasm__
 
 inline UINT AlignmentTrim(UINT value, UINT alignment)
 {
@@ -432,7 +432,7 @@ inline UINT AlignmentTrim(UINT64 value, UINT alignment)
     return ((UINT)value)&(alignment-1);
 }
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__wasm__)
 inline UINT AlignmentTrim(SIZE_T value, UINT alignment)
 {
     STATIC_CONTRACT_LEAF;

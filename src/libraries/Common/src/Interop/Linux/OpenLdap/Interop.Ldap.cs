@@ -71,7 +71,8 @@ internal static partial class Interop
         {
             Assembly currentAssembly = typeof(Ldap).Assembly;
 
-            // Register callback that tries to load other libraries when the default library "libldap-2.5.so.0" not found
+            // Register callback that tries to load other libraries when the default library "libldap.so.2" is not found.
+            // It is a convention to create the symbolic link "libldap.so.2" to point to a versioned library but not all distros do that.
             AssemblyLoadContext.GetLoadContext(currentAssembly).ResolvingUnmanagedDll += (assembly, ldapName) =>
             {
                 if (assembly != currentAssembly || ldapName != Libraries.OpenLdap)
@@ -79,8 +80,9 @@ internal static partial class Interop
                     return IntPtr.Zero;
                 }
 
-                // Try load next (libldap-2.6.so.0) or previous (libldap-2.4.so.2) versions
+                // Try versioned libraries.
                 if (NativeLibrary.TryLoad("libldap-2.6.so.0", out IntPtr handle) ||
+                    NativeLibrary.TryLoad("libldap-2.5.so.0", out handle) ||
                     NativeLibrary.TryLoad("libldap-2.4.so.2", out handle))
                 {
                     return handle;

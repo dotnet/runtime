@@ -14,6 +14,10 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 ICALL_EXPORT
 void
+mono_trace_samplepoint_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
+
+ICALL_EXPORT
+void
 mono_trace_leave_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallContext *ctx);
 
 ICALL_EXPORT

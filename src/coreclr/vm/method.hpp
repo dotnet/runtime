@@ -22,13 +22,14 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-
+#ifdef FEATURE_INTERPRETER
+#include "callstubgenerator.h"
+#endif // FEATURE_INTERPRETER
 class Stub;
 class FCallMethodDesc;
 class FieldDesc;
 class NDirect;
 class MethodDescChunk;
-struct LayoutRawFieldInfo;
 class InstantiatedMethodDesc;
 class DictionaryLayout;
 class Dictionary;
@@ -54,6 +55,74 @@ EXTERN_C VOID STDCALL NDirectImportThunk();
 #define METHOD_TOKEN_REMAINDER_MASK ((1 << METHOD_TOKEN_REMAINDER_BIT_COUNT) - 1)
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
+
+enum class AsyncMethodKind
+{
+    // Regular methods not returning tasks
+    // These are "normal" methods that do not get other variants.
+    // Note: Generic T-returning methods are NotAsync, even if T could be a Task.
+    NotAsync,
+
+    // Regular methods that return Task/ValueTask
+    // Such method has its actual IL body and there also a synthetic variant that is an
+    // Async-callable think. (AsyncVariantThunk)
+    TaskReturning,
+
+    // Task-returning methods marked as MethodImpl::Async in metadata.
+    // Such method has a body that is a thunk that forwards to an Async implementation variant
+    // which owns the original IL. (AsyncVariantImpl)
+    RuntimeAsync,
+
+    //=============================================================
+    // On {TaskReturning, AsyncVariantThunk} and {RuntimeAsync, AsyncVariantImpl} pairs:
+    //
+    // When we see a Task-returning method we create 2 method varaints that logically match the same method definition.
+    // One variant has the same signature/callconv as the defining method and another is a matching Async variant.
+    // Depending on whether the definition was a runtime async method or an ordinary Task-returning method,
+    // the IL body belongs to one of the variants and another variant is a synthetic thunk.
+    //
+    // The signature of the Async variant is derived from the original signature by replacing Task return type with
+    // modreq'd element type:
+    //   Example: "Task<int> Foo();"  ===> "modreq(Task`) int Foo();"
+    //   Example: "ValueTask Bar();"  ===> "modreq(ValueTask) void Bar();"
+    //
+    // The reason for this encoding is that:
+    //   - it uses parts of original signature, as-is, thus does not need to look for or construct anything
+    //   - it "unwraps" the element type.
+    //   - it is reversible. In particular nonconflicting signatures will map to nonconflicting ones.
+    //
+    // Async methods are called with CORINFO_CALLCONV_ASYNCCALL call convention.
+    //
+    // It is possible to get from one variant to another via GetAsyncOtherVariant.
+    //
+    // NOTE: not all Async methods are "variants" from a pair, see AsyncExplicitImpl below.
+    //=============================================================
+
+    // The following methods use special calling convention (CORINFO_CALLCONV_ASYNCCALL)
+    // These methods are emitted by the JIT as resumable state machines and also take an extra
+    // parameter and extra return - the continuation object.
+
+    // Async methods with actual IL implementation of a MethodImpl::Async method.
+    AsyncVariantImpl,
+
+    // Async methods with synthetic bodies that forward to a TaskReturning method.
+    AsyncVariantThunk,
+
+    // Methods that are explicitly declared as Async in metadata while not Task returning.
+    // This is a special case used in a few infrastructure methods like `Await`.
+    // Such methods do not get non-Async variants/thunks and can only be called from another Async method.
+    // NOTE: These methods have the original signature and it is not possible to tell if the method is Async
+    //       from the signature alone, thus all these methods are also JIT intrinsics.
+    AsyncExplicitImpl,
+};
+
+struct AsyncMethodData
+{
+    AsyncMethodKind kind;
+    Signature sig;
+};
+
+typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -128,8 +197,8 @@ enum MethodDescFlags
     // Has slot for native code
     mdfHasNativeCodeSlot                = 0x0020,
 
-    // Method was added via Edit And Continue
-    mdfEnCAddedMethod                   = 0x0040,
+    // HasAsyncMethodData
+    mdfHasAsyncMethodData               = 0x0040,
 
     // Method is static
     mdfStatic                           = 0x0080,
@@ -163,8 +232,33 @@ struct MethodDescCodeData final
 {
     PTR_MethodDescVersioningState VersioningState;
     PCODE TemporaryEntryPoint;
+#ifdef FEATURE_INTERPRETER
+    CallStubHeader *CallStub;
+#endif // FEATURE_INTERPRETER
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
+
+enum class AsyncVariantLookup
+{
+    MatchingAsyncVariant = 0,
+    AsyncOtherVariant
+};
+
+enum class MethodReturnKind
+{
+    NormalMethod,
+    GenericTaskReturningMethod,
+    NonGenericTaskReturningMethod
+};
+
+bool IsTypeDefOrRefImplementedInSystemModule(Module* pModule, mdToken tk);
+MethodReturnKind ClassifyMethodReturnKind(SigPointer sig, Module* pModule, ULONG* offsetOfAsyncDetails, bool *isValueTask);
+
+inline bool IsTaskReturning(MethodReturnKind input)
+{
+    return (input == MethodReturnKind::GenericTaskReturningMethod) ||
+        (input == MethodReturnKind::NonGenericTaskReturningMethod);
+}
 
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
@@ -287,7 +381,7 @@ public:
 
         PRECONDITION(HasPrecode());
         Precode* pPrecode = Precode::GetPrecodeFromEntryPoint(GetStableEntryPoint());
-        PREFIX_ASSUME(pPrecode != NULL);
+        _ASSERTE(pPrecode != NULL);
         return pPrecode;
     }
 
@@ -672,7 +766,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->IsEditAndContinueEnabled();
     }
 
@@ -831,7 +925,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetMDImport();
     }
 
@@ -841,7 +935,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
     }
 
@@ -850,7 +944,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetEmitter();
     }
 
@@ -858,7 +952,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetRWImporter();
     }
 #endif // !DACCESS_COMPILE
@@ -987,7 +1081,7 @@ public:
         WRAPPER_NO_CONTRACT;
         MethodTable *pMT = GetMethodTable();
         EEClass *pClass = pMT->GetClass();
-        PREFIX_ASSUME(pClass != NULL);
+        _ASSERTE(pClass != NULL);
         return pClass;
     }
 
@@ -1007,7 +1101,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
         return pModule->GetAssembly();
     }
 
@@ -1399,6 +1493,10 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = 0);
 
     PTR_PCODE GetAddrOfNativeCodeSlot();
+    PTR_AsyncMethodData GetAddrOfAsyncMethodData() const;
+#ifndef DACCESS_COMPILE
+    const AsyncMethodData& GetAsyncMethodData() { _ASSERTE(HasAsyncMethodData()); return *GetAddrOfAsyncMethodData(); }
+#endif
 
     BOOL MayHaveNativeCode();
 
@@ -1429,6 +1527,7 @@ public:
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
+    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
     // These return an address after resolving "virtual methods" correctly, including any
     // handling of context proxies, other thunking layers and also including
     // instantiation of generic virtual methods if required.
@@ -1545,12 +1644,18 @@ public:
                                                         BOOL allowInstParam,
                                                         BOOL forceRemotableMethod = FALSE,
                                                         BOOL allowCreate = TRUE,
+                                                        AsyncVariantLookup variantLookup = AsyncVariantLookup::MatchingAsyncVariant,
                                                         ClassLoadLevel level = CLASS_LOADED);
 
     // Normalize methoddesc for reflection
     static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc *pMethod,
                                                                      TypeHandle instType,
                                                                      Instantiation methodInst);
+
+    MethodDesc* GetAsyncOtherVariant(BOOL allowInstParam = TRUE)
+    {
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
+    }
 
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
@@ -1679,6 +1784,7 @@ protected:
         enum_flag4_ComputedRequiresStableEntryPoint         = 0x01,
         enum_flag4_RequiresStableEntryPoint                 = 0x02,
         enum_flag4_TemporaryEntryPointAssigned              = 0x04,
+        enum_flag4_EnCAddedMethod                           = 0x08,
     };
 
     void InterlockedSetFlags4(BYTE mask, BYTE newValue);
@@ -1713,6 +1819,11 @@ public:
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#ifdef FEATURE_INTERPRETER
+    bool SetCallStub(CallStubHeader *pHeader);
+    CallStubHeader *GetCallStub();
+#endif // FEATURE_INTERPRETER
+
 #endif //!DACCESS_COMPILE
 
     PTR_MethodDescVersioningState GetMethodDescVersionState();
@@ -1744,17 +1855,90 @@ public:
         m_wFlags |= mdfHasNativeCodeSlot;
     }
 
+    // In the runtime "Async" refers to methods callable via CORINFO_CALLCONV_ASYNCCALL
+    inline bool IsAsyncMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == AsyncMethodKind::AsyncVariantThunk ||
+            asyncKind == AsyncMethodKind::AsyncVariantImpl ||
+            asyncKind == AsyncMethodKind::AsyncExplicitImpl;
+    }
+
+    // Is this an Async variant method?
+    // If yes, the method has another Task-returning variant.
+    inline bool IsAsyncVariantMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == AsyncMethodKind::AsyncVariantThunk ||
+            asyncKind == AsyncMethodKind::AsyncVariantImpl;
+    }
+
+    // Is this a small(ish) synthetic Task/async adapter to an async/Task implementation?
+    // If yes, the method has another variant, which has the actual user-defined method body.
+    inline bool IsAsyncThunkMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+
+        auto asyncType = GetAddrOfAsyncMethodData()->kind;
+        return asyncType == AsyncMethodKind::AsyncVariantThunk ||
+            asyncType == AsyncMethodKind::RuntimeAsync;
+    }
+
+    inline bool IsTaskReturningMethod() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        if (!HasAsyncMethodData())
+            return false;
+        auto asyncKind = GetAddrOfAsyncMethodData()->kind;
+        return asyncKind == AsyncMethodKind::RuntimeAsync ||
+            asyncKind == AsyncMethodKind::TaskReturning;
+    }
+
+    inline bool IsStructMethodOperatingOnCopy()
+    {
+        if (!GetMethodTable()->IsValueType() || IsStatic())
+            return false;
+
+        if (!HasAsyncMethodData())
+            return false;
+
+        // Only async methods backed by actual user code operate on copies.
+        // Thunks with runtime-supplied implementation do not.
+        return GetAddrOfAsyncMethodData()->kind == AsyncMethodKind::AsyncVariantImpl;
+    }
+
+    inline bool HasAsyncMethodData() const
+    {
+        return (m_wFlags & mdfHasAsyncMethodData) != 0;
+    }
+
+    inline void SetHasAsyncMethodData()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_wFlags |= mdfHasAsyncMethodData;
+    }
+
 #ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdfEnCAddedMethod) != 0;
+        return (m_bFlags4 & enum_flag4_EnCAddedMethod) != 0;
     }
 
     inline void SetIsEnCAddedMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdfEnCAddedMethod;
+#ifndef DACCESS_COMPILE
+        InterlockedUpdateFlags4(enum_flag4_EnCAddedMethod, TRUE);
+#endif
     }
 #else
     inline BOOL IsEnCAddedMethod()
@@ -1885,8 +2069,18 @@ private:
     PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
     PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pilHeader, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode);
 
-public:
+    bool TryGenerateAsyncThunk(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
     bool TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
+    void EmitTaskReturningThunk(MethodDesc* pAsyncOtherVariant, MetaSig& thunkMsig, ILStubLinker* pSL);
+    void EmitAsyncMethodThunk(MethodDesc* pAsyncOtherVariant, MetaSig& msig, ILStubLinker* pSL);
+    SigPointer GetAsyncThunkResultTypeSig();
+    int GetTokenForGenericMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForGenericTypeMethodCallWithAsyncReturnType(ILCodeStream* pCode, MethodDesc* md);
+    int GetTokenForAwaitAwaiterInstantiatedOverTaskAwaiterType(ILCodeStream* pCode, TypeHandle taskAwaiterType);
+public:
+    static void CreateDerivedTargetSigWithExtraParams(MetaSig& msig, SigBuilder* stubSigBuilder);
+    bool TryGenerateTransientILImplementation(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
+    void GenerateFunctionPointerCall(DynamicResolver** resolver, COR_ILMETHOD_DECODER** methodILDecoder);
 #endif // DACCESS_COMPILE
 
 #ifdef HAVE_GCCOVER
@@ -1899,6 +2093,10 @@ public:
 
     friend struct ::cdac_data<MethodDesc>;
 };
+
+#ifndef DACCESS_COMPILE
+extern "C" void* QCALLTYPE UnsafeAccessors_ResolveGenericParamToTypeHandle(MethodDesc* unsafeAccessorMethod, BOOL isMethodParam, DWORD paramIndex);
+#endif // DACCESS_COMPILE
 
 template<> struct cdac_data<MethodDesc>
 {
@@ -2060,6 +2258,20 @@ public:
         m_jitSwitchedToMinOpt = true;
     }
 
+#ifdef FEATURE_INTERPRETER
+    void SetIsInterpreterCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isInterpreterCode = true;
+    }
+
+    bool IsInterpreterCode() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isInterpreterCode;
+    }
+#endif // FEATURE_INTERPRETER
+
 #ifdef FEATURE_TIERED_COMPILATION
 public:
     bool JitSwitchedToOptimized() const
@@ -2128,6 +2340,9 @@ private:
 #ifdef FEATURE_TIERED_COMPILATION
     bool m_jitSwitchedToOptimized; // when a different tier was requested
 #endif
+#ifdef FEATURE_INTERPRETER
+    bool m_isInterpreterCode; // The generated code is interpreter IR
+#endif // FEATURE_INTERPRETER
     PrepareCodeConfig *m_nextInSameThread;
 };
 
@@ -2222,6 +2437,7 @@ public:
                                         DWORD classification,
                                         BOOL fNonVtableSlot,
                                         BOOL fNativeCodeSlot,
+                                        BOOL fAsyncMethodData,
                                         MethodTable *initialMT,
                                         class AllocMemTracker *pamTracker,
                                         Module* pLoaderModule = NULL);
@@ -2371,9 +2587,6 @@ inline MethodDescChunk *MethodDesc::GetMethodDescChunk() const
 }
 
 MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint);
-// convert an entry point into a MethodDesc
-MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT);
-
 
 typedef DPTR(class StoredSigMethodDesc) PTR_StoredSigMethodDesc;
 class StoredSigMethodDesc : public MethodDesc
@@ -2508,6 +2721,8 @@ public:
 
         StubDelegateInvokeMethod,
 
+        StubAsyncResume,
+
         StubLast
     };
 
@@ -2576,6 +2791,12 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_pszMethodName;
+    }
+
+    void SetMethodName(PTR_CUTF8 name)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        m_pszMethodName = name;
     }
 
     // Based on the current flags, compute the equivalent as COR metadata.
@@ -3134,6 +3355,8 @@ struct CLRToCOMCallInfo
     // Size of outgoing arguments (on stack). This is currently used only
     // on x86 when we have an InlinedCallFrame representing a CLR->COM call.
     WORD        m_cbStackArgumentSize;
+    // Size of incoming arguments (on stack).
+    WORD        m_cbStackPop;
 
     void InitStackArgumentSize()
     {
@@ -3161,9 +3384,6 @@ struct CLRToCOMCallInfo
         _ASSERTE(m_cbStackArgumentSize != 0xFFFF);
         return m_cbStackArgumentSize;
     }
-
-    LPVOID      m_pRetThunk;
-
 #else // TARGET_X86
     void InitStackArgumentSize()
     {
@@ -3188,7 +3408,6 @@ class CLRToCOMCallMethodDesc : public MethodDesc
 public:
     CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
-    void InitRetThunk();
     void InitComEventCallInfo();
 
     PCODE * GetAddrOfILStubField()
@@ -3237,6 +3456,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_pCLRToCOMCallInfo->SetStackArgumentSize(cbDstBuffer);
+    }
+
+    void InitStackPop()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pCLRToCOMCallInfo->m_cbStackPop = (WORD)CbStackPop();
     }
 #else // TARGET_X86
     void SetStackArgumentSize(WORD cbDstBuffer)
@@ -3443,7 +3668,8 @@ public:
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,
-                                                                    BOOL getSharedNotStub);
+                                                                    BOOL getSharedNotStub,
+                                                                    BOOL asyncThunk);
 
 private:
 
@@ -3467,7 +3693,7 @@ inline PTR_MethodTable MethodDesc::GetMethodTable() const
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
-    PREFIX_ASSUME(pChunk != NULL);
+    _ASSERTE(pChunk != NULL);
     return pChunk->GetMethodTable();
 }
 
@@ -3483,7 +3709,7 @@ inline mdMethodDef MethodDesc::GetMemberDef() const
     LIMITED_METHOD_DAC_CONTRACT;
 
     MethodDescChunk *pChunk = GetMethodDescChunk();
-    PREFIX_ASSUME(pChunk != NULL);
+    _ASSERTE(pChunk != NULL);
     UINT16   tokrange = pChunk->GetTokRange();
 
     UINT16 tokremainder = m_wFlags3AndTokenRemainder & enum_flag3_TokenRemainderMask;

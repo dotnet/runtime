@@ -210,19 +210,19 @@ namespace System.Linq.Tests
             Assert.Equal(-100, Enumerable.Range(-100, int.MaxValue).FirstOrDefault());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void Last()
         {
             Assert.Equal(1000000056, Enumerable.Range(57, 1000000000).Last());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void LastOrDefault()
         {
             Assert.Equal(int.MaxValue - 101, Enumerable.Range(-100, int.MaxValue).LastOrDefault());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSpeedOptimized))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinqSpeedOptimized))]
         public void IListImplementationIsValid()
         {
             Validate(Enumerable.Range(42, 10), [42, 43, 44, 45, 46, 47, 48, 49, 50, 51]);

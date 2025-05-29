@@ -79,8 +79,7 @@ namespace System.Text
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
+            ArgumentNullException.ThrowIfNull(bytes);
 
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -120,11 +119,8 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                             char[] chars, int charIndex, bool flush)
         {
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
-
-            if (chars is null)
-                throw new ArgumentNullException(nameof(chars));
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -172,11 +168,8 @@ namespace System.Text
                                             char[] chars, int charIndex, int charCount, bool flush,
                                             out int bytesUsed, out int charsUsed, out bool completed)
         {
-            if (bytes is null)
-                throw new ArgumentNullException(nameof(bytes));
-
-            if (chars is null)
-                throw new ArgumentNullException(nameof(chars));
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);

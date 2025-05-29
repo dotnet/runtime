@@ -231,6 +231,19 @@ namespace System.Linq
                 found = true;
                 return _selector(_source[^1]);
             }
+
+            public override bool Contains(TResult value)
+            {
+                foreach (TSource item in _source)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class RangeSelectIterator<TResult> : Iterator<TResult>
@@ -358,6 +371,19 @@ namespace System.Linq
                 found = true;
                 return _selector(_end - 1);
             }
+
+            public override bool Contains(TResult value)
+            {
+                for (int i = _start; i != _end; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(i), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ListSelectIterator<TSource, TResult>
@@ -459,6 +485,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = _source.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -562,6 +603,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = _source.Count;
+
+                for (int i = 0; i < count; i++)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -942,6 +998,22 @@ namespace System.Linq
                 }
 
                 return count;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                int count = Count;
+
+                int end = _minIndexInclusive + count;
+                for (int i = _minIndexInclusive; i != end; ++i)
+                {
+                    if (EqualityComparer<TResult>.Default.Equals(_selector(_source[i]), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

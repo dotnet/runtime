@@ -17,7 +17,7 @@
    extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
-// WARNING!!!: These classes are used by the runtime and SOS in the diagnostics 
+// WARNING!!!: These classes are used by the runtime and SOS in the diagnostics
 // repo. Values should added or removed in a backwards and forwards compatible way.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
 //      https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/stresslog.h
@@ -32,7 +32,6 @@
 #include "log.h"
 
 #if defined(STRESS_LOG) && !defined(FEATURE_NO_STRESSLOG)
-#ifndef STRESS_LOG_ANALYZER
 #include "holder.h"
 #include "staticcontract.h"
 #include "mscoree.h"
@@ -46,9 +45,6 @@
 #ifndef _ASSERTE
 #define _ASSERTE(expr)
 #endif
-#else
-#include <stddef.h> // offsetof
-#endif // STRESS_LOG_ANALYZER
 
 /* The STRESS_LOG* macros work like printf.  In fact the use printf in their implementation
    so all printf format specifications work.  In addition the Stress log dumper knows
@@ -172,6 +168,9 @@
 
 void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
 
+template<typename T>
+struct cdac_offsets;
+
 class ThreadStressLog;
 
 struct StressLogMsg;
@@ -180,12 +179,12 @@ struct StressLogMsg;
 /* a log is a circular queue of messages */
 
 class StressLog {
+    template<typename T> friend struct ::cdac_offsets;
 public:
     static void Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
         unsigned maxBytesTotal, void* moduleBase, LPWSTR logFilename = nullptr);
     static void Terminate(BOOL fProcessDetach=FALSE);
     static void ThreadDetach();         // call at DllMain  THREAD_DETACH if you want to recycle thread logs
-#ifndef STRESS_LOG_ANALYZER
     static int NewChunk ()
     {
         return InterlockedIncrement (&theLog.totalChunk);
@@ -194,7 +193,6 @@ public:
     {
         return InterlockedDecrement (&theLog.totalChunk);
     }
-#endif //STRESS_LOG_ANALYZER
 
     //the result is not 100% accurate. If multiple threads call this function at the same time,
     //we could allow the total size be bigger than required. But the memory won't grow forever
@@ -244,28 +242,6 @@ public:
 #else
 #define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS nullptr
 #endif
-#endif
-
-#ifdef STRESS_LOG_ANALYZER
-    static size_t writing_base_address;
-    static size_t reading_base_address;
-
-    template<typename T>
-    static T* TranslateMemoryMappedPointer(T* input)
-    {
-        if (input == nullptr)
-        {
-            return nullptr;
-        }
-
-        return ((T*)(((uint8_t*)input) - writing_base_address + reading_base_address));
-    }
-#else
-    template<typename T>
-    static T* TranslateMemoryMappedPointer(T* input)
-    {
-        return input;
-    }
 #endif
 
 #ifdef MEMORY_MAPPED_STRESSLOG
@@ -399,9 +375,7 @@ inline void* StressLog::ConvertArgument(int64_t arg)
 }
 #endif
 
-#ifndef STRESS_LOG_ANALYZER
 typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;
-#endif //!STRESS_LOG_ANALYZER
 
 #if defined(DACCESS_COMPILE)
 inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
@@ -413,6 +387,29 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
     return FALSE;
 }
 #endif
+
+template<>
+struct cdac_offsets<StressLog>
+{
+    static const size_t facilitiesToLog = offsetof(StressLog, facilitiesToLog);
+    static const size_t levelToLog = offsetof(StressLog, levelToLog);
+    static const size_t MaxSizePerThread = offsetof(StressLog, MaxSizePerThread);
+    static const size_t MaxSizeTotal = offsetof(StressLog, MaxSizeTotal);
+    static const size_t totalChunk = offsetof(StressLog, totalChunk);
+    static const size_t logs = offsetof(StressLog, logs);
+    static const size_t tickFrequency = offsetof(StressLog, tickFrequency);
+    static const size_t startTimeStamp = offsetof(StressLog, startTimeStamp);
+    static const size_t startTime = offsetof(StressLog, startTime);
+    static const size_t moduleOffset = offsetof(StressLog, moduleOffset);
+    static constexpr uint64_t MAX_MODULES = StressLog::MAX_MODULES;
+
+    struct ModuleDesc
+    {
+        static constexpr size_t type_size = sizeof(StressLog::ModuleDesc);
+        static const size_t baseAddress = offsetof(StressLog::ModuleDesc, baseAddress);
+        static const size_t size = offsetof(StressLog::ModuleDesc, size);
+    };
+};
 
 /*************************************************************************************/
 /* private classes */
@@ -481,10 +478,9 @@ public:
         timeStamp = time;
     }
 
-    static const size_t maxArgCnt = 63;
+    static constexpr size_t maxArgCnt = 63;
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
-    static size_t maxMsgSize ()
-    { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
+    static constexpr size_t maxMsgSize = sizeof(uint64_t) * 2 + maxArgCnt * sizeof(void*);
 };
 
 static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
@@ -550,7 +546,7 @@ struct StressLogChunk
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
-        :prev (p), next (n), dwSig1 (0xCFCFCFCF), dwSig2 (0xCFCFCFCF)
+        :prev (p), next (n), dwSig1 (ValidChunkSig), dwSig2 (ValidChunkSig)
     {}
 
     char * StartPtr ()
@@ -565,8 +561,10 @@ struct StressLogChunk
 
     BOOL IsValid () const
     {
-        return dwSig1 == 0xCFCFCFCF && dwSig2 == 0xCFCFCFCF;
+        return dwSig1 == ValidChunkSig && dwSig2 == ValidChunkSig;
     }
+
+    static constexpr uint32_t ValidChunkSig = 0xCFCFCFCF;
 };
 
 // This class implements a circular stack of variable sized elements
@@ -582,9 +580,7 @@ struct StressLogChunk
 //     readPtr / curPtr fields. thecaller is responsible for reading/writing
 //     to the corresponding field
 class ThreadStressLog {
-#ifdef STRESS_LOG_ANALYZER
-public:
-#endif
+    template<typename T> friend struct ::cdac_offsets;
     ThreadStressLog* next;      // we keep a linked list of these
     uint64_t   threadId;        // the id for the thread using this buffer
     uint8_t    isDead;          // Is this thread dead
@@ -613,7 +609,7 @@ public:
 #endif //STRESS_LOG_READONLY
     friend class StressLog;
 
-#if !defined(STRESS_LOG_READONLY) && !defined(STRESS_LOG_ANALYZER)
+#if !defined(STRESS_LOG_READONLY)
     FORCEINLINE BOOL GrowChunkList ()
     {
         _ASSERTE (chunkListLength >= 1);
@@ -634,10 +630,10 @@ public:
 
         return TRUE;
     }
-#endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
+#endif //!STRESS_LOG_READONLY
 
 public:
-#if !defined(STRESS_LOG_READONLY) && !defined(STRESS_LOG_ANALYZER)
+#if !defined(STRESS_LOG_READONLY)
     ThreadStressLog ()
     {
         chunkListHead = chunkListTail = curWriteChunk = NULL;
@@ -665,9 +661,9 @@ public:
         chunkListLength = 1;
     }
 
-#endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
+#endif //!STRESS_LOG_READONLY
 
-#if defined(MEMORY_MAPPED_STRESSLOG) && !defined(STRESS_LOG_ANALYZER)
+#if defined(MEMORY_MAPPED_STRESSLOG)
     void* __cdecl operator new(size_t n, const std::nothrow_t&) noexcept;
     void __cdecl operator delete (void * chunk);
 #endif
@@ -679,9 +675,9 @@ public:
         {
             return;
         }
-#if !defined(STRESS_LOG_READONLY) && !defined(STRESS_LOG_ANALYZER)
+#if !defined(STRESS_LOG_READONLY)
         _ASSERTE (chunkListLength >= 1 && chunkListLength <= StressLog::theLog.totalChunk);
-#endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
+#endif //!STRESS_LOG_READONLY
         StressLogChunk * chunk = chunkListHead;
 
         do
@@ -689,9 +685,9 @@ public:
             StressLogChunk * tmp = chunk;
             chunk = chunk->next;
             delete tmp;
-#if !defined(STRESS_LOG_READONLY) && !defined(STRESS_LOG_ANALYZER)
+#if !defined(STRESS_LOG_READONLY)
             StressLog::ChunkDeleted ();
-#endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
+#endif //!STRESS_LOG_READONLY
         } while (chunk != chunkListHead);
     }
 
@@ -712,7 +708,7 @@ public:
         // a previous record.  Update curPtr to reflect the last safe beginning of a record,
         // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress
         // log
-        curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize());
+        curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize);
         if (curPtr < (StressMsg*)curWriteChunk->StartPtr())
         {
             curPtr = (StressMsg *)curWriteChunk->StartPtr();
@@ -727,7 +723,7 @@ public:
 
     BOOL IsValid () const
     {
-        return chunkListHead != NULL && (!curWriteChunk || StressLog::TranslateMemoryMappedPointer(curWriteChunk)->IsValid ());
+        return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
     }
 
 #ifdef STRESS_LOG_READONLY
@@ -757,6 +753,18 @@ public:
     static size_t OffsetOfNext () {return offsetof (ThreadStressLog, next);}
     static size_t OffsetOfListHead () {return offsetof (ThreadStressLog, chunkListHead);}
 #endif //STRESS_LOG_READONLY
+};
+
+template<>
+struct cdac_offsets<ThreadStressLog>
+{
+    static const size_t next = offsetof(ThreadStressLog, next);
+    static const size_t threadId = offsetof(ThreadStressLog, threadId);
+    static const size_t writeHasWrapped = offsetof(ThreadStressLog, writeHasWrapped);
+    static const size_t curPtr = offsetof(ThreadStressLog, curPtr);
+    static const size_t chunkListHead = offsetof(ThreadStressLog, chunkListHead);
+    static const size_t chunkListTail = offsetof(ThreadStressLog, chunkListTail);
+    static const size_t curWriteChunk = offsetof(ThreadStressLog, curWriteChunk);
 };
 
 #ifdef STRESS_LOG_READONLY
@@ -794,7 +802,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
     }
     curReadChunk = curReadChunk->next;
     void** p = (void**)curReadChunk->StartPtr();
-    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr()) < (StressMsg::maxMsgSize() / sizeof(void*)))
+    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr()) < (StressMsg::maxMsgSize / sizeof(void*)))
     {
         ++p;
     }
@@ -839,7 +847,7 @@ inline StressMsg* ThreadStressLog::AdvanceWrite(int cArgs) {
 // In addition it writes NULLs b/w the startPtr and curPtr
 inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
     STATIC_CONTRACT_WRAPPER;
-#if !defined(STRESS_LOG_READONLY) && !defined(STRESS_LOG_ANALYZER)
+#if !defined(STRESS_LOG_READONLY)
     //zeroed out remaining buffer
     memset (curWriteChunk->StartPtr (), 0, (BYTE *)curPtr - (BYTE *)curWriteChunk->StartPtr ());
 
@@ -848,7 +856,7 @@ inline StressMsg* ThreadStressLog::AdvWritePastBoundary(int cArgs) {
     {
         GrowChunkList ();
     }
-#endif //!STRESS_LOG_READONLY && !STRESS_LOG_ANALYZER
+#endif //!STRESS_LOG_READONLY
 
     curWriteChunk = curWriteChunk->prev;
 #ifndef STRESS_LOG_READONLY

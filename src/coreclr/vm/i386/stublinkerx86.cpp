@@ -1131,10 +1131,11 @@ VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
 
-    for (X86Reg r = kEAX; r <= NumX86Regs; r = (X86Reg)(r+1))
+    for (X86Reg r = kEAX; regSet > 0; r = (X86Reg)(r+1))
         if (regSet & (1U<<r))
         {
             X86EmitPushReg(r);
+            regSet &= ~(1U<<r);
         }
 }
 
@@ -1143,9 +1144,12 @@ VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
 {
     STANDARD_VM_CONTRACT;
 
-    for (X86Reg r = NumX86Regs; r >= kEAX; r = (X86Reg)(r-1))
+    for (X86Reg r = NumX86Regs; regSet > 0; r = (X86Reg)(r-1))
         if (regSet & (1U<<r))
+        {
             X86EmitPopReg(r);
+            regSet &= ~(1U<<r);
+        }
 }
 #endif // TARGET_X86
 
@@ -2140,58 +2144,6 @@ static const X86Reg c_argRegs[] = {
 
 #ifdef TARGET_X86
 
-VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        // It doesn't make sense to have the destination register be preserved
-        PRECONDITION((preservedRegSet & (1 << dstreg)) == 0);
-        AMD64_ONLY(PRECONDITION(dstreg < 8)); // code below doesn't support high registers
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_UNIX
-
-    X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
-
-    // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetThreadHelper), sizeof(void*));
-
-    // mov dstreg, eax
-    X86EmitMovRegReg(dstreg, kEAX);
-
-    X86EmitPopRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
-
-#ifdef _DEBUG
-    // Trash caller saved regs that we were not told to preserve, and that aren't the dstreg.
-    preservedRegSet |= 1 << dstreg;
-    if (!(preservedRegSet & (1 << kEAX)))
-        X86EmitDebugTrashReg(kEAX);
-    if (!(preservedRegSet & (1 << kEDX)))
-        X86EmitDebugTrashReg(kEDX);
-    if (!(preservedRegSet & (1 << kECX)))
-        X86EmitDebugTrashReg(kECX);
-#endif // _DEBUG
-
-#else // TARGET_UNIX
-
-    BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
-    static const int regByteIndex = 2;
-
-    code[regByteIndex] |= (dstreg << 3);
-
-    EmitBytes(code, sizeof(code));
-    Emit32(offsetof(TEB, ThreadLocalStoragePointer));
-
-    X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
-
-    X86EmitIndexRegLoad(dstreg, dstreg, (int)Thread::GetOffsetOfThreadStatic(&gCurrentThreadInfo));
-
-#endif // TARGET_UNIX
-}
-
 #ifdef TARGET_UNIX
 namespace
 {
@@ -2219,7 +2171,7 @@ VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigne
     X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
 
     // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), sizeof(void*));
+    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), 0);
 
     // mov dstreg, eax
     X86EmitMovRegReg(dstreg, kEAX);
@@ -2701,78 +2653,3 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 }
 
 #endif // !DACCESS_COMPILE
-
-#ifdef HAS_THISPTR_RETBUF_PRECODE
-
-// rel32 jmp target that points back to the jump (infinite loop).
-// Used to mark uninitialized ThisPtrRetBufPrecode target
-#define REL32_JMP_SELF (-5)
-
-#ifndef DACCESS_COMPILE
-void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    IN_TARGET_64BIT(m_nop1 = X86_INSTR_NOP;)   // nop
-#ifdef UNIX_AMD64_ABI
-    m_prefix1 = 0x48;
-    m_movScratchArg0 = 0xC78B;          // mov rax,rdi
-    m_prefix2 = 0x48;
-    m_movArg0Arg1 = 0xFE8B;             // mov rdi,rsi
-    m_prefix3 = 0x48;
-    m_movArg1Scratch = 0xF08B;          // mov rsi,rax
-#else
-    IN_TARGET_64BIT(m_prefix1 = 0x48;)
-    m_movScratchArg0 = 0xC889;          // mov r/eax,r/ecx
-    IN_TARGET_64BIT(m_prefix2 = 0x48;)
-    m_movArg0Arg1 = 0xD189;             // mov r/ecx,r/edx
-    IN_TARGET_64BIT(m_prefix3 = 0x48;)
-    m_movArg1Scratch = 0xC289;          // mov r/edx,r/eax
-#endif
-    m_nop2 = X86_INSTR_NOP;             // nop
-    m_jmp = X86_INSTR_JMP_REL32;        // jmp rel32
-    m_pMethodDesc = (TADDR)pMD;
-
-    // This precode is never patched lazily - avoid unnecessary jump stub allocation
-    m_rel32 = REL32_JMP_SELF;
-
-    _ASSERTE(*((BYTE*)this + OFFSETOF_PRECODE_TYPE) == ThisPtrRetBufPrecode::Type);
-}
-
-IN_TARGET_32BIT(static_assert_no_msg(offsetof(ThisPtrRetBufPrecode, m_movScratchArg0) == OFFSETOF_PRECODE_TYPE);)
-
-BOOL ThisPtrRetBufPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // This precode is never patched lazily - the interlocked semantics is not required.
-    _ASSERTE(m_rel32 == REL32_JMP_SELF);
-
-    // Use pMD == NULL to allocate the jump stub in non-dynamic heap that has the same lifetime as the precode itself
-    INT32 newRel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, ((MethodDesc *)GetMethodDesc())->GetLoaderAllocator());
-
-    _ASSERTE(IS_ALIGNED(&m_rel32, sizeof(INT32)));
-    ExecutableWriterHolder<INT32> rel32WriterHolder(&m_rel32, sizeof(INT32));
-    InterlockedExchange((LONG*)rel32WriterHolder.GetRW(), (LONG)newRel32);
-
-    return TRUE;
-}
-#endif // !DACCESS_COMPILE
-
-PCODE ThisPtrRetBufPrecode::GetTarget()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    // This precode is never patched lazily - pretend that the uninitialized m_rel32 points to prestub
-    if (m_rel32 == REL32_JMP_SELF)
-        return GetPreStubEntryPoint();
-
-    return rel32Decode(PTR_HOST_MEMBER_TADDR(ThisPtrRetBufPrecode, this, m_rel32));
-}
-
-#endif // HAS_THISPTR_RETBUF_PRECODE

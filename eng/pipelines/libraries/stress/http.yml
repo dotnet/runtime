@@ -8,11 +8,11 @@ pr:
 schedules:
 - cron: "0 13 * * *" # 1PM UTC => 5 AM PST
   displayName: HttpStress nightly run
+  always: true
   branches:
     include:
     - main
-    - release/8.0
-    - release/9.0
+    - release/*-staging
 
 variables:
   - template: ../variables.yml
@@ -38,7 +38,7 @@ extends:
           DUMPS_SHARE: "$(Build.ArtifactStagingDirectory)/dumps/"
         pool:
           name: $(DncEngPublicBuildPool)
-          demands: ImageOverride -equals 1es-ubuntu-1804-open
+          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
 
         steps:
         - checkout: self

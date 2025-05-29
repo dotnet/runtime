@@ -11,7 +11,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -28,6 +27,7 @@
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
+#include <minipal/time.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -40,7 +40,7 @@ uint64_t g_startupTimelineEvents[NUM_STARTUP_TIMELINE_EVENTS] = { 0 };
 #endif // PROFILE_STARTUP
 
 #ifdef HOST_WINDOWS
-EXTERN_C LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
+LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 #else
 int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
@@ -95,7 +95,7 @@ static bool InitDLL(HANDLE hPalInstance)
     //
     // Initialize interface dispatch.
     //
-    if (!InitializeInterfaceDispatch())
+    if (!InterfaceDispatch_Initialize())
         return false;
 #endif
 
@@ -209,7 +209,7 @@ bool InitGSCookie()
 #endif
 
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)PalGetTickCount64();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -372,6 +372,10 @@ extern "C" bool RhInitialize(bool isDll)
 #endif
 
 #if defined(HOST_WINDOWS) || defined(FEATURE_PERFTRACING)
+#if defined(DEBUG) && defined(HOST_WINDOWS)
+    // quick_exit works around Debug UCRT shutdown issues: https://github.com/dotnet/runtime/issues/108640
+    at_quick_exit(&OnProcessExit);
+#endif
     atexit(&OnProcessExit);
 #endif
 

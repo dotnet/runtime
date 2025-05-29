@@ -143,7 +143,10 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #pragma intrinsic(__dmb)
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
- #elif defined(HOST_AMD64)
+ #elif defined(HOST_BROWSER)
+  #define YieldProcessor()
+  #define MemoryBarrier __sync_synchronize
+#elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (
@@ -462,7 +465,7 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
 #define CONSISTENCY_CHECK(_expr) ASSERT(_expr)
-#define PREFIX_ASSUME(cond) ASSERT(cond)
+#define COMPILER_ASSUME(cond) ASSERT(cond)
 #define EEPOLICY_HANDLE_FATAL_ERROR(error) ASSERT(!"EEPOLICY_HANDLE_FATAL_ERROR")
 #define UI64(_literal) _literal##ULL
 

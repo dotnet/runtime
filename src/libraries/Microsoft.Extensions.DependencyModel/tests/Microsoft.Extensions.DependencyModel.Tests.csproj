@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <DefaultItemExcludes>$(DefaultItemExcludes);nonentrypointassembly\*</DefaultItemExcludes>
     <!-- Needed for .NET Framework. -->
@@ -12,10 +12,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
+    <PackageReference Include="AwesomeAssertions" Version="$(AwesomeAssertionsVersion)" />
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="..\src\Microsoft.Extensions.DependencyModel.csproj" SkipUseReferenceAssembly="true" />
     <ProjectReference Include="nonentrypointassembly\nonentrypointassembly.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" >
+    <TrimmerRootAssembly Include="nonentrypointassembly" />
   </ItemGroup>
 
 </Project>

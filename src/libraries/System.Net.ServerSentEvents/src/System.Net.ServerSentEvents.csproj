@@ -24,6 +24,7 @@ System.Net.ServerSentEvents.SseParser</PackageDescription>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <Compile Include="$(CommonPath)System\IO\StreamExtensions.netstandard.cs" Link="Common\System\IO\StreamExtensions.netstandard.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -31,6 +32,13 @@ System.Net.ServerSentEvents.SseParser</PackageDescription>
 
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
+  </ItemGroup>
+
+   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 
 </Project>

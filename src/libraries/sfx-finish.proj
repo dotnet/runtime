@@ -7,11 +7,16 @@
     <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
     <!-- Import the illink file which contains some of the logic required to illink the shared framework assemblies. -->
     <ExplicitlyImportCustomILLinkTargets>true</ExplicitlyImportCustomILLinkTargets>
+
+    <PackageOverridesInputPath>$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\PackageOverrides.txt</PackageOverridesInputPath>
+    <PackageOverridesOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)PackageOverrides.txt</PackageOverridesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="sfx-gen.proj" OutputItemType="SharedFrameworkAnalyzerAssembly" />
+
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
   </ItemGroup>
 
   <Target Name="GetGenerateFrameworkListFileInputs">
@@ -49,6 +54,20 @@
                              TargetFile="$(FrameworkListOutputPath)"
                              TargetFilePrefixes="ref/;runtimes/;analyzers/"
                              RootAttributes="@(FrameworkListRootAttribute)" />
+  </Target>
+
+  <Target Name="CreatePackageOverrides"
+          AfterTargets="Build"
+          Inputs="$(PackageOverridesInputPath)"
+          Outputs="$(PackageOverridesOutputPath)">
+    <ItemGroup>
+      <CreatePackageOverridesTemplateProperty Include="ProductVersion=$(ProductVersion)" />
+    </ItemGroup>
+
+    <GenerateFileFromTemplate
+      TemplateFile="$(PackageOverridesInputPath)"
+      Properties="@(CreatePackageOverridesTemplateProperty)"
+      OutputPath="$(PackageOverridesOutputPath)" />
   </Target>
 
   <!-- Copy the intellisense file to the targeting pack directory. -->
