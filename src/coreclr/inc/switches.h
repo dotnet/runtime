@@ -146,15 +146,12 @@
 #define FEATURE_HFA
 #endif
 
-// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
-// Additionally the platform ABI requires these types and composite type containing them to be similarly
-// aligned when passed as arguments.
-#ifdef TARGET_ARM
+// Some 32-bit platform ABIs require that 64-bit primitive types and composite types containing them are aligned at 64-bit boundaries.
+#if defined(TARGET_ARM) || defined(TARGET_WASM)
 #define FEATURE_64BIT_ALIGNMENT
 #endif
 
-// Prefer double alignment for structs and arrays with doubles. Put arrays of doubles more agressively
-// into large object heap for performance because large object heap is 8 byte aligned
+// Prefer double alignment for structs with doubles on the stack.
 #if !defined(FEATURE_64BIT_ALIGNMENT) && !defined(HOST_64BIT)
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif

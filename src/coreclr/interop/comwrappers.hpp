@@ -9,68 +9,24 @@
 #include <interoplibabi.h>
 #include "referencetrackertypes.hpp"
 
-#ifndef DEFINE_ENUM_FLAG_OPERATORS
-#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
-extern "C++" { \
-    inline ENUMTYPE operator | (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)|((int)b)); } \
-    inline ENUMTYPE operator |= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) |= ((int)b)); } \
-    inline ENUMTYPE operator & (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)&((int)b)); } \
-    inline ENUMTYPE operator &= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) &= ((int)b)); } \
-    inline ENUMTYPE operator ~ (ENUMTYPE a) { return (ENUMTYPE)(~((int)a)); } \
-    inline ENUMTYPE operator ^ (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)^((int)b)); } \
-    inline ENUMTYPE operator ^= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); } \
-}
-#endif
-
-enum class CreateComInterfaceFlagsEx : int32_t
-{
-    None = InteropLib::Com::CreateComInterfaceFlags_None,
-    CallerDefinedIUnknown = InteropLib::Com::CreateComInterfaceFlags_CallerDefinedIUnknown,
-    TrackerSupport = InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
-
-    // Highest bits are reserved for internal usage
-    LacksICustomQueryInterface = 1 << 29,
-    IsComActivated = 1 << 30,
-    IsPegged = 1 << 31,
-
-    InternalMask = IsPegged | IsComActivated | LacksICustomQueryInterface,
-};
-
-DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);
-
-// Forward declarations
-namespace ABI
-{
-    struct ComInterfaceDispatch;
-    struct ComInterfaceEntry;
-}
+using InteropLib::Com::CreateComInterfaceFlagsEx;
 
 static constexpr size_t ManagedObjectWrapperRefCountOffset();
+static constexpr size_t ManagedObjectWrapperFlagsOffset();
 
 // Class for wrapping a managed object and projecting it in a non-managed environment
-class ManagedObjectWrapper
+class ManagedObjectWrapper final : public InteropLib::ABI::ManagedObjectWrapperLayout
 {
-    friend constexpr size_t ManagedObjectWrapperRefCountOffset();
-public:
-    Volatile<InteropLib::OBJECTHANDLE> Target;
-
-private:
-    LONGLONG _refCount;
-
-    const int32_t _runtimeDefinedCount;
-    const int32_t _userDefinedCount;
-    const ABI::ComInterfaceEntry* _runtimeDefined;
-    const ABI::ComInterfaceEntry* _userDefined;
-    ABI::ComInterfaceDispatch* _dispatches;
-
-    Volatile<CreateComInterfaceFlagsEx> _flags;
-
 public: // static
     // Get the implementation for IUnknown.
     static void GetIUnknownImpl(
             _Out_ void** fpQueryInterface,
             _Out_ void** fpAddRef,
             _Out_ void** fpRelease);
+
+    static void const* GetIReferenceTrackerTargetImpl() noexcept;
+
+    static void const* GetTaggedCurrentVersionImpl() noexcept;
 
     // Convert the IUnknown if the instance is a ManagedObjectWrapper
     // into a ManagedObjectWrapper, otherwise null.
@@ -82,42 +38,17 @@ public: // static
     // performing a QueryInterface() which may not always be possible.
     // See implementation for more details.
     static ManagedObjectWrapper* MapFromIUnknownWithQueryInterface(_In_ IUnknown* pUnk);
-
-    // Create a ManagedObjectWrapper instance
-    static HRESULT Create(
-        _In_ InteropLib::Com::CreateComInterfaceFlags flags,
-        _In_ InteropLib::OBJECTHANDLE objectHandle,
-        _In_ int32_t userDefinedCount,
-        _In_ ABI::ComInterfaceEntry* userDefined,
-        _Outptr_ ManagedObjectWrapper** mow);
-
-    // Destroy the instance
-    static void Destroy(_In_ ManagedObjectWrapper* wrapper);
-
 private:
-    ManagedObjectWrapper(
-        _In_ CreateComInterfaceFlagsEx flags,
-        _In_ InteropLib::OBJECTHANDLE objectHandle,
-        _In_ int32_t runtimeDefinedCount,
-        _In_ const ABI::ComInterfaceEntry* runtimeDefined,
-        _In_ int32_t userDefinedCount,
-        _In_ const ABI::ComInterfaceEntry* userDefined,
-        _In_ ABI::ComInterfaceDispatch* dispatches);
-
-    ~ManagedObjectWrapper();
-
     // Query the runtime defined tables.
     void* AsRuntimeDefined(_In_ REFIID riid);
 
     // Query the user defined tables.
     void* AsUserDefined(_In_ REFIID riid);
-
 public:
     // N.B. Does not impact the reference count of the object.
     void* As(_In_ REFIID riid);
 
     // Attempt to set the target object handle based on an assumed current value.
-    bool TrySetObjectHandle(_In_ InteropLib::OBJECTHANDLE objectHandle, _In_ InteropLib::OBJECTHANDLE current = nullptr);
     bool IsSet(_In_ CreateComInterfaceFlagsEx flag) const;
     void SetFlag(_In_ CreateComInterfaceFlagsEx flag);
     void ResetFlag(_In_ CreateComInterfaceFlagsEx flag);
@@ -127,6 +58,8 @@ public:
 
     // Check if the wrapper has been marked to be destroyed.
     bool IsMarkedToDestroy() const;
+
+    InteropLib::OBJECTHANDLE GetTarget() const;
 
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
@@ -142,82 +75,13 @@ public: // Lifetime
     ULONG Release(void);
 };
 
-// ABI contract. This below offset is assumed in managed code and the DAC.
-ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
-
-static constexpr size_t ManagedObjectWrapperRefCountOffset()
-{
-    // _refCount is a private field and offsetof won't let you look at private fields.
-    // To overcome, this function is a friend function of ManagedObjectWrapper.
-    return offsetof(ManagedObjectWrapper, _refCount);
-}
-
-// ABI contract used by the DAC.
-ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, ManagedObject));
-ABI_ASSERT(ManagedObjectWrapperRefCountOffset() == offsetof(InteropLib::ABI::ManagedObjectWrapperLayout, RefCount));
-
-// State ownership mechanism.
-enum class TrackerObjectState
-{
-    NotSet,
-    SetNoRelease,
-    SetForRelease,
-};
-
-// Class for connecting a native COM object to a managed object instance
-class NativeObjectWrapperContext
-{
-    IReferenceTracker* _trackerObject;
-    void* _runtimeContext;
-    Volatile<BOOL> _trackerObjectDisconnected;
-    TrackerObjectState _trackerObjectState;
-    IUnknown* _nativeObjectAsInner;
-
-#ifdef _DEBUG
-    size_t _sentinel;
-#endif
-public: // static
-    // Convert a context pointer into a NativeObjectWrapperContext.
-    static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);
-
-    // Create a NativeObjectWrapperContext instance
-    static HRESULT Create(
-        _In_ IUnknown* external,
-        _In_opt_ IUnknown* nativeObjectAsInner,
-        _In_ InteropLib::Com::CreateObjectFlags flags,
-        _In_ size_t runtimeContextSize,
-        _Outptr_ NativeObjectWrapperContext** context);
-
-    // Destroy the instance
-    static void Destroy(_In_ NativeObjectWrapperContext* wrapper);
-
-private:
-    NativeObjectWrapperContext(_In_ void* runtimeContext, _In_opt_ IReferenceTracker* trackerObject, _In_opt_ IUnknown* nativeObjectAsInner);
-    ~NativeObjectWrapperContext();
-
-public:
-    // Get the associated runtime context for this context.
-    void* GetRuntimeContext() const noexcept;
-
-    // Get the IReferenceTracker instance.
-    IReferenceTracker* GetReferenceTracker() const noexcept;
-
-    // Disconnect reference tracker instance.
-    void DisconnectTracker() noexcept;
-
-private:
-    void HandleReferenceTrackerAggregation() noexcept;
-};
-
 // Manage native object wrappers that support IReferenceTracker.
 class TrackerObjectManager
 {
 public:
-    // Called when an IReferenceTracker instance is found.
-    static HRESULT OnIReferenceTrackerFound(_In_ IReferenceTracker* obj);
+    static bool HasReferenceTrackerManager();
 
-    // Called after wrapper has been created.
-    static HRESULT AfterWrapperCreated(_In_ IReferenceTracker* obj);
+    static bool TryRegisterReferenceTrackerManager(_In_ IReferenceTrackerManager* manager);
 
     // Called before wrapper is about to be finalized (the same lifetime as short weak handle).
     static HRESULT BeforeWrapperFinalized(_In_ IReferenceTracker* obj);
@@ -228,6 +92,8 @@ public:
 
     // End the reference tracking process for external object.
     static HRESULT EndReferenceTracking();
+
+    static HRESULT DetachNonPromotedObjects(_In_ InteropLibImports::RuntimeCallContext* cxt);
 };
 
 // Class used to hold COM objects (i.e. IUnknown base class)

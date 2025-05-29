@@ -110,16 +110,41 @@ struct CloneInfo : public GuardInfo
 };
 
 typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CloneInfo*> CloneMap;
+typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned>               NodeToIndexMap;
 
 class ObjectAllocator final : public Phase
 {
-    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
     enum ObjectAllocationType
     {
         OAT_NONE,
         OAT_NEWOBJ,
         OAT_NEWARR
     };
+
+    struct AllocationCandidate
+    {
+        AllocationCandidate(
+            BasicBlock* block, Statement* statement, GenTree* tree, unsigned lclNum, ObjectAllocationType allocType)
+            : m_block(block)
+            , m_statement(statement)
+            , m_tree(tree)
+            , m_lclNum(lclNum)
+            , m_allocType(allocType)
+            , m_onHeapReason(nullptr)
+            , m_bashCall(false)
+        {
+        }
+
+        BasicBlock* const          m_block;
+        Statement* const           m_statement;
+        GenTree* const             m_tree;
+        unsigned const             m_lclNum;
+        ObjectAllocationType const m_allocType;
+        const char*                m_onHeapReason;
+        bool                       m_bashCall;
+    };
+
+    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
 
     //===============================================================================
     // Data members
@@ -137,6 +162,7 @@ class ObjectAllocator final : public Phase
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
     unsigned int        m_StackAllocMaxSize;
+    unsigned            m_stackAllocationCount;
 
     // Info for conditionally-escaping locals
     LocalToLocalMap m_EnumeratorLocalToPseudoIndexMap;
@@ -148,7 +174,8 @@ class ObjectAllocator final : public Phase
     unsigned        m_regionsToClone;
 
     // Struct fields
-    bool m_trackFields;
+    bool           m_trackFields;
+    NodeToIndexMap m_StoreAddressToIndexMap;
 
     //===============================================================================
     // Methods
@@ -173,6 +200,7 @@ private:
     unsigned     LocalToIndex(unsigned lclNum);
     unsigned     IndexToLocal(unsigned bvIndex);
     bool         CanLclVarEscape(unsigned int lclNum);
+    bool         CanIndexEscape(unsigned int index);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkIndexAsPossiblyStackPointing(unsigned int index);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -191,6 +219,10 @@ private:
     void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
     void         ComputeStackObjectPointers(BitVecTraits* bitVecTraits);
     bool         MorphAllocObjNodes();
+    void         MorphAllocObjNode(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelper(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperArr(AllocationCandidate& candidate);
+    bool         MorphAllocObjNodeHelperObj(AllocationCandidate& candidate);
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj,
@@ -204,8 +236,9 @@ private:
                                                BasicBlock*          block,
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
-    bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
-    void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, bool retypeFields);
+    void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void UpdateAncestorTypes(
+        GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
 
     // Conditionally escaping allocation support
@@ -264,6 +297,21 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 }
 
 //------------------------------------------------------------------------
+// CanIndexEscape:          Returns true iff resource described by index can
+//                           potentially escape from the method
+//
+// Arguments:
+//    index   - bv index
+//
+// Return Value:
+//    Returns true if so
+
+inline bool ObjectAllocator::CanIndexEscape(unsigned int index)
+{
+    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, index);
+}
+
+//------------------------------------------------------------------------
 // CanLclVarEscape:          Returns true iff local variable can
 //                           potentially escape from the method
 //
@@ -280,8 +328,7 @@ inline bool ObjectAllocator::CanLclVarEscape(unsigned int lclNum)
         return true;
     }
 
-    const unsigned bvIndex = LocalToIndex(lclNum);
-    return BitVecOps::IsMember(&m_bitVecTraits, m_EscapingPointers, bvIndex);
+    return CanIndexEscape(LocalToIndex(lclNum));
 }
 
 //------------------------------------------------------------------------

@@ -43,6 +43,9 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_bitVecTraits(BitVecTraits(comp->lvaCount, comp))
     , m_unknownSourceIndex(BAD_VAR_NUM)
     , m_HeapLocalToStackLocalMap(comp->getAllocator(CMK_ObjectAllocator))
+    , m_ConnGraphAdjacencyMatrix(nullptr)
+    , m_StackAllocMaxSize(0)
+    , m_stackAllocationCount(0)
     , m_EnumeratorLocalToPseudoIndexMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_CloneMap(comp->getAllocator(CMK_ObjectAllocator))
     , m_nextLocalIndex(0)
@@ -51,6 +54,7 @@ ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_maxPseudos(0)
     , m_regionsToClone(0)
     , m_trackFields(false)
+    , m_StoreAddressToIndexMap(comp->getAllocator(CMK_ObjectAllocator))
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
@@ -373,7 +377,7 @@ void ObjectAllocator::PrepareAnalysis()
     //
     // If conditional escape analysis is enabled, we reserve the range [N...N+M-1]
     // for locals allocated during the conditional escape analysis expansions,
-    // where N is the maximum number of pseudos.
+    // where M is the maximum number of pseudos.
     //
     // We reserve the range [N+M ... N+2M-1] for pseudos.
     //
@@ -564,6 +568,34 @@ void ObjectAllocator::DoAnalysis()
         ComputeEscapingNodes(&m_bitVecTraits, m_EscapingPointers);
     }
 
+#ifdef DEBUG
+    // Print the connection graph
+    //
+    if (JitConfig.JitObjectStackAllocationDumpConnGraph() > 0)
+    {
+        JITDUMP("digraph ConnectionGraph {\n");
+        for (unsigned int i = 0; i < m_bvCount; i++)
+        {
+            BitVecOps::Iter iterator(&m_bitVecTraits, m_ConnGraphAdjacencyMatrix[i]);
+            unsigned int    lclIndex;
+            while (iterator.NextElem(&lclIndex))
+            {
+                JITDUMPEXEC(DumpIndex(lclIndex));
+                JITDUMP(" -> ");
+                JITDUMPEXEC(DumpIndex(i));
+                JITDUMP(";\n");
+            }
+
+            if (CanIndexEscape(i))
+            {
+                JITDUMPEXEC(DumpIndex(i));
+                JITDUMP(" -> E;\n");
+            }
+        }
+        JITDUMP("}\n");
+    }
+#endif
+
     m_AnalysisDone = true;
 }
 
@@ -614,47 +646,51 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             unsigned const   lclNum = tree->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const lclDsc = m_compiler->lvaGetDesc(lclNum);
 
-            // If this local already escapes, no need to look further.
+            // Are we tracking this local?
             //
-            if (m_allocator->CanLclVarEscape(lclNum))
+            if (!m_allocator->IsTrackedLocal(lclNum))
             {
                 return Compiler::fgWalkResult::WALK_CONTINUE;
             }
 
-            bool lclEscapes = true;
+            const unsigned lclIndex = m_allocator->LocalToIndex(lclNum);
+
+            // If this local already escapes, no need to look further.
+            //
+            if (m_allocator->CanIndexEscape(lclIndex))
+            {
+                return Compiler::fgWalkResult::WALK_CONTINUE;
+            }
 
             if (tree->OperIsLocalStore())
             {
-                lclEscapes = false;
                 m_allocator->CheckForGuardedAllocationOrCopy(m_block, m_stmt, use, lclNum);
             }
-            else if (tree->OperIs(GT_LCL_VAR) && m_allocator->IsTrackedLocal(lclNum))
+            else if (tree->OperIs(GT_LCL_VAR))
             {
                 assert(tree == m_ancestors.Top());
-                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
-                {
-                    lclEscapes = false;
-                }
+                m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
             }
-            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT) &&
-                     m_allocator->IsTrackedLocal(lclNum))
+            else if (tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() == TYP_STRUCT))
             {
                 assert(tree == m_ancestors.Top());
-                if (!m_allocator->CanLclVarEscapeViaParentStack(&m_ancestors, lclNum, m_block))
-                {
-                    lclEscapes = false;
-                }
+                m_allocator->AnalyzeParentStack(&m_ancestors, lclIndex, m_block);
             }
-
-            if (lclEscapes)
+            else if (tree->OperIs(GT_LCL_FLD))
             {
-                if (!m_allocator->CanLclVarEscape(lclNum))
-                {
-                    JITDUMP("V%02u first escapes via [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
-                }
+                // We generally don't see these in early IR. Bail for now.
+                //
+                JITDUMP("V%02u local field at [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
                 m_allocator->MarkLclVarAsEscaping(lclNum);
             }
-            else if (!tree->OperIsLocalStore())
+            else
+            {
+                assert((tree->OperIs(GT_LCL_ADDR) && (lclDsc->TypeGet() != TYP_STRUCT)));
+                JITDUMP("V%02u address taken at [%06u]\n", lclNum, m_compiler->dspTreeID(tree));
+                m_allocator->MarkLclVarAsEscaping(lclNum);
+            }
+
+            if (!m_allocator->CanIndexEscape(lclIndex) && !tree->OperIsLocalStore())
             {
                 // Note uses of variables of interest to conditional escape analysis.
                 //
@@ -1101,10 +1137,9 @@ ObjectAllocator::ObjectAllocationType ObjectAllocator::AllocationKind(GenTree* t
 
 bool ObjectAllocator::MorphAllocObjNodes()
 {
-    bool didStackAllocate             = false;
+    m_stackAllocationCount            = 0;
     m_PossiblyStackPointingPointers   = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_DefinitelyStackPointingPointers = BitVecOps::MakeEmpty(&m_bitVecTraits);
-    const bool isReadyToRun           = comp->IsReadyToRun();
 
     for (BasicBlock* const block : comp->Blocks())
     {
@@ -1128,6 +1163,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 continue;
             }
 
+            const unsigned int         lclNum    = stmtExpr->AsLclVar()->GetLclNum();
             GenTree* const             data      = stmtExpr->AsLclVar()->Data();
             ObjectAllocationType const allocType = AllocationKind(data);
 
@@ -1136,205 +1172,271 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 continue;
             }
 
-            bool               canStack     = false;
-            bool               bashCall     = false;
-            const char*        onHeapReason = nullptr;
-            const unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
-
-            // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
-            //
-            if (!IsObjectStackAllocationEnabled())
-            {
-                onHeapReason = "[object stack allocation disabled]";
-                canStack     = false;
-            }
-            else if (basicBlockHasBackwardJump)
-            {
-                onHeapReason = "[alloc in loop]";
-                canStack     = false;
-            }
-            else
-            {
-                if (allocType == OAT_NEWARR)
-                {
-                    assert(basicBlockHasNewArr);
-
-                    // R2R not yet supported
-                    //
-                    assert(!m_isR2R);
-
-                    //------------------------------------------------------------------------
-                    // We expect the following expression tree at this point
-                    // For non-ReadyToRun:
-                    //  STMTx (IL 0x... ???)
-                    //    * STORE_LCL_VAR   ref
-                    //    \--*  CALL help  ref
-                    //       +--*  CNS_INT(h) long
-                    //       \--*  CNS_INT long
-                    // For ReadyToRun:
-                    //  STMTx (IL 0x... ???)
-                    //    * STORE_LCL_VAR   ref
-                    //    \--*  CALL help  ref
-                    //       \--*  CNS_INT long
-                    //------------------------------------------------------------------------
-
-                    bool                 isExact   = false;
-                    bool                 isNonNull = false;
-                    CORINFO_CLASS_HANDLE clsHnd =
-                        comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-                    GenTree* const len = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
-
-                    assert(len != nullptr);
-
-                    unsigned int blockSize = 0;
-                    comp->Metrics.NewArrayHelperCalls++;
-
-                    if (!isExact || !isNonNull)
-                    {
-                        onHeapReason = "[array type is either non-exact or null]";
-                        canStack     = false;
-                    }
-                    else if (!len->IsCnsIntOrI())
-                    {
-                        onHeapReason = "[non-constant size]";
-                        canStack     = false;
-                    }
-                    else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, len->AsIntCon()->IconValue(),
-                                                       &blockSize, &onHeapReason))
-                    {
-                        // reason set by the call
-                        canStack = false;
-                    }
-                    else
-                    {
-                        JITDUMP("Allocating V%02u on the stack\n", lclNum);
-                        canStack = true;
-                        const unsigned int stackLclNum =
-                            MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd,
-                                                          (unsigned int)len->AsIntCon()->IconValue(), blockSize, block,
-                                                          stmt);
-
-                        // Note we do not want to rewrite uses of the array temp, so we
-                        // do not update m_HeapLocalToStackLocalMap.
-                        //
-                        comp->Metrics.StackAllocatedArrays++;
-                    }
-                }
-                else if (allocType == OAT_NEWOBJ)
-                {
-                    assert(basicBlockHasNewObj);
-                    //------------------------------------------------------------------------
-                    // We expect the following expression tree at this point
-                    //  STMTx (IL 0x... ???)
-                    //    * STORE_LCL_VAR   ref
-                    //    \--*  ALLOCOBJ  ref
-                    //       \--*  CNS_INT(h) long
-                    //------------------------------------------------------------------------
-
-                    CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
-                    const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
-
-                    if (isValueClass)
-                    {
-                        comp->Metrics.NewBoxedValueClassHelperCalls++;
-                    }
-                    else
-                    {
-                        comp->Metrics.NewRefClassHelperCalls++;
-                    }
-
-                    if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, 0, nullptr, &onHeapReason))
-                    {
-                        // reason set by the call
-                        canStack = false;
-                    }
-                    else
-                    {
-                        JITDUMP("Allocating V%02u on the stack\n", lclNum);
-                        canStack = true;
-
-                        ClassLayout* layout = nullptr;
-
-                        if (isValueClass)
-                        {
-                            CORINFO_CLASS_HANDLE boxedClsHnd = comp->info.compCompHnd->getTypeForBox(clsHnd);
-                            assert(boxedClsHnd != NO_CLASS_HANDLE);
-                            ClassLayout* structLayout = comp->typGetObjLayout(boxedClsHnd);
-                            layout                    = GetBoxedLayout(structLayout);
-                            comp->Metrics.StackAllocatedBoxedValueClasses++;
-                        }
-                        else
-                        {
-                            layout = comp->typGetObjLayout(clsHnd);
-                            comp->Metrics.StackAllocatedRefClasses++;
-                        }
-
-                        const unsigned int stackLclNum =
-                            MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), layout, block, stmt);
-                        m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
-
-                        bashCall = true;
-                    }
-                }
-            }
-
-            if (canStack)
-            {
-                // We keep the set of possibly-stack-pointing pointers as a superset of the set of
-                // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both
-                // sets.
-                MarkLclVarAsDefinitelyStackPointing(lclNum);
-                MarkLclVarAsPossiblyStackPointing(lclNum);
-
-                // If this was conditionally escaping enumerator, establish a connection between this local
-                // and the enumeratorLocal we already allocated. This is needed because we do early rewriting
-                // in the conditional clone.
-                //
-                unsigned pseudoIndex = BAD_VAR_NUM;
-                if (m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
-                {
-                    CloneInfo* info = nullptr;
-                    if (m_CloneMap.Lookup(pseudoIndex, &info))
-                    {
-                        if (info->m_willClone)
-                        {
-                            JITDUMP("Connecting stack allocated enumerator V%02u to its address var V%02u\n", lclNum,
-                                    info->m_enumeratorLocal);
-                            AddConnGraphEdge(lclNum, info->m_enumeratorLocal);
-                            MarkLclVarAsPossiblyStackPointing(info->m_enumeratorLocal);
-                            MarkLclVarAsDefinitelyStackPointing(info->m_enumeratorLocal);
-                        }
-                    }
-                }
-
-                if (bashCall)
-                {
-                    stmt->GetRootNode()->gtBashToNOP();
-                }
-
-                comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
-                didStackAllocate = true;
-            }
-            else
-            {
-                assert(onHeapReason != nullptr);
-                JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, onHeapReason);
-                if (allocType == OAT_NEWOBJ)
-                {
-                    GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(data->AsAllocObj());
-                    stmtExpr->AsLclVar()->Data() = newData;
-                    stmtExpr->AddAllEffectsFlags(newData);
-                }
-
-                if (IsTrackedLocal(lclNum))
-                {
-                    AddConnGraphEdgeIndex(LocalToIndex(lclNum), m_unknownSourceIndex);
-                }
-            }
+            AllocationCandidate c(block, stmt, stmtExpr, lclNum, allocType);
+            MorphAllocObjNode(c);
         }
     }
 
-    return didStackAllocate;
+    return (m_stackAllocationCount > 0);
+}
+
+//------------------------------------------------------------------------
+// MorphAllocObjNode: Transform an allocation site, possibly into as stack allocation
+//
+// Arguments:
+//    candidate -- allocation candidate
+//
+// Return Value:
+//    True if candidate was stack allocated
+//    If false, candidate reason is updated to explain why not
+//
+void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
+{
+    const bool     didStackAllocate = MorphAllocObjNodeHelper(candidate);
+    const unsigned lclNum           = candidate.m_lclNum;
+
+    if (didStackAllocate)
+    {
+        // We keep the set of possibly-stack-pointing pointers as a superset of the set of
+        // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both
+        // sets.
+        MarkLclVarAsDefinitelyStackPointing(lclNum);
+        MarkLclVarAsPossiblyStackPointing(lclNum);
+
+        // If this was conditionally escaping enumerator, establish a connection between this local
+        // and the enumeratorLocal we already allocated. This is needed because we do early rewriting
+        // in the conditional clone.
+        //
+        unsigned pseudoIndex = BAD_VAR_NUM;
+        if (m_EnumeratorLocalToPseudoIndexMap.TryGetValue(lclNum, &pseudoIndex))
+        {
+            CloneInfo* info = nullptr;
+            if (m_CloneMap.Lookup(pseudoIndex, &info))
+            {
+                if (info->m_willClone)
+                {
+                    JITDUMP("Connecting stack allocated enumerator V%02u to its address var V%02u\n", lclNum,
+                            info->m_enumeratorLocal);
+                    AddConnGraphEdge(lclNum, info->m_enumeratorLocal);
+                    MarkLclVarAsPossiblyStackPointing(info->m_enumeratorLocal);
+                    MarkLclVarAsDefinitelyStackPointing(info->m_enumeratorLocal);
+                }
+            }
+        }
+
+        if (candidate.m_bashCall)
+        {
+            candidate.m_statement->GetRootNode()->gtBashToNOP();
+        }
+
+        comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
+        m_stackAllocationCount++;
+    }
+    else
+    {
+        assert(candidate.m_onHeapReason != nullptr);
+        JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, candidate.m_onHeapReason);
+        if (candidate.m_allocType == OAT_NEWOBJ)
+        {
+            GenTree* const stmtExpr      = candidate.m_tree;
+            GenTree* const oldData       = stmtExpr->AsLclVar()->Data();
+            GenTree* const newData       = MorphAllocObjNodeIntoHelperCall(oldData->AsAllocObj());
+            stmtExpr->AsLclVar()->Data() = newData;
+            stmtExpr->AddAllEffectsFlags(newData);
+        }
+
+        if (IsTrackedLocal(lclNum))
+        {
+            AddConnGraphEdgeIndex(LocalToIndex(lclNum), m_unknownSourceIndex);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// MorphAllocObjNodeHelper: See if we can stack allocate a GT_ALLOCOBJ or GT_NEWARR
+//
+// Arguments:
+//    candidate -- allocation candidate
+//
+// Return Value:
+//    True if candidate was stack allocated
+//    If false, candidate reason is updated to explain why not
+//
+bool ObjectAllocator::MorphAllocObjNodeHelper(AllocationCandidate& candidate)
+{
+    if (!IsObjectStackAllocationEnabled())
+    {
+        candidate.m_onHeapReason = "[object stack allocation disabled]";
+        return false;
+    }
+
+    // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
+    //
+    if (candidate.m_block->HasFlag(BBF_BACKWARD_JUMP))
+    {
+        candidate.m_onHeapReason = "[alloc in loop]";
+        return false;
+    }
+
+    switch (candidate.m_allocType)
+    {
+        case OAT_NEWARR:
+            return MorphAllocObjNodeHelperArr(candidate);
+        case OAT_NEWOBJ:
+            return MorphAllocObjNodeHelperObj(candidate);
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// MorphAllocObjNodeHelperObj: See if we can stack allocate a GT_NEWARR
+//
+// Arguments:
+//    candidate -- allocation candidate
+//
+// Return Value:
+//    True if candidate was stack allocated
+//    If false, candidate reason is updated to explain why not
+//
+bool ObjectAllocator::MorphAllocObjNodeHelperArr(AllocationCandidate& candidate)
+{
+    assert(candidate.m_block->HasFlag(BBF_HAS_NEWARR));
+
+    // R2R not yet supported
+    //
+    if (m_isR2R)
+    {
+        candidate.m_onHeapReason = "[R2R array not yet supported]";
+        return false;
+    }
+
+    GenTree* const data = candidate.m_tree->AsLclVar()->Data();
+
+    //------------------------------------------------------------------------
+    // We expect the following expression tree at this point
+    // For non-ReadyToRun:
+    //  STMTx (IL 0x... ???)
+    //    * STORE_LCL_VAR   ref
+    //    \--*  CALL help  ref
+    //       +--*  CNS_INT(h) long
+    //       \--*  CNS_INT long
+    // For ReadyToRun:
+    //  STMTx (IL 0x... ???)
+    //    * STORE_LCL_VAR   ref
+    //    \--*  CALL help  ref
+    //       \--*  CNS_INT long
+    //------------------------------------------------------------------------
+
+    bool                 isExact   = false;
+    bool                 isNonNull = false;
+    CORINFO_CLASS_HANDLE clsHnd    = comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
+    GenTree* const       len       = data->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+    assert(len != nullptr);
+
+    unsigned int blockSize = 0;
+    comp->Metrics.NewArrayHelperCalls++;
+
+    if (!isExact || !isNonNull)
+    {
+        candidate.m_onHeapReason = "[array type is either non-exact or null]";
+        return false;
+    }
+
+    if (!len->IsCnsIntOrI())
+    {
+        candidate.m_onHeapReason = "[non-constant array size]";
+        return false;
+    }
+
+    if (!CanAllocateLclVarOnStack(candidate.m_lclNum, clsHnd, candidate.m_allocType, len->AsIntCon()->IconValue(),
+                                  &blockSize, &candidate.m_onHeapReason))
+    {
+        // reason set by the call
+        return false;
+    }
+
+    JITDUMP("Allocating V%02u on the stack\n", candidate.m_lclNum);
+    const unsigned int stackLclNum =
+        MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd, (unsigned int)len->AsIntCon()->IconValue(), blockSize,
+                                      candidate.m_block, candidate.m_statement);
+
+    // Note we do not want to rewrite uses of the array temp, so we
+    // do not update m_HeapLocalToStackLocalMap.
+    //
+    comp->Metrics.StackAllocatedArrays++;
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// MorphAllocObjNodeHelperObj: See if we can stack allocate a GT_ALLOCOBJ
+//
+// Arguments:
+//    candidate -- allocation candidate
+//
+// Return Value:
+//    True if candidate was stack allocated
+//    If false, candidate reason is updated to explain why not
+//
+bool ObjectAllocator::MorphAllocObjNodeHelperObj(AllocationCandidate& candidate)
+{
+    assert(candidate.m_block->HasFlag(BBF_HAS_NEWOBJ));
+
+    //------------------------------------------------------------------------
+    // We expect the following expression tree at this point
+    //  STMTx (IL 0x... ???)
+    //    * STORE_LCL_VAR   ref
+    //    \--*  ALLOCOBJ  ref
+    //       \--*  CNS_INT(h) long
+    //------------------------------------------------------------------------
+
+    unsigned const       lclNum       = candidate.m_lclNum;
+    GenTree* const       data         = candidate.m_tree->AsLclVar()->Data();
+    CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
+    const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
+
+    if (isValueClass)
+    {
+        comp->Metrics.NewBoxedValueClassHelperCalls++;
+    }
+    else
+    {
+        comp->Metrics.NewRefClassHelperCalls++;
+    }
+
+    if (!CanAllocateLclVarOnStack(lclNum, clsHnd, candidate.m_allocType, 0, nullptr, &candidate.m_onHeapReason))
+    {
+        // reason set by the call
+        return false;
+    }
+
+    JITDUMP("Allocating V%02u on the stack\n", lclNum);
+
+    ClassLayout* layout = nullptr;
+
+    if (isValueClass)
+    {
+        CORINFO_CLASS_HANDLE boxedClsHnd = comp->info.compCompHnd->getTypeForBox(clsHnd);
+        assert(boxedClsHnd != NO_CLASS_HANDLE);
+        ClassLayout* structLayout = comp->typGetObjLayout(boxedClsHnd);
+        layout                    = GetBoxedLayout(structLayout);
+        comp->Metrics.StackAllocatedBoxedValueClasses++;
+    }
+    else
+    {
+        layout = comp->typGetObjLayout(clsHnd);
+        comp->Metrics.StackAllocatedRefClasses++;
+    }
+
+    const unsigned int stackLclNum =
+        MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), layout, candidate.m_block, candidate.m_statement);
+    m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+
+    candidate.m_bashCall = true;
+
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -1606,29 +1708,22 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
 }
 
 //------------------------------------------------------------------------
-// CanLclVarEscapeViaParentStack: Check if the local variable escapes via the given parent stack.
+// AnalyzeParentStack: Check if the local variable escapes via the given parent stack.
 //                                Update the connection graph as necessary.
 //
 // Arguments:
 //    parentStack     - Parent stack of the current visit
-//    lclNum          - Local variable number
+//    lclIndex        - Index for a tracked, unescaped local referenced at the top of the stack
 //    block           - basic block holding the trees
 //
-// Return Value:
-//    true if the local can escape via the parent stack; false otherwise
-//
-// Notes:
-//    The method currently treats all locals assigned to a field as escaping.
-//    The can potentially be tracked by special field edges in the connection graph.
-//
-bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack,
-                                                    unsigned int          lclNum,
-                                                    BasicBlock*           block)
+void ObjectAllocator::AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclIndex, BasicBlock* block)
 {
     assert(parentStack != nullptr);
-    int parentIndex = 1;
+    assert(!CanIndexEscape(lclIndex));
 
-    LclVarDsc* const lclDsc = comp->lvaGetDesc(lclNum);
+    int              parentIndex = 1;
+    const unsigned   lclNum      = IndexToLocal(lclIndex);
+    LclVarDsc* const lclDsc      = comp->lvaGetDesc(lclNum);
 
     bool       keepChecking                  = true;
     bool       canLclVarEscapeViaParentStack = true;
@@ -1675,10 +1770,11 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     break;
                 }
 
-                // Add an edge to the connection graph.
-                const unsigned int srcLclNum = lclNum;
+                const unsigned dstIndex = LocalToIndex(dstLclNum);
 
-                AddConnGraphEdge(dstLclNum, srcLclNum);
+                // Add an edge to the connection graph.
+                //
+                AddConnGraphEdgeIndex(dstIndex, lclIndex);
                 canLclVarEscapeViaParentStack = false;
 
                 // If the source of this store is an enumerator local,
@@ -1686,7 +1782,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 //
                 if (isCopy)
                 {
-                    CheckForEnumeratorUse(srcLclNum, dstLclNum);
+                    CheckForEnumeratorUse(lclNum, dstLclNum);
                 }
 
                 // Note that we modelled this store in the connection graph
@@ -1733,6 +1829,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 }
 
                 // Check whether the local escapes higher up
+                isAddress = false;
                 ++parentIndex;
                 keepChecking = true;
                 break;
@@ -1757,57 +1854,49 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_STOREIND:
             case GT_STORE_BLK:
-            case GT_BLK:
             {
                 GenTree* const addr = parent->AsIndir()->Addr();
                 if (tree == addr)
                 {
-                    JITDUMP("... store address\n");
+                    if (isAddress)
+                    {
+                        // Remember the resource being stored to.
+                        //
+                        JITDUMP("... store address\n");
+                        m_StoreAddressToIndexMap.Set(tree, lclIndex);
+                    }
+
+                    // The address does not escape
+                    //
                     canLclVarEscapeViaParentStack = false;
                     break;
                 }
 
-                // If the value being stored is a local address, anything assigned to that local escapes
+                // Is this a store to a tracked resource?
                 //
-                if (isAddress)
+                unsigned dstIndex;
+                if (m_trackFields && m_StoreAddressToIndexMap.Lookup(addr, &dstIndex) && (dstIndex != BAD_VAR_NUM))
                 {
-                    break;
-                }
+                    JITDUMP("... local.field store\n");
 
-                // Is this a store to a field of a local struct...?
-                //
-                if (parent->OperIs(GT_STOREIND))
-                {
-                    // Are we storing to a local field?
-                    //
-                    if (addr->OperIs(GT_FIELD_ADDR))
+                    if (!isAddress)
                     {
-                        // Simple check for which local.
-                        //
-                        GenTree* const base = addr->AsOp()->gtGetOp1();
-
-                        if (base->OperIs(GT_LCL_ADDR))
-                        {
-                            unsigned const   dstLclNum = base->AsLclVarCommon()->GetLclNum();
-                            LclVarDsc* const dstDsc    = comp->lvaGetDesc(dstLclNum);
-
-                            if (IsTrackedLocal(dstLclNum))
-                            {
-                                JITDUMP("... local.field store\n");
-                                // Add an edge to the connection graph.
-                                AddConnGraphEdge(dstLclNum, lclNum);
-                                canLclVarEscapeViaParentStack = false;
-                            }
-                        }
+                        AddConnGraphEdgeIndex(dstIndex, lclIndex);
+                        canLclVarEscapeViaParentStack = false;
+                        break;
                     }
-
-                    // Else we're storing the value somewhere unknown.
-                    // Assume the worst.
+                    else
+                    {
+                        AddConnGraphEdgeIndex(dstIndex, m_unknownSourceIndex);
+                    }
                 }
+
+                // We're storing the value somewhere unknown. Assume the worst.
                 break;
             }
 
             case GT_IND:
+            case GT_BLK:
             {
                 // Does this load a type we're tracking?
                 //
@@ -1817,16 +1906,29 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     break;
                 }
 
+                // For structs we need to check the layout as well
+                //
+                if (parent->OperIs(GT_BLK))
+                {
+                    ClassLayout* const layout = parent->AsBlk()->GetLayout();
+
+                    if (!layout->HasGCPtr())
+                    {
+                        canLclVarEscapeViaParentStack = false;
+                        break;
+                    }
+                }
+
                 GenTree* const addr = parent->AsIndir()->Addr();
 
                 // For loads from local structs we may be tracking the underlying fields.
                 //
-                // We can assume that the local being read is lclNum, since we have walked up to this node from a leaf
-                // local.
+                // We can assume that the local being read is lclNum,
+                // since we have walked up to this node from a leaf local.
                 //
                 // We only track through the first indir.
                 //
-                if (m_trackFields && isAddress && addr->OperIs(GT_FIELD_ADDR))
+                if (m_trackFields && isAddress)
                 {
                     JITDUMP("... load local.field\n");
                     ++parentIndex;
@@ -1902,7 +2004,12 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         }
     }
 
-    return canLclVarEscapeViaParentStack;
+    if (canLclVarEscapeViaParentStack)
+    {
+        JITDUMP("V%02u first escapes via [%06u]...[%06u]\n", lclNum, comp->dspTreeID(parentStack->Top()),
+                comp->dspTreeID(parentStack->Top(parentIndex)));
+        MarkLclVarAsEscaping(lclNum);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1913,6 +2020,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 //    tree            - Possibly-stack-pointing tree
 //    parentStack     - Parent stack of the possibly-stack-pointing tree
 //    newType         - New type of the possibly-stack-pointing tree
+//    newLayout       - Layout for a retyped local struct
 //    retypeFields    - Inspiring local is a retyped local struct; retype fields.
 //
 // Notes:
@@ -1921,10 +2029,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 //                      In addition to updating types this method may set GTF_IND_TGT_NOT_HEAP on ancestor
 //                      indirections to help codegen with write barrier selection.
 //
-void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
-                                          ArrayStack<GenTree*>* parentStack,
-                                          var_types             newType,
-                                          bool                  retypeFields)
+void ObjectAllocator::UpdateAncestorTypes(
+    GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields)
 {
     assert(newType == TYP_BYREF || newType == TYP_I_IMPL);
     assert(parentStack != nullptr);
@@ -2036,7 +2142,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                     assert(parentType == TYP_BYREF);
                     parent->ChangeType(newType);
 
-                    // Propgate that upwards.
+                    // Propagate that upwards.
                     //
                     ++parentIndex;
                     keepChecking = true;
@@ -2072,7 +2178,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
 
             case GT_STOREIND:
             case GT_STORE_BLK:
-            case GT_BLK:
             {
                 if (tree == parent->AsIndir()->Addr())
                 {
@@ -2090,29 +2195,98 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree*              tree,
                 else
                 {
                     assert(tree == parent->AsIndir()->Data());
-                    GenTree* const addr = parent->AsIndir()->Addr();
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (parent->OperIs(GT_STOREIND) && addr->OperIs(GT_FIELD_ADDR) && varTypeIsGC(parent->TypeGet()))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
+                    }
+                    else if (retypeFields && parent->OperIs(GT_STORE_BLK))
+                    {
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be storing just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+                        }
                     }
                 }
                 break;
             }
 
             case GT_IND:
+            case GT_BLK:
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if (retypeFields && (tree->OperIs(GT_FIELD_ADDR)) && (varTypeIsGC(parent->TypeGet())))
+                if (retypeFields)
                 {
-                    parent->ChangeType(newType);
-                    ++parentIndex;
-                    keepChecking = true;
-                    retypeFields = false;
+                    bool didRetype = false;
+
+                    if (varTypeIsGC(parent->TypeGet()))
+                    {
+                        parent->ChangeType(newType);
+                        didRetype = true;
+                    }
+                    else if (parent->OperIs(GT_BLK))
+                    {
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be loading just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+
+                            didRetype = true;
+                        }
+                    }
+
+                    if (didRetype)
+                    {
+                        ++parentIndex;
+                        keepChecking = true;
+                        retypeFields = false;
+                    }
                 }
+
                 break;
             }
 
@@ -2183,6 +2357,7 @@ void ObjectAllocator::RewriteUses()
 
             unsigned int newLclNum = BAD_VAR_NUM;
             var_types    newType   = lclVarDsc->TypeGet();
+            ClassLayout* newLayout = nullptr;
 
             if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
             {
@@ -2196,16 +2371,16 @@ void ObjectAllocator::RewriteUses()
             }
             else if (newType == TYP_STRUCT)
             {
-                ClassLayout* const layout = lclVarDsc->GetLayout();
-                newType                   = layout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
-                retypeFields              = true;
+                newLayout    = lclVarDsc->GetLayout();
+                newType      = newLayout->HasGCPtr() ? TYP_BYREF : TYP_I_IMPL;
+                retypeFields = true;
             }
             else
             {
                 tree->ChangeType(newType);
             }
 
-            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, retypeFields);
+            m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType, newLayout, retypeFields);
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
         }
@@ -2510,11 +2685,11 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 
         // See what locals were "assigned" to the pseudo.
         //
-        BitVec PseudoAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoIndex];
+        BitVec pseudoAdjacencies = m_ConnGraphAdjacencyMatrix[pseudoIndex];
 
         // If we found an allocation but didn't find any conditionally escaping uses, then cloning is of no use
         //
-        if (BitVecOps::IsEmpty(bitVecTraits, PseudoAdjacencies))
+        if (BitVecOps::IsEmpty(bitVecTraits, pseudoAdjacencies))
         {
             JITDUMP("   No conditionally escaping uses under");
             JITDUMPEXEC(DumpIndex(pseudoIndex));
@@ -2525,7 +2700,7 @@ bool ObjectAllocator::AnalyzeIfCloningCanPreventEscape(BitVecTraits* bitVecTrait
 
         // Check if each conditionally escaping local escapes on its own; if so cloning is of no use
         //
-        BitVecOps::Iter iterator(bitVecTraits, PseudoAdjacencies);
+        BitVecOps::Iter iterator(bitVecTraits, pseudoAdjacencies);
         unsigned        lclNumIndex = BAD_VAR_NUM;
         while (canClone && iterator.NextElem(&lclNumIndex))
         {

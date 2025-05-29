@@ -308,8 +308,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportPkcs8PrivateKey(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyPkcs8);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
-            Assert.Equal(slhDsa.Algorithm.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
+            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
         }
 
@@ -319,8 +318,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportSubjectPublicKeyInfo(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyPkcs8);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] publicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
-            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(publicKey));
+            byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, publicKey);
         }
 
@@ -331,8 +329,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] secretKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes];
-            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.SecretKeySizeInBytes, slhDsa.ExportSlhDsaSecretKey(secretKey));
+            byte[] secretKey = slhDsa.ExportSlhDsaSecretKey();
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue, secretKey);
         }
 
@@ -343,8 +340,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             using SlhDsa slhDsa = SlhDsa.ImportFromPem(pem);
             Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s, slhDsa.Algorithm);
 
-            byte[] publicKey = new byte[SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes];
-            Assert.Equal(SlhDsaAlgorithm.SlhDsaSha2_128s.PublicKeySizeInBytes, slhDsa.ExportSlhDsaPublicKey(publicKey));
+            byte[] publicKey = slhDsa.ExportSlhDsaPublicKey();
             AssertExtensions.SequenceEqual(SlhDsaTestData.IetfSlhDsaSha2_128sPublicKeyValue, publicKey);
         }
 
@@ -375,20 +371,17 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             // Import secret key and verify exports
             using (SlhDsa secretSlhDsa = ImportSlhDsaSecretKey(vector.Algorithm, sk))
             {
-                byte[] pubKey = new byte[vector.Algorithm.PublicKeySizeInBytes];
-                Assert.Equal(pk.Length, secretSlhDsa.ExportSlhDsaPublicKey(pubKey));
+                byte[] pubKey = secretSlhDsa.ExportSlhDsaPublicKey();
                 AssertExtensions.SequenceEqual(pk, pubKey);
 
-                byte[] secretKey = new byte[vector.Algorithm.SecretKeySizeInBytes];
-                Assert.Equal(sk.Length, secretSlhDsa.ExportSlhDsaSecretKey(secretKey));
+                byte[] secretKey = secretSlhDsa.ExportSlhDsaSecretKey();
                 AssertExtensions.SequenceEqual(sk, secretKey);
             }
 
             // Import public key and verify exports
             using (SlhDsa publicSlhDsa = ImportSlhDsaPublicKey(vector.Algorithm, pk))
             {
-                byte[] pubKey = new byte[vector.Algorithm.PublicKeySizeInBytes];
-                Assert.Equal(pk.Length, publicSlhDsa.ExportSlhDsaPublicKey(pubKey));
+                byte[] pubKey = publicSlhDsa.ExportSlhDsaPublicKey();
                 AssertExtensions.SequenceEqual(pk, pubKey);
 
                 byte[] secretKey = new byte[vector.Algorithm.SecretKeySizeInBytes];

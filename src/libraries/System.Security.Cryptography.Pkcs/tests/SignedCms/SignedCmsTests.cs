@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.SLHDsa.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using Test.Cryptography;
@@ -659,6 +662,79 @@ namespace System.Security.Cryptography.Pkcs.Tests
             byte[] sig2 = cms.SignerInfos[0].GetSignature();
             Assert.Equal(signature, sig2);
 #endif
+
+            if (detached)
+            {
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+                cms = new SignedCms(contentInfo, detached);
+                cms.Decode(encoded);
+            }
+
+            cms.CheckSignature(true);
+        }
+
+        public static IEnumerable<object[]> AddFirstSignerSlhDsaTestData =>
+            from sit in new[] { SubjectIdentifierType.IssuerAndSerialNumber, SubjectIdentifierType.SubjectKeyIdentifier }
+            from detached in new[] { false, true }
+            from algorithms in new (SlhDsaAlgorithm signAlgorithm, string hashAlgorithm)[]
+            {
+                (SlhDsaAlgorithm.SlhDsaSha2_128s, Oids.Sha256),
+                (SlhDsaAlgorithm.SlhDsaShake128f, Oids.Shake128),
+                (SlhDsaAlgorithm.SlhDsaSha2_256f, Oids.Sha512),
+                (SlhDsaAlgorithm.SlhDsaShake256f, Oids.Shake256),
+            }
+            from SlhDsaTestData.SlhDsaGeneratedKeyInfo info in SlhDsaTestData.GeneratedKeyInfosRaw
+            where info.Algorithm == algorithms.signAlgorithm // Find the matching test data for the algorithm
+            select new object[] { sit, detached, algorithms.hashAlgorithm, info };
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(AddFirstSignerSlhDsaTestData))]
+        public static void AddFirstSigner_SlhDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, detached);
+
+            CertLoader loader = Certificates.SlhDsaGeneratedCerts.Single(cert => cert.CerData.SequenceEqual(info.Certificate));
+            using (X509Certificate2 signerCert = loader.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                cms.ComputeSignature(signer);
+            }
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Single(cms.Certificates);
+
+            int expectedVersion = identifierType == SubjectIdentifierType.SubjectKeyIdentifier ? 3 : 1;
+            Assert.Equal(expectedVersion, cms.Version);
+
+            SignerInfo firstSigner = cms.SignerInfos[0];
+            Assert.Equal(identifierType, firstSigner.SignerIdentifier.Type);
+            Assert.NotNull(firstSigner.Certificate);
+            Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
+            Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
+
+            byte[] signature = firstSigner.GetSignature();
+            Assert.NotEmpty(signature);
+
+            // SLH-DSA Oids are all under 2.16.840.1.101.3.4.3.
+            Assert.StartsWith("2.16.840.1.101.3.4.3.", firstSigner.SignatureAlgorithm.Value);
+
+            cms.CheckSignature(true);
+            byte[] encoded = cms.Encode();
+
+            cms = new SignedCms();
+            cms.Decode(encoded);
+
+            Assert.Single(cms.SignerInfos);
+            Assert.Single(cms.Certificates);
+            Assert.Equal(expectedVersion, cms.Version);
+            Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
+            Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
+
+            byte[] sig2 = cms.SignerInfos[0].GetSignature();
+            Assert.Equal(signature, sig2);
 
             if (detached)
             {
@@ -1609,6 +1685,21 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.Decode(SignedDocuments.TstWithAttributeCertificate);
             Assert.Equal(2, cms.Certificates.Count);
             cms.CheckSignature(verifySignatureOnly: true);
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ComputeSignature_SlhDsa_NoSignature()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+            SignedCms cms = new SignedCms(contentInfo, false);
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+            {
+                CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+                AssertExtensions.ThrowsContains<CryptographicException>(
+                    () => cms.ComputeSignature(cmsSigner),
+                    "SignatureIdentifierType.NoSignature is not valid with the provided certificate.");
+            }
         }
 
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)

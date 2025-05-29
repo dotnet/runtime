@@ -487,11 +487,11 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 
 #ifdef _DEBUG
     MethodTable * pItfMT =  ownerType.GetMethodTable();
-    PREFIX_ASSUME(pItfMT != NULL);
+    _ASSERTE(pItfMT != NULL);
 #endif // _DEBUG
 
     MethodTable *pServerMT = (*pServer)->GetMethodTable();
-    PREFIX_ASSUME(pServerMT != NULL);
+    _ASSERTE(pServerMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
@@ -552,7 +552,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, 
     CONTRACT_END;
 
     MethodTable * pItfMT =  pItfMD->GetMethodTable();
-    PREFIX_ASSUME(pItfMT != NULL);
+    _ASSERTE(pItfMT != NULL);
 
         // We now handle __ComObject class that doesn't have Dynamic Interface Map
     if (!HasDynamicInterfaceMap())
@@ -904,7 +904,7 @@ unsigned MethodTable::GetNumDynamicallyAddedInterfaces()
     PRECONDITION(HasDynamicInterfaceMap());
 
     PTR_InterfaceInfo pInterfaces = GetInterfaceMap();
-    PREFIX_ASSUME(pInterfaces != NULL);
+    _ASSERTE(pInterfaces != NULL);
     return (unsigned)*(dac_cast<PTR_SIZE_T>(pInterfaces) - 1);
 }
 
@@ -956,7 +956,7 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     // Copy the old map into the new one.
     if (TotalNumInterfaces > 0) {
         InterfaceInfo_t *pInterfaceMap = GetInterfaceMap();
-        PREFIX_ASSUME(pInterfaceMap != NULL);
+        _ASSERTE(pInterfaceMap != NULL);
 
         for (unsigned index = 0; index < TotalNumInterfaces; ++index)
         {
@@ -2716,8 +2716,8 @@ static void SetFpStructInRegistersInfoField(FpStructInRegistersInfo& info, int i
     (index == 0 ? info.offset1st : info.offset2nd) = offset;
 }
 
-static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInRegistersInfo& info, int& typeIndex
-    DEBUG_ARG(int nestingLevel))
+static bool HandleInlineArray(int elementTypeIndex, int nElements,
+    FpStructInRegistersInfo& info, int& typeIndex, uint32_t& occupiedBytesMap DEBUG_ARG(int nestingLevel))
 {
     int nFlattenedFieldsPerElement = typeIndex - elementTypeIndex;
     if (nFlattenedFieldsPerElement == 0)
@@ -2759,45 +2759,65 @@ static bool HandleInlineArray(int elementTypeIndex, int nElements, FpStructInReg
         int sizeShiftMask = (info.flags & FpStruct::SizeShift1stMask) << 2;
         info.flags = FpStruct::Flags(info.flags | floatFlag | sizeShiftMask); // merge with 1st field
         info.offset2nd = info.offset1st + info.Size1st(); // bump up the field offset
+
+        assert(info.Size1st() == info.Size2nd());
+        uint32_t startOffset = info.offset2nd;
+        uint32_t endOffset = startOffset + info.Size2nd();
+
+        uint32_t fieldOccupation = (~0u << startOffset) ^ (~0u << endOffset);
+        if ((occupiedBytesMap & fieldOccupation) != 0)
+        {
+            LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
+                " * duplicated array element [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
+                nestingLevel * 4, "", startOffset, endOffset, occupiedBytesMap));
+            return false;
+        }
+        occupiedBytesMap |= fieldOccupation;
+
         LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * duplicated array element type\n",
             nestingLevel * 4, ""));
     }
     return true;
 }
 
-static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInfo& info, int& typeIndex
+static bool FlattenFields(TypeHandle th, uint32_t structOffset, FpStructInRegistersInfo& info, int& typeIndex
     DEBUG_ARG(int nestingLevel))
 {
     bool isManaged = !th.IsTypeDesc();
     MethodTable* pMT = isManaged ? th.AsMethodTable() : th.AsNativeValueType();
     int nFields = isManaged ? pMT->GetNumIntroducedInstanceFields() : pMT->GetNativeLayoutInfo()->GetNumFields();
 
-    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s flattening %s (%s, %i fields)\n",
-        nestingLevel * 4, "", pMT->GetDebugClassName(), (isManaged ? "managed" : "native"), nFields));
+    LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s flattening %s (%s, %i fields) at offset %u\n",
+        nestingLevel * 4, "", pMT->GetDebugClassName(), (isManaged ? "managed" : "native"), nFields, structOffset));
 
     // TODO: templatize isManaged and use if constexpr for differences when we migrate to C++17
     // because the logic for both branches is nearly the same.
+
+    uint32_t occupiedBytesMap = 0;
     if (isManaged)
     {
         FieldDesc* fields = pMT->GetApproxFieldDescListRaw();
         int elementTypeIndex = typeIndex;
         for (int i = 0; i < nFields; ++i)
         {
-            if (i > 0 && fields[i-1].GetOffset() + fields[i-1].GetSize() > fields[i].GetOffset())
+            uint32_t startOffset = structOffset + fields[i].GetOffset();
+            uint32_t endOffset = startOffset + fields[i].GetSize();
+
+            uint32_t fieldOccupation = (~0u << startOffset) ^ (~0u << endOffset);
+            if ((occupiedBytesMap & fieldOccupation) != 0)
             {
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
-                    " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
-                    nestingLevel * 4, "",
-                    fields[i-1].GetDebugName(), fields[i-1].GetOffset(), fields[i-1].GetOffset() + fields[i-1].GetSize(),
-                    fields[i].GetDebugName(), fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize()));
+                    " * field %s [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
+                    nestingLevel * 4, "", fields[i].GetDebugName(), startOffset, endOffset, occupiedBytesMap));
                 return false;
             }
+            occupiedBytesMap |= fieldOccupation;
 
             CorElementType type = fields[i].GetFieldType();
             if (type == ELEMENT_TYPE_VALUETYPE)
             {
                 MethodTable* nested = fields[i].GetApproxFieldTypeHandleThrowing().GetMethodTable();
-                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetOffset(), info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                if (!FlattenFields(TypeHandle(nested), startOffset, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                     return false;
             }
             else if (fields[i].GetSize() <= TARGET_POINTER_SIZE)
@@ -2810,12 +2830,10 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 }
 
                 bool isFloating = CorTypeInfo::IsFloat_NoThrow(type);
-                SetFpStructInRegistersInfoField(info, typeIndex++,
-                    isFloating, CorTypeInfo::Size_NoThrow(type), offset + fields[i].GetOffset());
+                SetFpStructInRegistersInfoField(info, typeIndex++, isFloating, CorTypeInfo::Size_NoThrow(type), startOffset);
 
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
-                    nestingLevel * 4, "", fields[i].GetDebugName(),
-                    fields[i].GetOffset(), fields[i].GetOffset() + fields[i].GetSize(), CorTypeInfo::GetName(type)));
+                    nestingLevel * 4, "", fields[i].GetDebugName(), startOffset, endOffset, CorTypeInfo::GetName(type)));
             }
             else
             {
@@ -2842,7 +2860,7 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 return false;
             }
 
-            if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+            if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex, occupiedBytesMap DEBUG_ARG(nestingLevel + 1)))
                 return false;
         }
     }
@@ -2851,15 +2869,18 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
         const NativeFieldDescriptor* fields = pMT->GetNativeLayoutInfo()->GetNativeFieldDescriptors();
         for (int i = 0; i < nFields; ++i)
         {
-            if (i > 0 && fields[i-1].GetExternalOffset() + fields[i-1].NativeSize() > fields[i].GetExternalOffset())
+            uint32_t startOffset = structOffset + fields[i].GetExternalOffset();
+            uint32_t endOffset = startOffset + fields[i].NativeSize();
+
+            uint32_t fieldOccupation = (~0u << startOffset) ^ (~0u << endOffset);
+            if ((occupiedBytesMap & fieldOccupation) != 0)
             {
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
-                    " * fields %s [%i..%i) and %s [%i..%i) overlap, treat as union\n",
-                    nestingLevel * 4, "",
-                    fields[i-1].GetFieldDesc()->GetDebugName(), fields[i-1].GetExternalOffset(), fields[i-1].GetExternalOffset() + fields[i-1].NativeSize(),
-                    fields[i].GetFieldDesc()->GetDebugName(), fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize()));
+                    " * field %s [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset));
                 return false;
             }
+            occupiedBytesMap |= fieldOccupation;
 
             static const char* categoryNames[] = {"FLOAT", "NESTED", "INTEGER", "ILLEGAL"};
             NativeFieldCategory category = fields[i].GetCategory();
@@ -2868,12 +2889,12 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 int elementTypeIndex = typeIndex;
 
                 MethodTable* nested = fields[i].GetNestedNativeMethodTable();
-                if (!FlattenFields(TypeHandle(nested), offset + fields[i].GetExternalOffset(), info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                if (!FlattenFields(TypeHandle(nested), startOffset, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
                     return false;
 
                 // In native layout fixed arrays are marked as NESTED just like structs
                 int nElements = fields[i].GetNumElements();
-                if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex DEBUG_ARG(nestingLevel + 1)))
+                if (!HandleInlineArray(elementTypeIndex, nElements, info, typeIndex, occupiedBytesMap DEBUG_ARG(nestingLevel + 1)))
                     return false;
             }
             else if (fields[i].NativeSize() <= TARGET_POINTER_SIZE)
@@ -2886,13 +2907,10 @@ static bool FlattenFields(TypeHandle th, uint32_t offset, FpStructInRegistersInf
                 }
 
                 bool isFloating = (category == NativeFieldCategory::FLOAT);
-
-                SetFpStructInRegistersInfoField(info, typeIndex++,
-                    isFloating, fields[i].NativeSize(), offset + fields[i].GetExternalOffset());
+                SetFpStructInRegistersInfoField(info, typeIndex++, isFloating, fields[i].NativeSize(), startOffset);
 
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s  * found field %s [%i..%i), type: %s\n",
-                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(),
-                    fields[i].GetExternalOffset(), fields[i].GetExternalOffset() + fields[i].NativeSize(), categoryNames[(int)category]));
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset, categoryNames[(int)category]));
             }
             else
             {
@@ -2930,6 +2948,21 @@ FpStructInRegistersInfo MethodTable::GetFpStructInRegistersInfo(TypeHandle th)
     }
 
     assert(nFields == 1 || nFields == 2);
+    if (nFields == 2 && info.offset1st > info.offset2nd)
+    {
+        LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo: struct %s (%u bytes): swap fields to match memory order\n",
+            (!th.IsTypeDesc() ? th.AsMethodTable() : th.AsNativeValueType())->GetDebugClassName(), th.GetSize()));
+        info.flags = FpStruct::Flags(
+            ((info.flags & FloatInt) << (PosIntFloat - PosFloatInt)) |
+            ((info.flags & IntFloat) >> (PosIntFloat - PosFloatInt)) |
+            ((info.flags & SizeShift1stMask) << (PosSizeShift2nd - PosSizeShift1st)) |
+            ((info.flags & SizeShift2ndMask) >> (PosSizeShift2nd - PosSizeShift1st))
+        );
+        std::swap(info.offset1st, info.offset2nd);
+    }
+    assert((info.flags & (OnlyOne | BothFloat)) == 0);
+    assert((info.flags & FloatInt) == 0 || info.Size1st() == sizeof(float) || info.Size1st() == sizeof(double));
+    assert((info.flags & IntFloat) == 0 || info.Size2nd() == sizeof(float) || info.Size2nd() == sizeof(double));
 
     if ((info.flags & (FloatInt | IntFloat)) == (FloatInt | IntFloat))
     {
@@ -4328,7 +4361,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         ClassLoader::ValidateMethodsWithCovariantReturnTypes(this);
     }
 
-    if ((level == CLASS_LOADED) && 
+    if ((level == CLASS_LOADED) &&
         this->GetModule()->AreJITOptimizationsDisabled() &&
         !HasInstantiation() &&
         !GetModule()->GetAssembly()->IsLoading()) // Do not do this during the vtable fixup stage of C++/CLI assembly loading. See https://github.com/dotnet/runtime/issues/110365
@@ -8209,7 +8242,7 @@ MethodTable::TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType
         bool differsByAsyncVariant = false;
         if (!pMethodDecl->HasSameMethodDefAs(pInterfaceMD))
         {
-            if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() && 
+            if (pMethodDecl->GetMemberDef() == pInterfaceMD->GetMemberDef() &&
                 pMethodDecl->GetModule() == pInterfaceMD->GetModule() &&
                 pMethodDecl->IsAsyncVariantMethod() != pInterfaceMD->IsAsyncVariantMethod())
             {
@@ -8605,7 +8638,7 @@ int MethodTable::GetFieldAlignmentRequirement()
 {
     if (HasLayout())
     {
-        return GetLayoutInfo()->m_ManagedLargestAlignmentRequirementOfAllMembers;
+        return GetLayoutInfo()->GetAlignmentRequirement();
     }
     else if (GetClass()->HasCustomFieldAlignment())
     {
@@ -8629,7 +8662,7 @@ UINT32 MethodTable::GetNativeSize()
     CONTRACTL_END;
     if (IsBlittable())
     {
-        return GetClass()->GetLayoutInfo()->GetManagedSize();
+        return GetNumInstanceFieldBytes();
     }
     return GetNativeLayoutInfo()->GetSize();
 }

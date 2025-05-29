@@ -3245,7 +3245,7 @@ BOOL NDirect::MarshalingRequired(
 
     if (sigPointer.IsNull())
     {
-        PREFIX_ASSUME(pMD != NULL);
+        _ASSERTE(pMD != NULL);
 
         sigPointer = pMD->GetSigPointer();
         pModule = pMD->GetModule();
@@ -6483,27 +6483,8 @@ bool GenerateCopyConstructorHelper(MethodDesc* ftn, DynamicResolver** ppResolver
     pCode->EmitRET();
 
     // Generate all IL associated data for JIT
-    {
-        UINT maxStack;
-        size_t cbCode = sl.Link(&maxStack);
-        DWORD cbSig = sl.GetLocalSigSize();
-
-        COR_ILMETHOD_DECODER* pILHeader = ilResolver->AllocGeneratedIL(cbCode, cbSig, maxStack);
-        BYTE* pbBuffer = (BYTE*)pILHeader->Code;
-        BYTE* pbLocalSig = (BYTE*)pILHeader->LocalVarSig;
-        _ASSERTE(cbSig == pILHeader->cbLocalVarSig);
-        sl.GenerateCode(pbBuffer, cbCode);
-        sl.GetLocalSig(pbLocalSig, cbSig);
-
-        // Store the token lookup map
-        ilResolver->SetTokenLookupMap(sl.GetTokenLookupMap());
-        ilResolver->SetJitFlags(CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB));
-
-        *ppResolver = (DynamicResolver*)ilResolver;
-        *ppHeader = pILHeader;
-    }
-
-    ilResolver.SuppressRelease();
+    *ppHeader = ilResolver->FinalizeILStub(&sl);
+    *ppResolver = ilResolver.Extract();
     return true;
 }
 

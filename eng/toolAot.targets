@@ -18,7 +18,7 @@
       NativeAOT's targets don't handle cross-targeting to a non-portable RID.
       Change the RID when importing the NativeAOT targets to the corresponding portable RID if specified.
     -->
-    <RuntimeIdentifier Condition="'$(BaseOS)' != ''">$(BaseOS)</RuntimeIdentifier>
+    <RuntimeIdentifier Condition="'$(BaseRid)' != ''">$(BaseRid)</RuntimeIdentifier>
   </PropertyGroup>
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(PublishAot)' == 'true' and '$(UseBootstrapLayout)' == 'true'" />
   <PropertyGroup>

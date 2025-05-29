@@ -477,14 +477,8 @@ private:
 #define HelperMethodFrame_0OBJ      HelperMethodFrame
 #define HELPER_FRAME_ARGS(attribs)  __me, attribs
 #define FORLAZYMACHSTATE(x) x
-
-#if defined(_PREFAST_)
-  #define FORLAZYMACHSTATE_BEGINLOOP(x) x
-  #define FORLAZYMACHSTATE_ENDLOOP(x)
-#else
-  #define FORLAZYMACHSTATE_BEGINLOOP(x) x do
-  #define FORLAZYMACHSTATE_ENDLOOP(x) while(x)
-#endif
+#define FORLAZYMACHSTATE_BEGINLOOP(x) x do
+#define FORLAZYMACHSTATE_ENDLOOP(x) while(x)
 
 // BEGIN: before gcpoll
 //FCallGCCanTriggerNoDtor __fcallGcCanTrigger;
@@ -1145,24 +1139,10 @@ public:
 
 // This rule is verified in corelib.cpp if DOTNET_ConsistencyCheck is set.
 
-#ifdef _PREFAST_
-
-// Use prefast build to ensure that functions returning FC_BOOL_RET
-// are using FC_RETURN_BOOL to return it. Missing FC_RETURN_BOOL will
-// result into type mismatch error in prefast builds. This will also
-// catch misuses of FC_BOOL_RET for other places (e.g. in FCALL parameters).
-
-typedef LPVOID FC_BOOL_RET;
-#define FC_RETURN_BOOL(x) do { return (LPVOID)!!(x); } while(0)
-
-#else
-
 // The return value is artificially widened in managed calling convention
 typedef INT32 FC_BOOL_RET;
 
 #define FC_RETURN_BOOL(x)   do { return !!(x); } while(0)
-
-#endif
 
 
 // Small primitive return values are artificially widened in managed calling convention

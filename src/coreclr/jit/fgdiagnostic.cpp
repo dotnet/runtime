@@ -2714,7 +2714,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
+    JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
 }
@@ -2746,8 +2746,8 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
-           block->bbNum);
+    JITDUMP("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+            block->bbNum);
     assert(!"Jump into the middle of handler region");
     return false;
 }
@@ -3458,10 +3458,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_Sve_GatherPrefetch32Bit:
                     case NI_Sve_GatherPrefetch64Bit:
                     case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_Prefetch16Bit:
+                    case NI_Sve_Prefetch32Bit:
+                    case NI_Sve_Prefetch64Bit:
+                    case NI_Sve_Prefetch8Bit:
                     case NI_Sve_GetFfrByte:
                     case NI_Sve_GetFfrInt16:
                     case NI_Sve_GetFfrInt32:

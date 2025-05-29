@@ -407,15 +407,8 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // array header or alignment.
     sl.Emit16(0xfa81);
 
-
-        // The large object heap is 8 byte aligned, so for double arrays we
-        // want to bias toward putting things in the large object heap
     unsigned maxElems =  0xffff - 256;
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((flags & ALIGN8) && g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold() < maxElems)
-        maxElems = g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold();
-#endif // FEATURE_DOUBLE_ALIGNMENT_HINT
     if (flags & OBJ_ARRAY)
     {
         //Since we know that the array elements are sizeof(OBJECTREF), set maxElems exactly here (use the
@@ -711,61 +704,61 @@ void InitJITHelpers1()
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
 
     // Copy the write barriers to their final resting place.
-    for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
+    if (IsWriteBarrierCopyEnabled())
     {
-        BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
-
-        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
-        int reg = c_rgWriteBarrierRegs[iBarrier];
-
-        BYTE * pBufRW = pBuf;
-        ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
+        for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
         {
+            BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
+
+            BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
+            int reg = c_rgWriteBarrierRegs[iBarrier];
+
+            BYTE * pBufRW = pBuf;
+            ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
             barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 34);
             pBufRW = barrierWriterHolder.GetRW();
-        }
 
-        memcpy(pBufRW, pfunc, 34);
+            memcpy(pBufRW, pfunc, 34);
 
-        // assert the copied code ends in a ret to make sure we got the right length
-        _ASSERTE(pBuf[33] == 0xC3);
+            // assert the copied code ends in a ret to make sure we got the right length
+            _ASSERTE(pBuf[33] == 0xC3);
 
-        // We need to adjust registers in a couple of instructions
-        // It would be nice to have the template contain all zeroes for
-        // the register fields (corresponding to EAX), but that doesn't
-        // work because then we get a smaller encoding for the compares
-        // that only works for EAX but not the other registers.
-        // So we always have to clear the register fields before updating them.
+            // We need to adjust registers in a couple of instructions
+            // It would be nice to have the template contain all zeroes for
+            // the register fields (corresponding to EAX), but that doesn't
+            // work because then we get a smaller encoding for the compares
+            // that only works for EAX but not the other registers.
+            // So we always have to clear the register fields before updating them.
 
-        // First instruction to patch is a mov [edx], reg
+            // First instruction to patch is a mov [edx], reg
 
-        _ASSERTE(pBuf[0] == 0x89);
-        // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
-        pBufRW[1] &= 0xc7;
-        pBufRW[1] |= reg << 3;
+            _ASSERTE(pBuf[0] == 0x89);
+            // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
+            pBufRW[1] &= 0xc7;
+            pBufRW[1] |= reg << 3;
 
-        // Second instruction to patch is cmp reg, imm32 (low bound)
+            // Second instruction to patch is cmp reg, imm32 (low bound)
 
-        _ASSERTE(pBuf[2] == 0x81);
-        // Here the lowest three bits in ModR/M field are the register
-        pBufRW[3] &= 0xf8;
-        pBufRW[3] |= reg;
+            _ASSERTE(pBuf[2] == 0x81);
+            // Here the lowest three bits in ModR/M field are the register
+            pBufRW[3] &= 0xf8;
+            pBufRW[3] |= reg;
 
 #ifdef WRITE_BARRIER_CHECK
-        // Don't do the fancy optimization just jump to the old one
-        // Use the slow one for write barrier checks build because it has some good asserts
-        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
-            pfunc = &pBufRW[0];
-            *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
-            *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
-        }
+            // Don't do the fancy optimization just jump to the old one
+            // Use the slow one for write barrier checks build because it has some good asserts
+            if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
+                pfunc = &pBufRW[0];
+                *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
+                *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
+            }
 #endif // WRITE_BARRIER_CHECK
-    }
+        }
 
 #ifndef CODECOVERAGE
-    ValidateWriteBarrierHelpers();
+        ValidateWriteBarrierHelpers();
 #endif
+    }
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
 }
@@ -853,6 +846,12 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 
     int stompWBCompleteActions = SWB_PASS;
 
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
     if ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[0] == 0xE9)  // we are using slow write barrier
@@ -866,11 +865,8 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 
         BYTE * pBufRW = pBuf;
         ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
-        {
-            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
-            pBufRW = barrierWriterHolder.GetRW();
-        }
+        barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
+        pBufRW = barrierWriterHolder.GetRW();
 
         // assert there is in fact a cmp r/m32, imm32 there
         _ASSERTE(pBuf[2] == 0x81);
@@ -917,6 +913,12 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
     int stompWBCompleteActions = SWB_PASS;
 
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
     if ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[0] == 0xE9)  // we are using slow write barrier
@@ -935,11 +937,8 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
         BYTE * pBufRW = pBuf;
         ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
-        {
-            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
-            pBufRW = barrierWriterHolder.GetRW();
-        }
+        barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
+        pBufRW = barrierWriterHolder.GetRW();
 
         // Check if we are still using the pre-grow version of the write barrier.
         if (bWriteBarrierIsPreGrow)

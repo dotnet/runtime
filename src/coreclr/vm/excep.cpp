@@ -5894,12 +5894,77 @@ BOOL IsIPinVirtualStub(PCODE f_IP)
     return FALSE;
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 }
+#endif // FEATURE_EH_FUNCLETS
+
+typedef uint8_t CODE_LOCATION;
+EXTERN_C CODE_LOCATION RhpAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpAssignRefEBPAVLocation;
+#endif
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefAVLocation;
+#if defined(HOST_X86)
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEAXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefECXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBXAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefESIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEDIAVLocation;
+EXTERN_C CODE_LOCATION RhpCheckedAssignRefEBPAVLocation;
+#endif
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation1;
+
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+EXTERN_C CODE_LOCATION RhpByRefAssignRefAVLocation2;
+#endif
+
+static uintptr_t writeBarrierAVLocations[] =
+{
+    (uintptr_t)&RhpAssignRefAVLocation,
+#if defined(HOST_X86)
+    (uintptr_t)&RhpAssignRefEAXAVLocation,
+    (uintptr_t)&RhpAssignRefECXAVLocation,
+    (uintptr_t)&RhpAssignRefEBXAVLocation,
+    (uintptr_t)&RhpAssignRefESIAVLocation,
+    (uintptr_t)&RhpAssignRefEDIAVLocation,
+    (uintptr_t)&RhpAssignRefEBPAVLocation,
+#endif
+    (uintptr_t)&RhpCheckedAssignRefAVLocation,
+#if defined(HOST_X86)
+    (uintptr_t)&RhpCheckedAssignRefEAXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefECXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEBXAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefESIAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEDIAVLocation,
+    (uintptr_t)&RhpCheckedAssignRefEBPAVLocation,
+#endif
+    (uintptr_t)&RhpByRefAssignRefAVLocation1,
+#if !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64)
+    (uintptr_t)&RhpByRefAssignRefAVLocation2,
+#endif
+};
 
 // Check if the passed in instruction pointer is in one of the
 // JIT helper functions.
-bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
+bool IsIPInMarkedJitHelper(PCODE uControlPc)
 {
     LIMITED_METHOD_CONTRACT;
+
+    // compare the IP against the list of known possible AV locations in the write barrier helpers
+    for (size_t i = 0; i < sizeof(writeBarrierAVLocations)/sizeof(writeBarrierAVLocations[0]); i++)
+    {
+#if defined(HOST_AMD64) || defined(HOST_X86)
+        // Verify that the runtime is not linked with incremental linking enabled. Incremental linking
+        // wraps every method symbol with a jump stub that breaks the following check.
+        ASSERT(*(uint8_t*)writeBarrierAVLocations[i] != 0xE9); // jmp XXXXXXXX
+#endif
+
+        if (writeBarrierAVLocations[i] == PCODEToPINSTR(uControlPc))
+            return true;
+    }
 
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
@@ -5912,10 +5977,8 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_StackProbe)
 #endif // !TARGET_ARM64 && !TARGET_LOONGARCH64 && !TARGET_RISCV64
 #else
-#ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
     CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
-#endif // TARGET_UNIX
 #endif // TARGET_X86
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
@@ -5924,7 +5987,6 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
     return false;
 }
-#endif // FEATURE_EH_FUNCLETS
 
 // Returns TRUE if caller should resume execution.
 BOOL
@@ -5954,24 +6016,27 @@ AdjustContextForJITHelpers(
     if (pExceptionRecord == nullptr)
     {
 #if defined(TARGET_X86)
-        bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
-        bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
-        if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
+        if (IsIPInMarkedJitHelper(ip))
         {
             DWORD* esp = (DWORD*)pContext->Esp;
+#if defined(WRITE_BARRIER_CHECK)
+            // The assembly for patched write barriers carries the shadow gc heap writing code in such a way that the GC
+            // heap change is done after pushing some state and always happens in the non-patched region.
+            // (We don't check for this in the normal AV pathway, as in that case, we have an instruction which triggers
+            // the AV without writing to memory before adjusting the stack.
+            bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
             if (withinWriteBarrierGroup)
             {
-#if defined(WRITE_BARRIER_CHECK)
                 pContext->Ebp = *esp++;
                 pContext->Ecx = *esp++;
-#endif
             }
+#endif
             pContext->Eip = *esp++;
             pContext->Esp = (DWORD)esp;
             return TRUE;
         }
 #elif defined(TARGET_AMD64)
-        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        if (IsIPInMarkedJitHelper(ip))
         {
             Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
             return TRUE;
@@ -5985,10 +6050,9 @@ AdjustContextForJITHelpers(
 #endif // FEATURE_DATABREAKPOINT
 
 #if defined(TARGET_X86) && !defined(TARGET_UNIX)
-    void* f_IP = (void *)GetIP(pContext);
+    PCODE f_IP = GetIP(pContext);
 
-    if (((f_IP >= (void *) JIT_WriteBarrierGroup) && (f_IP <= (void *) JIT_WriteBarrierGroup_End)) ||
-        ((f_IP >= (void *) JIT_PatchedWriteBarrierGroup) && (f_IP <= (void *) JIT_PatchedWriteBarrierGroup_End)))
+    if (IsIPInMarkedJitHelper(ip))
     {
         // set the exception IP to be the instruction that called the write barrier
         void* callsite = (void *)GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
@@ -5999,7 +6063,7 @@ AdjustContextForJITHelpers(
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
 
-    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End))
+    if ((f_IP >= (PCODE) JIT_StackProbe) && (f_IP <= (PCODE) JIT_StackProbe_End))
     {
         TADDR ebp = GetFP(pContext);
         void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
@@ -6013,12 +6077,12 @@ AdjustContextForJITHelpers(
 
     return FALSE;
 #elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
-    void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
+    PCODE f_IP = GetIP(pContext);
 
     CONTEXT             tempContext;
     CONTEXT*            pExceptionContext = pContext;
 
-    BOOL fExcluded = IsIPInMarkedJitHelper((UINT_PTR)f_IP);
+    BOOL fExcluded = IsIPInMarkedJitHelper(f_IP);
 
     if (fExcluded)
     {
@@ -6999,7 +7063,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
     if (dwCode == EXCEPTION_BREAKPOINT || dwCode == EXCEPTION_SINGLE_STEP)
     {
         // For interop debugging, debugger bashes our managed exception handler.
@@ -11324,7 +11388,13 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
+#if defined(DACCESS_COMPILE) && defined(TARGET_X86)
+// X86 unwinding always works in terms of context pointers, so they need to be in the correct address space when debugging
+// This may work for other architectures as well, but that isn't tested.
+#define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = &pRD->pCurrentContext->regname;
+#else
 #define CALLEE_SAVED_REGISTER(regname) pRD->pCurrentContextPointers->regname = m_ContextPointers.regname;
+#endif
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
@@ -11341,7 +11411,7 @@ void SoftwareExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 #elif defined(TARGET_X86)
-#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(m_ContextPointers.regname);
+#define CALLEE_SAVED_REGISTER(regname) pRD->Set##regname##Location(&m_Context.regname);
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 
@@ -11366,6 +11436,7 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_Context.Eax = 0;    
     m_Context.Ecx = pTransitionBlock->m_argumentRegisters.ECX;
     m_Context.Edx = pTransitionBlock->m_argumentRegisters.EDX;
+#ifdef FEATURE_EH_FUNCLETS
     m_ContextPointers.Ecx = &m_Context.Ecx;
     m_ContextPointers.Edx = &m_Context.Edx;
 
@@ -11374,6 +11445,12 @@ void SoftwareExceptionFrame::UpdateContextFromTransitionBlock(TransitionBlock *p
     m_ContextPointers.reg = &m_Context.reg;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
+#else // FEATURE_EH_FUNCLETS
+#define CALLEE_SAVED_REGISTER(reg) \
+    m_Context.reg = pTransitionBlock->m_calleeSavedRegisters.reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+#endif // FEATURE_EH_FUNCLETS
 
     m_Context.Esp = (UINT_PTR)(pTransitionBlock + 1);
     m_Context.Eip = pTransitionBlock->m_ReturnAddress;

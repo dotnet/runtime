@@ -2708,9 +2708,9 @@ ValueNum ValueNumStore::VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN
         bool                 isExact;
         bool                 isNonNull;
         CORINFO_CLASS_HANDLE castFrom = GetObjectType(objVN, &isExact, &isNonNull);
-        CORINFO_CLASS_HANDLE castTo;
+        CORINFO_CLASS_HANDLE castTo   = NO_CLASS_HANDLE;
         if ((castFrom != NO_CLASS_HANDLE) &&
-            EmbeddedHandleMapLookup(ConstantValue<ssize_t>(castToVN), (ssize_t*)&castTo))
+            EmbeddedHandleMapLookup(ConstantValue<ssize_t>(castToVN), (ssize_t*)&castTo) && (castTo != NO_CLASS_HANDLE))
         {
             TypeCompareState castResult = m_pComp->info.compCompHnd->compareTypesForCast(castFrom, castTo);
             if (castResult == TypeCompareState::Must)
@@ -3706,7 +3706,12 @@ TailCall:
                     entry.Result = sameSelResult;
                     entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
 
-                    GetMapSelectWorkCache()->Set(fstruct, entry);
+                    // If we ran out of budget we could have already cached the
+                    // result in the leaf. In that case it is ok to overwrite
+                    // it here.
+                    MapSelectWorkCache* cache = GetMapSelectWorkCache();
+                    assert(!cache->Lookup(fstruct) || ((*cache)[fstruct].Result == sameSelResult));
+                    cache->Set(fstruct, entry, MapSelectWorkCache::Overwrite);
                 }
 
                 recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
@@ -13738,9 +13743,12 @@ bool Compiler::fgValueNumberSpecialIntrinsic(GenTreeCall* call)
                 break;
             }
 
-            ValueNum clsVN = typeHandleFuncApp.m_args[0];
-            ssize_t  clsHandle;
-            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle))
+            ValueNum clsVN     = typeHandleFuncApp.m_args[0];
+            ssize_t  clsHandle = 0;
+
+            // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
+            if (!vnStore->EmbeddedHandleMapLookup(vnStore->ConstantValue<ssize_t>(clsVN), &clsHandle) &&
+                (clsHandle != 0))
             {
                 break;
             }
@@ -13814,9 +13822,20 @@ void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
 
     switch (helpFunc)
     {
+        case CORINFO_HELP_LNG2FLT:
+            castToType   = TYP_FLOAT;
+            castFromType = TYP_LONG;
+            break;
+
         case CORINFO_HELP_LNG2DBL:
             castToType   = TYP_DOUBLE;
             castFromType = TYP_LONG;
+            break;
+
+        case CORINFO_HELP_ULNG2FLT:
+            castToType    = TYP_FLOAT;
+            castFromType  = TYP_LONG;
+            srcIsUnsigned = true;
             break;
 
         case CORINFO_HELP_ULNG2DBL:
@@ -14166,7 +14185,9 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     switch (helpFunc)
     {
+        case CORINFO_HELP_LNG2FLT:
         case CORINFO_HELP_LNG2DBL:
+        case CORINFO_HELP_ULNG2FLT:
         case CORINFO_HELP_ULNG2DBL:
         case CORINFO_HELP_DBL2INT:
         case CORINFO_HELP_DBL2INT_OVF:
@@ -15152,9 +15173,12 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     const VNFunc func = funcApp.m_func;
     if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf) || (func == VNF_JitNew))
     {
-        ssize_t  clsHandle;
-        ValueNum clsVN = funcApp.m_args[0];
-        if (IsVNTypeHandle(clsVN) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(clsVN), &clsHandle))
+        ssize_t  clsHandle = 0;
+        ValueNum clsVN     = funcApp.m_args[0];
+
+        // NOTE: EmbeddedHandleMapLookup may return 0 for non-0 embedded handle
+        if (IsVNTypeHandle(clsVN) && EmbeddedHandleMapLookup(ConstantValue<ssize_t>(clsVN), &clsHandle) &&
+            (clsHandle != 0))
         {
             // JitNew returns an exact and non-null obj, castclass and isinst do not have this guarantee.
             *pIsNonNull = func == VNF_JitNew;

@@ -303,6 +303,7 @@
                                 '$(MSBuildProjectExtension)' != '.pkgproj' and
                                 '$(UsingMicrosoftNoTargetsSdk)' != 'true' and
                                 '$(UsingMicrosoftTraversalSdk)' != 'true'">true</IsSourceProject>
+    <IsInBuildToolProject Condition="$(MSBuildProjectName.EndsWith('_inbuild'))">true</IsInBuildToolProject>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsReferenceAssemblyProject)' == 'true'">
