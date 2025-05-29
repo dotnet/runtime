@@ -412,7 +412,6 @@ namespace ILCompiler
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (Get(_command.ScanReflection))
