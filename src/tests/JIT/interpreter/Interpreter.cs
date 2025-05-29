@@ -1032,6 +1032,7 @@ public class InterpreterTest
         private int Field = 7;
         private int Property { get; set; } = 32;
         private int Method (int arg) => arg * 2;
+        private void VoidMethod () => Field *= 2;
 
         public void DumpState()
         {
@@ -1045,8 +1046,8 @@ public class InterpreterTest
     public static bool TestUnsafeAccessors()
     {
         UnsafeAccessorTestClass tc = new ();
-        // Calling DumpState triggers eager interpreted compilation of Method and get_Property.
-        // They work, but then the unsafe accessor somehow ends up invoking the interpreter IR instead of the interpreter stub.
+        // Calling DumpState triggers eager interpreted compilation of UnsafeAccessorTestClass's methods.
+        // They work, but then the unsafe accessors somehow end up invoking the interpreter IR instead of the interpreter stub.
         // tc.DumpState();
 
         Console.WriteLine("== Unsafe Accessors ==");
@@ -1057,14 +1058,27 @@ public class InterpreterTest
 
         // If DumpState is commented out, this invocation will trigger interpreted compilation of TestClass::Method,
         //  and then the unsafe accessor will invoke the InterpreterStub, but the return value gets trashed. For me, it is always 176.
+        // This appears to be because InterpreterStub never does anything with the return address after the interpreter execution writes it to sp.
+        /*
         int m = InvokeMethod(tc, 4);
         Console.WriteLine(m);
         if (m != 8)
             return false;
+        */
 
+        /*
         int p = GetProperty(tc);
         Console.WriteLine(p);
         if (p != 32)
+            return false;
+        */
+
+        // VoidMethod doubles the value of Field
+        InvokeVoidMethod(tc);
+
+        ref int f2 = ref GetField(tc);
+        Console.WriteLine(f2);
+        if (f2 != 14)
             return false;
 
         return true;
@@ -1073,10 +1087,16 @@ public class InterpreterTest
         // NOTE: This won't work for an 'int' return, only 'ref int'
         static extern ref int GetField (UnsafeAccessorTestClass tc);
 
+        /*
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name="get_Property")]
         static extern int GetProperty (UnsafeAccessorTestClass tc);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name="Method")]
         static extern int InvokeMethod (UnsafeAccessorTestClass tc, int arg);
+        */
+
+        // We currently lack support for passing arguments into interpreter methods as well.
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name="VoidMethod")]
+        static extern void InvokeVoidMethod (UnsafeAccessorTestClass tc);
     }
 }
