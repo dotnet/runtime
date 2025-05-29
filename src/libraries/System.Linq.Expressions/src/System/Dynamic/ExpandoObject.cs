@@ -318,7 +318,7 @@ namespace System.Dynamic
         }
 
         // This implementation is shared for 'IDictionary<,>.ContainsKey' and 'IReadOnlyDictionary<,>.ContainsKey'.
-        private bool ExpandoContainsKeyNoLock(string key)
+        private bool ExpandoContainsKeyAndValueIsInitialized(string key)
         {
             ExpandoData data = _data;
             int index = data.Class.GetValueIndexCaseSensitive(key);
@@ -669,14 +669,14 @@ namespace System.Dynamic
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            return ExpandoContainsKeyNoLock(key);
+            return ExpandoContainsKeyAndValueIsInitialized(key);
         }
 
         bool IReadOnlyDictionary<string, object?>.ContainsKey(string key)
         {
             ArgumentNullException.ThrowIfNull(key);
 
-            return ExpandoContainsKeyNoLock(key);
+            return ExpandoContainsKeyAndValueIsInitialized(key);
         }
 
         bool IDictionary<string, object?>.Remove(string key)
