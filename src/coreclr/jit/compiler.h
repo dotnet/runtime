@@ -6477,6 +6477,7 @@ public:
     bool                                   fgPgoSynthesized;
     bool                                   fgPgoDynamic;
     bool                                   fgPgoConsistent;
+    bool                                   fgPgoSingleEdge = false;
 
 #ifdef DEBUG
     bool                                   fgPgoDeferredInconsistency;
@@ -11635,6 +11636,7 @@ public:
 #endif // defined(UNIX_AMD64_ABI)
 
     bool fgTryMorphStructArg(CallArg* arg);
+    bool FieldsMatchAbi(LclVarDsc* varDsc, const ABIPassingInformation& abiInfo);
 
     bool killGCRefs(GenTree* tree);
 

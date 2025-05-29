@@ -15,18 +15,21 @@ public class PredicateInstructions
     [Fact]
     public static void TestPredicateInstructions()
     {
-        ZipLow();
-        ZipHigh();
-        UnzipOdd();
-        UnzipEven();
-        TransposeOdd();
-        TransposeEven();
-        ReverseElement();
-        And();
-        BitwiseClear();
-        Xor();
-        Or();
-        ConditionalSelect();
+        if (Sve.IsSupported)
+        {
+            ZipLow();
+            ZipHigh();
+            UnzipOdd();
+            UnzipEven();
+            TransposeOdd();
+            TransposeEven();
+            ReverseElement();
+            And();
+            BitwiseClear();
+            Xor();
+            Or();
+            ConditionalSelect();
+        }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
