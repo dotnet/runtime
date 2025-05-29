@@ -70,13 +70,17 @@ namespace System.IO.Hashing
             // }
             Debug.Assert(length > 16);
 
-            ulong hash = length switch
+            if (length <= 128)
             {
-                <= 128 => HashLength17To128(sourcePtr, length, 0UL),
-                <= MidSizeMaxBytes => HashLength129To240(sourcePtr, length, 0UL),
-                _ => HashLengthOver240(sourcePtr, length, 0UL)
-            };
-            return unchecked((int)hash);
+                return (int)HashLength17To128(sourcePtr, length, (ulong)seed);
+            }
+
+            if (length <= MidSizeMaxBytes)
+            {
+                return (int)HashLength129To240(sourcePtr, length, (ulong)seed);
+            }
+
+            return (int)HashLengthOver240(sourcePtr, length, (ulong)seed);
         }
 #endif
 
