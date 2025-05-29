@@ -62,41 +62,46 @@ namespace System.IO.Hashing
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int NonRandomizedHashToInt32(byte* sourcePtr, uint length)
         {
-            // We currently use this function only for large inputs from corelib's String.GetNonRandomizedHashCode,
-            // so we don't need the fast path for small inputs.
-            //
-            if (length <= 16)
+            switch (length)
             {
-                if (length > 8)
-                {
-                    return (int)HashLength9To16(sourcePtr, length, 0UL);
-                }
+                case 0:
+                    return (int)Avalanche(DefaultSecretUInt64_7 ^ DefaultSecretUInt64_8);
 
-                if (length >= 4)
-                {
-                    return (int)HashLength4To8(sourcePtr, length, 0UL);
-                }
-
-                if (length != 0)
-                {
+                case 1:
+                case 2:
+                case 3:
                     return (int)HashLength1To3(sourcePtr, length, 0UL);
+
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                case 8:
+                    return (int)HashLength4To8(sourcePtr, length, 0UL);
+
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                case 13:
+                case 14:
+                case 15:
+                case 16:
+                    return (int)HashLength9To16(sourcePtr, length, 0UL);
+
+                default:
+                {
+                    if (length <= 128)
+                    {
+                        return (int)HashLength17To128(sourcePtr, length, 0UL);
+                    }
+                    if (length <= MidSizeMaxBytes)
+                    {
+                        return (int)HashLength129To240(sourcePtr, length, 0UL);
+                    }
+                    return (int)HashLengthOver240(sourcePtr, length, 0UL);
                 }
-
-                const ulong SecretXor = DefaultSecretUInt64_7 ^ DefaultSecretUInt64_8;
-                return (int)Avalanche(SecretXor);
             }
-
-            if (length <= 128)
-            {
-                return (int)HashLength17To128(sourcePtr, length, 0UL);
-            }
-
-            if (length <= MidSizeMaxBytes)
-            {
-                return (int)HashLength129To240(sourcePtr, length, 0UL);
-            }
-
-            return (int)HashLengthOver240(sourcePtr, length, 0UL);
         }
 #endif
 

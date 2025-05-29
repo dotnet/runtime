@@ -832,16 +832,20 @@ namespace System
             return GetNonRandomizedHashCode(new ReadOnlySpan<char>(ref _firstChar, _stringLength));
         }
 
+        // Use XxHash3 on platforms that accelerate it, such as AMD64 and ARM64.
+#if !MONO && (TARGET_AMD64 || TARGET_ARM64)
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
         {
-            // Use XxHash3 on platforms that accelerate it, such as AMD64 and ARM64.
-#if !MONO && (TARGET_AMD64 || TARGET_ARM64)
             fixed (char* src = &MemoryMarshal.GetReference(span))
             {
                 uint byteLength = (uint)span.Length * 2; // never overflows
                 return System.IO.Hashing.XxHash3.NonRandomizedHashToInt32((byte*)src, byteLength);
             }
+        }
 #else
+        internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
+        {
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
 
@@ -895,8 +899,8 @@ namespace System
             }
 
             return (int)(hash1 + (hash2 * 1_566_083_941));
-#endif
         }
+#endif
 
         // We "normalize to lowercase" every char by ORing with 0x0020. This casts
         // a very wide net because it will change, e.g., '^' to '~'. But that should
