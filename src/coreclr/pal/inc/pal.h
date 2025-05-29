@@ -517,18 +517,6 @@ SearchPathW(
 
 #define SearchPath  SearchPathW
 
-PALIMPORT
-DWORD
-PALAPI
-GetFileAttributesW(
-           IN LPCWSTR lpFileName);
-
-#ifdef UNICODE
-#define GetFileAttributes GetFileAttributesW
-#else
-#define GetFileAttributes GetFileAttributesA
-#endif
-
 typedef enum _GET_FILEEX_INFO_LEVELS {
   GetFileExInfoStandard
 } GET_FILEEX_INFO_LEVELS;

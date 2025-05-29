@@ -41,12 +41,6 @@ CreateDirectoryW(
          IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
 
 PALIMPORT
-DWORD
-PALAPI
-GetFileAttributesA(
-           IN LPCSTR lpFileName);
-
-PALIMPORT
 BOOL
 PALAPI
 SetFileAttributesA(
