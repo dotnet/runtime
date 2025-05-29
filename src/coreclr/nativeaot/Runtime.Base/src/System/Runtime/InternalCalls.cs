@@ -248,6 +248,12 @@ namespace System.Runtime
         internal static extern void RhpValidateExInfoStack();
 
 #if TARGET_WINDOWS
+        [RuntimeImport(Redhawk.BaseName, "RhpFirstChanceExceptionNotification")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void RhpFirstChanceExceptionNotification();
+#endif
+
+#if TARGET_WINDOWS
         [RuntimeImport(Redhawk.BaseName, "RhpCopyContextFromExInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);

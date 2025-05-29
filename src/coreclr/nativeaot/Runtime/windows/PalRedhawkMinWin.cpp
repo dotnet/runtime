@@ -21,8 +21,6 @@
 #define _T(s) L##s
 #include "RhConfig.h"
 
-#define PalRaiseFailFastException RaiseFailFastException
-
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcconfig.h"
@@ -1038,3 +1036,51 @@ void SetSSP(CONTEXT *pContext, uintptr_t ssp)
     }
 }
 #endif // TARGET_AMD64
+
+uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
+{
+    DWORD backTraceHash;
+    WORD res = ::RtlCaptureStackBackTrace(arg1, arg2, (PVOID*)arg3, &backTraceHash);
+    *arg4 = backTraceHash;
+    return res;
+}
+
+UInt32_BOOL PalCloseHandle(HANDLE arg1)
+{
+    return ::CloseHandle(arg1);
+}
+
+void PalFlushProcessWriteBuffers()
+{
+    ::FlushProcessWriteBuffers();
+}
+
+uint32_t PalGetCurrentProcessId()
+{
+    return static_cast<uint32_t>(::GetCurrentProcessId());
+}
+
+uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
+{
+    return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
+}
+
+UInt32_BOOL PalResetEvent(HANDLE arg1)
+{
+    return ::ResetEvent(arg1);
+}
+
+UInt32_BOOL PalSetEvent(HANDLE arg1)
+{
+    return ::SetEvent(arg1);
+}
+
+uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
+{
+    return ::WaitForSingleObjectEx(arg1, arg2, arg3);
+}
+
+void PalGetSystemTimeAsFileTime(FILETIME * arg1)
+{
+    ::GetSystemTimeAsFileTime(arg1);
+}

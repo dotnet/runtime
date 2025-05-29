@@ -5561,10 +5561,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<long> value) { throw null; }
         public static System.Numerics.Vector<ulong> PopCount(System.Numerics.Vector<ulong> value) { throw null; }
-        public static unsafe void PrefetchBytes(System.Numerics.Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
-        public static unsafe void PrefetchInt16(System.Numerics.Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
-        public static unsafe void PrefetchInt32(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
-        public static unsafe void PrefetchInt64(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void Prefetch16Bit(System.Numerics.Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void Prefetch32Bit(System.Numerics.Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void Prefetch64Bit(System.Numerics.Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
+        public static unsafe void Prefetch8Bit(System.Numerics.Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw null; }
         public static System.Numerics.Vector<double> ReciprocalEstimate(System.Numerics.Vector<double> value) { throw null; }
         public static System.Numerics.Vector<float> ReciprocalEstimate(System.Numerics.Vector<float> value) { throw null; }
         public static System.Numerics.Vector<double> ReciprocalExponent(System.Numerics.Vector<double> value) { throw null; }
