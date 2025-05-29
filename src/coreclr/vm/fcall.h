@@ -8,13 +8,8 @@
 // to have a frame within an FCall, you need to manually set up the frame
 // before you do such operations.
 
-// It is illegal to cause a GC or EH to happen in an FCALL before setting
-// up a frame.  To prevent accidentally violating this rule, FCALLs turn
-// on BEGINGCFORBID, which ensures that these things can't happen in a
-// checked build without causing an ASSERTE.  Once you set up a frame,
-// this state is turned off as long as the frame is active, and then is
-// turned on again when the frame is torn down.   This mechanism should
-// be sufficient to ensure that the rules are followed.
+// Causing GC or EH in an FCALL before setting up a frame is illegal.
+// Since the frame setup mechanism has been removed, QCalls should be used instead.
 
 // Compile time errors occur if you try to violate either of these rules.
 
