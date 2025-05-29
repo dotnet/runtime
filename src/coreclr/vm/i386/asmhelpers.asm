@@ -499,9 +499,9 @@ donestack:
 
 CallDescrWorkerInternalReturnAddress:
 ifdef _DEBUG
-        nop     ; This is a tag that we use in an assert.  Fcalls expect to
-                ; be called from Jitted code or from certain blessed call sites like
-                ; this one.  (See HelperMethodFrame::EnsureInit)
+    nop     ; Debug-only tag used in asserts.
+            ; FCalls expect to be called from Jitted code or specific approved call sites,
+            ; like this one.
 endif
 
         ; Save FP return value if necessary

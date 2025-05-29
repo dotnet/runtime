@@ -67,10 +67,6 @@
 //    UINT64) and floating-point values (i.e. FLOAT or DOUBLE). For example, FCDECL3_IVI
 //    must be used for FCalls that take 3 arguments and 2nd argument is INT64 and
 //    FDECL2_VV must be used for FCalls that take 2 arguments where both are FLOAT.
-//
-//  - You may use structs for protecting multiple OBJECTREF's simultaneously.
-//    In these cases, you must use a variant of a helper method frame with PROTECT
-//    in the name, to ensure all the OBJECTREF's in the struct get protected.
 
 // How FCall works:
 // ----------------

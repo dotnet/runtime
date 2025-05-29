@@ -2483,8 +2483,8 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
-    // This is called when trying to create a HelperMethodFrame, which means there are
-    // potentially managed references on the stack that are not yet protected.
+    // This is called in a context where managed references on the stack may not be fully protected,
+    // so garbage collection must be forbidden here.
     GCX_FORBID();
 
     if (token.IsTypedToken())
