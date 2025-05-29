@@ -12,6 +12,13 @@ namespace System.Net.Security
     internal sealed class SslAuthenticationOptions
     {
         private const string EnableOcspStaplingContextSwitchName = "System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux";
+
+        internal static readonly X509RevocationMode DefaultRevocationMode =
+            AppContextSwitchHelper.GetBooleanConfig(
+                "System.Net.Security.OfflineRevocationByDefault",
+                "DOTNET_SYSTEM_NET_SECURITY_OFFLINEREVOCATIONBYDEFAULT")
+                ? X509RevocationMode.NoCheck : X509RevocationMode.Online;
+
         internal SslAuthenticationOptions()
         {
             TargetHost = string.Empty;
