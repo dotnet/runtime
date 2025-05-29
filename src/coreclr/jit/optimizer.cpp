@@ -1968,6 +1968,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
             condBlock->bbNum, loop->GetIndex());
 
+    // Loops that are too large for cloning probably won't benefit from inversion.
+    if (!optShouldCloneLoop(loop))
+    {
+        return false;
+    }
+
     unsigned estDupCostSz = 0;
 
     for (int i = 0; i < duplicatedBlocks.Height(); i++)

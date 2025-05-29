@@ -1819,8 +1819,7 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
 // optShouldCloneLoop: Decide if a loop that can be cloned should be cloned.
 //
 // Arguments:
-//     loop        - the current loop for which the optimizations are performed.
-//     context     - data structure where all loop cloning info is kept.
+//     loop - the current loop for which the optimizations are performed.
 //
 // Returns:
 //     true if expected performance gain from cloning is worth the potential
@@ -1836,7 +1835,7 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
 //     This value is compared to a hard-coded threshold, and if bigger,
 //     then the method returns false.
 //
-bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* context)
+bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop)
 {
     // See if loop size exceeds the limit.
     //
@@ -1859,12 +1858,11 @@ bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop, LoopCloneContext* 
 
     if (result == BasicBlockVisit::Abort)
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
+        JITDUMP("Rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
         return false;
     }
 
-    JITDUMP("Loop cloning: loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size,
-            sizeLimit);
+    JITDUMP("Loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size, sizeLimit);
 
     return true;
 }
@@ -3149,7 +3147,7 @@ PhaseStatus Compiler::optCloneLoops()
                 // No need to clone.
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
-            else if (!optShouldCloneLoop(loop, &context))
+            else if (!optShouldCloneLoop(loop))
             {
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
