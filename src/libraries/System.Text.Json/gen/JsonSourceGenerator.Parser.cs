@@ -1514,6 +1514,11 @@ namespace System.Text.Json.SourceGeneration
                         continue;
                     }
 
+                    if (property.DefaultIgnoreCondition == JsonIgnoreCondition.Always && !property.IsRequired)
+                    {
+                        continue;
+                    }
+
                     if ((property.IsRequired && !constructorSetsRequiredMembers) || property.IsInitOnlySetter)
                     {
                         if (!(memberInitializerNames ??= new()).Add(property.MemberName))
