@@ -139,16 +139,6 @@ ASMCONSTANTS_C_ASSERT(MachState__esp == offsetof(MachState, _esp))
 #define MachState__pRetAddr       36
 ASMCONSTANTS_C_ASSERT(MachState__pRetAddr == offsetof(MachState, _pRetAddr))
 
-#define LazyMachState_captureEbp  40
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEbp == offsetof(LazyMachState, captureEbp))
-
-#define LazyMachState_captureEsp  44
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEsp == offsetof(LazyMachState, captureEsp))
-
-#define LazyMachState_captureEip  48
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captureEip))
-
-
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
 

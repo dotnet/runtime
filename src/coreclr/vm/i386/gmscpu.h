@@ -43,7 +43,6 @@ struct MachState {
 #endif
 
     friend class CheckAsmOffsets;
-    friend struct LazyMachState;
 
 protected:
     // Note the fields are laid out to make generating a
@@ -65,42 +64,5 @@ protected:
     TADDR     _esp;       // stack pointer after the function returns
     PTR_TADDR _pRetAddr;  // The address of the stored IP address (points into the stack)
 };
-
-/********************************************************************/
-/* This allows you to defer the computation of the Machine state
-   until later.  Note that we don't reuse slots, because we want
-   this to be threadsafe without locks */
-
-struct LazyMachState : public MachState {
-    // compute the machine state of the processor as it will exist just
-    // after the return after at most'funCallDepth' number of functions.
-    // if 'testFtn' is non-NULL, the return address is tested at each
-    // return instruction encountered.  If this test returns non-NULL,
-    // then stack walking stops (thus you can walk up to the point that the
-    // return address matches some criteria
-
-    // Normally this is called with funCallDepth=1 and testFtn = 0 so that
-    // it returns the state of the processor after the function that called 'captureState()'
-    void setLazyStateFromUnwind(MachState* copy);
-
-    friend class CheckAsmOffsets;
-private:
-    TADDR            captureEbp;        // Ebp at the time of capture
-    TADDR            captureEsp;        // Esp at the time of capture
-    TADDR            captureEip;        // Eip at the time of capture
-};
-
-inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
-{
-    // _pRetAddr has to be the last thing updated when we make the copy (because its
-    // is the _pRetAddr becoming non-zero that flips this from invalid to valid.
-    // we assert that it is the last field in the struct.
-    static_assert_no_msg(offsetof(MachState, _pRetAddr) + sizeof(_pRetAddr) == sizeof(MachState));
-
-    memcpy(this, copy, offsetof(MachState, _pRetAddr));
-
-    // this has to be last
-    VolatileStore((TADDR*)&_pRetAddr, dac_cast<TADDR>(copy->_pRetAddr));
-}
 
 #endif

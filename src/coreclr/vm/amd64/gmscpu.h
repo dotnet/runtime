@@ -36,7 +36,6 @@ struct MachState
 #endif
 
     friend class CheckAsmOffsets;
-    friend struct LazyMachState;
 
 protected:
     PCODE m_Rip;
@@ -54,72 +53,5 @@ protected:
     CalleeSavedRegisters m_Unwound;
 #endif
 };
-
-struct LazyMachState : public MachState
-{
-    // compute the machine state of the processor as it will exist just
-    // after the return after at most'funCallDepth' number of functions.
-    // if 'testFtn' is non-NULL, the return address is tested at each
-    // return instruction encountered.  If this test returns non-NULL,
-    // then stack walking stops (thus you can walk up to the point that the
-    // return address matches some criteria
-
-    // Normally this is called with funCallDepth=1 and testFtn = 0 so that
-    // it returns the state of the processor after the function that called 'captureState()'
-    void setLazyStateFromUnwind(MachState* copy);
-
-    friend class CheckAsmOffsets;
-};
-
-inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#if defined(DACCESS_COMPILE)
-    // This function cannot be called in DAC because DAC cannot update target memory.
-    DacError(E_FAIL);
-    return;
-
-#else  // !DACCESS_COMPILE
-    this->m_Rip = copy->m_Rip;
-    this->m_Rsp = copy->m_Rsp;
-
-#ifdef TARGET_UNIX
-    this->m_Unwound = copy->m_Unwound;
-#endif
-
-    // Capture* has already been set, so there is no need to touch it
-
-    // loop over the nonvolatile context pointers and make
-    // sure to properly copy interior pointers into the
-    // new struct
-
-    PULONG64* pSrc = (PULONG64 *)&copy->m_Ptrs;
-    PULONG64* pDst = (PULONG64 *)&this->m_Ptrs;
-
-    const PULONG64 LowerBoundDst = (PULONG64) this;
-    const PULONG64 LowerBoundSrc = (PULONG64) copy;
-
-    const PULONG64 UpperBoundSrc = (PULONG64) ((BYTE*)LowerBoundSrc + sizeof(*copy));
-
-    for (int i = 0; i < NUM_CALLEE_SAVED_REGISTERS; i++)
-    {
-        PULONG64 valueSrc = *pSrc++;
-
-        if ((LowerBoundSrc <= valueSrc) && (valueSrc < UpperBoundSrc))
-        {
-            // make any pointer interior to 'src' interior to 'dst'
-            valueSrc = (PULONG64)((BYTE*)valueSrc - (BYTE*)LowerBoundSrc + (BYTE*)LowerBoundDst);
-        }
-
-        *pDst++ = valueSrc;
-    }
-
-    // this has to be last because we depend on write ordering to
-    // synchronize the race implicit in updating this struct
-    VolatileStore(&_pRetAddr, (PTR_TADDR)(TADDR)&m_Rip);
-
-#endif // !DACCESS_COMPILE
-}
 
 #endif // __gmsAMD64_h__

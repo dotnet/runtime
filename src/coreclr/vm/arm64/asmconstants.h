@@ -100,19 +100,6 @@ ASMCONSTANTS_C_ASSERT(MachState__ptrX19_X29 == offsetof(MachState, ptrX19_X29))
 #define MachState__isValid 0xc0
 ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
 
-#define LazyMachState_captureX19_X29 MachState__captureX19_X29
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureX19_X29 == offsetof(LazyMachState, captureX19_X29))
-
-#ifdef __APPLE__
-#define LazyMachState_captureSp     (MachState__isValid+8+88) // padding for alignment
-#else // __APPLE__
-#define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
-#endif // __APPLE
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
-
-#define LazyMachState_captureIp     (LazyMachState_captureSp+8)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
-
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
 

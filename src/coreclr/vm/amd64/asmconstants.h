@@ -255,18 +255,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rip
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rsp
                     == offsetof(MachState, m_Rsp));
 
-#ifdef UNIX_AMD64_ABI
-#define               OFFSETOF__MachState__m_Ptrs           0x40
-#define               OFFSETOF__MachState___pRetAddr        0x70
-#else
-#define               OFFSETOF__MachState__m_Ptrs           0x50
-#define               OFFSETOF__MachState___pRetAddr        0x90
-#endif
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Ptrs
-                    == offsetof(MachState, m_Ptrs));
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState___pRetAddr
-                    == offsetof(MachState, _pRetAddr));
-
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));
