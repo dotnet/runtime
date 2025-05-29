@@ -207,11 +207,10 @@ internal static partial class Interop
         private static unsafe CGroupVersion FindCGroupVersion()
         {
             CGroupVersion cgroupVersion = CGroupVersion.None;
-            Span<char> buffer = stackalloc char[16];
-            Interop.Error error = Interop.procfs.GetFileSystemTypeForMountPoint(SysFsCgroupFileSystemPath, buffer, out ReadOnlySpan<char> fileSystemType);
+            Interop.Error error = Interop.procfs.GetFileSystemTypeForMountPoint(SysFsCgroupFileSystemPath, out string format);
             if (error == Interop.Error.SUCCESS)
             {
-                if (fileSystemType.SequenceEqual("cgroup2"))
+                if (format == "cgroup2")
                 {
                     cgroupVersion = CGroupVersion.CGroup2;
                 }

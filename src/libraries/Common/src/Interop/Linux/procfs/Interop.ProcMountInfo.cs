@@ -19,9 +19,9 @@ internal static partial class Interop
             public required ReadOnlySpan<char> SuperOptions { get; init; }
         }
 
-        internal static Error GetFileSystemTypeForMountPoint(string name, Span<char> buffer, out ReadOnlySpan<char> format)
+        internal static Error GetFileSystemTypeForMountPoint(string name, out string format)
         {
-            format = default;
+            format = "";
 
             if (File.Exists(ProcMountInfoFilePath))
             {
@@ -36,15 +36,7 @@ internal static partial class Interop
                         {
                             if (mount.MountPoint.SequenceEqual(name))
                             {
-                                if (buffer.Length >= mount.FileSystemType.Length)
-                                {
-                                    mount.FileSystemType.CopyTo(buffer);
-                                    format = buffer.Slice(0, mount.FileSystemType.Length);
-                                }
-                                else
-                                {
-                                    format = mount.FileSystemType.ToString();
-                                }
+                                format = mount.FileSystemType.ToString();
                                 return Error.SUCCESS;
                             }
                         }

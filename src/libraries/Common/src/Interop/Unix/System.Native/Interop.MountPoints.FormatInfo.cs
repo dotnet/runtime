@@ -33,11 +33,11 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
         internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out MountPointInformation mpi);
 
-        internal static Error GetFileSystemTypeNameForMountPoint(string name, Span<char> buffer, out ReadOnlySpan<char> format)
+        internal static Error GetFileSystemTypeNameForMountPoint(string name, out string format)
         {
             if (OperatingSystem.IsLinux())
             {
-                return procfs.GetFileSystemTypeForMountPoint(name, buffer, out format);
+                return procfs.GetFileSystemTypeForMountPoint(name, out format);
             }
             else
             {
@@ -45,18 +45,9 @@ internal static partial class Interop
             }
         }
 
-        internal static Error GetFileSystemTypeNameForMountPoint(string name, out string format)
-        {
-            Span<char> buffer = stackalloc char[16];
-            Error error = GetFileSystemTypeNameForMountPoint(name, buffer, out ReadOnlySpan<char> formatSpan);
-            format = error == Error.SUCCESS ? formatSpan.ToString() : "";
-            return error;
-        }
-
         internal static Error GetDriveTypeForMountPoint(string name, out DriveType type)
         {
-            Span<char> buffer = stackalloc char[16];
-            Error error = GetFileSystemTypeNameForMountPoint(name, buffer, out ReadOnlySpan<char> format);
+            Error error = GetFileSystemTypeNameForMountPoint(name, out string format);
             type = error == Error.SUCCESS ? GetDriveType(format) : DriveType.Unknown;
             return error;
         }
@@ -86,7 +77,7 @@ internal static partial class Interop
         /// <summary>Categorizes a file system name into a drive type.</summary>
         /// <param name="fileSystemName">The name to categorize.</param>
         /// <returns>The recognized drive type.</returns>
-        private static DriveType GetDriveType(ReadOnlySpan<char> fileSystemName)
+        private static DriveType GetDriveType(string fileSystemName)
         {
             // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems", coreutils "stat.c",
             // and "wiki.debian.org/FileSystem". It can be extended over time as we find additional file systems that should
