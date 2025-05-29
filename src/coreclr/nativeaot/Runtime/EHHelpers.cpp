@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -350,7 +347,7 @@ static uintptr_t UnwindSimpleHelperToCaller(
 
 #ifdef TARGET_UNIX
 
-int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
+int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
     PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg)
 {
     uintptr_t faultingIP = palContext->GetIp();
