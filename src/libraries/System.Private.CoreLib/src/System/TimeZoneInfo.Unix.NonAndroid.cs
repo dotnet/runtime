@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Enumeration;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
