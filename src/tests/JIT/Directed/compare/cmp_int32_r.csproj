@@ -7,6 +7,6 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="int32.cs" />
+    <Compile Include="cmp_int32.cs" />
   </ItemGroup>
 </Project>
