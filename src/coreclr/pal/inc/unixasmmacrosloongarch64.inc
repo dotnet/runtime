@@ -399,20 +399,13 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
         RESTORE_CALLEESAVED_REGISTERS 3, __PWTB_CalleeSavedRegisters
 
         EPILOG_RESTORE_REG_PAIR 22, 1, __PWTB_CalleeSavedRegisters
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
-
-.endm
-
-
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-        EPILOG_WITH_TRANSITION_BLOCK
 
         jirl  $r0, $ra, 0
 
