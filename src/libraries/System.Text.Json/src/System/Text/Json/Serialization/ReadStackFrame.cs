@@ -149,8 +149,7 @@ namespace System.Text.Json
         {
             Debug.Assert(AssignedProperties is null);
 
-            // Only track assigned properties if there are required properties or duplicate properties aren't allowed.
-            if (typeInfo.NegatedRequiredPropertiesMask is { } || !typeInfo.Options.AllowDuplicateProperties)
+            if (typeInfo.ShouldTrackRequiredProperties || typeInfo.Options.AllowDuplicateProperties is false)
             {
                 // This may be slightly larger than required (e.g. if there's an extension property)
                 AssignedProperties = new BitArray(typeInfo.Properties.Count);
@@ -160,12 +159,13 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
         {
-            if (typeInfo.NegatedRequiredPropertiesMask is { })
+            if (typeInfo.ShouldTrackRequiredProperties)
             {
-                Debug.Assert(AssignedProperties is { });
+                Debug.Assert(AssignedProperties is not null);
+                Debug.Assert(typeInfo.OptionalPropertiesMask is not null);
 
-                // All properties must be either assigned or not required
-                BitArray assignedOrNotRequiredPropertiesSet = AssignedProperties.Or(typeInfo.NegatedRequiredPropertiesMask);
+                // All properties must be either assigned or optional
+                BitArray assignedOrNotRequiredPropertiesSet = AssignedProperties.Or(typeInfo.OptionalPropertiesMask);
 
                 if (!assignedOrNotRequiredPropertiesSet.HasAllSet())
                 {

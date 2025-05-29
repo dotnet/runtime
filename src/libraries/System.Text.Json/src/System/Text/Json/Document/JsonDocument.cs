@@ -27,7 +27,7 @@ namespace System.Text.Json
         private byte[]? _extraRentedArrayPoolBytes;
         private PooledByteBufferWriter? _extraPooledByteBufferWriter;
 
-        internal bool IsDisposable { get; }
+        internal bool IsDisposable { get; private set; }
 
         /// <summary>
         ///   The <see cref="JsonElement"/> representing the value of the document.
@@ -37,24 +37,33 @@ namespace System.Text.Json
         private JsonDocument(
             ReadOnlyMemory<byte> utf8Json,
             MetadataDb parsedData,
-            byte[]? extraRentedArrayPoolBytes = null,
-            PooledByteBufferWriter? extraPooledByteBufferWriter = null,
-            bool isDisposable = true)
+            bool isDisposable)
         {
             Debug.Assert(!utf8Json.IsEmpty);
 
-            // Both rented values better be null if we're not disposable.
-            Debug.Assert(isDisposable ||
-                (extraRentedArrayPoolBytes == null && extraPooledByteBufferWriter == null));
-
-            // Both rented values can't be specified.
-            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
-
             _utf8Json = utf8Json;
             _parsedData = parsedData;
-            _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;
-            _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
             IsDisposable = isDisposable;
+        }
+
+        private void TakePooledArrayOwnership(byte[] extraRentedArrayPoolBytes)
+        {
+            Debug.Assert(extraRentedArrayPoolBytes is not null);
+            Debug.Assert(_extraRentedArrayPoolBytes is null);
+            Debug.Assert(_extraPooledByteBufferWriter is null);
+
+            _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;
+            IsDisposable = true;
+        }
+
+        private void TakePooledBufferWriterOwnership(PooledByteBufferWriter extraPooledByteBufferWriter)
+        {
+            Debug.Assert(extraPooledByteBufferWriter is not null);
+            Debug.Assert(_extraPooledByteBufferWriter is null);
+            Debug.Assert(_extraRentedArrayPoolBytes is null);
+
+            _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
+            IsDisposable = true;
         }
 
         /// <inheritdoc />
@@ -783,8 +792,6 @@ namespace System.Text.Json
                 new JsonDocument(
                     segmentCopy,
                     newDb,
-                    extraRentedArrayPoolBytes: null,
-                    extraPooledByteBufferWriter: null,
                     isDisposable: false);
 
             return newDocument.RootElement;
@@ -1138,6 +1145,7 @@ namespace System.Text.Json
 
                         // No more children, so process the current element.
                         enumerator.Reset();
+                        propertyNameSet.SetCapacity(curr.GetPropertyCount());
 
                         foreach (JsonProperty property in enumerator)
                         {

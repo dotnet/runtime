@@ -22,19 +22,12 @@ namespace System.Text.Json.Serialization.Converters
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;
 
-            if (options.AllowDuplicateProperties)
+            if (!options.AllowDuplicateProperties && collection.Contains(key))
             {
-                collection[key] = value;
+                ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(key);
             }
-            else
-            {
-                if (collection.Contains(key))
-                {
-                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(key);
-                }
 
-                collection.Add(key, value);
-            }
+            collection[key] = value;
 
             if (IsValueType)
             {

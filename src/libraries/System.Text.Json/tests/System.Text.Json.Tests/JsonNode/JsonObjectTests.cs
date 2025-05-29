@@ -1675,8 +1675,11 @@ namespace System.Text.Json.Nodes.Tests
                     () => JsonSerializer.Deserialize<T>(jsonPayload, JsonTestSerializerOptions.DisallowDuplicateProperties),
                     "Duplicate");
 
-                // Default options also throw
-                AssertExtensions.ThrowsContains<JsonException>(() => JsonSerializer.Deserialize<T>(jsonPayload), "Duplicate");
+                // Default options don't throw on deserialize but will throw when accessed
+                T node = JsonSerializer.Deserialize<T>(jsonPayload);
+                AssertExtensions.ThrowsContains<ArgumentException>(
+                    () => JsonNode.DeepEquals(node, node),
+                    "An item with the same key has already been added.");
             }
         }
 

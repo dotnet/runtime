@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
@@ -13,28 +15,56 @@ namespace System.Text.Json
         private ref struct PropertyNameSet : IDisposable
         {
             // Data structure to track property names in an object while deserializing
-            // into a JsonDocument and validate that there are no duplicates. A small inline
-            // array is used for the first few property names and then a pooled array is used
-            // for the rest. Escaped property names are always stored in the pooled array.
+            // into a JsonDocument and validate that there are no duplicates. A small
+            // array is used when the number of properties is small and no properties
+            // are escaped. Otherwise a hash set is used.
 
-            private ReadOnlyMemory<byte>[]? _heapCache;
-            private int _heapCacheCount = 0;
+            private HashSet<ReadOnlyMemory<byte>>? _hashSet;
+
+            private const int ArraySetThreshold = 16;
+            private int _arraySetCount;
+            private bool _useArraySet = true;
 
 #if NET
-            private const int StackCacheThreshold = 16;
-
-            [InlineArray(StackCacheThreshold)]
+            [InlineArray(ArraySetThreshold)]
             private struct InlineRangeArray16
             {
-                private Range _element0;
+                private (int Start, int Length) _element0;
             }
 
-            private InlineRangeArray16 _stackCache;
-            private int _stackCacheCount = 0;
+            private InlineRangeArray16 _arraySet;
+#else
+            private readonly (int Start, int Length)[] _arraySet = new (int Start, int Length)[ArraySetThreshold];
 #endif
 
             public PropertyNameSet()
             {
+            }
+
+            internal void SetCapacity(int capacity)
+            {
+                if (capacity <= ArraySetThreshold)
+                {
+                    _useArraySet = true;
+                }
+                else
+                {
+                    _useArraySet = false;
+                    if (_hashSet is null)
+                    {
+                        _hashSet = new HashSet<ReadOnlyMemory<byte>>(
+#if NET
+                            capacity,
+#endif
+                            PropertyNameComparer.Instance);
+                    }
+                    else
+                    {
+#if NET
+                        _hashSet.EnsureCapacity(capacity);
+#endif
+                    }
+                }
             }
 
             internal void AddPropertyName(JsonProperty property, JsonDocument document)
@@ -42,102 +72,88 @@ namespace System.Text.Json
                 DbRow dbRow = document._parsedData.Get(property.Value.MetadataDbIndex - DbRow.Size);
                 Debug.Assert(dbRow.TokenType is JsonTokenType.PropertyName);
 
-                // Name without quotes
                 ReadOnlyMemory<byte> utf8Json = document._utf8Json;
                 ReadOnlyMemory<byte> propertyName = utf8Json.Slice(dbRow.Location, dbRow.SizeOrLength);
 
                 if (dbRow.HasComplexChildren)
                 {
+                    SwitchToHashSet(utf8Json);
                     propertyName = JsonReaderHelper.GetUnescaped(propertyName.Span);
                 }
 
-#if NET
-                for (int i = 0; i < _stackCacheCount; i++)
+                if (_useArraySet)
                 {
-                    ReadOnlySpan<byte> previousPropertyName = utf8Json[_stackCache[i]].Span;
+                    for (int i = 0; i < _arraySetCount; i++)
+                    {
+                        (int Start, int Length) range = _arraySet[i];
+                        ReadOnlySpan<byte> previousPropertyName = utf8Json.Span.Slice(range.Start, range.Length);
 
-                    if (previousPropertyName.SequenceEqual(propertyName.Span))
+                        if (previousPropertyName.SequenceEqual(propertyName.Span))
+                        {
+                            ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName.Span);
+                        }
+                    }
+
+                    _arraySet[_arraySetCount] = (dbRow.Location, dbRow.SizeOrLength);
+                    _arraySetCount++;
+                }
+                else
+                {
+                    Debug.Assert(_hashSet is not null);
+
+                    if (!_hashSet.Add(propertyName))
                     {
                         ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName.Span);
                     }
                 }
-#endif
-
-                // Positive heap cache count implies it is not null.
-                Debug.Assert(_heapCacheCount is 0 || _heapCache is not null);
-
-                for (int i = 0; i < _heapCacheCount; i++)
-                {
-                    ReadOnlySpan<byte> previousPropertyName = _heapCache![i].Span;
-
-                    if (previousPropertyName.SequenceEqual(propertyName.Span))
-                    {
-                        ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName.Span);
-                    }
-                }
-
-#if NET
-                // Property name is not a duplicate, so add it to the cache.
-                // Use the stack cache if there's space and property name is not escaped
-                if (!dbRow.HasComplexChildren && _stackCacheCount < StackCacheThreshold)
-                {
-                    _stackCache[_stackCacheCount] = dbRow.Location..(dbRow.Location + dbRow.SizeOrLength);
-                    _stackCacheCount++;
-                    return;
-                }
-#endif
-
-                EnsureHeapCacheCapacity();
-
-                // Add the property name to the heap cache.
-                _heapCache![_heapCacheCount] = propertyName;
-                _heapCacheCount++;
             }
 
-            private void EnsureHeapCacheCapacity()
+            private void SwitchToHashSet(ReadOnlyMemory<byte> utf8Json)
             {
-                if (_heapCache is not null && _heapCacheCount < _heapCache.Length)
+                if (_useArraySet)
                 {
-                    return;
+                    _hashSet ??= new HashSet<ReadOnlyMemory<byte>>(
+#if NET
+                        ArraySetThreshold,
+#endif
+                        PropertyNameComparer.Instance);
+
+                    for (int i = 0; i < _arraySetCount; i++)
+                    {
+                        (int Start, int Length) range = _arraySet[i];
+                        ReadOnlyMemory<byte> propertyName = utf8Json.Slice(range.Start, range.Length);
+                        bool success = _hashSet.Add(propertyName);
+                        Debug.Assert(success, $"Property name {propertyName} should not already exist in the set.");
+                    }
+
+                    _useArraySet = false;
+                    _arraySetCount = 0;
                 }
-
-                int newSize = _heapCache is null ? 4 : checked(_heapCache.Length * 2);
-                ReadOnlyMemory<byte>[] newArray = ArrayPool<ReadOnlyMemory<byte>>.Shared.Rent(newSize);
-
-                // Copy and clear the old array if it exists.
-                if (_heapCache is not null)
-                {
-                    Span<ReadOnlyMemory<byte>> oldArraySpan = _heapCache.AsSpan();
-                    oldArraySpan.CopyTo(newArray);
-                    oldArraySpan.Clear();
-                    ArrayPool<ReadOnlyMemory<byte>>.Shared.Return(_heapCache!);
-                }
-
-                _heapCache = newArray;
             }
 
             internal void Reset()
             {
-                // Clear the ReadOnlyMemory<byte> contents so they don't root any data.
-                if (_heapCache is not null)
-                {
-                    _heapCache.AsSpan(0, _heapCacheCount).Clear();
-                    _heapCacheCount = 0;
-                }
-
-#if NET
-                _stackCacheCount = 0;
-#endif
+                _hashSet?.Clear();
+                _arraySetCount = 0;
             }
 
-            public void Dispose()
+            public readonly void Dispose()
             {
-                Reset();
+            }
 
-                // Dispose of the heap cache if it was allocated.
-                if (_heapCache is not null)
+            private sealed class PropertyNameComparer : IEqualityComparer<ReadOnlyMemory<byte>>
+            {
+                internal static readonly PropertyNameComparer Instance = new();
+
+                public bool Equals(ReadOnlyMemory<byte> left, ReadOnlyMemory<byte> right) =>
+                    left.Length == right.Length && left.Span.SequenceEqual(right.Span);
+
+                public int GetHashCode(ReadOnlyMemory<byte> name)
                 {
-                    ArrayPool<ReadOnlyMemory<byte>>.Shared.Return(_heapCache);
+                    // Marvin is the currently used hash algorithm for string comparisons.
+                    // The seed is unique to this process so an item's hash code can't easily be
+                    // discovered by an adversary trying to perform a denial of service attack.
+                    return Marvin.ComputeHash32(name.Span, Marvin.DefaultSeed);
                 }
             }
         }

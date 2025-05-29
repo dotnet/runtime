@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartObject:
-                    return ReadObject(ref reader, options.GetNodeOptions());
+                    return ReadObject(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -71,19 +71,29 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions options)
+        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            if (options.PropertyNameCaseInsensitive)
+            JsonNodeOptions nodeOptions = options.GetNodeOptions();
+
+            if (options.AllowDuplicateProperties)
             {
                 JsonElement jElement = JsonElement.ParseValue(ref reader);
-                JsonObject jObject = new JsonObject(jElement, options);
+                JsonObject jObject = new JsonObject(jElement, nodeOptions);
+                return jObject;
+            }
+            else if (options.PropertyNameCaseInsensitive)
+            {
+                // Do duplicate detection by expanding the JsonObject eagerly
+                JsonElement jElement = JsonElement.ParseValue(ref reader);
+                JsonObject jObject = new JsonObject(jElement, nodeOptions);
                 jObject.InitializeComplexNodesEagerly();
                 return jObject;
             }
             else
             {
+                // Do duplicate detection with JsonElement.ParseValue
                 JsonElement jElement = JsonElement.ParseValue(ref reader, allowDuplicateProperties: false);
-                return new JsonObject(jElement, options);
+                return new JsonObject(jElement, nodeOptions);
             }
         }
 

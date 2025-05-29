@@ -33,7 +33,8 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Negated bitmask of the required properties, indexed by <see cref="JsonPropertyInfo.PropertyIndex"/>.
         /// </summary>
-        internal BitArray? NegatedRequiredPropertiesMask { get; private set; }
+        internal BitArray? OptionalPropertiesMask { get; private set; }
+        internal bool ShouldTrackRequiredProperties => OptionalPropertiesMask is not null;
 
         private Action<object>? _onSerializing;
         private Action<object>? _onSerialized;
@@ -1129,7 +1130,7 @@ namespace System.Text.Json.Serialization.Metadata
                 propertyCache.StableSortByKey(static propInfo => propInfo.Order);
             }
 
-            NegatedRequiredPropertiesMask = requiredPropertiesMask?.Not();
+            OptionalPropertiesMask = requiredPropertiesMask?.Not();
             _propertyCache = propertyCache.ToArray();
             _propertyIndex = propertyIndex;
 

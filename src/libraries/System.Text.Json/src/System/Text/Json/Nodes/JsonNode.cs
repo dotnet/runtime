@@ -408,10 +408,8 @@ namespace System.Text.Json.Nodes
                         element?.InitializeComplexNodesEagerly();
                     }
                     break;
-                case JsonValue:
-                    break;
                 default:
-                    Debug.Fail($"Unknown JsonNode type encountered during initialization: {this.GetType().FullName}");
+                    Debug.Assert(this is JsonValue);
                     break;
             }
         }
