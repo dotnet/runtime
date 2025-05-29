@@ -38,7 +38,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
     [true, "mono_wasm_send_dbg_command_with_parms", "bool", ["number", "number", "number", "number", "number", "number", "string"]],
     [true, "mono_wasm_setenv", null, ["string", "string"]],
-    [true, "mono_wasm_parse_runtime_options", null, ["number", "number"]],
+    [true, "mono_wasm_parse_runtime_options", null, ["number", "pointer"]],
     [true, "mono_wasm_strdup", "number", ["string"]],
     [true, "mono_background_exec", null, []],
     [true, "mono_wasm_ds_exec", null, []],
