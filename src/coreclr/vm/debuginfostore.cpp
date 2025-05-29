@@ -158,7 +158,7 @@ public:
     void DoEncodedU32(uint32_t & dw)
     {
         SUPPORTS_DAC;
-        dw = m_r.ReadEncodedU32();
+        dw = m_r.ReadEncodedU32_NoThrow();
     }
 
     // Use to decode a monotonically increasing delta.
@@ -166,7 +166,7 @@ public:
     void DoEncodedDeltaU32(uint32_t & dw, uint32_t dwLast)
     {
         SUPPORTS_DAC;
-        uint32_t dwDelta = m_r.ReadEncodedU32();
+        uint32_t dwDelta = m_r.ReadEncodedU32_NoThrow();
         dw = dwLast + dwDelta;
     }
 
@@ -174,7 +174,7 @@ public:
     {
         SUPPORTS_DAC;
         //_ASSERTE(dwAdjust < 0);
-        dw = m_r.ReadEncodedU32() + dwAdjust;
+        dw = m_r.ReadEncodedU32_NoThrow() + dwAdjust;
     }
 
     void DoEncodedDeltaU32NonMonotonic(uint32_t& dw, uint32_t dwLast)
@@ -187,19 +187,19 @@ public:
     void DoEncodedSourceType(ICorDebugInfo::SourceTypes & dw)
     {
         SUPPORTS_DAC;
-        dw = (ICorDebugInfo::SourceTypes) m_r.ReadEncodedU32();
+        dw = (ICorDebugInfo::SourceTypes) m_r.ReadEncodedU32_NoThrow();
     }
 
     void DoEncodedVarLocType(ICorDebugInfo::VarLocType & dw)
     {
         SUPPORTS_DAC;
-        dw = (ICorDebugInfo::VarLocType) m_r.ReadEncodedU32();
+        dw = (ICorDebugInfo::VarLocType) m_r.ReadEncodedU32_NoThrow();
     }
 
     void DoEncodedUnsigned(unsigned & dw)
     {
         SUPPORTS_DAC;
-        dw = (unsigned) m_r.ReadEncodedU32();
+        dw = (unsigned) m_r.ReadEncodedU32_NoThrow();
     }
 
 
@@ -208,27 +208,27 @@ public:
     {
         SUPPORTS_DAC;
 #ifdef TARGET_X86
-        dwOffset = m_r.ReadEncodedI32() * sizeof(DWORD);
+        dwOffset = m_r.ReadEncodedI32_NoThrow() * sizeof(DWORD);
 #else
         // Non x86 platforms don't need it to be dword aligned.
-        dwOffset = m_r.ReadEncodedI32();
+        dwOffset = m_r.ReadEncodedI32_NoThrow();
 #endif
     }
 
     void DoEncodedRegIdx(ICorDebugInfo::RegNum & reg)
     {
         SUPPORTS_DAC;
-        reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32();
+        reg = (ICorDebugInfo::RegNum) m_r.ReadEncodedU32_NoThrow();
     }
 
     void DoMethodHandle(CORINFO_METHOD_HANDLE& p)
     {
 #ifdef TARGET_64BIT
-        uint32_t lo = m_r.ReadUnencodedU32();
-        uint32_t hi = m_r.ReadUnencodedU32();
+        uint32_t lo = m_r.ReadUnencodedU32_NoThrow();
+        uint32_t hi = m_r.ReadUnencodedU32_NoThrow();
         p = reinterpret_cast<CORINFO_METHOD_HANDLE>(uintptr_t(lo) | (uintptr_t(hi) << 32));
 #else
-        uint32_t val = m_r.ReadUnencodedU32();
+        uint32_t val = m_r.ReadUnencodedU32_NoThrow();
         p = reinterpret_cast<CORINFO_METHOD_HANDLE>(static_cast<uintptr_t>(val));
 #endif
     }
@@ -241,7 +241,7 @@ public:
 #ifdef _DEBUG
         if (Dbg_ShouldUseCookies())
         {
-            BYTE b2 = m_r.ReadNibble();
+            BYTE b2 = m_r.ReadNibble_NoThrow();
             _ASSERTE(b == b2);
         }
 #endif
@@ -916,8 +916,8 @@ size_t CompressDebugInfo::WalkILOffsets(
 
     NibbleReader r(pDebugInfo, 12 /* maximum size of compressed 2 UINT32s */);
 
-    ULONG cbBounds = r.ReadEncodedU32();
-    ULONG cbVars   = r.ReadEncodedU32();
+    ULONG cbBounds = r.ReadEncodedU32_NoThrow();
+    ULONG cbVars   = r.ReadEncodedU32_NoThrow();
 
     PTR_BYTE addrBounds = pDebugInfo + r.GetNextByteIndex();
     PTR_BYTE addrVars   = addrBounds + cbBounds;
@@ -927,7 +927,7 @@ size_t CompressDebugInfo::WalkILOffsets(
         NibbleReader r(addrBounds, cbBounds);
         TransferReader t(r);
 
-        UINT32 cNumEntries = r.ReadEncodedU32();
+        UINT32 cNumEntries = r.ReadEncodedU32_NoThrow();
         _ASSERTE(cNumEntries > 0);
 
         // Main decompression routine.
