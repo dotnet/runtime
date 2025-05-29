@@ -548,6 +548,12 @@ namespace Internal.TypeSystem
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
             }
 
+            if (cumulativeInstanceFieldPos == LayoutInt.Zero)
+            {
+                // CStruct cannot have zero size.
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
+            }
+
             SizeAndAlignment instanceByteSizeAndAlignment;
             var instanceSizeAndAlignment = ComputeInstanceSize(
                 type,

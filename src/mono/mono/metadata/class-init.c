@@ -2479,6 +2479,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 			real_size = klass->parent->instance_size;
 
+			if (top == 0) {
+				/* Empty structs are not allowed */
+				if (mono_class_set_type_load_failure (klass, "CStruct type cannot be empty."))
+					return;
+			}
+
 			for (i = 0; i < top; i++){
 				gint32 align;
 				guint32 size;
