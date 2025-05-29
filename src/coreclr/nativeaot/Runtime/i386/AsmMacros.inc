@@ -152,7 +152,7 @@ OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_r
 ;;
 
 RhDebugBreak                                equ @RhDebugBreak@0
-RhpGcAlloc                                  equ @RhpGcAlloc@16
+RhpGcAlloc                                  equ _RhpGcAlloc@16
 G_LOWEST_ADDRESS                            equ _g_lowest_address
 G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low

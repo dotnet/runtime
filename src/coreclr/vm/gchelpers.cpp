@@ -55,11 +55,7 @@ EXTERN_C ee_alloc_context* GetThreadEEAllocContext()
 //  numElements     -  number of array elements
 //  pTransitionBlock-  transition frame to make stack crawlable
 // Returns a pointer to the object allocated or NULL on failure.
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
 EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t numElements, TransitionBlock* pTransitionBlock)
-#else
-EXTERN_C Object* F_CALL_CONV RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, uintptr_t numElements, TransitionBlock* pTransitionBlock)
-#endif
 {
     OBJECTREF newobj = NULL;
 
@@ -118,11 +114,7 @@ EXTERN_C Object* F_CALL_CONV RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags,
     return OBJECTREFToObject(newobj);
 }
 
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
 EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock)
-#else
-EXTERN_C Object* F_CALL_CONV RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t numElements, TransitionBlock* pTransitionBlock)
-#endif
 {
     OBJECTREF newobj = NULL;
 
@@ -178,11 +170,7 @@ EXTERN_C Object* F_CALL_CONV RhpGcAllocMaybeFrozen(MethodTable* pMT, uintptr_t n
     return OBJECTREFToObject(newobj);
 }
 
-#if defined(TARGET_X86) && defined(TARGET_UNIX)
 EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock)
-#else
-EXTERN_C void F_CALL_CONV RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock)
-#endif
 {
     MAKE_CURRENT_THREAD_AVAILABLE();
 
