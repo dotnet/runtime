@@ -212,7 +212,7 @@ The FCall entrypoint has to be registered in tables in [vm\ecalllist.h][ecalllis
 
 [ecalllist]: https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/ecalllist.h
 
-This method is an instance method in managed code, with the "this" parameter passed as the first argument. We use `StringObject*` as the argument type, then copy it into a `STRINGREF` so we get some error checking when we use it.
+This example shows an FCall method that takes a managed object (`Object*`) as a raw pointer. These raw inputs are considered "unsafe" and must be validated or converted if they’re used in a GC-sensitive context.
 
 ```C++
 FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExceptionUNSAFE)

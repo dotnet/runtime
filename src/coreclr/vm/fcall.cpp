@@ -73,7 +73,7 @@ DEBUG_NOINLINE FCallCheck::~FCallCheck()
 
     // Confirm that we don't starve the GC or thread-abort.
     // Basically every control flow path through an FCALL must
-    // to a poll.
+    // do a poll.
 
     _ASSERTE(unbreakableLockCount == m_pThread->GetUnbreakableLockCount() ||
              (!m_pThread->HasUnbreakableLock() && !m_pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock)));

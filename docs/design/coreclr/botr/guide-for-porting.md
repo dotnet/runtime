@@ -371,7 +371,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
     7.  `ComCallPreStub`/ `COMToCLRDispatchHelper` /`GenericComCallStub` - not
         necessary for non-Windows platforms at this time
 
-    9.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
+    8.  `TheUMEntryPrestub`/ `UMThunkStub` - used to enter the runtime from
         non-managed code through entrypoints generated from the
         Marshal.GetFunctionPointerForDelegate api.
 
