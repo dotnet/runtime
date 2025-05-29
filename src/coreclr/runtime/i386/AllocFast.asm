@@ -50,6 +50,8 @@ FASTCALL_FUNC   RhpNewObject, 8
 
         push        eax                                             ; transition frame
         push        0                                               ; numElements
+        push        edx
+        push        ecx
 
         ;; Call the rest of the allocation helper.
         ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
@@ -237,8 +239,8 @@ FASTCALL_FUNC RhpNewArray, 8
         ; Push alloc helper arguments (transition frame, size, flags, MethodTable).
         push        eax                                             ; transition frame
         push        edx                                             ; numElements
-        xor         edx, edx                                        ; Flags
-        ; Passing MethodTable in ecx
+        push        0                                               ; Flags
+        push        ecx                                             ; MethodTable
 
         ; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         call        RhpGcAlloc

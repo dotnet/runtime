@@ -9,9 +9,8 @@
 include asmconstants.inc
 include asmmacros.inc
 
-EXTERN @RhpGcAlloc@16 : PROC
-EXTERN @RhpGcAllocMaybeFrozen@12 : PROC
-EXTERN @RhExceptionHandling_FailedAllocation_Helper@12 : PROC
+EXTERN _RhpGcAllocMaybeFrozen@12 : PROC
+EXTERN _RhExceptionHandling_FailedAllocation_Helper@12 : PROC
 EXTERN @RhpNewObject@8 : PROC
 EXTERN @RhpNewArray@8 : PROC
 
@@ -40,8 +39,9 @@ FASTCALL_FUNC RhpNewMaybeFrozen, 4
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
-        mov         edx, 0
-        call        @RhpGcAllocMaybeFrozen@12
+        push        0
+        push        ecx
+        call        _RhpGcAllocMaybeFrozen@12
 
         POP_COOP_PINVOKE_FRAME
         ret
@@ -56,7 +56,9 @@ FASTCALL_FUNC RhpNewArrayMaybeFrozen, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
-        call        @RhpGcAllocMaybeFrozen@12
+        push        edx
+        push        ecx
+        call        _RhpGcAllocMaybeFrozen@12
 
         POP_COOP_PINVOKE_FRAME
         ret
@@ -69,7 +71,9 @@ RhExceptionHandling_FailedAllocation PROC PUBLIC
         PUSH_COOP_PINVOKE_FRAME eax
 
         push        eax
-        call        @RhExceptionHandling_FailedAllocation_Helper@12
+        push        edx
+        push        ecx
+        call        _RhExceptionHandling_FailedAllocation_Helper@12
 
         POP_COOP_PINVOKE_FRAME
         ret
