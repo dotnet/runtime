@@ -675,6 +675,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
             {
                 optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
             }
+
+            JITDUMP("Cross-block table size %u (for %u tracked locals)\n", optMaxAssertionCount, lvaTrackedCount);
         }
         else
         {

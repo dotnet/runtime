@@ -159,7 +159,7 @@ namespace ILCompiler
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                         if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
-                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                            && module.PEReader.TryGetCompositeReadyToRunHeader(out int _))
                         {
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;

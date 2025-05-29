@@ -16,6 +16,7 @@ namespace System.Runtime.InteropServices
         {
             handle = LoadLibraryByName(libraryName,
                                 assembly,
+                                userSpecifiedSearchFlags: true,
                                 searchPath,
                                 throwOnError: false);
             return handle != IntPtr.Zero;
@@ -26,21 +27,21 @@ namespace System.Runtime.InteropServices
             // First checks if a default dllImportSearchPathFlags was passed in, if so, use that value.
             // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute.
             // If so, use that value.
-
-            if (!searchPath.HasValue)
+            bool userSpecifiedSearchFlags = searchPath.HasValue;
+            if (!userSpecifiedSearchFlags)
             {
-                searchPath = GetDllImportSearchPath(assembly);
+                searchPath = GetDllImportSearchPath(assembly, out userSpecifiedSearchFlags);
             }
-            return LoadLibraryByName(libraryName, assembly, searchPath.Value, throwOnError);
+            return LoadLibraryByName(libraryName, assembly, userSpecifiedSearchFlags, searchPath!.Value, throwOnError);
         }
 
-        internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath searchPath, bool throwOnError)
+        private static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, bool userSpecifiedSearchFlags, DllImportSearchPath searchPath, bool throwOnError)
         {
             int searchPathFlags = (int)(searchPath & ~DllImportSearchPath.AssemblyDirectory);
             bool searchAssemblyDirectory = (searchPath & DllImportSearchPath.AssemblyDirectory) != 0;
 
             LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LoadBySearch(assembly, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
+            IntPtr ret = LoadBySearch(assembly, userSpecifiedSearchFlags, searchAssemblyDirectory, searchPathFlags, ref errorTracker, libraryName);
             if (throwOnError && ret == IntPtr.Zero)
             {
                 errorTracker.Throw(libraryName);
@@ -49,20 +50,22 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
-        internal static DllImportSearchPath GetDllImportSearchPath(Assembly callingAssembly)
+        private static DllImportSearchPath GetDllImportSearchPath(Assembly callingAssembly, out bool userSpecifiedSearchFlags)
         {
             foreach (CustomAttributeData cad in callingAssembly.CustomAttributes)
             {
                 if (cad.AttributeType == typeof(DefaultDllImportSearchPathsAttribute))
                 {
+                    userSpecifiedSearchFlags = true;
                     return (DllImportSearchPath)cad.ConstructorArguments[0].Value!;
                 }
             }
 
+            userSpecifiedSearchFlags = false;
             return DllImportSearchPath.AssemblyDirectory;
         }
 
-        internal static IntPtr LoadBySearch(Assembly callingAssembly, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
+        internal static IntPtr LoadBySearch(Assembly callingAssembly, bool userSpecifiedSearchFlags, bool searchAssemblyDirectory, int dllImportSearchPathFlags, ref LoadLibErrorTracker errorTracker, string libraryName)
         {
             IntPtr ret;
 
@@ -107,10 +110,20 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                ret = LoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, ref errorTracker);
-                if (ret != IntPtr.Zero)
+                // Internally, search path flags and whether or not to search the assembly directory are
+                // tracked separately. However, on the API level, DllImportSearchPath represents them both.
+                // When unspecified, the default is to search the assembly directory and all OS defaults,
+                // which maps to searchAssemblyDirectory being true and dllImportSearchPathFlags being 0.
+                // When a user specifies DllImportSearchPath.AssemblyDirectory, searchAssemblyDirectory is
+                // true, dllImportSearchPathFlags is 0, and the desired logic is to only search the assembly
+                // directory (handled above), so we avoid doing any additional load search in that case.
+                if (!userSpecifiedSearchFlags || !searchAssemblyDirectory || dllImportSearchPathFlags != 0)
                 {
-                    return ret;
+                    ret = LoadLibraryHelper(currLibNameVariation, dllImportSearchPathFlags, ref errorTracker);
+                    if (ret != IntPtr.Zero)
+                    {
+                        return ret;
+                    }
                 }
             }
 

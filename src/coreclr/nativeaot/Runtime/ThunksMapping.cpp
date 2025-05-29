@@ -244,10 +244,14 @@ EXTERN_C void* QCALLTYPE RhAllocateThunksMapping()
             //jirl      $r0, $t8, 0
 
             int delta = (int)(pCurrentDataAddress - pCurrentThunkAddress);
+            ASSERT((-0x200000 <= delta) && (delta < 0x200000));
+
             *((uint32_t*)pCurrentThunkAddress) = 0x18000013 | (((delta & 0x3FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 
             delta += OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2) - 4;
+            ASSERT((-0x200000 <= delta) && (delta < 0x200000));
+
             *((uint32_t*)pCurrentThunkAddress) = 0x18000014 | (((delta & 0x3FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 

@@ -36,7 +36,7 @@ GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-uint8_t* g_sw_ww_table = nullptr;
+uint8_t* g_write_watch_table = nullptr;
 bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP

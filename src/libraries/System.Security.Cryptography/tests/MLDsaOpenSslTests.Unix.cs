@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void MLDsaOpenSsl_Ctor_InvalidHandle()
         {
-            AssertExtensions.Throws<ArgumentException>(static () => new MLDsaOpenSsl(new SafeEvpPKeyHandle()));
+            AssertExtensions.Throws<ArgumentException>("pkeyHandle", static () => new MLDsaOpenSsl(new SafeEvpPKeyHandle()));
         }
 
         [Fact]
@@ -103,14 +103,14 @@ namespace System.Security.Cryptography.Tests
                     VerifyInstanceIsUsable(two);
                 }
 
-                VerifyDisposed(one);
+                MLDsaTestHelpers.VerifyDisposed(one);
                 Assert.Throws<ObjectDisposedException>(() => one.DuplicateKeyHandle());
 
                 VerifyInstanceIsUsable(two);
                 ExerciseSuccessfulVerify(two, data, oneSignature, context);
             }
 
-            VerifyDisposed(two);
+            MLDsaTestHelpers.VerifyDisposed(two);
             Assert.Throws<ObjectDisposedException>(() => two.DuplicateKeyHandle());
         }
 

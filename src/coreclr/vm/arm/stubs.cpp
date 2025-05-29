@@ -292,7 +292,7 @@ struct WriteBarrierDescriptor
     DWORD   m_dw_g_ephemeral_high_offset;   // Offset of the instruction reading g_ephemeral_high
     DWORD   m_dw_g_card_table_offset;       // Offset of the instruction reading g_card_table
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    DWORD   m_dw_g_sw_ww_table_offset;      // Offset of the instruction reading g_sw_ww_table
+    DWORD   m_dw_g_write_watch_table_offset;// Offset of the instruction reading g_write_watch_table
 #endif
 };
 
@@ -463,7 +463,7 @@ void UpdateGCWriteBarriers(bool postGrow = false)
             GWB_PATCH_OFFSET(g_ephemeral_high);
             GWB_PATCH_OFFSET(g_card_table);
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-            GWB_PATCH_OFFSET(g_sw_ww_table);
+            GWB_PATCH_OFFSET(g_write_watch_table);
 #endif
         }
 
@@ -473,6 +473,12 @@ void UpdateGCWriteBarriers(bool postGrow = false)
 
 int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     // The runtime is not always suspended when this is called (unlike StompWriteBarrierEphemeral) but we have
     // no way to update the barrier code atomically on ARM since each 32-bit value we change is loaded over
     // two instructions. So we have to suspend the EE (which forces code out of the barrier functions) before
@@ -498,6 +504,12 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
@@ -507,6 +519,12 @@ int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
@@ -515,6 +533,12 @@ int SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 
 int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
     UNREFERENCED_PARAMETER(isRuntimeSuspended);
     _ASSERTE(isRuntimeSuspended);
     UpdateGCWriteBarriers();
@@ -1592,10 +1616,17 @@ void HijackFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats
      pRD->IsCallerSPValid      = FALSE;
 
      pRD->pCurrentContext->Pc = m_ReturnAddress;
-     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + sizeof(struct HijackArgs);
+     size_t s = sizeof(struct HijackArgs);
+     _ASSERTE(s%4 == 0); // HijackArgs contains register values and hence will be a multiple of 4
+     // stack must be multiple of 8. So if s is not multiple of 8 then there must be padding of 4 bytes
+     s = s + s%8;
+     pRD->pCurrentContext->Sp = PTR_TO_TADDR(m_Args) + s ;
 
      pRD->pCurrentContext->R0 = m_Args->R0;
+     pRD->pCurrentContext->R2 = m_Args->R2;
+
      pRD->volatileCurrContextPointers.R0 = &m_Args->R0;
+     pRD->volatileCurrContextPointers.R2 = &m_Args->R2;
 
      pRD->pCurrentContext->R4 = m_Args->R4;
      pRD->pCurrentContext->R5 = m_Args->R5;
@@ -1645,7 +1676,6 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
 
         ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
     }

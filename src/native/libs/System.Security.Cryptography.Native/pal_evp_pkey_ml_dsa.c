@@ -7,10 +7,10 @@
 #include "openssl.h"
 #include <assert.h>
 
-int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId)
+int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId, int32_t* hasSeed, int32_t* hasSecretKey)
 {
 #ifdef NEED_OPENSSL_3_0
-    assert(pKey && mldsaId);
+    assert(pKey && mldsaId && hasSeed && hasSecretKey);
 
     if (API_EXISTS(EVP_PKEY_is_a))
     {
@@ -31,13 +31,20 @@ int32_t CryptoNative_MLDsaGetPalId(const EVP_PKEY* pKey, int32_t* mldsaId)
         else
         {
             *mldsaId = PalMLDsaId_Unknown;
+            *hasSeed = 0;
+            *hasSecretKey = 0;
+            return 1;
         }
 
+        *hasSeed = EvpPKeyHasKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_ML_DSA_SEED);
+        *hasSecretKey = EvpPKeyHasKeyOctetStringParam(pKey, OSSL_PKEY_PARAM_PRIV_KEY);
         return 1;
     }
 #endif
 
     (void)pKey;
+    *hasSeed = 0;
+    *hasSecretKey = 0;
     *mldsaId = PalMLDsaId_Unknown;
     return 0;
 }
@@ -113,7 +120,6 @@ int32_t CryptoNative_MLDsaSignPure(EVP_PKEY *pkey,
                                    uint8_t* destination, int32_t destinationLen)
 {
     assert(pkey);
-    assert(msg);
     assert(msgLen >= 0);
     assert(contextLen >= 0);
     assert(destination);
@@ -193,7 +199,6 @@ int32_t CryptoNative_MLDsaVerifyPure(EVP_PKEY *pkey,
                                      uint8_t* sig, int32_t sigLen)
 {
     assert(pkey);
-    assert(msg);
     assert(msgLen >= 0);
     assert(sig);
     assert(sigLen >= 2420 /* ML-DSA-44 signature size */);

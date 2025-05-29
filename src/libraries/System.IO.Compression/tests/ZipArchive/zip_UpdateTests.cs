@@ -314,7 +314,7 @@ namespace System.IO.Compression.Tests
             await IsZipSameAsDir(testArchive, zmodified("addFile"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true, async);
         }
 
-        private static Task CreateAndUpdateEntry(ZipArchive archive, string installFile, string entryName,  bool async)
+        private static Task CreateAndUpdateEntry(ZipArchive archive, string installFile, string entryName, bool async)
         {
             ZipArchiveEntry e = archive.CreateEntry(entryName);
             return UpdateEntry(e, installFile, entryName, async);
@@ -472,15 +472,20 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Data()
+        {
+            yield return [ 49, 1, 1, ];
+            yield return [ 40, 3, 2, ];
+            yield return [ 30, 5, 3, ];
+            yield return [ 0, 8, 1, ];
+        }
+
         [Theory]
-        [InlineData(49, 1, 1)]
-        [InlineData(40, 3, 2)]
-        [InlineData(30, 5, 3)]
-        [InlineData(0, 8, 1)]
-        public void Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged(int startIndex, int entriesToModify, int step)
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Data))]
+        public async Task Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged(int startIndex, int entriesToModify, int step)
         {
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-            byte[] sampleZipFile = CreateZipFile(50, sampleEntryContents, async: false).Result;
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -554,113 +559,115 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        //[Theory]
-        //[InlineData(49, 1, 1)]
-        //[InlineData(40, 3, 2)]
-        //[InlineData(30, 5, 3)]
-        //[InlineData(0, 8, 1)]
-        //public async Task Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Async(int startIndex, int entriesToModify, int step)
-        //{
-        //    byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-        //    byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: true);
-
-        //    await using (MemoryStream ms = new MemoryStream())
-        //    {
-        //        await ms.WriteAsync(sampleZipFile);
-        //        ms.Seek(0, SeekOrigin.Begin);
-
-        //        await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
-        //        {
-        //            // Open the first archive in Update mode, then change the value of {entriesToModify} fixed-length entry headers
-        //            // (LastWriteTime.) Verify the correct number of writes performed as a result, then reopen the same
-        //            // archive, get the entries and make sure that the fields hold the expected value.
-        //            int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write));
-        //            int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
-        //            ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
-        //            List<(string EntryName, DateTimeOffset LastWriteTime)> updatedMetadata = new(entriesToModify);
-
-        //            for (int i = 0; i < entriesToModify; i++)
-        //            {
-        //                int modificationIndex = startIndex + (i * step);
-        //                ZipArchiveEntry entryToModify = target.Entries[modificationIndex];
-        //                string entryName = entryToModify.FullName;
-        //                DateTimeOffset expectedDateTimeOffset = entryToModify.LastWriteTime.AddHours(1.0);
-
-        //                entryToModify.LastWriteTime = expectedDateTimeOffset;
-        //                updatedMetadata.Add((entryName, expectedDateTimeOffset));
-        //            }
-
-        //            await target.DisposeAsync();
-
-        //            writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write)) - writesCalled;
-        //            writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
-        //            // As above, check 1: the number of writes performed should be minimal.
-        //            // 2 writes per archive entry for the local file header.
-        //            // 2 writes per archive entry for the central directory header.
-        //            // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
-        //            // The EOCD block won't change as a result of our modifications, so is excluded from the counts.
-        //            Assert.Equal(((2 + 2) * entriesToModify), writesCalled + writeBytesCalled);
-
-        //            trackingStream.Seek(0, SeekOrigin.Begin);
-        //            target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
-
-        //            for (int i = 0; i < entriesToModify; i++)
-        //            {
-        //                int modificationIndex = startIndex + (i * step);
-        //                var expectedValues = updatedMetadata[i];
-        //                ZipArchiveEntry verifiedEntry = target.Entries[modificationIndex];
-
-        //                // Check 2: the field holds the expected value (and thus has been written to the file.)
-        //                Assert.NotNull(verifiedEntry);
-        //                Assert.Equal(expectedValues.EntryName, verifiedEntry.FullName);
-        //                Assert.Equal(expectedValues.LastWriteTime, verifiedEntry.LastWriteTime);
-        //            }
-
-        //            // Check 3: no other data has been corrupted as a result
-        //            for (int i = 0; i < target.Entries.Count; i++)
-        //            {
-        //                ZipArchiveEntry entry = target.Entries[i];
-        //                byte[] expectedBuffer = [.. sampleEntryContents, (byte)(i % byte.MaxValue)];
-        //                byte[] readBuffer = new byte[expectedBuffer.Length];
-
-        //                await using (Stream readStream = await entry.OpenAsync())
-        //                {
-        //                    await readStream.ReadAsync(readBuffer);
-        //                }
-
-        //                Assert.Equal(expectedBuffer, readBuffer);
-        //            }
-
-        //            await target.DisposeAsync();
-        //        }
-        //    }
-        //}
-
         [Theory]
-        [InlineData(0)]
-        [InlineData(10)]
-        [InlineData(20)]
-        [InlineData(30)]
-        [InlineData(49)]
-        public void Update_PerformMinimalWritesWhenEntryDataChanges(int index)
-            => Update_PerformMinimalWritesWithDataAndHeaderChanges(index, -1);
-
-        //[Theory]
-        //[InlineData(0)]
-        //[InlineData(10)]
-        //[InlineData(20)]
-        //[InlineData(30)]
-        //[InlineData(49)]
-        //public Task Update_PerformMinimalWritesWhenEntryDataChanges_Async(int index) => Update_PerformMinimalWritesWithDataAndHeaderChanges_Async(index, -1);
-
-        [Theory]
-        [InlineData(0, 0)]
-        [InlineData(20, 40)]
-        [InlineData(30, 10)]
-        public void Update_PerformMinimalWritesWithDataAndHeaderChanges(int dataChangeIndex, int lastWriteTimeChangeIndex)
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Data))]
+        public async Task Update_PerformMinimalWritesWhenFixedLengthEntryHeaderFieldChanged_Async(int startIndex, int entriesToModify, int step)
         {
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-            byte[] sampleZipFile = CreateZipFile(50, sampleEntryContents, async: false).Result;
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
+
+            await using (MemoryStream ms = new MemoryStream())
+            {
+                await ms.WriteAsync(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
+                {
+                    // Open the first archive in Update mode, then change the value of {entriesToModify} fixed-length entry headers
+                    // (LastWriteTime.) Verify the correct number of writes performed as a result, then reopen the same
+                    // archive, get the entries and make sure that the fields hold the expected value.
+                    int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync));
+                    int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
+                    ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
+                    List<(string EntryName, DateTimeOffset LastWriteTime)> updatedMetadata = new(entriesToModify);
+
+                    for (int i = 0; i < entriesToModify; i++)
+                    {
+                        int modificationIndex = startIndex + (i * step);
+                        ZipArchiveEntry entryToModify = target.Entries[modificationIndex];
+                        string entryName = entryToModify.FullName;
+                        DateTimeOffset expectedDateTimeOffset = entryToModify.LastWriteTime.AddHours(1.0);
+
+                        entryToModify.LastWriteTime = expectedDateTimeOffset;
+                        updatedMetadata.Add((entryName, expectedDateTimeOffset));
+                    }
+
+                    await target.DisposeAsync();
+
+                    writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync)) - writesCalled;
+                    writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
+                    // As above, check 1: the number of writes performed should be minimal.
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
+                    // The EOCD block won't change as a result of our modifications, so is excluded from the counts.
+                    Assert.Equal(((2 + 2) * entriesToModify), writesCalled + writeBytesCalled);
+
+                    trackingStream.Seek(0, SeekOrigin.Begin);
+                    target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+
+                    for (int i = 0; i < entriesToModify; i++)
+                    {
+                        int modificationIndex = startIndex + (i * step);
+                        var expectedValues = updatedMetadata[i];
+                        ZipArchiveEntry verifiedEntry = target.Entries[modificationIndex];
+
+                        // Check 2: the field holds the expected value (and thus has been written to the file.)
+                        Assert.NotNull(verifiedEntry);
+                        Assert.Equal(expectedValues.EntryName, verifiedEntry.FullName);
+                        Assert.Equal(expectedValues.LastWriteTime, verifiedEntry.LastWriteTime);
+                    }
+
+                    // Check 3: no other data has been corrupted as a result
+                    for (int i = 0; i < target.Entries.Count; i++)
+                    {
+                        ZipArchiveEntry entry = target.Entries[i];
+                        byte[] expectedBuffer = [.. sampleEntryContents, (byte)(i % byte.MaxValue)];
+                        byte[] readBuffer = new byte[expectedBuffer.Length];
+
+                        await using (Stream readStream = await entry.OpenAsync())
+                        {
+                            await readStream.ReadAsync(readBuffer.AsMemory());
+                        }
+
+                        Assert.Equal(expectedBuffer, readBuffer);
+                    }
+
+                    await target.DisposeAsync();
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntryDataChanges_Data()
+        {
+            yield return new object[] { 0, };
+            yield return new object[] { 10, };
+            yield return new object[] { 20, };
+            yield return new object[] { 30, };
+            yield return new object[] { 49, };
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenEntryDataChanges_Data))]
+        public Task Update_PerformMinimalWritesWhenEntryDataChanges(int index) => Update_PerformMinimalWritesWithDataAndHeaderChanges(index, -1);
+
+        [Theory]
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenEntryDataChanges_Data))]
+        public Task Update_PerformMinimalWritesWhenEntryDataChanges_Async(int index) => Update_PerformMinimalWritesWithDataAndHeaderChanges_Async(index, -1);
+
+        public static IEnumerable<object[]> Get_PerformMinimalWritesWithDataAndHeaderChanges_Data()
+        {
+            yield return [ 0, 0 ];
+            yield return [ 20, 40 ];
+            yield return [ 30, 10 ];
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_PerformMinimalWritesWithDataAndHeaderChanges_Data))]
+        public async Task Update_PerformMinimalWritesWithDataAndHeaderChanges(int dataChangeIndex, int lastWriteTimeChangeIndex)
+        {
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
             byte[] expectedUpdatedEntryContents = [19, 18, 17, 16, 15, 14, 13, 12, 11, 10];
 
             using (MemoryStream ms = new MemoryStream())
@@ -751,105 +758,103 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        //[Theory]
-        //[InlineData(0, 0)]
-        //[InlineData(20, 40)]
-        //[InlineData(30, 10)]
-        //public async Task Update_PerformMinimalWritesWithDataAndHeaderChanges_Async(int dataChangeIndex, int lastWriteTimeChangeIndex)
-        //{
-        //    byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-        //    byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: true);
-        //    byte[] expectedUpdatedEntryContents = [19, 18, 17, 16, 15, 14, 13, 12, 11, 10];
+        [Theory]
+        [MemberData(nameof(Get_PerformMinimalWritesWithDataAndHeaderChanges_Data))]
+        public async Task Update_PerformMinimalWritesWithDataAndHeaderChanges_Async(int dataChangeIndex, int lastWriteTimeChangeIndex)
+        {
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: true);
+            byte[] expectedUpdatedEntryContents = [19, 18, 17, 16, 15, 14, 13, 12, 11, 10];
 
-        //    await using (MemoryStream ms = new MemoryStream())
-        //    {
-        //        await ms.WriteAsync(sampleZipFile);
-        //        ms.Seek(0, SeekOrigin.Begin);
+            await using (MemoryStream ms = new MemoryStream())
+            {
+                await ms.WriteAsync(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
 
-        //        await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
-        //        {
-        //            // Open the archive in Update mode, then rewrite the data of the {dataChangeIndex}th entry
-        //            // and set the LastWriteTime of the {lastWriteTimeChangeIndex}th entry.
-        //            // Verify the correct number of writes performed as a result, then reopen the same
-        //            // archive, get the entries and make sure that the fields hold the expected value.
-        //            int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write));
-        //            int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
-        //            ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
-        //            ZipArchiveEntry entryToRewrite = target.Entries[dataChangeIndex];
-        //            int totalEntries = target.Entries.Count;
-        //            int expectedEntriesToWrite = target.Entries.Count - dataChangeIndex;
-        //            DateTimeOffset expectedWriteTime = default;
+                await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
+                {
+                    // Open the archive in Update mode, then rewrite the data of the {dataChangeIndex}th entry
+                    // and set the LastWriteTime of the {lastWriteTimeChangeIndex}th entry.
+                    // Verify the correct number of writes performed as a result, then reopen the same
+                    // archive, get the entries and make sure that the fields hold the expected value.
+                    int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync));
+                    int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
+                    ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
+                    ZipArchiveEntry entryToRewrite = target.Entries[dataChangeIndex];
+                    int totalEntries = target.Entries.Count;
+                    int expectedEntriesToWrite = target.Entries.Count - dataChangeIndex;
+                    DateTimeOffset expectedWriteTime = default;
 
-        //            if (lastWriteTimeChangeIndex != -1)
-        //            {
-        //                ZipArchiveEntry entryToModify = target.Entries[lastWriteTimeChangeIndex];
+                    if (lastWriteTimeChangeIndex != -1)
+                    {
+                        ZipArchiveEntry entryToModify = target.Entries[lastWriteTimeChangeIndex];
 
-        //                expectedWriteTime = entryToModify.LastWriteTime.AddHours(1.0);
-        //                entryToModify.LastWriteTime = expectedWriteTime;
-        //            }
+                        expectedWriteTime = entryToModify.LastWriteTime.AddHours(1.0);
+                        entryToModify.LastWriteTime = expectedWriteTime;
+                    }
 
-        //            await using (var entryStream = await entryToRewrite.OpenAsync())
-        //            {
-        //                entryStream.SetLength(0);
-        //                await entryStream.WriteAsync(expectedUpdatedEntryContents);
-        //            }
+                    await using (var entryStream = await entryToRewrite.OpenAsync())
+                    {
+                        entryStream.SetLength(0);
+                        await entryStream.WriteAsync(expectedUpdatedEntryContents);
+                    }
 
-        //            await target.DisposeAsync();
+                    await target.DisposeAsync();
 
-        //            writesCalled = trackingStream.TimesCalled(nameof(trackingStream.Write)) - writesCalled;
-        //            writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
+                    writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync)) - writesCalled;
+                    writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
 
-        //            // If the data changed first, then every entry after it will be written in full. If the fixed-length
-        //            // metadata changed first, some entries which won't have been fully written - just updated in place.
-        //            // 2 writes per archive entry for the local file header.
-        //            // 2 writes per archive entry for the central directory header.
-        //            // 2 writes for the file data of the updated entry itself
-        //            // 1 write per archive entry for the file data of other entries after this in the file
-        //            // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
-        //            // All of the central directory headers must be rewritten after an entry's data has been modified.
-        //            if (dataChangeIndex <= lastWriteTimeChangeIndex || lastWriteTimeChangeIndex == -1)
-        //            {
-        //                // dataChangeIndex -> totalEntries: rewrite in full
-        //                // all central directories headers
-        //                Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * totalEntries), writesCalled + writeBytesCalled);
-        //            }
-        //            else
-        //            {
-        //                // lastWriteTimeChangeIndex: partial rewrite
-        //                // dataChangeIndex -> totalEntries: rewrite in full
-        //                // all central directory headers
-        //                Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * totalEntries) + 2, writesCalled + writeBytesCalled);
-        //            }
+                    // If the data changed first, then every entry after it will be written in full. If the fixed-length
+                    // metadata changed first, some entries which won't have been fully written - just updated in place.
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 2 writes for the file data of the updated entry itself
+                    // 1 write per archive entry for the file data of other entries after this in the file
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
+                    // All of the central directory headers must be rewritten after an entry's data has been modified.
+                    if (dataChangeIndex <= lastWriteTimeChangeIndex || lastWriteTimeChangeIndex == -1)
+                    {
+                        // dataChangeIndex -> totalEntries: rewrite in full
+                        // all central directories headers
+                        Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * totalEntries), writesCalled + writeBytesCalled);
+                    }
+                    else
+                    {
+                        // lastWriteTimeChangeIndex: partial rewrite
+                        // dataChangeIndex -> totalEntries: rewrite in full
+                        // all central directory headers
+                        Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * totalEntries) + 2, writesCalled + writeBytesCalled);
+                    }
 
-        //            trackingStream.Seek(0, SeekOrigin.Begin);
-        //            target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+                    trackingStream.Seek(0, SeekOrigin.Begin);
+                    target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
 
-        //            // Check 2: no other data has been corrupted as a result
-        //            for (int i = 0; i < target.Entries.Count; i++)
-        //            {
-        //                ZipArchiveEntry entry = target.Entries[i];
-        //                byte[] expectedBuffer = i == dataChangeIndex
-        //                    ? expectedUpdatedEntryContents
-        //                    : [.. sampleEntryContents, (byte)(i % byte.MaxValue)];
-        //                byte[] readBuffer = new byte[expectedBuffer.Length];
+                    // Check 2: no other data has been corrupted as a result
+                    for (int i = 0; i < target.Entries.Count; i++)
+                    {
+                        ZipArchiveEntry entry = target.Entries[i];
+                        byte[] expectedBuffer = i == dataChangeIndex
+                            ? expectedUpdatedEntryContents
+                            : [.. sampleEntryContents, (byte)(i % byte.MaxValue)];
+                        byte[] readBuffer = new byte[expectedBuffer.Length];
 
-        //                await using (Stream readStream = await entry.OpenAsync())
-        //                {
-        //                    await readStream.ReadAsync(readBuffer);
-        //                }
+                        await using (Stream readStream = await entry.OpenAsync())
+                        {
+                            await readStream.ReadAsync(readBuffer);
+                        }
 
-        //                Assert.Equal(expectedBuffer, readBuffer);
+                        Assert.Equal(expectedBuffer, readBuffer);
 
-        //                if (i == lastWriteTimeChangeIndex)
-        //                {
-        //                    Assert.Equal(expectedWriteTime, entry.LastWriteTime);
-        //                }
-        //            }
+                        if (i == lastWriteTimeChangeIndex)
+                        {
+                            Assert.Equal(expectedWriteTime, entry.LastWriteTime);
+                        }
+                    }
 
-        //            await target.DisposeAsync();
-        //        }
-        //    }
-        //}
+                    await target.DisposeAsync();
+                }
+            }
+        }
 
         [Fact]
         public async Task Update_PerformMinimalWritesWhenArchiveCommentChanged()
@@ -875,19 +880,53 @@ namespace System.IO.Compression.Tests
 
                 target = new ZipArchive(trackingStream, ZipArchiveMode.Read, leaveOpen: true);
                 Assert.Equal(expectedComment, target.Comment);
+                target.Dispose();
             }
         }
 
+        [Fact]
+        public async Task Update_PerformMinimalWritesWhenArchiveCommentChanged_Async()
+        {
+            await using (LocalMemoryStream ms = await LocalMemoryStream.ReadAppFileAsync(zfile("normal.zip")))
+            await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
+            {
+                int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync));
+                int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
+                string expectedComment = "14 byte comment";
+
+                ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
+                target.Comment = expectedComment;
+                await target.DisposeAsync();
+
+                writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync)) - writesCalled;
+                writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
+
+                // We expect 2 writes for the end of central directory block - 1 for the EOCD, 1 for the comment.
+                Assert.Equal(2, writesCalled + writeBytesCalled);
+
+                trackingStream.Seek(0, SeekOrigin.Begin);
+
+                target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: null);
+                Assert.Equal(expectedComment, target.Comment);
+                await target.DisposeAsync();
+            }
+        }
+
+        public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Data()
+        {
+            yield return [ -1, 40 ];
+            yield return [ -1, 49 ];
+            yield return [ -1, 0 ];
+            yield return [ 42, 40 ];
+            yield return [ 38, 40 ];
+        }
+
         [Theory]
-        [InlineData(-1, 40)]
-        [InlineData(-1, 49)]
-        [InlineData(-1, 0)]
-        [InlineData(42, 40)]
-        [InlineData(38, 40)]
-        public void Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted(int modifyIndex, int deleteIndex)
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Data))]
+        public async Task Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted(int modifyIndex, int deleteIndex)
         {
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-            byte[] sampleZipFile = CreateZipFile(50, sampleEntryContents, async: false).Result;
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
             byte[] expectedUpdatedEntryContents = [22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 
             using (MemoryStream ms = new MemoryStream())
@@ -976,14 +1015,112 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
-        [InlineData(1)]
-        [InlineData(5)]
-        [InlineData(10)]
-        [InlineData(12)]
-        public void Update_PerformMinimalWritesWhenEntriesModifiedAndAdded(int entriesToCreate)
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Data))]
+        public async Task Update_PerformMinimalWritesWhenEntriesModifiedAndDeleted_Async(int modifyIndex, int deleteIndex)
         {
             byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-            byte[] sampleZipFile = CreateZipFile(50, sampleEntryContents, async: false).Result;
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
+            byte[] expectedUpdatedEntryContents = [22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
+
+            await using (MemoryStream ms = new MemoryStream())
+            {
+                await ms.WriteAsync(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
+                {
+                    // Open the archive in Update mode, then rewrite the data of the {modifyIndex}th entry
+                    // and delete the LastWriteTime of the {lastWriteTimeChangeIndex}th entry.
+                    // Verify the correct number of writes performed as a result, then reopen the same
+                    // archive, get the entries, make sure that the right number of entries have been
+                    // found and that the entries have the correct contents.
+                    int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync));
+                    int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
+                    ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
+                    int totalEntries = target.Entries.Count;
+                    // Everything after the first modification or deletion is to be rewritten.
+                    int expectedEntriesToWrite = (totalEntries - 1) - (modifyIndex == -1 ? deleteIndex : Math.Min(modifyIndex, deleteIndex));
+                    ZipArchiveEntry entryToDelete = target.Entries[deleteIndex];
+                    string deletedPath = entryToDelete.FullName;
+                    string modifiedPath = null;
+
+                    if (modifyIndex != -1)
+                    {
+                        ZipArchiveEntry entryToRewrite = target.Entries[modifyIndex];
+
+                        modifiedPath = entryToRewrite.FullName;
+                        await using (var entryStream = await entryToRewrite.OpenAsync())
+                        {
+                            entryStream.SetLength(0);
+                            await entryStream.WriteAsync(expectedUpdatedEntryContents);
+                        }
+                    }
+
+                    entryToDelete.Delete();
+
+                    await target.DisposeAsync();
+
+                    Assert.True(ms.Length < sampleZipFile.Length);
+
+                    writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync)) - writesCalled;
+                    writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
+
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 2 writes for the file data of the updated entry itself
+                    // 1 write per archive entry for the file data of other entries after this in the file
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
+                    // All of the central directory headers must be rewritten after an entry's data has been modified.
+                    if (modifyIndex == -1)
+                    {
+                        Assert.Equal(1 + ((2 + 1) * expectedEntriesToWrite) + (2 * (totalEntries - 1)), writesCalled + writeBytesCalled);
+                    }
+                    else
+                    {
+                        Assert.Equal(1 + 1 + ((2 + 1) * expectedEntriesToWrite) + (2 * (totalEntries - 1)), writesCalled + writeBytesCalled);
+                    }
+
+                    trackingStream.Seek(0, SeekOrigin.Begin);
+                    target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+
+                    // Check 2: no other data has been corrupted as a result
+                    for (int i = 0; i < target.Entries.Count; i++)
+                    {
+                        ZipArchiveEntry entry = target.Entries[i];
+                        // The expected index will be off by one if it's after the deleted index, so compensate
+                        int expectedIndex = i < deleteIndex ? i : i + 1;
+                        byte[] expectedBuffer = entry.FullName == modifiedPath
+                            ? expectedUpdatedEntryContents
+                            : [.. sampleEntryContents, (byte)(expectedIndex % byte.MaxValue)];
+                        byte[] readBuffer = new byte[expectedBuffer.Length];
+
+                        await using (Stream readStream = await entry.OpenAsync())
+                        {
+                            await readStream.ReadAsync(readBuffer.AsMemory());
+                        }
+
+                        Assert.Equal(expectedBuffer, readBuffer);
+
+                        Assert.NotEqual(deletedPath, entry.FullName);
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> Get_Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Data()
+        {
+            yield return [ 1 ];
+            yield return [ 5 ];
+            yield return [ 10 ];
+            yield return [ 12 ];
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Data))]
+        public async Task Update_PerformMinimalWritesWhenEntriesModifiedAndAdded(int entriesToCreate)
+        {
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
 
             using (MemoryStream ms = new MemoryStream())
             {
@@ -1051,6 +1188,88 @@ namespace System.IO.Compression.Tests
                         using (Stream readStream = entry.Open())
                         {
                             readStream.Read(readBuffer.AsSpan());
+                        }
+
+                        Assert.Equal(expectedBuffer, readBuffer);
+                    }
+                }
+            }
+        }
+
+
+        [Theory]
+        [MemberData(nameof(Get_Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Data))]
+        public async Task Update_PerformMinimalWritesWhenEntriesModifiedAndAdded_Async(int entriesToCreate)
+        {
+            byte[] sampleEntryContents = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+            byte[] sampleZipFile = await CreateZipFile(50, sampleEntryContents, async: false);
+
+            await using (MemoryStream ms = new MemoryStream())
+            {
+                await ms.WriteAsync(sampleZipFile);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                await using (CallTrackingStream trackingStream = new CallTrackingStream(ms))
+                {
+                    // Open the archive in Update mode. Rewrite the data of the first entry and add five entries
+                    // to the end of the archive. Verify the correct number of writes performed as a result, then
+                    // reopen the same archive, get the entries, make sure that the right number of entries have
+                    // been found and that the entries have the correct contents.
+                    int writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync));
+                    int writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte));
+                    ZipArchive target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Update, leaveOpen: true, entryNameEncoding: null);
+                    int totalEntries = target.Entries.Count;
+                    ZipArchiveEntry entryToRewrite = target.Entries[^1];
+                    string modifiedPath = entryToRewrite.FullName;
+
+                    await using (Stream entryStream = await entryToRewrite.OpenAsync())
+                    {
+                        entryStream.Seek(0, SeekOrigin.Begin);
+                        for (int i = 0; i < 100; i++)
+                        {
+                            await entryStream.WriteAsync(sampleEntryContents);
+                        }
+                    }
+
+                    for (int i = 0; i < entriesToCreate; i++)
+                    {
+                        ZipArchiveEntry createdEntry = target.CreateEntry($"added/{i}.bin");
+
+                        using (Stream entryWriteStream = createdEntry.Open())
+                        {
+                            await entryWriteStream.WriteAsync(sampleEntryContents);
+                            entryWriteStream.WriteByte((byte)((i + totalEntries) % byte.MaxValue));
+                        }
+                    }
+
+                    await target.DisposeAsync();
+
+                    writesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteAsync)) - writesCalled;
+                    writeBytesCalled = trackingStream.TimesCalled(nameof(trackingStream.WriteByte)) - writeBytesCalled;
+
+                    // 2 writes per archive entry for the local file header.
+                    // 2 writes per archive entry for the central directory header.
+                    // 2 writes for the file data of the updated entry itself
+                    // 1 write (sometimes 2, if there's a comment) for the end of central directory block.
+                    // All of the central directory headers must be rewritten after an entry's data has been modified.
+
+                    Assert.Equal(1 + ((2 + 2 + 2) * entriesToCreate) + (2 * (totalEntries - 1) + (2 + 2 + 2)), writesCalled + writeBytesCalled);
+
+                    trackingStream.Seek(0, SeekOrigin.Begin);
+                    target = await ZipArchive.CreateAsync(trackingStream, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: null);
+
+                    // Check 2: no other data has been corrupted as a result
+                    for (int i = 0; i < totalEntries + entriesToCreate; i++)
+                    {
+                        ZipArchiveEntry entry = target.Entries[i];
+                        byte[] expectedBuffer = entry.FullName == modifiedPath
+                            ? Enumerable.Repeat(sampleEntryContents, 100).SelectMany(x => x).ToArray()
+                            : [.. sampleEntryContents, (byte)(i % byte.MaxValue)];
+                        byte[] readBuffer = new byte[expectedBuffer.Length];
+
+                        await using (Stream readStream = await entry.OpenAsync())
+                        {
+                            await readStream.ReadAsync(readBuffer.AsMemory());
                         }
 
                         Assert.Equal(expectedBuffer, readBuffer);

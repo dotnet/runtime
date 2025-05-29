@@ -193,11 +193,11 @@ namespace System.Diagnostics.Tests
 
                 if (fieldName == PropagatorTests.CorrelationContext)
                 {
-                    fieldValue = "key1=value1,key2=value2,key3=value3";
+                    fieldValue = "key3=value3,key2=value2,key1=value1";
                     return;
                 }
 
-                Assert.Fail($"Encountered wrong header name '{fieldName}' in W3C baggage propagatoration");
+                Assert.Fail($"Encountered wrong header name '{fieldName}' in W3C baggage propagation");
             });
 
             Assert.Equal(new[] { new KeyValuePair<string, string?>("key1", "value1"), new KeyValuePair<string, string?>("key2", "value2"), new KeyValuePair<string, string?>("key3", "value3") }, extractedBaggage);
@@ -214,9 +214,9 @@ namespace System.Diagnostics.Tests
             // Double equals
             yield return new object[] { "key==value", new[] { new KeyValuePair<string, string?>("key", "=value") },  "key = =value" };
 
-            yield return new object[] { "SomeKey=SomeValue,SomeKey2=SomeValue2", new[] { new KeyValuePair<string, string?>("SomeKey", "SomeValue"), new KeyValuePair<string, string?>("SomeKey2", "SomeValue2") }, "SomeKey2 = SomeValue2, SomeKey = SomeValue" };
+            yield return new object[] { "SomeKey=SomeValue,SomeKey2=SomeValue2", new[] { new KeyValuePair<string, string?>("SomeKey2", "SomeValue2"), new KeyValuePair<string, string?>("SomeKey", "SomeValue") }, "SomeKey = SomeValue, SomeKey2 = SomeValue2" };
 
-            yield return new object[] { "SomeKey \t = \t SomeValue \t , \t SomeKey2 \t = \t SomeValue2 \t", new[] { new KeyValuePair<string, string?>("SomeKey", "SomeValue"), new KeyValuePair<string, string?>("SomeKey2", "SomeValue2") }, "SomeKey2 = SomeValue2, SomeKey = SomeValue" };
+            yield return new object[] { "SomeKey \t = \t SomeValue \t , \t SomeKey2 \t = \t SomeValue2 \t", new[] { new KeyValuePair<string, string?>("SomeKey2", "SomeValue2"), new KeyValuePair<string, string?>("SomeKey", "SomeValue") }, "SomeKey = SomeValue, SomeKey2 = SomeValue2" };
 
             yield return new object[] { "SomeKey=SomeValue=equals", new[] { new KeyValuePair<string, string?>("SomeKey", "SomeValue=equals") }, "SomeKey = SomeValue=equals" };
 

@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this ICacheEntry entry,
             IChangeToken expirationToken)
         {
-            ThrowHelper.ThrowIfNull(expirationToken);
+            ArgumentNullException.ThrowIfNull(expirationToken);
 
             entry.ExpirationTokens.Add(expirationToken);
             return entry;
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Caching.Memory
             PostEvictionDelegate callback,
             object? state)
         {
-            ThrowHelper.ThrowIfNull(callback);
+            ArgumentNullException.ThrowIfNull(callback);
 
             entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;

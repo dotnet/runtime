@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.IO.Compression.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/114769")]
     public class ZipFile_Extract : ZipFileTestBase
     {
         public static IEnumerable<object[]> Get_ExtractToDirectoryNormal_Data()
@@ -33,7 +32,7 @@ namespace System.IO.Compression.Tests
             string folderName = zfolder(folder);
             using TempDirectory tempFolder = new TempDirectory(GetTestFilePath());
             await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path);
-            DirsEqual(tempFolder.Path, folderName);
+            await DirsEqual(tempFolder.Path, folderName);
         }
 
         [Theory]
@@ -157,7 +156,7 @@ namespace System.IO.Compression.Tests
             await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: false));
             await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, overwriteFiles: true);
 
-            DirsEqual(tempFolder.Path, folderName);
+            await DirsEqual(tempFolder.Path, folderName);
         }
 
         [Theory]
@@ -174,7 +173,7 @@ namespace System.IO.Compression.Tests
             await Assert.ThrowsAsync<IOException>(() => CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: false));
             await CallZipFileExtractToDirectory(async, zipFileName, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
 
-            DirsEqual(tempFolder.Path, folderName);
+            await DirsEqual(tempFolder.Path, folderName);
         }
 
         [Theory]

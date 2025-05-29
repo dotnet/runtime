@@ -1891,12 +1891,12 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
 
                         // Find the MethodDesc's for the CanRead property.
                         MethodDesc *pCanReadMD = MemberLoader::FindPropertyMethod(MemberInfoObj->GetMethodTable(), PROPERTY_INFO_CAN_READ_PROP, PropertyGet);
-                        PREFIX_ASSUME_MSG((pCanReadMD != NULL), "Unable to find getter method for property PropertyInfo::CanRead");
+                        _ASSERTE_MSG((pCanReadMD != NULL), "Unable to find getter method for property PropertyInfo::CanRead");
                         MethodDescCallSite canRead(pCanReadMD, &MemberInfoObj);
 
                         // Find the MethodDesc's for the CanWrite property.
                         MethodDesc *pCanWriteMD = MemberLoader::FindPropertyMethod(MemberInfoObj->GetMethodTable(), PROPERTY_INFO_CAN_WRITE_PROP, PropertyGet);
-                        PREFIX_ASSUME_MSG((pCanWriteMD != NULL), "Unable to find setter method for property PropertyInfo::CanWrite");
+                        _ASSERTE_MSG((pCanWriteMD != NULL), "Unable to find setter method for property PropertyInfo::CanWrite");
                         MethodDescCallSite canWrite(pCanWriteMD, &MemberInfoObj);
 
                         // Check to see if the property can be read.

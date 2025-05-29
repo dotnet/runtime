@@ -608,13 +608,6 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetTypeForBox(cls);
 }
 
-// Class handle for a boxed value type, on the stack.
-CORINFO_CLASS_HANDLE MyICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getTypeForBoxOnStack");
-    return jitInstance->mc->repGetTypeForBoxOnStack(cls);
-}
-
 // returns the correct box helper for a particular class.  Note
 // that if this returns CORINFO_HELP_BOX, the JIT can assume
 // 'standard' boxing (allocate object and copy), and optimize
@@ -1195,6 +1188,12 @@ void MyICJI::getEEInfo(CORINFO_EE_INFO* pEEInfoOut)
     jitInstance->mc->repGetEEInfo(pEEInfoOut);
 }
 
+void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
+{
+    jitInstance->mc->cr->AddCall("getAsyncInfo");
+    jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1319,12 +1318,6 @@ CorInfoHelpFunc MyICJI::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
     return jitInstance->mc->repGetLazyStringLiteralHelper(handle);
 }
 
-CORINFO_MODULE_HANDLE MyICJI::embedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("embedModuleHandle");
-    return jitInstance->mc->repEmbedModuleHandle(handle, ppIndirection);
-}
-
 CORINFO_CLASS_HANDLE MyICJI::embedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection)
 {
     jitInstance->mc->cr->AddCall("embedClassHandle");
@@ -1335,12 +1328,6 @@ CORINFO_METHOD_HANDLE MyICJI::embedMethodHandle(CORINFO_METHOD_HANDLE handle, vo
 {
     jitInstance->mc->cr->AddCall("embedMethodHandle");
     return jitInstance->mc->repEmbedMethodHandle(handle, ppIndirection);
-}
-
-CORINFO_FIELD_HANDLE MyICJI::embedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("embedFieldHandle");
-    return jitInstance->mc->repEmbedFieldHandle(handle, ppIndirection);
 }
 
 // Given a module scope (module), a method handle (context) and
@@ -1518,6 +1505,12 @@ bool MyICJI::getTailCallHelpers(
 {
     jitInstance->mc->cr->AddCall("getTailCallHelpers");
     return jitInstance->mc->repGetTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE MyICJI::getAsyncResumptionStub()
+{
+    jitInstance->mc->cr->AddCall("getAsyncResumptionStub");
+    return jitInstance->mc->repGetAsyncResumptionStub();;
 }
 
 bool MyICJI::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fMustConvert)

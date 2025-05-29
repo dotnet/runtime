@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.IO.Compression.Tests;
 
-[SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/114769")]
 public class ZipFile_Extract_Stream : ZipFileTestBase
 {
     [Fact]
@@ -47,7 +46,7 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         string folderName = zfolder(folder);
         using TempDirectory tempFolder = new(GetTestFilePath());
         await CallZipFileExtractToDirectory(async, source, tempFolder.Path);
-        DirsEqual(tempFolder.Path, folderName);
+        await DirsEqual(tempFolder.Path, folderName);
         await DisposeStream(async, source);
     }
 
@@ -74,7 +73,7 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         string folderName = zfolder(folder);
         using TempDirectory tempFolder = new(GetTestFilePath());
         await CallZipFileExtractToDirectory(async, source, tempFolder.Path);
-        DirsEqual(tempFolder.Path, folderName);
+        await DirsEqual(tempFolder.Path, folderName);
         await DisposeStream(async, fs);
     }
 
@@ -200,7 +199,7 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         source.Position = 0;
         await CallZipFileExtractToDirectory(async, source, tempFolder.Path, overwriteFiles: true);
 
-        DirsEqual(tempFolder.Path, folderName);
+        await DirsEqual(tempFolder.Path, folderName);
 
         await DisposeStream(async, source);
     }
@@ -222,7 +221,7 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
         source.Position = 0;
         await CallZipFileExtractToDirectory(async, source, tempFolder.Path, Encoding.UTF8, overwriteFiles: true);
 
-        DirsEqual(tempFolder.Path, folderName);
+        await DirsEqual(tempFolder.Path, folderName);
     }
 
     [Theory]

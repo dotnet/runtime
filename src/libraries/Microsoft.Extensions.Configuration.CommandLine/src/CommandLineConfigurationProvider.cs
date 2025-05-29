@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// <param name="switchMappings">The switch mappings.</param>
         public CommandLineConfigurationProvider(IEnumerable<string> args, IDictionary<string, string>? switchMappings = null)
         {
-            ThrowHelper.ThrowIfNull(args);
+            ArgumentNullException.ThrowIfNull(args);
 
             Args = args;
 

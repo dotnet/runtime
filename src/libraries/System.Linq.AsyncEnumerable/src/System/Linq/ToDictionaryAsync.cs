@@ -26,7 +26,7 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return Impl(source.WithCancellation(cancellationToken), comparer);
 
@@ -79,8 +79,8 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return Impl(source.WithCancellation(cancellationToken), keySelector, comparer);
 
@@ -118,8 +118,8 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return Impl(source, keySelector, comparer, cancellationToken);
 
@@ -162,9 +162,9 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
 
             return Impl(source.WithCancellation(cancellationToken), keySelector, elementSelector, comparer);
 
@@ -208,9 +208,9 @@ namespace System.Linq
             IEqualityComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default) where TKey : notnull
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
-            ThrowHelper.ThrowIfNull(elementSelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(elementSelector);
 
             return Impl(source, keySelector, elementSelector, comparer, cancellationToken);
 

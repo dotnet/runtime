@@ -2653,30 +2653,6 @@ namespace Internal.JitInterface
             return ObjectToHandle(typeForBox);
         }
 
-        private CORINFO_CLASS_STRUCT_* getTypeForBoxOnStack(CORINFO_CLASS_STRUCT_* cls)
-        {
-            TypeDesc clsTypeDesc = HandleToObject(cls);
-            if (clsTypeDesc.IsNullable)
-            {
-                clsTypeDesc = clsTypeDesc.Instantiation[0];
-            }
-
-            if (clsTypeDesc.RequiresAlign8())
-            {
-                // Conservatively give up on such types (32bit)
-                return null;
-            }
-
-            // Instantiate StackAllocatedBox<T> helper type with the type we're boxing
-            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System.Runtime.CompilerServices", "StackAllocatedBox`1", throwIfNotFound: false);
-            if (placeholderType == null)
-            {
-                // Give up if corelib does not have support for stackallocation
-                return null;
-            }
-            return ObjectToHandle(placeholderType.MakeInstantiatedType(clsTypeDesc));
-        }
-
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
@@ -3380,6 +3356,11 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
+        private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
+        {
+            throw new NotImplementedException();
+        }
+
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
@@ -3611,12 +3592,6 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
         }
 
-        private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedModuleHandle"); }
-
-        private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedFieldHandle"); }
-
         private static CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
         {
             if (method.RequiresInstMethodDescArg())
@@ -3705,6 +3680,13 @@ namespace Internal.JitInterface
 #else
             return false;
 #endif
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return null;
         }
 
         private byte[] _code;

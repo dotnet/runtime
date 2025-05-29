@@ -544,10 +544,6 @@ public:
     void dmpGetCastingHelper(const Agnostic_GetCastingHelper& key, DWORD value);
     CorInfoHelpFunc repGetCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing);
 
-    void recEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection, CORINFO_MODULE_HANDLE result);
-    void dmpEmbedModuleHandle(DWORDLONG key, DLDL value);
-    CORINFO_MODULE_HANDLE repEmbedModuleHandle(CORINFO_MODULE_HANDLE handle, void** ppIndirection);
-
     void recEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection, CORINFO_CLASS_HANDLE result);
     void dmpEmbedClassHandle(DWORDLONG key, DLDL value);
     CORINFO_CLASS_HANDLE repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection);
@@ -573,6 +569,10 @@ public:
     void recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut);
     void dmpGetEEInfo(DWORD key, const Agnostic_CORINFO_EE_INFO& value);
     void repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut);
+
+    void recGetAsyncInfo(const CORINFO_ASYNC_INFO* pAsyncInfo);
+    void dmpGetAsyncInfo(DWORD key, const Agnostic_CORINFO_ASYNC_INFO& value);
+    void repGetAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut);
 
     void recGetGSCookie(GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void dmpGetGSCookie(DWORD key, DLDL value);
@@ -769,10 +769,6 @@ public:
     void dmpGetProfilingHandle(DWORD key, const Agnostic_GetProfilingHandle& value);
     void repGetProfilingHandle(bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
 
-    void recEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection, CORINFO_FIELD_HANDLE result);
-    void dmpEmbedFieldHandle(DWORDLONG key, DLDL value);
-    CORINFO_FIELD_HANDLE repEmbedFieldHandle(CORINFO_FIELD_HANDLE handle, void** ppIndirection);
-
     void recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass, TypeCompareState result);
     void dmpCompareTypesForCast(DLDL key, DWORD value);
     TypeCompareState repCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass);
@@ -870,6 +866,10 @@ public:
         CORINFO_SIG_INFO* sig,
         CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
         CORINFO_TAILCALL_HELPERS* pResult);
+
+    void recGetAsyncResumptionStub(CORINFO_METHOD_HANDLE hnd);
+    void dmpGetAsyncResumptionStub(DWORD key, DWORDLONG handle);
+    CORINFO_METHOD_HANDLE repGetAsyncResumptionStub();
 
     void recUpdateEntryPointForTailCall(const CORINFO_CONST_LOOKUP& origEntryPoint, const CORINFO_CONST_LOOKUP& newEntryPoint);
     void dmpUpdateEntryPointForTailCall(const Agnostic_CORINFO_CONST_LOOKUP& origEntryPoint, const Agnostic_CORINFO_CONST_LOOKUP& newEntryPoint);
@@ -999,10 +999,10 @@ enum mcPackets
     //Retired3 = 14,
     Packet_ConstructStringLiteral = 15,
     Packet_EmbedClassHandle = 16,
-    Packet_EmbedFieldHandle = 17,
+    //Packet_EmbedFieldHandle = 17,
     Packet_EmbedGenericHandle = 18,
     Packet_EmbedMethodHandle = 19,
-    Packet_EmbedModuleHandle = 20,
+    //Packet_EmbedModuleHandle = 20,
     Packet_EmptyStringLiteral = 21,
     Packet_ErrorList = 22,
     Packet_FindCallSiteSig = 23,
@@ -1208,6 +1208,8 @@ enum mcPackets
     Packet_GetMethodInstantiationArgument = 227,
     Packet_GetInstantiatedEntry = 228,
     Packet_NotifyInstructionSetUsage = 229,
+    Packet_GetAsyncInfo = 230,
+    Packet_GetAsyncResumptionStub = 231,
 };
 
 void SetDebugDumpVariables();

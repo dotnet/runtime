@@ -64,14 +64,31 @@ enum class InlinedCallFrameMarker
     Mask = ExceptionHandlingHelper | SecondPassFuncletCaller
 };
 
+#ifdef FEATURE_INTERPRETER
+class ResumeAfterCatchException
+{
+    TADDR m_resumeSP;
+    TADDR m_resumeIP;
+public:
+    ResumeAfterCatchException(TADDR resumeSP, TADDR resumeIP)
+        : m_resumeSP(resumeSP),
+          m_resumeIP(resumeIP)
+    {}
+
+    void GetResumeContext(TADDR * pResumeSP, TADDR * pResumeIP) const
+    {
+        *pResumeSP = m_resumeSP;
+        *pResumeIP = m_resumeIP;
+    }
+};
+#endif // FEATURE_INTERPRETER
+
+void DECLSPEC_NORETURN ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t targetSSP, size_t arg1 = 0, size_t arg2 = 0);
+
 #endif // FEATURE_EH_FUNCLETS
 
 #if defined(TARGET_X86)
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
-
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-#define USE_FUNCLET_CALL_HELPER
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #endif  // __EXCEPTION_HANDLING_h__

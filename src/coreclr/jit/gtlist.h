@@ -33,6 +33,7 @@ GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,0,GTK_LEAF)             // local
 //-----------------------------------------------------------------------------
 
 GTNODE(CATCH_ARG        , GenTree            ,0,0,GTK_LEAF)             // Exception object in a catch block
+GTNODE(ASYNC_CONTINUATION, GenTree           ,0,0,GTK_LEAF)            // Access returned continuation by an async call
 GTNODE(LABEL            , GenTree            ,0,0,GTK_LEAF)             // Jump-target
 GTNODE(JMP              , GenTreeVal         ,0,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,0,GTK_LEAF)             // Address of a function
@@ -273,6 +274,29 @@ GTNODE(SELECT_NEGCC     , GenTreeOpCC        ,0,0,GTK_BINOP|DBK_NOTHIR)
 #endif
 
 //-----------------------------------------------------------------------------
+//  LIR specific arithmetic nodes:
+//-----------------------------------------------------------------------------
+
+#ifdef TARGET_RISCV64
+// Maps to riscv64 sh1add instruction. Computes result = op2 + (op1 << 1).
+GTNODE(SH1ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh1add.uw instruction. Computes result = op2 + zext(op1[31..0] << 1).
+GTNODE(SH1ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add instruction. Computes result = op2 + (op1 << 2).
+GTNODE(SH2ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh2add.uw instruction. Computes result = op2 + zext(op1[31..0] << 2).
+GTNODE(SH2ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add instruction. Computes result = op2 + (op1 << 3).
+GTNODE(SH3ADD           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 sh3add.uw instruction. Computes result = op2 + zext(op1[31..0] << 3).
+GTNODE(SH3ADD_UW        , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 add.uw instruction. Computes result = op2 + zext(op1[31..0]).
+GTNODE(ADD_UW           , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+// Maps to riscv64 slli.uw instruction. Computes result = zext(op1[31..0] << imm).
+GTNODE(SLLI_UW          , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
+//-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:
 //-----------------------------------------------------------------------------
 
@@ -289,6 +313,11 @@ GTNODE(FIELD_LIST       , GenTreeFieldList   ,0,0,GTK_SPECIAL)            // Lis
 GTNODE(RETURN           , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 GTNODE(SWITCH           , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE)
 GTNODE(NO_OP            , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE) // A NOP that cannot be deleted.
+
+// Suspend an async method, returning a continuation.
+// Before lowering this is a seemingly normal TYP_VOID node with a lot of side effects (GTF_CALL | GTF_GLOB_REF | GTF_ORDER_SIDEEFF).
+// Lowering then removes all successor nodes and leaves it as the terminator node.
+GTNODE(RETURN_SUSPEND   , GenTreeOp          ,0,1,GTK_UNOP|GTK_NOVALUE) // Return a continuation in an async method
 
 GTNODE(START_NONGC      , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group that will be non-gc interruptible.
 GTNODE(START_PREEMPTGC  , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR) // Starts a new instruction group where preemptive GC is enabled.
