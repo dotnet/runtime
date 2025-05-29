@@ -162,9 +162,7 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
         ; Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rcx + OFFSETOF__MethodTable__m_usComponentSize]
         imul        rax, rdx
-        mov         r8d, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         rax, r8
-        add         rax, 7
+        lea         rax, [rax + SZARRAY_BASE_SIZE + 7]
         and         rax, -8
 
         NEW_ARRAY_FAST
@@ -198,8 +196,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         ; This helps us in two ways - we can shift instead of multiplying, and
         ; there's no need to align the size either
 
-        mov         eax, dword ptr [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-        lea         eax, [eax + edx * 8]
+        lea         eax, [edx * 8 + SZARRAY_BASE_SIZE]
 
         ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         ; to be a multiple of 8.

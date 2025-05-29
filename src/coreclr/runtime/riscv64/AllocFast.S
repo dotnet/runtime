@@ -199,11 +199,9 @@ LOCAL_LABEL(StringSizeOverflow):
         bltu  a2, a1, LOCAL_LABEL(ArraySizeOverflow)  // Branch if a2 < a1 (check for overflow)
 
         lhu   t0, OFFSETOF__MethodTable__m_usComponentSize(a0) // Load component size
-        mul   t0, a1, t0                // t0 = a1 * component size
-        lw    t1, OFFSETOF__MethodTable__m_uBaseSize(a0)       // Load base size
-        add   t0, t0, t1                // t0 = t0 + base size
-        addi  t0, t0, 7                 // t0 = t0 + 7
-        andi  t0, t0, ~0x7              // Clear the bits[2:0] of t0 (align to 8 bytes)
+        mul   t0, a1, t0                                       // t0 = a1 * component size
+        addi  t0, t0, SZARRAY_BASE_SIZE + 7                    // t0 = t0 + 7
+        andi  t0, t0, ~0x7                                     // Clear the bits[2:0] of t0 (align to 8 bytes)
 
         NEW_ARRAY_FAST
 
@@ -230,9 +228,8 @@ LOCAL_LABEL(ArraySizeOverflow):
         // This helps us in two ways - we can shift instead of multiplying, and
         // there's no need to align the size either
 
-        lw          t0, OFFSETOF__MethodTable__m_uBaseSize(a0)
-        sll         t1, a1, 3
-        add         t0, t0, t1
+        sll         t0, a1, 3
+        addi        t0, t0, SZARRAY_BASE_SIZE
 
         // No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         // to be a multiple of 8.

@@ -165,8 +165,7 @@ FASTCALL_FUNC   RhpNewArrayFast, 8
         cmp         edx, 010000h
         ja          ArraySizeBig
         mul         edx
-        add         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, 3
+        lea         eax, [eax + SZARRAY_BASE_SIZE + 3]
 ArrayAlignSize:
         and         eax, -4
 
@@ -216,8 +215,7 @@ FASTCALL_FUNC   RhpNewObjectArrayFast, 8
         ; This helps us in two ways - we can shift instead of multiplying, and
         ; there's no need to align the size either
 
-        mov         eax, dword ptr [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        lea         eax, [eax + edx * 4]
+        lea         eax, [edx * 4 + SZARRAY_BASE_SIZE]
 
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST

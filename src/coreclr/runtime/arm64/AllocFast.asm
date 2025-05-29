@@ -169,9 +169,7 @@ StringSizeOverflow
 
         ldrh        w2, [x0, #OFFSETOF__MethodTable__m_usComponentSize]
         umull       x2, w1, w2
-        ldr         w3, [x0, #OFFSETOF__MethodTable__m_uBaseSize]
-        add         x2, x2, x3
-        add         x2, x2, #7
+        add         x2, x2, #(SZARRAY_BASE_SIZE + 7)
         and         x2, x2, #-8
 
         NEW_ARRAY_FAST
@@ -200,8 +198,8 @@ ArraySizeOverflow
         ; This helps us in two ways - we can shift instead of multiplying, and
         ; there's no need to align the size either
 
-        ldr         w2, [x0, #OFFSETOF__MethodTable__m_uBaseSize]
-        add         x2, x2, x1, lsl #3
+        lsl         x2, x1, #3
+        add         x2, x2, #SZARRAY_BASE_SIZE
 
         ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         ; to be a multiple of 8.
