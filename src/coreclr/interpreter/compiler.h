@@ -215,7 +215,6 @@ struct InterpVar
 {
     CORINFO_CLASS_HANDLE clsHnd;
     InterpType interpType;
-    int indirects;
     int offset;
     int size;
     // live_start and live_end are used by the offset allocator
@@ -241,7 +240,6 @@ struct InterpVar
         offset = -1;
         liveStart = NULL;
         bbIndex = -1;
-        indirects = 0;
 
         callArgs = false;
         noCallArgs = false;

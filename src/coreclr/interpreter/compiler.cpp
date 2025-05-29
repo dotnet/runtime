@@ -1452,11 +1452,13 @@ void InterpCompiler::CreateILVars()
     m_totalVarsStackSize = offset;
 }
 
+// Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
+// That means when the leaveOffset is inside the try region and the target is outside of it.
+// These finally call island blocks are used for non-exceptional finally execution.
+// The linked list of finally call island blocks is stored in the pFinallyCallIslandBB field of the finally basic block.
+// The pFinallyCallIslandBB in the actual finally call island block points to the outer try region's finally call island block.
 void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
 {
-    // Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
-    // That means when the leaveOffset is inside the try region and the target is outside of it.
-    // These finally call island blocks are used for non-exceptional finally execution.
     bool firstFinallyCallIsland = true;
     InterpBasicBlock* pInnerFinallyCallIslandBB = NULL;
     for (unsigned int i = 0; i < methodInfo->EHcount; i++)
@@ -1468,34 +1470,39 @@ void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* met
             continue;
         }
 
+        // Only try regions in which the leave instruction is located are considered.
         if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset > (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
 
+        // If the leave target is inside the try region, we don't need to create a finally call island block.
         if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset <= (clause.TryOffset + clause.TryLength))
         {
             continue;
         }
 
         InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
-        InterpBasicBlock* pFinallyCallIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+        InterpBasicBlock* pFinallyCallIslandBB = NULL;
 
         InterpBasicBlock** ppLastBBNext = &pHandlerBB->pFinallyCallIslandBB;
         while (*ppLastBBNext != NULL)
         {
-            if (*ppLastBBNext == pFinallyCallIslandBB)
+            if ((*ppLastBBNext)->pLeaveTargetBB == pLeaveTargetBB)
             {
-                // We already have this finally call island block
-                assert(pFinallyCallIslandBB->pLeaveTargetBB == pLeaveTargetBB);
+                // We already have finally call island block for the leave target
+                pFinallyCallIslandBB = (*ppLastBBNext);
                 break;
             }
             ppLastBBNext = &((*ppLastBBNext)->pFinallyCallIslandBB);
         }
 
-        pFinallyCallIslandBB->pLeaveTargetBB = pLeaveTargetBB;
-
-        *ppLastBBNext = pFinallyCallIslandBB;
+        if (pFinallyCallIslandBB == NULL)
+        {
+            pFinallyCallIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pFinallyCallIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            *ppLastBBNext = pFinallyCallIslandBB;
+        }
 
         if (pInnerFinallyCallIslandBB != NULL)
         {
@@ -1721,6 +1728,30 @@ bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodI
         }
     }
 
+    // Now that we have classified all the basic blocks, we can set the clause type for the finally call island blocks.
+    // We set it to the same type as the basic block after the finally handler.
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+
+        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+        {
+            continue;
+        }
+
+        InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
+
+        InterpBasicBlock* pFinallyCallIslandBB = pFinallyBB->pFinallyCallIslandBB;
+        while (pFinallyCallIslandBB != NULL)
+        {
+            InterpBasicBlock* pAfterFinallyBB = m_ppOffsetToBB[clause.HandlerOffset + clause.HandlerLength];
+            assert(pAfterFinallyBB != NULL);
+            pFinallyCallIslandBB->clauseType = pAfterFinallyBB->clauseType;
+            pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+        }
+    }
+
     return true;
 }
 
@@ -1826,7 +1857,6 @@ void InterpCompiler::EmitLoadVar(int32_t var)
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        m_pVars[var].indirects++;
         EmitLdind(interpType, clsHnd, m_pVars[var].offset);
         return;
     }
@@ -2455,7 +2485,6 @@ void InterpCompiler::EmitLdLocA(int32_t var)
         AddIns(INTOP_LOAD_FRAMEVAR);
         PushInterpType(InterpTypeI, NULL);
         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-        m_pVars[var].indirects++;
         AddIns(INTOP_ADD_P_IMM);
         m_pLastNewIns->data[0] = var;
         m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
@@ -2467,7 +2496,6 @@ void InterpCompiler::EmitLdLocA(int32_t var)
 
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
-    m_pVars[var].indirects++;
     PushInterpType(InterpTypeByRef, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
@@ -2630,13 +2658,14 @@ retry_emit:
 
             while (pFinallyCallIslandBB != NULL)
             {
-                INTERP_DUMP("Injecting BB%d\n", pFinallyCallIslandBB->index);
+                INTERP_DUMP("Injecting finally call island BB%d\n", pFinallyCallIslandBB->index);
                 if (pFinallyCallIslandBB->emitState != BBStateEmitted)
                 {
                     // Set the finally call island BB as current so that the instructions are emitted into it
                     m_pCBB = pFinallyCallIslandBB;
                     InitBBStackState(m_pCBB);
                     EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
+                    m_pLastNewIns->ilOffset = -1;
                     // Try to get the next finally call island block (for an outer try's finally)
                     if (pFinallyCallIslandBB->pFinallyCallIslandBB)
                     {
@@ -2648,6 +2677,7 @@ retry_emit:
                         // This is the last finally call island, so we need to emit a branch to the leave target
                         EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pLeaveTargetBB);
                     }
+                    m_pLastNewIns->ilOffset = -1;
                     m_pCBB->emitState = BBStateEmitted;
                     INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pFinallyCallIslandBB->index);
                 }
