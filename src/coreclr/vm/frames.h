@@ -181,7 +181,6 @@ Prestub:
 #include "method.hpp"
 #include "stackwalk.h"
 #include "stubmgr.h"
-#include "gms.h"
 #include "threads.h"
 #include "callingconvention.h"
 

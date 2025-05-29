@@ -244,17 +244,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
-
-// MachState offsets (AMD64\gmscpu.h)
-
-#define               OFFSETOF__MachState__m_Rip            0x00
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rip
-                    == offsetof(MachState, m_Rip));
-
-#define               OFFSETOF__MachState__m_Rsp            0x08
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rsp
-                    == offsetof(MachState, m_Rsp));
-
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));

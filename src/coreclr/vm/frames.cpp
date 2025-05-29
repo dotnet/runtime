@@ -16,7 +16,6 @@
 #include "dllimportcallback.h"
 #include "stackwalk.h"
 #include "dbginterface.h"
-#include "gms.h"
 #include "eeconfig.h"
 #include "ecall.h"
 #include "clsload.hpp"

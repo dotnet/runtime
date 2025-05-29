@@ -1,17 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// FCALL.CPP
-//
-
-//
-
 
 #include "common.h"
 #include "vars.hpp"
 #include "fcall.h"
 #include "excep.h"
 #include "frames.h"
-#include "gms.h"
 #include "ecall.h"
 #include "eeconfig.h"
 

@@ -1,7 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// FCall.H
-//
 
 //
 // FCall is a high-performance alternative to ECall. Unlike ECall, FCall
@@ -88,7 +86,6 @@
 #ifndef __FCall_h__
 #define __FCall_h__
 
-#include "gms.h"
 #include "runtimeexceptionkind.h"
 #include "debugreturn.h"
 

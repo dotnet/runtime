@@ -806,7 +806,6 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
         ${ARCH_SOURCES_DIR}/asmconstants.h
         ${ARCH_SOURCES_DIR}/cgencpu.h
         ${ARCH_SOURCES_DIR}/excepcpu.h
-        ${ARCH_SOURCES_DIR}/gmscpu.h
         ${ARCH_SOURCES_DIR}/stublinkeramd64.h
     )
 
@@ -831,7 +830,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
     set(VM_HEADERS_DAC_AND_WKS_ARCH
         ${ARCH_SOURCES_DIR}/cgencpu.h
         ${ARCH_SOURCES_DIR}/excepcpu.h
-        ${ARCH_SOURCES_DIR}/gmscpu.h
         ${ARCH_SOURCES_DIR}/stublinkerx86.h
     )
 

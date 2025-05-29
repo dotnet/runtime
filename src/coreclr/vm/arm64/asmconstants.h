@@ -88,18 +88,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pRetBuffArg          == offsetof(CallDescrData, pRetBuffArg))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
-
-// Offset of the array containing the address of captured registers in MachState
-#define MachState__captureX19_X29 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureX19_X29 == offsetof(MachState, captureX19_X29))
-
-// Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrX19_X29 0x58
-ASMCONSTANTS_C_ASSERT(MachState__ptrX19_X29 == offsetof(MachState, ptrX19_X29))
-
-#define MachState__isValid 0xc0
-ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
-
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
 

@@ -13,27 +13,6 @@
 #endif
 
 #ifndef USE_EXTERNAL_UNWINDER
-/***************************************************************/
-/* setMachState figures out what the state of the CPU will be
-   when the function that calls 'setMachState' returns.  It stores
-   this information in 'frame'
-
-   setMachState works by simulating the execution of the
-   instructions starting at the instruction following the
-   call to 'setMachState' and continuing until a return instruction
-   is simulated.  To avoid having to process arbitrary code, the
-   call to 'setMachState' should be called as follows
-
-      if (machState.setMachState != 0) return;
-
-   setMachState is guaranteed to return 0 (so the return
-   statement will never be executed), but the expression above
-   ensures that there is a 'quick' path to epilog
-   of the function.  This ensures that setMachState will only
-   have to parse a limited number of X86 instructions.   */
-
-
-/***************************************************************/
 #ifndef POISONC
 #define POISONC ((sizeof(int *) == 4)?0xCCCCCCCCU:UI64(0xCCCCCCCCCCCCCCCC))
 #endif
