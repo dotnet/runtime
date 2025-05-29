@@ -138,14 +138,16 @@ public class Delegates
     // With PGO the delegate is also inlined.
     //
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int Test2(int a) => InvokeFunc(x => x + a);
+    static int RunTest2Inner(int a) => InvokeFunc(x => x + a);
 
     static int InvokeFunc(Func<int, int> func) => func(101);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int RunTest2() => RunTest2Inner(-1);
 
     [Fact]
     public static int Test2()
     {
-        RunTest2();
         return CallTestAndVerifyAllocation(RunTest2, 100, HeapAllocation());
     }
 }
