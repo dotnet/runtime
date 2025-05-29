@@ -28,6 +28,12 @@ dn_simdhash_ght_insert_replace (
 	int32_t overwrite_key
 );
 
+// faster and simpler to use than dn_simdhash_ght_try_get_value, use it wisely
+void *
+dn_simdhash_ght_get_value_or_default (
+	dn_simdhash_ght_t *hash, void * key
+);
+
 // compatibility shims for the g_hash_table_ versions in glib.h
 #define dn_simdhash_ght_insert(h,k,v)  dn_simdhash_ght_insert_replace ((h),(k),(v),FALSE)
 #define dn_simdhash_ght_replace(h,k,v) dn_simdhash_ght_insert_replace ((h),(k),(v),TRUE)

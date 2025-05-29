@@ -283,7 +283,6 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
@@ -295,6 +294,7 @@ typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name);
 #ifdef TARGET_WINDOWS
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInitComAndFlsSlot();
 #endif
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
@@ -321,12 +321,8 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 REDHAWK_PALIMPORT HANDLE PalCreateLowMemoryResourceNotification();
 
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
 REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
-
-REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
-REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
 
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 

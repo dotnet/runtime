@@ -1,9 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
-    <NoWarn>$(NoWarn);CS1998</NoWarn> <!-- Various IAsyncEnumerable implementations that don't need to use await -->
+
+    <!-- Various IAsyncEnumerable implementations that don't need to use await -->
+    <NoWarn>$(NoWarn);CS1998</NoWarn>
+
+    <!-- Due to heavy use of callbacks, ConfigureAwait(false) should not be used.
+         The callbacks should be allowed to run in the original context. -->
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
 
     <!-- Disabling baseline validation since this is a brand new package.
          Once this package has shipped a stable version, the following line
@@ -90,8 +96,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
-    
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Memory\src\Microsoft.Bcl.Memory.csproj" />

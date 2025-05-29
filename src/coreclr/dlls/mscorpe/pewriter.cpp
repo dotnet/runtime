@@ -290,7 +290,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
         IfFailRet(AddOvf_RVA(curRVA, curOffset));
         DWORD UNALIGNED * pos = (DWORD *) m_blobFetcher.ComputePointer(curOffset);
 
-        PREFIX_ASSUME(pos != NULL);
+        _ASSERTE(pos != NULL);
 
 #ifdef LOGGING
         LOG((LF_ZAP, LL_INFO1000000,

@@ -31,6 +31,13 @@ if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
   endif()
 endif()
 
+if (MSVC)
+  #zlib-ng sets /utf-8 which clashes with /source-charset:utf-8 that we set centrally
+  get_directory_property(dirCompileOptions COMPILE_OPTIONS)
+  string(REPLACE "/source-charset:utf-8" "" dirCompileOptions "${dirCompileOptions}")
+  set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
+endif()
+
 set(BUILD_SHARED_LIBS OFF) # Shared libraries aren't supported in wasm
 set(SKIP_INSTALL_ALL ON)
 FetchContent_MakeAvailable(fetchzlibng)

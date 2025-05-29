@@ -44,14 +44,14 @@ namespace System.Net.Mime
             return false;
         }
 
-        protected override bool LineBreakNeeded(byte[] bytes, int count)
+        protected override bool LineBreakNeeded(ReadOnlySpan<byte> bytes)
         {
-            if (count == 1 || IsCRLF(bytes, count)) // preserve same behavior as in EncodeBytes
+            if (bytes.Length == 1 || IsCRLF(bytes)) // preserve same behavior as in EncodeBytes
             {
                 return LineBreakNeeded(bytes[0]);
             }
 
-            int numberOfCharsToAppend = count * SizeOfQEncodedChar;
+            int numberOfCharsToAppend = bytes.Length * SizeOfQEncodedChar;
             return WriteState.CurrentLineLength + numberOfCharsToAppend + _writeState.FooterLength > WriteState.MaxLineLength;
         }
 
@@ -74,7 +74,7 @@ namespace System.Net.Mime
         // no padding in q-encoding
         public override void AppendPadding() { }
 
-        protected override void ApppendEncodedByte(byte b)
+        protected override void AppendEncodedByte(byte b)
         {
             if (b == ' ')
             {

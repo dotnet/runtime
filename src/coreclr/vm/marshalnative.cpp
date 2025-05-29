@@ -800,7 +800,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnS
     GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
 
@@ -830,7 +830,7 @@ extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandl
     GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
 
@@ -1044,7 +1044,7 @@ static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
         if (DefItfType == DefaultInterfaceType_AutoDual || DefItfType == DefaultInterfaceType_Explicit)
         {
             pMT = hndDefItfClass.GetMethodTable();
-            PREFIX_ASSUME(pMT != NULL);
+            _ASSERTE(pMT != NULL);
         }
         else
         {

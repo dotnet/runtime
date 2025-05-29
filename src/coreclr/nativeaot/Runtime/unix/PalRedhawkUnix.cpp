@@ -517,17 +517,6 @@ extern "C" void PalAttachThread(void* thread)
     UnmaskActivationSignal();
 }
 
-// Detach thread from OS notifications.
-// Parameters:
-//  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
-extern "C" bool PalDetachThread(void* thread)
-{
-    UNREFERENCED_PARAMETER(thread);
-    return true;
-}
-
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
 REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
@@ -537,7 +526,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDL
     vm_prot_t prot, max_prot;
     kern_return_t ret;
 
-    // Allocate two contiguous ranges of memory: the first range will contain the trampolines
+    // Allocate two contiguous ranges of memory: the first range will contain the stubs
     // and the second range will contain their data.
     do
     {
@@ -739,15 +728,6 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
-}
-
-// Returns a 64-bit tick count with a millisecond resolution. It tries its best
-// to return monotonically increasing counts and avoid being affected by changes
-// to the system clock (either due to drift or due to explicit changes to system
-// time).
-REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
-{
-    return GCToOSInterface::GetLowPrecisionTimeStamp();
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -1216,16 +1196,6 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
 
     lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
-}
-
-extern "C" uint64_t PalQueryPerformanceCounter()
-{
-    return GCToOSInterface::QueryPerformanceCounter();
-}
-
-extern "C" uint64_t PalQueryPerformanceFrequency()
-{
-    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentOSThreadId()

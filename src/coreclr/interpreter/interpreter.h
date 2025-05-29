@@ -15,13 +15,13 @@
 #ifdef HOST_WINDOWS
 #include <malloc.h>
 #endif
-#include <algorithm>
 
 #include "corhdr.h"
 #include "corjit.h"
 
 #include "interpretershared.h"
 #include "compiler.h"
+#include "interpconfig.h"
 
 #define ALIGN_UP_TO(val,align) ((((size_t)val) + (size_t)((align) - 1)) & (~((size_t)(align - 1))))
 

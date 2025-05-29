@@ -84,7 +84,11 @@ namespace Microsoft.Interop
                     return ResolvedGenerator.Resolved(s_variantBool.Bind(info, context));
 
                 // Delegate types
-                case { ManagedType: DelegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
+                case { ManagedType: DelegateTypeInfo delegateTypeInfo, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
+                    if (delegateTypeInfo.IsGeneric)
+                    {
+                        return ResolvedGenerator.NotSupported(info, context, new(info) { NotSupportedDetails = SR.GenericDelegatesNotSupported });
+                    }
                     return ResolvedGenerator.Resolved(s_delegate.Bind(info, context));
 
                 // void

@@ -1327,7 +1327,7 @@ namespace Internal.Runtime
     {
         private readonly int _value;
 
-        public unsafe IntPtr Value => (IntPtr)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
+        public unsafe IntPtr Value => (IntPtr)((byte*)Unsafe.AsPointer(in _value) + _value);
     }
 
     // Wrapper around relative pointers
@@ -1336,7 +1336,7 @@ namespace Internal.Runtime
     {
         private readonly int _value;
 
-        public T* Value => (T*)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + _value);
+        public T* Value => (T*)((byte*)Unsafe.AsPointer(in _value) + _value);
     }
 
     // Abstracts a list of MethodTable pointers that could either be relative

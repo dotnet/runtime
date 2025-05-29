@@ -1,4 +1,4 @@
-# Cross Compilation for iOS Simulator on macOS
+# Cross Compilation for iOS/tvOS Simulator on macOS
 
 ## Requirements
 
@@ -9,7 +9,7 @@ Build requirements are the same as for building native CoreCLR on macOS. iPhone 
 Build the runtime pack and tools with
 
 ```
-./build.sh clr+clr.runtime+libs+packs -os [iossimulator/maccatalyst] -arch [x64/arm64] -cross -c Release
+./build.sh clr+clr.runtime+libs+packs -os [iossimulator/tvossimulator/maccatalyst] -arch [x64/arm64] -cross -c Release
 ```
 
 ## Running the sample iOS app

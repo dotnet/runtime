@@ -20,10 +20,6 @@ namespace System.Runtime
         [UnmanagedCallersOnly(EntryPoint = "ProcessFinalizers")]
         public static void ProcessFinalizers()
         {
-#if INPLACE_RUNTIME
-            System.Runtime.FinalizerInitRunner.DoInitialize();
-#endif
-
             while (true)
             {
                 // Wait until there's some work to be done. If true is returned we should finalize objects,

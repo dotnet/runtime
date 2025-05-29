@@ -21,6 +21,7 @@ set __Ninja=1
 set __icuDir=""
 set __usePThreads=0
 set __ExtraCmakeParams=
+set __CrossTarget=0
 
 :Arg_Loop
 :: Since the native build requires some configuration information before msbuild is called, we have to do some manual args parsing
@@ -63,7 +64,14 @@ if NOT [%errorlevel%] == [0] goto :Failure
 echo Commencing build of native components
 echo.
 
-if /i not "%__TargetOS%" == "android" (
+if "%__TargetOS%"=="android" (
+    set __CrossTarget=1
+)
+if "%__TargetOS%"=="browser" (
+    set __CrossTarget=1
+)
+
+if %__CrossTarget% EQU 0 (
     call "%__repoRoot%\eng\native\version\copy_version_files.cmd"
 ) else (
     call powershell -NoProfile -ExecutionPolicy ByPass -File "%__repoRoot%\eng\native\version\copy_version_files.ps1"
@@ -116,7 +124,7 @@ if /i "%__TargetOS%" == "linux-bionic" (
 
 :: Regenerate the VS solution
 
-call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %__VSVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
+call "%__repoRoot%\eng\native\gen-buildsys.cmd" "%__sourceRootDir%" "%__IntermediatesDir%" %VisualStudioVersion% %__BuildArch% %__TargetOS% %__ExtraCmakeParams%
 if NOT [%errorlevel%] == [0] goto :Failure
 
 :BuildNativeProj
@@ -129,7 +137,7 @@ if [%__Ninja%] == [1] (
 ) else if [%__TargetOS%] == [wasi] (
     set __generatorArgs=
 ) else (
-    set __generatorArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%" -noWarn:MSB8065
+    set __generatorArgs=
 )
 
 call "%CMakePath%" --build "%__IntermediatesDir%" --target install --config %CMAKE_BUILD_TYPE% -- %__generatorArgs%

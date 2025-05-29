@@ -52,9 +52,9 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
-
-    ${{ if ne(parameters.templateContext, '') }}:
-      templateContext: ${{ parameters.templateContext }}
+    enableMicrobuild: ${{ parameters.isOfficialBuild }}
+    enableMicrobuildForMacAndLinux: ${{ parameters.isOfficialBuild }}
+    templateContext: ${{ parameters.templateContext }}
 
     artifacts:
       publish:
@@ -90,6 +90,12 @@ jobs:
       - name: _archParameter
         value: -arch ${{ parameters.archType }}
 
+      - name: _AssetManifestName
+        value: ${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.nameSuffix }}
+
+      - name: _SignType
+        value: $[ coalesce(variables.OfficialSignType, 'real') ]
+
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
           value: -os linux-bionic
@@ -117,20 +123,14 @@ jobs:
       - ${{ if ne(parameters.cxxAbiLibrary, '') }}:
         - name: CxxAbiLibraryArg
           value: /p:TargetCxxAbiLibrary=${{ parameters.cxxAbiLibrary }}
-      
+
       - name: TargetCxxLibraryConfigurationArgs
         value: $(CxxStandardLibraryArg) $(CxxStandardLibraryStaticArg) $(CxxAbiLibraryArg)
 
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
-          value: /p:OfficialBuildId=$(Build.BuildNumber)
+          value: /p:OfficialBuildId=$(Build.BuildNumber) /p:DotNetPublishUsingPipelines=true /p:SignType=$(_SignType) /p:DotNetSignType=$(_SignType)
         ${{ if ne(parameters.isOfficialBuild, true) }}:
-          value: ''
-
-      - name: _buildDarwinFrameworksParameter
-        ${{ if in(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
-          value: /p:BuildDarwinFrameworks=true
-        ${{ if notin(parameters.osGroup, 'ios', 'tvos', 'maccatalyst')}}:
           value: ''
 
       # Set no native sanitizers by default

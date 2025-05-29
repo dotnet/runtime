@@ -58,11 +58,11 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the blazor.boot.json will be downloaded and applied by default.
+     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./blazor.boot.json is a default config file location.
+     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -191,6 +191,16 @@ type MonoConfig = {
      */
     environmentVariables?: {
         [i: string]: string;
+    };
+    /**
+     * Subset of runtimeconfig.json
+     */
+    runtimeConfig?: {
+        runtimeOptions?: {
+            configProperties?: {
+                [i: string]: string | number | boolean;
+            };
+        };
     };
     /**
      * initial number of workers to add to the emscripten pthread pool
@@ -376,7 +386,7 @@ type SingleAssetBehaviors =
  */
  | "js-module-native"
 /**
- * Typically blazor.boot.json
+ * Typically dotnet.boot.js
  */
  | "manifest"
 /**
@@ -439,7 +449,7 @@ type DotnetModuleConfig = {
     imports?: any;
     exports?: string[];
 } & Partial<EmscriptenModule>;
-type APIType = {
+type RunAPIType = {
     /**
      * Runs the Main() method of the application.
      * Note: this will keep the .NET runtime alive and the APIs will be available for further calls.
@@ -489,6 +499,8 @@ type APIType = {
      * You can register the scripts using MonoConfig.resources.modulesAfterConfigLoaded and MonoConfig.resources.modulesAfterRuntimeReady.
      */
     invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
+};
+type MemoryAPIType = {
     /**
      * Writes to the WASM linear memory
      */
@@ -630,6 +642,43 @@ type APIType = {
      */
     localHeapViewF64: () => Float64Array;
 };
+type DiagnosticsAPIType = {
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     */
+    collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file. Default is 60 seconds.
+     * It could be opened in PerfView or Visual Studio as is.
+     * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
+     */
+    collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * creates diagnostic trace file.
+     * It could be opened in PerfView as is.
+     * It could be converted for Visual Studio using `dotnet-gcdump convert`.
+     */
+    collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
+     */
+    connectDSRouter(url: string): void;
+};
+type DiagnosticCommandProviderV2 = {
+    keywords: [number, number];
+    logLevel: number;
+    provider_name: string;
+    arguments: string | null;
+};
+type DiagnosticCommandOptions = {
+    durationSeconds?: number;
+    intervalSeconds?: number;
+    skipDownload?: boolean;
+    circularBufferMB?: number;
+    extraProviders?: DiagnosticCommandProviderV2[];
+};
+type APIType = RunAPIType & MemoryAPIType & DiagnosticsAPIType;
 type RuntimeAPI = {
     INTERNAL: any;
     Module: EmscriptenModule;

@@ -22,6 +22,7 @@ namespace JIT.HardwareIntrinsics.Arm
             TestLibrary.TestFramework.LogInformation($"  Sha1:      {Sha1.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sha256:    {Sha256.IsSupported}");
             TestLibrary.TestFramework.LogInformation($"  Sve:       {Sve.IsSupported}");
+            TestLibrary.TestFramework.LogInformation($"  Sve2:      {Sve2.IsSupported}");
             TestLibrary.TestFramework.LogInformation(string.Empty);
         }
     }
