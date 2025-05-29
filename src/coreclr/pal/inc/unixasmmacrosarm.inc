@@ -194,17 +194,11 @@ C_FUNC(\Name):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
         free_stack __PWTB_StackAlloc
         POP_CALLEE_SAVED_REGISTERS
         free_stack 16
-
-.endm
-
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-        EPILOG_WITH_TRANSITION_BLOCK
         bx lr
 
 .endm

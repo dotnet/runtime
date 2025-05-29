@@ -341,17 +341,11 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
         free_stack      __PWTB_StackAlloc
         POP_ARGUMENT_REGISTERS
         POP_CALLEE_SAVED_REGISTERS
-
-.endm
-
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-        EPILOG_WITH_TRANSITION_BLOCK
         ret
 
 .endm

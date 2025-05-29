@@ -287,7 +287,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 
-.macro EPILOG_WITH_TRANSITION_BLOCK
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
@@ -297,14 +297,7 @@ C_FUNC(\Name\()_End):
         EPILOG_RESTORE_REG_PAIR   x25, x26, 64
         EPILOG_RESTORE_REG_PAIR   x27, x28, 80
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
-
-.endm
-
-
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-
-        EPILOG_WITH_TRANSITION_BLOCK
-        EPILOG_RETURN
+        ret
 
 .endm
 

@@ -298,17 +298,12 @@ C_FUNC(\Name):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
     RESTORE_CALLEESAVED_REGISTERS sp, __PWTB_CalleeSavedRegisters
 
     EPILOG_RESTORE_REG_PAIR       fp, ra, __PWTB_CalleeSavedRegisters
 
     EPILOG_STACK_FREE             __PWTB_StackAlloc
-.endm
-
-
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
-    EPILOG_WITH_TRANSITION_BLOCK
 
     ret
 .endm
