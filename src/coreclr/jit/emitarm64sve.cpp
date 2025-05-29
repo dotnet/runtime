@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 #include "instr.h"
+#include "codegen.h"
 
 /*****************************************************************************/
 
@@ -2682,11 +2683,10 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                 }
                 else
                 {
-                    // Otherwise, create the address first and then
-                    // use it in str
-                    // add reg2, reg2, imm
-                    // str zn, [reg2]
-                    emitIns_R_R_I(INS_add, EA_8BYTE, reg2, reg2, imm);
+                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                    // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                    reg2 = rsvdReg;
                     imm = 0;
                 }
             }
@@ -2722,11 +2722,10 @@ void emitter::emitInsSve_R_R_I(instruction     ins,
                 }
                 else
                 {
-                    // Otherwise, create the address first and then
-                    // use it in str
-                    // add reg2, reg2, imm
-                    // str zn, [reg2]
-                    emitIns_R_R_I(INS_add, EA_8BYTE, reg2, reg2, imm);
+                    regNumber rsvdReg = codeGen->rsGetRsvdReg();
+                    // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                    codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                    reg2 = rsvdReg;
                     imm = 0;
                 }
             }
