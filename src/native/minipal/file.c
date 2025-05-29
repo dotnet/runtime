@@ -151,7 +151,7 @@ static uint64_t UnixTimeToWin32FileTime(struct timespec ts)
 
 #endif // TARGET_WINDOWS
 
-bool minipal_file_get_attributes_utf16(const CHAR16_T* path, minipal_file_attr_t* attributes)
+bool minipal_file_get_attributes_utf16(const char16_t* path, minipal_file_attr_t* attributes)
 {
 #ifdef TARGET_WINDOWS
     if (!path || !attributes)

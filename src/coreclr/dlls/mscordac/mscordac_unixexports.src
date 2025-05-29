@@ -88,7 +88,6 @@ nativeStringResourceTable_mscorrc
 #GetEnvironmentStringsW
 #GetEnvironmentVariableA
 #GetEnvironmentVariableW
-#GetFileAttributesExW
 #GetFileSize
 #GetFullPathNameW
 #GetLastError

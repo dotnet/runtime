@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <minipal/types.h>
+#include <uchar.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -19,7 +19,7 @@ typedef struct minipal_file_attr_
     uint64_t lastWriteTime; // Windows FILETIME precision
 } minipal_file_attr_t;
 
-bool minipal_file_get_attributes_utf16(const CHAR16_T* path, minipal_file_attr_t* attributes);
+bool minipal_file_get_attributes_utf16(const char16_t* path, minipal_file_attr_t* attributes);
 
 #ifdef __cplusplus
 }

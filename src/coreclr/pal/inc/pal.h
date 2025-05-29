@@ -534,27 +534,6 @@ typedef enum _FINDEX_SEARCH_OPS {
     FindExSearchMaxSearchOp
 } FINDEX_SEARCH_OPS;
 
-typedef struct _WIN32_FILE_ATTRIBUTE_DATA {
-    DWORD      dwFileAttributes;
-    FILETIME   ftCreationTime;
-    FILETIME   ftLastAccessTime;
-    FILETIME   ftLastWriteTime;
-    DWORD      nFileSizeHigh;
-    DWORD      nFileSizeLow;
-} WIN32_FILE_ATTRIBUTE_DATA, *LPWIN32_FILE_ATTRIBUTE_DATA;
-
-PALIMPORT
-BOOL
-PALAPI
-GetFileAttributesExW(
-             IN LPCWSTR lpFileName,
-             IN GET_FILEEX_INFO_LEVELS fInfoLevelId,
-             OUT LPVOID lpFileInformation);
-
-#ifdef UNICODE
-#define GetFileAttributesEx GetFileAttributesExW
-#endif
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
