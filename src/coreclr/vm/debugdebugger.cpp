@@ -1263,7 +1263,7 @@ void DebugStackTrace::Element::InitPass2()
 {
     CONTRACTL
     {
-        MODE_ANY;
+        MODE_COOPERATIVE;
         GC_TRIGGERS;
         THROWS;
     }
