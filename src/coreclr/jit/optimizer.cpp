@@ -2012,6 +2012,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
             block->bbNum, bTop->bbNum, bTest->bbNum);
 
+    // Don't bother inverting the loop if PGO data suggests it doesn't iterate more than a few times.
     weight_t   loopIterations     = BB_LOOP_WEIGHT_SCALE;
     const bool haveProfileWeights = fgIsUsingProfileWeights();
     if (haveProfileWeights)
@@ -2019,6 +2020,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         loopIterations = bTest->GetTrueEdge()->getLikelyWeight() / BasicBlock::getCalledCount(this);
         if (loopIterations < BB_LOOP_WEIGHT_SCALE)
         {
+            JITDUMP("Loop iterates only " FMT_WT " times. Skipping loop inversion.\n", loopIterations);
             return false;
         }
     }
