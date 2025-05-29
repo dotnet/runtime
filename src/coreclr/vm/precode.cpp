@@ -561,7 +561,7 @@ void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_
     FillStubCodePage(pageBase, (const void*)PCODEToPINSTR((PCODE)StubPrecodeCode), StubPrecode::CodeSize, pageSize);
 #endif // TARGET_X86
 #ifdef _DEBUG
-    for (int i = 0; i < totalCodeSize; i += FixupPrecode::CodeSize)
+    for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
     {
         _ASSERTE(StubPrecode::IsStubPrecodeByASM((PCODE)(pageBaseRX + i)));
         _ASSERTE(StubPrecode::IsStubPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
