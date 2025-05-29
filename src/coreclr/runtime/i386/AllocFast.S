@@ -172,8 +172,7 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
         cmp         edx, 0x010000
         ja          LOCAL_LABEL(RhpNewArrayFast_ArraySizeBig)
         mul         edx
-        add         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, 3
+        lea         eax, [eax + SZARRAY_BASE_SIZE + 3]
 LOCAL_LABEL(RhpNewArrayFast_ArrayAlignSize):
         and         eax, -4
 
@@ -224,8 +223,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         // This helps us in two ways - we can shift instead of multiplying, and
         // there's no need to align the size either
 
-        mov         eax, dword ptr [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        lea         eax, [eax + edx * 4]
+        lea         eax, [edx * 4 + SZARRAY_BASE_SIZE]
 
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST

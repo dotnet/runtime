@@ -168,9 +168,7 @@ LOCAL_LABEL(StringSizeOverflow):
 
         ld.h  $a2, $a0, OFFSETOF__MethodTable__m_usComponentSize
         mulw.d.w  $a2, $a1, $a2
-        ld.w  $a3, $a0, OFFSETOF__MethodTable__m_uBaseSize
-        add.d  $a2, $a2, $a3
-        addi.d  $a2, $a2, 7
+        addi.d  $a2, $a2, SZARRAY_BASE_SIZE + 7
         bstrins.d  $a2, $r0, 2, 0
 
         NEW_ARRAY_FAST
@@ -199,9 +197,8 @@ LOCAL_LABEL(ArraySizeOverflow):
         // This helps us in two ways - we can shift instead of multiplying, and
         // there's no need to align the size either
 
-        ld.w  $a3, $a0, OFFSETOF__MethodTable__m_uBaseSize
         slli.d  $a2, $a1, 3
-        add.d  $a2, $a2, $a3
+        addi.d  $a2, $a2, SZARRAY_BASE_SIZE
 
         // No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         // to be a multiple of 8.

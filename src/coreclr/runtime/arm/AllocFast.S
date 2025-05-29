@@ -280,9 +280,7 @@ LEAF_ENTRY RhpNewArrayFast, _TEXT
         cmp         r1, #0x10000
         bhi         LOCAL_LABEL(ArraySizeBig)
         umull       r2, r3, r2, r1
-        ldr         r3, [r0, #OFFSETOF__MethodTable__m_uBaseSize]
-        adds        r2, r3
-        adds        r2, #3
+        adds        r2, #(SZARRAY_BASE_SIZE + 3)
 LOCAL_LABEL(ArrayAlignSize):
         bic         r2, r2, #3
 
@@ -336,7 +334,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         cmp         r1, r2
         bhs         LOCAL_LABEL(RhpNewObjectArrayFast_RarePath)
 
-        ldr         r2, [r0, #OFFSETOF__MethodTable__m_uBaseSize]
+        mov         r2, #SZARRAY_BASE_SIZE
         add         r2, r2, r1, lsl #2
 
         NEW_ARRAY_FAST

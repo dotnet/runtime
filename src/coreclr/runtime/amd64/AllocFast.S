@@ -203,9 +203,7 @@ NESTED_ENTRY RhpNewArrayFast, _TEXT, NoHandler
         // Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rdi + OFFSETOF__MethodTable__m_usComponentSize]
         imul        rax, rsi
-        mov         edx, [rdi + OFFSETOF__MethodTable__m_uBaseSize]
-        add         rax, rdx
-        add         rax, 7
+        lea         rax, [rax + SZARRAY_BASE_SIZE + 7]
         and         rax, -8
 
         NEW_ARRAY_FAST
@@ -235,8 +233,7 @@ NESTED_ENTRY RhpNewObjectArrayFast, _TEXT, NoHandler
         // This helps us in two ways - we can shift instead of multiplying, and
         // there's no need to align the size either
 
-        mov         eax, dword ptr [rdi + OFFSETOF__MethodTable__m_uBaseSize]
-        lea         eax, [eax + esi * 8]
+        lea         eax, [esi * 8 + SZARRAY_BASE_SIZE]
 
         // No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         // to be a multiple of 8.
