@@ -539,7 +539,7 @@ namespace System.Net.Mail
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
                 exception = ProcessException(e, ref canceled, forceWrapExceptions, _timedOut);
-                Exception? ProcessException(Exception e, ref bool canceled, bool forceWrapExceptions, bool timedOut)
+                Exception ProcessException(Exception e, ref bool canceled, bool forceWrapExceptions, bool timedOut)
                 {
                     if (e is SmtpFailedRecipientException && !((SmtpFailedRecipientException)e).fatal)
                     {
@@ -549,12 +549,6 @@ namespace System.Net.Mail
                     canceled = e is OperationCanceledException;
 
                     Abort();
-
-                    // If the operation was canceled, we should not report an error
-                    if (canceled)
-                    {
-                        return null;
-                    }
                     if (timedOut)
                     {
                         return ExceptionDispatchInfo.SetCurrentStackTrace(new SmtpException(SR.net_timeout));
@@ -564,7 +558,8 @@ namespace System.Net.Mail
                         // for compatibility reasons, don't wrap these exceptions during sync executions
                         (typeof(TIOAdapter) == typeof(SyncReadWriteAdapter) &&
                             (e is SecurityException || e is AuthenticationException)) ||
-                        e is SmtpException)
+                        e is SmtpException ||
+                        e is OperationCanceledException)
                     {
                         return e;
                     }
@@ -580,7 +575,9 @@ namespace System.Net.Mail
                 // SendCompleted event should ever be invoked only for asynchronous send completions.
                 if (invokeSendCompleted && !synchronous)
                 {
-                    AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(exception, canceled, userToken);
+                    // If the operation was canceled, Error should be null
+                    Exception? errorToReport = canceled ? null : exception;
+                    AsyncCompletedEventArgs eventArgs = new AsyncCompletedEventArgs(errorToReport, canceled, userToken);
                     OnSendCompleted(eventArgs);
                 }
             }

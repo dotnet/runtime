@@ -315,17 +315,19 @@ namespace System.Net.Mail.Tests
 
             // The server will introduce some fake latency so that the operation can be canceled before the request completes
             ManualResetEvent serverMre = new ManualResetEvent(false);
-            server.OnConnected += _ => serverMre.WaitOne();
-
             CancellationTokenSource cts = new CancellationTokenSource();
+            
+            server.OnConnected += _ => 
+            {
+                // Cancel the operation during actual server communication
+                cts.Cancel();
+                // Allow the server to continue after a brief delay
+                Task.Delay(100).ContinueWith(_ => serverMre.Set());
+            };
 
             var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
 
-            Task sendTask = Task.Run(() => client.SendMailAsync(message, cts.Token));
-
-            cts.Cancel();
-            await Task.Delay(500);
-            serverMre.Set();
+            Task sendTask = client.SendMailAsync(message, cts.Token);
 
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
 
