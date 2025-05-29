@@ -1014,6 +1014,32 @@ namespace System.Diagnostics.Tests
             Assert.Throws<PlatformNotSupportedException>(() => info.Password = new SecureString());
         }
 
+        [Fact]
+        public void InheritHandles_GetDefaultValue_ReturnsExpected()
+        {
+            var info = new ProcessStartInfo();
+            Assert.True(info.InheritHandles);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void InheritHandles_Set_GetReturnsExpected()
+        {
+            var info = new ProcessStartInfo();
+            Assert.True(info.InheritHandles);
+            info.InheritHandles = false;
+            Assert.False(info.InheritHandles);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void InheritHandles_SetUnix_Throws()
+        {
+            var info = new ProcessStartInfo();
+            Assert.Throws<PlatformNotSupportedException>(() => info.InheritHandles = true);
+            Assert.Throws<PlatformNotSupportedException>(() => info.InheritHandles = false);
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]
