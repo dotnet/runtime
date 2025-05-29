@@ -3854,6 +3854,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		} else if (td->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
 			// This scenario causes https://github.com/dotnet/runtime/issues/83792
 			return FALSE;
+		} else if (target_method->flags & METHOD_ATTRIBUTE_REQSECOBJ) {
+			return FALSE;
 		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
 			 * Since the method does not return, it's probably a throw helper and will not be called.
