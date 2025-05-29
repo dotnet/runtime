@@ -110,6 +110,11 @@ bool emitter::IsAVXVNNIINT16Instruction(instruction ins)
     return (ins >= INS_FIRST_AVXVNNIINT16_INSTRUCTION) && (ins <= INS_LAST_AVXVNNIINT16_INSTRUCTION);
 }
 
+bool emitter::IsAVXVNNIFamilyInstruction(instruction ins)
+{
+    return (IsAVXVNNIInstruction(ins) || IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
+}
+
 bool emitter::IsBMIInstruction(instruction ins)
 {
     return (ins >= INS_FIRST_BMI_INSTRUCTION) && (ins <= INS_LAST_BMI_INSTRUCTION);
@@ -10049,8 +10054,7 @@ void emitter::emitIns_SIMD_R_R_R_A(instruction   ins,
                                    GenTreeIndir* indir,
                                    insOpts       instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) ||
-           IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -10083,8 +10087,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
                                    int                  offs,
                                    insOpts              instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) ||
-           IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2
@@ -10115,8 +10118,7 @@ void emitter::emitIns_SIMD_R_R_R_R(instruction ins,
                                    regNumber   op3Reg,
                                    insOpts     instOptions)
 {
-    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) ||
-        IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins))
+    if (IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins))
     {
         assert(UseSimdEncoding());
 
@@ -10203,8 +10205,7 @@ void emitter::emitIns_SIMD_R_R_R_S(instruction ins,
                                    int         offs,
                                    insOpts     instOptions)
 {
-    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIInstruction(ins) ||
-           IsAVXVNNIINT8Instruction(ins) || IsAVXVNNIINT16Instruction(ins));
+    assert(IsFMAInstruction(ins) || IsPermuteVar2xInstruction(ins) || IsAVXVNNIFamilyInstruction(ins));
     assert(UseSimdEncoding());
 
     // Ensure we aren't overwriting op2

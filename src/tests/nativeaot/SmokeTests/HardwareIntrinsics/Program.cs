@@ -131,6 +131,8 @@ unsafe class Program
         bool? ExpectedAvxVnniInt16 = null;
         bool? ExpectedAvx10v1 = false;
         bool? ExpectedAvx10v1V512 = false;
+        bool? ExpectedAvx10v2 = false;
+        bool? ExpectedAvx10v2V512 = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
