@@ -1186,13 +1186,12 @@ CALL_TARGET_IP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
 
-                    MethodTable *pClass = (MethodTable*)pMethod->pDataItems[ip[4]];
-                    OBJECTREF objRef = AllocateObject(pClass);
+                    OBJECTREF objRef = AllocateObject((MethodTable*)pMethod->pDataItems[ip[4]]);
 
                     // This is return value
                     LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
                     // Set `this` arg for ctor call
-                    LOCAL_VAR(callArgsOffset, OBJECTREF) = objRef;
+                    LOCAL_VAR (callArgsOffset, OBJECTREF) = objRef;
                     ip += 5;
 
                     goto CALL_INTERP_SLOT;
