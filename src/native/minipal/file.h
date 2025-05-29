@@ -6,7 +6,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#ifndef __APPLE__
 #include <uchar.h>
+#endif // __APPLE__
 
 #ifdef __cplusplus
 extern "C"
