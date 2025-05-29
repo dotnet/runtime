@@ -13,10 +13,14 @@ namespace Microsoft.NET.HostModel.MachO;
 internal struct BlobIndex
 {
     private readonly CodeDirectorySpecialSlot _slot;
-    private readonly uint _offset;
+    private uint _offset;
 
     public CodeDirectorySpecialSlot Slot => (CodeDirectorySpecialSlot)((uint)_slot).ConvertFromBigEndian();
-    public uint Offset => _offset.ConvertFromBigEndian();
+
+    public uint Offset
+    {
+        get => _offset.ConvertFromBigEndian();
+    }
 
     public BlobIndex(CodeDirectorySpecialSlot slot, uint offset)
     {

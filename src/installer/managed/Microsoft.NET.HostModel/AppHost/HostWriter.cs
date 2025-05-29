@@ -244,9 +244,6 @@ namespace Microsoft.NET.HostModel.AppHost
                             if (MachObjectFile.IsMachOImage(accessor))
                             {
                                 var machObjectFile = MachObjectFile.Create(accessor);
-                                if (machObjectFile.HasSignature)
-                                    throw new AppHostMachOFormatException(MachOFormatError.SignNotRemoved);
-
                                 bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
                                 if (!wasBundled)
                                     throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
