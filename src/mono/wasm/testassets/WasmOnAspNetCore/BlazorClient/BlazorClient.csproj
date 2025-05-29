@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <WasmEnableThreads>true</WasmEnableThreads>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <!-- nullablility warning, async warning -->
     <NoWarn>$(NoWarn);CS8604;CS4014</NoWarn>
     <StaticWebAssetBasePath>blazorclient</StaticWebAssetBasePath>

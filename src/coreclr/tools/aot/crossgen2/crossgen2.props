@@ -15,11 +15,9 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
     <RunAnalyzers>false</RunAnalyzers>
-    <UseLocalTargetingRuntimePack Condition="'$(StageTwoBuild)' == 'true'">true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
   <Import Project="../AotCompilerCommon.props" />
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(StageTwoBuild)' == 'true'" />
 
   <ItemGroup Label="Embedded Resources">
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -55,12 +53,14 @@
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
 
     <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>
@@ -69,6 +69,7 @@
     <Content Include="$(RuntimeBinDir)/pgort*.dll"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       Condition="'$(PgoInstrument)' != ''"
       />
@@ -94,6 +95,7 @@
     <Content Include="$(DiaSymReaderTargetArchPath)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
       Link="%(FileName)%(Extension)"
       />
   </ItemGroup>

@@ -96,8 +96,8 @@
              Link="Common\Interop\Interop.IsWellKnownSid.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.IsEqualDomainSid.cs"
              Link="Common\Interop\Interop.IsEqualDomainSid.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken.cs"
-             Link="Common\Interop\Interop.OpenThreadToken.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenThreadToken_SafeAccessTokenHandle.cs"
+             Link="Common\Interop\Interop.OpenThreadToken_SafeAccessTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RevertToSelf.cs"
              Link="Common\Interop\Interop.RevertToSelf.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateLoggedOnUser.cs"

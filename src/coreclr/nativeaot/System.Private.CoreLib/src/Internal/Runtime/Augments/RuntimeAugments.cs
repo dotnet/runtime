@@ -483,7 +483,7 @@ namespace Internal.Runtime.Augments
         }
 
         [Intrinsic]
-        public static RuntimeTypeHandle GetCanonType(CanonTypeKind kind)
+        public static RuntimeTypeHandle GetCanonType()
         {
             // Compiler needs to expand this. This is not expressible in IL.
             throw new NotSupportedException();
@@ -641,7 +641,7 @@ namespace Internal.Runtime.Augments
         /// </summary>
         /// <param name="ip">Address inside the module</param>
         /// <param name="moduleBase">Module base address</param>
-        public static unsafe string? TryGetFullPathToApplicationModule(IntPtr ip, out IntPtr moduleBase)
+        public static unsafe string TryGetFullPathToApplicationModule(IntPtr ip, out IntPtr moduleBase)
         {
             moduleBase = RuntimeImports.RhGetOSModuleFromPointer(ip);
             if (moduleBase == IntPtr.Zero)

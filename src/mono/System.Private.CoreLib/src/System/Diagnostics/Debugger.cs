@@ -7,8 +7,6 @@ namespace System.Diagnostics
 {
     public static partial class Debugger
     {
-        public static readonly string? DefaultCategory;
-
         public static bool IsAttached => IsAttached_internal();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

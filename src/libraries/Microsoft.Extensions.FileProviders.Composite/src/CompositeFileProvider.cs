@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="fileProviders">The collection of <see cref="IFileProvider" /> objects.</param>
         public CompositeFileProvider(IEnumerable<IFileProvider> fileProviders)
         {
-            ThrowHelper.ThrowIfNull(fileProviders);
+            ArgumentNullException.ThrowIfNull(fileProviders);
 
             _fileProviders = fileProviders.ToArray();
         }

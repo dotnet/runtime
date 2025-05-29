@@ -15,7 +15,6 @@
 #include "PalRedhawk.h"
 #include "rhassert.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "thread.h"
@@ -31,6 +30,7 @@
 #include "RhConfig.h"
 #include "GcEnum.h"
 #include "NativeContext.h"
+#include "minipal/time.h"
 
 #ifndef DACCESS_COMPILE
 
@@ -41,7 +41,7 @@ static Thread* g_RuntimeInitializingThread;
 
 ee_alloc_context::PerThreadRandom::PerThreadRandom()
 {
-    minipal_xoshiro128pp_init(&random_state, (uint32_t)PalGetTickCount64());
+    minipal_xoshiro128pp_init(&random_state, (uint32_t)minipal_lowres_ticks());
 }
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
@@ -1096,7 +1096,10 @@ bool Thread::IsDetached()
 void Thread::SetDetached()
 {
     ASSERT(!IsStateSet(TSF_Detached));
+    ASSERT(IsStateSet(TSF_Attached));
+
     SetState(TSF_Detached);
+    ClearState(TSF_Attached);
 }
 
 bool Thread::IsActivationPending()

@@ -518,6 +518,7 @@ namespace System
             private object _dummy;
             private int _dummyPrimitive;
             public readonly System.Range Current { get { throw null; } }
+            public readonly System.ReadOnlySpan<T> Source { get { throw null; } }
             public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
         }

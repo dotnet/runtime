@@ -41,9 +41,7 @@ inline static bool isHighSimdReg(regNumber reg)
 inline static bool isHighGPReg(regNumber reg)
 {
 #ifdef TARGET_AMD64
-    // TODO-apx: the definition here is incorrect, we will need to revisit this after we extend the register definition.
-    //           for now, we can simply use REX2 as REX.
-    return ((reg >= REG_R16) && (reg <= REG_R23));
+    return ((reg >= REG_R16) && (reg <= REG_R31));
 #else
     // X86 JIT operates in 32-bit mode and hence extended regs are not available.
     return false;
@@ -124,6 +122,7 @@ static bool IsAVXOnlyInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsPermuteVar2xInstruction(instruction ins);
+static bool IsKMOVInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
 static bool IsKInstruction(instruction ins);
@@ -132,11 +131,11 @@ static bool IsApxOnlyInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool             HasVexEncoding(instruction ins) const;
-bool             HasEvexEncoding(instruction ins) const;
-bool             HasRex2Encoding(instruction ins) const;
-bool             HasApxNdd(instruction ins) const;
-bool             HasApxNf(instruction ins) const;
+static bool      HasVexEncoding(instruction ins);
+static bool      HasEvexEncoding(instruction ins);
+static bool      HasRex2Encoding(instruction ins);
+static bool      HasApxNdd(instruction ins);
+static bool      HasApxNf(instruction ins);
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
 bool             IsRex2EncodableInstruction(instruction ins) const;
@@ -229,7 +228,8 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
-insTupleType insTupleTypeInfo(instruction ins) const;
+static insTupleType insTupleTypeInfo(instruction ins);
+static unsigned     insKMaskBaseSize(instruction ins);
 
 // 2-byte REX2 prefix starts with byte 0xD5
 #define REX2_PREFIX_MASK_2BYTE 0xFF0000000000ULL
@@ -297,6 +297,11 @@ bool HasKMaskRegisterDest(instruction ins) const
         case INS_vgatherqps:
         case INS_vgatherdpd:
         case INS_vgatherqpd:
+        // KMOV can be promoted to EVEX with APX.
+        case INS_kmovb_msk:
+        case INS_kmovw_msk:
+        case INS_kmovd_msk:
+        case INS_kmovq_msk:
         {
             return true;
         }
@@ -750,14 +755,16 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
                                VARSET_VALARG_TP GCvars,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
+                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                               bool             hasAsyncRet);
 
 void    emitGetInsCns(const instrDesc* id, CnsVal* cv) const;
 ssize_t emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const;
@@ -1221,36 +1228,6 @@ void emitIns_BASE_R_R_I(instruction ins, emitAttr attr, regNumber op1Reg, regNum
 regNumber emitIns_BASE_R_R_RM(
     instruction ins, emitAttr attr, regNumber targetReg, GenTree* treeNode, GenTree* regOp, GenTree* rmOp);
 
-enum EmitCallType
-{
-    EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method (call addr with RIP-relative encoding)
-    EC_FUNC_TOKEN_INDIR, // Indirect call to a helper/static/nonvirtual/global method (call [addr]/call [rip+addr])
-    EC_INDIR_R,          // Indirect call via register (call rax)
-    EC_INDIR_ARD,        // Indirect call via an addressing mode (call [rax+rdx*8+disp])
-
-    EC_COUNT
-};
-
-// clang-format off
-void emitIns_Call(EmitCallType          callType,
-                  CORINFO_METHOD_HANDLE methHnd,
-                  INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*                 addr,
-                  ssize_t               argSize,
-                  emitAttr              retSize
-                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP      ptrVars,
-                  regMaskTP             gcrefRegs,
-                  regMaskTP             byrefRegs,
-                  const DebugInfo& di = DebugInfo(),
-                  regNumber             ireg     = REG_NA,
-                  regNumber             xreg     = REG_NA,
-                  unsigned              xmul     = 0,
-                  ssize_t               disp     = 0,
-                  bool                  isJump   = false,
-                  bool                  noSafePoint   = false);
-// clang-format on
-
 #ifdef TARGET_AMD64
 // Is the last instruction emitted a call instruction?
 bool emitIsLastInsCall();
@@ -1320,5 +1297,10 @@ inline bool HasHighSIMDReg(const instrDesc* id) const;
 inline bool HasExtendedGPReg(const instrDesc* id) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
+
+#ifdef TARGET_AMD64
+// true if this 'imm' can be encoded as a input operand to a ccmp instruction
+static bool emitIns_valid_imm_for_ccmp(INT64 imm);
+#endif // TARGET_AMD64
 
 #endif // TARGET_XARCH

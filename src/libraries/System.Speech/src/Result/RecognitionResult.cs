@@ -62,8 +62,8 @@ namespace System.Speech.Recognition
         #region Public Methods
         public RecognizedAudio GetAudioForWordRange(RecognizedWordUnit firstWord, RecognizedWordUnit lastWord)
         {
-            Helpers.ThrowIfNull(firstWord, nameof(firstWord));
-            Helpers.ThrowIfNull(lastWord, nameof(lastWord));
+            ArgumentNullException.ThrowIfNull(firstWord);
+            ArgumentNullException.ThrowIfNull(lastWord);
 
             return Audio.GetRange(firstWord._audioPosition, lastWord._audioPosition + lastWord._audioDuration - firstWord._audioPosition);
         }
@@ -71,7 +71,7 @@ namespace System.Speech.Recognition
 #pragma warning disable SYSLIB0050 // Legacy formatter infrastructure is obsolete
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            Helpers.ThrowIfNull(info, nameof(info));
+            ArgumentNullException.ThrowIfNull(info);
 
             bool appDomainTransition = context.State == StreamingContextStates.CrossAppDomain;
 

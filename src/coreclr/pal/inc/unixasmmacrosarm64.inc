@@ -26,6 +26,24 @@
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+#if defined(__APPLE__)
+        .alt_entry C_FUNC(\Name)
+        .private_extern C_FUNC(\Name)
+#else
+        .global C_FUNC(\Name)
+        .hidden C_FUNC(\Name)
+#endif
+C_FUNC(\Name):
+.endm
+
+// On MacOS, local labels cannot be used in arithmetic expressions.
+#if defined(__APPLE__)
+#define FIXUP_LABEL(name) name
+#else
+#define FIXUP_LABEL(name) .L##name
+#endif
+
 .macro LEAF_ENTRY Name, Section
         .global C_FUNC(\Name)
 #if defined(__APPLE__)
@@ -101,6 +119,13 @@ C_FUNC(\Name\()_End):
         mov fp, sp
         .cfi_def_cfa_register fp
         .endif
+.endm
+
+.macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ofs
+        stp \reg1, \reg2, [sp, \ofs]!
+        .cfi_adjust_cfa_offset -\ofs
+        .cfi_rel_offset \reg1, 0
+        .cfi_rel_offset \reg2, 8
 .endm
 
 .macro EPILOG_RESTORE_REG reg, ofs

@@ -11,7 +11,7 @@
 // the EE changes (by adding or removing methods to any interface shared between them), this GUID should
 // be changed. This is the identifier verified by ICorJitCompiler::getVersionIdentifier().
 //
-// You can use "uuidgen.exe -s" to generate this value.
+// You can use src/coreclr/tools/Common/JitInterface/ThunkGenerator/gen.bat (or .sh on Unix) to update this file.
 //
 // Note that this file is parsed by some tools, namely superpmi.py, so make sure the first line is exactly
 // of the form:
@@ -37,11 +37,11 @@
 
 #include <minipal/guid.h>
 
-constexpr GUID JITEEVersionIdentifier = { /* 4463d6ac-dfcb-4ab0-a941-c53b56089b7c */
-    0x4463d6ac,
-    0xdfcb,
-    0x4ab0,
-    {0xa9, 0x41, 0xc5, 0x3b, 0x56, 0x08, 0x9b, 0x7c}
+constexpr GUID JITEEVersionIdentifier = { /* bffedb4e-ed47-4df3-8156-7ad8fc8521f1 */
+    0xbffedb4e,
+    0xed47,
+    0x4df3,
+    {0x81, 0x56, 0x7a, 0xd8, 0xfc, 0x85, 0x21, 0xf1}
   };
 
 #endif // JIT_EE_VERSIONING_GUID_H

@@ -330,18 +330,26 @@ struct simdmask_t
         return !(*this == other);
     }
 
-    static simdmask_t AllBitsSet()
+    static simdmask_t AllBitsSet(unsigned elementCount)
     {
+        assert((elementCount >= 1) && (elementCount <= 64));
         simdmask_t result;
 
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        if (elementCount == 64)
+        {
+            result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        }
+        else
+        {
+            result.u64[0] = (1ULL << elementCount) - 1;
+        }
 
         return result;
     }
 
     bool IsAllBitsSet() const
     {
-        return *this == AllBitsSet();
+        return *this == AllBitsSet(64);
     }
 
     bool IsZero() const
@@ -1412,7 +1420,7 @@ void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TS
 
         case TYP_DOUBLE:
         {
-            result->f64[arg1] = static_cast<float>(arg2);
+            result->f64[arg1] = arg2;
             break;
         }
 

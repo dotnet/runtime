@@ -366,139 +366,7 @@ void *JIT_TrialAlloc::GenAllocSFast(Flags flags)
     // Jump to the framed helper
     sl.X86EmitNearJump(sl.NewExternalCodeLabel((LPVOID)JIT_New));
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
-
-    return (void *)pStub->GetEntryPoint();
-}
-
-
-void *JIT_TrialAlloc::GenBox(Flags flags)
-{
-    STANDARD_VM_CONTRACT;
-
-    CPUSTUBLINKER sl;
-
-    CodeLabel *noLock  = sl.NewCodeLabel();
-    CodeLabel *noAlloc = sl.NewCodeLabel();
-    CodeLabel *nullRef = sl.NewCodeLabel();
-
-    // Save address of value to be boxed
-    sl.X86EmitPushReg(kEBX);
-    sl.Emit16(0xda8b);
-
-    // Check for null ref
-    // test edx, edx
-    sl.X86EmitR2ROp(0x85, kEDX, kEDX);
-
-    // je nullRef
-    sl.X86EmitCondJump(nullRef, X86CondCode::kJE);
-
-    // Emit the main body of the trial allocator
-    EmitCore(&sl, noLock, noAlloc, flags);
-
-    // Here we are at the end of the success case
-
-    // Check whether the object contains pointers
-    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsGCPointers
-    sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTable, m_dwFlags));
-    sl.Emit32(MethodTable::enum_flag_ContainsGCPointers);
-
-    CodeLabel *pointerLabel = sl.NewCodeLabel();
-
-    // jne              pointerLabel
-    sl.X86EmitCondJump(pointerLabel, X86CondCode::kJNE);
-
-    // We have no pointers - emit a simple inline copy loop
-
-    // mov             ecx, [ecx]MethodTable.m_BaseSize
-    sl.X86EmitOffsetModRM(0x8b, kECX, kECX, offsetof(MethodTable, m_BaseSize));
-
-    // sub ecx,12
-    sl.X86EmitSubReg(kECX, 12);
-
-    CodeLabel *loopLabel = sl.NewCodeLabel();
-
-    sl.EmitLabel(loopLabel);
-
-    // mov edx,[ebx+ecx]
-    sl.X86EmitOp(0x8b, kEDX, kEBX, 0, kECX, 1);
-
-    // mov [eax+ecx+4],edx
-    sl.X86EmitOp(0x89, kEDX, kEAX, 4, kECX, 1);
-
-    // sub ecx,4
-    sl.X86EmitSubReg(kECX, 4);
-
-    // jg loopLabel
-    sl.X86EmitCondJump(loopLabel, X86CondCode::kJGE);
-
-    sl.X86EmitPopReg(kEBX);
-
-    sl.X86EmitReturn(0);
-
-    // Arrive at this label if there are pointers in the object
-    sl.EmitLabel(pointerLabel);
-
-    // Do call to CopyValueClassUnchecked(object, data, pMT)
-
-#ifdef UNIX_X86_ABI
-#define STACK_ALIGN_PADDING 12
-    // Make pad to align esp
-    sl.X86EmitSubEsp(STACK_ALIGN_PADDING);
-#endif // UNIX_X86_ABI
-
-    // Pass pMT (still in ECX)
-    sl.X86EmitPushReg(kECX);
-
-    // Pass data (still in EBX)
-    sl.X86EmitPushReg(kEBX);
-
-    // Save the address of the object just allocated
-    // mov ebx,eax
-    sl.Emit16(0xD88B);
-
-
-    // Pass address of first user byte in the newly allocated object
-    sl.X86EmitAddReg(kEAX, 4);
-    sl.X86EmitPushReg(kEAX);
-
-    // call CopyValueClass
-    sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID) CopyValueClassUnchecked), 12);
-#ifdef UNIX_X86_ABI
-    // Make pad to align esp
-    sl.X86EmitAddEsp(STACK_ALIGN_PADDING);
-#undef STACK_ALIGN_PADDING
-#endif // UNIX_X86_ABI
-
-    // Restore the address of the newly allocated object and return it.
-    // mov eax,ebx
-    sl.Emit16(0xC38B);
-
-    sl.X86EmitPopReg(kEBX);
-
-    sl.X86EmitReturn(0);
-
-    // Come here in case of no space or null ref
-    sl.EmitLabel(noAlloc);
-    sl.EmitLabel(nullRef);
-
-    // Release the lock in the uniprocessor case
-    EmitNoAllocCode(&sl, flags);
-
-    // Come here in case of failure to get the lock
-    sl.EmitLabel(noLock);
-
-    // Restore the address of the value to be boxed
-    // mov edx,ebx
-    sl.Emit16(0xD38B);
-
-    // pop ebx
-    sl.X86EmitPopReg(kEBX);
-
-    // Jump to the slow version of JIT_Box
-    sl.X86EmitNearJump(sl.NewExternalCodeLabel((LPVOID) JIT_Box));
-
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocSFast");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -539,15 +407,8 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // array header or alignment.
     sl.Emit16(0xfa81);
 
-
-        // The large object heap is 8 byte aligned, so for double arrays we
-        // want to bias toward putting things in the large object heap
     unsigned maxElems =  0xffff - 256;
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((flags & ALIGN8) && g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold() < maxElems)
-        maxElems = g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold();
-#endif // FEATURE_DOUBLE_ALIGNMENT_HINT
     if (flags & OBJ_ARRAY)
     {
         //Since we know that the array elements are sizeof(OBJECTREF), set maxElems exactly here (use the
@@ -656,7 +517,7 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     _ASSERTE(target->e.m_pExternalAddress);
     sl.X86EmitNearJump(target);
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocArray");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -744,7 +605,7 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
     CodeLabel * target = sl.NewExternalCodeLabel((LPVOID)FramedAllocateString);
     sl.X86EmitNearJump(target);
 
-    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap(), NEWSTUB_FL_NONE, "AllocString");
 
     return (void *)pStub->GetEntryPoint();
 }
@@ -793,7 +654,6 @@ void InitJITHelpers1()
     static const LPCWSTR pHelperNames[ETW_NUM_JIT_HELPERS] = {
                                                       W("@NewObject"),
                                                       W("@NewObjectAlign8"),
-                                                      W("@Box"),
                                                       W("@NewArray1Object"),
                                                       W("@NewArray1ValueType"),
                                                       W("@NewArray1ObjectAlign8"),
@@ -824,14 +684,12 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, pMethodAddresses[0]);
         pMethodAddresses[1] = JIT_TrialAlloc::GenAllocSFast((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::ALIGN8 | JIT_TrialAlloc::ALIGN8OBJ));
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, pMethodAddresses[1]);
-        pMethodAddresses[2] = JIT_TrialAlloc::GenBox(flags);
-        SetJitHelperFunction(CORINFO_HELP_BOX, pMethodAddresses[2]);
-        pMethodAddresses[3] = JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::OBJ_ARRAY));
-        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, pMethodAddresses[3]);
-        pMethodAddresses[4] = JIT_TrialAlloc::GenAllocArray(flags);
-        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, pMethodAddresses[4]);
-        pMethodAddresses[5] = JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::ALIGN8));
-        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, pMethodAddresses[5]);
+        pMethodAddresses[2] = JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::OBJ_ARRAY));
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, pMethodAddresses[2]);
+        pMethodAddresses[3] = JIT_TrialAlloc::GenAllocArray(flags);
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, pMethodAddresses[3]);
+        pMethodAddresses[4] = JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::ALIGN8));
+        SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, pMethodAddresses[4]);
 
         // If allocation logging is on, then we divert calls to FastAllocateString to an Ecall method, not this
         // generated method. Find this workaround in Ecall::Init() in ecall.cpp.
@@ -846,61 +704,61 @@ void InitJITHelpers1()
     _ASSERTE_ALL_BUILDS((BYTE*)JIT_PatchedWriteBarrierGroup_End - (BYTE*)JIT_PatchedWriteBarrierGroup < (ptrdiff_t)GetOsPageSize());
 
     // Copy the write barriers to their final resting place.
-    for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
+    if (IsWriteBarrierCopyEnabled())
     {
-        BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
-
-        BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
-        int reg = c_rgWriteBarrierRegs[iBarrier];
-
-        BYTE * pBufRW = pBuf;
-        ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
+        for (int iBarrier = 0; iBarrier < NUM_WRITE_BARRIERS; iBarrier++)
         {
+            BYTE * pfunc = (BYTE *) JIT_WriteBarrierReg_PreGrow;
+
+            BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
+            int reg = c_rgWriteBarrierRegs[iBarrier];
+
+            BYTE * pBufRW = pBuf;
+            ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
             barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 34);
             pBufRW = barrierWriterHolder.GetRW();
-        }
 
-        memcpy(pBufRW, pfunc, 34);
+            memcpy(pBufRW, pfunc, 34);
 
-        // assert the copied code ends in a ret to make sure we got the right length
-        _ASSERTE(pBuf[33] == 0xC3);
+            // assert the copied code ends in a ret to make sure we got the right length
+            _ASSERTE(pBuf[33] == 0xC3);
 
-        // We need to adjust registers in a couple of instructions
-        // It would be nice to have the template contain all zeroes for
-        // the register fields (corresponding to EAX), but that doesn't
-        // work because then we get a smaller encoding for the compares
-        // that only works for EAX but not the other registers.
-        // So we always have to clear the register fields before updating them.
+            // We need to adjust registers in a couple of instructions
+            // It would be nice to have the template contain all zeroes for
+            // the register fields (corresponding to EAX), but that doesn't
+            // work because then we get a smaller encoding for the compares
+            // that only works for EAX but not the other registers.
+            // So we always have to clear the register fields before updating them.
 
-        // First instruction to patch is a mov [edx], reg
+            // First instruction to patch is a mov [edx], reg
 
-        _ASSERTE(pBuf[0] == 0x89);
-        // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
-        pBufRW[1] &= 0xc7;
-        pBufRW[1] |= reg << 3;
+            _ASSERTE(pBuf[0] == 0x89);
+            // Update the reg field (bits 3..5) of the ModR/M byte of this instruction
+            pBufRW[1] &= 0xc7;
+            pBufRW[1] |= reg << 3;
 
-        // Second instruction to patch is cmp reg, imm32 (low bound)
+            // Second instruction to patch is cmp reg, imm32 (low bound)
 
-        _ASSERTE(pBuf[2] == 0x81);
-        // Here the lowest three bits in ModR/M field are the register
-        pBufRW[3] &= 0xf8;
-        pBufRW[3] |= reg;
+            _ASSERTE(pBuf[2] == 0x81);
+            // Here the lowest three bits in ModR/M field are the register
+            pBufRW[3] &= 0xf8;
+            pBufRW[3] |= reg;
 
 #ifdef WRITE_BARRIER_CHECK
-        // Don't do the fancy optimization just jump to the old one
-        // Use the slow one for write barrier checks build because it has some good asserts
-        if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
-            pfunc = &pBufRW[0];
-            *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
-            *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
-        }
+            // Don't do the fancy optimization just jump to the old one
+            // Use the slow one for write barrier checks build because it has some good asserts
+            if (g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) {
+                pfunc = &pBufRW[0];
+                *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
+                *((DWORD*) pfunc) = (BYTE*) c_rgDebugWriteBarriers[iBarrier] - (&pBuf[1] + sizeof(DWORD));
+            }
 #endif // WRITE_BARRIER_CHECK
-    }
+        }
 
 #ifndef CODECOVERAGE
-    ValidateWriteBarrierHelpers();
+        ValidateWriteBarrierHelpers();
 #endif
+    }
 
     // Leave the patched region writable for StompWriteBarrierEphemeral(), StompWriteBarrierResize()
 }
@@ -988,6 +846,12 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 
     int stompWBCompleteActions = SWB_PASS;
 
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
     if ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[0] == 0xE9)  // we are using slow write barrier
@@ -1001,11 +865,8 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
 
         BYTE * pBufRW = pBuf;
         ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
-        {
-            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
-            pBufRW = barrierWriterHolder.GetRW();
-        }
+        barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
+        pBufRW = barrierWriterHolder.GetRW();
 
         // assert there is in fact a cmp r/m32, imm32 there
         _ASSERTE(pBuf[2] == 0x81);
@@ -1052,6 +913,12 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
     int stompWBCompleteActions = SWB_PASS;
 
+    if (!IsWriteBarrierCopyEnabled())
+    {
+        // If we didn't copy the write barriers, then don't update them.
+        return SWB_PASS;
+    }
+
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization if we are checking write barrier
     if ((GetWriteBarrierCodeLocation((BYTE *)JIT_WriteBarrierEAX))[0] == 0xE9)  // we are using slow write barrier
@@ -1070,11 +937,8 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 
         BYTE * pBufRW = pBuf;
         ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
-        if (IsWriteBarrierCopyEnabled())
-        {
-            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
-            pBufRW = barrierWriterHolder.GetRW();
-        }
+        barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
+        pBufRW = barrierWriterHolder.GetRW();
 
         // Check if we are still using the pre-grow version of the write barrier.
         if (bWriteBarrierIsPreGrow)

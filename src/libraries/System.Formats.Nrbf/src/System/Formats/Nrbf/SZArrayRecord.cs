@@ -35,9 +35,9 @@ public abstract class SZArrayRecord<T> : ArrayRecord
     /// </param>
     /// <returns>An array filled with the data provided in the serialized records.</returns>
     /// <remarks>
-    /// Check the total length of the array by using <see cref="Length"/> property before calling this method,
-    /// as an attacker could have sent you a small payload that will require to allocate a very large array
-    /// and potentially cause <see cref="OutOfMemoryException"/> and Denial of Service.
+    /// Before calling this method, check the total length of the array by using the <see cref="Length"/> property.
+    /// An attacker could have sent you a small payload that requires allocation of a very large array
+    /// that could cause <see cref="OutOfMemoryException"/> and denial of service.
     /// </remarks>
     public abstract T?[] GetArray(bool allowNulls = true);
 

@@ -29,6 +29,11 @@ check_function_exists(
     HAVE_OPENSSL_SHA3_SQUEEZE
 )
 
+check_function_exists(
+    EVP_PKEY_sign_message_init
+    HAVE_OPENSSL_EVP_PKEY_SIGN_MESSAGE_INIT
+)
+
 check_source_compiles(C "
 #include <openssl/engine.h>
 int main(void) { ENGINE_init(NULL); return 1; }"

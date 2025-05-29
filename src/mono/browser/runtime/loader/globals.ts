@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="../types/sidecar.d.ts" />
 
-import { exceptions, simd } from "wasm-feature-detect";
+import { exceptions, simd, relaxedSimd } from "wasm-feature-detect";
 
 import gitHash from "consts:gitHash";
 
@@ -133,6 +133,7 @@ export function setLoaderGlobals (
         // from wasm-feature-detect npm package
         exceptions,
         simd,
+        relaxedSimd
     };
     Object.assign(runtimeHelpers, rh);
     Object.assign(loaderHelpers, lh);

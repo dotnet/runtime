@@ -17,7 +17,6 @@
 
 #include "PalRedhawkCommon.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
 #include "interoplibinterface.h"
@@ -43,11 +42,18 @@ GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 GPTR_IMPL(Thread, g_pFinalizerThread);
 
 bool RhInitializeFinalization();
+#ifdef TARGET_WINDOWS
+bool RhWaitForFinalizerThreadStart();
+#endif
 
 // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in gcenv.ee.
 // Returns true on success or false if a subsystem failed to initialize.
 bool InitializeGC()
 {
+    // Give some headstart to the finalizer thread by launching it early.
+    if (!RhInitializeFinalization())
+        return false;
+
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
     g_FreeObjectEEType.InitializeAsGcFreeType();
     g_pFreeObjectEEType = &g_FreeObjectEEType;
@@ -78,13 +84,17 @@ bool InitializeGC()
     if (FAILED(hr))
         return false;
 
-    if (!RhInitializeFinalization())
-        return false;
-
     // Initialize HandleTable.
     if (!GCHandleUtilities::GetGCHandleManager()->Initialize())
         return false;
 
+#ifdef TARGET_WINDOWS
+    // By now finalizer thread should have initialized FLS slot for thread cleanup notifications.
+    // And ensured that COM is initialized (must happen before allocating FLS slot).
+    // Make sure that this was done.
+    if (!RhWaitForFinalizerThreadStart())
+        return false;
+#endif
     return true;
 }
 

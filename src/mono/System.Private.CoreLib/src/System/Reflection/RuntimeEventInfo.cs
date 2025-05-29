@@ -87,6 +87,8 @@ namespace System.Reflection
             return GetDeclaringTypeInternal().GetRuntimeModule();
         }
 
+        public override bool IsCollectible => false;
+
         internal BindingFlags GetBindingFlags()
         {
             MonoEventInfo info = GetEventInfo(this);

@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <paramref name="hostBuilder"/> instance for chaining.</returns>
         public static IHostBuilder UseSystemd(this IHostBuilder hostBuilder)
         {
-            ThrowHelper.ThrowIfNull(hostBuilder);
+            ArgumentNullException.ThrowIfNull(hostBuilder);
 
             if (SystemdHelpers.IsSystemdService())
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Hosting
         /// <returns>The <paramref name="services"/> instance for chaining.</returns>
         public static IServiceCollection AddSystemd(this IServiceCollection services)
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             if (SystemdHelpers.IsSystemdService())
             {

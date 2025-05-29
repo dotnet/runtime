@@ -433,7 +433,7 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() ||
         (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP) ||
-		(TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
+                (TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);
@@ -510,15 +510,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     size_t totalSize = safeTotalSize.Value();
 #endif
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
-        ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-    {
-        STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-    }
-#endif
-
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
@@ -533,12 +524,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        if (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
-        {
-            flags |= GC_ALLOC_ALIGN8;
-        }
-#endif
 #ifdef FEATURE_64BIT_ALIGNMENT
         MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
         if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
@@ -697,7 +682,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     GC_ALLOC_FLAGS flagsOriginal = flags;
 
    _ASSERTE(pArrayMT->CheckInstanceActivated());
-    PREFIX_ASSUME(pArrayMT != NULL);
+    _ASSERTE(pArrayMT != NULL);
     CorElementType kind = pArrayMT->GetInternalCorElementType();
     _ASSERTE(kind == ELEMENT_TYPE_ARRAY || kind == ELEMENT_TYPE_SZARRAY);
 
@@ -771,15 +756,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         ThrowOutOfMemoryDimensionsExceeded();
 
     size_t totalSize = safeTotalSize.Value();
-#endif
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
-        (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-    {
-        STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-    }
 #endif
 
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
@@ -1261,34 +1237,34 @@ static unsigned UncheckedBarrierInterval = BarrierCountPrintInterval;
 
 void IncCheckedBarrierCount()
 {
-	++CheckedBarrierCount;
-	if (--CheckedBarrierInterval == 0)
-	{
-		CheckedBarrierInterval = BarrierCountPrintInterval;
-		printf("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-			CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-		printf("    [Checked: %lld after heap check, %lld after ephem check, %lld after already dirty check.]\n",
-			CheckedAfterHeapFilter, CheckedAfterRefInEphemFilter, CheckedAfterAlreadyDirtyFilter);
-		printf("    [Unchecked: %lld after ephem check, %lld after already dirty check.]\n",
-			UncheckedAfterRefInEphemFilter, UncheckedAfterAlreadyDirtyFilter);
-		printf("    [Dest in ephem: checked = %lld, unchecked = %lld.]\n",
-			CheckedDestInEphem, UncheckedDestInEphem);
-        printf("    [Checked: %lld are stores to fields of ret buff, %lld via byref args,\n",
+    ++CheckedBarrierCount;
+    if (--CheckedBarrierInterval == 0)
+    {
+        CheckedBarrierInterval = BarrierCountPrintInterval;
+        minipal_log_print_info("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
+            CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
+        minipal_log_print_info("    [Checked: %lld after heap check, %lld after ephem check, %lld after already dirty check.]\n",
+            CheckedAfterHeapFilter, CheckedAfterRefInEphemFilter, CheckedAfterAlreadyDirtyFilter);
+        minipal_log_print_info("    [Unchecked: %lld after ephem check, %lld after already dirty check.]\n",
+            UncheckedAfterRefInEphemFilter, UncheckedAfterAlreadyDirtyFilter);
+        minipal_log_print_info("    [Dest in ephem: checked = %lld, unchecked = %lld.]\n",
+            CheckedDestInEphem, UncheckedDestInEphem);
+        minipal_log_print_info("    [Checked: %lld are stores to fields of ret buff, %lld via byref args,\n",
             CheckedBarrierRetBufCount, CheckedBarrierByrefArgCount);
-        printf("     %lld via other locals, %lld via addr of local.]\n",
+        minipal_log_print_info("     %lld via other locals, %lld via addr of local.]\n",
             CheckedBarrierByrefOtherLocalCount, CheckedBarrierAddrOfLocalCount);
-	}
+    }
 }
 
 void IncUncheckedBarrierCount()
 {
-	++UncheckedBarrierCount;
-	if (--UncheckedBarrierInterval == 0)
-	{
-		printf("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-			CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-		UncheckedBarrierInterval = BarrierCountPrintInterval;
-	}
+    ++UncheckedBarrierCount;
+    if (--UncheckedBarrierInterval == 0)
+    {
+        minipal_log_print_info("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
+            CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
+        UncheckedBarrierInterval = BarrierCountPrintInterval;
+    }
 }
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
