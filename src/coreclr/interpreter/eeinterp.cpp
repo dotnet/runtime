@@ -79,6 +79,11 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
     InterpCompiler compiler(compHnd, methodInfo);
     InterpMethod *pMethod = compiler.CompileMethod();
 
+    if (!pMethod)
+    {
+        return CORJIT_BADCODE;
+    }
+
     int32_t IRCodeSize;
     int32_t *pIRCode = compiler.GetCode(&IRCodeSize);
 
