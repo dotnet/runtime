@@ -14,6 +14,7 @@ check_symbol_exists(O_CLOEXEC fcntl.h HAVE_O_CLOEXEC)
 check_symbol_exists(CLOCK_MONOTONIC time.h HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE time.h HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(clock_gettime_nsec_np time.h HAVE_CLOCK_GETTIME_NSEC_NP)
+check_symbol_exists(stat64 sys/stat.h HAVE_STAT64)
 
 if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
     set(BIGENDIAN 1)

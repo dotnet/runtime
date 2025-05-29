@@ -30,7 +30,7 @@ static bool IsPathNotFullyQualified(WCHAR* path)
     // Handles paths that use the alternate directory separator.  It is a frequent mistake to
     // assume that rooted paths (Path.IsPathRooted) are not relative.  This isn't the case.
 
-    if ((path[0] == '\0') || (path[1] == '\0'))
+    if ((path[0] == L'\0') || (path[1] == L'\0'))
     {
         return true;  // It isn't fixed, it must be relative.  There is no way to specify a fixed path with one character (or less).
     }
@@ -51,7 +51,7 @@ static bool IsPathNotFullyQualified(WCHAR* path)
 //  \\server\<long>\bar => \\?\UNC\server\<long>\bar
 static WCHAR* NormalizePath(const WCHAR* path)
 {
-    if (path[0] == '\0')
+    if (path[0] == L'\0')
         return NULL;
 
     if (wcsncmp(path, DevicePathPrefix, sizeof(DevicePathPrefix) / sizeof(WCHAR) - 1) == 0)
