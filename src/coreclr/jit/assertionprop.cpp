@@ -5340,7 +5340,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
         }
 
         Range rng = Range(Limit(Limit::keUnknown));
-        if (vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
+        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
             RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng) && rng.LowerLimit().IsConstant())
         {
             // Lower known limit of ArrLen:
