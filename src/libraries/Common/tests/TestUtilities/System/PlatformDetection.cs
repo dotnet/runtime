@@ -103,7 +103,6 @@ namespace System
         public static bool IsCheckedRuntime => s_isCheckedRuntime.Value;
         public static bool IsReleaseRuntime => s_isReleaseRuntime.Value;
         public static bool IsDebugRuntime => s_isDebugRuntime.Value;
-        public static bool IsNotDebugRuntime => !IsDebugRuntime;
 
         public static bool IsReleaseLibrary(Assembly assembly) => !IsDebuggable(assembly);
         public static bool IsDebugLibrary(Assembly assembly) => IsDebuggable(assembly);
