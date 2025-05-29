@@ -316,11 +316,7 @@ namespace System.Net.Mail.Tests
             // The server will introduce some fake latency so that the operation can be canceled before the request completes
             CancellationTokenSource cts = new CancellationTokenSource();
             
-            server.OnConnected += _ => 
-            {
-                // Cancel the operation during actual server communication
-                cts.Cancel();
-            };
+            server.OnConnected += _ => cts.Cancel();
 
             var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
 
@@ -368,7 +364,6 @@ namespace System.Net.Mail.Tests
             client.SendAsync(message, null);
             AsyncCompletedEventArgs e = await tcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
             Assert.True(e.Cancelled, "SendAsync should have been canceled");
-            _output.WriteLine(e.Error?.ToString() ?? "No error");
             Assert.Null(e.Error);
 
             // We should still be able to send mail on the SmtpClient instance
