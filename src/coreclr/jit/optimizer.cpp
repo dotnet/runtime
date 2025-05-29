@@ -2012,10 +2012,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
             block->bbNum, bTop->bbNum, bTest->bbNum);
 
-    const weight_t loopIterations = bTest->bbWeight / BasicBlock::getCalledCount(this);
-    if (loopIterations == BB_ZERO_WEIGHT)
+    weight_t   loopIterations     = BB_LOOP_WEIGHT_SCALE;
+    const bool haveProfileWeights = fgIsUsingProfileWeights();
+    if (haveProfileWeights)
     {
-        return false;
+        loopIterations = bTest->GetTrueEdge()->getLikelyWeight() / BasicBlock::getCalledCount(this);
+        if (loopIterations < BB_LOOP_WEIGHT_SCALE)
+        {
+            return false;
+        }
     }
 
     // Estimate the cost of cloning the entire test block.
@@ -2104,8 +2109,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
             }
         }
     }
-
-    const bool haveProfileWeights = fgIsUsingProfileWeights();
 
 #ifdef DEBUG
     if (verbose)
