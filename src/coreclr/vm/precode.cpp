@@ -545,6 +545,7 @@ void StubPrecode::StaticInitialize()
 
 void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_t pageSize)
 {
+#ifndef TARGET_WASM
     int totalCodeSize = (int)(pageSize / StubPrecode::CodeSize) * StubPrecode::CodeSize;
 #ifdef TARGET_X86
     for (int i = 0; i < totalCodeSize; i += StubPrecode::CodeSize)
@@ -567,7 +568,7 @@ void StubPrecode::GenerateCodePage(uint8_t* pageBase, uint8_t* pageBaseRX, size_
         _ASSERTE(StubPrecode::IsStubPrecodeByASM_DAC((PCODE)(pageBaseRX + i)));
     }
 #endif // _DEBUG
-
+#endif // TARGET_WASM
 }
 
 BOOL StubPrecode::IsStubPrecodeByASM(PCODE addr)
