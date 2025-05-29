@@ -34,6 +34,17 @@ public class Delegates
         return expectedAllocationKind;
     }
 
+    static AllocationKind HeapAllocation()
+    {
+        AllocationKind expectedAllocationKind = AllocationKind.Heap;
+        if (GCStressEnabled())
+        {
+            Console.WriteLine("GCStress is enabled");
+            expectedAllocationKind = AllocationKind.Undefined;
+        }
+        return expectedAllocationKind;
+    }
+
     static int CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind, bool throws = false)
     {
         string methodName = test.Method.Name;
@@ -121,5 +132,20 @@ public class Delegates
     {
         RunTest1();
         return CallTestAndVerifyAllocation(RunTest1, 100, StackAllocation());
+    }
+
+    // Here the delegate gets stack allocated, but not the closure.
+    // With PGO the delegate is also inlined.
+    //
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static int Test2(int a) => InvokeFunc(x => x + a);
+
+    static int InvokeFunc(Func<int, int> func) => func(101);
+
+    [Fact]
+    public static int Test2()
+    {
+        RunTest2();
+        return CallTestAndVerifyAllocation(RunTest2, 100, HeapAllocation());
     }
 }
