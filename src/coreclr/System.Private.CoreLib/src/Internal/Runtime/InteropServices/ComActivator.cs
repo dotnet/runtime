@@ -706,6 +706,10 @@ namespace Internal.Runtime.InteropServices
         private const string LicenseRefTypeName = "System.ComponentModel.License&, System.ComponentModel.TypeConverter";
         private const string LicInfoHelperLicenseContextTypeName = "System.ComponentModel.LicenseManager+LicInfoHelperLicenseContext, System.ComponentModel.TypeConverter";
 
+        // RCW Activation
+        private object? _licContext;
+        private Type? _targetRcwType;
+
         [UnsafeAccessor(UnsafeAccessorKind.Method)]
         private static extern void SetSavedLicenseKey(
             [UnsafeAccessorType(LicenseContextTypeName)] object licContext,
@@ -757,10 +761,6 @@ namespace Internal.Runtime.InteropServices
         private static extern bool Contains(
             [UnsafeAccessorType(LicInfoHelperLicenseContextTypeName)] object? licInfoHelperContext,
             string assemblyName);
-
-        // RCW Activation
-        private object? _licContext;
-        private Type? _targetRcwType;
 
         // Helper function to create an object from the native side
         public static object Create()

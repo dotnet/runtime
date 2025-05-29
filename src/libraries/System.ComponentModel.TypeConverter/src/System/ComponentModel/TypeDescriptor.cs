@@ -3045,10 +3045,6 @@ namespace System.ComponentModel
         // string method is the failure is silent during type load making diagnosing the issue difficult.
         private sealed class ComNativeDescriptorProxy : TypeDescriptionProvider
         {
-            [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
-            [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
-            private static extern object CreateComNativeDescriptor();
-
             private readonly TypeDescriptionProvider _comNativeDescriptor;
 
             public ComNativeDescriptorProxy()
@@ -3059,6 +3055,10 @@ namespace System.ComponentModel
                 }
 
                 _comNativeDescriptor = (TypeDescriptionProvider)CreateComNativeDescriptor();
+
+                [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+                [return: UnsafeAccessorType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor, System.Windows.Forms")]
+                private static extern object CreateComNativeDescriptor();
             }
 
             [return: NotNullIfNotNull(nameof(instance))]

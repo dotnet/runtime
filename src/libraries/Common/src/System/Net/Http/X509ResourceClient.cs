@@ -194,8 +194,8 @@ namespace System.Net.Http
 
                     if (async)
                     {
-                        object sendTask = SendAsync(httpClient, requestMessage, cancellationToken);
-                        await ((Task)sendTask).ConfigureAwait(false);
+                        Task sendTask = (Task)SendAsync(httpClient, requestMessage, cancellationToken);
+                        await sendTask.ConfigureAwait(false);
                         responseMessage = taskResultProperty.GetValue(sendTask)!;
                     }
                     else
@@ -233,8 +233,8 @@ namespace System.Net.Http
 
                         if (async)
                         {
-                            object sendTask = SendAsync(httpClient, requestMessage, cancellationToken);
-                            await ((Task)sendTask).ConfigureAwait(false);
+                            Task sendTask = (Task)SendAsync(httpClient, requestMessage, cancellationToken);
+                            await sendTask.ConfigureAwait(false);
                             responseMessage = taskResultProperty.GetValue(sendTask)!;
                         }
                         else
