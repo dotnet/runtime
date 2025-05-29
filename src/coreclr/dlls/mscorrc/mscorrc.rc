@@ -293,7 +293,6 @@ BEGIN
 #endif // FEATURE_COMINTEROP
 
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-    IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE               "The object resolved by a native IWeakReference has an incompatible type for its managed WeakReference instance.\r\nExpected WeakReference target type: '%1'\r\nNative IWeakReference returned type: '%2'"
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
@@ -367,7 +366,6 @@ BEGIN
     IDS_CLASSLOAD_UNSUPPORTED_DISPATCH      "Could not make constrained call to method '%1' on interface '%2' with type '%3' from assembly '%4'. Dispatch to default interface methods is not supported in this situation."
     IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED    "Could not call method '%1' on type '%2' with an instance of '%3' from assembly '%4' because there is no implementation for the method."
 
-    IDS_CLASSLOAD_MISSINGMETHODRVA          "Could not load type '%1' from assembly '%2' because the method '%3' has no implementation (no RVA)."
     IDS_CLASSLOAD_BAD_FIELD                 "Type '%1' from assembly '%2' has a field of an illegal type."
     IDS_CLASSLOAD_MI_ILLEGAL_BODY           "Body referenced in a method implementation must be defined in the same type.  Type: '%1'.  Assembly: '%2'."
     IDS_CLASSLOAD_MI_ILLEGAL_TOKEN_BODY     "Body token used in a method implementation is out of range.  Type: '%1'.  Assembly: '%2'."
@@ -420,7 +418,6 @@ BEGIN
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
-    IDS_EE_NEEDS_ASSEMBLY_SPEC              "Typename needs an assembly qualifier."
 
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
 
@@ -569,7 +566,6 @@ END
 // General prompt strings.
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_RTL                             "RTL_False"    //  change this to RTL_True on Arabic/Hebrew system
 END
 
 // BAD_FORMAT_ASSERT error messages
@@ -672,14 +668,12 @@ BEGIN
         IDS_E_PROF_NO_CLSID                     "Loading profiler failed.  CORECLR_ENABLE_PROFILING was set properly, but CORECLR_PROFILER was not.  CORECLR_PROFILER must be set to the CLSID of the profiler to load.\n"
         IDS_E_PROF_INTERNAL_INIT                "Loading profiler failed due to an internal profiling services initialization failure.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
         IDS_E_PROF_BAD_CLSID                    "Loading profiler failed.  CORECLR_PROFILER is set to an invalid CLSID: '%s'.  HRESULT: 0x%x.\n"
-        IDS_E_PROF_NO_CALLBACK_IFACE            "Loading profiler failed.  CORECLR_PROFILER is set to a CLSID of a COM object that does not implement the interface GUID (IID) requested by the CLR.  This often indicates that the profiler does not support this version of the CLR.  Profiler CLSID: '%s'.  Requested IID: '%s'.\n"
         IDS_E_PROF_CCI_FAILED                   "Loading profiler failed during instantiation.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
         IDS_E_PROF_INIT_CALLBACK_FAILED         "Loading profiler failed.  The profiler was instantiated, but the profiler failed during its initialization callback.  Profiler CLSID: '%s'.  HRESULT: 0x%x.\n"
         IDS_PROF_SUPPLEMENTARY_INFO             "Process ID (decimal): %d.  Message ID: [0x%x].\n"
         IDS_PROF_LOAD_COMPLETE                  "The profiler was loaded successfully.  Profiler CLSID: '%s'.\n"
         IDS_E_PROF_NOT_ATTACHABLE               "Loading profiler failed.  The profiler was instantiated, but the profiler does not support attaching to a live process.  The profiler must be loaded at application startup by using a launcher program included with the profiler (if any) or by setting the CORECLR_ENABLE_PROFILING and CORECLR_PROFILER environment variables before launching the application to be profiled.  Profiler CLSID: '%s'\n"
         IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD  "Loading profiler failed.  There was an unhandled exception while trying to instantiate the profiler.  Please ensure the CLSID is associated with a valid profiler designed to work with this version of the runtime.  Profiler CLSID: '%s'.\n"
-        IDS_PROF_ATTACH_REQUEST_RECEIVED        "The CLR received a request to attach a profiler. Profiler CLSID: '%s'.\n"
         IDS_PROF_DETACH_INITIATED               "The profiler currently in use has requested to be detached from the process.  The CLR has disabled communication with the profiler and will unload the profiler when it is safe to do so.\n"
         IDS_PROF_DETACH_COMPLETE                "The CLR has fully detached and unloaded the profiler.\n"
         IDS_PROF_DETACH_THREAD_ERROR            "There was an internal failure in the profiling API detach infrastructure.  The profiler will not be able to be detached.  Error code: %d.\n"
