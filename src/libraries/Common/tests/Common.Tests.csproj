@@ -145,6 +145,10 @@
     <Compile Include="Tests\Interop\cgroupsTests.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\cgroups\Interop.cgroups.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcMountInfo.cs"
+             Link="Common\Interop\Linux\procfs\Interop.ProcMountInfo.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"
+             Link="Common\Interop\Unix\Interop.Errors.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
