@@ -252,6 +252,8 @@ namespace System.Buffers.Binary
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<short> Reverse(Vector256<short> vector) =>
                 Vector256.ShiftLeft(vector, 8) | Vector256.ShiftRightLogical(vector, 8);
+
+            public static Vector512<short> Reverse(Vector512<short> vector) => Vector512.ShiftLeft(vector, 8) | Vector512.ShiftRightLogical(vector, 8);
         }
 
         private readonly struct Int32EndiannessReverser : IEndiannessReverser<int>
@@ -266,6 +268,10 @@ namespace System.Buffers.Binary
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<int> Reverse(Vector256<int> vector) =>
                 Vector256.Shuffle(vector.AsByte(), Vector256.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28)).AsInt32();
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<int> Reverse(Vector512<int> vector) =>
+                Vector512.Shuffle(vector.AsByte(), Vector512.Create((byte)3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24, 31, 30, 29, 28, 35, 34, 33, 32, 39, 38, 37, 36, 43, 42, 41, 40, 47, 46, 45, 44, 51, 50, 49, 48, 55, 54, 53, 52, 59, 58, 57, 56, 63, 62, 61, 60)).AsInt32();
         }
 
         private readonly struct Int64EndiannessReverser : IEndiannessReverser<long>
@@ -280,6 +286,9 @@ namespace System.Buffers.Binary
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<long> Reverse(Vector256<long> vector) =>
                 Vector256.Shuffle(vector.AsByte(), Vector256.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24)).AsInt64();
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<long> Reverse(Vector512<long> vector) => Vector512.Shuffle(vector.AsByte(), Vector512.Create((byte)7, 6, 5, 4, 3, 2, 1, 0, 15, 14, 13, 12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 18, 17, 16, 31, 30, 29, 28, 27, 26, 25, 24, 39, 38, 37, 36, 35, 34, 33, 32, 47, 46, 45, 44, 43, 42, 41, 40, 55, 54, 53, 52, 51, 50, 49, 48, 63, 62, 61, 60, 59, 58, 57, 56)).AsInt64();
         }
 
         private static void ReverseEndianness<T, TReverser>(ReadOnlySpan<T> source, Span<T> destination)
@@ -304,6 +313,15 @@ namespace System.Buffers.Binary
                 // source data we haven't yet read.
 
                 int i = 0;
+
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    while (i <= source.Length - Vector512<T>.Count)
+                    {
+                        Vector512.StoreUnsafe(TReverser.Reverse(Vector512.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
+                        i += Vector512<T>.Count;
+                    }
+                }
 
                 if (Vector256.IsHardwareAccelerated)
                 {
@@ -337,6 +355,15 @@ namespace System.Buffers.Binary
 
                 int i = source.Length;
 
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    while (i >= Vector512<T>.Count)
+                    {
+                        i -= Vector512<T>.Count;
+                        Vector512.StoreUnsafe(TReverser.Reverse(Vector512.LoadUnsafe(ref sourceRef, (uint)i)), ref destRef, (uint)i);
+                    }
+                }
+
                 if (Vector256.IsHardwareAccelerated)
                 {
                     while (i >= Vector256<T>.Count)
@@ -368,6 +395,7 @@ namespace System.Buffers.Binary
             static abstract T Reverse(T value);
             static abstract Vector128<T> Reverse(Vector128<T> vector);
             static abstract Vector256<T> Reverse(Vector256<T> vector);
+            static abstract Vector512<T> Reverse(Vector512<T> vector);
         }
 
         /// <inheritdoc cref="ReverseEndianness(ReadOnlySpan{ushort}, Span{ushort})" />
