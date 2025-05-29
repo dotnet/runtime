@@ -315,7 +315,7 @@ namespace System.Runtime
                 if (result == HResults.E_OUTOFMEMORY)
                     throw new OutOfMemoryException();
                 else if (result != HResults.S_OK)
-                    throw new NotSupportedException() { HResult = result };
+                    throw new PlatformNotSupportedException();
 
                 // Each mapping consists of multiple blocks of thunk stubs/data pairs. Keep track of those
                 // so that we do not create a new mapping until all blocks in the sections we just mapped are consumed

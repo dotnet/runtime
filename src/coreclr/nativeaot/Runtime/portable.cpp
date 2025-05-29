@@ -367,7 +367,7 @@ FCIMPLEND
 
 FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 {
-    return S_FAIL;
+    return E_FAIL;
 }
 FCIMPLEND
 
