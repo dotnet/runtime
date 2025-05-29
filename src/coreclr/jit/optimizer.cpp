@@ -181,7 +181,8 @@ void Compiler::optScaleLoopBlocks(FlowGraphNaturalLoop* loop)
 {
     loop->VisitLoopBlocks([&](BasicBlock* curBlk) -> BasicBlockVisit {
         auto reportBlockWeight = [&](const char* message) {
-            DBEXEC(verbose, printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", curBlk->bbNum, curBlk->getBBWeight(this), message));
+            DBEXEC(verbose,
+                   printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", curBlk->bbNum, curBlk->getBBWeight(this), message));
         };
 
         // Don't change the block weight if it came from profile data.
