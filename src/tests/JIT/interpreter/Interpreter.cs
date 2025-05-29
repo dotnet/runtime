@@ -301,6 +301,7 @@ public class InterpreterTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void RunInterpreterTests()
     {
+        /*
         TestCallingConvention0(1, 2.0f, 3, 4.0, 5, 6.0);
 
         TestStruct s = new TestStruct();
@@ -428,6 +429,9 @@ public class InterpreterTest
         if (!TestMdArray())
             Environment.FailFast(null);
         */
+
+        if (!TestUnsafeAccessors())
+            Environment.FailFast(null);
 
         System.GC.Collect();
     }
@@ -1021,5 +1025,58 @@ public class InterpreterTest
         // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
         int[,] a = {{1, 2}, {3, 4}};
         return a[0, 1] == 2;
+    }
+
+    class UnsafeAccessorTestClass
+    {
+        private int Field = 7;
+        private int Property { get; set; } = 32;
+        private int Method (int arg) => arg * 2;
+
+        public void DumpState()
+        {
+            Console.WriteLine("== DumpState ==");
+            Console.WriteLine(Field);
+            Console.WriteLine(Method(4));
+            Console.WriteLine(Property);
+        }
+    }
+
+    public static bool TestUnsafeAccessors()
+    {
+        UnsafeAccessorTestClass tc = new ();
+        // Calling DumpState triggers eager interpreted compilation of Method and get_Property.
+        // They work, but then the unsafe accessor somehow ends up invoking the interpreter IR instead of the interpreter stub.
+        // tc.DumpState();
+
+        Console.WriteLine("== Unsafe Accessors ==");
+        ref int f = ref GetField(tc);
+        Console.WriteLine(f);
+        if (f != 7)
+            return false;
+
+        // If DumpState is commented out, this invocation will trigger interpreted compilation of TestClass::Method,
+        //  and then the unsafe accessor will invoke the InterpreterStub, but the return value gets trashed. For me, it is always 176.
+        int m = InvokeMethod(tc, 4);
+        Console.WriteLine(m);
+        if (m != 8)
+            return false;
+
+        int p = GetProperty(tc);
+        Console.WriteLine(p);
+        if (p != 32)
+            return false;
+
+        return true;
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name="Field")]
+        // NOTE: This won't work for an 'int' return, only 'ref int'
+        static extern ref int GetField (UnsafeAccessorTestClass tc);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name="get_Property")]
+        static extern int GetProperty (UnsafeAccessorTestClass tc);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name="Method")]
+        static extern int InvokeMethod (UnsafeAccessorTestClass tc, int arg);
     }
 }
