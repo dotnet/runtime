@@ -17716,35 +17716,10 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 //
 bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
 {
-    class Visitor final : public GenTreeVisitor<Visitor>
-    {
-        genTreeOps m_oper;
-
-    public:
-        Visitor(Compiler* comp, genTreeOps oper)
-            : GenTreeVisitor(comp)
-            , m_oper(oper)
-        {
-        }
-
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if ((*use)->OperIs(m_oper))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
+    auto hasOper = [oper](GenTree* tree) {
+        return tree->OperGet() == oper;
     };
-
-    Visitor visitor(this, oper);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtFindNodeInTree<GTF_EMPTY>(tree, hasOper) != nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -19997,7 +19972,7 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic())))
+    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic(), nullptr)))
     {
         return true;
     }
@@ -20600,6 +20575,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 #endif
 }
 
+#if defined(TARGET_XARCH)
 //------------------------------------------------------------------------
 // isEvexCompatibleHWIntrinsic: Checks if the intrinsic has a compatible
 // EVEX form for its intended lowering instruction.
@@ -20609,7 +20585,6 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 //
 bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
-#if defined(TARGET_XARCH)
     if (OperIsHWIntrinsic())
     {
         NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
@@ -20627,16 +20602,47 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
             }
         }
     }
-#endif
     return false;
 }
+
+//------------------------------------------------------------------------
+// isEmbeddedBroadcastCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// with the EVEX embedded broadcast form for its intended lowering instruction.
+//
+// Return Value:
+//   true if the intrinsic node lowering instruction has a EVEX embedded broadcast support
+//
+bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
+        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
+        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+
+        if (CodeGenInterface::instIsEmbeddedBroadcastCompatible(ins))
+        {
+            insTupleType tupleType = emitter::insTupleTypeInfo(ins);
+
+            if ((tupleType & INS_TT_MEM128) != 0)
+            {
+                assert(AsHWIntrinsic()->GetOperandCount() == 2);
+                return HWIntrinsicInfo::isImmOp(intrinsicId, AsHWIntrinsic()->Op(2));
+            }
+
+            return true;
+        }
+    }
+    return false;
+}
+#endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
 // isEmbeddedMaskingCompatibleHWIntrinsic : Checks if the intrinsic is compatible
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrinsic node lowering instruction has an EVEX embedded masking
+//   true if the intrinsic node lowering instruction has a EVEX embedded masking support
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
@@ -20646,23 +20652,21 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 #if defined(TARGET_XARCH)
         var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
-        switch (intrinsicId)
+        if (simdBaseType == TYP_UNKNOWN)
         {
-            case NI_AVX512F_ConvertToVector256Int32:
-            case NI_AVX512F_ConvertToVector256UInt32:
-            case NI_AVX512F_ConvertToVector512Int32:
-            case NI_AVX512F_ConvertToVector512UInt32:
-            case NI_AVX512F_VL_ConvertToVector128UInt32:
-            case NI_AVX10v1_ConvertToVector128UInt32:
-            {
-                return varTypeIsFloating(simdBaseType);
-            }
-
-            default:
-            {
-                return HWIntrinsicInfo::IsEmbMaskingCompatible(intrinsicId);
-            }
+            // Various scalar intrinsics don't support masking
+            return false;
         }
+
+        if (AsHWIntrinsic()->OperIsMemoryLoadOrStore())
+        {
+            // Direct loads and stores cannot be embedded masking compatible
+            // as they may suppress faults that should otherwise be raised
+            return false;
+        }
+
+        instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        return CodeGenInterface::instIsEmbeddedMaskingCompatible(ins);
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
                HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId);
@@ -21095,13 +21099,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             std::swap(op1, op2);
 #endif // TARGET_XARCH
         }
-#ifdef TARGET_XARCH
-        if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
-        {
-            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
-            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
-        }
-#endif // TARGET_XARCH
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -27169,15 +27166,6 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
         intrinsic = NI_AVX512F_VL_TernaryLogic;
     }
 
-#ifdef TARGET_XARCH
-    assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic));
-    if (varTypeIsSmall(simdBaseType))
-    {
-        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
-        simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
-    }
-#endif // TARGET_XARCH
-
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
 }
 #endif // TARGET_XARCH
@@ -28507,45 +28495,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 }
 
 //------------------------------------------------------------------------
-// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible intrinsic.
-//
-// Return Value:
-//     true if the intrinsic node lowering instruction is embedded broadcast compatible.
-//
-bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
-{
-#if defined(TARGET_XARCH)
-    NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
-    var_types      simdBaseType = GetSimdBaseType();
-
-    // MaybeImm intrinsics support embedded broadcasts only for their IMM variants (e.g. PSLLQ)
-    if (HWIntrinsicInfo::MaybeImm(intrinsicId) &&
-        !HWIntrinsicInfo::isImmOp(intrinsicId, GetOperandArray()[GetOperandCount() - 1]))
-    {
-        return false;
-    }
-
-    switch (intrinsicId)
-    {
-        case NI_AVX512F_ConvertToVector256Int32:
-        case NI_AVX512F_ConvertToVector256UInt32:
-        case NI_AVX512F_VL_ConvertToVector128UInt32:
-        case NI_AVX10v1_ConvertToVector128UInt32:
-        {
-            return varTypeIsFloating(simdBaseType);
-        }
-
-        default:
-        {
-            return !varTypeIsSmall(simdBaseType) && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
-        }
-    }
-#else
-    return false;
-#endif // TARGET_XARCH
-}
-
-//------------------------------------------------------------------------
 // OperIsBroadcastScalar: Is this HWIntrinsic a broadcast node from scalar.
 //
 // Return Value:
@@ -28749,10 +28698,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
@@ -28765,6 +28710,10 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_SetFfr:
             {
                 return true;
@@ -28897,6 +28846,15 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;
+
+#ifdef TARGET_XARCH
+    var_types simdBaseType = GetSimdBaseType();
+
+    if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+    {
+        SetSimdBaseJitType(varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT);
+    }
+#endif // TARGET_XARCH
 }
 
 /* static */ bool GenTreeHWIntrinsic::Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2)
@@ -28958,10 +28916,10 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_GetFfrByte:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:
