@@ -786,9 +786,32 @@ private:
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            InlineCandidateInfo* const inlineInfo = origCall->GetGDVCandidateInfo(0);
+            InlineCandidateInfo* const inlineInfo  = origCall->GetGDVCandidateInfo(0);
+            GenTree* const             retExprNode = inlineInfo->retExpr;
 
-            if (!origCall->TypeIs(TYP_VOID))
+            if (retExprNode == nullptr)
+            {
+                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+                return;
+            }
+
+            GenTreeRetExpr* const retExpr       = retExprNode->AsRetExpr();
+            bool const            noRetValue    = origCall->TypeIs(TYP_VOID);
+            bool const            retExprUnused = retExpr->IsUnused();
+
+            if (noRetValue)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID  return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
+            }
+            else if (retExprUnused)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for UNUSED return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
+            }
+            else
             {
                 // If there's a spill temp already associated with this inline candidate,
                 // use that instead of allocating a new temp.
@@ -850,23 +873,6 @@ private:
                         returnTemp);
 
                 inlineInfo->retExpr->gtSubstExpr = tempTree;
-            }
-            else if (inlineInfo->retExpr != nullptr)
-            {
-                // We still oddly produce GT_RET_EXPRs for some void
-                // returning calls. Just bash the ret expr to a NOP.
-                //
-                // Todo: consider bagging creation of these RET_EXPRs. The only possible
-                // benefit they provide is stitching back larger trees for failed inlines
-                // of void-returning methods. But then the calls likely sit in commas and
-                // the benefit of a larger tree is unclear.
-                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
-                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
-            }
-            else
-            {
-                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
             }
         }
 
@@ -1055,7 +1061,6 @@ private:
                 if (oldRetExpr != nullptr)
                 {
                     inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
-
                     GenTree* newRetExpr = inlineInfo->retExpr;
 
                     if (returnTemp != BAD_VAR_NUM)
@@ -1065,7 +1070,9 @@ private:
                     else
                     {
                         // We should always have a return temp if we return results by value
-                        assert(origCall->TypeGet() == TYP_VOID);
+                        // and that value is not unused.
+                        assert((origCall->TypeGet() == TYP_VOID) || oldRetExpr->IsUnused());
+                        newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
                 }

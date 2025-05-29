@@ -339,7 +339,9 @@ private:
     {
         while ((*use)->OperIs(GT_RET_EXPR))
         {
-            GenTree* tree = *use;
+            GenTree* const  tree     = *use;
+            GenTreeRetExpr* retExpr  = tree->AsRetExpr();
+            bool const      isUnused = retExpr->IsUnused();
 
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
@@ -348,46 +350,71 @@ private:
             GenTree*    inlineCandidate = tree;
             do
             {
-                GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
-                inlineCandidate         = retExpr->gtSubstExpr;
-                inlineeBB               = retExpr->gtSubstBB;
+                assert(isUnused || !retExpr->IsUnused());
+
+                retExpr         = inlineCandidate->AsRetExpr();
+                inlineCandidate = retExpr->gtSubstExpr;
+                inlineeBB       = retExpr->gtSubstBB;
             } while (inlineCandidate->OperIs(GT_RET_EXPR));
 
             // We might as well try and fold the return value. Eg returns of
             // constant bools will have CASTS. This folding may uncover more
             // GT_RET_EXPRs, so we loop around until we've got something distinct.
             //
-            inlineCandidate   = m_compiler->gtFoldExpr(inlineCandidate);
-            var_types retType = tree->TypeGet();
+            inlineCandidate = m_compiler->gtFoldExpr(inlineCandidate);
 
-#ifdef DEBUG
-            if (m_compiler->verbose)
+            // If this use is an unused ret expr, is the first child of a comma, the return value is ignored.
+            // Extract any side effects.
+            //
+            if (isUnused || ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->gtGetOp1() == *use)))
             {
-                printf("\nReplacing the return expression placeholder ");
-                Compiler::printTreeID(tree);
-                printf(" with ");
-                Compiler::printTreeID(inlineCandidate);
-                printf("\n");
-                // Dump out the old return expression placeholder it will be overwritten by the ReplaceWith below
-                m_compiler->gtDispTree(tree);
-            }
-#endif // DEBUG
+                JITDUMP("\nReturn expression placeholder [%06u] value [%06u] unused\n", m_compiler->dspTreeID(tree),
+                        m_compiler->dspTreeID(inlineCandidate));
 
-            var_types newType = inlineCandidate->TypeGet();
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(inlineCandidate, &sideEffects);
 
-            // If we end up swapping type we may need to retype the tree:
-            if (retType != newType)
-            {
-                if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+                if (sideEffects == nullptr)
                 {
-                    // - in an RVA static if we've reinterpreted it as a byref;
-                    assert(newType == TYP_I_IMPL);
-                    JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
-                    inlineCandidate->gtType = TYP_BYREF;
+                    JITDUMP("\nInline return expression had no side effects\n");
+                    (*use)->gtBashToNOP();
+                }
+                else
+                {
+                    JITDUMP("\nInserting the inline return expression side effects\n");
+                    JITDUMPEXEC(m_compiler->gtDispTree(sideEffects));
+                    JITDUMP("\n");
+                    *use = sideEffects;
                 }
             }
+            else
+            {
+                JITDUMP("\nReplacing the return expression placeholder [%06u] with [%06u]\n",
+                        m_compiler->dspTreeID(tree), m_compiler->dspTreeID(inlineCandidate));
+                JITDUMPEXEC(m_compiler->gtDispTree(tree));
 
-            *use          = inlineCandidate;
+                var_types retType = tree->TypeGet();
+                var_types newType = inlineCandidate->TypeGet();
+
+                // If we end up swapping type we may need to retype the tree:
+                if (retType != newType)
+                {
+                    if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+                    {
+                        // - in an RVA static if we've reinterpreted it as a byref;
+                        assert(newType == TYP_I_IMPL);
+                        JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
+                        inlineCandidate->gtType = TYP_BYREF;
+                    }
+                }
+
+                JITDUMP("\nInserting the inline return expression\n");
+                JITDUMPEXEC(m_compiler->gtDispTree(inlineCandidate));
+                JITDUMP("\n");
+
+                *use = inlineCandidate;
+            }
+
             m_madeChanges = true;
 
             if (inlineeBB != nullptr)
@@ -396,15 +423,6 @@ private:
                 // Propagate those flags from the containing BB.
                 m_compiler->compCurBB->CopyFlags(inlineeBB, BBF_COPY_PROPAGATE);
             }
-
-#ifdef DEBUG
-            if (m_compiler->verbose)
-            {
-                printf("\nInserting the inline return expression\n");
-                m_compiler->gtDispTree(inlineCandidate);
-                printf("\n");
-            }
-#endif // DEBUG
         }
 
         // If the inline was rejected and returns a retbuffer, then mark that
