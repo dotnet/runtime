@@ -59,16 +59,32 @@ namespace System.IO.Hashing
 
 
 #if SYSTEM_PRIVATE_CORELIB
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int NonRandomizedHashToInt32(byte* sourcePtr, uint length)
         {
             // We currently use this function only for large inputs from corelib's String.GetNonRandomizedHashCode,
             // so we don't need the fast path for small inputs.
             //
-            // if (length <= 16)
-            // {
-            //     return HashLength0To16(sourcePtr, length, 0UL);
-            // }
-            Debug.Assert(length > 16);
+            if (length <= 16)
+            {
+                if (length > 8)
+                {
+                    return (int)HashLength9To16(sourcePtr, length, 0UL);
+                }
+
+                if (length >= 4)
+                {
+                    return (int)HashLength4To8(sourcePtr, length, 0UL);
+                }
+
+                if (length != 0)
+                {
+                    return (int)HashLength1To3(sourcePtr, length, 0UL);
+                }
+
+                const ulong SecretXor = DefaultSecretUInt64_7 ^ DefaultSecretUInt64_8;
+                return (int)Avalanche(SecretXor);
+            }
 
             if (length <= 128)
             {

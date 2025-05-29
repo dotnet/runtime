@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if !MONO && (TARGET_AMD64 || TARGET_ARM64)
-#define USE_XXHASH3
-#endif
-
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
@@ -831,23 +827,21 @@ namespace System
         // restructure the comparison so that for odd-length spans, we simulate the null terminator and include
         // it in the hash computation exactly as does str.GetNonRandomizedHashCode().
 
-#if USE_XXHASH3
-#if TARGET_AMD64
-        private const int XxHash3Threshold = 64;
-#else
-        // XxHash3 is less efficient on ARM64 due to the lack of 256/512-bit vectors
-        // We should revisit this if we start using SVE in the hash implementation.
-        private const int XxHash3Threshold = 128;
-#endif
-#endif
-
-        internal unsafe int GetNonRandomizedHashCode()
+        internal int GetNonRandomizedHashCode()
         {
             return GetNonRandomizedHashCode(new ReadOnlySpan<char>(ref _firstChar, _stringLength));
         }
 
         internal static unsafe int GetNonRandomizedHashCode(ReadOnlySpan<char> span)
         {
+            // Use XxHash3 on platforms that accelerate it, such as AMD64 and ARM64.
+#if !MONO && (TARGET_AMD64 || TARGET_ARM64)
+            fixed (char* src = &MemoryMarshal.GetReference(span))
+            {
+                uint byteLength = (uint)span.Length * 2; // never overflows
+                return System.IO.Hashing.XxHash3.NonRandomizedHashToInt32((byte*)src, byteLength);
+            }
+#else
             uint hash1 = (5381 << 16) + 5381;
             uint hash2 = hash1;
 
@@ -860,13 +854,6 @@ namespace System
                 switch (length)
                 {
                     default:
-#if USE_XXHASH3
-                        if (length >= XxHash3Threshold)
-                        {
-                            uint byteLength = (uint)length * 2; // never overflows
-                            return System.IO.Hashing.XxHash3.NonRandomizedHashToInt32((byte*)src, byteLength);
-                        }
-#endif
                         do
                         {
                             length -= 4;
@@ -908,6 +895,7 @@ namespace System
             }
 
             return (int)(hash1 + (hash2 * 1_566_083_941));
+#endif
         }
 
         // We "normalize to lowercase" every char by ORing with 0x0020. This casts
