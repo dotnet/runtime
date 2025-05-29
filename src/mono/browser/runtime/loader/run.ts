@@ -16,7 +16,6 @@ import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { importLibraryInitializers, invokeLibraryInitializers } from "./libraryInitializers";
-import { initCacheToUseIfEnabled } from "./assetsCache";
 
 
 export class HostBuilder implements DotnetHostBuilder {
@@ -510,8 +509,6 @@ async function downloadOnly ():Promise<void> {
 
     prepareAssets();
 
-    await initCacheToUseIfEnabled();
-
     init_globalization();
 
     mono_download_assets(); // intentionally not awaited
@@ -526,8 +523,6 @@ async function createEmscriptenMain (): Promise<RuntimeAPI> {
     prepareAssets();
 
     const promises = importModules();
-
-    await initCacheToUseIfEnabled();
 
     streamingCompileWasm(); // intentionally not awaited
 
