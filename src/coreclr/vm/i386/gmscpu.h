@@ -71,8 +71,6 @@ protected:
    until later.  Note that we don't reuse slots, because we want
    this to be threadsafe without locks */
 
-struct LazyMachState;
-typedef DPTR(LazyMachState) PTR_LazyMachState;
 struct LazyMachState : public MachState {
     // compute the machine state of the processor as it will exist just
     // after the return after at most'funCallDepth' number of functions.
@@ -104,19 +102,5 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
     // this has to be last
     VolatileStore((TADDR*)&_pRetAddr, dac_cast<TADDR>(copy->_pRetAddr));
 }
-
-// Do the initial capture of the machine state.  This is meant to be
-// as light weight as possible, as we may never need the state that
-// we capture.  Thus to complete the process you need to call
-// 'getMachState()', which finishes the process
-EXTERN_C int __fastcall LazyMachStateCaptureState(struct LazyMachState *pState);
-
-// CAPTURE_STATE captures just enough register state so that the state of the
-// processor can be deterined just after the routine that has CAPTURE_STATE in
-// it returns.
-
-// Note that the return is never taken, it is there for epilog walking
-#define CAPTURE_STATE(machState, ret)                       \
-    if (LazyMachStateCaptureState(machState)) ret
 
 #endif

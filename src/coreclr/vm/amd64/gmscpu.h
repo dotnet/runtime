@@ -42,19 +42,6 @@ protected:
     PCODE m_Rip;
     TADDR m_Rsp;
 
-    //
-    // These "capture" fields are READ ONLY once initialized by
-    // LazyMachStateCaptureState because we are racing to update
-    // the MachState when we do a stackwalk so, we must not update
-    // any state used to initialize the unwind from the captured
-    // state to the managed caller.
-    //
-    // Note also, that these fields need to be in the base struct
-    // because the context pointers below may point up to these
-    // fields.
-    //
-    CalleeSavedRegisters m_Capture;
-
     // context pointers for preserved registers
     CalleeSavedRegistersPointers m_Ptrs;
 
@@ -68,14 +55,6 @@ protected:
 #endif
 };
 
-/********************************************************************/
-/* This allows you to defer the computation of the Machine state
-   until later.  Note that we don't reuse slots, because we want
-   this to be threadsafe without locks */
-
-EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
-
-typedef DPTR(struct LazyMachState) PTR_LazyMachState;
 struct LazyMachState : public MachState
 {
     // compute the machine state of the processor as it will exist just
@@ -90,16 +69,6 @@ struct LazyMachState : public MachState
     void setLazyStateFromUnwind(MachState* copy);
 
     friend class CheckAsmOffsets;
-
-    //
-    // These "capture" fields are READ ONLY once initialized by
-    // LazyMachStateCaptureState because we are racing to update
-    // the MachState when we do a stackwalk so, we must not update
-    // any state used to initialize the unwind from the captured
-    // state to the managed caller.
-    //
-    ULONG64 m_CaptureRip;
-    ULONG64 m_CaptureRsp;
 };
 
 inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
@@ -152,18 +121,5 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 
 #endif // !DACCESS_COMPILE
 }
-
-// Do the initial capture of the machine state.  This is meant to be
-// as light weight as possible, as we may never need the state that
-// we capture.  Thus to complete the process you need to call
-// 'getMachState()', which finishes the process
-EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
-
-// CAPTURE_STATE captures just enough register state so that the state of the
-// processor can be deterined just after the routine that has CAPTURE_STATE in
-// it returns.
-
-#define CAPTURE_STATE(machState, ret)                           \
-    LazyMachStateCaptureState(machState)
 
 #endif // __gmsAMD64_h__

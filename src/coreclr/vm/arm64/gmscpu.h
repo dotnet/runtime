@@ -93,13 +93,4 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 #endif // DACCESS_COMPILE
 }
 
-// Do the initial capture of the machine state.  This is meant to be
-// as light weight as possible, as we may never need the state that
-// we capture.
-EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
-
-#define CAPTURE_STATE(machState, ret)                       \
-    LazyMachStateCaptureState(machState)
-
-
 #endif

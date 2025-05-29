@@ -317,40 +317,6 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     EPILOG_BRANCH_REG  t4
 NESTED_END ThePreStub, _TEXT
 
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    sw  zero, (MachState__isValid)(a0)
-
-    sd  ra, (LazyMachState_captureIp)(a0)
-
-    // save sp register.
-    sd  sp, (LazyMachState_captureSp)(a0)
-
-    // save non-volatile registers that can contain object references
-    addi  a1, a0, LazyMachState_captureCalleeSavedRegisters
-
-    sd  s0, 0(a1)
-    sd  s1, 8(a1)
-    sd  s2, 16(a1)
-    sd  s3, 24(a1)
-    sd  s4, 32(a1)
-    sd  s5, 40(a1)
-    sd  s6, 48(a1)
-    sd  s7, 56(a1)
-    sd  s8, 64(a1)
-    sd  s9, 72(a1)
-    sd  s10, 80(a1)
-    sd  s11, 88(a1)
-    sd  gp, 96(a1)
-    sd  tp, 104(a1)
-
-    ret
-LEAF_END LazyMachStateCaptureState, _TEXT
-
 // ------------------------------------------------------------------
 // The call in ndirect import precode points to this function.
 NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler

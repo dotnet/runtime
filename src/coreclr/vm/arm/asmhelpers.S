@@ -135,23 +135,6 @@ CallDescrWorkerInternalReturnAddressOffset:
 
 // ------------------------------------------------------------------
 
-// void LazyMachStateCaptureState(struct LazyMachState *pState)//
-    LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-
-        // marks that this is not yet valid
-        mov     r1, #0
-        str     r1, [r0, #MachState__isValid]
-
-        str     lr, [r0, #LazyMachState_captureIp]
-        str     sp, [r0, #LazyMachState_captureSp]
-
-        add     r1, r0, #LazyMachState_captureR4_R11
-        stm     r1, {r4-r11}
-
-        mov     pc, lr
-
-    LEAF_END LazyMachStateCaptureState, _TEXT
-
 //
 // r12 = UMEntryThunk*
 //

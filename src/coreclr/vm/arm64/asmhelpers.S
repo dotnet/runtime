@@ -30,33 +30,6 @@ LEAF_END GetDataCacheZeroIDReg, _TEXT
         ret     lr
     LEAF_END GetSveLengthFromOS, _TEXT
 
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    mov w1, #0
-    str w1, [x0, #MachState__isValid]
-
-    str lr, [x0, #LazyMachState_captureIp]
-
-    // str instruction does not save sp register directly so move to temp register
-    mov x1, sp
-    str x1, [x0, #LazyMachState_captureSp]
-
-    // save non-volatile registers that can contain object references
-    add x1, x0, #LazyMachState_captureX19_X29
-    stp x19, x20, [x1, #(16*0)]
-    stp x21, x22, [x1, #(16*1)]
-    stp x23, x24, [x1, #(16*2)]
-    stp x25, x26, [x1, #(16*3)]
-    stp x27, x28, [x1, #(16*4)]
-    str x29, [x1, #(16*5)]
-
-    ret lr
-LEAF_END LazyMachStateCaptureState, _TEXT
-
 // ------------------------------------------------------------------
 // The call in ndirect import precode points to this function.
 NESTED_ENTRY NDirectImportThunk, _TEXT, NoHandler

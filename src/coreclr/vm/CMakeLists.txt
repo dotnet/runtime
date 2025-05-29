@@ -674,7 +674,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
         ${ARCH_SOURCES_DIR}/AllocSlow.asm
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
         ${ARCH_SOURCES_DIR}/ehhelpers.asm
-        ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
@@ -740,7 +739,6 @@ else(CLR_CMAKE_TARGET_WIN32)
             ${ARCH_SOURCES_DIR}/ehhelpers.S
             ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/jithelp.S
-            ${ARCH_SOURCES_DIR}/gmsasm.S
             ${ARCH_SOURCES_DIR}/pinvokestubs.S
             ${ARCH_SOURCES_DIR}/umthunkstub.S
             ${ARCH_SOURCES_DIR}/thunktemplates.S

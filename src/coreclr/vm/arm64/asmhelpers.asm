@@ -93,49 +93,6 @@
         ret     lr
     LEAF_END
 
-;;-----------------------------------------------------------------------------
-;; This routine captures the machine state. It is used by helper method frame
-;;-----------------------------------------------------------------------------
-;;void LazyMachStateCaptureState(struct LazyMachState *pState);
-        LEAF_ENTRY LazyMachStateCaptureState
-        ;; marks that this is not yet valid
-        mov     w1, #0
-        str     w1, [x0, #MachState__isValid]
-
-        str     lr, [x0, #LazyMachState_captureIp]
-
-        ;; str instruction does not save sp register directly so move to temp register
-        mov     x1, sp
-        str     x1, [x0, #LazyMachState_captureSp]
-
-        ;; save non-volatile registers that can contain object references
-        add     x1, x0, #LazyMachState_captureX19_X29
-        stp     x19, x20, [x1, #(16*0)]
-        stp     x21, x22, [x1, #(16*1)]
-        stp     x23, x24, [x1, #(16*2)]
-        stp     x25, x26, [x1, #(16*3)]
-        stp     x27, x28, [x1, #(16*4)]
-        str     x29, [x1, #(16*5)]
-
-        ret     lr
-        LEAF_END
-
-        ;
-        ; If a preserved register were pushed onto the stack between
-        ; the managed caller and the H_M_F, ptrX19_X29 will point to its
-        ; location on the stack and it would have been updated on the
-        ; stack by the GC already and it will be popped back into the
-        ; appropriate register when the appropriate epilog is run.
-        ;
-        ; Otherwise, the register is preserved across all the code
-        ; in this HCALL or FCALL, so we need to update those registers
-        ; here because the GC will have updated our copies in the
-        ; frame.
-        ;
-        ; So, if ptrX19_X29 points into the MachState, we need to update
-        ; the register here.  That's what this macro does.
-        ;
-
 ; ------------------------------------------------------------------
 ; The call in ndirect import precode points to this function.
         NESTED_ENTRY NDirectImportThunk

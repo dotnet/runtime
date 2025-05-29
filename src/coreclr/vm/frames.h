@@ -54,9 +54,6 @@
 //    | |                         to either a EE runtime helper function or
 //    | |                         a framed method.
 //    | |
-//    | +-MulticastFrame        - this frame protects arguments to a MulticastDelegate
-//    |                           Invoke() call while calling each subscriber.
-//    |
 //    | +-FramedMethodFrame     - this abstract frame represents a call to a method
 //    |   |                       that generates a full-fledged frame.
 //    |   |

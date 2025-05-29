@@ -43,24 +43,5 @@
     
     // R4 - R11
     #define NUM_NONVOLATILE_CONTEXT_POINTERS 8
-    
-    inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
-    {
-        _ASSERTE("LazyMachState::setLazyStateFromUnwind is not implemented");
-    }
-    typedef DPTR(LazyMachState) PTR_LazyMachState;
-    
-    // Do the initial capture of the machine state.  This is meant to be
-    // as light weight as possible, as we may never need the state that
-    // we capture.  Thus to complete the process you need to call
-    // 'getMachState()', which finishes the process
-    EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
-    
-    // CAPTURE_STATE captures just enough register state so that the state of the
-    // processor can be deterined just after the routine that has CAPTURE_STATE in
-    // it returns.
-    
-    #define CAPTURE_STATE(machState, ret)                       \
-        LazyMachStateCaptureState(machState)
-    
+
     #endif
