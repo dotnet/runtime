@@ -469,8 +469,8 @@ namespace System.Numerics.Tensors
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> RadiansToDegrees<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.ITrigonometricFunctions<T> { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Reciprocal<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IFloatingPoint<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Reciprocal<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IFloatingPoint<T> { throw null; }
-        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Reshape<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
-        public static System.Numerics.Tensors.TensorSpan<T> Reshape<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Reshape<T>(this scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Reshape<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Reshape<T>(this System.Numerics.Tensors.Tensor<T> tensor, scoped System.ReadOnlySpan<nint> lengths) { throw null; }
         public static void ResizeTo<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, in System.Numerics.Tensors.TensorSpan<T> destination) { }
         public static void ResizeTo<T>(scoped in System.Numerics.Tensors.TensorSpan<T> tensor, in System.Numerics.Tensors.TensorSpan<T> destination) { }
@@ -511,11 +511,11 @@ namespace System.Numerics.Tensors
         public static System.Numerics.Tensors.Tensor<T>[] Split<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, int splitCount, nint dimension) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Sqrt<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.IRootFunctions<T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Sqrt<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IRootFunctions<T> { throw null; }
-        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> SqueezeDimension<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, int dimension) { throw null; }
-        public static System.Numerics.Tensors.TensorSpan<T> SqueezeDimension<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, int dimension) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> SqueezeDimension<T>(this scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, int dimension) { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> SqueezeDimension<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor, int dimension) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> SqueezeDimension<T>(this System.Numerics.Tensors.Tensor<T> tensor, int dimension) { throw null; }
-        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Squeeze<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor) { throw null; }
-        public static System.Numerics.Tensors.TensorSpan<T> Squeeze<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Squeeze<T>(this scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor) { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Squeeze<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Squeeze<T>(this System.Numerics.Tensors.Tensor<T> tensor) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> StackAlongDimension<T>(int dimension, params scoped System.ReadOnlySpan<System.Numerics.Tensors.Tensor<T>> tensors) { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> StackAlongDimension<T>(scoped System.ReadOnlySpan<System.Numerics.Tensors.Tensor<T>> tensors, in System.Numerics.Tensors.TensorSpan<T> destination, int dimension) { throw null; }
@@ -546,8 +546,8 @@ namespace System.Numerics.Tensors
         public static bool TryBroadcastTo<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public static bool TryBroadcastTo<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
         public static bool TryBroadcastTo<T>(this System.Numerics.Tensors.Tensor<T> tensor, in System.Numerics.Tensors.TensorSpan<T> destination) { throw null; }
-        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Unsqueeze<T>(this in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, int dimension) { throw null; }
-        public static System.Numerics.Tensors.TensorSpan<T> Unsqueeze<T>(this in System.Numerics.Tensors.TensorSpan<T> tensor, int dimension) { throw null; }
+        public static System.Numerics.Tensors.ReadOnlyTensorSpan<T> Unsqueeze<T>(this scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> tensor, int dimension) { throw null; }
+        public static System.Numerics.Tensors.TensorSpan<T> Unsqueeze<T>(this scoped in System.Numerics.Tensors.TensorSpan<T> tensor, int dimension) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Unsqueeze<T>(this System.Numerics.Tensors.Tensor<T> tensor, int dimension) { throw null; }
         public static System.Numerics.Tensors.Tensor<T> Xor<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
         public static ref readonly System.Numerics.Tensors.TensorSpan<T> Xor<T>(scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x, scoped in System.Numerics.Tensors.ReadOnlyTensorSpan<T> y, in System.Numerics.Tensors.TensorSpan<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { throw null; }
