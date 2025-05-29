@@ -1040,6 +1040,10 @@ public class InterpreterTest
             Console.WriteLine(Field);
             Console.WriteLine(Method(4));
             Console.WriteLine(Property);
+            VoidMethod();
+            Console.WriteLine(Field);
+            // Restore value of Field
+            Field = 7;
         }
     }
 
@@ -1048,7 +1052,7 @@ public class InterpreterTest
         UnsafeAccessorTestClass tc = new ();
         // Calling DumpState triggers eager interpreted compilation of UnsafeAccessorTestClass's methods.
         // They work, but then the unsafe accessors somehow end up invoking the interpreter IR instead of the interpreter stub.
-        // tc.DumpState();
+        tc.DumpState();
 
         Console.WriteLine("== Unsafe Accessors ==");
         ref int f = ref GetField(tc);
