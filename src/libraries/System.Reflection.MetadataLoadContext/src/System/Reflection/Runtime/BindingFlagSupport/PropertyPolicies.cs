@@ -95,19 +95,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return getter;
 
             // Compare accessibility of getter and setter, returning the most accessible one
-            MethodAttributes getterAccess = getter.Attributes & MethodAttributes.MemberAccessMask;
-            MethodAttributes setterAccess = setter.Attributes & MethodAttributes.MemberAccessMask;
+            static MethodAttributes GetAccessibility(MethodInfo method) => method.Attributes & MethodAttributes.MemberAccessMask;
 
-            // Accessibility priority: Public > Family/Assembly (protected/internal) > Private
-            // Return the getter if accessibilities are equal (preserving original behavior)
-            if (IsMoreAccessible(setterAccess, getterAccess))
-                return setter;
-            else
-                return getter;
-        }
+            MethodAttributes getterAccess = GetAccessibility(getter);
+            MethodAttributes setterAccess = GetAccessibility(setter);
 
-        private static bool IsMoreAccessible(MethodAttributes access1, MethodAttributes access2)
-        {
             // Define accessibility ranking
             static int GetAccessibilityRank(MethodAttributes access) => access switch
             {
@@ -120,7 +112,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 _ => 0
             };
 
-            return GetAccessibilityRank(access1) > GetAccessibilityRank(access2);
+            // Return the setter if it's more accessible, otherwise return the getter (preserving original behavior when equal)
+            return GetAccessibilityRank(setterAccess) > GetAccessibilityRank(getterAccess) ? setter : getter;
         }
     }
 }
