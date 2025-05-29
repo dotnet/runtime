@@ -82,7 +82,6 @@ nativeStringResourceTable_mscorrc
 #FreeEnvironmentStringsW
 #FreeLibrary
 #FileTimeToSystemTime
-#GetACP
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
@@ -113,8 +112,6 @@ nativeStringResourceTable_mscorrc
 #OutputDebugStringW
 #OpenEventW
 #OutputDebugStringA
-#QueryPerformanceCounter
-#QueryPerformanceFrequency
 #RaiseException
 #RaiseFailFastException
 #ReadFile

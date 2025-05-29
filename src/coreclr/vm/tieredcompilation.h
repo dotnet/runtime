@@ -71,7 +71,7 @@ public:
 
 private:
     static DWORD StaticBackgroundWorkCallback(void* args);
-    bool DoBackgroundWork(UINT64 *workDurationTicksRef, UINT64 minWorkDurationTicks, UINT64 maxWorkDurationTicks);
+    bool DoBackgroundWork(int64_t *workDurationTicksRef, int64_t minWorkDurationTicks, int64_t maxWorkDurationTicks);
 
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);

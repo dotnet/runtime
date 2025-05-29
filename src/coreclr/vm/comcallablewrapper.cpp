@@ -847,7 +847,7 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     CONTRACTL_END;
 
     MethodTable* pMT = pTemplate->GetClassType().GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
 
 
     m_pMT = pMT;

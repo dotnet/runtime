@@ -22,17 +22,16 @@ public class PreloadingTests : WasmTemplateTestsBase
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public void PreloadAssets(bool isPublish, bool fingerprintAssets)
+    public void PreloadAssets(bool isPublish, bool fingerprintDotnetJs)
     {
         Configuration config = Configuration.Debug;
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp, "PreloadAssets");
 
-        // TODO: AssertAppBundle doesn't with fingerprinted dotnet.js at the moment
-        string extraMSBuildArgs = $"-p:OverrideHtmlAssetPlaceholders=true -p:WasmFingerprintAssets={fingerprintAssets}";
+        string extraMSBuildArgs = $"-p:WasmFingerprintDotnetJs={fingerprintDotnetJs}";
         if (isPublish)
-            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs, AssertAppBundle: false));
+            PublishProject(info, config, new PublishOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintDotnetJs);
         else
-            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs, AssertAppBundle: false));
+            BuildProject(info, config, new BuildOptions(ExtraMSBuildArgs: extraMSBuildArgs), wasmFingerprintDotnetJs: fingerprintDotnetJs);
 
         string? indexHtmlPath = null;
         if (isPublish)
@@ -52,7 +51,7 @@ public class PreloadingTests : WasmTemplateTestsBase
         Assert.True(File.Exists(indexHtmlPath));
         string indexHtmlContent = File.ReadAllText(indexHtmlPath);
 
-        if (fingerprintAssets)
+        if (fingerprintDotnetJs)
         {
             // Expect to find fingerprinted preload
             Assert.Contains("<link href=\"_framework/dotnet", indexHtmlContent);

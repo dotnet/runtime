@@ -32,6 +32,7 @@ public enum DataType
     ModuleLookupMap,
     AppDomain,
     Assembly,
+    LoaderAllocator,
     PEAssembly,
     PEImage,
     PEImageLayout,
@@ -96,6 +97,9 @@ public enum DataType
     MethodImpl,
     NativeCodeSlot,
     GCCoverageInfo,
+    ArrayListBase,
+    ArrayListBlock,
+
     TransitionBlock,
     DebuggerEval,
     CalleeSavedRegisters,

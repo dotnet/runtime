@@ -60,7 +60,7 @@ namespace ILCompiler
                 if (!field.IsStatic || field.IsLiteral || field.IsThreadStatic || field.HasRva)
                     continue;
 
-               _fieldValues.Add(field, NewUninitializedLocationValue(field.FieldType, field));
+                _fieldValues.Add(field, NewUninitializedLocationValue(field.FieldType, field));
             }
         }
 
@@ -235,17 +235,17 @@ namespace ILCompiler
                     case ILOpcode.ldc_i4_6:
                     case ILOpcode.ldc_i4_7:
                     case ILOpcode.ldc_i4_8:
+                    {
+                        int value = opcode switch
                         {
-                            int value = opcode switch
-                            {
-                                ILOpcode.ldc_i4_m1 => -1,
-                                ILOpcode.ldc_i4_s => (sbyte)reader.ReadILByte(),
-                                ILOpcode.ldc_i4 => (int)reader.ReadILUInt32(),
-                                _ => opcode - ILOpcode.ldc_i4_0,
-                            };
-                            stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(value));
-                        }
-                        break;
+                            ILOpcode.ldc_i4_m1 => -1,
+                            ILOpcode.ldc_i4_s => (sbyte)reader.ReadILByte(),
+                            ILOpcode.ldc_i4 => (int)reader.ReadILUInt32(),
+                            _ => opcode - ILOpcode.ldc_i4_0,
+                        };
+                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(value));
+                    }
+                    break;
 
                     case ILOpcode.ldc_i8:
                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)reader.ReadILUInt64()));
@@ -258,48 +258,48 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.sizeof_:
-                        {
-                            TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(type.GetElementSize().AsInt));
-                        }
-                        break;
+                    {
+                        TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(type.GetElementSize().AsInt));
+                    }
+                    break;
 
                     case ILOpcode.ldnull:
                         stack.Push((ReferenceTypeValue)null);
                         break;
 
                     case ILOpcode.newarr:
+                    {
+                        if (!stack.TryPopIntValue(out int elementCount))
                         {
-                            if (!stack.TryPopIntValue(out int elementCount))
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            const int MaximumInterpretedArraySize = 8192;
-
-                            TypeDesc elementType = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (elementCount > 0
-                                && (elementType.IsGCPointer
-                                || (elementType.IsValueType && ((DefType)elementType).ContainsGCPointers)))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
-                            }
-
-                            if (elementCount < 0
-                                || elementCount > MaximumInterpretedArraySize)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Array out of bounds");
-                            }
-
-                            if (elementType.RequiresAlign8())
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
-                            }
-
-                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
-                            stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount, allocSite));
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
-                        break;
+
+                        const int MaximumInterpretedArraySize = 8192;
+
+                        TypeDesc elementType = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (elementCount > 0
+                            && (elementType.IsGCPointer
+                            || (elementType.IsValueType && ((DefType)elementType).ContainsGCPointers)))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
+                        }
+
+                        if (elementCount < 0
+                            || elementCount > MaximumInterpretedArraySize)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Array out of bounds");
+                        }
+
+                        if (elementType.RequiresAlign8())
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+                        }
+
+                        AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                        stack.Push(new ArrayInstance(elementType.MakeArrayType(), elementCount, allocSite));
+                    }
+                    break;
 
                     case ILOpcode.dup:
                         if (stack.Count == 0)
@@ -310,487 +310,487 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.pop:
-                        {
-                            stack.Pop();
-                            break;
-                        }
+                    {
+                        stack.Pop();
+                        break;
+                    }
 
                     case ILOpcode.ldstr:
+                    {
+                        string s = (string)methodIL.GetObject(reader.ReadILToken());
+                        if (!_internedStrings.TryGetValue(s, out StringInstance instance))
                         {
-                            string s = (string)methodIL.GetObject(reader.ReadILToken());
-                            if (!_internedStrings.TryGetValue(s, out StringInstance instance))
-                            {
-                                instance = new StringInstance(context.GetWellKnownType(WellKnownType.String), s);
-                                _internedStrings.Add(s, instance);
-                            }
-                            stack.Push(instance);
+                            instance = new StringInstance(context.GetWellKnownType(WellKnownType.String), s);
+                            _internedStrings.Add(s, instance);
                         }
-                        break;
+                        stack.Push(instance);
+                    }
+                    break;
 
                     case ILOpcode.ret:
+                    {
+                        bool returnsVoid = methodIL.OwningMethod.Signature.ReturnType.IsVoid;
+                        if ((returnsVoid && stack.Count > 0)
+                            || (!returnsVoid && stack.Count != 1))
                         {
-                            bool returnsVoid = methodIL.OwningMethod.Signature.ReturnType.IsVoid;
-                            if ((returnsVoid && stack.Count > 0)
-                                || (!returnsVoid && stack.Count != 1))
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            if (!returnsVoid)
-                            {
-                                returnValue = stack.PopIntoLocation(methodIL.OwningMethod.Signature.ReturnType);
-                            }
-                            return Status.Success;
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
+
+                        if (!returnsVoid)
+                        {
+                            returnValue = stack.PopIntoLocation(methodIL.OwningMethod.Signature.ReturnType);
+                        }
+                        return Status.Success;
+                    }
 
                     case ILOpcode.nop:
                     case ILOpcode.volatile_:
                         break;
 
                     case ILOpcode.stsfld:
+                    {
+                        FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (!field.IsStatic || field.IsLiteral)
                         {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (!field.IsStatic || field.IsLiteral)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
 
-                            if (field.OwningType != _type)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Store into other static");
-                            }
+                        if (field.OwningType != _type)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Store into other static");
+                        }
 
-                            if (field.IsThreadStatic || field.HasRva)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
-                            }
+                        if (field.IsThreadStatic || field.HasRva)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
+                        }
 
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
-                            }
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                        }
 
-                            if (_fieldValues[field] is IAssignableValue assignableField)
+                        if (_fieldValues[field] is IAssignableValue assignableField)
+                        {
+                            if (!assignableField.TryAssign(stack.PopIntoLocation(field.FieldType)))
                             {
-                                if (!assignableField.TryAssign(stack.PopIntoLocation(field.FieldType)))
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
-                                }
-                            }
-                            else
-                            {
-                                Value value = stack.PopIntoLocation(field.FieldType);
-                                if (value is IInternalModelingOnlyValue)
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
-                                _fieldValues[field] = value;
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
                             }
                         }
-                        break;
+                        else
+                        {
+                            Value value = stack.PopIntoLocation(field.FieldType);
+                            if (value is IInternalModelingOnlyValue)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Value with no external representation");
+                            _fieldValues[field] = value;
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldsfld:
                     case ILOpcode.ldsflda:
+                    {
+                        FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (!field.IsStatic || field.IsLiteral)
                         {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (!field.IsStatic || field.IsLiteral)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            if (field.IsThreadStatic)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
-                            }
-
-                            if (opcode != ILOpcode.ldsfld
-                                && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
-                            }
-
-                            Value fieldValue;
-                            if (field.HasRva)
-                            {
-                                if (!field.IsInitOnly
-                                    || field.OwningType.HasStaticConstructor
-                                    || field.GetTypicalFieldDefinition() is not EcmaField ecmaField)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported RVA static");
-                                }
-
-                                fieldValue = new ValueTypeValue(GetFieldRvaData(ecmaField));
-                            }
-                            else if (field.OwningType == _type)
-                            {
-                                fieldValue = _fieldValues[field];
-                            }
-                            else if (_readOnlyPolicy.IsReadOnly(field)
-                                && field.OwningType.HasStaticConstructor
-                                && _policy.CanPreinitialize(field.OwningType))
-                            {
-                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)field.OwningType, recursionProtect, ref instructionCounter, out NestedPreinitResult nestedPreinitResult))
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
-                                }
-
-                                if (!nestedPreinitResult.TryGetFieldValue(this, field, out fieldValue))
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else if (_readOnlyPolicy.IsReadOnly(field)
-                                && opcode != ILOpcode.ldsflda // We need to intern these for correctness in ldsfda scenarios
-                                && !field.OwningType.HasStaticConstructor)
-                            {
-                                // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
-                                fieldValue = NewUninitializedLocationValue(field.FieldType, field);
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
-                            }
-
-                            if (opcode == ILOpcode.ldsfld)
-                            {
-                                stack.PushFromLocation(field.FieldType, fieldValue);
-                            }
-                            else
-                            {
-                                Debug.Assert(opcode == ILOpcode.ldsflda);
-                                if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
-                                }
-
-                                stack.Push(StackValueKind.ByRef, byRefValue);
-                            }
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
-                        break;
+
+                        if (field.IsThreadStatic)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported static");
+                        }
+
+                        if (opcode != ILOpcode.ldsfld
+                            && _flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                        }
+
+                        Value fieldValue;
+                        if (field.HasRva)
+                        {
+                            if (!field.IsInitOnly
+                                || field.OwningType.HasStaticConstructor
+                                || field.GetTypicalFieldDefinition() is not EcmaField ecmaField)
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported RVA static");
+                            }
+
+                            fieldValue = new ValueTypeValue(GetFieldRvaData(ecmaField));
+                        }
+                        else if (field.OwningType == _type)
+                        {
+                            fieldValue = _fieldValues[field];
+                        }
+                        else if (_readOnlyPolicy.IsReadOnly(field)
+                            && field.OwningType.HasStaticConstructor
+                            && _policy.CanPreinitialize(field.OwningType))
+                        {
+                            if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)field.OwningType, recursionProtect, ref instructionCounter, out NestedPreinitResult nestedPreinitResult))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
+                            }
+
+                            if (!nestedPreinitResult.TryGetFieldValue(this, field, out fieldValue))
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        else if (_readOnlyPolicy.IsReadOnly(field)
+                            && opcode != ILOpcode.ldsflda // We need to intern these for correctness in ldsfda scenarios
+                            && !field.OwningType.HasStaticConstructor)
+                        {
+                            // (Effectively) read only field but no static constructor to set it: the value is default-initialized.
+                            fieldValue = NewUninitializedLocationValue(field.FieldType, field);
+                        }
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Load from other non-initonly static");
+                        }
+
+                        if (opcode == ILOpcode.ldsfld)
+                        {
+                            stack.PushFromLocation(field.FieldType, fieldValue);
+                        }
+                        else
+                        {
+                            Debug.Assert(opcode == ILOpcode.ldsflda);
+                            if (fieldValue == null || !fieldValue.TryCreateByRef(out Value byRefValue))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported byref");
+                            }
+
+                            stack.Push(StackValueKind.ByRef, byRefValue);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.call:
                     case ILOpcode.callvirt:
+                    {
+                        MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                        MethodSignature methodSig = method.Signature;
+                        int paramOffset = methodSig.IsStatic ? 0 : 1;
+                        int numParams = methodSig.Length + paramOffset;
+
+                        if (constrainedType != null)
                         {
-                            MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
-                            MethodSignature methodSig = method.Signature;
-                            int paramOffset = methodSig.IsStatic ? 0 : 1;
-                            int numParams = methodSig.Length + paramOffset;
-
-                            if (constrainedType != null)
+                            DefaultInterfaceMethodResolution staticResolution = default;
+                            MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out bool forceUseRuntimeLookup, ref staticResolution);
+                            if (directMethod == null || forceUseRuntimeLookup)
                             {
-                                DefaultInterfaceMethodResolution staticResolution = default;
-                                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(method.OwningType, method, out bool forceUseRuntimeLookup, ref staticResolution);
-                                if (directMethod == null || forceUseRuntimeLookup)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Did not resolve constraint");
-                                }
-                                method = directMethod;
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Did not resolve constraint");
                             }
-
-                            TypeDesc owningType = method.OwningType;
-                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, method))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
-                            }
-
-                            if (owningType.HasStaticConstructor
-                                    && owningType != methodIL.OwningMethod.OwningType
-                                    && (method.Signature.IsStatic || method.IsConstructor || owningType.IsValueType || owningType.IsInterface) // ECMA-335 I.8.9.5
-                                    && !((MetadataType)owningType).IsBeforeFieldInit)
-                            {
-                                // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
-                                // otherwise there might be side effects we'd miss by letting this through.
-                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
-                            }
-
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
-                            }
-
-                            Value[] methodParams = new Value[numParams];
-                            for (int i = numParams - 1; i >= 0; i--)
-                            {
-                                methodParams[i] = stack.PopIntoLocation(GetArgType(method, i));
-                            }
-
-                            if (opcode == ILOpcode.callvirt)
-                            {
-                                // Only support non-virtual methods for now + we don't emulate NRE on null this
-                                if (!owningType.IsValueType && (method.IsVirtual || methodParams[0] == null))
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            Value retVal;
-                            if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
-                            {
-                                recursionProtect ??= new Stack<MethodDesc>();
-                                recursionProtect.Push(methodIL.OwningMethod);
-                                Status callResult = TryScanMethod(method, methodParams, recursionProtect, ref instructionCounter, out retVal);
-                                if (!callResult.IsSuccessful)
-                                {
-                                    recursionProtect.Pop();
-                                    return callResult;
-                                }
-                                recursionProtect.Pop();
-                            }
-
-                            if (!methodSig.ReturnType.IsVoid)
-                                stack.PushFromLocation(methodSig.ReturnType, retVal);
+                            method = directMethod;
                         }
-                        break;
+
+                        TypeDesc owningType = method.OwningType;
+                        if (!_compilationGroup.CanInline(methodIL.OwningMethod, method))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
+                        }
+
+                        if (owningType.HasStaticConstructor
+                                && owningType != methodIL.OwningMethod.OwningType
+                                && (method.Signature.IsStatic || method.IsConstructor || owningType.IsValueType || owningType.IsInterface) // ECMA-335 I.8.9.5
+                                && !((MetadataType)owningType).IsBeforeFieldInit)
+                        {
+                            // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                            // otherwise there might be side effects we'd miss by letting this through.
+                            if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                        }
+
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(method))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                        }
+
+                        Value[] methodParams = new Value[numParams];
+                        for (int i = numParams - 1; i >= 0; i--)
+                        {
+                            methodParams[i] = stack.PopIntoLocation(GetArgType(method, i));
+                        }
+
+                        if (opcode == ILOpcode.callvirt)
+                        {
+                            // Only support non-virtual methods for now + we don't emulate NRE on null this
+                            if (!owningType.IsValueType && (method.IsVirtual || methodParams[0] == null))
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+
+                        Value retVal;
+                        if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
+                        {
+                            recursionProtect ??= new Stack<MethodDesc>();
+                            recursionProtect.Push(methodIL.OwningMethod);
+                            Status callResult = TryScanMethod(method, methodParams, recursionProtect, ref instructionCounter, out retVal);
+                            if (!callResult.IsSuccessful)
+                            {
+                                recursionProtect.Pop();
+                                return callResult;
+                            }
+                            recursionProtect.Pop();
+                        }
+
+                        if (!methodSig.ReturnType.IsVoid)
+                            stack.PushFromLocation(methodSig.ReturnType, retVal);
+                    }
+                    break;
 
                     case ILOpcode.newobj:
+                    {
+                        MethodDesc ctor = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+                        MethodSignature ctorSig = ctor.Signature;
+
+                        TypeDesc owningType = ctor.OwningType;
+                        if (!_compilationGroup.CanInline(methodIL.OwningMethod, ctor)
+                            || !_compilationGroup.ContainsType(owningType))
                         {
-                            MethodDesc ctor = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
-                            MethodSignature ctorSig = ctor.Signature;
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
+                        }
 
-                            TypeDesc owningType = ctor.OwningType;
-                            if (!_compilationGroup.CanInline(methodIL.OwningMethod, ctor)
-                                || !_compilationGroup.ContainsType(owningType))
+                        if (owningType.HasStaticConstructor
+                                && owningType != methodIL.OwningMethod.OwningType
+                                && !((MetadataType)owningType).IsBeforeFieldInit)
+                        {
+                            // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
+                            // otherwise there might be side effects we'd miss by letting this through.
+                            if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
+                        }
+
+                        if (!owningType.IsDefType)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Not a class or struct");
+                        }
+
+                        if (owningType.HasFinalizer)
+                        {
+                            // We have a finalizer. There's still a small chance it has been nopped out
+                            // with a feature switch. Check for that.
+                            byte[] finalizerMethodILBytes = _ilProvider.GetMethodIL(owningType.GetFinalizer()).GetILBytes();
+                            if (finalizerMethodILBytes.Length != 1 || finalizerMethodILBytes[0] != (byte)ILOpcode.ret)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Cannot inline");
+                                // Finalizer might have observable side effects
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                            }
+                        }
+
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                        }
+
+                        if (owningType.RequiresAlign8())
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+                        }
+
+                        Value[] ctorParameters = new Value[ctorSig.Length + 1];
+                        for (int i = ctorSig.Length - 1; i >= 0; i--)
+                        {
+                            ctorParameters[i + 1] = stack.PopIntoLocation(GetArgType(ctor, i + 1));
+                        }
+
+                        AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+
+                        Value instance;
+                        if (owningType.IsDelegate)
+                        {
+                            if (!(ctorParameters[2] is MethodPointerValue methodPointer))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unverifiable delegate creation");
                             }
 
-                            if (owningType.HasStaticConstructor
-                                    && owningType != methodIL.OwningMethod.OwningType
-                                    && !((MetadataType)owningType).IsBeforeFieldInit)
+                            ReferenceTypeValue firstParameter = null;
+                            if (ctorParameters[1] != null)
                             {
-                                // Static constructor needs to execute before we do the call. If we can preinitialize, consider it executed,
-                                // otherwise there might be side effects we'd miss by letting this through.
-                                if (!TryGetNestedPreinitResult(methodIL.OwningMethod, (MetadataType)owningType, recursionProtect, ref instructionCounter, out _))
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Static constructor");
-                            }
-
-                            if (!owningType.IsDefType)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Not a class or struct");
-                            }
-
-                            if (owningType.HasFinalizer)
-                            {
-                                // We have a finalizer. There's still a small chance it has been nopped out
-                                // with a feature switch. Check for that.
-                                byte[] finalizerMethodILBytes = _ilProvider.GetMethodIL(owningType.GetFinalizer()).GetILBytes();
-                                if (finalizerMethodILBytes.Length != 1 || finalizerMethodILBytes[0] != (byte)ILOpcode.ret)
+                                firstParameter = ctorParameters[1] as ReferenceTypeValue;
+                                if (firstParameter == null)
                                 {
-                                    // Finalizer might have observable side effects
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Finalizable class");
+                                    ThrowHelper.ThrowInvalidProgramException();
                                 }
                             }
 
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(ctor))
+                            MethodDesc pointedMethod = methodPointer.PointedToMethod;
+                            if ((firstParameter == null) != pointedMethod.Signature.IsStatic)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Open/closed static/instance delegate mismatch");
                             }
 
-                            if (owningType.RequiresAlign8())
+                            if (firstParameter != null && pointedMethod.HasInstantiation)
                             {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Delegate with fat pointer");
                             }
 
-                            Value[] ctorParameters = new Value[ctorSig.Length + 1];
-                            for (int i = ctorSig.Length - 1; i >= 0; i--)
+                            instance = new DelegateInstance(owningType, pointedMethod, firstParameter, allocSite);
+                        }
+                        else
+                        {
+                            if (owningType.IsValueType)
                             {
-                                ctorParameters[i + 1] = stack.PopIntoLocation(GetArgType(ctor, i + 1));
-                            }
-
-                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
-
-                            Value instance;
-                            if (owningType.IsDelegate)
-                            {
-                                if (!(ctorParameters[2] is MethodPointerValue methodPointer))
+                                instance = NewUninitializedLocationValue(owningType, fieldThatOwnsMemory: null);
+                                if (!instance.TryCreateByRef(out ctorParameters[0]))
                                 {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unverifiable delegate creation");
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "Can't make `this`");
                                 }
-
-                                ReferenceTypeValue firstParameter = null;
-                                if (ctorParameters[1] != null)
-                                {
-                                    firstParameter = ctorParameters[1] as ReferenceTypeValue;
-                                    if (firstParameter == null)
-                                    {
-                                        ThrowHelper.ThrowInvalidProgramException();
-                                    }
-                                }
-
-                                MethodDesc pointedMethod = methodPointer.PointedToMethod;
-                                if ((firstParameter == null) != pointedMethod.Signature.IsStatic)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Open/closed static/instance delegate mismatch");
-                                }
-
-                                if (firstParameter != null && pointedMethod.HasInstantiation)
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Delegate with fat pointer");
-                                }
-
-                                instance = new DelegateInstance(owningType, pointedMethod, firstParameter, allocSite);
                             }
                             else
                             {
-                                if (owningType.IsValueType)
-                                {
-                                    instance = NewUninitializedLocationValue(owningType, fieldThatOwnsMemory: null);
-                                    if (!instance.TryCreateByRef(out ctorParameters[0]))
-                                    {
-                                        return Status.Fail(methodIL.OwningMethod, opcode, "Can't make `this`");
-                                    }
-                                }
-                                else
-                                {
-                                    instance = new ObjectInstance((DefType)owningType, allocSite);
-                                    ctorParameters[0] = instance;
-                                }
+                                instance = new ObjectInstance((DefType)owningType, allocSite);
+                                ctorParameters[0] = instance;
+                            }
 
-                                if (((DefType)owningType).ContainsGCPointers)
-                                {
-                                    // We don't want to end up with GC pointers in the frozen region
-                                    // because write barriers can't handle that.
+                            if (((DefType)owningType).ContainsGCPointers)
+                            {
+                                // We don't want to end up with GC pointers in the frozen region
+                                // because write barriers can't handle that.
 
-                                    // We can make an exception for readonly fields.
-                                    bool allGcPointersAreReadonly = true;
-                                    TypeDesc currentType = owningType;
-                                    do
+                                // We can make an exception for readonly fields.
+                                bool allGcPointersAreReadonly = true;
+                                TypeDesc currentType = owningType;
+                                do
+                                {
+                                    foreach (FieldDesc field in currentType.GetFields())
                                     {
-                                        foreach (FieldDesc field in currentType.GetFields())
+                                        if (field.IsStatic)
+                                            continue;
+
+                                        TypeDesc fieldType = field.FieldType;
+                                        if (fieldType.IsGCPointer)
                                         {
-                                            if (field.IsStatic)
-                                                continue;
-
-                                            TypeDesc fieldType = field.FieldType;
-                                            if (fieldType.IsGCPointer)
-                                            {
-                                                if (!_readOnlyPolicy.IsReadOnly(field))
-                                                {
-                                                    allGcPointersAreReadonly = false;
-                                                    break;
-                                                }
-                                            }
-                                            else if (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
+                                            if (!_readOnlyPolicy.IsReadOnly(field))
                                             {
                                                 allGcPointersAreReadonly = false;
                                                 break;
                                             }
                                         }
-                                    } while (allGcPointersAreReadonly && (currentType = currentType.BaseType) != null && !currentType.IsValueType);
+                                        else if (fieldType.IsValueType && ((DefType)fieldType).ContainsGCPointers)
+                                        {
+                                            allGcPointersAreReadonly = false;
+                                            break;
+                                        }
+                                    }
+                                } while (allGcPointersAreReadonly && (currentType = currentType.BaseType) != null && !currentType.IsValueType);
 
-                                    if (!allGcPointersAreReadonly)
-                                        return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
-                                }
-
-                                recursionProtect ??= new Stack<MethodDesc>();
-                                recursionProtect.Push(methodIL.OwningMethod);
-                                Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, ref instructionCounter, out _);
-                                if (!ctorCallResult.IsSuccessful)
-                                {
-                                    recursionProtect.Pop();
-                                    return ctorCallResult;
-                                }
-
-                                recursionProtect.Pop();
+                                if (!allGcPointersAreReadonly)
+                                    return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
                             }
 
-                            stack.PushFromLocation(owningType, instance);
+                            recursionProtect ??= new Stack<MethodDesc>();
+                            recursionProtect.Push(methodIL.OwningMethod);
+                            Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, ref instructionCounter, out _);
+                            if (!ctorCallResult.IsSuccessful)
+                            {
+                                recursionProtect.Pop();
+                                return ctorCallResult;
+                            }
+
+                            recursionProtect.Pop();
                         }
-                        break;
+
+                        stack.PushFromLocation(owningType, instance);
+                    }
+                    break;
 
                     case ILOpcode.localloc:
+                    {
+                        StackEntry entry = stack.Pop();
+                        long size = entry.ValueKind switch
                         {
-                            StackEntry entry = stack.Pop();
-                            long size = entry.ValueKind switch
-                            {
-                                StackValueKind.Int32 => entry.Value.AsInt32(),
-                                StackValueKind.NativeInt => (context.Target.PointerSize == 4)
-                                    ? entry.Value.AsInt32() : entry.Value.AsInt64(),
-                                _ => long.MaxValue
-                            };
+                            StackValueKind.Int32 => entry.Value.AsInt32(),
+                            StackValueKind.NativeInt => (context.Target.PointerSize == 4)
+                                ? entry.Value.AsInt32() : entry.Value.AsInt64(),
+                            _ => long.MaxValue
+                        };
 
-                            // Arbitrary limit for allocation size to prevent compiler OOM
-                            if (size < 0 || size > 8192)
-                                return Status.Fail(methodIL.OwningMethod, ILOpcode.localloc);
+                        // Arbitrary limit for allocation size to prevent compiler OOM
+                        if (size < 0 || size > 8192)
+                            return Status.Fail(methodIL.OwningMethod, ILOpcode.localloc);
 
-                            stack.Push(StackValueKind.NativeInt, new ByRefValue(new byte[size], pointedToOffset: 0));
-                        }
-                        break;
+                        stack.Push(StackValueKind.NativeInt, new ByRefValue(new byte[size], pointedToOffset: 0));
+                    }
+                    break;
 
                     case ILOpcode.stfld:
+                    {
+                        FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
+
+                        if (field.IsStatic)
                         {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-
-                            if (field.IsStatic)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Static field with stfld");
-                            }
-
-                            Value value = stack.PopIntoLocation(field.FieldType);
-                            StackEntry instance = stack.Pop();
-
-                            if (field.FieldType.IsGCPointer && value != null)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
-                            }
-
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
-                            }
-
-                            if (instance.Value is not IHasInstanceFields settableInstance
-                                || !settableInstance.TrySetField(field, value))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Not settable");
-                            }
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Static field with stfld");
                         }
-                        break;
+
+                        Value value = stack.PopIntoLocation(field.FieldType);
+                        StackEntry instance = stack.Pop();
+
+                        if (field.FieldType.IsGCPointer && value != null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
+                        }
+
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                        }
+
+                        if (instance.Value is not IHasInstanceFields settableInstance
+                            || !settableInstance.TrySetField(field, value))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Not settable");
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldfld:
+                    {
+                        FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
+
+                        if (field.FieldType.IsGCPointer
+                            || field.IsStatic)
                         {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-
-                            if (field.FieldType.IsGCPointer
-                                || field.IsStatic)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            StackEntry instance = stack.Pop();
-
-                            var loadableInstance = instance.Value as IHasInstanceFields;
-                            if (loadableInstance == null)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            Value fieldValue = loadableInstance.GetField(field);
-
-                            stack.PushFromLocation(field.FieldType, fieldValue);
+                            return Status.Fail(methodIL.OwningMethod, opcode);
                         }
-                        break;
+
+                        StackEntry instance = stack.Pop();
+
+                        var loadableInstance = instance.Value as IHasInstanceFields;
+                        if (loadableInstance == null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+
+                        Value fieldValue = loadableInstance.GetField(field);
+
+                        stack.PushFromLocation(field.FieldType, fieldValue);
+                    }
+                    break;
 
                     case ILOpcode.ldflda:
+                    {
+                        FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (field.FieldType.IsGCPointer
+                            || field.IsStatic)
                         {
-                            FieldDesc field = (FieldDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (field.FieldType.IsGCPointer
-                                || field.IsStatic)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
-                            }
-
-                            StackEntry instance = stack.Pop();
-
-                            var loadableInstance = instance.Value as IHasInstanceFields;
-                            if (loadableInstance == null)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            stack.Push(StackValueKind.ByRef, loadableInstance.GetFieldAddress(field));
+                            return Status.Fail(methodIL.OwningMethod, opcode);
                         }
-                        break;
+
+                        if (_flowAnnotations.RequiresDataflowAnalysisDueToSignature(field))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Needs dataflow analysis");
+                        }
+
+                        StackEntry instance = stack.Pop();
+
+                        var loadableInstance = instance.Value as IHasInstanceFields;
+                        if (loadableInstance == null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+
+                        stack.Push(StackValueKind.ByRef, loadableInstance.GetFieldAddress(field));
+                    }
+                    break;
 
                     case ILOpcode.conv_i:
                     case ILOpcode.conv_u:
@@ -804,159 +804,159 @@ namespace ILCompiler
                     case ILOpcode.conv_u8:
                     case ILOpcode.conv_r4:
                     case ILOpcode.conv_r8:
-                        {
-                            StackEntry popped = stack.Pop();
+                    {
+                        StackEntry popped = stack.Pop();
 
-                            if (opcode is ILOpcode.conv_i or ILOpcode.conv_u
-                                && popped.ValueKind == StackValueKind.ByRef)
+                        if (opcode is ILOpcode.conv_i or ILOpcode.conv_u
+                            && popped.ValueKind == StackValueKind.ByRef)
+                        {
+                            Debug.Assert(popped.Value is ByRefValueBase);
+                            stack.Push(StackValueKind.NativeInt, popped.Value);
+                        }
+                        else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
+                        {
+                            int val = popped.Value.AsInt32();
+                            switch (opcode)
                             {
-                                Debug.Assert(popped.Value is ByRefValueBase);
-                                stack.Push(StackValueKind.NativeInt, popped.Value);
-                            }
-                            else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
-                            {
-                                int val = popped.Value.AsInt32();
-                                switch (opcode)
-                                {
-                                    case ILOpcode.conv_i:
-                                        stack.Push(StackValueKind.NativeInt,
-                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32(val));
-                                        break;
-                                    case ILOpcode.conv_u:
-                                        stack.Push(StackValueKind.NativeInt,
-                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((uint)val) : ValueTypeValue.FromInt32(val));
-                                        break;
-                                    case ILOpcode.conv_i1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
-                                        break;
-                                    case ILOpcode.conv_i2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
-                                        break;
-                                    case ILOpcode.conv_i4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(val));
-                                        break;
-                                    case ILOpcode.conv_i8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
-                                        break;
-                                    case ILOpcode.conv_u1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
-                                        break;
-                                    case ILOpcode.conv_u2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
-                                        break;
-                                    case ILOpcode.conv_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(val));
-                                        break;
-                                    case ILOpcode.conv_u8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
-                                        break;
-                                    case ILOpcode.conv_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
-                                        break;
-                                    case ILOpcode.conv_r8:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
-                                        break;
-                                    default:
-                                        return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-                            }
-                            else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
-                            {
-                                long val = popped.Value.AsInt64();
-                                switch (opcode)
-                                {
-                                    case ILOpcode.conv_u:
-                                    case ILOpcode.conv_i:
-                                        stack.Push(StackValueKind.NativeInt,
-                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
-                                        break;
-                                    case ILOpcode.conv_i1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
-                                        break;
-                                    case ILOpcode.conv_i2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
-                                        break;
-                                    case ILOpcode.conv_i4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
-                                        break;
-                                    case ILOpcode.conv_i8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
-                                        break;
-                                    case ILOpcode.conv_u1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
-                                        break;
-                                    case ILOpcode.conv_u2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
-                                        break;
-                                    case ILOpcode.conv_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
-                                        break;
-                                    case ILOpcode.conv_u8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
-                                        break;
-                                    case ILOpcode.conv_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
-                                        break;
-                                    case ILOpcode.conv_r8:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
-                                        break;
-                                    default:
-                                        return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-                            }
-                            else if (popped.ValueKind == StackValueKind.Float)
-                            {
-                                double val = popped.Value.AsDouble();
-                                switch (opcode)
-                                {
-                                    case ILOpcode.conv_i:
-                                        stack.Push(StackValueKind.NativeInt,
-                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)val) : ValueTypeValue.FromInt32((int)val));
-                                        break;
-                                    case ILOpcode.conv_u:
-                                        stack.Push(StackValueKind.NativeInt,
-                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)(ulong)val) : ValueTypeValue.FromInt32((int)(uint)val));
-                                        break;
-                                    case ILOpcode.conv_i1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
-                                        break;
-                                    case ILOpcode.conv_i2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
-                                        break;
-                                    case ILOpcode.conv_i4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
-                                        break;
-                                    case ILOpcode.conv_i8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
-                                        break;
-                                    case ILOpcode.conv_u1:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
-                                        break;
-                                    case ILOpcode.conv_u2:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
-                                        break;
-                                    case ILOpcode.conv_u4:
-                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)(uint)val));
-                                        break;
-                                    case ILOpcode.conv_u8:
-                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)(ulong)val));
-                                        break;
-                                    case ILOpcode.conv_r4:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
-                                        break;
-                                    case ILOpcode.conv_r8:
-                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
-                                        break;
-                                    default:
-                                        return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
+                                case ILOpcode.conv_i:
+                                    stack.Push(StackValueKind.NativeInt,
+                                        context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32(val));
+                                    break;
+                                case ILOpcode.conv_u:
+                                    stack.Push(StackValueKind.NativeInt,
+                                        context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((uint)val) : ValueTypeValue.FromInt32(val));
+                                    break;
+                                case ILOpcode.conv_i1:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                    break;
+                                case ILOpcode.conv_i2:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                    break;
+                                case ILOpcode.conv_i4:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(val));
+                                    break;
+                                case ILOpcode.conv_i8:
+                                    stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
+                                    break;
+                                case ILOpcode.conv_u1:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                    break;
+                                case ILOpcode.conv_u2:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                    break;
+                                case ILOpcode.conv_u4:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(val));
+                                    break;
+                                case ILOpcode.conv_u8:
+                                    stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
+                                    break;
+                                case ILOpcode.conv_r4:
+                                    stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
+                                    break;
+                                case ILOpcode.conv_r8:
+                                    stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
+                                    break;
+                                default:
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                         }
-                        break;
+                        else if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
+                        {
+                            long val = popped.Value.AsInt64();
+                            switch (opcode)
+                            {
+                                case ILOpcode.conv_u:
+                                case ILOpcode.conv_i:
+                                    stack.Push(StackValueKind.NativeInt,
+                                        context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(val) : ValueTypeValue.FromInt32((int)val));
+                                    break;
+                                case ILOpcode.conv_i1:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                    break;
+                                case ILOpcode.conv_i2:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                    break;
+                                case ILOpcode.conv_i4:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                    break;
+                                case ILOpcode.conv_i8:
+                                    stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
+                                    break;
+                                case ILOpcode.conv_u1:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                    break;
+                                case ILOpcode.conv_u2:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                    break;
+                                case ILOpcode.conv_u4:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                    break;
+                                case ILOpcode.conv_u8:
+                                    stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
+                                    break;
+                                case ILOpcode.conv_r4:
+                                    stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
+                                    break;
+                                case ILOpcode.conv_r8:
+                                    stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((double)val));
+                                    break;
+                                default:
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+                        }
+                        else if (popped.ValueKind == StackValueKind.Float)
+                        {
+                            double val = popped.Value.AsDouble();
+                            switch (opcode)
+                            {
+                                case ILOpcode.conv_i:
+                                    stack.Push(StackValueKind.NativeInt,
+                                        context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)val) : ValueTypeValue.FromInt32((int)val));
+                                    break;
+                                case ILOpcode.conv_u:
+                                    stack.Push(StackValueKind.NativeInt,
+                                        context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)(ulong)val) : ValueTypeValue.FromInt32((int)(uint)val));
+                                    break;
+                                case ILOpcode.conv_i1:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                    break;
+                                case ILOpcode.conv_i2:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                    break;
+                                case ILOpcode.conv_i4:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                    break;
+                                case ILOpcode.conv_i8:
+                                    stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
+                                    break;
+                                case ILOpcode.conv_u1:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                    break;
+                                case ILOpcode.conv_u2:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                    break;
+                                case ILOpcode.conv_u4:
+                                    stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)(uint)val));
+                                    break;
+                                case ILOpcode.conv_u8:
+                                    stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)(ulong)val));
+                                    break;
+                                case ILOpcode.conv_r4:
+                                    stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
+                                    break;
+                                case ILOpcode.conv_r8:
+                                    stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
+                                    break;
+                                default:
+                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                            }
+                        }
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldarg_0:
                     case ILOpcode.ldarg_1:
@@ -964,64 +964,64 @@ namespace ILCompiler
                     case ILOpcode.ldarg_3:
                     case ILOpcode.ldarg_s:
                     case ILOpcode.ldarg:
+                    {
+                        int index = opcode switch
                         {
-                            int index = opcode switch
-                            {
-                                ILOpcode.ldarg_s => reader.ReadILByte(),
-                                ILOpcode.ldarg => reader.ReadILUInt16(),
-                                _ => opcode - ILOpcode.ldarg_0,
-                            };
-                            stack.PushFromLocation(GetArgType(methodIL.OwningMethod, index), parameters[index]);
-                        }
-                        break;
+                            ILOpcode.ldarg_s => reader.ReadILByte(),
+                            ILOpcode.ldarg => reader.ReadILUInt16(),
+                            _ => opcode - ILOpcode.ldarg_0,
+                        };
+                        stack.PushFromLocation(GetArgType(methodIL.OwningMethod, index), parameters[index]);
+                    }
+                    break;
 
                     case ILOpcode.starg_s:
                     case ILOpcode.starg:
+                    {
+                        int index = opcode == ILOpcode.starg ? reader.ReadILUInt16() : reader.ReadILByte();
+                        TypeDesc argType = GetArgType(methodIL.OwningMethod, index);
+                        if (parameters[index] is IAssignableValue assignableParam)
                         {
-                            int index = opcode == ILOpcode.starg ? reader.ReadILUInt16() : reader.ReadILByte();
-                            TypeDesc argType = GetArgType(methodIL.OwningMethod, index);
-                            if (parameters[index] is IAssignableValue assignableParam)
+                            if (!assignableParam.TryAssign(stack.PopIntoLocation(argType)))
                             {
-                                if (!assignableParam.TryAssign(stack.PopIntoLocation(argType)))
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
-                                }
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
                             }
-                            else
-                                parameters[index] = stack.PopIntoLocation(argType);
                         }
-                        break;
+                        else
+                            parameters[index] = stack.PopIntoLocation(argType);
+                    }
+                    break;
 
                     case ILOpcode.ldtoken:
+                    {
+                        var token = methodIL.GetObject(reader.ReadILToken());
+                        if (token is FieldDesc field)
                         {
-                            var token = methodIL.GetObject(reader.ReadILToken());
-                            if (token is FieldDesc field)
-                            {
-                                stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));
-                            }
-                            else if (token is TypeDesc type)
-                            {
-                                stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeTypeHandleValue(type)));
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
+                            stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeFieldHandleValue(field)));
                         }
-                        break;
+                        else if (token is TypeDesc type)
+                        {
+                            stack.Push(new StackEntry(StackValueKind.ValueType, new RuntimeTypeHandleValue(type)));
+                        }
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldftn:
-                        {
-                            if (constrainedType != null)
-                                return Status.Fail(methodIL.OwningMethod, ILOpcode.constrained);
+                    {
+                        if (constrainedType != null)
+                            return Status.Fail(methodIL.OwningMethod, ILOpcode.constrained);
 
-                            var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
-                            if (method != null)
-                                stack.Push(StackValueKind.NativeInt, new MethodPointerValue(method));
-                            else
-                                ThrowHelper.ThrowInvalidProgramException();
-                        }
-                        break;
+                        var method = methodIL.GetObject(reader.ReadILToken()) as MethodDesc;
+                        if (method != null)
+                            stack.Push(StackValueKind.NativeInt, new MethodPointerValue(method));
+                        else
+                            ThrowHelper.ThrowInvalidProgramException();
+                    }
+                    break;
 
                     case ILOpcode.ldloc_0:
                     case ILOpcode.ldloc_1:
@@ -1029,22 +1029,22 @@ namespace ILCompiler
                     case ILOpcode.ldloc_3:
                     case ILOpcode.ldloc_s:
                     case ILOpcode.ldloc:
+                    {
+                        int index = opcode switch
                         {
-                            int index = opcode switch
-                            {
-                                ILOpcode.ldloc_s => reader.ReadILByte(),
-                                ILOpcode.ldloc => reader.ReadILUInt16(),
-                                _ => opcode - ILOpcode.ldloc_0,
-                            };
+                            ILOpcode.ldloc_s => reader.ReadILByte(),
+                            ILOpcode.ldloc => reader.ReadILUInt16(),
+                            _ => opcode - ILOpcode.ldloc_0,
+                        };
 
-                            if (index >= locals.Length)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            stack.PushFromLocation(localTypes[index].Type, locals[index]);
+                        if (index >= locals.Length)
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
-                        break;
+
+                        stack.PushFromLocation(localTypes[index].Type, locals[index]);
+                    }
+                    break;
 
                     case ILOpcode.stloc_0:
                     case ILOpcode.stloc_1:
@@ -1052,80 +1052,80 @@ namespace ILCompiler
                     case ILOpcode.stloc_3:
                     case ILOpcode.stloc_s:
                     case ILOpcode.stloc:
+                    {
+                        int index = opcode switch
                         {
-                            int index = opcode switch
-                            {
-                                ILOpcode.stloc_s => reader.ReadILByte(),
-                                ILOpcode.stloc => reader.ReadILUInt16(),
-                                _ => opcode - ILOpcode.stloc_0,
-                            };
+                            ILOpcode.stloc_s => reader.ReadILByte(),
+                            ILOpcode.stloc => reader.ReadILUInt16(),
+                            _ => opcode - ILOpcode.stloc_0,
+                        };
 
-                            if (index >= locals.Length)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            TypeDesc localType = localTypes[index].Type;
-                            if (locals[index] is IAssignableValue assignableLocal)
-                            {
-                                if (!assignableLocal.TryAssign(stack.PopIntoLocation(localType)))
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
-                                }
-                            }
-                            else
-                                locals[index] = stack.PopIntoLocation(localType);
-
+                        if (index >= locals.Length)
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
-                        break;
+
+                        TypeDesc localType = localTypes[index].Type;
+                        if (locals[index] is IAssignableValue assignableLocal)
+                        {
+                            if (!assignableLocal.TryAssign(stack.PopIntoLocation(localType)))
+                            {
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Unsupported store");
+                            }
+                        }
+                        else
+                            locals[index] = stack.PopIntoLocation(localType);
+
+                    }
+                    break;
 
                     case ILOpcode.ldarga_s:
                     case ILOpcode.ldarga:
                     case ILOpcode.ldloca_s:
                     case ILOpcode.ldloca:
+                    {
+                        int index = opcode switch
                         {
-                            int index = opcode switch
-                            {
-                                ILOpcode.ldloca_s or ILOpcode.ldarga_s => reader.ReadILByte(),
-                                ILOpcode.ldloca or ILOpcode.ldarga => reader.ReadILUInt16(),
-                                _ => throw new NotImplementedException(), // Unreachable
-                            };
+                            ILOpcode.ldloca_s or ILOpcode.ldarga_s => reader.ReadILByte(),
+                            ILOpcode.ldloca or ILOpcode.ldarga => reader.ReadILUInt16(),
+                            _ => throw new NotImplementedException(), // Unreachable
+                        };
 
-                            Value[] storage = opcode is ILOpcode.ldloca or ILOpcode.ldloca_s ? locals : parameters;
-                            if (index >= storage.Length)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            Value localValue = storage[index];
-                            if (localValue == null || !localValue.TryCreateByRef(out Value byrefValue))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else
-                            {
-                                stack.Push(StackValueKind.ByRef, byrefValue);
-                            }
+                        Value[] storage = opcode is ILOpcode.ldloca or ILOpcode.ldloca_s ? locals : parameters;
+                        if (index >= storage.Length)
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
-                        break;
+
+                        Value localValue = storage[index];
+                        if (localValue == null || !localValue.TryCreateByRef(out Value byrefValue))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        else
+                        {
+                            stack.Push(StackValueKind.ByRef, byrefValue);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.initobj:
+                    {
+                        StackEntry popped = stack.Pop();
+                        if (popped.ValueKind != StackValueKind.ByRef)
                         {
-                            StackEntry popped = stack.Pop();
-                            if (popped.ValueKind != StackValueKind.ByRef)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            TypeDesc token = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (token.IsGCPointer
-                                || popped.Value is not ByRefValueBase byrefVal
-                                || !byrefVal.TryInitialize(token.GetElementSize().AsInt))
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
+                            ThrowHelper.ThrowInvalidProgramException();
                         }
-                        break;
+
+                        TypeDesc token = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (token.IsGCPointer
+                            || popped.Value is not ByRefValueBase byrefVal
+                            || !byrefVal.TryInitialize(token.GetElementSize().AsInt))
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.br:
                     case ILOpcode.brfalse:
@@ -1153,262 +1153,262 @@ namespace ILCompiler
                     case ILOpcode.bge_un_s:
                     case ILOpcode.ble_s:
                     case ILOpcode.ble_un_s:
+                    {
+                        int delta = opcode >= ILOpcode.br ?
+                            (int)reader.ReadILUInt32() :
+                            (sbyte)reader.ReadILByte();
+                        int target = reader.Offset + delta;
+                        if (target < 0
+                            || target > reader.Size)
                         {
-                            int delta = opcode >= ILOpcode.br ?
-                                (int)reader.ReadILUInt32() :
-                                (sbyte)reader.ReadILByte();
-                            int target = reader.Offset + delta;
-                            if (target < 0
-                                || target > reader.Size)
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+
+                        ILOpcode normalizedOpcode = opcode >= ILOpcode.br ?
+                            opcode - ILOpcode.br + ILOpcode.br_s :
+                            opcode;
+
+                        bool branchTaken;
+                        if (normalizedOpcode == ILOpcode.brtrue_s || normalizedOpcode == ILOpcode.brfalse_s)
+                        {
+                            StackEntry condition = stack.Pop();
+                            if (condition.ValueKind == StackValueKind.Int32 || (condition.ValueKind == StackValueKind.NativeInt && context.Target.PointerSize == 4))
+                                branchTaken = normalizedOpcode == ILOpcode.brfalse_s
+                                    ? condition.Value.AsInt32() == 0 : condition.Value.AsInt32() != 0;
+                            else if (condition.ValueKind == StackValueKind.Int64 || (condition.ValueKind == StackValueKind.NativeInt && context.Target.PointerSize == 8))
+                                branchTaken = normalizedOpcode == ILOpcode.brfalse_s
+                                    ? condition.Value.AsInt64() == 0 : condition.Value.AsInt64() != 0;
+                            else if (condition.ValueKind == StackValueKind.ObjRef)
+                                branchTaken = normalizedOpcode == ILOpcode.brfalse_s
+                                    ? condition.Value == null : condition.Value != null;
+                            else
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        else if (normalizedOpcode == ILOpcode.blt_s || normalizedOpcode == ILOpcode.bgt_s
+                            || normalizedOpcode == ILOpcode.bge_s || normalizedOpcode == ILOpcode.beq_s
+                            || normalizedOpcode == ILOpcode.ble_s || normalizedOpcode == ILOpcode.blt_un_s
+                            || normalizedOpcode == ILOpcode.ble_un_s || normalizedOpcode == ILOpcode.bge_un_s
+                            || normalizedOpcode == ILOpcode.bgt_un_s || normalizedOpcode == ILOpcode.bne_un_s)
+                        {
+                            StackEntry value2 = stack.Pop();
+                            StackEntry value1 = stack.Pop();
+
+                            if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                             {
-                                ThrowHelper.ThrowInvalidProgramException();
+                                branchTaken = normalizedOpcode switch
+                                {
+                                    ILOpcode.blt_s => value1.Value.AsInt32() < value2.Value.AsInt32(),
+                                    ILOpcode.blt_un_s => (uint)value1.Value.AsInt32() < (uint)value2.Value.AsInt32(),
+                                    ILOpcode.bgt_s => value1.Value.AsInt32() > value2.Value.AsInt32(),
+                                    ILOpcode.bgt_un_s => (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32(),
+                                    ILOpcode.bge_s => value1.Value.AsInt32() >= value2.Value.AsInt32(),
+                                    ILOpcode.bge_un_s => (uint)value1.Value.AsInt32() >= (uint)value2.Value.AsInt32(),
+                                    ILOpcode.beq_s => value1.Value.AsInt32() == value2.Value.AsInt32(),
+                                    ILOpcode.bne_un_s => value1.Value.AsInt32() != value2.Value.AsInt32(),
+                                    ILOpcode.ble_s => value1.Value.AsInt32() <= value2.Value.AsInt32(),
+                                    ILOpcode.ble_un_s => (uint)value1.Value.AsInt32() <= (uint)value2.Value.AsInt32(),
+                                    _ => throw new NotImplementedException() // unreachable
+                                };
                             }
-
-                            ILOpcode normalizedOpcode = opcode >= ILOpcode.br ?
-                                opcode - ILOpcode.br + ILOpcode.br_s:
-                                opcode;
-
-                            bool branchTaken;
-                            if (normalizedOpcode == ILOpcode.brtrue_s || normalizedOpcode == ILOpcode.brfalse_s)
+                            else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
                             {
-                                StackEntry condition = stack.Pop();
-                                if (condition.ValueKind == StackValueKind.Int32 || (condition.ValueKind == StackValueKind.NativeInt && context.Target.PointerSize == 4))
-                                    branchTaken = normalizedOpcode == ILOpcode.brfalse_s
-                                        ? condition.Value.AsInt32() == 0 : condition.Value.AsInt32() != 0;
-                                else if (condition.ValueKind == StackValueKind.Int64 || (condition.ValueKind == StackValueKind.NativeInt && context.Target.PointerSize == 8))
-                                    branchTaken = normalizedOpcode == ILOpcode.brfalse_s
-                                        ? condition.Value.AsInt64() == 0 : condition.Value.AsInt64() != 0;
-                                else if (condition.ValueKind == StackValueKind.ObjRef)
-                                    branchTaken = normalizedOpcode == ILOpcode.brfalse_s
-                                        ? condition.Value == null : condition.Value != null;
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
+                                branchTaken = normalizedOpcode switch
+                                {
+                                    ILOpcode.blt_s => value1.Value.AsInt64() < value2.Value.AsInt64(),
+                                    ILOpcode.blt_un_s => (ulong)value1.Value.AsInt64() < (ulong)value2.Value.AsInt64(),
+                                    ILOpcode.bgt_s => value1.Value.AsInt64() > value2.Value.AsInt64(),
+                                    ILOpcode.bgt_un_s => (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64(),
+                                    ILOpcode.bge_s => value1.Value.AsInt64() >= value2.Value.AsInt64(),
+                                    ILOpcode.bge_un_s => (ulong)value1.Value.AsInt64() >= (ulong)value2.Value.AsInt64(),
+                                    ILOpcode.beq_s => value1.Value.AsInt64() == value2.Value.AsInt64(),
+                                    ILOpcode.bne_un_s => value1.Value.AsInt64() != value2.Value.AsInt64(),
+                                    ILOpcode.ble_s => value1.Value.AsInt64() <= value2.Value.AsInt64(),
+                                    ILOpcode.ble_un_s => (ulong)value1.Value.AsInt64() <= (ulong)value2.Value.AsInt64(),
+                                    _ => throw new NotImplementedException() // unreachable
+                                };
                             }
-                            else if (normalizedOpcode == ILOpcode.blt_s || normalizedOpcode == ILOpcode.bgt_s
-                                || normalizedOpcode == ILOpcode.bge_s || normalizedOpcode == ILOpcode.beq_s
-                                || normalizedOpcode == ILOpcode.ble_s || normalizedOpcode == ILOpcode.blt_un_s
-                                || normalizedOpcode == ILOpcode.ble_un_s || normalizedOpcode == ILOpcode.bge_un_s
-                                || normalizedOpcode == ILOpcode.bgt_un_s || normalizedOpcode == ILOpcode.bne_un_s)
+                            else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
                             {
-                                StackEntry value2 = stack.Pop();
-                                StackEntry value1 = stack.Pop();
-
-                                if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
+                                branchTaken = normalizedOpcode switch
                                 {
-                                    branchTaken = normalizedOpcode switch
-                                    {
-                                        ILOpcode.blt_s => value1.Value.AsInt32() < value2.Value.AsInt32(),
-                                        ILOpcode.blt_un_s => (uint)value1.Value.AsInt32() < (uint)value2.Value.AsInt32(),
-                                        ILOpcode.bgt_s => value1.Value.AsInt32() > value2.Value.AsInt32(),
-                                        ILOpcode.bgt_un_s => (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32(),
-                                        ILOpcode.bge_s => value1.Value.AsInt32() >= value2.Value.AsInt32(),
-                                        ILOpcode.bge_un_s => (uint)value1.Value.AsInt32() >= (uint)value2.Value.AsInt32(),
-                                        ILOpcode.beq_s => value1.Value.AsInt32() == value2.Value.AsInt32(),
-                                        ILOpcode.bne_un_s => value1.Value.AsInt32() != value2.Value.AsInt32(),
-                                        ILOpcode.ble_s => value1.Value.AsInt32() <= value2.Value.AsInt32(),
-                                        ILOpcode.ble_un_s => (uint)value1.Value.AsInt32() <= (uint)value2.Value.AsInt32(),
-                                        _ => throw new NotImplementedException() // unreachable
-                                    };
-                                }
-                                else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
-                                {
-                                    branchTaken = normalizedOpcode switch
-                                    {
-                                        ILOpcode.blt_s => value1.Value.AsInt64() < value2.Value.AsInt64(),
-                                        ILOpcode.blt_un_s => (ulong)value1.Value.AsInt64() < (ulong)value2.Value.AsInt64(),
-                                        ILOpcode.bgt_s => value1.Value.AsInt64() > value2.Value.AsInt64(),
-                                        ILOpcode.bgt_un_s => (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64(),
-                                        ILOpcode.bge_s => value1.Value.AsInt64() >= value2.Value.AsInt64(),
-                                        ILOpcode.bge_un_s => (ulong)value1.Value.AsInt64() >= (ulong)value2.Value.AsInt64(),
-                                        ILOpcode.beq_s => value1.Value.AsInt64() == value2.Value.AsInt64(),
-                                        ILOpcode.bne_un_s => value1.Value.AsInt64() != value2.Value.AsInt64(),
-                                        ILOpcode.ble_s => value1.Value.AsInt64() <= value2.Value.AsInt64(),
-                                        ILOpcode.ble_un_s => (ulong)value1.Value.AsInt64() <= (ulong)value2.Value.AsInt64(),
-                                        _ => throw new NotImplementedException() // unreachable
-                                    };
-                                }
-                                else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
-                                {
-                                    branchTaken = normalizedOpcode switch
-                                    {
-                                        ILOpcode.blt_s => value1.Value.AsDouble() < value2.Value.AsDouble(),
-                                        ILOpcode.blt_un_s => !(value1.Value.AsDouble() >= value2.Value.AsDouble()),
-                                        ILOpcode.bgt_s => value1.Value.AsDouble() > value2.Value.AsDouble(),
-                                        ILOpcode.bgt_un_s => !(value1.Value.AsDouble() <= value2.Value.AsDouble()),
-                                        ILOpcode.bge_s => value1.Value.AsDouble() >= value2.Value.AsDouble(),
-                                        ILOpcode.bge_un_s => !(value1.Value.AsDouble() < value2.Value.AsDouble()),
-                                        ILOpcode.beq_s => value1.Value.AsDouble() == value2.Value.AsDouble(),
-                                        ILOpcode.bne_un_s => value1.Value.AsDouble() != value2.Value.AsDouble(),
-                                        ILOpcode.ble_s => value1.Value.AsDouble() <= value2.Value.AsDouble(),
-                                        ILOpcode.ble_un_s => !(value1.Value.AsDouble() > value2.Value.AsDouble()),
-                                        _ => throw new NotImplementedException() // unreachable
-                                    };
-                                }
-                                else
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
+                                    ILOpcode.blt_s => value1.Value.AsDouble() < value2.Value.AsDouble(),
+                                    ILOpcode.blt_un_s => !(value1.Value.AsDouble() >= value2.Value.AsDouble()),
+                                    ILOpcode.bgt_s => value1.Value.AsDouble() > value2.Value.AsDouble(),
+                                    ILOpcode.bgt_un_s => !(value1.Value.AsDouble() <= value2.Value.AsDouble()),
+                                    ILOpcode.bge_s => value1.Value.AsDouble() >= value2.Value.AsDouble(),
+                                    ILOpcode.bge_un_s => !(value1.Value.AsDouble() < value2.Value.AsDouble()),
+                                    ILOpcode.beq_s => value1.Value.AsDouble() == value2.Value.AsDouble(),
+                                    ILOpcode.bne_un_s => value1.Value.AsDouble() != value2.Value.AsDouble(),
+                                    ILOpcode.ble_s => value1.Value.AsDouble() <= value2.Value.AsDouble(),
+                                    ILOpcode.ble_un_s => !(value1.Value.AsDouble() > value2.Value.AsDouble()),
+                                    _ => throw new NotImplementedException() // unreachable
+                                };
                             }
                             else
                             {
-                                Debug.Assert(normalizedOpcode == ILOpcode.br_s);
-                                branchTaken = true;
-                            }
-
-                            if (branchTaken)
-                            {
-                                reader.Seek(target);
+                                return Status.Fail(methodIL.OwningMethod, opcode);
                             }
                         }
-                        break;
+                        else
+                        {
+                            Debug.Assert(normalizedOpcode == ILOpcode.br_s);
+                            branchTaken = true;
+                        }
+
+                        if (branchTaken)
+                        {
+                            reader.Seek(target);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.switch_:
+                    {
+                        StackEntry val = stack.Pop();
+                        if (val.ValueKind is not StackValueKind.Int32)
+                            ThrowHelper.ThrowInvalidProgramException();
+
+                        uint target = (uint)val.Value.AsInt32();
+
+                        uint count = reader.ReadILUInt32();
+                        int nextInstruction = reader.Offset + (int)(4 * count);
+                        if (target > count)
                         {
-                            StackEntry val = stack.Pop();
-                            if (val.ValueKind is not StackValueKind.Int32)
-                                ThrowHelper.ThrowInvalidProgramException();
-
-                            uint target = (uint)val.Value.AsInt32();
-
-                            uint count = reader.ReadILUInt32();
-                            int nextInstruction = reader.Offset + (int)(4 * count);
-                            if (target > count)
-                            {
-                                reader.Seek(nextInstruction);
-                            }
-                            else
-                            {
-                                reader.Seek(reader.Offset + (int)(4 * target));
-                                reader.Seek(nextInstruction + (int)reader.ReadILUInt32());
-                            }
+                            reader.Seek(nextInstruction);
                         }
-                        break;
+                        else
+                        {
+                            reader.Seek(reader.Offset + (int)(4 * target));
+                            reader.Seek(nextInstruction + (int)reader.ReadILUInt32());
+                        }
+                    }
+                    break;
 
                     case ILOpcode.leave:
                     case ILOpcode.leave_s:
+                    {
+                        stack.Clear();
+
+                        // We assume no finally regions (would have to run them here)
+                        // This is validated before, but we're being paranoid.
+                        foreach (ILExceptionRegion ehRegion in ehRegions)
                         {
-                            stack.Clear();
-
-                            // We assume no finally regions (would have to run them here)
-                            // This is validated before, but we're being paranoid.
-                            foreach (ILExceptionRegion ehRegion in ehRegions)
-                            {
-                                Debug.Assert(ehRegion.Kind != ILExceptionRegionKind.Finally);
-                            }
-
-                            int delta = opcode == ILOpcode.leave ?
-                                (int)reader.ReadILUInt32() :
-                                (sbyte)reader.ReadILByte();
-                            int target = reader.Offset + delta;
-                            if (target < 0
-                                || target > reader.Size)
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
-                            reader.Seek(target);
+                            Debug.Assert(ehRegion.Kind != ILExceptionRegionKind.Finally);
                         }
-                        break;
+
+                        int delta = opcode == ILOpcode.leave ?
+                            (int)reader.ReadILUInt32() :
+                            (sbyte)reader.ReadILByte();
+                        int target = reader.Offset + delta;
+                        if (target < 0
+                            || target > reader.Size)
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+
+                        reader.Seek(target);
+                    }
+                    break;
 
                     case ILOpcode.clt:
                     case ILOpcode.clt_un:
                     case ILOpcode.cgt:
                     case ILOpcode.cgt_un:
+                    {
+                        StackEntry value1 = stack.Pop();
+                        StackEntry value2 = stack.Pop();
+
+                        bool condition;
+                        if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                         {
-                            StackEntry value1 = stack.Pop();
-                            StackEntry value2 = stack.Pop();
-
-                            bool condition;
-                            if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
-                            {
-                                if (opcode == ILOpcode.cgt)
-                                    condition = value1.Value.AsInt32() < value2.Value.AsInt32();
-                                else if (opcode == ILOpcode.cgt_un)
-                                    condition = (uint)value1.Value.AsInt32() < (uint)value2.Value.AsInt32();
-                                else if (opcode == ILOpcode.clt)
-                                    condition = value1.Value.AsInt32() > value2.Value.AsInt32();
-                                else if (opcode == ILOpcode.clt_un)
-                                    condition = (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32();
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
-                            {
-                                if (opcode == ILOpcode.cgt)
-                                    condition = value1.Value.AsInt64() < value2.Value.AsInt64();
-                                else if (opcode == ILOpcode.cgt_un)
-                                    condition = (ulong)value1.Value.AsInt64() < (ulong)value2.Value.AsInt64();
-                                else if (opcode == ILOpcode.clt)
-                                    condition = value1.Value.AsInt64() > value2.Value.AsInt64();
-                                else if (opcode == ILOpcode.clt_un)
-                                    condition = (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64();
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
-                            {
-                                if (opcode == ILOpcode.cgt)
-                                    condition = value1.Value.AsDouble() < value2.Value.AsDouble();
-                                else if (opcode == ILOpcode.cgt_un)
-                                    condition = !(value1.Value.AsDouble() >= value2.Value.AsDouble());
-                                else if (opcode == ILOpcode.clt)
-                                    condition = value1.Value.AsDouble() > value2.Value.AsDouble();
-                                else if (opcode == ILOpcode.clt_un)
-                                    condition = !(value1.Value.AsDouble() <= value2.Value.AsDouble());
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-                            else if (value1.ValueKind == StackValueKind.ObjRef && value2.ValueKind == StackValueKind.ObjRef)
-                            {
-                                if (opcode == ILOpcode.cgt_un)
-                                    condition = value1.Value == null && value2.Value != null;
-                                else
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
+                            if (opcode == ILOpcode.cgt)
+                                condition = value1.Value.AsInt32() < value2.Value.AsInt32();
+                            else if (opcode == ILOpcode.cgt_un)
+                                condition = (uint)value1.Value.AsInt32() < (uint)value2.Value.AsInt32();
+                            else if (opcode == ILOpcode.clt)
+                                condition = value1.Value.AsInt32() > value2.Value.AsInt32();
+                            else if (opcode == ILOpcode.clt_un)
+                                condition = (uint)value1.Value.AsInt32() > (uint)value2.Value.AsInt32();
                             else
-                            {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            stack.Push(StackValueKind.Int32, condition
-                                    ? ValueTypeValue.FromInt32(1)
-                                    : ValueTypeValue.FromInt32(0));
                         }
-                        break;
+                        else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
+                        {
+                            if (opcode == ILOpcode.cgt)
+                                condition = value1.Value.AsInt64() < value2.Value.AsInt64();
+                            else if (opcode == ILOpcode.cgt_un)
+                                condition = (ulong)value1.Value.AsInt64() < (ulong)value2.Value.AsInt64();
+                            else if (opcode == ILOpcode.clt)
+                                condition = value1.Value.AsInt64() > value2.Value.AsInt64();
+                            else if (opcode == ILOpcode.clt_un)
+                                condition = (ulong)value1.Value.AsInt64() > (ulong)value2.Value.AsInt64();
+                            else
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
+                        {
+                            if (opcode == ILOpcode.cgt)
+                                condition = value1.Value.AsDouble() < value2.Value.AsDouble();
+                            else if (opcode == ILOpcode.cgt_un)
+                                condition = !(value1.Value.AsDouble() >= value2.Value.AsDouble());
+                            else if (opcode == ILOpcode.clt)
+                                condition = value1.Value.AsDouble() > value2.Value.AsDouble();
+                            else if (opcode == ILOpcode.clt_un)
+                                condition = !(value1.Value.AsDouble() <= value2.Value.AsDouble());
+                            else
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        else if (value1.ValueKind == StackValueKind.ObjRef && value2.ValueKind == StackValueKind.ObjRef)
+                        {
+                            if (opcode == ILOpcode.cgt_un)
+                                condition = value1.Value == null && value2.Value != null;
+                            else
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+
+                        stack.Push(StackValueKind.Int32, condition
+                                ? ValueTypeValue.FromInt32(1)
+                                : ValueTypeValue.FromInt32(0));
+                    }
+                    break;
 
                     case ILOpcode.ceq:
-                        {
-                            StackEntry value1 = stack.Pop();
-                            StackEntry value2 = stack.Pop();
+                    {
+                        StackEntry value1 = stack.Pop();
+                        StackEntry value2 = stack.Pop();
 
-                            if (value1.ValueKind == value2.ValueKind
-                                && Value.TryCompareEquality(value1.Value, value2.Value, out bool compareResult))
-                            {
-                                stack.Push(StackValueKind.Int32,
-                                    compareResult
-                                    ? ValueTypeValue.FromInt32(1)
-                                    : ValueTypeValue.FromInt32(0));
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
+                        if (value1.ValueKind == value2.ValueKind
+                            && Value.TryCompareEquality(value1.Value, value2.Value, out bool compareResult))
+                        {
+                            stack.Push(StackValueKind.Int32,
+                                compareResult
+                                ? ValueTypeValue.FromInt32(1)
+                                : ValueTypeValue.FromInt32(0));
                         }
-                        break;
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.neg:
-                        {
-                            StackEntry value = stack.Pop();
-                            if (value.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
-                                stack.Push(value.ValueKind, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
-                            else if (value.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
-                                stack.Push(value.ValueKind, ValueTypeValue.FromInt64(-value.Value.AsInt64()));
-                            else if (value.ValueKind == StackValueKind.Float)
-                                stack.Push(value.ValueKind, ValueTypeValue.FromDouble(-value.Value.AsDouble()));
-                            else
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                        }
-                        break;
+                    {
+                        StackEntry value = stack.Pop();
+                        if (value.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
+                            stack.Push(value.ValueKind, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
+                        else if (value.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
+                            stack.Push(value.ValueKind, ValueTypeValue.FromInt64(-value.Value.AsInt64()));
+                        else if (value.ValueKind == StackValueKind.Float)
+                            stack.Push(value.ValueKind, ValueTypeValue.FromDouble(-value.Value.AsDouble()));
+                        else
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                    }
+                    break;
 
                     case ILOpcode.or:
                     case ILOpcode.shl:
@@ -1420,135 +1420,135 @@ namespace ILCompiler
                     case ILOpcode.div_un:
                     case ILOpcode.rem:
                     case ILOpcode.rem_un:
+                    {
+                        bool isDivRem = opcode == ILOpcode.div || opcode == ILOpcode.div_un
+                            || opcode == ILOpcode.rem || opcode == ILOpcode.rem_un;
+
+                        StackEntry value2 = stack.Pop();
+                        StackEntry value1 = stack.Pop();
+
+                        bool isNint = value1.ValueKind == StackValueKind.NativeInt || value2.ValueKind == StackValueKind.NativeInt;
+
+                        if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                         {
-                            bool isDivRem = opcode == ILOpcode.div || opcode == ILOpcode.div_un
-                                || opcode == ILOpcode.rem || opcode == ILOpcode.rem_un;
+                            if (isDivRem && value2.Value.AsInt32() == 0)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
-                            StackEntry value2 = stack.Pop();
-                            StackEntry value1 = stack.Pop();
-
-                            bool isNint = value1.ValueKind == StackValueKind.NativeInt || value2.ValueKind == StackValueKind.NativeInt;
-
-                            if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
+                            int result = opcode switch
                             {
-                                if (isDivRem && value2.Value.AsInt32() == 0)
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
+                                ILOpcode.or => value1.Value.AsInt32() | value2.Value.AsInt32(),
+                                ILOpcode.shl => value1.Value.AsInt32() << value2.Value.AsInt32(),
+                                ILOpcode.add => value1.Value.AsInt32() + value2.Value.AsInt32(),
+                                ILOpcode.sub => value1.Value.AsInt32() - value2.Value.AsInt32(),
+                                ILOpcode.and => value1.Value.AsInt32() & value2.Value.AsInt32(),
+                                ILOpcode.mul => value1.Value.AsInt32() * value2.Value.AsInt32(),
+                                ILOpcode.div => value1.Value.AsInt32() / value2.Value.AsInt32(),
+                                ILOpcode.div_un => (int)((uint)value1.Value.AsInt32() / (uint)value2.Value.AsInt32()),
+                                ILOpcode.rem => value1.Value.AsInt32() % value2.Value.AsInt32(),
+                                ILOpcode.rem_un => (int)((uint)value1.Value.AsInt32() % (uint)value2.Value.AsInt32()),
+                                _ => throw new NotImplementedException(), // unreachable
+                            };
 
-                                int result = opcode switch
-                                {
-                                    ILOpcode.or => value1.Value.AsInt32() | value2.Value.AsInt32(),
-                                    ILOpcode.shl => value1.Value.AsInt32() << value2.Value.AsInt32(),
-                                    ILOpcode.add => value1.Value.AsInt32() + value2.Value.AsInt32(),
-                                    ILOpcode.sub => value1.Value.AsInt32() - value2.Value.AsInt32(),
-                                    ILOpcode.and => value1.Value.AsInt32() & value2.Value.AsInt32(),
-                                    ILOpcode.mul => value1.Value.AsInt32() * value2.Value.AsInt32(),
-                                    ILOpcode.div => value1.Value.AsInt32() / value2.Value.AsInt32(),
-                                    ILOpcode.div_un => (int)((uint)value1.Value.AsInt32() / (uint)value2.Value.AsInt32()),
-                                    ILOpcode.rem => value1.Value.AsInt32() % value2.Value.AsInt32(),
-                                    ILOpcode.rem_un => (int)((uint)value1.Value.AsInt32() % (uint)value2.Value.AsInt32()),
-                                    _ => throw new NotImplementedException(), // unreachable
-                                };
-
-                                stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int32, ValueTypeValue.FromInt32(result));
-                            }
-                            else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
-                            {
-                                if (isDivRem && value2.Value.AsInt64() == 0)
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
-
-                                long result = opcode switch
-                                {
-                                    ILOpcode.or => value1.Value.AsInt64() | value2.Value.AsInt64(),
-                                    ILOpcode.add => value1.Value.AsInt64() + value2.Value.AsInt64(),
-                                    ILOpcode.sub => value1.Value.AsInt64() - value2.Value.AsInt64(),
-                                    ILOpcode.and => value1.Value.AsInt64() & value2.Value.AsInt64(),
-                                    ILOpcode.mul => value1.Value.AsInt64() * value2.Value.AsInt64(),
-                                    ILOpcode.div => value1.Value.AsInt64() / value2.Value.AsInt64(),
-                                    ILOpcode.div_un => (long)((ulong)value1.Value.AsInt64() / (ulong)value2.Value.AsInt64()),
-                                    ILOpcode.rem => value1.Value.AsInt64() % value2.Value.AsInt64(),
-                                    ILOpcode.rem_un => (long)((ulong)value1.Value.AsInt64() % (ulong)value2.Value.AsInt64()),
-                                    _ => throw new NotImplementedException(), // unreachable
-                                };
-
-                                stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(result));
-                            }
-                            else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
-                            {
-                                if (isDivRem && value2.Value.AsDouble() == 0)
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
-
-                                if (opcode == ILOpcode.or || opcode == ILOpcode.shl || opcode == ILOpcode.and || opcode == ILOpcode.div_un || opcode == ILOpcode.rem_un)
-                                    ThrowHelper.ThrowInvalidProgramException();
-
-                                double result = opcode switch
-                                {
-                                    ILOpcode.add => value1.Value.AsDouble() + value2.Value.AsDouble(),
-                                    ILOpcode.sub => value1.Value.AsDouble() - value2.Value.AsDouble(),
-                                    ILOpcode.mul => value1.Value.AsDouble() * value2.Value.AsDouble(),
-                                    ILOpcode.div => value1.Value.AsDouble() / value2.Value.AsDouble(),
-                                    ILOpcode.rem => value1.Value.AsDouble() % value2.Value.AsDouble(),
-                                    _ => throw new NotImplementedException(), // unreachable
-                                };
-
-                                stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(result));
-                            }
-                            else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int32
-                                && opcode == ILOpcode.shl)
-                            {
-                                long result = value1.Value.AsInt64() << value2.Value.AsInt32();
-                                stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(result));
-                            }
-                            else if ((value1.ValueKind == StackValueKind.ByRef && value2.ValueKind != StackValueKind.ByRef)
-                                || (value2.ValueKind == StackValueKind.ByRef && value1.ValueKind != StackValueKind.ByRef))
-                            {
-                                if (opcode != ILOpcode.add)
-                                    ThrowHelper.ThrowInvalidProgramException();
-
-                                StackEntry reference = value1.ValueKind == StackValueKind.ByRef ? value1 : value2;
-                                StackEntry addend = value1.ValueKind != StackValueKind.ByRef ? value1 : value2;
-
-                                if (addend.ValueKind is not StackValueKind.NativeInt and not StackValueKind.Int32)
-                                    ThrowHelper.ThrowInvalidProgramException();
-
-                                long addition = addend.ValueKind switch
-                                {
-                                    StackValueKind.Int32 => addend.Value.AsInt32(),
-                                    _ => context.Target.PointerSize == 8 ? addend.Value.AsInt64() : addend.Value.AsInt32()
-                                };
-
-                                if (reference.Value is not ByRefValue previousByRef)
-                                    return Status.Fail(methodIL.OwningMethod, "Byref math with unsupported byref");
-
-                                if (addition > previousByRef.PointedToBytes.Length - previousByRef.PointedToOffset
-                                    || addition + previousByRef.PointedToOffset < 0)
-                                    return Status.Fail(methodIL.OwningMethod, "Out of range byref access");
-
-                                stack.Push(StackValueKind.ByRef, new ByRefValue(previousByRef.PointedToBytes, (int)(previousByRef.PointedToOffset + addition)));
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
+                            stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int32, ValueTypeValue.FromInt32(result));
                         }
-                        break;
+                        else if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int64)
+                        {
+                            if (isDivRem && value2.Value.AsInt64() == 0)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
+
+                            long result = opcode switch
+                            {
+                                ILOpcode.or => value1.Value.AsInt64() | value2.Value.AsInt64(),
+                                ILOpcode.add => value1.Value.AsInt64() + value2.Value.AsInt64(),
+                                ILOpcode.sub => value1.Value.AsInt64() - value2.Value.AsInt64(),
+                                ILOpcode.and => value1.Value.AsInt64() & value2.Value.AsInt64(),
+                                ILOpcode.mul => value1.Value.AsInt64() * value2.Value.AsInt64(),
+                                ILOpcode.div => value1.Value.AsInt64() / value2.Value.AsInt64(),
+                                ILOpcode.div_un => (long)((ulong)value1.Value.AsInt64() / (ulong)value2.Value.AsInt64()),
+                                ILOpcode.rem => value1.Value.AsInt64() % value2.Value.AsInt64(),
+                                ILOpcode.rem_un => (long)((ulong)value1.Value.AsInt64() % (ulong)value2.Value.AsInt64()),
+                                _ => throw new NotImplementedException(), // unreachable
+                            };
+
+                            stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(result));
+                        }
+                        else if (value1.ValueKind == StackValueKind.Float && value2.ValueKind == StackValueKind.Float)
+                        {
+                            if (isDivRem && value2.Value.AsDouble() == 0)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
+
+                            if (opcode == ILOpcode.or || opcode == ILOpcode.shl || opcode == ILOpcode.and || opcode == ILOpcode.div_un || opcode == ILOpcode.rem_un)
+                                ThrowHelper.ThrowInvalidProgramException();
+
+                            double result = opcode switch
+                            {
+                                ILOpcode.add => value1.Value.AsDouble() + value2.Value.AsDouble(),
+                                ILOpcode.sub => value1.Value.AsDouble() - value2.Value.AsDouble(),
+                                ILOpcode.mul => value1.Value.AsDouble() * value2.Value.AsDouble(),
+                                ILOpcode.div => value1.Value.AsDouble() / value2.Value.AsDouble(),
+                                ILOpcode.rem => value1.Value.AsDouble() % value2.Value.AsDouble(),
+                                _ => throw new NotImplementedException(), // unreachable
+                            };
+
+                            stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(result));
+                        }
+                        else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int32
+                            && opcode == ILOpcode.shl)
+                        {
+                            long result = value1.Value.AsInt64() << value2.Value.AsInt32();
+                            stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(result));
+                        }
+                        else if ((value1.ValueKind == StackValueKind.ByRef && value2.ValueKind != StackValueKind.ByRef)
+                            || (value2.ValueKind == StackValueKind.ByRef && value1.ValueKind != StackValueKind.ByRef))
+                        {
+                            if (opcode != ILOpcode.add)
+                                ThrowHelper.ThrowInvalidProgramException();
+
+                            StackEntry reference = value1.ValueKind == StackValueKind.ByRef ? value1 : value2;
+                            StackEntry addend = value1.ValueKind != StackValueKind.ByRef ? value1 : value2;
+
+                            if (addend.ValueKind is not StackValueKind.NativeInt and not StackValueKind.Int32)
+                                ThrowHelper.ThrowInvalidProgramException();
+
+                            long addition = addend.ValueKind switch
+                            {
+                                StackValueKind.Int32 => addend.Value.AsInt32(),
+                                _ => context.Target.PointerSize == 8 ? addend.Value.AsInt64() : addend.Value.AsInt32()
+                            };
+
+                            if (reference.Value is not ByRefValue previousByRef)
+                                return Status.Fail(methodIL.OwningMethod, "Byref math with unsupported byref");
+
+                            if (addition > previousByRef.PointedToBytes.Length - previousByRef.PointedToOffset
+                                || addition + previousByRef.PointedToOffset < 0)
+                                return Status.Fail(methodIL.OwningMethod, "Out of range byref access");
+
+                            stack.Push(StackValueKind.ByRef, new ByRefValue(previousByRef.PointedToBytes, (int)(previousByRef.PointedToOffset + addition)));
+                        }
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldlen:
+                    {
+                        StackEntry popped = stack.Pop();
+                        if (popped.Value is ArrayInstance arrayInstance)
                         {
-                            StackEntry popped = stack.Pop();
-                            if (popped.Value is ArrayInstance arrayInstance)
-                            {
-                                stack.Push(StackValueKind.NativeInt, context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(arrayInstance.Length) : ValueTypeValue.FromInt32(arrayInstance.Length));
-                            }
-                            else if (popped.Value == null)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
-                            }
-                            else
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
+                            stack.Push(StackValueKind.NativeInt, context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64(arrayInstance.Length) : ValueTypeValue.FromInt32(arrayInstance.Length));
                         }
-                        break;
+                        else if (popped.Value == null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
 
                     case ILOpcode.stelem:
                     case ILOpcode.stelem_i:
@@ -1558,45 +1558,45 @@ namespace ILCompiler
                     case ILOpcode.stelem_i8:
                     case ILOpcode.stelem_r4:
                     case ILOpcode.stelem_r8:
+                    {
+                        TypeDesc elementType = opcode switch
                         {
-                            TypeDesc elementType = opcode switch
-                            {
-                                ILOpcode.stelem_i => context.GetWellKnownType(WellKnownType.IntPtr),
-                                ILOpcode.stelem_i1 => context.GetWellKnownType(WellKnownType.SByte),
-                                ILOpcode.stelem_i2 => context.GetWellKnownType(WellKnownType.Int16),
-                                ILOpcode.stelem_i4 => context.GetWellKnownType(WellKnownType.Int32),
-                                ILOpcode.stelem_i8 => context.GetWellKnownType(WellKnownType.Int64),
-                                ILOpcode.stelem_r4 => context.GetWellKnownType(WellKnownType.Single),
-                                ILOpcode.stelem_r8 => context.GetWellKnownType(WellKnownType.Double),
-                                _ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
-                            };
+                            ILOpcode.stelem_i => context.GetWellKnownType(WellKnownType.IntPtr),
+                            ILOpcode.stelem_i1 => context.GetWellKnownType(WellKnownType.SByte),
+                            ILOpcode.stelem_i2 => context.GetWellKnownType(WellKnownType.Int16),
+                            ILOpcode.stelem_i4 => context.GetWellKnownType(WellKnownType.Int32),
+                            ILOpcode.stelem_i8 => context.GetWellKnownType(WellKnownType.Int64),
+                            ILOpcode.stelem_r4 => context.GetWellKnownType(WellKnownType.Single),
+                            ILOpcode.stelem_r8 => context.GetWellKnownType(WellKnownType.Double),
+                            _ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
+                        };
 
-                            if (elementType.IsGCPointer)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode);
-                            }
-
-                            Value value = stack.PopIntoLocation(elementType);
-                            if (!stack.TryPopIntValue(out int index))
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-                            StackEntry array = stack.Pop();
-                            if (array.Value is ArrayInstance arrayInstance)
-                            {
-                                if (!arrayInstance.TryStoreElement(index, value))
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Out of range access");
-                            }
-                            else if (array.Value == null)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
-                            }
-                            else
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
+                        if (elementType.IsGCPointer)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
                         }
-                        break;
+
+                        Value value = stack.PopIntoLocation(elementType);
+                        if (!stack.TryPopIntValue(out int index))
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                        StackEntry array = stack.Pop();
+                        if (array.Value is ArrayInstance arrayInstance)
+                        {
+                            if (!arrayInstance.TryStoreElement(index, value))
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Out of range access");
+                        }
+                        else if (array.Value == null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldelem:
                     case ILOpcode.ldelem_i:
@@ -1609,95 +1609,95 @@ namespace ILCompiler
                     case ILOpcode.ldelem_i8:
                     case ILOpcode.ldelem_r4:
                     case ILOpcode.ldelem_r8:
+                    {
+                        TypeDesc elementType = opcode switch
                         {
-                            TypeDesc elementType = opcode switch
-                            {
-                                ILOpcode.ldelem_i => context.GetWellKnownType(WellKnownType.IntPtr),
-                                ILOpcode.ldelem_i1 => context.GetWellKnownType(WellKnownType.SByte),
-                                ILOpcode.ldelem_u1 => context.GetWellKnownType(WellKnownType.Byte),
-                                ILOpcode.ldelem_i2 => context.GetWellKnownType(WellKnownType.Int16),
-                                ILOpcode.ldelem_u2 => context.GetWellKnownType(WellKnownType.UInt16),
-                                ILOpcode.ldelem_i4 => context.GetWellKnownType(WellKnownType.Int32),
-                                ILOpcode.ldelem_u4 => context.GetWellKnownType(WellKnownType.UInt32),
-                                ILOpcode.ldelem_i8 => context.GetWellKnownType(WellKnownType.Int64),
-                                ILOpcode.ldelem_r4 => context.GetWellKnownType(WellKnownType.Single),
-                                ILOpcode.ldelem_r8 => context.GetWellKnownType(WellKnownType.Double),
-                                _ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
-                            };
+                            ILOpcode.ldelem_i => context.GetWellKnownType(WellKnownType.IntPtr),
+                            ILOpcode.ldelem_i1 => context.GetWellKnownType(WellKnownType.SByte),
+                            ILOpcode.ldelem_u1 => context.GetWellKnownType(WellKnownType.Byte),
+                            ILOpcode.ldelem_i2 => context.GetWellKnownType(WellKnownType.Int16),
+                            ILOpcode.ldelem_u2 => context.GetWellKnownType(WellKnownType.UInt16),
+                            ILOpcode.ldelem_i4 => context.GetWellKnownType(WellKnownType.Int32),
+                            ILOpcode.ldelem_u4 => context.GetWellKnownType(WellKnownType.UInt32),
+                            ILOpcode.ldelem_i8 => context.GetWellKnownType(WellKnownType.Int64),
+                            ILOpcode.ldelem_r4 => context.GetWellKnownType(WellKnownType.Single),
+                            ILOpcode.ldelem_r8 => context.GetWellKnownType(WellKnownType.Double),
+                            _ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
+                        };
 
-                            if (elementType.IsGCPointer)
+                        if (elementType.IsGCPointer)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+
+                        if (!stack.TryPopIntValue(out int index))
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+
+                        StackEntry array = stack.Pop();
+                        if (array.Value is ArrayInstance arrayInstance)
+                        {
+                            if (!arrayInstance.TryLoadElement(index, out Value value))
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Out of range access");
+
+                            stack.PushFromLocation(elementType, value);
+                        }
+                        else if (array.Value == null)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
+                        }
+                        else if (array.Value is ForeignTypeInstance)
+                        {
+                            return Status.Fail(methodIL.OwningMethod, opcode, "Foreign array");
+                        }
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+
+                    }
+                    break;
+
+                    case ILOpcode.box:
+                    {
+                        TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                        if (type.IsValueType)
+                        {
+                            if (type.IsNullable)
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+
+                            if (type.RequiresAlign8())
+                                return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
+
+                            Value value = stack.PopIntoLocation(type);
+                            AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
+                            if (!ObjectInstance.TryBox((DefType)type, value, allocSite, out ObjectInstance boxedResult))
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
 
-                            if (!stack.TryPopIntValue(out int index))
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
 
-                            StackEntry array = stack.Pop();
-                            if (array.Value is ArrayInstance arrayInstance)
-                            {
-                                if (!arrayInstance.TryLoadElement(index, out Value value))
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Out of range access");
-
-                                stack.PushFromLocation(elementType, value);
-                            }
-                            else if (array.Value == null)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Null array");
-                            }
-                            else if (array.Value is ForeignTypeInstance)
-                            {
-                                return Status.Fail(methodIL.OwningMethod, opcode, "Foreign array");
-                            }
-                            else
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
-
+                            stack.Push(boxedResult);
                         }
-                        break;
-
-                    case ILOpcode.box:
-                        {
-                            TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (type.IsValueType)
-                            {
-                                if (type.IsNullable)
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-
-                                if (type.RequiresAlign8())
-                                    return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
-
-                                Value value = stack.PopIntoLocation(type);
-                                AllocationSite allocSite = new AllocationSite(_type, instructionCounter);
-                                if (!ObjectInstance.TryBox((DefType)type, value, allocSite, out ObjectInstance boxedResult))
-                                {
-                                    return Status.Fail(methodIL.OwningMethod, opcode);
-                                }
-
-
-                                stack.Push(boxedResult);
-                            }
-                        }
-                        break;
+                    }
+                    break;
 
                     case ILOpcode.unbox_any:
+                    {
+                        TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+                        StackEntry entry = stack.Pop();
+                        if (entry.Value is ObjectInstance objInst
+                            && objInst.TryUnboxAny(type, out Value unboxed))
                         {
-                            TypeDesc type = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            StackEntry entry = stack.Pop();
-                            if (entry.Value is ObjectInstance objInst
-                                && objInst.TryUnboxAny(type, out Value unboxed))
-                            {
-                                stack.PushFromLocation(type, unboxed);
-                            }
-                            else
-                            {
-                                ThrowHelper.ThrowInvalidProgramException();
-                            }
+                            stack.PushFromLocation(type, unboxed);
                         }
-                        break;
+                        else
+                        {
+                            ThrowHelper.ThrowInvalidProgramException();
+                        }
+                    }
+                    break;
 
                     case ILOpcode.ldobj:
                     case ILOpcode.ldind_i1:
@@ -1707,34 +1707,34 @@ namespace ILCompiler
                     case ILOpcode.ldind_i4:
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldind_i8:
+                    {
+                        TypeDesc type = opcode switch
                         {
-                            TypeDesc type = opcode switch
-                            {
-                                ILOpcode.ldind_i1 => context.GetWellKnownType(WellKnownType.SByte),
-                                ILOpcode.ldind_u1 => context.GetWellKnownType(WellKnownType.Byte),
-                                ILOpcode.ldind_i2 => context.GetWellKnownType(WellKnownType.Int16),
-                                ILOpcode.ldind_u2 => context.GetWellKnownType(WellKnownType.UInt16),
-                                ILOpcode.ldind_i4 => context.GetWellKnownType(WellKnownType.Int32),
-                                ILOpcode.ldind_u4 => context.GetWellKnownType(WellKnownType.UInt32),
-                                ILOpcode.ldind_i8 => context.GetWellKnownType(WellKnownType.Int64),
-                                _ /* ldobj */ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
-                            };
+                            ILOpcode.ldind_i1 => context.GetWellKnownType(WellKnownType.SByte),
+                            ILOpcode.ldind_u1 => context.GetWellKnownType(WellKnownType.Byte),
+                            ILOpcode.ldind_i2 => context.GetWellKnownType(WellKnownType.Int16),
+                            ILOpcode.ldind_u2 => context.GetWellKnownType(WellKnownType.UInt16),
+                            ILOpcode.ldind_i4 => context.GetWellKnownType(WellKnownType.Int32),
+                            ILOpcode.ldind_u4 => context.GetWellKnownType(WellKnownType.UInt32),
+                            ILOpcode.ldind_i8 => context.GetWellKnownType(WellKnownType.Int64),
+                            _ /* ldobj */ => (TypeDesc)methodIL.GetObject(reader.ReadILToken()),
+                        };
 
-                            StackEntry entry = stack.Pop();
-                            if (entry.ValueKind != StackValueKind.ByRef && entry.ValueKind != StackValueKind.NativeInt)
-                                ThrowHelper.ThrowInvalidProgramException();
+                        StackEntry entry = stack.Pop();
+                        if (entry.ValueKind != StackValueKind.ByRef && entry.ValueKind != StackValueKind.NativeInt)
+                            ThrowHelper.ThrowInvalidProgramException();
 
-                            if (entry.Value is ByRefValueBase byRefVal
-                                && byRefVal.TryLoad(type, out Value dereferenced))
-                            {
-                                stack.PushFromLocation(type, dereferenced);
-                            }
-                            else
-                            {
-                                return Status.Fail(methodIL.OwningMethod, "Ldind from unsupported byref");
-                            }
+                        if (entry.Value is ByRefValueBase byRefVal
+                            && byRefVal.TryLoad(type, out Value dereferenced))
+                        {
+                            stack.PushFromLocation(type, dereferenced);
                         }
-                        break;
+                        else
+                        {
+                            return Status.Fail(methodIL.OwningMethod, "Ldind from unsupported byref");
+                        }
+                    }
+                    break;
 
                     case ILOpcode.stobj:
                     case ILOpcode.stind_i:
@@ -1742,42 +1742,42 @@ namespace ILCompiler
                     case ILOpcode.stind_i2:
                     case ILOpcode.stind_i4:
                     case ILOpcode.stind_i8:
+                    {
+                        if (opcode == ILOpcode.stobj)
                         {
-                            if (opcode == ILOpcode.stobj)
+                            TypeDesc type = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
+                            opcode = type.Category switch
                             {
-                                TypeDesc type = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
-                                opcode = type.Category switch
-                                {
-                                    TypeFlags.SByte or TypeFlags.Boolean or TypeFlags.Byte => ILOpcode.stind_i1,
-                                    TypeFlags.Int16 or TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.stind_i2,
-                                    TypeFlags.Int32 or TypeFlags.UInt32 => ILOpcode.stind_i4,
-                                    TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.stind_i8,
-                                    TypeFlags.IntPtr or TypeFlags.UIntPtr => ILOpcode.stind_i,
-                                    _ => ILOpcode.stobj,
-                                };
-                            }
-
-                            Value val = opcode switch
-                            {
-                                ILOpcode.stind_i1 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.Byte)),
-                                ILOpcode.stind_i2 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt16)),
-                                ILOpcode.stind_i4 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt32)),
-                                ILOpcode.stind_i8 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt64)),
-                                ILOpcode.stind_i => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UIntPtr)),
-                                _ => stack.Pop().Value
+                                TypeFlags.SByte or TypeFlags.Boolean or TypeFlags.Byte => ILOpcode.stind_i1,
+                                TypeFlags.Int16 or TypeFlags.Char or TypeFlags.UInt16 => ILOpcode.stind_i2,
+                                TypeFlags.Int32 or TypeFlags.UInt32 => ILOpcode.stind_i4,
+                                TypeFlags.Int64 or TypeFlags.UInt64 => ILOpcode.stind_i8,
+                                TypeFlags.IntPtr or TypeFlags.UIntPtr => ILOpcode.stind_i,
+                                _ => ILOpcode.stobj,
                             };
-
-                            StackEntry location = stack.Pop();
-                            if (location.ValueKind != StackValueKind.ByRef && location.ValueKind != StackValueKind.NativeInt)
-                                ThrowHelper.ThrowInvalidProgramException();
-
-                            if (location.Value is not ByRefValueBase destValue)
-                                return Status.Fail(methodIL.OwningMethod, "Stind into usupported byref");
-
-                            if (!destValue.TryStore(val))
-                                return Status.Fail(methodIL.OwningMethod, "Byref doesn't support storing value");
                         }
-                        break;
+
+                        Value val = opcode switch
+                        {
+                            ILOpcode.stind_i1 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.Byte)),
+                            ILOpcode.stind_i2 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt16)),
+                            ILOpcode.stind_i4 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt32)),
+                            ILOpcode.stind_i8 => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UInt64)),
+                            ILOpcode.stind_i => stack.PopIntoLocation(context.GetWellKnownType(WellKnownType.UIntPtr)),
+                            _ => stack.Pop().Value
+                        };
+
+                        StackEntry location = stack.Pop();
+                        if (location.ValueKind != StackValueKind.ByRef && location.ValueKind != StackValueKind.NativeInt)
+                            ThrowHelper.ThrowInvalidProgramException();
+
+                        if (location.Value is not ByRefValueBase destValue)
+                            return Status.Fail(methodIL.OwningMethod, "Stind into usupported byref");
+
+                        if (!destValue.TryStore(val))
+                            return Status.Fail(methodIL.OwningMethod, "Byref doesn't support storing value");
+                    }
+                    break;
 
                     case ILOpcode.constrained:
                         constrainedType = methodIL.GetObject(reader.ReadILToken()) as TypeDesc;
@@ -1788,28 +1788,28 @@ namespace ILCompiler
                         break;
 
                     case ILOpcode.initblk:
-                        {
-                            StackEntry size = stack.Pop();
-                            StackEntry value = stack.Pop();
-                            StackEntry addr = stack.Pop();
+                    {
+                        StackEntry size = stack.Pop();
+                        StackEntry value = stack.Pop();
+                        StackEntry addr = stack.Pop();
 
-                            if (size.ValueKind != StackValueKind.Int32
-                                || value.ValueKind != StackValueKind.Int32
-                                || addr.ValueKind != StackValueKind.ByRef)
-                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        if (size.ValueKind != StackValueKind.Int32
+                            || value.ValueKind != StackValueKind.Int32
+                            || addr.ValueKind != StackValueKind.ByRef)
+                            return Status.Fail(methodIL.OwningMethod, opcode);
 
-                            uint sizeBytes = (uint)size.Value.AsInt32();
+                        uint sizeBytes = (uint)size.Value.AsInt32();
 
-                            if (addr.Value is not ByRefValue addressValue)
-                                return Status.Fail(methodIL.OwningMethod, "initblk of unsupported byref");
+                        if (addr.Value is not ByRefValue addressValue)
+                            return Status.Fail(methodIL.OwningMethod, "initblk of unsupported byref");
 
-                            if (sizeBytes > addressValue.PointedToBytes.Length - addressValue.PointedToOffset
-                                || sizeBytes > int.MaxValue /* paranoid check that cast to int is legit */)
-                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        if (sizeBytes > addressValue.PointedToBytes.Length - addressValue.PointedToOffset
+                            || sizeBytes > int.MaxValue /* paranoid check that cast to int is legit */)
+                            return Status.Fail(methodIL.OwningMethod, opcode);
 
-                            Array.Fill(addressValue.PointedToBytes, (byte)value.Value.AsInt32(), addressValue.PointedToOffset, (int)sizeBytes);
-                        }
-                        break;
+                        Array.Fill(addressValue.PointedToBytes, (byte)value.Value.AsInt32(), addressValue.PointedToOffset, (int)sizeBytes);
+                    }
+                    break;
 
                     default:
                         return Status.Fail(methodIL.OwningMethod, opcode);
@@ -1904,45 +1904,45 @@ namespace ILCompiler
                     return false;
                 case "GetTypeFromHandle" when IsSystemType(method.OwningType)
                         && parameters[0] is RuntimeTypeHandleValue typeHandle:
+                {
+                    if (!_internedTypes.TryGetValue(typeHandle.Type, out RuntimeTypeValue runtimeType))
                     {
-                        if (!_internedTypes.TryGetValue(typeHandle.Type, out RuntimeTypeValue runtimeType))
-                        {
-                            _internedTypes.Add(typeHandle.Type, runtimeType = new RuntimeTypeValue(typeHandle.Type));
-                        }
-                        retVal = runtimeType;
-                        return true;
+                        _internedTypes.Add(typeHandle.Type, runtimeType = new RuntimeTypeValue(typeHandle.Type));
                     }
+                    retVal = runtimeType;
+                    return true;
+                }
                 case "get_IsValueType" when IsSystemType(method.OwningType)
                         && parameters[0] is RuntimeTypeValue typeToCheckForValueType:
-                    {
-                        retVal = ValueTypeValue.FromSByte(typeToCheckForValueType.TypeRepresented.IsValueType ? (sbyte)1 : (sbyte)0);
-                        return true;
-                    }
+                {
+                    retVal = ValueTypeValue.FromSByte(typeToCheckForValueType.TypeRepresented.IsValueType ? (sbyte)1 : (sbyte)0);
+                    return true;
+                }
                 case "op_Equality" when IsSystemType(method.OwningType)
                         && (parameters[0] is RuntimeTypeValue || parameters[1] is RuntimeTypeValue):
-                    {
-                        retVal = ValueTypeValue.FromSByte(parameters[0] == parameters[1] ? (sbyte)1 : (sbyte)0);
-                        return true;
-                    }
+                {
+                    retVal = ValueTypeValue.FromSByte(parameters[0] == parameters[1] ? (sbyte)1 : (sbyte)0);
+                    return true;
+                }
                 case "IsReferenceOrContainsReferences" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType isReferenceOrContainsReferencesType
                         && isReferenceOrContainsReferencesType.Name == "RuntimeHelpers" && isReferenceOrContainsReferencesType.Namespace == "System.Runtime.CompilerServices"
                         && isReferenceOrContainsReferencesType.Module == method.Context.SystemModule:
-                    {
-                        bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
-                        retVal = ValueTypeValue.FromSByte(result ? (sbyte)1 : (sbyte)0);
-                        return true;
-                    }
+                {
+                    bool result = method.Instantiation[0].IsGCPointer || (method.Instantiation[0] is DefType defType && defType.ContainsGCPointers);
+                    retVal = ValueTypeValue.FromSByte(result ? (sbyte)1 : (sbyte)0);
+                    return true;
+                }
                 case "GetArrayDataReference" when method.Instantiation.Length == 1
                         && method.OwningType is MetadataType getArrayDataReferenceType
                         && getArrayDataReferenceType.Name == "MemoryMarshal" && getArrayDataReferenceType.Namespace == "System.Runtime.InteropServices"
                         && getArrayDataReferenceType.Module == method.Context.SystemModule
                         && parameters[0] is ArrayInstance arrayData
                         && ((ArrayType)arrayData.Type).ElementType == method.Instantiation[0]:
-                    {
-                        retVal = arrayData.GetArrayData();
-                        return true;
-                    }
+                {
+                    retVal = arrayData.GetArrayData();
+                    return true;
+                }
             }
 
             static bool IsSystemType(TypeDesc type)

@@ -48,7 +48,7 @@ namespace System.Net.Http
 
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(CheckTls13Support);
         private static readonly TimeSpan s_cleanCachedCertificateTimeout = TimeSpan.FromMilliseconds((int?)AppDomain.CurrentDomain.GetData("System.Net.Http.WinHttpCertificateCachingCleanupTimerInterval") ?? 60_000);
-        private static readonly long s_staleTimeout = (long)(s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency / 1000);
+        private static readonly long s_staleTimeout = (long)(s_cleanCachedCertificateTimeout.TotalSeconds * Stopwatch.Frequency);
 
         [ThreadStatic]
         private static StringBuilder? t_requestHeadersBuilder;

@@ -295,6 +295,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // SWIFT_SUPPORT
 
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
         case GT_LEA:
             // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
@@ -508,6 +512,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
             genConsumeReg(treeNode);
+            break;
+
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
             break;
 
         case GT_PINVOKE_PROLOG:
@@ -3489,7 +3497,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     assert(params.secondRetSize != EA_BYREF);
 #endif
 
-    params.isJump = call->IsFastTailCall();
+    params.isJump      = call->IsFastTailCall();
+    params.hasAsyncRet = call->IsAsync();
 
     // We need to propagate the debug information to the call instruction, so we can emit
     // an IL to native mapping record for the call, to support managed return value debugging.
@@ -3537,6 +3546,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 #endif // DEBUG
+
     GenTree* target = getCallTarget(call, &params.methHnd);
 
     if (target != nullptr)

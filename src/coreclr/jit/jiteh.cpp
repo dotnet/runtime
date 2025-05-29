@@ -1537,6 +1537,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     assert(XTnum < compHndBBtabCount);
     assert(!ehTableFinalized);
 
+    JITDUMP("\nRemoving EH#%u\n", XTnum);
+
     EHblkDsc* HBtab;
 
     /* Reduce the number of entries in the EH table by one */
@@ -1646,6 +1648,7 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
     }
     else
     {
+        JITDUMP("Updating ACD entries after EH removal\n");
         // There are three possibilities for each ACD entry
         //
         // 1. remains as is (stays in same region with same indices)
@@ -1718,6 +1721,8 @@ void Compiler::fgRemoveEHTableEntry(unsigned XTnum)
                 JITDUMPEXEC(add->Dump());
             }
         }
+
+        JITDUMP("... done updating ACD entries after EH removal\n");
     }
 }
 

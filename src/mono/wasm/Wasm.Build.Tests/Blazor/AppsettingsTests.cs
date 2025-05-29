@@ -20,11 +20,10 @@ public class AppsettingsTests : BlazorWasmTestBase
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/aspnetcore/issues/60536")]
     public async Task FileInVfs()
     {
         Configuration config = Configuration.Debug;
-        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor", extraProperties: "<OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>");
+        ProjectInfo info = CreateWasmTemplateProject(Template.BlazorWasm, config, aot: false, "blazor");
         UpdateHomePage();
         string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
         File.WriteAllText(Path.Combine(projectDirectory, "wwwroot", "appsettings.json"), $"{{ \"Id\": \"{info.ProjectName}\" }}");

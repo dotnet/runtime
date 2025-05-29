@@ -220,6 +220,7 @@ class ComCallMethodDesc;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
+#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -1034,14 +1035,14 @@ struct cdac_data<FaultingExceptionFrame>
 #endif // FEATURE_EH_FUNCLETS
 };
 
-#ifdef FEATURE_EH_FUNCLETS
-
 typedef DPTR(class SoftwareExceptionFrame) PTR_SoftwareExceptionFrame;
 
 class SoftwareExceptionFrame : public Frame
 {
     TADDR                           m_ReturnAddress;
+#if !defined(TARGET_X86) || defined(FEATURE_EH_FUNCLETS)
     T_KNONVOLATILE_CONTEXT_POINTERS m_ContextPointers;
+#endif
     // This T_CONTEXT field needs to be the last field in the class because it is a
     // different size between Linux (pal.h) and the Windows cross-DAC (winnt.h).
     T_CONTEXT                       m_Context;
@@ -1107,7 +1108,6 @@ struct cdac_data<SoftwareExceptionFrame>
     static constexpr size_t TargetContext = offsetof(SoftwareExceptionFrame, m_Context);
     static constexpr size_t ReturnAddress = offsetof(SoftwareExceptionFrame, m_ReturnAddress);
 };
-#endif // FEATURE_EH_FUNCLETS
 
 //-----------------------------------------------------------------------
 // Frame for debugger function evaluation
@@ -2889,6 +2889,9 @@ public:
     InterpreterFrame(TransitionBlock* pTransitionBlock, InterpMethodContextFrame* pContextFrame)
         : FramedMethodFrame(FrameIdentifier::InterpreterFrame, pTransitionBlock, NULL),
         m_pTopInterpMethodContextFrame(pContextFrame)
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        , m_SSP(0)
+#endif
     {
         WRAPPER_NO_CONTRACT;
         Push();
@@ -2900,13 +2903,53 @@ public:
     }
 
 #endif // DACCESS_COMPILE
+
+    BOOL NeedsUpdateRegDisplay_Impl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return GetTransitionBlock() != 0;
+    }
+
+    PCODE GetReturnAddressPtr_Impl()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (GetTransitionBlock() == 0)
+            return 0;
+
+        return FramedMethodFrame::GetReturnAddressPtr_Impl();
+    }
+
+    void UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats = false);
+#ifndef DACCESS_COMPILE
+    void ExceptionUnwind_Impl();
+#endif
+
     PTR_InterpMethodContextFrame GetTopInterpMethodContextFrame();
+
+    void SetContextToInterpMethodContextFrame(T_CONTEXT * pContext);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    void SetInterpExecMethodSSP(TADDR ssp)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_SSP = ssp;
+    }
+
+    TADDR GetInterpExecMethodSSP()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_SSP;
+    }
+#endif // HOST_AMD64 && HOST_WINDOWS
 
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
     // this InterpreterFrame.
     PTR_InterpMethodContextFrame m_pTopInterpMethodContextFrame;
-    
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    // Saved SSP of the InterpExecMethod for resuming after catch into interpreter frames.
+    TADDR m_SSP;
+#endif // HOST_AMD64 && HOST_WINDOWS
 };
 
 #endif // FEATURE_INTERPRETER
@@ -2971,11 +3014,6 @@ private:
 
 #ifndef DACCESS_COMPILE
 
-#ifdef _PREFAST_
-// Suppress prefast warning #6384: Dividing sizeof a pointer by another value
-#pragma warning(disable:6384)
-#endif /*_PREFAST_ */
-
 #define GCPROTECT_BEGIN(ObjRefStruct)                           do {    \
                 GCFrame __gcframe(                                      \
                         (OBJECTREF*)&(ObjRefStruct),                    \
@@ -3033,6 +3071,8 @@ private:
 
 
 #define ASSERT_ADDRESS_IN_STACK(address) _ASSERTE (Thread::IsAddressInCurrentStack (address));
+
+class GCRefMapBuilder;
 
 void ComputeCallRefMap(MethodDesc* pMD,
                        GCRefMapBuilder * pBuilder,

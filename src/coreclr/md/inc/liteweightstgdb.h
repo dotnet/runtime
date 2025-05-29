@@ -25,14 +25,7 @@ class StgIO;
 #include "pdbheap.h"
 #endif
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:28718)    // public header missing SAL annotations
-#endif // _PREFAST_
 class TiggerStorage;
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif // _PREFAST_
 
 //*****************************************************************************
 // This class provides common definitions for heap segments.  It is both the

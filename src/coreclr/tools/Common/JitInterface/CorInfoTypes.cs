@@ -793,8 +793,7 @@ namespace Internal.JitInterface
         CORINFO_HELPER_ARG_TYPE_Field = 1,
         CORINFO_HELPER_ARG_TYPE_Method = 2,
         CORINFO_HELPER_ARG_TYPE_Class = 3,
-        CORINFO_HELPER_ARG_TYPE_Module = 4,
-        CORINFO_HELPER_ARG_TYPE_Const = 5,
+        CORINFO_HELPER_ARG_TYPE_Const = 4,
     }
 
     public struct CORINFO_HELPER_DESC
@@ -870,6 +869,18 @@ namespace Internal.JitInterface
         public CORINFO_RUNTIME_ABI targetAbi;
 
         public CORINFO_OS osType;
+    }
+
+    public unsafe struct CORINFO_ASYNC_INFO
+    {
+        // Class handle for System.Runtime.CompilerServices.Continuation
+        public CORINFO_CLASS_STRUCT_* continuationClsHnd;
+        // 'Next' field
+        public CORINFO_FIELD_STRUCT_* continuationNextFldHnd;
+        // 'Data' field
+        public CORINFO_FIELD_STRUCT_* continuationDataFldHnd;
+        // 'GCData' field
+        public CORINFO_FIELD_STRUCT_* continuationGCDataFldHnd;
     }
 
     // Flags passed from JIT to runtime.

@@ -781,6 +781,9 @@ private:
 };
 
 typedef TGcInfoDecoder<TargetGcInfoEncoding> GcInfoDecoder;
+#ifdef FEATURE_INTERPRETER
+typedef TGcInfoDecoder<InterpreterGcInfoEncoding> InterpreterGcInfoDecoder;
+#endif // FEATURE_INTERPRETER
 
 #endif // USE_GC_INFO_DECODER
 

@@ -1070,83 +1070,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public async Task SendAsync_ExpectedDiagnosticSynchronousExceptionActivityLogging()
-        {
-            await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
-            {
-                Exception exceptionLogged = null;
-
-                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
-                {
-                    if (kvp.Key.Equals("System.Net.Http.HttpRequestOut.Stop"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        GetProperty<HttpRequestMessage>(kvp.Value, "Request");
-                        TaskStatus requestStatus = GetProperty<TaskStatus>(kvp.Value, "RequestTaskStatus");
-                        Assert.Equal(TaskStatus.Faulted, requestStatus);
-                        activityStopTcs.SetResult();
-                    }
-                    else if (kvp.Key.Equals("System.Net.Http.Exception"))
-                    {
-                        Assert.NotNull(kvp.Value);
-                        exceptionLogged = GetProperty<Exception>(kvp.Value, "Exception");
-                    }
-                });
-
-                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-                {
-                    diagnosticListenerObserver.Enable();
-
-                    using (HttpClientHandler handler = CreateHttpClientHandler(useVersion))
-                    using (HttpClient client = CreateHttpClient(handler, useVersion))
-                    {
-                        // Set a ftp proxy.
-                        // Forces a synchronous exception for SocketsHttpHandler.
-                        // SocketsHttpHandler only allow http & https & socks scheme for proxies.
-                        handler.Proxy = new WebProxy($"ftp://foo.bar", false);
-                        var request = new HttpRequestMessage(HttpMethod.Get, InvalidUri)
-                        {
-                            Version = Version.Parse(useVersion)
-                        };
-
-                        // We cannot use Assert.Throws<Exception>(() => { SendAsync(...); }) to verify the
-                        // synchronous exception here, because DiagnosticsHandler SendAsync() method has async
-                        // modifier, and returns Task. If the call is not awaited, the current test method will continue
-                        // run before the call is completed, thus Assert.Throws() will not capture the exception.
-                        // We need to wait for the Task to complete synchronously, to validate the exception.
-
-                        Exception exception = null;
-                        if (bool.Parse(testAsync))
-                        {
-                            Task sendTask = client.SendAsync(request);
-                            Assert.True(sendTask.IsFaulted);
-                            exception = sendTask.Exception.InnerException;
-                        }
-                        else
-                        {
-                            try
-                            {
-                                client.Send(request);
-                            }
-                            catch (Exception ex)
-                            {
-                                exception = ex;
-                            }
-                            Assert.NotNull(exception);
-                        }
-
-                        await activityStopTcs.Task;
-
-                        Assert.IsType<NotSupportedException>(exception);
-                        Assert.Same(exceptionLogged, exception);
-                    }
-                }
-            }, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
-        }
-
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_ExpectedDiagnosticSourceNewAndDeprecatedEventsLogging()
         {
             await RemoteExecutor.Invoke(async (useVersion, testAsync) =>
@@ -1252,9 +1175,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("fAlSe")]
         [InlineData("helloworld")]
         [InlineData("")]
-        public void SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
+        public async Task SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue)
         {
-            RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
+            await RemoteExecutor.Invoke(async (useVersion, testAsync, envVarValue) =>
             {
                 Environment.SetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName, envVarValue);
 
@@ -1283,7 +1206,7 @@ namespace System.Net.Http.Functional.Tests
 
                     Assert.Equal(isInstrumentationEnabled, anyEventLogged);
                 }
-            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).Dispose();
+            }, UseVersion.ToString(), TestAsync.ToString(), envVarValue).DisposeAsync();
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

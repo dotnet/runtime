@@ -40,8 +40,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js.map", false },
         };
 
-        if (assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js") ?? false)
+        if ((assertOptions.BuildOptions.BootConfigFileName?.EndsWith(".js")) ?? false)
             result[assertOptions.BuildOptions.BootConfigFileName] = true;
+
+        if (assertOptions.ExpectDotnetJsFingerprinting == false)
+            result["dotnet.js"] = false;
 
         return result;
     }

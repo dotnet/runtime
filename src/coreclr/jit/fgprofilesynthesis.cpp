@@ -148,6 +148,17 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    // A simple check whether the current method has more than one edge.
+    m_comp->fgPgoSingleEdge = true;
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        if (block->NumSucc() > 1)
+        {
+            m_comp->fgPgoSingleEdge = false;
+            break;
+        }
+    }
+
     m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
 
     if (m_approximate)
@@ -1186,7 +1197,7 @@ void ProfileSynthesis::GaussSeidelSolver()
     weight_t                      relResidual          = 0;
     weight_t                      oldRelResidual       = 0;
     weight_t                      eigenvalue           = 0;
-    weight_t const                stopRelResidual      = 0.002;
+    weight_t const                stopRelResidual      = 0.001;
     BasicBlock*                   residualBlock        = nullptr;
     BasicBlock*                   relResidualBlock     = nullptr;
     const FlowGraphDfsTree* const dfs                  = m_loops->GetDfsTree();

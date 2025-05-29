@@ -274,6 +274,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {

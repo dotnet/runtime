@@ -445,15 +445,18 @@ int LinearScan::BuildNode(GenTree* tree)
             if (!varTypeIsFloating(op1Type))
             {
                 emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
-                if (tree->gtGetOp2()->isContainedIntOrIImmed())
+                if (cmpSize == EA_4BYTE)
                 {
-                    bool isUnsigned = (tree->gtFlags & GTF_UNSIGNED) != 0;
-                    if (cmpSize == EA_4BYTE && isUnsigned)
-                        buildInternalIntRegisterDefForNode(tree);
-                }
-                else
-                {
-                    if (cmpSize == EA_4BYTE)
+                    GenTree* op2 = tree->gtGetOp2();
+
+                    bool isUnsigned    = (tree->gtFlags & GTF_UNSIGNED) != 0;
+                    bool useAddSub     = !(!tree->OperIs(GT_EQ, GT_NE) || op2->IsIntegralConst(-2048));
+                    bool useShiftRight = !isUnsigned && ((tree->OperIs(GT_LT) && op2->IsIntegralConst(0)) ||
+                                                         (tree->OperIs(GT_LE) && op2->IsIntegralConst(-1)));
+                    bool useLoadImm    = isUnsigned && ((tree->OperIs(GT_LT, GT_GE) && op2->IsIntegralConst(0)) ||
+                                                     (tree->OperIs(GT_LE, GT_GT) && op2->IsIntegralConst(-1)));
+
+                    if (!useAddSub && !useShiftRight && !useLoadImm)
                         buildInternalIntRegisterDefForNode(tree);
                 }
             }
@@ -776,6 +779,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -1017,6 +1025,11 @@ int LinearScan::BuildCall(GenTreeCall* call)
     buildInternalRegisterUses();
 
     // Now generate defs and kills.
+    if (call->IsAsync() && compiler->compIsAsync() && !call->IsFastTailCall())
+    {
+        MarkAsyncContinuationBusyForCall(call);
+    }
+
     regMaskTP killMask = getKillSetForCall(call);
     if (dstCount > 0)
     {

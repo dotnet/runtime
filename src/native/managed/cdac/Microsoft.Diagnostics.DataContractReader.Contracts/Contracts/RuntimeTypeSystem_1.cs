@@ -843,7 +843,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             TargetPointer auxDataPtr = mt.AuxiliaryData;
             Data.MethodTableAuxiliaryData auxData = _target.ProcessedData.GetOrAdd<Data.MethodTableAuxiliaryData>(auxDataPtr);
             TargetPointer nonVirtualSlotsArray = auxDataPtr + (ulong)auxData.OffsetToNonVirtualSlots;
-            return nonVirtualSlotsArray - (1 + (slotNum - mt.NumVirtuals));
+            return nonVirtualSlotsArray - ((1 + (slotNum - mt.NumVirtuals)) * (ulong)_target.PointerSize);
         }
     }
 

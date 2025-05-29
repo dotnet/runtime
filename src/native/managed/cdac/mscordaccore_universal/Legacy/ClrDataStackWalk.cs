@@ -19,6 +19,7 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     private readonly Target _target;
     private readonly IXCLRDataStackWalk? _legacyImpl;
 
+    private bool _currentFrameIsValid;
     private readonly IEnumerator<IStackDataFrameHandle> _dataFrames;
 
     public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target, IXCLRDataStackWalk? legacyImpl)
@@ -33,25 +34,33 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 
         // IEnumerator<T> begins before the first element.
         // Call MoveNext() to set _dataFrames.Current to the first element.
-        _dataFrames.MoveNext();
+        _currentFrameIsValid = _dataFrames.MoveNext();
     }
 
     int IXCLRDataStackWalk.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, [MarshalUsing(CountElementName = "contextBufSize"), Out] byte[] contextBuf)
     {
         int hr = HResults.S_OK;
 
-        IStackWalk sw = _target.Contracts.StackWalk;
-        IStackDataFrameHandle dataFrame = _dataFrames.Current;
-        byte[] context = sw.GetRawContext(dataFrame);
-        if (context.Length > contextBufSize)
-            hr = HResults.E_INVALIDARG;
-
-        if (contextSize is not null)
+        if (_currentFrameIsValid)
         {
-            *contextSize = (uint)context.Length;
+            IStackWalk sw = _target.Contracts.StackWalk;
+            IStackDataFrameHandle dataFrame = _dataFrames.Current;
+            byte[] context = sw.GetRawContext(dataFrame);
+            if (context.Length > contextBufSize)
+                hr = HResults.E_INVALIDARG;
+
+            if (contextSize is not null)
+            {
+                *contextSize = (uint)context.Length;
+            }
+
+            context.CopyTo(contextBuf);
+        }
+        else
+        {
+            hr = HResults.S_FALSE;
         }
 
-        context.CopyTo(contextBuf);
 
 #if DEBUG
         if (_legacyImpl is not null)
@@ -60,12 +69,15 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             int hrLocal = _legacyImpl.GetContext(contextFlags, contextBufSize, null, localContextBuf);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
 
-            IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
-            contextStruct.FillFromBuffer(contextBuf);
-            localContextStruct.FillFromBuffer(localContextBuf);
+            if (hr == HResults.S_OK)
+            {
+                IPlatformAgnosticContext contextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                IPlatformAgnosticContext localContextStruct = IPlatformAgnosticContext.GetContextForPlatform(_target);
+                contextStruct.FillFromBuffer(contextBuf);
+                localContextStruct.FillFromBuffer(localContextBuf);
 
-            Debug.Assert(contextStruct.Equals(localContextStruct));
+                Debug.Assert(contextStruct.Equals(localContextStruct));
+            }
         }
 #endif
 
@@ -83,7 +95,8 @@ internal sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         int hr;
         try
         {
-            hr = _dataFrames.MoveNext() ? HResults.S_OK : HResults.S_FALSE;
+            _currentFrameIsValid = _dataFrames.MoveNext();
+            hr = _currentFrameIsValid ? HResults.S_OK : HResults.S_FALSE;
         }
         catch (System.Exception ex)
         {

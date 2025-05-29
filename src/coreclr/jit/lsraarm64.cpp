@@ -1320,6 +1320,11 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT.GetIntRegSet());
             break;
 
+        case GT_ASYNC_CONTINUATION:
+            srcCount = 0;
+            BuildDef(tree, RBM_ASYNC_CONTINUATION_RET.GetIntRegSet());
+            break;
+
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -2285,6 +2290,9 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             break;
 
         case NI_Sve_CreateBreakPropagateMask:
+        case NI_Sve2_BitwiseSelect:
+        case NI_Sve2_BitwiseSelectLeftInverted:
+        case NI_Sve2_BitwiseSelectRightInverted:
             // RMW operates on the second op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(2);

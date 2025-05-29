@@ -38,6 +38,13 @@ typedef var_types RegisterType;
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType  TYP_MASK
 
+// NEXT_REGISTER : update reg to next active registers.
+#ifdef TARGET_AMD64
+#define NEXT_REGISTER(reg, index) index++, reg = regIndices[index]
+#else
+#define NEXT_REGISTER(reg, index) reg = REG_NEXT(reg)
+#endif
+
 //------------------------------------------------------------------------
 // regType: Return the RegisterType to use for a given type
 //
@@ -1030,7 +1037,7 @@ private:
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
 
-    void addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
+    RefPosition* addKillForRegs(regMaskTP mask, LsraLocation currentLoc);
 
     void resolveConflictingDefAndUse(Interval* interval, RefPosition* defRefPosition);
 
@@ -1966,9 +1973,12 @@ private:
     int BuildRMWUses(
         GenTree* node, GenTree* op1, GenTree* op2, SingleTypeRegSet op1Candidates, SingleTypeRegSet op2Candidates);
     inline SingleTypeRegSet BuildEvexIncompatibleMask(GenTree* tree);
-    inline SingleTypeRegSet BuildApxIncompatibleGPRMask(GenTree*         tree,
-                                                        SingleTypeRegSet candidates = RBM_NONE,
-                                                        bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApx(GenTree*         tree,
+                                              SingleTypeRegSet candidates = RBM_NONE,
+                                              bool             isGPR      = false);
+    inline SingleTypeRegSet ForceLowGprForApxIfNeeded(GenTree*         tree,
+                                                      SingleTypeRegSet candidates = RBM_NONE,
+                                                      bool             UseApxRegs = false);
     inline bool             DoesThisUseGPR(GenTree* op);
 #endif // !TARGET_XARCH
     int BuildSelect(GenTreeOp* select);
@@ -2014,6 +2024,7 @@ private:
     int  BuildPutArgReg(GenTreeUnOp* node);
     int  BuildCall(GenTreeCall* call);
     void MarkSwiftErrorBusyForCall(GenTreeCall* call);
+    void MarkAsyncContinuationBusyForCall(GenTreeCall* call);
     int  BuildCmp(GenTree* tree);
     int  BuildCmpOperands(GenTree* tree);
     int  BuildBlockStore(GenTreeBlk* blkNode);
@@ -2084,7 +2095,7 @@ private:
     regMaskTP rbmAllInt;
     regMaskTP rbmIntCalleeTrash;
     regNumber regIntLast;
-    bool      isApxSupported;
+    bool      apxIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
@@ -2106,9 +2117,9 @@ private:
     {
         return this->regIntLast;
     }
-    FORCEINLINE bool getIsApxSupported() const
+    FORCEINLINE bool getApxIsSupported() const
     {
-        return this->isApxSupported;
+        return this->apxIsSupported;
     }
 #else
     FORCEINLINE regNumber get_REG_INT_LAST() const
@@ -2121,6 +2132,7 @@ private:
     regMaskTP        rbmAllMask;
     regMaskTP        rbmMskCalleeTrash;
     SingleTypeRegSet lowGprRegs;
+    bool             evexIsSupported;
 
     FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
@@ -2130,9 +2142,14 @@ private:
     {
         return this->rbmMskCalleeTrash;
     }
+    FORCEINLINE bool getEvexIsSupported() const
+    {
+        return this->evexIsSupported;
+    }
 #endif // TARGET_XARCH
 
-    unsigned availableRegCount;
+    unsigned   availableRegCount;
+    regNumber* regIndices;
 
     FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {

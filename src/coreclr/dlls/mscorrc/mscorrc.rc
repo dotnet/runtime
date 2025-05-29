@@ -596,6 +596,8 @@ BEGIN
         BFA_BAD_FIELD_TOKEN                     "Field token out of range."
         BFA_INVALID_FIELD_ACC_FLAGS             "Invalid Field Access Flags."
         BFA_INVALID_UNSAFEACCESSOR              "Invalid usage of UnsafeAccessorAttribute."
+        BFA_INVALID_UNSAFEACCESSORTYPE          "Invalid usage of UnsafeAccessorTypeAttribute."
+        BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE "ValueTypes are not supported with UnsafeAccessorTypeAttribute."
         BFA_FIELD_LITERAL_AND_INIT              "Field is Literal and InitOnly."
         BFA_NONSTATIC_GLOBAL_FIELD              "Non-Static Global Field."
         BFA_INSTANCE_FIELD_IN_INT               "Instance Field in an Interface."

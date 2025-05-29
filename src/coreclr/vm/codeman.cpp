@@ -1526,6 +1526,11 @@ void EEJitManager::SetCpuInfo()
         // if ((maxVectorTLength >= sveLengthFromOS) || (maxVectorTBitWidth == 0))
         {
             CPUCompileFlags.Set(InstructionSet_Sve);
+
+            if (((cpuFeatures & ARM64IntrinsicConstants_Sve2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableArm64Sve2))
+            {
+                CPUCompileFlags.Set(InstructionSet_Sve2);
+            }
         }
     }
 
@@ -1716,8 +1721,18 @@ struct JIT_LOAD_DATA
                                         //   Otherwise, this will be S_OK (which is zero).
 };
 
-// Here's the global data for JIT load and initialization state.
+#ifdef FEATURE_STATICALLY_LINKED
+
+EXTERN_C void jitStartup(ICorJitHost* host);
+EXTERN_C ICorJitCompiler* getJit();
+
+#endif // FEATURE_STATICALLY_LINKED
+
+#if !defined(FEATURE_STATICALLY_LINKED) || defined(FEATURE_JIT)
+
+#ifdef FEATURE_JIT
 JIT_LOAD_DATA g_JitLoadData;
+#endif // FEATURE_JIT
 
 #ifdef FEATURE_INTERPRETER
 JIT_LOAD_DATA g_interpreterLoadData;
@@ -1892,12 +1907,30 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
+#endif // !FEATURE_STATICALLY_LINKED || FEATURE_JIT
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-EXTERN_C void jitStartup(ICorJitHost* host);
-EXTERN_C ICorJitCompiler* getJit();
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_STATICALLY_LINKED
+static ICorJitCompiler* InitializeStaticJIT()
+{
+    ICorJitCompiler* newJitCompiler = NULL;
+    EX_TRY
+    {
+        jitStartup(JitHost::getJitHost());
 
+        newJitCompiler = getJit();
+
+        // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+
+    return newJitCompiler;
+}
+#endif // FEATURE_STATICALLY_LINKED
+
+#ifdef FEATURE_JIT
 BOOL EEJitManager::LoadJIT()
 {
     STANDARD_VM_CONTRACT;
@@ -1917,22 +1950,9 @@ BOOL EEJitManager::LoadJIT()
 
     ICorJitCompiler* newJitCompiler = NULL;
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-
-    EX_TRY
-    {
-        jitStartup(JitHost::getJitHost());
-
-        newJitCompiler = getJit();
-
-        // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-
-#else // !FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_STATICALLY_LINKED
+    newJitCompiler = InitializeStaticJIT();
+#else // !FEATURE_STATICALLY_LINKED
 
     m_JITCompiler = NULL;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1945,7 +1965,7 @@ BOOL EEJitManager::LoadJIT()
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPath, &mainJitPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetJitName() DEBUGARG(mainJitPath), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_STATICALLY_LINKED
 
 #ifdef ALLOW_SXS_JIT
 
@@ -2043,6 +2063,7 @@ BOOL EEJitManager::LoadJIT()
     // In either failure case, we'll rip down the VM (so no need to clean up (unload) either JIT that did load successfully.
     return IsJitLoaded();
 }
+#endif // FEATURE_JIT
 
 //**************************************************************************
 
@@ -2373,7 +2394,7 @@ static size_t GetDefaultReserveForJumpStubs(size_t codeHeapSize)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef TARGET_64BIT
     //
     // Keep a small default reserve at the end of the codeheap for jump stubs. It should reduce
     // chance that we won't be able allocate jump stub because of lack of suitable address space.
@@ -2425,7 +2446,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT)
     if (!pInfo->IsInterpreted())
     {
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
@@ -2485,7 +2506,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
@@ -2493,6 +2514,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
+        // Set the personality routine. This is needed even outside Windows because IsIPInEpilog relies on it being set.
         pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMemForCode_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     }
 #else
@@ -2526,7 +2548,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
-#ifdef TARGET_64BIT
+#if defined(TARGET_64BIT)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
@@ -2655,7 +2677,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_64BIT)
     if (!pInfo->IsInterpreted())
     {
         reserveSize += JUMP_ALLOCATE_SIZE;
@@ -3489,7 +3511,7 @@ GCInfoToken InterpreterJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    // The JIT-ed code always has the current version of GCInfo
+    // The Interpreter IR always has the current version of GCInfo
     return{ GetCodeHeader(MethodToken)->GetGCInfo(), GCINFO_VERSION };
 }
 #endif // FEATURE_INTERPRETER
@@ -3574,7 +3596,7 @@ TypeHandle EECodeGenManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClause,
 
     MethodDesc* pMD = pCf->GetFunction();
     Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
     return ClassLoader::LoadTypeDefOrRefOrSpecThrowing(pModule, typeTok, &typeContext,
@@ -3734,12 +3756,19 @@ BOOL InterpreterJitManager::LoadInterpreter()
     ICorJitCompiler* newInterpreter = NULL;
     m_interpreter = NULL;
 
+// If both JIT and interpret are available, statically link the JIT. Interpreter can be loaded dynamically
+// via config switch for testing purposes. 
+#if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
+    newInterpreter = InitializeStaticJIT();
+#else // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
     g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
+
     LPWSTR interpreterPath = NULL;
 #ifdef _DEBUG
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetInterpreterName() DEBUGARG(interpreterPath), &m_interpreterHandle, &newInterpreter, &g_interpreterLoadData, getClrVmOs());
+#endif // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
 
     // Publish the interpreter.
     m_interpreter = newInterpreter;
@@ -4143,6 +4172,14 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
 
     this->pRealCodeHeader.EnumMem();
 
+#ifdef FEATURE_EH_FUNCLETS
+    // UnwindInfos are stored in an array immediately following the RealCodeHeader structure in memory.
+    if (this->pRealCodeHeader->nUnwindInfos)
+    {
+        DacEnumMemoryRegion(PTR_TO_MEMBER_TADDR(RealCodeHeader, pRealCodeHeader, unwindInfos), this->pRealCodeHeader->nUnwindInfos * sizeof(T_RUNTIME_FUNCTION));
+    }
+#endif // FEATURE_EH_FUNCLETS
+
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     BOOL hasFlagByte = TRUE;
 #else
@@ -4159,7 +4196,7 @@ void CodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJitManager* pJ
 // Enumerate for minidumps.
 //-----------------------------------------------------------------------------
 template<typename TCodeHeader>
-void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -4170,15 +4207,14 @@ void EECodeGenManager::EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemo
     CONTRACTL_END;
 
     DebugInfoRequest request;
-    PCODE addrCode = pMD->GetNativeCode();
-    request.InitFromStartingAddr(pMD, addrCode);
+    request.InitFromStartingAddr(pCodeInfo->GetMethodDesc(), pCodeInfo->GetStartAddress());
 
     TCodeHeader * pHeader = GetCodeHeaderFromDebugInfoRequest<TCodeHeader>(request);
 
     pHeader->EnumMemoryRegions(flags, NULL);
 }
 
-void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -4188,7 +4224,7 @@ void EEJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags fl
     }
     CONTRACTL_END;
 
-    EnumMemoryRegionsForMethodDebugInfoWorker<CodeHeader>(flags, pMD);
+    EnumMemoryRegionsForMethodDebugInfoWorker<CodeHeader>(flags, pCodeInfo);
 }
 
 #ifdef FEATURE_INTERPRETER
@@ -4212,7 +4248,7 @@ void InterpreterCodeHeader::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, IJit
     }
 }
 
-void InterpreterJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void InterpreterJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -4222,7 +4258,7 @@ void InterpreterJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemor
     }
     CONTRACTL_END;
 
-    EnumMemoryRegionsForMethodDebugInfoWorker<InterpreterCodeHeader>(flags, pMD);
+    EnumMemoryRegionsForMethodDebugInfoWorker<InterpreterCodeHeader>(flags, pCodeInfo);
 }
 #endif // FEATURE_INTERPRETER
 
@@ -4432,7 +4468,7 @@ TADDR EECodeGenManager::FindMethodCode(RangeSection * pRangeSection, PCODE curre
     pMap += (startPos >> LOG2_NIBBLES_PER_DWORD); // points to the proper DWORD of the map
 
     // #1 look up DWORD represnting current PC
-    PREFIX_ASSUME(pMap != NULL);
+    _ASSERTE(pMap != NULL);
     dword = VolatileLoadWithoutBarrier<DWORD>(pMap);
 
     // #2 if DWORD is a pointer, then we can return
@@ -5136,7 +5172,7 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
     return FALSE;
 }
 
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
+#ifndef FEATURE_STATICALLY_LINKED
 /*********************************************************************/
 // This static method returns the name of the jit dll
 //
@@ -5157,7 +5193,7 @@ LPCWSTR ExecutionManager::GetJitName()
     return pwzJitName;
 }
 
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_STATICALLY_LINKED
 
 #ifdef FEATURE_INTERPRETER
 
@@ -6245,7 +6281,7 @@ TypeHandle ReadyToRunJitManager::ResolveEHClause(EE_ILEXCEPTION_CLAUSE* pEHClaus
     _ASSERTE(pMD != NULL);
 
     Module* pModule = pMD->GetModule();
-    PREFIX_ASSUME(pModule != NULL);
+    _ASSERTE(pModule != NULL);
 
     SigTypeContext typeContext(pMD);
     mdToken typeTok = pEHClause->ClassToken;
@@ -6309,16 +6345,15 @@ BOOL ReadyToRunJitManager::GetRichDebugInfo(
 //
 // Need to write out debug info
 //
-void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void ReadyToRunJitManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     SUPPORTS_DAC;
 
-    EECodeInfo codeInfo(pMD->GetNativeCode());
-    if (!codeInfo.IsValid())
+    if (!pCodeInfo->IsValid())
         return;
 
-    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(codeInfo.GetMethodToken());
-    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(codeInfo.GetMethodToken());
+    ReadyToRunInfo * pReadyToRunInfo = JitTokenToReadyToRunInfo(pCodeInfo->GetMethodToken());
+    PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(pCodeInfo->GetMethodToken());
 
     PTR_BYTE pDebugInfo = pReadyToRunInfo->GetDebugInfo(pRuntimeFunction);
     if (pDebugInfo == NULL)

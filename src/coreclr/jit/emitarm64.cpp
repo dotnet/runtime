@@ -9155,7 +9155,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         /* Indirect call, virtual calls */
 
         id = emitNewInstrCallInd(argCnt, 0 /* disp */, params.ptrVars, gcrefRegs, byrefRegs, params.retSize,
-                                 params.secondRetSize);
+                                 params.secondRetSize, params.hasAsyncRet);
     }
     else
     {
@@ -9164,7 +9164,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         assert(params.callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.secondRetSize);
+        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.secondRetSize,
+                                 params.hasAsyncRet);
     }
 
     /* Update the emitter's live GC ref sets */
@@ -10893,6 +10894,10 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         else if (idCall->idSecondGCref() == GCT_BYREF)
         {
             byrefRegs |= RBM_INTRET_1;
+        }
+        if (idCall->hasAsyncContinuationRet())
+        {
+            gcrefRegs |= RBM_ASYNC_CONTINUATION_RET;
         }
     }
 

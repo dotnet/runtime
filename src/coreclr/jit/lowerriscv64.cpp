@@ -64,13 +64,17 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
         switch (parentNode->OperGet())
         {
-            case GT_ADD:
             case GT_EQ:
             case GT_NE:
+                return emitter::isValidSimm12(-immVal) || (immVal == -2048);
+
+            case GT_LE: // a <= N  ->  a < N+1
+            case GT_GT: // a > N  ->  !(a <= N)  ->  !(a < N+1)
+                immVal += 1;
+                FALLTHROUGH;
             case GT_LT:
-            case GT_LE:
             case GT_GE:
-            case GT_GT:
+            case GT_ADD:
             case GT_AND:
             case GT_OR:
             case GT_XOR:
@@ -85,9 +89,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XCHG:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
-                if (immVal == 0)
-                    return true;
-                break;
+                return (immVal == 0);
 
             default:
                 break;
@@ -504,21 +506,9 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 // Return Value:
 //    None.
 //
-// Notes:
-//    Casts from float/double to a smaller int type are transformed as follows:
-//    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
-//    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
-//    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
-//    GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
-//
-//    Note that for the overflow conversions we still depend on helper calls and
-//    don't expect to see them here.
-//    i) GT_CAST(float/double, int type with overflow detection)
-//
-
-GenTree* Lowering::LowerCast(GenTree* tree)
+void Lowering::LowerCast(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    assert(tree->OperIs(GT_CAST));
 
     JITDUMP("LowerCast for: ");
     DISPNODE(tree);
@@ -530,17 +520,16 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 
     if (varTypeIsFloating(srcType))
     {
+        // Overflow casts should have been converted to helper call in morph.
         noway_assert(!tree->gtOverflow());
-        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small
-                                          // int.
+        // Small types should have had an intermediate int cast inserted in morph.
+        assert(!varTypeIsSmall(dstType));
     }
 
     assert(!varTypeIsSmall(srcType));
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
-
-    return nullptr;
 }
 
 //------------------------------------------------------------------------

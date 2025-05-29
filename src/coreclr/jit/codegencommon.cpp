@@ -1616,7 +1616,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
         {
             // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-            PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
@@ -1953,6 +1953,11 @@ void CodeGen::genGenerateMachineCode()
             printf("; OSR variant for entry point 0x%x\n", compiler->info.compILEntry);
         }
 
+        if (compiler->compIsAsync())
+        {
+            printf("; async\n");
+        }
+
         if ((compiler->opts.compFlags & CLFLG_MAXOPT) == CLFLG_MAXOPT)
         {
             printf("; optimized code\n");
@@ -2107,7 +2112,7 @@ void CodeGen::genEmitMachineCode()
 
     bool trackedStackPtrsContig; // are tracked stk-ptrs contiguous ?
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef TARGET_64BIT
     trackedStackPtrsContig = false;
 #elif defined(TARGET_ARM)
     // On arm due to prespilling of arguments, tracked stk-ptrs may not be contiguous
@@ -4750,11 +4755,6 @@ void CodeGen::genFinalizeFrame()
  *
  *  ARM stepping code is here: debug\ee\arm\armwalker.cpp, vm\arm\armsinglestepper.cpp.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 void CodeGen::genFnProlog()
 {
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
@@ -5044,8 +5044,11 @@ void CodeGen::genFnProlog()
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
 #if defined(TARGET_AMD64)
-    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs.
-    excludeMask = excludeMask | RBM_HIGHINT;
+    // we'd require eEVEX present to enable EGPRs in HWIntrinsics.
+    if (!compiler->canUseEvexEncoding())
+    {
+        excludeMask = excludeMask | RBM_HIGHINT;
+    }
 #endif // !defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM
@@ -5285,8 +5288,10 @@ void CodeGen::genFnProlog()
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_XARCH)
+    genClearAvxStateInProlog();
+
     // Preserve callee saved float regs to stack.
-    genPreserveCalleeSavedFltRegs(compiler->compLclFrameSize);
+    genPreserveCalleeSavedFltRegs();
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
@@ -5591,9 +5596,6 @@ void CodeGen::genFnProlog()
 
     GetEmitter()->emitEndProlog();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset
@@ -6880,23 +6882,14 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 
+    if (treeNode->OperIs(GT_RETURN) && compiler->compIsAsync())
+    {
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
+    }
+
     if (treeNode->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
-        const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
-
-        if (compiler->compMethodReturnsRetBufAddr())
-        {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
-        }
-        else
-        {
-            unsigned retRegCount = retTypeDesc.GetReturnRegCount();
-            for (unsigned i = 0; i < retRegCount; ++i)
-            {
-                gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
-                                       retTypeDesc.GetReturnRegType(i));
-            }
-        }
+        genMarkReturnGCInfo();
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -6962,6 +6955,83 @@ void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
     genReturn(treeNode);
 }
 #endif // SWIFT_SUPPORT
+
+//------------------------------------------------------------------------
+// genReturnSuspend:
+//   Generate code for a GT_RETURN_SUSPEND node
+//
+// Arguments:
+//   treeNode - The node
+//
+void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
+{
+    GenTree* op = treeNode->gtGetOp1();
+    assert(op->TypeIs(TYP_REF));
+
+    regNumber reg = genConsumeReg(op);
+    inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+
+    ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
+    unsigned       numRetRegs  = retTypeDesc.GetReturnRegCount();
+    for (unsigned i = 0; i < numRetRegs; i++)
+    {
+        if (varTypeIsGC(retTypeDesc.GetReturnRegType(i)))
+        {
+            regNumber returnReg = retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv);
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, returnReg);
+        }
+    }
+
+    genMarkReturnGCInfo();
+}
+
+//------------------------------------------------------------------------
+// genMarkReturnGCInfo:
+//   Mark GC and non-GC pointers of return registers going into the epilog..
+//
+void CodeGen::genMarkReturnGCInfo()
+{
+    const ReturnTypeDesc& retTypeDesc = compiler->compRetTypeDesc;
+
+    if (compiler->compMethodReturnsRetBufAddr())
+    {
+        gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+    }
+    else
+    {
+        unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+        for (unsigned i = 0; i < retRegCount; ++i)
+        {
+            gcInfo.gcMarkRegPtrVal(retTypeDesc.GetABIReturnReg(i, compiler->info.compCallConv),
+                                   retTypeDesc.GetReturnRegType(i));
+        }
+    }
+
+    if (compiler->compIsAsync())
+    {
+        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+    }
+}
+
+//------------------------------------------------------------------------
+// genCodeForAsyncContinuation:
+//   Generate code for a GT_ASYNC_CONTINUATION node.
+//
+// Arguments:
+//   tree - The node
+//
+void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
+{
+    assert(tree->OperIs(GT_ASYNC_CONTINUATION));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->GetRegNum();
+
+    inst_Mov(targetType, targetReg, REG_ASYNC_CONTINUATION_RET, /* canSkip */ true);
+    genTransferRegGCState(targetReg, REG_ASYNC_CONTINUATION_RET);
+
+    genProduceReg(tree);
+}
 
 //------------------------------------------------------------------------
 // isStructReturn: Returns whether the 'treeNode' is returning a struct.
