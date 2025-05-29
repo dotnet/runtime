@@ -17716,35 +17716,10 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 //
 bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
 {
-    class Visitor final : public GenTreeVisitor<Visitor>
-    {
-        genTreeOps m_oper;
-
-    public:
-        Visitor(Compiler* comp, genTreeOps oper)
-            : GenTreeVisitor(comp)
-            , m_oper(oper)
-        {
-        }
-
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if ((*use)->OperIs(m_oper))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
+    auto hasOper = [oper](GenTree* tree) {
+        return tree->OperGet() == oper;
     };
-
-    Visitor visitor(this, oper);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtFindNodeInTree<GTF_EMPTY>(tree, hasOper) != nullptr;
 }
 
 //------------------------------------------------------------------------

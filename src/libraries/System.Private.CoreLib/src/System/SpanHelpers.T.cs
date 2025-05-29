@@ -3794,7 +3794,7 @@ namespace System
             return count;
         }
 
-        public static unsafe int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>?
+        public static unsafe int CountValueType<T>(ref T current, T value, int length) where T : struct, IEquatable<T>
         {
             int count = 0;
             ref T end = ref Unsafe.Add(ref current, length);

@@ -5103,12 +5103,16 @@ namespace System
         public T[] ToArray() { throw null; }
         public override string ToString() { throw null; }
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
-        public ref partial struct Enumerator
+        public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
             private int _dummyPrimitive;
             public ref readonly T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
+            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     public partial class ResolveEventArgs : System.EventArgs
@@ -5563,12 +5567,16 @@ namespace System
         public T[] ToArray() { throw null; }
         public override string ToString() { throw null; }
         public bool TryCopyTo(System.Span<T> destination) { throw null; }
-        public ref partial struct Enumerator
+        public ref partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
             private int _dummyPrimitive;
             public ref T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
+            T System.Collections.Generic.IEnumerator<T>.Current { get { throw null; } }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { throw null; }
+            void System.IDisposable.Dispose() { throw null; }
         }
     }
     public sealed partial class StackOverflowException : System.SystemException

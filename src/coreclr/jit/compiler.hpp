@@ -2199,6 +2199,74 @@ inline bool GenTree::gtOverflowEx() const
     return OperMayOverflow() && gtOverflow();
 }
 
+//------------------------------------------------------------------------
+// gtFindNodeInTree:
+//   Check if a tree contains a node matching the specified predicate. Descend
+//   only into subtrees with the specified flags set on them (can be GTF_EMPTY
+//   to descend into all nodes).
+//
+// Type parameters:
+//   RequiredFlagsToDescendIntoNode - Flags that must be set on the node to
+//                                    descend into it (GTF_EMPTY to descend into all nodes)
+//   Predicate - Type of the predicate (GenTree* -> bool)
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   Node matching the predicate, or nullptr if no such node was found.
+//
+template <GenTreeFlags RequiredFlagsToDescendIntoNode, typename Predicate>
+GenTree* Compiler::gtFindNodeInTree(GenTree* tree, Predicate pred)
+{
+    struct FindNodeVisitor : GenTreeVisitor<FindNodeVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        GenTree* Result = nullptr;
+
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        FindNodeVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<FindNodeVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (m_pred(node))
+            {
+                Result = node;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+    {
+        return nullptr;
+    }
+
+    FindNodeVisitor findNode(this, pred);
+    findNode.WalkTree(&tree, nullptr);
+    return findNode.Result;
+}
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
