@@ -46,7 +46,7 @@ public record struct InfoHdr
     public uint GsCookieOffset { get; set; } = 0;
     public uint SyncStartOffset { get; set; } = 0;
     public uint SyndEndOffset { get; set; } = 0;
-    public uint RevPInvokeOffset { get; set; } = unchecked((uint)-1);
+    public uint RevPInvokeOffset { get; set; } = INVALID_REV_PINVOKE_OFFSET;
     public uint NoGCRegionCount { get; set; } = 0;
 
     public bool HasArgTabOffset { get; set; }
@@ -244,7 +244,8 @@ public record struct InfoHdr
                             infoHdr.SyncStartOffset ^= HAS_SYNC_OFFSET;
                             break;
                         case (byte)InfoHdrAdjust.FLIP_REV_PINVOKE_FRAME:
-                            infoHdr.RevPInvokeOffset ^= HAS_REV_PINVOKE_FRAME_OFFSET;
+                            infoHdr.RevPInvokeOffset = infoHdr.RevPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ?
+                                HAS_REV_PINVOKE_FRAME_OFFSET : INVALID_REV_PINVOKE_OFFSET;
                             break;
 
                         case (byte)InfoHdrAdjust.NEXT_OPCODE:
