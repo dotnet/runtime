@@ -3222,10 +3222,10 @@ void MethodDesc::ResetCodeEntryPointForEnC()
 
     // Updates are expressed via metadata diff and a methoddef of a runtime async method
     // would be resolved to the thunk.
-    // If we see athink here, fetch the other variant that owns the IL and reset that.
+    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
     if (IsAsyncThunkMethod())
     {
-        MethodDesc *otherVariant =  GetAsyncOtherVariantNoCreate();
+        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
         _ASSERTE(otherVariant != NULL);
         otherVariant->ResetCodeEntryPointForEnC();
         return;
