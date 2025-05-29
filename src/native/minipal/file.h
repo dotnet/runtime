@@ -13,6 +13,14 @@ extern "C"
 {
 #endif // __cplusplus
 
+typedef struct minipal_file_attr_
+{
+    uint64_t size;
+    uint64_t lastWriteTime; // Windows FILETIME precision
+} minipal_file_attr_t;
+
+bool minipal_file_get_attributes_utf16(const CHAR16_T* path, minipal_file_attr_t* attributes);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

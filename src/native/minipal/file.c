@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <stdint.h>
 #include <minipal/file.h>
-#include <minipal/utf8.h>
 
 #ifdef TARGET_WINDOWS
 #include <Windows.h>
@@ -101,5 +101,98 @@ static WCHAR* NormalizePath(const WCHAR* path)
 
     return buffer;
 }
+#else // TARGET_WINDOWS
 
-#endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <minipal/utf8.h>
+#include <minipal/strings.h>
+
+#if HAVE_STAT64
+#define stat_ stat64
+#define fstat_ fstat64
+#define lstat_ lstat64
+#else /* HAVE_STAT64 */
+#define stat_ stat
+#define fstat_ fstat
+#define lstat_ lstat
+#endif  /* HAVE_STAT64 */
+
+/* Magic number explanation:
+
+   To 1970:
+   Both epochs are Gregorian. 1970 - 1601 = 369. Assuming a leap
+   year every four years, 369 / 4 = 92. However, 1700, 1800, and 1900
+   were NOT leap years, so 89 leap years, 280 non-leap years.
+   89 * 366 + 280 * 365 = 134774 days between epochs. Of course
+   60 * 60 * 24 = 86400 seconds per day, so 134774 * 86400 =
+   11644473600 = SECS_BETWEEN_1601_AND_1970_EPOCHS.
+
+   To 2001:
+   Again, both epochs are Gregorian. 2001 - 1601 = 400. Assuming a leap
+   year every four years, 400 / 4 = 100. However, 1700, 1800, and 1900
+   were NOT leap years (2000 was because it was divisible by 400), so
+   97 leap years, 303 non-leap years.
+   97 * 366 + 303 * 365 = 146097 days between epochs. 146097 * 86400 =
+   12622780800 = SECS_BETWEEN_1601_AND_2001_EPOCHS.
+
+   This result is also confirmed in the MSDN documentation on how
+   to convert a time_t value to a win32 FILETIME.
+*/
+static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
+static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
+
+static uint64_t UnixTimeToWin32FileTime(struct timespec ts)
+{
+    return (uint64_t)(((int64_t)ts.tv_sec + SECS_BETWEEN_1601_AND_1970_EPOCHS) * SECS_TO_100NS +
+        (ts.tv_nsec / 100));
+}
+
+#endif // TARGET_WINDOWS
+
+bool minipal_file_get_attributes_utf16(const CHAR16_T* path, minipal_file_attr_t* attributes)
+{
+#ifdef TARGET_WINDOWS
+    if (!path || !attributes)
+        return false;
+
+    WCHAR* extendedPath = NormalizePath(path);
+    if (extendedPath)
+        path = extendedPath;
+
+    WIN32_FILE_ATTRIBUTE_DATA faData;
+    bool ret = GetFileAttributesExW(path, GetFileExInfoStandard, &faData);
+
+    if (ret)
+    {
+        attributes->size = ((uint64_t)faData.nFileSizeHigh << 32) | (uint64_t)faData.nFileSizeLow;
+        attributes->lastWriteTime =  ((uint64_t)faData.ftLastWriteTime.dwHighDateTime << 32) | (uint64_t)faData.ftLastWriteTime.dwLowDateTime;
+    }
+
+    if (extendedPath)
+        free(extendedPath);
+
+    return ret;
+#else // TARGET_WINDOWS
+    if (!path || !attributes)
+        return false;
+
+    size_t u16Len = minipal_u16_strlen(path);
+    size_t u8Len = minipal_get_length_utf16_to_utf8(path, u16Len, 0);
+    char* u8Path = (char*)malloc(u8Len + 1);
+    minipal_convert_utf16_to_utf8(path, u16Len, u8Path, u8Len + 1, 0);
+
+    struct stat_ stat_data;
+    bool ret = stat_(u8Path, &stat_data) == 0;
+
+    if (ret)
+    {
+        attributes->size = stat_data.st_size;
+        attributes->lastWriteTime = UnixTimeToWin32FileTime(stat_data.st_mtim);
+    }
+
+    free(u8Path);
+    return ret;
+#endif // TARGET_WINDOWS
+}
