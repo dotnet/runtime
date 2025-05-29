@@ -486,6 +486,7 @@
 #define IDS_E_PROF_NO_CLSID                     0x2500
 #define IDS_E_PROF_INTERNAL_INIT                0x2501
 #define IDS_E_PROF_BAD_CLSID                    0x2502
+#define IDS_E_PROF_NO_CALLBACK_IFACE            0x2503
 #define IDS_E_PROF_CCI_FAILED                   0x2504
 #define IDS_E_PROF_INIT_CALLBACK_FAILED         0x2505
 #define IDS_PROF_SUPPLEMENTARY_INFO             0x2506
@@ -496,6 +497,7 @@
 #define IDS_E_PROF_NOTIFICATION_LIMIT_EXCEEDED  0x250B
 #define IDS_E_PROF_NOT_ATTACHABLE               0x250E
 #define IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD  0x250F
+#define IDS_PROF_ATTACH_REQUEST_RECEIVED        0x2512
 #define IDS_PROF_DETACH_INITIATED               0x2513
 #define IDS_PROF_DETACH_COMPLETE                0x2514
 #define IDS_PROF_DETACH_THREAD_ERROR            0x2515
