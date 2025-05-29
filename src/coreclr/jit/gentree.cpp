@@ -17716,35 +17716,10 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 //
 bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
 {
-    class Visitor final : public GenTreeVisitor<Visitor>
-    {
-        genTreeOps m_oper;
-
-    public:
-        Visitor(Compiler* comp, genTreeOps oper)
-            : GenTreeVisitor(comp)
-            , m_oper(oper)
-        {
-        }
-
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if ((*use)->OperIs(m_oper))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
+    auto hasOper = [oper](GenTree* tree) {
+        return tree->OperGet() == oper;
     };
-
-    Visitor visitor(this, oper);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtFindNodeInTree<GTF_EMPTY>(tree, hasOper) != nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -28723,10 +28698,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
@@ -28739,6 +28710,10 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_SetFfr:
             {
                 return true;
@@ -28941,10 +28916,10 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_GetFfrByte:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:

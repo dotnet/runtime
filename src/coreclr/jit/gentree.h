@@ -2735,16 +2735,10 @@ struct GenTreeFieldList : public GenTree
 
     class UseList
     {
-        Use* m_head;
-        Use* m_tail;
+        Use* m_head = nullptr;
+        Use* m_tail = nullptr;
 
     public:
-        UseList()
-            : m_head(nullptr)
-            , m_tail(nullptr)
-        {
-        }
-
         Use* GetHead() const
         {
             return m_head;
@@ -2800,6 +2794,12 @@ struct GenTreeFieldList : public GenTree
                 use->SetNext(m_head);
                 m_head = use;
             }
+        }
+
+        void Clear()
+        {
+            m_head = nullptr;
+            m_tail = nullptr;
         }
 
         bool IsSorted() const

@@ -2142,7 +2142,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     assert(parentType == TYP_BYREF);
                     parent->ChangeType(newType);
 
-                    // Propgate that upwards.
+                    // Propagate that upwards.
                     //
                     ++parentIndex;
                     keepChecking = true;
@@ -2195,20 +2195,40 @@ void ObjectAllocator::UpdateAncestorTypes(
                 else
                 {
                     assert(tree == parent->AsIndir()->Data());
-                    GenTree* const addr = parent->AsIndir()->Addr();
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (parent->OperIs(GT_STOREIND) && varTypeIsGC(parent->TypeGet()))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
-
-                    // If we are storing a struct, we may need to change the layout
-                    //
-                    if (retypeFields && parent->OperIs(GT_STORE_BLK))
+                    else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {
-                        parent->AsBlk()->SetLayout(newLayout);
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be storing just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+                        }
                     }
                 }
                 break;
@@ -2219,19 +2239,54 @@ void ObjectAllocator::UpdateAncestorTypes(
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if (retypeFields && (varTypeIsGC(parent->TypeGet())))
+                if (retypeFields)
                 {
-                    parent->ChangeType(newType);
+                    bool didRetype = false;
 
-                    if (parent->OperIs(GT_BLK))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
-                        parent->AsBlk()->SetLayout(newLayout);
+                        parent->ChangeType(newType);
+                        didRetype = true;
+                    }
+                    else if (parent->OperIs(GT_BLK))
+                    {
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be loading just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+
+                            didRetype = true;
+                        }
                     }
 
-                    ++parentIndex;
-                    keepChecking = true;
-                    retypeFields = false;
+                    if (didRetype)
+                    {
+                        ++parentIndex;
+                        keepChecking = true;
+                        retypeFields = false;
+                    }
                 }
+
                 break;
             }
 
