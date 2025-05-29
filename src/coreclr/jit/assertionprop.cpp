@@ -5318,21 +5318,15 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
         JITDUMP("\nVN based redundant (%s) bounds check assertion prop in " FMT_BB ":\n", reason, compCurBB->bbNum);
         DISPTREE(tree);
-
-        if (arrBndsChk == stmt->GetRootNode())
+        if (arrBndsChk != stmt->GetRootNode())
         {
-            // We have a top-level bounds check node.
-            // This can happen when trees are broken up due to inlining.
-            // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).
-            GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
-
-            return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+            // Defer the removal.
+            arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
+            return nullptr;
         }
 
-        // Defer actually removing the tree until processing reaches its parent comma, since
-        // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
-        arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
-        return nullptr;
+        GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
+        return optAssertionProp_Update(newTree, arrBndsChk, stmt);
     };
 
     // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
@@ -5345,24 +5339,18 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             std::swap(funcApp.m_args[0], funcApp.m_args[1]);
         }
 
-        if (vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        Range rng = Range(Limit(Limit::keUnknown));
+        if (vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
+            RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng) && rng.LowerLimit().IsConstant())
         {
-            Range rng = Range(Limit(Limit::keDependent));
-            if (RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng))
-            {
-                if (rng.LowerLimit().IsConstant())
-                {
-                    // Lower known limit of ArrLen:
-                    const int lenLowerLimit = rng.LowerLimit().GetConstant();
+            // Lower known limit of ArrLen:
+            const int lenLowerLimit = rng.LowerLimit().GetConstant();
 
-                    // Negative delta in the array access (ArrLen + -CNS)
-                    const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
-                    if ((lenLowerLimit > 0) && (delta < 0) && (delta > -CORINFO_Array_MaxLength) &&
-                        (lenLowerLimit >= -delta))
-                    {
-                        dropBoundsCheck("a[a.Length-cns] when a.Length is known to be >= cns");
-                    }
-                }
+            // Negative delta in the array access (ArrLen + -CNS)
+            const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
+            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+            {
+                return dropBoundsCheck("a[a.Length-cns] when a.Length is known to be >= cns");
             }
         }
     }
@@ -5383,29 +5371,21 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
-        // Set 'isRedundant' to true if we can determine that 'arrBndsChk' can be
-        // classified as a redundant bounds check using 'curAssertion'
-        bool isRedundant = false;
-        INDEBUG(const char* dbgMsg = "Not Set");
-
         // Do we have a previous range check involving the same 'vnLen' upper bound?
         if (curAssertion->op1.bnd.vnLen == vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
         {
-
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
             if (curAssertion->op1.bnd.vnIdx == vnCurIdx)
             {
-                isRedundant = true;
-                INDEBUG(dbgMsg = "a[i] followed by a[i]");
+                return dropBoundsCheck(INDEBUG("a[i] followed by a[i]"));
             }
             // Are we using zero as the index?
             // It can always be considered as redundant with any previous value
             //       a[*] followed by a[0]
             else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChk->GetIndex()->TypeGet()))
             {
-                isRedundant = true;
-                INDEBUG(dbgMsg = "a[*] followed by a[0]");
+                return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
             // Do we have two constant indexes?
             else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
@@ -5426,8 +5406,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)
                     {
-                        isRedundant = true;
-                        INDEBUG(dbgMsg = "a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2");
+                        return dropBoundsCheck(INDEBUG("a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2"));
                     }
                 }
             }
@@ -5436,13 +5415,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
         }
-
-        if (!isRedundant)
-        {
-            continue;
-        }
-
-        return dropBoundsCheck(INDEBUG(dbgMsg));
     }
 
     return nullptr;
