@@ -58,32 +58,35 @@ namespace System.Runtime
         [RuntimeExport("RhNewArray")]
         public static unsafe object RhNewArray(MethodTable* pEEType, int length)
         {
-            Debug.Assert(pEEType->IsArray || pEEType->IsString);
-
-            if (pEEType->IsString)
-            {
-                return RuntimeImports.RhNewString(pEEType, length);
-            }
+            Debug.Assert(pEEType->IsSzArray);
 
 #if FEATURE_64BIT_ALIGNMENT
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
             if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
-                if (pEEType->IsSzArray)
-                {
-                    return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
-                }
+                return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
+            }
+            else
+#endif // FEATURE_64BIT_ALIGNMENT
+            {
+                return InternalCalls.RhpNewArrayFast(pEEType, length);
+            }
+        }
 
+        [RuntimeExport("RhNewVariableSizeObject")]
+        public static unsafe object RhNewVariableSizeObject(MethodTable* pEEType, int length)
+        {
+            Debug.Assert(pEEType->IsArray || pEEType->IsString);
+
+#if FEATURE_64BIT_ALIGNMENT
+            MethodTable* pEEElementType = pEEType->RelatedParameterType;
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
+            {
                 return InternalCalls.RhpNewArray(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN8);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                if (pEEType->IsSzArray)
-                {
-                    return InternalCalls.RhpNewArrayFast(pEEType, length);
-                }
-
                 return InternalCalls.RhpNewArray(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
             }
         }
