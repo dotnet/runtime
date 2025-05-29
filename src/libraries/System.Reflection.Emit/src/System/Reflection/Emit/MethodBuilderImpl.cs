@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < names.Length; i++)
             {
                 string name = names[i];
-                ArgumentNullException.ThrowIfNull(names, nameof(names));
+                ArgumentNullException.ThrowIfNull(names);
                 typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _declaringType);
             }
 

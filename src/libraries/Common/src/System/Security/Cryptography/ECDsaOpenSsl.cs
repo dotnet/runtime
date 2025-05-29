@@ -292,21 +292,13 @@ namespace System.Security.Cryptography
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
         {
             ThrowIfDisposed();
-
-            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
-            {
-                return ECOpenSsl.ExportExplicitParameters(ecKey, includePrivateParameters);
-            }
+            return ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters);
         }
 
         public override ECParameters ExportParameters(bool includePrivateParameters)
         {
             ThrowIfDisposed();
-
-            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
-            {
-                return ECOpenSsl.ExportParameters(ecKey, includePrivateParameters);
-            }
+            return ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters);
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(

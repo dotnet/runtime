@@ -18,9 +18,9 @@ namespace System.Security.Cryptography
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        [RequiresUnreferencedCode(CryptoConfigForwarder.CreateFromNameUnreferencedCodeMessage)]
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static AsymmetricAlgorithm? Create(string algName) =>
-            CryptoConfigForwarder.CreateFromName<AsymmetricAlgorithm>(algName);
+            CryptoConfig.CreateFromName<AsymmetricAlgorithm>(algName);
 
         public virtual int KeySize
         {

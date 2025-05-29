@@ -206,6 +206,10 @@ struct unused_generation
     uint8_t unused;
 };
 
+#define build_variant_use_region 1
+#define build_variant_background_gc 2
+#define build_variant_dynamic_heap_count 4
+
 // The DAC links against six symbols that build as part of the VM DACCESS_COMPILE
 // build. These symbols are considered to be GC-private functions, but the DAC needs
 // to use them in order to perform some handle-related functions. These six functions

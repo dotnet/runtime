@@ -40,7 +40,7 @@ OnStackReplacementManager::OnStackReplacementManager(LoaderAllocator * loaderAll
 }
 
 // Fetch or create patchpoint info for this patchpoint.
-PerPatchpointInfo* OnStackReplacementManager::GetPerPatchpointInfo(PCODE ip)
+PerPatchpointInfo* OnStackReplacementManager::GetPerPatchpointInfo(PCODE funcStart, int ilOffset)
 {
     CONTRACTL
     {
@@ -50,7 +50,10 @@ PerPatchpointInfo* OnStackReplacementManager::GetPerPatchpointInfo(PCODE ip)
     }
     CONTRACTL_END;
 
-    PTR_PCODE ppId = dac_cast<PTR_PCODE>(ip);
+    PtrPlusInt ppId;
+    ppId.pValue = (PVOID)funcStart;
+    ppId.iValue = ilOffset;
+
     PTR_PerPatchpointInfo ppInfo = NULL;
 
     BOOL hasData = m_jitPatchpointTable.GetValueSpeculative(ppId, (HashDatum*)&ppInfo);

@@ -28,9 +28,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationType);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationType);
 
             return AddKeyed(services, serviceType, serviceKey, implementationType, ServiceLifetime.Transient);
         }
@@ -52,9 +52,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             Func<IServiceProvider, object?, object> implementationFactory)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return AddKeyed(services, serviceType, serviceKey, implementationFactory, ServiceLifetime.Transient);
         }
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             return services.AddKeyedTransient(typeof(TService), serviceKey, typeof(TImplementation));
         }
@@ -95,8 +95,8 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType,
             object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             return services.AddKeyedTransient(serviceType, serviceKey, serviceType);
         }
@@ -115,7 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             return services.AddKeyedTransient(typeof(TService), serviceKey);
         }
@@ -137,8 +137,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return services.AddKeyedTransient(typeof(TService), serviceKey, implementationFactory);
         }
@@ -163,8 +163,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return services.AddKeyedTransient(typeof(TService), serviceKey, implementationFactory);
         }
@@ -186,9 +186,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationType);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationType);
 
             return AddKeyed(services, serviceType, serviceKey, implementationType, ServiceLifetime.Scoped);
         }
@@ -210,9 +210,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             Func<IServiceProvider, object?, object> implementationFactory)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return AddKeyed(services, serviceType, serviceKey, implementationFactory, ServiceLifetime.Scoped);
         }
@@ -234,7 +234,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             return services.AddKeyedScoped(typeof(TService), serviceKey, typeof(TImplementation));
         }
@@ -253,8 +253,8 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType,
             object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             return services.AddKeyedScoped(serviceType, serviceKey, serviceType);
         }
@@ -273,7 +273,7 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             return services.AddKeyedScoped(typeof(TService), serviceKey);
         }
@@ -295,8 +295,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return services.AddKeyedScoped(typeof(TService), serviceKey, implementationFactory);
         }
@@ -321,8 +321,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return services.AddKeyedScoped(typeof(TService), serviceKey, implementationFactory);
         }
@@ -344,9 +344,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationType);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationType);
 
             return AddKeyed(services, serviceType, serviceKey, implementationType, ServiceLifetime.Singleton);
         }
@@ -368,9 +368,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             Func<IServiceProvider, object?, object> implementationFactory)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return AddKeyed(services, serviceType, serviceKey, implementationFactory, ServiceLifetime.Singleton);
         }
@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             return services.AddKeyedSingleton(typeof(TService), serviceKey, typeof(TImplementation));
         }
@@ -411,8 +411,8 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType,
             object? serviceKey)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             return services.AddKeyedSingleton(serviceType, serviceKey, serviceType);
         }
@@ -431,7 +431,7 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(services);
 
             return services.AddKeyedSingleton(typeof(TService), serviceKey, typeof(TService));
         }
@@ -453,8 +453,8 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return services.AddKeyedSingleton(typeof(TService), serviceKey, implementationFactory);
         }
@@ -479,8 +479,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationFactory);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationFactory);
 
             return services.AddKeyedSingleton(typeof(TService), serviceKey, implementationFactory);
         }
@@ -502,9 +502,9 @@ namespace Microsoft.Extensions.DependencyInjection
             object? serviceKey,
             object implementationInstance)
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(serviceType);
-            ThrowHelper.ThrowIfNull(implementationInstance);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationInstance);
 
             var serviceDescriptor = new ServiceDescriptor(serviceType, serviceKey, implementationInstance);
             services.Add(serviceDescriptor);
@@ -527,8 +527,8 @@ namespace Microsoft.Extensions.DependencyInjection
             TService implementationInstance)
             where TService : class
         {
-            ThrowHelper.ThrowIfNull(services);
-            ThrowHelper.ThrowIfNull(implementationInstance);
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(implementationInstance);
 
             return services.AddKeyedSingleton(typeof(TService), serviceKey, implementationInstance);
         }

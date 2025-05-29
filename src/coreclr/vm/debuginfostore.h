@@ -154,7 +154,7 @@ public:
         OUT ULONG32*                           pNumRichMappings);
 
 #ifdef DACCESS_COMPILE
-    static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    static void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif
 };
 

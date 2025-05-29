@@ -785,11 +785,11 @@ private:
     bool GetCycles(uint64_t* time);
 };
 
-// Uses win API QueryPerformanceCounter/QueryPerformanceFrequency.
+// Uses minipal/time.h
 class PerfCounter
 {
-    LARGE_INTEGER beg;
-    double        freq;
+    int64_t beg;
+    double  freq;
 
 public:
     // If the method returns false, any other query yield unpredictable results.

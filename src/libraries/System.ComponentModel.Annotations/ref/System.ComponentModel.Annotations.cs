@@ -17,8 +17,8 @@ namespace System.ComponentModel.DataAnnotations
     public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
     {
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
-        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type associatedMetadataType) { }
-        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type objectType, object? instance) { throw null; }
+        public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)] System.Type associatedMetadataType) { }
+        public override System.ComponentModel.ICustomTypeDescriptor GetTypeDescriptor([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)] System.Type objectType, object? instance) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
     [System.ObsoleteAttribute("AssociationAttribute has been deprecated and is not supported.")]
@@ -229,8 +229,8 @@ namespace System.ComponentModel.DataAnnotations
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false)]
     public sealed partial class MetadataTypeAttribute : System.Attribute
     {
-        public MetadataTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type metadataClassType) { }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        public MetadataTypeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)] System.Type metadataClassType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public System.Type MetadataClassType { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -254,13 +254,13 @@ namespace System.ComponentModel.DataAnnotations
         public RangeAttribute(double minimum, double maximum) { }
         public RangeAttribute(int minimum, int maximum) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        public RangeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string minimum, string maximum) { }
+        public RangeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)] System.Type type, string minimum, string maximum) { }
         public bool ConvertValueInInvariantCulture { get { throw null; } set { } }
         public object Maximum { get { throw null; } }
         public bool MaximumIsExclusive { get { throw null; } set { } }
         public object Minimum { get { throw null; } }
         public bool MinimumIsExclusive { get { throw null; } set { } }
-        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllConstructors | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllEvents | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllFields | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllMethods | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllNestedTypes | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.AllProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
         public System.Type OperandType { get { throw null; } }
         public bool ParseLimitsInInvariantCulture { get { throw null; } set { } }
         public override string FormatErrorMessage(string name) { throw null; }
@@ -341,12 +341,13 @@ namespace System.ComponentModel.DataAnnotations
     }
     public sealed partial class ValidationContext : System.IServiceProvider
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public ValidationContext(object instance) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public ValidationContext(object instance, System.Collections.Generic.IDictionary<object, object?>? items) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public ValidationContext(object instance, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
+        public ValidationContext(object instance, string displayName, System.IServiceProvider? serviceProvider, System.Collections.Generic.IDictionary<object, object?>? items) { }
         public string DisplayName { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<object, object?> Items { get { throw null; } }
         public string? MemberName { get { throw null; } set { } }
@@ -381,16 +382,16 @@ namespace System.ComponentModel.DataAnnotations
     }
     public static partial class Validator
     {
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public static bool TryValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, bool validateAllProperties) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static bool TryValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults) { throw null; }
         public static bool TryValidateValue(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext, System.Collections.Generic.ICollection<System.ComponentModel.DataAnnotations.ValidationResult>? validationResults, System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationAttribute> validationAttributes) { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of instance cannot be statically discovered and the Type's properties can be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Constructing a ValidationContext without a display name is not trim-safe because it uses reflection to discover the type of the instance being validated in order to resolve the DisplayNameAttribute when a display name is not provided.")]
         public static void ValidateObject(object instance, System.ComponentModel.DataAnnotations.ValidationContext validationContext, bool validateAllProperties) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Type of validationContext.ObjectType cannot be statically discovered.")]
         public static void ValidateProperty(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) { }

@@ -370,7 +370,7 @@ namespace JsonToItemsTaskFactory
                         var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(ref reader, options);
                         if (dict == null)
                             return null!;
-                        var idict = new Dictionary<string, string> (dict, StringComparer.OrdinalIgnoreCase);
+                        var idict = new Dictionary<string, string>(dict, StringComparer.OrdinalIgnoreCase);
                         if  (!idict.TryGetValue("Identity", out var identity) || string.IsNullOrEmpty(identity))
                             throw new JsonException ("deserialized json dictionary item did not have a non-empty Identity metadata");
                         else

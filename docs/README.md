@@ -61,7 +61,11 @@ Coding Guidelines
 Project Docs
 =================
 
-To be added. Visit the [project docs folder](project/) directly meanwhile.
+- [Breaking change process](./project/breaking-change-process.md)
+- [Copyright](./project/copyright.md)
+- [Linux build methodology](./project/linux-build-methodology.md)
+- [Onboarding Guide for New Operating System Versions](./project/os-onboarding.md)
+- [Project docs folder](./project/)
 
 Other Information
 =================

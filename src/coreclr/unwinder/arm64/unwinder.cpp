@@ -4,7 +4,9 @@
 //
 
 #include "stdafx.h"
+#ifndef FEATURE_CDAC_UNWINDER
 #include "utilcode.h"
+#endif // FEATURE_CDAC_UNWINDER
 #include "crosscomp.h"
 
 #include "unwinder.h"
@@ -164,13 +166,25 @@ typedef struct _ARM64_VFP_STATE
 // Macros for accessing memory. These can be overridden if other code
 // (in particular the debugger) needs to use them.
 
-#if !defined(DEBUGGER_UNWIND)
+#if !defined(DEBUGGER_UNWIND) && !defined(FEATURE_CDAC_UNWINDER)
 
 #define MEMORY_READ_BYTE(params, addr)       (*dac_cast<PTR_BYTE>(addr))
-#define MEMORY_READ_WORD(params, addr)      (*dac_cast<PTR_WORD>(addr))
+#define MEMORY_READ_WORD(params, addr)       (*dac_cast<PTR_WORD>(addr))
 #define MEMORY_READ_DWORD(params, addr)      (*dac_cast<PTR_DWORD>(addr))
 #define MEMORY_READ_QWORD(params, addr)      (*dac_cast<PTR_UINT64>(addr))
 
+#elif defined(FEATURE_CDAC_UNWINDER)
+template<typename T>
+T cdacRead(uint64_t addr)
+{
+    T t;
+    t_pCallbacks->readFromTarget(addr, &t, sizeof(t), t_pCallbacks->callbackContext);
+    return t;
+}
+#define MEMORY_READ_BYTE(params, addr)       (cdacRead<BYTE>(addr))
+#define MEMORY_READ_WORD(params, addr)       (cdacRead<WORD>(addr))
+#define MEMORY_READ_DWORD(params, addr)      (cdacRead<DWORD>(addr))
+#define MEMORY_READ_QWORD(params, addr)      (cdacRead<UINT64>(addr))
 #endif
 
 //
@@ -823,7 +837,7 @@ RtlpExpandCompactToFull (
                 // !sav_predec_done can't even happen.
                 //
 
-                _ASSERTE(sav_predec_done);
+                UNWINDER_ASSERT(sav_predec_done);
 
                 DBG_OP("save_lrpair\t(%s, %i)\n", int_reg_names[intreg], sav_slot * 8);
                 emit_save_lrpair(&op_buffer, intreg, sav_slot * 8);
@@ -1063,7 +1077,7 @@ Return Value:
 --*/
 
 {
-    _ASSERTE(UnwindCode <= 0xFF);
+    UNWINDER_ASSERT(UnwindCode <= 0xFF);
 
     if (UnwindCode < 0xC0) {
         if (ARGUMENT_PRESENT(ScopeSize)) {
@@ -1621,7 +1635,7 @@ Return Value:
 
     case 0xeb:  // MSFT_OP_EC_CONTEXT:
         // NOTE: for .NET, the arm64ec context restoring is not implemented
-        _ASSERTE(FALSE);
+        UNWINDER_ASSERT(FALSE);
         return STATUS_UNSUCCESSFUL;
 
     case 0xec: // MSFT_OP_CLEAR_UNWOUND_TO_CALL
@@ -2335,7 +2349,7 @@ ExecuteCodes:
         }
 
         //
-        // pac (11111100): function has pointer authentication 
+        // pac (11111100): function has pointer authentication
         //
 
         else if (CurCode == 0xfc) {
@@ -2574,7 +2588,7 @@ Return Value:
 
     UNREFERENCED_PARAMETER(HandlerType);
 
-    _ASSERTE((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
+    UNWINDER_ASSERT((UnwindFlags & ~RTL_VIRTUAL_UNWIND_VALID_FLAGS_ARM64) == 0);
 
     if (FunctionEntry == NULL) {
 
@@ -2648,7 +2662,7 @@ Return Value:
                 FunctionEntry = (PRUNTIME_FUNCTION)(ImageBase + FunctionEntry->UnwindData - 3);
                 UnwindType = (FunctionEntry->UnwindData & 3);
 
-                _ASSERTE(UnwindType != 3);
+                UNWINDER_ASSERT(UnwindType != 3);
 
                 ControlPcRva = FunctionEntry->BeginAddress;
 
@@ -2759,6 +2773,7 @@ BOOL OOPStackUnwinderArm64::Unwind(T_CONTEXT * pContext)
     return TRUE;
 }
 
+#ifdef DACCESS_COMPILE
 BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers)
 {
     OOPStackUnwinderArm64 unwinder;
@@ -2774,6 +2789,18 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
 
     return res;
 }
+#elif defined(FEATURE_CDAC_UNWINDER)
+BOOL arm64Unwind(void* pContext, ReadFromTarget readFromTarget, GetAllocatedBuffer getAllocatedBuffer, GetStackWalkInfo getStackWalkInfo, UnwinderFail unwinderFail, void* callbackContext)
+{
+    CDACCallbacks callbacks { readFromTarget, getAllocatedBuffer, getStackWalkInfo, unwinderFail, callbackContext };
+    t_pCallbacks = &callbacks;
+    OOPStackUnwinderArm64 unwinder;
+    BOOL res = unwinder.Unwind((T_CONTEXT*) pContext);
+    t_pCallbacks = nullptr;
+
+    return res;
+}
+#endif // FEATURE_CDAC_UNWINDER
 
 #if defined(HOST_UNIX)
 

@@ -25,6 +25,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 for (int i = 0; i < 8; i++)
                 {
+                    if (PlatformDetection.IsBrowser && i is 0 or 2 or 4 or 5 or 6) continue; // ignore sync reads
+
                     yield return new object[] { remoteServer, i };
                 }
             }
@@ -176,10 +178,13 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             using (Stream stream = await client.GetStreamAsync(remoteServer.EchoUri))
             {
-                Assert.Equal(0, stream.Read(new byte[1], 0, 0));
+                if (PlatformDetection.IsNotBrowser)
+                {
+                    Assert.Equal(0, stream.Read(new byte[1], 0, 0));
 #if !NETFRAMEWORK
-                Assert.Equal(0, stream.Read(new Span<byte>(new byte[1], 0, 0)));
+                    Assert.Equal(0, stream.Read(new Span<byte>(new byte[1], 0, 0)));
 #endif
+                }
                 Assert.Equal(0, await stream.ReadAsync(new byte[1], 0, 0));
             }
         }
@@ -200,7 +205,7 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
 
                 // Verify that the task completed.
-                Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
+                Assert.Same(task, await Task.WhenAny(task, Task.Delay(TimeSpan.FromMinutes(5))));
                 Assert.True(task.IsCompleted, "Task was not yet completed");
 
                 // Verify that the task completed successfully or is canceled.
@@ -230,16 +235,107 @@ namespace System.Net.Http.Functional.Tests
 
 #if NET
 
+        public static IEnumerable<object[]> HttpMethods => new object[][]
+        {
+            new [] { HttpMethod.Get },
+            new [] { HttpMethod.Head },
+            new [] { HttpMethod.Post },
+            new [] { HttpMethod.Put },
+            new [] { HttpMethod.Delete },
+            new [] { HttpMethod.Options },
+            new [] { HttpMethod.Patch },
+        };
+
+        public static IEnumerable<object[]> HttpMethodsAndAbort => new object[][]
+        {
+            new object[] { HttpMethod.Get, "abortBeforeHeaders" },
+            new object[] { HttpMethod.Head , "abortBeforeHeaders"},
+            new object[] { HttpMethod.Post , "abortBeforeHeaders"},
+            new object[] { HttpMethod.Put , "abortBeforeHeaders"},
+            new object[] { HttpMethod.Delete , "abortBeforeHeaders"},
+            new object[] { HttpMethod.Options , "abortBeforeHeaders"},
+            new object[] { HttpMethod.Patch , "abortBeforeHeaders"},
+
+            new object[] { HttpMethod.Get, "abortAfterHeaders" },
+            new object[] { HttpMethod.Post , "abortAfterHeaders"},
+            new object[] { HttpMethod.Put , "abortAfterHeaders"},
+            new object[] { HttpMethod.Delete , "abortAfterHeaders"},
+            new object[] { HttpMethod.Options , "abortAfterHeaders"},
+            new object[] { HttpMethod.Patch , "abortAfterHeaders"},
+
+            new object[] { HttpMethod.Get, "abortDuringBody" },
+            new object[] { HttpMethod.Post , "abortDuringBody"},
+            new object[] { HttpMethod.Put , "abortDuringBody"},
+            new object[] { HttpMethod.Delete , "abortDuringBody"},
+            new object[] { HttpMethod.Options , "abortDuringBody"},
+            new object[] { HttpMethod.Patch , "abortDuringBody"},
+
+       };
+
+        [MemberData(nameof(HttpMethods))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingResponse(HttpMethod method)
+        {
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp11Server.BaseUri + "echo.ashx");
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            if (method == HttpMethod.Post)
+            {
+                req.Content = new StringContent("hello world");
+            }
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server))
+            // we need to switch off Response buffering of default ResponseContentRead option
+            using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+            {
+                using var content = response.Content;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(typeof(StreamContent), content.GetType());
+                Assert.NotEqual(0, content.Headers.ContentLength);
+                if (method != HttpMethod.Head)
+                {
+                    var data = await content.ReadAsByteArrayAsync();
+                    Assert.NotEqual(0, data.Length);
+                }
+            }
+        }
+
+        [MemberData(nameof(HttpMethodsAndAbort))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingResponseAbort(HttpMethod method, string abort)
+        {
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var req = new HttpRequestMessage(method, Configuration.Http.RemoteHttp11Server.BaseUri + "echo.ashx?" + abort + "=true");
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            if (method == HttpMethod.Post || method == HttpMethod.Put || method == HttpMethod.Patch)
+            {
+                req.Content = new StringContent("hello world");
+            }
+
+            using HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteHttp11Server);
+            if (abort == "abortDuringBody")
+            {
+                using var res = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead);
+                await Assert.ThrowsAsync<HttpRequestException>(() => res.Content.ReadAsByteArrayAsync());
+            }
+            else
+            {
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead));
+            }
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
         public async Task BrowserHttpHandler_Streaming()
         {
             var WebAssemblyEnableStreamingRequestKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingRequest");
-            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
             var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteHttp2Server.BaseUri + "echobody.ashx");
 
             req.Options.Set(WebAssemblyEnableStreamingRequestKey, true);
-            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
             byte[] body = new byte[1024 * 1024];
             Random.Shared.NextBytes(body);
@@ -485,15 +581,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
-        public async Task BrowserHttpHandler_StreamingResponse()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_StreamingResponseLarge()
         {
-            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
-
             var size = 1500 * 1024 * 1024;
             var req = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.RemoteSecureHttp11Server.BaseUri + "large.ashx?size=" + size);
-
-            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
             using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteSecureHttp11Server))
             // we need to switch off Response buffering of default ResponseContentRead option
@@ -512,7 +604,7 @@ namespace System.Net.Http.Functional.Tests
                 int fetchedCount = 0;
                 do
                 {
-                    // with WebAssemblyEnableStreamingResponse option set, we will be using https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader/read
+                    // we will be using https://developer.mozilla.org/en-US/docs/Web/API/ReadableStreamDefaultReader/read
                     fetchedCount = await stream.ReadAsync(buffer, 0, buffer.Length);
                     totalCount += fetchedCount;
                 } while (fetchedCount != 0);

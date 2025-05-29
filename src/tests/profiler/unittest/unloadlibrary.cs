@@ -21,7 +21,7 @@ namespace UnloadLibrary
             {
                 instanceStrings[i] = staticString + (++s_count);
             }
-            Console.WriteLine("Class1 constructed");
+            Console.WriteLine("TestClass constructed");
 
             instances.Add(this);
         }

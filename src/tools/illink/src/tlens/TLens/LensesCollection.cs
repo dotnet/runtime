@@ -37,7 +37,8 @@ namespace TLens
 		// Most used/unused attributes
 		// Constants passed as arguments
 		//
-		static readonly LensAnalyzerDetails[] all = new[] {
+		static readonly LensAnalyzerDetails[] all =
+		[
 			new LensAnalyzerDetails ("duplicated-code",
 				"Methods which are possible duplicates", typeof (DuplicatedCodeAnalyzer)),
 			new LensAnalyzerDetails ("fields-init",
@@ -64,7 +65,7 @@ namespace TLens
 				"Types with limited number of constructions", typeof (TypeInstatiationAnalyzer)) { DefaultSet = true },
 			new LensAnalyzerDetails ("unused-param",
 				"Methods with unused parameters", typeof (UnusedParametersAnalyzer)),
-		};
+		];
 
 		public static IEnumerable<LensAnalyzerDetails> All => all;
 

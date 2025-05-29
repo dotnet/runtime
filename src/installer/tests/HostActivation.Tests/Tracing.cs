@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
@@ -115,6 +116,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdErrContaining(ExpectedInfoMessage)
                 .And.HaveStdErrContaining(ExpectedVerboseMessage)
                 .And.HaveStdErrContaining(ExpectedBadPathMessage);
+        }
+
+        [Fact]
+        public void TracingOnToDirectory()
+        {
+            using (TestArtifact directory = TestArtifact.Create("trace"))
+            {
+                var result = TestContext.BuiltDotNet.Exec(sharedTestState.App.AppDll)
+                    .EnableHostTracingToPath(directory.Location)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .Execute();
+
+                string traceFilePath = Path.Combine(directory.Location, $"{Path.GetFileNameWithoutExtension(Binaries.DotNet.FileName)}.{result.ProcessId}.log");
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("Hello World")
+                    .And.NotHaveStdErrContaining(ExpectedInfoMessage)
+                    .And.NotHaveStdErrContaining(ExpectedVerboseMessage)
+                    .And.FileExists(traceFilePath)
+                    .And.FileContains(traceFilePath, ExpectedVerboseMessage);
+            }
         }
 
         public class SharedTestState : IDisposable

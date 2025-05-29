@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
         private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
-            byte[] key,
+            ReadOnlySpan<byte> key,
             byte[]? iv,
             int blockSize,
             int paddingSize,

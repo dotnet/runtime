@@ -14,21 +14,18 @@ class EHClauseInfo;
 #include "exceptionhandling.h"
 #include "cdacdata.h"
 
-#if !defined(FEATURE_EH_FUNCLETS)
-// ExInfo contains definitions for 32bit
+#ifndef FEATURE_EH_FUNCLETS
 #include "exinfo.h"
-#endif // !defined(FEATURE_EH_FUNCLETS)
+#else
+struct ExInfo;
+typedef DPTR(ExInfo) PTR_ExInfo;
+#endif
 
 #if !defined(DACCESS_COMPILE)
 #define PRESERVE_WATSON_ACROSS_CONTEXTS 1
 #endif
 
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
-
-#ifdef FEATURE_EH_FUNCLETS
-struct ExInfo;
-typedef DPTR(ExInfo) PTR_ExInfo;
-#endif // !FEATURE_EH_FUNCLETS
 
 //
 // This class serves as a forwarding and abstraction layer for the EH subsystem.
@@ -48,17 +45,16 @@ class ThreadExceptionState
 #endif // DACCESS_COMPILE
 
     // ProfToEEInterfaceImpl::GetNotifiedExceptionClauseInfo needs access so that it can fetch the
-    // ExceptionTracker or the ExInfo as appropriate for the platform
+    // ExInfo
     friend class ProfToEEInterfaceImpl;
 
     friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_EH_FUNCLETS
-    friend class ExceptionTracker;
     friend struct ExInfo;
 #else
     friend class ExInfo;
-#endif // FEATURE_EH_FUNCLETS
+#endif
 
 public:
 
@@ -93,6 +89,7 @@ public:
 #ifdef DEBUGGING_SUPPORTED
     // DebuggerExState stores information necessary for intercepting an exception
     DebuggerExState*    GetDebuggerState();
+    void SetDebuggerIndicatedFramePointer(LPVOID indicatedFramePointer);
 
     // check to see if the current exception is interceptable
     BOOL                IsDebuggerInterceptable();
@@ -142,17 +139,16 @@ private:
     Thread* GetMyThread();
 
 #ifdef FEATURE_EH_FUNCLETS
-    PTR_ExceptionTrackerBase m_pCurrentTracker;
-    ExceptionTracker        m_OOMTracker;
+    PTR_ExInfo m_pCurrentTracker;
 public:
-    PTR_ExceptionTrackerBase GetCurrentExceptionTracker()
+    PTR_ExInfo GetCurrentExceptionTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCurrentTracker;
     }
 
 #ifndef DACCESS_COMPILE
-    void SetCurrentExceptionTracker(ExceptionTrackerBase* pTracker)
+    void SetCurrentExceptionTracker(PTR_ExInfo pTracker)
     {
         LIMITED_METHOD_CONTRACT;
         m_pCurrentTracker = pTracker;

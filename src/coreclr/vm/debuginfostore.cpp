@@ -1025,7 +1025,7 @@ BOOL DebugInfoManager::GetRichDebugInfo(
 }
 
 #ifdef DACCESS_COMPILE
-void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD)
+void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
 {
     CONTRACTL
     {
@@ -1035,18 +1035,23 @@ void DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlag
     }
     CONTRACTL_END;
 
-    PCODE addrCode = pMD->GetNativeCode();
+    if (!pCodeInfo->IsValid())
+    {
+        return;
+    }
+
+    PCODE addrCode = pCodeInfo->GetStartAddress();
     if (addrCode == (PCODE)NULL)
     {
         return;
     }
 
-    IJitManager* pJitMan = ExecutionManager::FindJitMan(addrCode);
+    IJitManager* pJitMan = pCodeInfo->GetJitManager();
     if (pJitMan == NULL)
     {
         return; // no info available.
     }
 
-    pJitMan->EnumMemoryRegionsForMethodDebugInfo(flags, pMD);
+    pJitMan->EnumMemoryRegionsForMethodDebugInfo(flags, pCodeInfo);
 }
 #endif

@@ -16,6 +16,7 @@
 
 #include "qcall.h"
 
+extern "C" STRINGREF* QCALLTYPE String_StrCns(UINT32 rid, CORINFO_MODULE_HANDLE scopeHnd);
 extern "C" void QCALLTYPE String_Intern(QCall::StringHandleOnStack str);
 extern "C" void QCALLTYPE String_IsInterned(QCall::StringHandleOnStack str);
 

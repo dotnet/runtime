@@ -23,10 +23,12 @@ namespace System.Linq
             IAsyncEnumerable<TSource> second,
             IEqualityComparer<TSource>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
 
-            return Impl(first, second, comparer, default);
+            return
+                first.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, comparer, default);
 
             async static IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -34,20 +36,29 @@ namespace System.Linq
                 IEqualityComparer<TSource>? comparer,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
+                await using IAsyncEnumerator<TSource> firstEnumerator = first.GetAsyncEnumerator(cancellationToken);
+
+                if (!await firstEnumerator.MoveNextAsync())
+                {
+                    yield break;
+                }
+
                 HashSet<TSource> set = new(comparer);
 
-                await foreach (TSource element in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in second.WithCancellation(cancellationToken))
                 {
                     set.Add(element);
                 }
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                do
                 {
-                    if (set.Add(element))
+                    TSource firstElement = firstEnumerator.Current;
+                    if (set.Add(firstElement))
                     {
-                        yield return element;
+                        yield return firstElement;
                     }
                 }
+                while (await firstEnumerator.MoveNextAsync());
             }
         }
     }

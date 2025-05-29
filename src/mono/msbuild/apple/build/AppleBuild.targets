@@ -54,10 +54,14 @@
       <AppleBundleDir Condition="'$(AppleBundleDir)' == ''">$([MSBuild]::NormalizeDirectory('$(OutDir)', 'Bundle'))</AppleBundleDir>
 
       <BundleDir>$(AppleBundleDir)</BundleDir>
-      <RuntimeHeaders Condition="'$(UseMonoRuntime)' != 'false' and '$(UseNativeAOTRuntime)' != 'true'">$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</RuntimeHeaders>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
       <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
+
+    <ItemGroup>
+      <RuntimeHeaders Include="$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))"
+                      Condition="'$(UseMonoRuntime)' != 'false' and '$(UseNativeAOTRuntime)' != 'true'" />
+    </ItemGroup>
 
     <ItemGroup Condition="'$(AppleAppBuilderRuntime)' == 'MonoVM'">
       <RuntimeComponents Condition="'$(UseAllRuntimeComponents)' == 'true'" Include="@(_MonoRuntimeAvailableComponents)"/>
@@ -298,7 +302,7 @@
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
     </ItemGroup>
- 
+
     <PropertyGroup>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseNativeAOTRuntime)' == 'true'">NativeAOT</AppleAppBuilderRuntime>
       <AppleAppBuilderRuntime Condition="'$(AppleAppBuilderRuntime)' == '' and '$(UseMonoRuntime)' == 'false'">CoreCLR</AppleAppBuilderRuntime>
@@ -324,7 +328,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       IsLibraryMode="$(_IsLibraryMode)"
       MainLibraryFileName="$(MainLibraryFileName)"
-      MonoRuntimeHeaders="$(RuntimeHeaders)"
+      MonoRuntimeHeaders="@(RuntimeHeaders)"
       NativeMainSource="$(NativeMainSource)"
       NativeDependencies="@(NativeDependencies)"
       Optimized="$(Optimized)"

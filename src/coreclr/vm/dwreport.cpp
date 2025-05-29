@@ -23,6 +23,9 @@
 #include "utilcode.h"
 #include "../dlls/mscorrc/resource.h"   // for resource ids
 
+#ifdef FEATURE_EH_FUNCLETS
+#include "exinfo.h"
+#endif
 
 EFaultRepRetVal DoReportFault(EXCEPTION_POINTERS * pExceptionInfo);
 

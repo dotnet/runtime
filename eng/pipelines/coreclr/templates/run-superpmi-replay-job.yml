@@ -16,6 +16,7 @@ parameters:
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
   helixQueues: ''                 # required -- Helix queues
+  replayType: 'standard'          # required -- 'standard', 'apx'
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -47,6 +48,9 @@ jobs:
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
+    - name: replayType
+      value: ${{ parameters.replayType }}
+
     - template: /eng/pipelines/coreclr/templates/jit-python-variables.yml
       parameters:
         osGroup: ${{ parameters.osGroup }}
@@ -74,8 +78,8 @@ jobs:
         mkdir $(SpmiLogsLocation)
       displayName: Create directories
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -arch $(archType)
-      displayName: ${{ format('SuperPMI replay setup ({0})', parameters.archType) }}
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi_replay_setup.py -source_directory $(Build.SourcesDirectory) -product_directory $(buildProductRootFolderPath) -type $(replayType) -arch $(archType)
+      displayName: ${{ format('SuperPMI replay setup ({0} {1})', parameters.replayType, parameters.archType) }}
 
       # Run superpmi replay in helix
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
@@ -93,6 +97,7 @@ jobs:
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}
+        SuperPmiReplayType: ${{ parameters.replayType }}
 
       # Always upload the available logs for diagnostics
     - task: CopyFiles@2

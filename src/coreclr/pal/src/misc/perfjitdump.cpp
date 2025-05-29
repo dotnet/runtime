@@ -26,6 +26,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <limits.h>
+#include "minipal/time.h"
 
 #include "../inc/llvm/ELF.h"
 
@@ -90,9 +91,7 @@ namespace
             return static_cast<uint64_t>(__rdtsc());
         }
 #endif
-        LARGE_INTEGER result;
-        QueryPerformanceCounter(&result);
-        return result.QuadPart;
+        return (uint64_t)minipal_hires_ticks();
     }
 
 
@@ -185,16 +184,13 @@ struct PerfJitDumpState
     {
         int result = 0;
 
-        // On platforms where JITDUMP is used, the PAL QueryPerformanceFrequency
-        // returns tccSecondsToNanoSeconds, meaning QueryPerformanceCounter
-        // will return a direct nanosecond value. If this isn't true,
+        // On platforms where JITDUMP is used, minipal_hires_tick_frequency()
+        // returns tccSecondsToNanoSeconds. If this isn't true,
         // then some other method will need to be used to implement GetTimeStampNS.
         // Validate this is true once in Start here.
-        LARGE_INTEGER freq;
-        QueryPerformanceFrequency(&freq);
-        if (freq.QuadPart != tccSecondsToNanoSeconds)
+        if (minipal_hires_tick_frequency() != tccSecondsToNanoSeconds)
         {
-            _ASSERTE(!"QueryPerformanceFrequency does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
+            _ASSERTE(!"minipal_hires_tick_frequency() does not return tccSecondsToNanoSeconds. Implement JITDUMP GetTimeStampNS directly for this platform.\n");
             FatalError();
         }
 

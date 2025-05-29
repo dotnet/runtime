@@ -172,42 +172,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // This certificate has omitted the parameters section completely,
             // which while RFC compliant (it's labelled OPTIONAL) isn't what everyone
             // else does.  So this test ensures that we can read such a cert.
-            const string PemEncodedCert = @"
------BEGIN CERTIFICATE-----
-MIIE4jCCAsygAwIBAgIEMTI0NjALBgkqhkiG9w0BAQUwgZgxCzAJBgNVBAYTAlVT
-MQswCQYDVQQIDAJOWTEbMBkGA1UECgwSUVogSW5kdXN0cmllcywgTExDMRswGQYD
-VQQLDBJRWiBJbmR1c3RyaWVzLCBMTEMxGTAXBgNVBAMMEHF6aW5kdXN0cmllcy5j
-b20xJzAlBgkqhkiG9w0BCQEWGHN1cHBvcnRAcXppbmR1c3RyaWVzLmNvbTAeFw0x
-NjA0MDYyMTAwMDBaFw0xNzA0MDcyMTAwMDBaMIGtMQswCQYDVQQGDAJDWjEXMBUG
-A1UECAwOQ3plY2ggUmVwdWJsaWMxDTALBgNVBAcMBEJybm8xGTAXBgNVBAoMEHNt
-c3RpY2tldCBzLnIuby4xGTAXBgNVBAsMEHNtc3RpY2tldCBzLnIuby4xHjAcBgNV
-BAMMFXBva2xhZG5hLnNtc3RpY2tldC5jejEgMB4GCSqGSIb3DQEJAQwRaW5mb0Bz
-bXN0aWNrZXQuY3owggEgMAsGCSqGSIb3DQEBAQOCAQ8AMIIBCgKCAQEAsDh05CAX
-Wp29GTbjk3gzeCCe/1t7V3aNTwbtzkUtLZnbS9tge/+Iaqsz10IOWk3SndLhPIfa
-KUvX/pnkq5CXIVyTTyRoFpyYrDfNoRmZ/3uTmMG50urk0Rg/+e4f2k32BfFTfB0W
-3V169+QQ6Xvvuoyh62cppfi1msgFJ6WGmEF1r73Q6tK1vxfuA9wJfMWTl4Sg8nEf
-9NXsTc9VAwGKRJbmTUN1b0xsqFvlFbxvaxPGwxNM29lXWlez5KEsh0sfUyTGQuTB
-tu5JMC57TGvL0/TwgwrtOxQL5+N4lJAWnUQ+z3XXL694eSsuKlgw2yasO2ZwWnyz
-eap2vnN/CifUgwIDAQABoyMwITAfBgNVHSMEGDAWgBSQplC3hNS56l/yBYQTeEXo
-qXVUXDALBgkqhkiG9w0BAQUDggIBAHMNLagyKZYla3gR0KOhxiUWuFG2gU7uB2v+
-zeqmIh6XxG4/39r6SJgUIimZ2aVQjYLa/fgrn5FRXhDqMumLJ3rWp8GB05evmdWl
-WMQrb6E39jsFXuCzev6mCjiHxzGC2I7SRvFmnCj5fvOF81V5dLjU2PnCNqPym9Aw
-XbEHVXTxpM9okSeq/EoeuTA5NHl/EySwYiGoexz0Ia51M5cw5W5go2Abmtqs4bbz
-7OFeZKP9fd1p+C/ZnekgKq+3SJ9qbEiJxoPir3rG2N0mw7iI5pwvbCixY9irZh5o
-Lrc5RvH4hdpygNSm4MYEuBykEW0tizkcVanGCUmGdjxM22Y9XdPgKitS04rVk/2U
-C1Gszv9KvtmQ2P3/HWWWiOQgljc3SFqBltt6TqJTGCtLEbWRw6V+sw3SALoafvLg
-tIsyWUsjM5LunRkUQ+HIsmKo42943TmgUvgRuuo0nsEFI5TS7Jh0iC/2gQEt7XGh
-wzOTZ0HzM3oNnTphlXFLBwL9MUgWKbhu5Fg486dDMeQmZmhztW/+F/uHHYFisk+1
-tmr2prSh5i4fD71t4p+EGJJQxM4wCiXRLzggIVGUAIrzynxO2vjYiMQxAUH3tdsX
-JI6fq+e/mFZOE2XQmYu3/hQEw8/2F6usF1lyvwMZt2TgQZF1/g8gFVQUY2mGLM1z
-Wry5FNNo
------END CERTIFICATE-----";
-
-            byte[] bytes = System.Text.Encoding.ASCII.GetBytes(PemEncodedCert);
-
-            using (X509Certificate2 cert = new X509Certificate2(bytes))
+            using (X509Certificate2 cert = X509Certificate2.CreateFromPem(TestData.RsaNoParametersCertificate))
             {
-                Assert.Equal(Array.Empty<byte>(), cert.GetKeyAlgorithmParameters());
+                Assert.Null(cert.GetKeyAlgorithmParameters());
+                Assert.Null(cert.GetKeyAlgorithmParametersString());
                 Assert.Equal("1.2.840.113549.1.1.1", cert.GetKeyAlgorithm());
             }
         }

@@ -14,11 +14,6 @@
     <PackagePlatform>AnyCPU</PackagePlatform>
   </PropertyGroup>
 
-  <!-- CoreCLR nuget packages shouldn't be published during servicing. -->
-  <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
-    <IsShipping>false</IsShipping>
-  </PropertyGroup>
-
   <PropertyGroup>
     <!-- build the transport package which includes product and symbols in addition to standard packages
     This is a legacy setting as we tend to use symbol packages for symbol indexing and we don't use

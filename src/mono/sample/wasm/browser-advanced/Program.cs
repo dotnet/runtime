@@ -67,6 +67,36 @@ namespace Sample
         }
 
         [JSExport]
+        internal static void SillyLoop()
+        {
+            // this silly method will generate few sample points for the profiler
+            for (int i = 1; i <= 60; i ++)
+            {
+                try
+                {
+                    for (int s = 0; s <= 60; s ++)
+                    {
+                        try
+                        {
+                            if (DateTime.UtcNow.Millisecond == s)
+                            {
+                                Console.WriteLine("Time is " + s);
+                            }
+                        }
+                        catch(Exception e)
+                        {
+                            Console.WriteLine(e.Message);
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+        }
+
+        [JSExport]
         internal static bool IsPrime(int number)
         {
             if (number <= 1) return false;

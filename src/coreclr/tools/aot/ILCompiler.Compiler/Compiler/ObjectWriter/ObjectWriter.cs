@@ -134,15 +134,6 @@ namespace ILCompiler.ObjectWriter
             return true;
         }
 
-        private protected static ObjectNodeSection GetSharedSection(ObjectNodeSection section, string key)
-        {
-            string standardSectionPrefix = "";
-            if (section.IsStandardSection)
-                standardSectionPrefix = ".";
-
-            return new ObjectNodeSection(standardSectionPrefix + section.Name, section.Type, key);
-        }
-
         private unsafe void EmitOrResolveRelocation(
             int sectionIndex,
             long offset,

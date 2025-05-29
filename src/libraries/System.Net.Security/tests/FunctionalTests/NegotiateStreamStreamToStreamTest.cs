@@ -9,8 +9,9 @@ using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Security.Tests
 {
@@ -191,6 +192,11 @@ namespace System.Net.Security.Tests
         public async Task NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
             string targetName = "testTargetName";
+
+            if (PlatformDetection.IsWindowsServer2025)
+            {
+                throw new SkipTestException("Empty credentials not supported on Server 2025");
+            }
 
             // Ensure there is no confusion between DefaultCredentials / DefaultNetworkCredentials and a
             // NetworkCredential object with empty user, password and domain.

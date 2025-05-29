@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
         private volatile byte[]? _lazyKeyAlgorithmParameters;
         private volatile byte[]? _lazyPublicKey;
         private volatile byte[]? _lazyRawData;
+        private volatile bool _lazyKeyAlgorithmParametersCreated;
         private DateTime _lazyNotBefore = DateTime.MinValue;
         private DateTime _lazyNotAfter = DateTime.MinValue;
 
@@ -38,6 +39,7 @@ namespace System.Security.Cryptography.X509Certificates
             _lazyRawData = null;
             _lazyNotBefore = DateTime.MinValue;
             _lazyNotAfter = DateTime.MinValue;
+            _lazyKeyAlgorithmParametersCreated = false;
 
             ICertificatePalCore? pal = Pal;
             if (pal != null)
@@ -345,6 +347,79 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="exportParameters"/> is not a valid value.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance is disposed.</para>
+        ///   <para>-or-</para>
+        ///   <para>The export operation failed.</para>
+        /// </exception>
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, string? password)
+        {
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            if (Pal is null)
+                throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            {
+                return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
+        /// <summary>
+        ///   Exports the certificate and private key in PKCS#12 / PFX format.
+        /// </summary>
+        /// <param name="exportParameters">The algorithm parameters to use for the export.</param>
+        /// <param name="password">The password to use for the export.</param>
+        /// <returns>A byte array containing the encoded PKCS#12.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="password"/> contains a Unicode 'NULL' character.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exportParameters"/> is <see langword="null"/> .
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The current instance is disposed.</para>
+        ///   <para>-or-</para>
+        ///   <para>The export operation failed.</para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> specifies a <see cref="PbeParameters.HashAlgorithm"/> value that is
+        ///     not supported for the <see cref="PbeParameters.EncryptionAlgorithm"/> value.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="exportParameters"/> contains an invalid encryption algorithm for
+        ///     <see cref="PbeParameters.EncryptionAlgorithm"/>.
+        ///   </para>
+        /// </exception>
+        public byte[] ExportPkcs12(PbeParameters exportParameters, string? password)
+        {
+            ArgumentNullException.ThrowIfNull(exportParameters);
+            Helpers.ThrowIfInvalidPkcs12ExportParameters(exportParameters);
+            Helpers.ThrowIfPasswordContainsNullCharacter(password);
+
+            if (Pal is null)
+                throw new CryptographicException(ErrorCode.E_POINTER); // Consistent with existing Export method.
+
+            using (SafePasswordHandle safePasswordHandle = new(password, passwordProvided: true))
+            {
+                return Pal.ExportPkcs12(exportParameters, safePasswordHandle);
+            }
+        }
+
         public virtual string GetRawCertDataString()
         {
             ThrowIfInvalid();
@@ -447,20 +522,25 @@ namespace System.Security.Cryptography.X509Certificates
             return _lazyKeyAlgorithm ??= Pal.KeyAlgorithm;
         }
 
-        public virtual byte[] GetKeyAlgorithmParameters()
+        public virtual byte[]? GetKeyAlgorithmParameters()
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = _lazyKeyAlgorithmParameters ??= Pal.KeyAlgorithmParameters;
-            return keyAlgorithmParameters.CloneByteArray();
+            if (!_lazyKeyAlgorithmParametersCreated)
+            {
+                _lazyKeyAlgorithmParameters = Pal.KeyAlgorithmParameters;
+                _lazyKeyAlgorithmParametersCreated = true;
+            }
+
+            return _lazyKeyAlgorithmParameters.CloneByteArray();
         }
 
-        public virtual string GetKeyAlgorithmParametersString()
+        public virtual string? GetKeyAlgorithmParametersString()
         {
             ThrowIfInvalid();
 
-            byte[] keyAlgorithmParameters = GetKeyAlgorithmParameters();
-            return keyAlgorithmParameters.ToHexStringUpper();
+            byte[]? keyAlgorithmParameters = GetKeyAlgorithmParameters();
+            return keyAlgorithmParameters?.ToHexStringUpper();
         }
 
         public virtual byte[] GetPublicKey()

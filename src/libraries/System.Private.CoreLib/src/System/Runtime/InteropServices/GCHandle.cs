@@ -21,6 +21,9 @@ namespace System.Runtime.InteropServices
     /// WeakTrackResurrection: Same as Weak, but stays until after object is really gone.
     /// Pinned - same as Normal, but allows the address of the actual object to be taken.
     /// </remarks>
+    /// <seealso cref="GCHandle{T}"/>
+    /// <seealso cref="PinnedGCHandle{T}"/>
+    /// <seealso cref="WeakGCHandle{T}"/>
     [StructLayout(LayoutKind.Sequential)]
     public partial struct GCHandle : IEquatable<GCHandle>
     {
@@ -190,6 +193,25 @@ namespace System.Runtime.InteropServices
             {
                 ThrowHelper.ThrowInvalidOperationException_HandleIsNotInitialized();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void CheckUninitialized(IntPtr handle)
+        {
+            // Check if the handle was never initialized or was freed.
+            // Throws NRE with minimal overhead, to avoid access violation from unmanaged code.
+            // Invalid handle is unsupported and will cause AV as expected.
+#if MONO
+            // Mono doesn't handle reading null pointer as NRE.
+            // Throw a NRE manually.
+            if (handle == 0)
+            {
+                throw new NullReferenceException();
+            }
+#else
+            // The read will be combined with the read in InternalGet under Release.
+            _ = *(object*)handle;
+#endif
         }
     }
 }

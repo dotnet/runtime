@@ -9,13 +9,11 @@
 ;;
 ;; CONSTANTS -- INTEGER
 ;;
-TSF_Attached                    equ 0x01
 TSF_SuppressGcStress            equ 0x08
 TSF_DoNotTriggerGc              equ 0x10
 TSF_SuppressGcStress__OR__TSF_DoNotTriggerGC equ 0x18
 
 ;; Bit position for the flags above, to be used with tbz/tbnz instructions
-TSF_Attached_Bit                equ 0
 TSF_SuppressGcStress_Bit        equ 3
 TSF_DoNotTriggerGc_Bit          equ 4
 

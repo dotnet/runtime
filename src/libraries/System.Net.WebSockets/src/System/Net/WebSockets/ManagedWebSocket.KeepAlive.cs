@@ -29,7 +29,7 @@ namespace System.Net.WebSockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
-            Observe(
+            LogExceptions(
                 TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
 
@@ -98,7 +98,7 @@ namespace System.Net.WebSockets
 
                 if (shouldSendPing)
                 {
-                    Observe(
+                    LogExceptions(
                         SendPingAsync(pingPayload));
                 }
             }
@@ -120,52 +120,6 @@ namespace System.Net.WebSockets
             await TrySendKeepAliveFrameAsync(MessageOpcode.Ping, pingPayloadBuffer).ConfigureAwait(false);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.KeepAlivePingSent(this, pingPayload);
-        }
-
-        // "Observe" either a ValueTask result, or any exception, ignoring it
-        // to prevent the unobserved exception event from being raised.
-        private void Observe(ValueTask t)
-        {
-            if (t.IsCompletedSuccessfully)
-            {
-                t.GetAwaiter().GetResult();
-            }
-            else
-            {
-                Observe(t.AsTask());
-            }
-        }
-
-        // "Observe" any exception, ignoring it to prevent the unobserved task
-        // exception event from being raised.
-        private void Observe(Task t)
-        {
-            if (t.IsCompleted)
-            {
-                if (t.IsFaulted)
-                {
-                    LogFaulted(t, this);
-                }
-            }
-            else
-            {
-                t.ContinueWith(
-                    LogFaulted,
-                    this,
-                    CancellationToken.None,
-                    TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                    TaskScheduler.Default);
-            }
-
-            static void LogFaulted(Task task, object? thisObj)
-            {
-                Debug.Assert(task.IsFaulted);
-
-                // accessing exception to observe it regardless of whether the tracing is enabled
-                Exception e = task.Exception!.InnerException!;
-
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(thisObj, e);
-            }
         }
 
         private sealed class KeepAlivePingState

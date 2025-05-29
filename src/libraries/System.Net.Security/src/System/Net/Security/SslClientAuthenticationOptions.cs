@@ -12,7 +12,7 @@ namespace System.Net.Security
     {
         private EncryptionPolicy _encryptionPolicy = EncryptionPolicy.RequireEncryption;
         private X509RevocationMode _checkCertificateRevocation = X509RevocationMode.NoCheck;
-        private SslProtocols _enabledSslProtocols = SecurityProtocol.SystemDefaultSecurityProtocols;
+        private SslProtocols _enabledSslProtocols = SslProtocols.None;
         private bool _allowRenegotiation = true;
         private bool _allowTlsResume = true;
 

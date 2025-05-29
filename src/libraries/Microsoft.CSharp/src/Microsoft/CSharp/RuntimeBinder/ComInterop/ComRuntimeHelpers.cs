@@ -17,6 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal static class ComRuntimeHelpers
     {
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message)
         {
             if (ComHresults.IsSuccess(hresult))
@@ -209,11 +210,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
         {
             return new BoundDispEvent(rcw, sourceIid, dispid);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static DispCallable CreateDispCallable(IDispatchComObject dispatch, ComMethodDesc method)
         {
             return new DispCallable(dispatch, method.Name, method.DispId);
@@ -350,6 +353,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         internal static ModuleBuilder DynamicModule
         {
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             get
             {
                 if (s_dynamicModule != null)

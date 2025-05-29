@@ -6,7 +6,8 @@
 #ifndef MEASUREMENTS_IMPLEMENTATION
 #define MEASUREMENTS_IMPLEMENTATION 1
 
-#define INNER_COUNT 1024 * 32
+#define INNER_COUNT 47431
+#define BH_INNER_COUNT 2777
 #define BASELINE_SIZE 20480
 
 static dn_simdhash_u32_ptr_t *random_u32s_hash;
@@ -47,6 +48,8 @@ static uint32_t random_uint () {
 }
 
 static void init_data () {
+    printf("Random u32 key count: %d. Bad hash key count: %d\n", INNER_COUNT, BH_INNER_COUNT);
+
     random_u32s_hash = dn_simdhash_u32_ptr_new(INNER_COUNT, NULL);
     sequential_u32s = dn_vector_alloc(sizeof(uint32_t));
     random_u32s = dn_vector_alloc(sizeof(uint32_t));
@@ -73,6 +76,10 @@ retry2: {
         dn_vector_push_back(random_unused_u32s, key);
 }
     }
+}
+
+static uint32_t bad_hash_func (const void * key) {
+    return (((size_t)key) & 0xFFF) << 17;
 }
 
 
@@ -132,6 +139,74 @@ static void destroy_instance_ght (void *data) {
     g_hash_table_destroy((GHashTable *)data);
 }
 
+
+static void * create_instance_dnght () {
+    if (!random_u32s)
+        init_data();
+
+    return dn_simdhash_ght_new(NULL, NULL, 0, NULL);
+}
+
+static void * create_instance_dnght_random_values () {
+    if (!random_u32s)
+        init_data();
+
+    dn_simdhash_ght_t *result = dn_simdhash_ght_new(NULL, NULL, INNER_COUNT, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_ght_try_add(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+static void destroy_instance_dnght (void *data) {
+    dn_simdhash_free((dn_simdhash_ght_t *)data);
+}
+
+
+static void * create_instance_ght_random_values_bad_hash () {
+    if (!random_u32s)
+        init_data();
+
+    GHashTable *result = g_hash_table_new(bad_hash_func, NULL);
+    for (int i = 0; i < BH_INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        g_hash_table_insert(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+static void * create_instance_dnght_random_values_bad_hash () {
+    if (!random_u32s)
+        init_data();
+
+    dn_simdhash_ght_t *result = dn_simdhash_ght_new(bad_hash_func, NULL, BH_INNER_COUNT, NULL);
+    for (int i = 0; i < BH_INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_ght_try_add(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+
+static void * create_instance_ght_sequential_keys () {
+    GHashTable *result = g_hash_table_new(bad_hash_func, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        g_hash_table_insert(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
+static void * create_instance_dnght_sequential_keys () {
+    dn_simdhash_ght_t *result = dn_simdhash_ght_new(bad_hash_func, NULL, INNER_COUNT, NULL);
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        dn_simdhash_ght_try_add(result, (gpointer)(size_t)key, (gpointer)(size_t)i);
+    }
+    return result;
+}
+
 #endif // MEASUREMENTS_IMPLEMENTATION
 
 // These go outside the guard because we include this file multiple times.
@@ -143,6 +218,7 @@ MEASUREMENT(baseline, uint8_t *, baseline_init, free, {
         dn_simdhash_assert(data[i] == i);
     }
 });
+
 
 MEASUREMENT(dn_clear_then_fill_sequential, dn_simdhash_u32_ptr_t *, create_instance_u32_ptr, destroy_instance, {
     dn_simdhash_clear(data);
@@ -188,6 +264,7 @@ MEASUREMENT(dn_fill_then_remove_every_item, dn_simdhash_u32_ptr_t *, create_inst
     }
 })
 
+
 MEASUREMENT(ght_clear_then_fill_sequential, GHashTable *, create_instance_ght, destroy_instance_ght, {
     g_hash_table_remove_all(data);
     for (int i = 0; i < INNER_COUNT; i++) {
@@ -215,5 +292,66 @@ MEASUREMENT(ght_find_missing_key, GHashTable *, create_instance_ght_random_value
     for (int i = 0; i < INNER_COUNT; i++) {
         uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
         dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == NULL);
+    }
+})
+
+
+MEASUREMENT(dnght_find_random_keys, dn_simdhash_ght_t *, create_instance_dnght_random_values, destroy_instance_dnght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(dnght_find_missing_key, dn_simdhash_ght_t *, create_instance_dnght_random_values, destroy_instance_dnght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
+        dn_simdhash_assert(!dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key));
+    }
+})
+
+
+MEASUREMENT(ght_find_random_keys_bad_hash, GHashTable *, create_instance_ght_random_values_bad_hash, destroy_instance_ght, {
+    for (int i = 0; i < BH_INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(ght_find_missing_key_bad_hash, GHashTable *, create_instance_ght_random_values_bad_hash, destroy_instance_ght, {
+    for (int i = 0; i < BH_INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
+        dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == NULL);
+    }
+})
+
+
+MEASUREMENT(dnght_find_random_keys_bad_hash, dn_simdhash_ght_t *, create_instance_dnght_random_values_bad_hash, destroy_instance_dnght, {
+    for (int i = 0; i < BH_INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_u32s, uint32_t, i);
+        dn_simdhash_assert(dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
+    }
+})
+
+MEASUREMENT(dnght_find_missing_key_bad_hash, dn_simdhash_ght_t *, create_instance_dnght_random_values_bad_hash, destroy_instance_dnght, {
+    for (int i = 0; i < BH_INNER_COUNT; i++) {
+        uint32_t key = *dn_vector_index_t(random_unused_u32s, uint32_t, i);
+        dn_simdhash_assert(!dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key));
+    }
+})
+
+
+MEASUREMENT(ght_find_sequential_keys, GHashTable *, create_instance_ght_sequential_keys, destroy_instance_ght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        dn_simdhash_assert(g_hash_table_lookup(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
+    }
+})
+
+
+MEASUREMENT(dnght_find_sequential_keys, dn_simdhash_ght_t *, create_instance_dnght_sequential_keys, destroy_instance_dnght, {
+    for (int i = 0; i < INNER_COUNT; i++) {
+        uint32_t key = i;
+        dn_simdhash_assert(dn_simdhash_ght_get_value_or_default(data, (gpointer)(size_t)key) == (gpointer)(size_t)i);
     }
 })

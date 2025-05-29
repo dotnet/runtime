@@ -517,6 +517,45 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        // Helpers for boxing
+        [DebuggerHidden]
+        internal static object? Box_Nullable(MethodTable* srcMT, ref byte nullableData)
+        {
+            Debug.Assert(srcMT->IsNullable);
+
+            if (nullableData == 0)
+                return null;
+
+            // Allocate a new instance of the T in Nullable<T>.
+            MethodTable* dstMT = srcMT->InstantiationArg0();
+            ref byte srcValue = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
+
+            // Delegate to non-nullable boxing implementation
+            return Box(dstMT, ref srcValue);
+        }
+
+        [DebuggerHidden]
+        internal static object Box(MethodTable* typeMT, ref byte unboxedData)
+        {
+            Debug.Assert(typeMT != null);
+            Debug.Assert(typeMT->IsValueType);
+
+            // A null can be passed for boxing of a null ref.
+            _ = Unsafe.ReadUnaligned<byte>(ref unboxedData);
+
+            object boxed = RuntimeTypeHandle.InternalAllocNoChecks(typeMT);
+            if (typeMT->ContainsGCPointers)
+            {
+                Buffer.BulkMoveWithWriteBarrier(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytesIfContainsGCPointers());
+            }
+            else
+            {
+                SpanHelpers.Memmove(ref boxed.GetRawData(), ref unboxedData, typeMT->GetNumInstanceFieldBytes());
+            }
+
+            return boxed;
+        }
+
         // Helpers for Unboxing
 #if FEATURE_TYPEEQUIVALENCE
         [DebuggerHidden]
@@ -615,27 +654,8 @@ namespace System.Runtime.CompilerServices
         [DebuggerHidden]
         internal static object? ReboxFromNullable(MethodTable* srcMT, object src)
         {
-            Debug.Assert(srcMT->IsNullable);
-
             ref byte nullableData = ref src.GetRawData();
-
-            // If 'hasValue' is false, return null.
-            if (!Unsafe.As<byte, bool>(ref nullableData))
-                return null;
-
-            // Allocate a new instance of the T in Nullable<T>.
-            MethodTable* dstMT = srcMT->InstantiationArg0();
-            object dst = RuntimeTypeHandle.InternalAlloc(dstMT);
-
-            // Copy data from the Nullable<T>.
-            ref byte srcData = ref Unsafe.Add(ref nullableData, srcMT->NullableValueAddrOffset);
-            ref byte dstData = ref RuntimeHelpers.GetRawData(dst);
-            if (dstMT->ContainsGCPointers)
-                Buffer.BulkMoveWithWriteBarrier(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytesIfContainsGCPointers());
-            else
-                SpanHelpers.Memmove(ref dstData, ref srcData, dstMT->GetNumInstanceFieldBytes());
-
-            return dst;
+            return Box_Nullable(srcMT, ref nullableData);
         }
 
         [DebuggerHidden]

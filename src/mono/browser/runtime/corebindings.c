@@ -32,6 +32,7 @@ extern void mono_wasm_invoke_js_function (int function_js_handle, void *args);
 extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
 
 typedef void (*background_job_cb)(void);
+typedef int (*ds_job_cb)(void* data);
 
 void mono_wasm_bind_assembly_exports (char *assembly_name);
 void mono_wasm_assembly_get_entry_point (char *assembly_name, int auto_insert_breakpoint, MonoMethod **method_out);

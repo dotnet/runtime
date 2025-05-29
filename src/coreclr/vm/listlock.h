@@ -278,7 +278,7 @@ class ListLockBase
     {
         WRAPPER_NO_CONTRACT;
         // There should not be any of these around
-        _ASSERTE(m_pHead == NULL || dbg_fDrasticShutdown || g_fInControlC);
+        _ASSERTE(m_pHead == NULL);
 
         if (m_fInited)
         {

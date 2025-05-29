@@ -104,6 +104,7 @@ namespace VirtualStaticInterfaceMethodTestGen
             tw.WriteLine(".assembly extern mscorlib {}");
             tw.WriteLine(".assembly extern System.Runtime {}");
             tw.WriteLine(".assembly extern GenericContextCommonCs {}");
+            tw.WriteLine(".assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }");
         }
 
         static void EmitAssemblyExternRecord(TextWriter tw, string assemblyName)

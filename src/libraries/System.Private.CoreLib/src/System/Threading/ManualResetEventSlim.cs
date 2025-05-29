@@ -186,6 +186,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="initialState">Whether the event is set initially or not.</param>
         /// <param name="spinCount">The spin count that decides when the event will block.</param>
+#pragma warning disable IDE0060 // Remove unused parameter spinCount, on single-threaded systems, the spin count is not used.
         private void Initialize(bool initialState, int spinCount)
         {
             m_combinedState = initialState ? (1 << SignalledState_ShiftCount) : 0;
@@ -196,6 +197,7 @@ namespace System.Threading
 
             SpinCount = Environment.IsSingleProcessor ? DEFAULT_SPIN_SP : spinCount;
         }
+#pragma warning restore IDE0060
 
         /// <summary>
         /// Helper to ensure the lock object is created before first use.

@@ -58,7 +58,7 @@
 
   <Target Name="SetNugetConfigContent">
     <GetNugetConfigTask
-      InputFile="$(MonoProjectRoot)wasm/Wasm.Build.Tests/data/nuget10.config"
+      InputFile="$(MonoProjectRoot)wasm\Wasm.Build.Tests\data\nuget.config"
       ArtifactsDir="$(ArtifactsDir)"
       Configuration="$(Configuration)">
       <Output TaskParameter="NugetConfigContent" PropertyName="NugetConfigContent"/>
@@ -125,7 +125,7 @@
         <OverrideDestFiles Include="$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame/wwwroot/frame.js" />
     </ItemGroup>
 
-    <MakeDir Directories="$(MonoProjectRoot)sample/wasm/blazor-frame/browser-frame"/>
+    <MakeDir Directories="$(MonoProjectRoot)sample/wasm/browser-frame/browser-frame"/>
     <Copy SourceFiles="@(OverrideFiles)" DestinationFiles="@(OverrideDestFiles)" UseSymbolicLinksIfPossible="true" OverwriteReadOnlyFiles="true" />
 
     <WriteLinesToFile

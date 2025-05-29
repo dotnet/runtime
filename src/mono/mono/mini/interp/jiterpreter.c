@@ -977,7 +977,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 					JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
 					guint32 trace_index = opcode->trace_index;
 					need_extra_free = FALSE;
-					mono_jiterp_free_method_data_js (method, imethod, trace_index);
+					mono_wasm_free_method_data (method, imethod, trace_index);
 					break;
 				}
 			}
@@ -988,7 +988,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 	if (need_extra_free) {
 		// HACK: Perform a single free operation to clear out any stuff from the jit queues
 		// This will happen if we didn't encounter any jiterpreter traces in the method
-		mono_jiterp_free_method_data_js (method, imethod, 0);
+		mono_wasm_free_method_data (method, imethod, 0);
 	}
 }
 

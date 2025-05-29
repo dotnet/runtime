@@ -10,7 +10,6 @@
 #include "rhassert.h"
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "rhbinder.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"

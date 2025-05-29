@@ -419,12 +419,33 @@ GCInfo::regPtrDsc* GCInfo::gcRegPtrAllocDsc()
 
 #ifdef JIT32_GCENCODER
 
+// Small helper class to handle the No-GC-Interrupt callbacks
+// when reporting interruptible ranges.
+struct NoGCRegionCounter
+{
+    unsigned noGCRegionCount;
+
+    NoGCRegionCounter()
+        : noGCRegionCount(0)
+    {
+    }
+
+    // This callback is called for each insGroup marked with IGF_NOGCINTERRUPT.
+    bool operator()(unsigned igFuncIdx, unsigned igOffs, unsigned igSize, unsigned firstInstrSize, bool isInProlog)
+    {
+        noGCRegionCount++;
+        return true;
+    }
+};
+
 /*****************************************************************************
  *
  *  Compute the various counts that get stored in the info block header.
  */
 
-void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize)
+void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
+                              UNALIGNED unsigned int* pVarPtrTableSize,
+                              UNALIGNED unsigned int* pNoGCRegionCount)
 {
     unsigned   varNum;
     LclVarDsc* varDsc;
@@ -556,6 +577,19 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED
 #endif
 
     *pVarPtrTableSize = varPtrTableSize;
+
+    // Count the number of no GC regions
+
+    unsigned int noGCRegionCount = 0;
+
+    if (compiler->codeGen->GetInterruptible())
+    {
+        NoGCRegionCounter counter;
+        compiler->GetEmitter()->emitGenNoGCLst(counter, /* skipMainPrologsAndEpilogs = */ true);
+        noGCRegionCount = counter.noGCRegionCount;
+    }
+
+    *pNoGCRegionCount = noGCRegionCount;
 }
 
 //------------------------------------------------------------------------

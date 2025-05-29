@@ -433,7 +433,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
 
     pILImage = PEImage::OpenImage(pFilePath,
         MDInternalImport_Default,
-        Bundle::ProbeAppBundle(SString{ SString::Literal, pFilePath }));
+        AssemblyProbeExtension::Probe(SString{ SString::Literal, pFilePath }));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())

@@ -34,6 +34,9 @@
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
+
 #define ASMCONSTANT_OFFSETOF_ASSERT(struct, member) \
 ASMCONSTANTS_C_ASSERT(OFFSETOF__##struct##__##member == offsetof(struct, member));
 
@@ -78,8 +81,8 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters
 ASMCONSTANTS_C_ASSERT(SIZEOF_CalleeSavedRegisters == sizeof(CalleeSavedRegisters));
 #endif
 
-#define SIZEOF_GSCookie                             0x8
-ASMCONSTANTS_C_ASSERT(SIZEOF_GSCookie == sizeof(GSCookie));
+#define FRAMETYPE_InlinedCallFrame 0x1
+ASMCONSTANTS_C_ASSERT(FRAMETYPE_InlinedCallFrame == (int)FrameIdentifier::InlinedCallFrame)
 
 #define               OFFSETOF__Frame____VFN_table  0
 
@@ -123,7 +126,42 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__ThreadExceptionState__m_pCurrentTracker
                     == offsetof(ThreadExceptionState, m_pCurrentTracker));
 
 
+#define               OFFSETOF__DynamicHelperStubArgs__Constant1    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant1
+                    == offsetof(DynamicHelperStubArgs, Constant1));
 
+#define               OFFSETOF__DynamicHelperStubArgs__Constant2    0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Constant2
+                    == offsetof(DynamicHelperStubArgs, Constant2));
+
+#define               OFFSETOF__DynamicHelperStubArgs__Helper    0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicHelperStubArgs__Helper
+                    == offsetof(DynamicHelperStubArgs, Helper));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SecondIndir    0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SecondIndir
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SecondIndir));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__LastIndir    0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__LastIndir
+                    == offsetof(GenericDictionaryDynamicHelperStubData, LastIndir));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SizeOffset    0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SizeOffset
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SizeOffset));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffset    0xc
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__SlotOffset
+                    == offsetof(GenericDictionaryDynamicHelperStubData, SlotOffset));
+
+#define               OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs    0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleArgs
+                    == offsetof(GenericDictionaryDynamicHelperStubData, HandleArgs));
+
+#define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x40, 0x18)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo
+                    == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
+                    
 
 #define               OFFSETOF__MethodTable__m_dwFlags              0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
@@ -151,6 +189,10 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_OFFSET_VTABLE == sizeof(MethodTable));
 #define               OFFSETOF__MethodTable__m_ElementType      DBG_FRE(0x38, 0x30)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_ElementType
                     == offsetof(MethodTable, m_ElementTypeHnd));
+
+#define               OFFSETOF__MethodTable__m_pPerInstInfo    DBG_FRE(0x38, 0x30)
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pPerInstInfo
+                    == offsetof(MethodTable, m_pPerInstInfo));
 
 #define               OFFSETOF__MethodTable__m_pInterfaceMap    DBG_FRE(0x40, 0x38)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_pInterfaceMap
@@ -433,7 +475,7 @@ ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, Th
 #define REDIRECTSTUB_ESTABLISHER_OFFSET_RBP 0
 #define REDIRECTSTUB_RBP_OFFSET_CONTEXT     0x20
 
-#define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x30
+#define THROWSTUB_ESTABLISHER_OFFSET_FaultingExceptionFrame 0x20
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #define OFFSETOF__APC_CALLBACK_DATA__ContextRecord 0x8
@@ -526,8 +568,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPreco
 #define StubPrecodeData__Target 0x08
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecodeData, Target))
 
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc        == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))
@@ -537,6 +579,14 @@ ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForMethod == offsetof(CallCoun
 
 #define CallCountingStubData__TargetForThresholdReached 0x10
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__TargetForThresholdReached == offsetof(CallCountingStubData, TargetForThresholdReached))
+
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+#define OFFSETOF__InterfaceDispatchCache__m_rgEntries 0x20
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCache__m_rgEntries == offsetof(InterfaceDispatchCache, m_rgEntries))
+
+#define OFFSETOF__InterfaceDispatchCell__m_pCache 0x08
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceDispatchCell__m_pCache == offsetof(InterfaceDispatchCell, m_pCache))
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 
 #ifdef PROFILING_SUPPORTED
 #define PROFILE_ENTER        0x1

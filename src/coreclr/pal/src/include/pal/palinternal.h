@@ -157,10 +157,6 @@ function_name() to call the system's implementation
    the header */
 #include <type_traits>
 
-#ifdef PAL_PERF
-#include "pal_perf.h"
-#endif
-
 #ifdef __record_type_class
 #undef __record_type_class
 #endif
@@ -168,6 +164,7 @@ function_name() to call the system's implementation
 #undef __real_type_class
 #endif
 
+#include <minipal/mutex.h>
 
 #include "pal.h"
 #include "palprivate.h"

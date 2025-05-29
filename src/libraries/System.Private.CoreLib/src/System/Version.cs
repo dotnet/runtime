@@ -451,7 +451,7 @@ namespace System
             }
 
             // Quick reference equality test prior to calling the virtual Equality
-            return ReferenceEquals(v2, v1) ? true : v2.Equals(v1);
+            return ReferenceEquals(v2, v1) || v2.Equals(v1);
         }
 
         public static bool operator !=(Version? v1, Version? v2) => !(v1 == v2);

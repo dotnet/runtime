@@ -4,6 +4,18 @@
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
     <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+    <!-- In non-official builds, build RID-specific projects -->
+    <BuildRidSpecificProjects Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</BuildRidSpecificProjects>
+    <!-- In the VMR, we're always in a RID-specific leg. -->
+    <BuildRidSpecificProjects Condition="'$(BuildRidSpecificProjects)' == '' and
+                                         '$(DotNetBuildOrchestrator)' == 'true'">true</BuildRidSpecificProjects>
+    <!--
+      Outside the VMR, only RID-specific packages in official build legs when we're not building AllConfigurations,
+      but we're building everything for this RID target (ie don't build on specialized legs like Mono LLVMAOT).
+    -->
+    <BuildRidSpecificProjects Condition="'$(BuildRidSpecificProjects)' == '' and
+                                         '$(BuildAllConfigurations)' != 'true' and
+                                         '$(DotNetBuildAllRuntimePacks)' == 'true'">true</BuildRidSpecificProjects>
   </PropertyGroup>
 
   <!-- Reference all NetCoreAppCurrent out-of-band src projects. -->
@@ -19,13 +31,7 @@
          The limitation on DotNetBuildAllRuntimePacks avoids duplicate assets being publish. -->
     <ProjectReference Include="$(MSBuildThisFileDirectory)*\pkg\runtime.$(OutputRID).*.proj"
                       Condition="'$(SkipLibrariesNativeRuntimePackages)' != 'true' and
-                                 (
-                                  '$(BuildingAnOfficialBuildLeg)' != 'true' or
-                                  (
-                                   '$(BuildAllConfigurations)' != 'true' and
-                                   '$(DotNetBuildAllRuntimePacks)' == 'true'
-                                  )
-                                 )" />
+                                 '$(BuildRidSpecificProjects)' == 'true'" />
 
     <!-- Don't build task and tools project in the NetCoreAppCurrent vertical. -->
     <ProjectReference Remove="Microsoft.XmlSerializer.Generator\src\Microsoft.XmlSerializer.Generator.csproj" />

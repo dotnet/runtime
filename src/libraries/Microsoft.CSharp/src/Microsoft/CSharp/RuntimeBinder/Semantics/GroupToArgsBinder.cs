@@ -17,6 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal readonly partial struct ExpressionBinder
     {
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal sealed class GroupToArgsBinder
         {
             private enum Result

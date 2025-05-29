@@ -17,6 +17,16 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("second", () => AsyncEnumerable.Intersect(AsyncEnumerable.Empty<int>(), null));
         }
 
+        [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            IAsyncEnumerable<int> empty = AsyncEnumerable.Empty<int>();
+            IAsyncEnumerable<int> nonEmpty = CreateSource(1, 2, 3);
+
+            Assert.Same(empty, empty.Intersect(nonEmpty));
+            Assert.Same(empty, nonEmpty.Intersect(empty));
+        }
+
         [Theory]
         [InlineData(new int[0], new int[0])]
         [InlineData(new int[0], new int[] { 42 })]

@@ -169,10 +169,7 @@ namespace System.Reflection.TypeLoading
 
         private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             return Query<M>(name, bindingAttr, null);
         }

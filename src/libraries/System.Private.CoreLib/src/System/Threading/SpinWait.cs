@@ -85,7 +85,11 @@ namespace System.Threading
         /// depends on the likelihood of the spin being successful and how long the wait would be but those are not accounted
         /// for here.
         /// </remarks>
+#if FEATURE_SINGLE_THREADED
+        internal const int SpinCountforSpinBeforeWait = 1;
+#else
         internal static readonly int SpinCountforSpinBeforeWait = Environment.IsSingleProcessor ? 1 : 35;
+#endif
 
         // The number of times we've spun already.
         private int _count;

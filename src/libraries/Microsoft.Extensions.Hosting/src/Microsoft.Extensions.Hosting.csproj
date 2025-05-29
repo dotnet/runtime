@@ -7,10 +7,6 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Remove="HostBuilder.notnetcoreapp.cs" />
     <Compile Remove="Internal\ConsoleLifetime.notnetcoreapp.cs" />

@@ -67,10 +67,7 @@ namespace System.Configuration
 
         public void CopyTo(ConfigurationSectionGroup[] array, int index)
         {
-            if (array is null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             int c = Count;
             if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));

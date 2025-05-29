@@ -4,13 +4,13 @@
 import BuildConfiguration from "consts:configuration";
 
 import { type MonoConfig, type DotnetHostBuilder, type DotnetModuleConfig, type RuntimeAPI, type LoadBootResourceCallback } from "../types";
-import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal } from "../types/internal";
+import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagnosticModuleExportsInternal } from "../types/internal";
 
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
 import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
-import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
+import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm, try_resolve_single_asset_path } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
@@ -434,13 +434,14 @@ export async function createEmscripten (moduleFactory: DotnetModuleConfig | ((ap
 
 let jsModuleRuntimePromise: Promise<RuntimeModuleExportsInternal>;
 let jsModuleNativePromise: Promise<NativeModuleExportsInternal>;
+let jsModuleDiagnosticPromise: Promise<DiagnosticModuleExportsInternal>;
 
 // in the future we can use feature detection to load different flavors
 function importModules () {
     const jsModuleRuntimeAsset = resolve_single_asset_path("js-module-runtime");
     const jsModuleNativeAsset = resolve_single_asset_path("js-module-native");
     if (jsModuleRuntimePromise && jsModuleNativePromise) {
-        return [jsModuleRuntimePromise, jsModuleNativePromise];
+        return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagnosticPromise];
     }
 
     if (typeof jsModuleRuntimeAsset.moduleExports === "object") {
@@ -456,14 +457,30 @@ function importModules () {
         mono_log_debug(() => `Attempting to import '${jsModuleNativeAsset.resolvedUrl}' for ${jsModuleNativeAsset.name}`);
         jsModuleNativePromise = import(/*! webpackIgnore: true */jsModuleNativeAsset.resolvedUrl!);
     }
-    return [jsModuleRuntimePromise, jsModuleNativePromise];
+
+    const jsModuleDiagnosticAsset = try_resolve_single_asset_path("js-module-diagnostics");
+    if (jsModuleDiagnosticAsset) {
+        if (typeof jsModuleDiagnosticAsset.moduleExports === "object") {
+            jsModuleDiagnosticPromise = jsModuleDiagnosticAsset.moduleExports;
+        } else {
+            mono_log_debug(() => `Attempting to import '${jsModuleDiagnosticAsset.resolvedUrl}' for ${jsModuleDiagnosticAsset.name}`);
+            jsModuleDiagnosticPromise = import(/*! webpackIgnore: true */jsModuleDiagnosticAsset.resolvedUrl!);
+        }
+    }
+
+    return [jsModuleRuntimePromise, jsModuleNativePromise, jsModuleDiagnosticPromise];
 }
 
-async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal]) {
+async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, NativeModuleExportsInternal, DiagnosticModuleExportsInternal?]) {
     const { initializeExports, initializeReplacements, configureRuntimeStartup, configureEmscriptenStartup, configureWorkerStartup, setRuntimeGlobals, passEmscriptenInternals } = es6Modules[0];
     const { default: emscriptenFactory } = es6Modules[1];
+    const diagnosticModule = es6Modules[2];
     setRuntimeGlobals(globalObjectsRoot);
     initializeExports(globalObjectsRoot);
+    if (diagnosticModule) {
+        diagnosticModule.setRuntimeGlobals(globalObjectsRoot);
+    }
+
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 

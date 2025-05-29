@@ -82,7 +82,7 @@ namespace System.Linq
                 return _end - 1;
             }
 
-            public bool Contains(int item) =>
+            public override bool Contains(int item) =>
                 (uint)(item - _start) < (uint)(_end - _start);
 
             public int IndexOf(int item) =>

@@ -24,7 +24,7 @@ public class InvariantTests : BuildTestBase
     {
         string extraProperties = invariantTimezone ? "<InvariantTimezone>true</InvariantTimezone>" : "";
         CommandResult res = ConsolePublishAndRunForSingleFileBundleInternal(config, "InvariantTimezones.cs", aot, extraProperties: extraProperties);
-        if(invariantTimezone)
+        if (invariantTimezone)
             Assert.Contains("Could not find Asia/Tokyo", res.Output);
         else
             Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);

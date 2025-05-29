@@ -24,6 +24,12 @@ C_FUNC(\Name):
 C_FUNC(\Name):
 .endm
 
+.macro ALTERNATE_ENTRY Name
+        .global C_FUNC(\Name)
+        .type \Name, %function
+C_FUNC(\Name):
+.endm
+
 .macro LEAF_END Name, Section
         .size \Name, .-\Name
         .cfi_endproc

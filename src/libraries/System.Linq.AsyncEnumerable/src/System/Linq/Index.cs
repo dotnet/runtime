@@ -18,16 +18,18 @@ namespace System.Linq
         public static IAsyncEnumerable<(int Index, TSource Item)> Index<TSource>(
             this IAsyncEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source, default);
+            return
+                source.IsKnownEmpty() ? Empty<(int Index, TSource Item)>() :
+                Impl(source, default);
 
             static async IAsyncEnumerable<(int Index, TSource Item)> Impl(
                 IAsyncEnumerable<TSource> source,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
                 int index = -1;
-                await foreach (TSource element in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in source.WithCancellation(cancellationToken))
                 {
                     yield return (checked(++index), element);
                 }

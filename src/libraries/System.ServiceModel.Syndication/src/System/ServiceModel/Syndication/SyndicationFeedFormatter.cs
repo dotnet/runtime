@@ -24,10 +24,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationFeedFormatter(SyndicationFeed feedToWrite)
         {
-            if (feedToWrite is null)
-            {
-                throw new ArgumentNullException(nameof(feedToWrite));
-            }
+            ArgumentNullException.ThrowIfNull(feedToWrite);
 
             _feed = feedToWrite;
             DateTimeParser = GetDefaultDateTimeParser();
@@ -60,130 +57,91 @@ namespace System.ServiceModel.Syndication
 
         protected internal static SyndicationCategory CreateCategory(SyndicationFeed feed)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             return GetNonNullValue(feed.CreateCategory(), SR.FeedCreatedNullCategory);
         }
 
         protected internal static SyndicationCategory CreateCategory(SyndicationItem item)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             return GetNonNullValue(item.CreateCategory(), SR.ItemCreatedNullCategory);
         }
 
         protected internal static SyndicationItem CreateItem(SyndicationFeed feed)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             return GetNonNullValue(feed.CreateItem(), SR.FeedCreatedNullItem);
         }
 
         protected internal static SyndicationLink CreateLink(SyndicationFeed feed)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             return GetNonNullValue(feed.CreateLink(), SR.FeedCreatedNullPerson);
         }
 
         protected internal static SyndicationLink CreateLink(SyndicationItem item)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             return GetNonNullValue(item.CreateLink(), SR.ItemCreatedNullPerson);
         }
 
         protected internal static SyndicationPerson CreatePerson(SyndicationFeed feed)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             return GetNonNullValue(feed.CreatePerson(), SR.FeedCreatedNullPerson);
         }
 
         protected internal static SyndicationPerson CreatePerson(SyndicationItem item)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             return GetNonNullValue(item.CreatePerson(), SR.ItemCreatedNullPerson);
         }
 
         protected internal static void LoadElementExtensions(XmlReader reader, SyndicationFeed feed, int maxExtensionSize)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             feed.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected internal static void LoadElementExtensions(XmlReader reader, SyndicationItem item, int maxExtensionSize)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             item.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected internal static void LoadElementExtensions(XmlReader reader, SyndicationCategory category, int maxExtensionSize)
         {
-            if (category is null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
+            ArgumentNullException.ThrowIfNull(category);
 
             category.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected internal static void LoadElementExtensions(XmlReader reader, SyndicationLink link, int maxExtensionSize)
         {
-            if (link is null)
-            {
-                throw new ArgumentNullException(nameof(link));
-            }
+            ArgumentNullException.ThrowIfNull(link);
 
             link.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected internal static void LoadElementExtensions(XmlReader reader, SyndicationPerson person, int maxExtensionSize)
         {
-            if (person is null)
-            {
-                throw new ArgumentNullException(nameof(person));
-            }
+            ArgumentNullException.ThrowIfNull(person);
 
             person.LoadElementExtensions(reader, maxExtensionSize);
         }
 
         protected internal static bool TryParseAttribute(string name, string ns, string value, SyndicationFeed feed, string version)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -194,10 +152,7 @@ namespace System.ServiceModel.Syndication
 
         protected internal static bool TryParseAttribute(string name, string ns, string value, SyndicationItem item, string version)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -208,10 +163,7 @@ namespace System.ServiceModel.Syndication
 
         protected internal static bool TryParseAttribute(string name, string ns, string value, SyndicationCategory category, string version)
         {
-            if (category is null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
+            ArgumentNullException.ThrowIfNull(category);
 
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -222,10 +174,7 @@ namespace System.ServiceModel.Syndication
 
         protected internal static bool TryParseAttribute(string name, string ns, string value, SyndicationLink link, string version)
         {
-            if (link is null)
-            {
-                throw new ArgumentNullException(nameof(link));
-            }
+            ArgumentNullException.ThrowIfNull(link);
 
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -236,10 +185,7 @@ namespace System.ServiceModel.Syndication
 
         protected internal static bool TryParseAttribute(string name, string ns, string value, SyndicationPerson person, string version)
         {
-            if (person is null)
-            {
-                throw new ArgumentNullException(nameof(person));
-            }
+            ArgumentNullException.ThrowIfNull(person);
 
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -255,160 +201,112 @@ namespace System.ServiceModel.Syndication
 
         protected internal static bool TryParseElement(XmlReader reader, SyndicationFeed feed, string version)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             return feed.TryParseElement(reader, version);
         }
 
         protected internal static bool TryParseElement(XmlReader reader, SyndicationItem item, string version)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             return item.TryParseElement(reader, version);
         }
 
         protected internal static bool TryParseElement(XmlReader reader, SyndicationCategory category, string version)
         {
-            if (category is null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
+            ArgumentNullException.ThrowIfNull(category);
 
             return category.TryParseElement(reader, version);
         }
 
         protected internal static bool TryParseElement(XmlReader reader, SyndicationLink link, string version)
         {
-            if (link is null)
-            {
-                throw new ArgumentNullException(nameof(link));
-            }
+            ArgumentNullException.ThrowIfNull(link);
 
             return link.TryParseElement(reader, version);
         }
 
         protected internal static bool TryParseElement(XmlReader reader, SyndicationPerson person, string version)
         {
-            if (person is null)
-            {
-                throw new ArgumentNullException(nameof(person));
-            }
+            ArgumentNullException.ThrowIfNull(person);
 
             return person.TryParseElement(reader, version);
         }
 
         protected internal static void WriteAttributeExtensions(XmlWriter writer, SyndicationFeed feed, string version)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             feed.WriteAttributeExtensions(writer, version);
         }
 
         protected internal static void WriteAttributeExtensions(XmlWriter writer, SyndicationItem item, string version)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             item.WriteAttributeExtensions(writer, version);
         }
 
         protected internal static void WriteAttributeExtensions(XmlWriter writer, SyndicationCategory category, string version)
         {
-            if (category is null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
+            ArgumentNullException.ThrowIfNull(category);
 
             category.WriteAttributeExtensions(writer, version);
         }
 
         protected internal static void WriteAttributeExtensions(XmlWriter writer, SyndicationLink link, string version)
         {
-            if (link is null)
-            {
-                throw new ArgumentNullException(nameof(link));
-            }
+            ArgumentNullException.ThrowIfNull(link);
 
             link.WriteAttributeExtensions(writer, version);
         }
 
         protected internal static void WriteAttributeExtensions(XmlWriter writer, SyndicationPerson person, string version)
         {
-            if (person is null)
-            {
-                throw new ArgumentNullException(nameof(person));
-            }
+            ArgumentNullException.ThrowIfNull(person);
 
             person.WriteAttributeExtensions(writer, version);
         }
 
         protected internal static void WriteElementExtensions(XmlWriter writer, SyndicationFeed feed, string version)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             feed.WriteElementExtensions(writer, version);
         }
 
         protected internal static void WriteElementExtensions(XmlWriter writer, SyndicationItem item, string version)
         {
-            if (item is null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             item.WriteElementExtensions(writer, version);
         }
 
         protected internal static void WriteElementExtensions(XmlWriter writer, SyndicationCategory category, string version)
         {
-            if (category is null)
-            {
-                throw new ArgumentNullException(nameof(category));
-            }
+            ArgumentNullException.ThrowIfNull(category);
 
             category.WriteElementExtensions(writer, version);
         }
 
         protected internal static void WriteElementExtensions(XmlWriter writer, SyndicationLink link, string version)
         {
-            if (link is null)
-            {
-                throw new ArgumentNullException(nameof(link));
-            }
+            ArgumentNullException.ThrowIfNull(link);
 
             link.WriteElementExtensions(writer, version);
         }
 
         protected internal static void WriteElementExtensions(XmlWriter writer, SyndicationPerson person, string version)
         {
-            if (person is null)
-            {
-                throw new ArgumentNullException(nameof(person));
-            }
+            ArgumentNullException.ThrowIfNull(person);
 
             person.WriteElementExtensions(writer, version);
         }
 
         protected internal virtual void SetFeed(SyndicationFeed feed)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             _feed = feed;
         }
@@ -511,10 +409,7 @@ namespace System.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationFeed feed)
         {
-            if (feed is null)
-            {
-                throw new ArgumentNullException(nameof(feed));
-            }
+            ArgumentNullException.ThrowIfNull(feed);
 
             CloseBuffer(buffer, writer);
             feed.LoadElementExtensions(buffer);

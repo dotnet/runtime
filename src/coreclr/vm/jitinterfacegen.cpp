@@ -17,24 +17,16 @@
 #include "comdelegate.h"
 #include "field.h"
 #include "ecall.h"
+#include "writebarriermanager.h"
 
 #ifdef HOST_64BIT
 
-// These are the multi-processor-optimized versions of the allocation helpers
-// that must be written in assembly.
-EXTERN_C Object* JIT_BoxFastMP (CORINFO_CLASS_HANDLE type, void* unboxedData);
-
 // These are the single-processor-optimized versions of the allocation helpers.
 EXTERN_C Object* JIT_TrialAllocSFastSP(CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C Object* JIT_BoxFastUP (CORINFO_CLASS_HANDLE type, void* unboxedData);
 EXTERN_C Object* AllocateStringFastUP (CLR_I4 cch);
 
 EXTERN_C Object* JIT_NewArr1OBJ_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_NewArr1VC_UP (CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-
-#ifdef TARGET_AMD64
-extern WriteBarrierManager g_WriteBarrierManager;
-#endif // TARGET_AMD64
 
 #endif // HOST_64BIT
 
@@ -65,7 +57,6 @@ void InitJITHelpers1()
 #ifdef TARGET_UNIX
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-        SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
 
@@ -76,7 +67,6 @@ void InitJITHelpers1()
         {
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_Box_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
 
@@ -90,7 +80,6 @@ void InitJITHelpers1()
             // InlineGetThread versions because there is no need to call GetThread
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_TrialAllocSFastSP);
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_TrialAllocSFastSP);
-            SetJitHelperFunction(CORINFO_HELP_BOX, JIT_BoxFastUP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_UP);
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_UP);
 

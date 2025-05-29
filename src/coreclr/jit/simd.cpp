@@ -169,7 +169,7 @@ unsigned Compiler::getFFRegisterVarNum()
 //    to determine if this api needs to be called.
 //
 //    The type handle passed here can only be used in a subset of JIT-EE calls
-//    since it may be called by promotion during prejit of a method that does
+//    since it may be called by promotion during AOT of a method that does
 //    not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on
 //    the supported JIT-EE calls.
 //
@@ -627,14 +627,11 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 
     GenTreeIndexAddr* op1IndexAddr = op1->AsIndir()->Addr()->AsIndexAddr();
     GenTreeIndexAddr* op2IndexAddr = op2->AsIndir()->Addr()->AsIndexAddr();
+    GenTree*          op1ArrayRef  = op1IndexAddr->Arr();
+    GenTree*          op2ArrayRef  = op2IndexAddr->Arr();
+    GenTree*          op1IndexNode = op1IndexAddr->Index();
+    GenTree*          op2IndexNode = op2IndexAddr->Index();
 
-    GenTree* op1ArrayRef = op1IndexAddr->Arr();
-    GenTree* op2ArrayRef = op2IndexAddr->Arr();
-    assert(op1ArrayRef->TypeGet() == TYP_REF);
-    assert(op2ArrayRef->TypeGet() == TYP_REF);
-
-    GenTree* op1IndexNode = op1IndexAddr->Index();
-    GenTree* op2IndexNode = op2IndexAddr->Index();
     if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
         (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
     {

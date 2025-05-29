@@ -49,6 +49,28 @@ static ECCurveType EcKeyGetCurveType(
     return MethodToCurveType(method);
 }
 
+static int EcPointGetAffineCoordinates(const EC_GROUP *group, ECCurveType curveType, const EC_POINT *p, BIGNUM *x, BIGNUM *y)
+{
+#if HAVE_OPENSSL_EC2M
+    if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (curveType == Characteristic2))
+    {
+        if (!EC_POINT_get_affine_coordinates_GF2m(group, p, x, y, NULL))
+            return 0;
+    }
+    else
+#endif
+    {
+        if (!EC_POINT_get_affine_coordinates_GFp(group, p, x, y, NULL))
+            return 0;
+    }
+
+#if !HAVE_OPENSSL_EC2M
+    (void)curveType;
+#endif
+
+    return 1;
+}
+
 int32_t CryptoNative_GetECKeyParameters(
     const EC_KEY* key,
     int32_t includePrivate,
@@ -82,18 +104,8 @@ int32_t CryptoNative_GetECKeyParameters(
     if (!xBn || !yBn)
         goto error;
 
-#if HAVE_OPENSSL_EC2M
-    if (API_EXISTS(EC_POINT_get_affine_coordinates_GF2m) && (curveType == Characteristic2))
-    {
-        if (!EC_POINT_get_affine_coordinates_GF2m(group, Q, xBn, yBn, NULL))
-            goto error;
-    }
-    else
-#endif
-    {
-        if (!EC_POINT_get_affine_coordinates_GFp(group, Q, xBn, yBn, NULL))
-            goto error;
-    }
+    if (!EcPointGetAffineCoordinates(group, curveType, Q, xBn, yBn))
+        goto error;
 
     // Success; assign variables
     *qx = xBn; *cbQx = BN_num_bytes(xBn);
@@ -412,6 +424,118 @@ error:
     return ret;
 }
 
+int32_t CryptoNative_EvpPKeyGetEcGroupNid(const EVP_PKEY *pkey, int32_t* nidName)
+{
+    if (!nidName)
+        return 0;
+
+    *nidName = NID_undef;
+
+    if (!pkey || EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
+        return 0;
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_utf8_string_param))
+    {
+        return 0;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    // Retrieve the textual name of the EC group (e.g., "prime256v1")
+    // In all known cases this should be exactly 10 characters + 1 null byte but leaving some room in case it changes in the future
+    // versions of OpenSSL. This length also matches with what OpenSSL uses in their demo code:
+    // https://github.com/openssl/openssl/blob/ac80e1e15dcd13c61392a706170c427250c7bb69/demos/pkey/EVP_PKEY_EC_keygen.c#L88
+    char curveName[80] = {0};
+
+    if (!EVP_PKEY_get_utf8_string_param(pkey, OSSL_PKEY_PARAM_GROUP_NAME, curveName, sizeof(curveName), NULL))
+        return 0;
+
+    *nidName = OBJ_txt2nid(curveName);
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+int32_t CryptoNative_EvpPKeyGetEcKeyParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD)
+{
+    assert(qx != NULL);
+    assert(cbQx != NULL);
+    assert(qy != NULL);
+    assert(cbQy != NULL);
+    assert(d != NULL);
+    assert(cbD != NULL);
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EVP_PKEY_get_bn_param))
+    {
+        *cbQx = *cbQy = 0;
+        *qx = *qy = 0;
+        if (d) *d = NULL;
+        if (cbD) *cbD = 0;
+        return 0;
+    }
+#endif
+
+    int rc = 0;
+    BIGNUM *xBn = NULL;
+    BIGNUM *yBn = NULL;
+    BIGNUM *dBn = NULL;
+
+#ifdef NEED_OPENSSL_3_0
+    // Ensure we have an EC key
+    if (EVP_PKEY_get_base_id(pkey) != EVP_PKEY_EC)
+        goto error;
+
+    ERR_clear_error();
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_X, &xBn))
+        goto error;
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_Y, &yBn))
+        goto error;
+
+    *qx = xBn;
+    *cbQx = BN_num_bytes(xBn);
+    *qy = yBn;
+    *cbQy = BN_num_bytes(yBn);
+
+    if (includePrivate)
+    {
+        if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &dBn))
+            goto error;
+
+        *d = dBn;
+        *cbD = BN_num_bytes(dBn);
+    }
+    else
+    {
+        *d = NULL;
+        *cbD = 0;
+    }
+
+    // success
+    return 1;
+
+error:
+#else
+    (void)pkey;
+    (void)includePrivate;
+#endif
+    *cbQx = *cbQy = 0;
+    *qx = *qy = 0;
+    if (d) *d = NULL;
+    if (cbD) *cbD = 0;
+    if (xBn) BN_free(xBn);
+    if (yBn) BN_free(yBn);
+    return rc;
+}
+
 EC_KEY* CryptoNative_EcKeyCreateByExplicitParameters(
     ECCurveType curveType,
     uint8_t* qx, int32_t qxLength,
@@ -591,4 +715,226 @@ error:
     if (key) EC_KEY_free(key);
 
     return ret;
+}
+
+static ECCurveType NIDToCurveType(int fieldType)
+{
+    if (fieldType == NID_X9_62_characteristic_two_field)
+        return Characteristic2;
+
+    if (fieldType == NID_X9_62_prime_field)
+        return PrimeShortWeierstrass;
+
+    return Unspecified;
+}
+
+int32_t CryptoNative_EvpPKeyGetEcCurveParameters(
+    const EVP_PKEY* pkey,
+    int32_t includePrivate,
+    ECCurveType* curveType,
+    BIGNUM** qx, int32_t* cbQx,
+    BIGNUM** qy, int32_t* cbQy,
+    BIGNUM** d, int32_t* cbD,
+    BIGNUM** p, int32_t* cbP,
+    BIGNUM** a, int32_t* cbA,
+    BIGNUM** b, int32_t* cbB,
+    BIGNUM** gx, int32_t* cbGx,
+    BIGNUM** gy, int32_t* cbGy,
+    BIGNUM** order, int32_t* cbOrder,
+    BIGNUM** cofactor, int32_t* cbCofactor,
+    BIGNUM** seed, int32_t* cbSeed)
+{
+    assert(p != NULL);
+    assert(cbP != NULL);
+    assert(a != NULL);
+    assert(cbA != NULL);
+    assert(b != NULL);
+    assert(cbB != NULL);
+    assert(gx != NULL);
+    assert(cbGx != NULL);
+    assert(gy != NULL);
+    assert(cbGy != NULL);
+    assert(order != NULL);
+    assert(cbOrder != NULL);
+    assert(cofactor != NULL);
+    assert(cbCofactor != NULL);
+    assert(seed != NULL);
+    assert(cbSeed != NULL);
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(EC_GROUP_new_by_curve_name) ||
+        !API_EXISTS(EC_GROUP_get_field_type) ||
+        !API_EXISTS(EVP_PKEY_get_octet_string_param) ||
+        !API_EXISTS(EC_POINT_oct2point))
+    {
+        return 0;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    ERR_clear_error();
+
+    // Get the public key parameters first in case any of its 'out' parameters are not initialized
+    int32_t rc = CryptoNative_EvpPKeyGetEcKeyParameters(pkey, includePrivate, qx, cbQx, qy, cbQy, d, cbD);
+
+    EC_POINT* G = NULL;
+    BIGNUM* xBn = BN_new();
+    BIGNUM* yBn = BN_new();
+    BIGNUM* pBn = NULL;
+    BIGNUM* aBn = NULL;
+    BIGNUM* bBn = NULL;
+    BIGNUM* orderBn = NULL;
+    BIGNUM* cofactorBn = NULL;
+    size_t sufficientSeedBufferSize = 0;
+    unsigned char* seedBuffer = NULL;
+    EC_GROUP* group = NULL;
+    size_t generatorBufferSize = 0;
+    unsigned char* generatorBuffer = NULL;
+
+    // Exit if CryptoNative_EvpPKeyGetEcKeyParameters failed
+    if (rc != 1)
+        goto error;
+
+    if (!xBn || !yBn)
+        goto error;
+
+    int curveTypeNID;
+    if (!CryptoNative_EvpPKeyGetEcGroupNid(pkey, &curveTypeNID) || !curveTypeNID)
+        goto error;
+
+    // Extract p, a, b
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_P, &pBn))
+        goto error;
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_A, &aBn))
+        goto error;
+
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_B, &bBn))
+        goto error;
+
+    // curveTypeNID will be always NID_X9_62_characteristic_two_field or NID_X9_62_prime_field
+    group = EC_GROUP_new_by_curve_name(curveTypeNID);
+
+    // In some cases EVP_PKEY_get_field_type can return NID_undef
+    // and some providers seem to be ignoring OSSL_PKEY_PARAM_EC_FIELD_TYPE.
+    // This is specifically true for tpm2 provider.
+    // We can reliably get the field type from the EC_GROUP.
+    int fieldTypeNID = EC_GROUP_get_field_type(group);
+
+    *curveType = NIDToCurveType(fieldTypeNID);
+    if (*curveType == Unspecified)
+        goto error;
+
+    if (!group)
+        goto error;
+
+    if (!EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_EC_GENERATOR, NULL, 0, &generatorBufferSize))
+        goto error;
+
+    generatorBuffer = (unsigned char*)OPENSSL_malloc(generatorBufferSize);
+    if (!EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_EC_GENERATOR, generatorBuffer, generatorBufferSize, &generatorBufferSize))
+        goto error;
+
+    G = EC_POINT_new(group);
+
+    if (!G)
+        goto error;
+
+    if (!EC_POINT_oct2point(group, G, generatorBuffer, generatorBufferSize, NULL))
+        goto error;
+
+    if (!EcPointGetAffineCoordinates(group, *curveType, G, xBn, yBn))
+        goto error;
+
+    // Extract order (n)
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_ORDER, &orderBn))
+        goto error;
+
+    // Extract cofactor (h)
+    if (!EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_COFACTOR, &cofactorBn))
+        goto error;
+
+    // Extract seed (optional)
+    if (!seed || !EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_EC_SEED, NULL, 0, &sufficientSeedBufferSize))
+    {
+        *seed = NULL;
+        *cbSeed = 0;
+    }
+    else
+    {
+        seedBuffer = (unsigned char*)OPENSSL_malloc(sufficientSeedBufferSize);
+        size_t actualSeedSize;
+        if (EVP_PKEY_get_octet_string_param(pkey, OSSL_PKEY_PARAM_EC_SEED, seedBuffer, sufficientSeedBufferSize, &actualSeedSize))
+        {
+            *cbSeed = SizeTToInt32(actualSeedSize);
+            *seed = BN_bin2bn(seedBuffer, *cbSeed, NULL);
+
+            if (!*seed)
+            {
+                *cbSeed = 0;
+            }
+        }
+        else
+        {
+            *seed = NULL;
+            *cbSeed = 0;
+        }
+    }
+
+    // Success; assign variables
+    *gx = xBn; *cbGx = BN_num_bytes(xBn);
+    *gy = yBn; *cbGy = BN_num_bytes(yBn);
+    *p = pBn; *cbP = BN_num_bytes(pBn);
+    *a = aBn; *cbA = BN_num_bytes(aBn);
+    *b = bBn; *cbB = BN_num_bytes(bBn);
+    *order = orderBn; *cbOrder = BN_num_bytes(orderBn);
+    *cofactor = cofactorBn; *cbCofactor = BN_num_bytes(cofactorBn);
+
+    rc = 1;
+    goto exit;
+
+error:
+    // Clear out variables from CryptoNative_EvpPKeyGetEcKeyParameters
+    if (*qx) BN_free((BIGNUM*)*qx);
+    if (*qy) BN_free(*qy);
+    if (d && *d) BN_clear_free(*d);
+
+    *cbQx = *cbQy = 0;
+    *qx = *qy = NULL;
+    if (d) *d = NULL;
+    if (cbD) *cbD = 0;
+
+    // Clear our out variables
+    *curveType = Unspecified;
+    *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
+    *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
+
+    if (xBn) BN_free(xBn);
+    if (yBn) BN_free(yBn);
+    if (pBn) BN_free(pBn);
+    if (aBn) BN_free(aBn);
+    if (bBn) BN_free(bBn);
+    if (orderBn) BN_free(orderBn);
+    if (cofactorBn) BN_free(cofactorBn);
+
+exit:
+    // Clear out temporary variables
+    if (group) EC_GROUP_free(group);
+    if (generatorBuffer) OPENSSL_free(generatorBuffer);
+    if (G) EC_POINT_free(G);
+    if (seedBuffer) OPENSSL_free(seedBuffer);
+
+    return rc;
+#else
+    (void)pkey;
+    (void)includePrivate;
+    *cbQx = *cbQy = 0;
+    *qx = *qy = NULL;
+    if (d) *d = NULL;
+    if (cbD) *cbD = 0;
+    *curveType = Unspecified;
+    *cbP = *cbA = *cbB = *cbGx = *cbGy = *cbOrder = *cbCofactor = *cbSeed = 0;
+    *p = *a = *b = *gx = *gy = *order = *cofactor = *seed = NULL;
+    return 0;
+#endif
 }

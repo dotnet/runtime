@@ -109,8 +109,6 @@ namespace System.Net.Http
                 _maxResponseDrainSize = _maxResponseDrainSize,
                 _maxResponseDrainTime = _maxResponseDrainTime,
                 _maxResponseHeadersLength = _maxResponseHeadersLength,
-                _meterFactory = _meterFactory,
-                _metrics = _metrics,
                 _pooledConnectionLifetime = _pooledConnectionLifetime,
                 _pooledConnectionIdleTimeout = _pooledConnectionIdleTimeout,
                 _preAuthenticate = _preAuthenticate,
@@ -135,6 +133,12 @@ namespace System.Net.Http
                 _clientCertificateOptions = _clientCertificateOptions,
                 _impersonationLevel = _impersonationLevel,
             };
+
+            if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
+            {
+                settings._meterFactory = _meterFactory;
+                settings._metrics = _metrics;
+            }
 
             return settings;
         }

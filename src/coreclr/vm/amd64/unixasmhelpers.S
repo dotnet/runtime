@@ -152,13 +152,16 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     PUSH_CALLEE_SAVED_REGISTERS
 
+    // Push rcx for the async continuation
+    push_register rcx
+    // Push rdx for the second half of the return value
     push_register rdx
     // Push rax again - this is where integer/pointer return values are returned
     push_register rax
 
     mov                 rdi, rsp
 
-    alloc_stack         0x28
+    alloc_stack         0x20
 
     // First float return register
     movdqa              [rsp], xmm0
@@ -171,9 +174,11 @@ NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
 
     movdqa              xmm0, [rsp]
     movdqa              xmm1, [rsp+0x10]
-    free_stack          0x28
+    free_stack          0x20
+
     pop_register        rax
     pop_register        rdx
+    pop_register        rcx
 
     POP_CALLEE_SAVED_REGISTERS
     ret
@@ -194,5 +199,21 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         TAILJMP_RAX
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        lea     rdi, [rsp + __PWTB_TransitionBlock] // TransitionBlock *
+        call    C_FUNC(JIT_PatchpointWorkerWorkerWithPolicy)
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+NESTED_END JIT_Patchpoint, _TEXT
+
+// first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
+        mov rsi, rdi
+        xor rdi, rdi
+        jmp C_FUNC(JIT_Patchpoint)
+LEAF_END JIT_PatchpointForced, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION

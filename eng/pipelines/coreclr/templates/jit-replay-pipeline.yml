@@ -1,0 +1,58 @@
+parameters:
+  - name: platforms
+    type: object
+  - name: replayType
+    type: string
+    default: standard
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    # Don't run if the JIT-EE GUID has changed,
+    # since there won't be any SuperPMI collections with the new GUID until the collection
+    # pipeline completes after this PR is merged.
+    - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      - stage: EvaluatePaths
+        displayName: Evaluate Paths
+        jobs:
+        - template: /eng/pipelines/common/evaluate-paths-job.yml
+          parameters:
+            paths:
+            - subset: jiteeversionguid
+              include:
+              - src/coreclr/inc/jiteeversionguid.h
+
+    - stage: Build
+      jobs:
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: checked
+          platforms: ${{ parameters.platforms }}
+          jobParameters:
+            buildArgs: -s clr.alljits+clr.spmi -c $(_BuildConfig)
+            postBuildSteps:
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/bin/coreclr
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  tarCompression: $(tarCompression)
+                  archiveExtension: $(archiveExtension)
+                  artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  displayName: Build Assets
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-replay-job.yml
+          buildConfig: checked
+          platforms: ${{ parameters.platforms }}
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            replayType: ${{ parameters.replayType }}
+            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)

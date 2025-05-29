@@ -134,6 +134,34 @@ namespace pal
         return INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(file_path.c_str());
     }
 
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        HANDLE file = ::CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE)
+            return false;
+
+        HANDLE file_mapping = ::CreateFileMappingA(file, nullptr, PAGE_READONLY, 0, 0, nullptr);
+        if (file_mapping  == nullptr)
+        {
+            ::CloseHandle(file);
+            return false;
+        }
+
+        void* mapped_local = ::MapViewOfFile(file_mapping, FILE_MAP_READ, 0, 0, 0);
+        if (mapped_local == nullptr)
+        {
+            ::CloseHandle(file);
+            ::CloseHandle(file_mapping);
+            return false;
+        }
+
+        *size = ::GetFileSize(file, nullptr);
+        *mapped = mapped_local;
+        ::CloseHandle(file_mapping);
+        ::CloseHandle(file);
+        return true;
+    }
+
     // Forward declaration
     void ensure_trailing_delimiter(pal::string_t& dir);
 
@@ -300,7 +328,9 @@ public:
 #else // !TARGET_WINDOWS
 #include <dirent.h>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -309,7 +339,6 @@ public:
 #include <sys/sysctl.h>
 #include <sys/types.h>
 #else // !__APPLE__
-#include <fcntl.h>
 #include <ctype.h>
 #endif // !__APPLE__
 
@@ -431,6 +460,33 @@ namespace pal
             return false;
         }
 
+        return true;
+    }
+
+    inline bool try_map_file_readonly(const char* path, void** mapped, int64_t* size)
+    {
+        int fd = open(path, O_RDONLY);
+        if (fd == -1)
+            return false;
+
+        struct stat buf;
+        if (fstat(fd, &buf) == -1)
+        {
+            close(fd);
+            return false;
+        }
+
+        int64_t size_local = buf.st_size;
+        void* mapped_local = mmap(NULL, size_local, PROT_READ, MAP_PRIVATE, fd, 0);
+        if (mapped == MAP_FAILED)
+        {
+            close(fd);
+            return false;
+        }
+
+        *mapped = mapped_local;
+        *size = size_local;
+        close(fd);
         return true;
     }
 

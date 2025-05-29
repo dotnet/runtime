@@ -154,9 +154,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string ijwhostName = "ijwhost.dll";
                 File.Copy(Path.Combine(RepoDirectoriesProvider.Default.HostArtifacts, ijwhostName), Path.Combine(folder, ijwhostName));
 
-                // Copy over the C++/CLI test library
+                // Copy over the C++/CLI test library and any dependencies
                 string ijwLibraryName = "ijw.dll";
                 File.Copy(Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, ijwLibraryName), Path.Combine(folder, ijwLibraryName));
+                string ijwDependencies = Path.Combine(RepoDirectoriesProvider.Default.HostTestArtifacts, "ijw-deps");
+                if (Directory.Exists(ijwDependencies))
+                {
+                    foreach(string file in Directory.GetFiles(ijwDependencies))
+                    {
+                        File.Copy(file, Path.Combine(folder, Path.GetFileName(file)));
+                    }
+                }
 
                 // Create a runtimeconfig.json for the C++/CLI test library
                 new RuntimeConfig(Path.Combine(folder, "ijw.runtimeconfig.json"))

@@ -958,7 +958,7 @@ _wfopen(
     const wchar_16 *fileName,
     const wchar_16 *mode)
 {
-    CHAR mbFileName[ _MAX_PATH ];
+    CHAR mbFileName[ MAX_PATH ];
     CHAR mbMode[ 10 ];
     FILE * filePtr = NULL;
 

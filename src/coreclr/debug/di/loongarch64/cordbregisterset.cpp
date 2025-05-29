@@ -282,7 +282,6 @@ void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT *pInputContext)
             *pDest++ = *pSrc++;
         }
 
-        pInputContext->Tp = m_rd->TP;
         pInputContext->Ra = m_rd->RA;
     }
 

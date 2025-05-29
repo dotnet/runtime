@@ -238,6 +238,9 @@
   <data name="InvalidOperation_IncompatibleComparer" xml:space="preserve">
     <value>The collection's comparer does not support the requested operation.</value>
   </data>
+  <data name="InvalidOperation_TypeMapMissingEntryAssembly" xml:space="preserve">
+    <value>Entry assembly is required but was not found.</value>
+  </data>
   <data name="Arg_BufferTooSmall" xml:space="preserve">
     <value>Not enough space available in the buffer.</value>
   </data>
@@ -3476,6 +3479,12 @@
   <data name="Lock_Exit_SynchronizationLockException" xml:space="preserve">
     <value>The calling thread does not hold the lock.</value>
   </data>
+  <data name="NamedWaitHandles_IncompatibleNamePrefix" xml:space="preserve">
+    <value>The specified name '{0}' has a prefix that is not compatible with the specified option 'CurrentSessionOnly'.</value>
+  </data>
+  <data name="NamedWaitHandles_ExistingObjectIncompatibleWithCurrentUserOnly" xml:space="preserve">
+    <value>An object with the specified name '{0}' exists and can't be opened because it's not compatible with the specified option 'CurrentUserOnly = true'.</value>
+  </data>
   <data name="SpinLock_IsHeldByCurrentThread" xml:space="preserve">
     <value>Thread tracking is disabled.</value>
   </data>
@@ -4348,5 +4357,8 @@
   </data>
   <data name="ComVariant_VariantWrapper_In_Variant" xml:space="preserve">
     <value>VariantWrappers cannot be stored in Variants.</value>
+  </data>
+  <data name="NotImplemented_CreateObjectWithUserState" xml:space="preserve">
+    <value>Creating an object wrapper for a COM instance with user state is not implemented.</value>
   </data>
 </root>

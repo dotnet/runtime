@@ -1,7 +1,0 @@
-<linker>
-  <assembly fullname="library">
-    <type fullname="Mono.Linker.Tests.Cases.Substitutions.Dependencies.ReferencedField">
-      <field name="BoolValue" value="1" initialize="true" />
-    </type>
-  </assembly>
-</linker>

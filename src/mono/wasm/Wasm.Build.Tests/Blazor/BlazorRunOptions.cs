@@ -29,6 +29,7 @@ public record BlazorRunOptions : RunOptions
         string                          BrowserPath             = "",
         string                          Locale                  = "en-US",
         int?                            ExpectedExitCode        = 0,
+        int?                            TimeoutSeconds          = 10,
         string                          CustomBundleDir         = "",
         bool                            CheckCounter            = true,
         Func<IPage, Task>?              Test                    = null,
@@ -48,6 +49,7 @@ public record BlazorRunOptions : RunOptions
         Locale,
         ExpectedExitCode,
         CustomBundleDir,
+        TimeoutSeconds,
         ExecuteAfterLoaded
     )
     {

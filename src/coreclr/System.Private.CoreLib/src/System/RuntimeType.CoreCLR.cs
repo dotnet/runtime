@@ -3365,6 +3365,7 @@ namespace System
 
                 Guid result;
 #if FEATURE_COMINTEROP
+                Debug.Assert(OperatingSystem.IsWindows());
                 // The fully qualified name is needed since the RuntimeType has a TypeHandle property.
                 if (System.Runtime.CompilerServices.TypeHandle.AreSameType(th, System.Runtime.CompilerServices.TypeHandle.TypeHandleOf<__ComObject>()))
                 {
@@ -3567,18 +3568,18 @@ namespace System
         }
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(Type[] instantiation)
+        public override Type MakeGenericType(Type[] typeArguments)
         {
-            ArgumentNullException.ThrowIfNull(instantiation);
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
             RuntimeType[] genericParameters = GetGenericArgumentsInternal();
-            if (genericParameters.Length != instantiation.Length)
-                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
+            if (genericParameters.Length != typeArguments.Length)
+                throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(typeArguments));
 
-            if (instantiation.Length == 1 && instantiation[0] is RuntimeType rt)
+            if (typeArguments.Length == 1 && typeArguments[0] is RuntimeType rt)
             {
                 ThrowIfTypeNeverValidGenericArgument(rt);
                 try
@@ -3592,13 +3593,13 @@ namespace System
                 }
             }
 
-            RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
+            RuntimeType[] instantiationRuntimeType = new RuntimeType[typeArguments.Length];
 
             bool foundSigType = false;
             bool foundNonRuntimeType = false;
-            for (int i = 0; i < instantiation.Length; i++)
+            for (int i = 0; i < typeArguments.Length; i++)
             {
-                Type instantiationElem = instantiation[i] ?? throw new ArgumentNullException();
+                Type instantiationElem = typeArguments[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)
@@ -3616,9 +3617,9 @@ namespace System
             if (foundNonRuntimeType)
             {
                 if (foundSigType)
-                    return new SignatureConstructedGenericType(this, instantiation);
+                    return new SignatureConstructedGenericType(this, typeArguments);
 
-                return Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
+                return Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(typeArguments.Clone()));
             }
 
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);

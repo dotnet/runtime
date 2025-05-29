@@ -13,6 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // BindExplicitConversion
         // ----------------------------------------------------------------------------
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private sealed class ExplicitConversion
         {
             private readonly ExpressionBinder _binder;
@@ -592,6 +593,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            [RequiresDynamicCode(Binder.DynamicCodeWarning)]
             private AggCastResult bindExplicitConversionBetweenSimpleTypes(AggregateType aggTypeDest)
             {
                 // 13.2.1

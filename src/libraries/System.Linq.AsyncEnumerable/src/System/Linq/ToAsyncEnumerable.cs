@@ -18,13 +18,14 @@ namespace System.Linq
         public static IAsyncEnumerable<TSource> ToAsyncEnumerable<TSource>(
             this IEnumerable<TSource> source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             return source switch
             {
-                TSource[] array => FromArray(array),
+                TSource[] array => array.Length == 0 ? Empty<TSource>() : FromArray(array),
                 List<TSource> list => FromList(list),
                 IList<TSource> list => FromIList(list),
+                _ when source == Enumerable.Empty<TSource>() => Empty<TSource>(),
                 _ => FromIterator(source),
             };
 

@@ -38,7 +38,7 @@ namespace System.IO.Compression
         public async Task DecompressFailsWithWrapperStream(string uncompressedPath, string newDirectory, string newSuffix)
         {
             string fileName = Path.Combine(newDirectory, Path.GetFileName(uncompressedPath) + newSuffix);
-            using (LocalMemoryStream baseStream = await LocalMemoryStream.readAppFileAsync(fileName))
+            using (LocalMemoryStream baseStream = await LocalMemoryStream.ReadAppFileAsync(fileName))
             using (Stream cs = CreateStream(baseStream, CompressionMode.Decompress))
             {
                 int _bufferSize = 2048;

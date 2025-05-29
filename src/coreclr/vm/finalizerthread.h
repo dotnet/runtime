@@ -10,7 +10,7 @@ class FinalizerThread
     static BOOL fQuitFinalizer;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-    static ULONGLONG LastHeapDumpTime;
+    static int64_t LastHeapDumpTime;
 #endif
 
     static CLREvent *hEventFinalizer;
@@ -64,6 +64,8 @@ public:
             hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
         }
     }
+
+    static void WaitForFinalizerThreadStart();
 
     static void FinalizerThreadWait();
 

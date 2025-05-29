@@ -94,39 +94,6 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        public void GetCookies_AddCookieVersion1WithExplicitDomain_CookieReturnedForDomainAndOneLevelSubDomain()
-        {
-            const string SchemePrefix = "http://";
-            const string OriginalDomain = "contoso.com";
-            const string OriginalDomainWithLeadingDot = "." + OriginalDomain;
-
-            var container = new CookieContainer();
-            var cookie1 = new Cookie(CookieName1, CookieValue1) { Domain = OriginalDomainWithLeadingDot, Version = 1 };
-            container.Add(new Uri(SchemePrefix + OriginalDomain), cookie1);
-
-            var uri = new Uri(SchemePrefix + OriginalDomain);
-            var cookies = container.GetCookies(uri);
-            Assert.Equal(1, cookies.Count);
-            Assert.Equal(OriginalDomainWithLeadingDot, cookies[CookieName1].Domain);
-
-            uri = new Uri(SchemePrefix + "www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(1, cookies.Count);
-
-            uri = new Uri(SchemePrefix + "x.www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(0, cookies.Count);
-
-            uri = new Uri(SchemePrefix + "y.x.www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(0, cookies.Count);
-
-            uri = new Uri(SchemePrefix + "z.y.x.www." + OriginalDomain);
-            cookies = container.GetCookies(uri);
-            Assert.Equal(0, cookies.Count);
-        }
-
-        [Fact]
         public void GetAllCookies_Empty_ReturnsEmptyCollection()
         {
             var container = new CookieContainer();

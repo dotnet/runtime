@@ -9,7 +9,7 @@
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(ForceAOT)</RunAOTCompilation>
-    <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+    <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">true</StripDebugSymbols>
     <AppName>HelloAndroid</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
@@ -19,20 +19,24 @@
 
   <ItemGroup>
     <RuntimeComponents Condition="'$(RuntimeFlavor)' == 'Mono' and '$(DiagnosticPorts)' != ''" Include="diagnostics_tracing" />
+    <RuntimeHeaders Include="$(SharedNativeRoot)" Condition="'$(RuntimeFlavor)' != 'Mono'"/>
   </ItemGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
+  <PropertyGroup>
+    <!-- Import after SDK targets in order to override R2R-related targets in the SDK -->
+    <AfterMicrosoftNETSdkTargets>$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
 
   <Target Name="RunAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'"
           AfterTargets="_AfterAndroidBuild"
           DependsOnTargets="$(AndroidBuildDependsOn)" >
-    <Exec Command="dotnet xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
+    <Exec Command="$(DotNetTool) xharness android test --package-name=net.dot.HelloAndroid --instrumentation=net.dot.MonoRunner --app=$(AndroidBundleDir)/bin/HelloAndroid.apk --expected-exit-code=42 --output-directory=$(AndroidBundleDir)/log" />
   </Target>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
           AfterTargets="_AfterAndroidBuild"
           DependsOnTargets="$(AndroidBuildDependsOn)" >
     <PropertyGroup>

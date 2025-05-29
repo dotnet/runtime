@@ -238,6 +238,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
+        public void Hostfxr_resolve_sdk2_GlobalJson_Paths()
+        {
+            // With global.json specifying custom search paths, no version.
+            // Return first search location match (latest in that location).
+
+            var f = sharedTestState.SdkAndFrameworkFixture;
+            using (TestArtifact workingDir = TestArtifact.Create(nameof(workingDir)))
+            {
+                string globalJson = GlobalJson.Write(workingDir.Location, new GlobalJson.Sdk() { Paths = [ f.SelfRegistered, f.LocalSdkDir ] });
+                string expectedData = string.Join(';', new[]
+                {
+                    ("resolved_sdk_dir", Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview")),
+                    ("global_json_path", globalJson)
+                });
+
+                string api = ApiNames.hostfxr_resolve_sdk2;
+                TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, api, f.ExeDir, workingDir.Location, "0")
+                    .EnableTracingAndCaptureOutputs()
+                    .Execute()
+                    .Should().Pass()
+                    .And.ReturnStatusCode(api, Constants.ErrorCode.Success)
+                    .And.HaveStdOutContaining($"{api} data:[{expectedData}]");
+            }
+        }
+
+        [Fact]
         public void Hostfxr_corehost_set_error_writer_test()
         {
             TestContext.BuiltDotNet.Exec(sharedTestState.HostApiInvokerApp.AppDll, "Test_hostfxr_set_error_writer")

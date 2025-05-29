@@ -25,10 +25,16 @@
   </Target> -->
 
   <PropertyGroup>
+    <!-- Default to standard type -->
+    <SuperPmiReplayType Condition=" '$(_SuperPmiReplayType)' == '' ">standard</SuperPmiReplayType>
+    <SuperPmiReplayType Condition=" '$(_SuperPmiReplayType)' != '' ">$(_SuperPmiReplayType)</SuperPmiReplayType>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <Python>%HELIX_PYTHONPATH%</Python>
     <ProductDirectory>%HELIX_CORRELATION_PAYLOAD%</ProductDirectory>
     <SuperpmiLogsLocation>%HELIX_WORKITEM_UPLOAD_ROOT%</SuperpmiLogsLocation>
-    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_replay.py -jit_directory $(ProductDirectory)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(ProductDirectory)\superpmi_replay.py -type $(SuperPmiReplayType) -jit_directory $(ProductDirectory)</WorkItemCommand>
     <WorkItemTimeout>3:15</WorkItemTimeout>
   </PropertyGroup>
 
@@ -49,38 +55,95 @@
     </HelixCorrelationPayload>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Architecture)' == 'x64'">
-    <SPMI_Partition Include="windows-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-x64-3" Platform="windows" Architecture="x64" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-arm64-3" Platform="windows" Architecture="arm64" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-x64-1" Platform="linux" Architecture="x64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-x64-2" Platform="linux" Architecture="x64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-x64-3" Platform="linux" Architecture="x64" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-arm64-1" Platform="linux" Architecture="arm64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-arm64-2" Platform="linux" Architecture="arm64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-arm64-3" Platform="linux" Architecture="arm64" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="osx-arm64-1" Platform="osx" Architecture="arm64" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="osx-arm64-2" Platform="osx" Architecture="arm64" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="osx-arm64-3" Platform="osx" Architecture="arm64" Partition="3" PartitionCount="3"/>
+  <ItemGroup Condition="'$(SuperPmiReplayType)' == 'standard' and '$(Architecture)' == 'x64'">
+    <SPMI_Partition Include="windows-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-3" Platform="windows" Architecture="x64" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-4" Platform="windows" Architecture="x64" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-5" Platform="windows" Architecture="x64" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-6" Platform="windows" Architecture="x64" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-7" Platform="windows" Architecture="x64" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-8" Platform="windows" Architecture="x64" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x64-9" Platform="windows" Architecture="x64" Partition="9" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-1" Platform="windows" Architecture="arm64" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-2" Platform="windows" Architecture="arm64" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-3" Platform="windows" Architecture="arm64" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-4" Platform="windows" Architecture="arm64" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-5" Platform="windows" Architecture="arm64" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-6" Platform="windows" Architecture="arm64" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-7" Platform="windows" Architecture="arm64" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-8" Platform="windows" Architecture="arm64" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-arm64-9" Platform="windows" Architecture="arm64" Partition="9" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-1" Platform="linux" Architecture="x64" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-2" Platform="linux" Architecture="x64" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-3" Platform="linux" Architecture="x64" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-4" Platform="linux" Architecture="x64" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-5" Platform="linux" Architecture="x64" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-6" Platform="linux" Architecture="x64" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-7" Platform="linux" Architecture="x64" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-8" Platform="linux" Architecture="x64" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-x64-9" Platform="linux" Architecture="x64" Partition="9" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-1" Platform="linux" Architecture="arm64" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-2" Platform="linux" Architecture="arm64" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-3" Platform="linux" Architecture="arm64" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-4" Platform="linux" Architecture="arm64" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-5" Platform="linux" Architecture="arm64" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-6" Platform="linux" Architecture="arm64" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-7" Platform="linux" Architecture="arm64" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-8" Platform="linux" Architecture="arm64" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm64-9" Platform="linux" Architecture="arm64" Partition="9" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-1" Platform="osx" Architecture="arm64" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-2" Platform="osx" Architecture="arm64" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-3" Platform="osx" Architecture="arm64" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-4" Platform="osx" Architecture="arm64" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-5" Platform="osx" Architecture="arm64" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-6" Platform="osx" Architecture="arm64" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-7" Platform="osx" Architecture="arm64" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-8" Platform="osx" Architecture="arm64" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="osx-arm64-9" Platform="osx" Architecture="arm64" Partition="9" PartitionCount="9"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Architecture)' == 'x86'">
-    <SPMI_Partition Include="windows-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="windows-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-arm-1" Platform="linux" Architecture="arm" Partition="1" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-arm-2" Platform="linux" Architecture="arm" Partition="2" PartitionCount="3"/>
-    <SPMI_Partition Include="linux-arm-3" Platform="linux" Architecture="arm" Partition="3" PartitionCount="3"/>
+  <ItemGroup Condition="'$(SuperPmiReplayType)' == 'standard' and '$(Architecture)' == 'x86'">
+    <SPMI_Partition Include="windows-x86-1" Platform="windows" Architecture="x86" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-2" Platform="windows" Architecture="x86" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-3" Platform="windows" Architecture="x86" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-4" Platform="windows" Architecture="x86" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-5" Platform="windows" Architecture="x86" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-6" Platform="windows" Architecture="x86" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-7" Platform="windows" Architecture="x86" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-8" Platform="windows" Architecture="x86" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="windows-x86-9" Platform="windows" Architecture="x86" Partition="9" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-1" Platform="linux" Architecture="arm" Partition="1" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-2" Platform="linux" Architecture="arm" Partition="2" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-3" Platform="linux" Architecture="arm" Partition="3" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-4" Platform="linux" Architecture="arm" Partition="4" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-5" Platform="linux" Architecture="arm" Partition="5" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-6" Platform="linux" Architecture="arm" Partition="6" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-7" Platform="linux" Architecture="arm" Partition="7" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-8" Platform="linux" Architecture="arm" Partition="8" PartitionCount="9"/>
+    <SPMI_Partition Include="linux-arm-9" Platform="linux" Architecture="arm" Partition="9" PartitionCount="9"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(SuperPmiReplayType)' == 'apx' and '$(Architecture)' == 'x64'">
+    <SPMI_Partition Include="windows-x64-1" Platform="windows" Architecture="x64" Partition="1" PartitionCount="6"/>
+    <SPMI_Partition Include="windows-x64-2" Platform="windows" Architecture="x64" Partition="2" PartitionCount="6"/>
+    <SPMI_Partition Include="windows-x64-3" Platform="windows" Architecture="x64" Partition="3" PartitionCount="6"/>
+    <SPMI_Partition Include="windows-x64-4" Platform="windows" Architecture="x64" Partition="4" PartitionCount="6"/>
+    <SPMI_Partition Include="windows-x64-5" Platform="windows" Architecture="x64" Partition="5" PartitionCount="6"/>
+    <SPMI_Partition Include="windows-x64-6" Platform="windows" Architecture="x64" Partition="6" PartitionCount="6"/>
+    <SPMI_Partition Include="linux-x64-1" Platform="linux" Architecture="x64" Partition="1" PartitionCount="6"/>
+    <SPMI_Partition Include="linux-x64-2" Platform="linux" Architecture="x64" Partition="2" PartitionCount="6"/>
+    <SPMI_Partition Include="linux-x64-3" Platform="linux" Architecture="x64" Partition="3" PartitionCount="6"/>
+    <SPMI_Partition Include="linux-x64-4" Platform="linux" Architecture="x64" Partition="4" PartitionCount="6"/>
+    <SPMI_Partition Include="linux-x64-5" Platform="linux" Architecture="x64" Partition="5" PartitionCount="6"/>
+    <SPMI_Partition Include="linux-x64-6" Platform="linux" Architecture="x64" Partition="6" PartitionCount="6"/>
   </ItemGroup>
 
   <ItemGroup>
     <HelixWorkItem Include="@(SPMI_Partition)">
       <Command>$(WorkItemCommand) -arch %(HelixWorkItem.Architecture) -platform %(HelixWorkItem.Platform) -partition %(HelixWorkItem.Partition) -partition_count %(HelixWorkItem.PartitionCount) -log_directory $(SuperpmiLogsLocation)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>superpmi_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture)_%(HelixWorkItem.Partition).log</DownloadFilesFromResults>
+      <DownloadFilesFromResults>superpmi_final_%(HelixWorkItem.Platform)_%(HelixWorkItem.Architecture)_%(HelixWorkItem.Partition).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
   </Project>

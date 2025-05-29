@@ -379,7 +379,7 @@ namespace System.Threading
                 }
 
                 bool waitingForThreadStart = false;
-                GCHandle threadHandle = GCHandle.Alloc(this);
+                GCHandle<Thread> threadHandle = new GCHandle<Thread>(this);
 
                 try
                 {
@@ -404,7 +404,7 @@ namespace System.Threading
                     Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
                     if (!waitingForThreadStart)
                     {
-                        threadHandle.Free();
+                        threadHandle.Dispose();
                     }
                 }
 
@@ -422,8 +422,7 @@ namespace System.Threading
 
         private static void StartThread(IntPtr parameter)
         {
-            GCHandle threadHandle = (GCHandle)parameter;
-            Thread thread = (Thread)threadHandle.Target!;
+            Thread thread = GCHandle<Thread>.FromIntPtr(parameter).Target;
 
             try
             {

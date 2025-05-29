@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal static class SymFactory
     {
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static Symbol NewBasicSymbol(
             SYMKIND kind,
             Name name,
@@ -73,6 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Namespace
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static NamespaceSymbol CreateNamespace(Name name, NamespaceSymbol parent)
         {
             NamespaceSymbol sym = (NamespaceSymbol)NewBasicSymbol(SYMKIND.SK_NamespaceSymbol, name, parent);
@@ -82,6 +85,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         /////////////////////////////////////////////////////////////////////////////////
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateSymbol CreateAggregate(Name name, NamespaceOrAggregateSymbol parent)
         {
             Debug.Assert(name != null);
@@ -99,6 +103,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Members of aggs
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static FieldSymbol CreateMemberVar(Name name, AggregateSymbol parent)
         {
             Debug.Assert(name != null);
@@ -109,6 +114,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static LocalVariableSymbol CreateLocalVar(Name name, Scope parent, CType type)
         {
             LocalVariableSymbol sym = (LocalVariableSymbol)NewBasicSymbol(SYMKIND.SK_LocalVariableSymbol, name, parent);
@@ -119,9 +125,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static MethodSymbol CreateMethod(Name name, AggregateSymbol parent) =>
             NewBasicSymbol(SYMKIND.SK_MethodSymbol, name, parent) as MethodSymbol;
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static PropertySymbol CreateProperty(Name name, AggregateSymbol parent)
         {
             PropertySymbol sym = NewBasicSymbol(SYMKIND.SK_PropertySymbol, name, parent) as PropertySymbol;
@@ -129,6 +137,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static EventSymbol CreateEvent(Name name, AggregateSymbol parent)
         {
             EventSymbol sym = NewBasicSymbol(SYMKIND.SK_EventSymbol, name, parent) as EventSymbol;
@@ -137,6 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeParameterSymbol CreateMethodTypeParameter(Name pName, MethodSymbol pParent, int index, int indexTotal)
         {
             TypeParameterSymbol pResult = (TypeParameterSymbol)NewBasicSymbol(SYMKIND.SK_TypeParameterSymbol, pName, pParent);
@@ -149,6 +159,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pResult;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeParameterSymbol CreateClassTypeParameter(Name pName, AggregateSymbol pParent, int index, int indexTotal)
         {
             TypeParameterSymbol pResult = (TypeParameterSymbol)NewBasicSymbol(SYMKIND.SK_TypeParameterSymbol, pName, pParent);
@@ -161,8 +172,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pResult;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static Scope CreateScope() => (Scope)NewBasicSymbol(SYMKIND.SK_Scope, null, null);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static IndexerSymbol CreateIndexer(Name name, ParentSymbol parent)
         {
             IndexerSymbol sym = (IndexerSymbol)NewBasicSymbol(SYMKIND.SK_IndexerSymbol, name, parent);

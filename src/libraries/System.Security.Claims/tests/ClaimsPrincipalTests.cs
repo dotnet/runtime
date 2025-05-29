@@ -242,6 +242,26 @@ namespace System.Security.Claims
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ClaimsPrincipalSelector_DefaultNull()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                Assert.Null(ClaimsPrincipal.ClaimsPrincipalSelector);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ClaimsPrincipalSelector_Roundtrip()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                ClaimsPrincipal selected = new();
+                ClaimsPrincipal.ClaimsPrincipalSelector = () => selected;
+                Assert.Same(selected, ClaimsPrincipal.ClaimsPrincipalSelector());
+            }).Dispose();
+        }
+
         private class NonClaimsPrincipal : IPrincipal
         {
             public IIdentity Identity { get; set; }

@@ -141,7 +141,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // initialized to False but updated later to the actual condition of \n only if a line anchor occurs anywhere in the regex
             // this implies that if a regex never uses a line anchor then the character context will never
-            // update the previous character context to mark that the previous caharcter was \n
+            // update the previous character context to mark that the previous character was \n
             _newLineSet = solver.Empty;
             _nothing = SymbolicRegexNode<TSet>.CreateFalse(this);
             _anyChar = SymbolicRegexNode<TSet>.CreateTrue(this);

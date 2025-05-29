@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Diagnostics
 {
@@ -149,6 +150,121 @@ namespace System.Diagnostics
         public DiagEnumerator<T> GetEnumerator() => new DiagEnumerator<T>(_first);
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        private static void ActivityLinkToString(ref ActivityLink al, ref ValueStringBuilder vsb)
+        {
+            ActivityContext ac = al.Context;
+
+            vsb.Append("(");
+            vsb.Append(ac.TraceId.ToHexString());
+            vsb.Append(",\u200B");
+            vsb.Append(ac.SpanId.ToHexString());
+            vsb.Append(",\u200B");
+            vsb.Append(ac.TraceFlags.ToString());
+            vsb.Append(",\u200B");
+            vsb.Append(ac.TraceState ?? "null");
+            vsb.Append(",\u200B");
+            vsb.Append(ac.IsRemote ? "true" : "false");
+
+            if (al.Tags is not null)
+            {
+                vsb.Append(",\u200B[");
+                string sep = "";
+                foreach (KeyValuePair<string, object?> kvp in al.EnumerateTagObjects())
+                {
+                    vsb.Append(sep);
+                    vsb.Append(kvp.Key);
+                    vsb.Append(":\u200B");
+                    vsb.Append(kvp.Value?.ToString() ?? "null");
+                    sep = ",\u200B";
+                }
+
+                vsb.Append("]");
+            }
+            vsb.Append(")");
+        }
+
+        private static void ActivityEventToString(ref ActivityEvent ae, ref ValueStringBuilder vsb)
+        {
+            vsb.Append("(");
+            vsb.Append(ae.Name);
+            vsb.Append(",\u200B");
+            vsb.Append(ae.Timestamp.ToString("o"));
+
+            if (ae.Tags is not null)
+            {
+                vsb.Append(",\u200B[");
+                string sep = "";
+                foreach (KeyValuePair<string, object?> kvp in ae.EnumerateTagObjects())
+                {
+                    vsb.Append(sep);
+                    vsb.Append(kvp.Key);
+                    vsb.Append(":\u200B");
+                    vsb.Append(kvp.Value?.ToString() ?? "null");
+                    sep = ",\u200B";
+                }
+
+                vsb.Append("]");
+            }
+            vsb.Append(")");
+        }
+
+        public override string ToString()
+        {
+            lock (this)
+            {
+                DiagNode<T>? current = _first;
+                if (current is null)
+                {
+                    return "[]";
+                }
+
+                var vsb = new ValueStringBuilder(stackalloc char[256]);
+                vsb.Append("[");
+
+                if (typeof(T) == typeof(ActivityLink))
+                {
+                    while (current is not null)
+                    {
+                        ActivityLink al = (ActivityLink)(object)current.Value!;
+                        ActivityLinkToString(ref al, ref vsb);
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+                }
+                else if (typeof(T) == typeof(ActivityEvent))
+                {
+                    while (current is not null)
+                    {
+                        ActivityEvent ae = (ActivityEvent)(object)current.Value!;
+                        ActivityEventToString(ref ae, ref vsb);
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+                }
+                else
+                {
+                    while (current is not null)
+                    {
+                        vsb.Append(current.Value?.ToString() ?? "null");
+                        current = current.Next;
+                        if (current is not null)
+                        {
+                            vsb.Append(",\u200B");
+                        }
+                    }
+                }
+
+                vsb.Append("]");
+                return vsb.ToString();
+            }
+        }
     }
 
     internal struct DiagEnumerator<T> : IEnumerator<T>

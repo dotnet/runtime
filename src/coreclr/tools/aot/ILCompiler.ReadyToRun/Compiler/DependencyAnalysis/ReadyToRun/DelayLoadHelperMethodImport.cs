@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MethodWithToken method,
             bool useVirtualCall,
             bool useInstantiatingStub,
-            Signature instanceSignature, 
+            Signature instanceSignature,
             MethodDesc callingMethod = null)
             : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, useJumpableStub: false, callingMethod)
         {

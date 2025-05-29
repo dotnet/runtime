@@ -84,7 +84,6 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
 
     if ((flags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
     {
-        pDRD->TP = pContext->Tp;
         memcpy(&pDRD->A0, &pContext->A0, sizeof(pDRD->A0)*(21 - 4 + 1));
         memcpy(&pDRD->S0, &pContext->S0, sizeof(pDRD->S0)* 9);
     }

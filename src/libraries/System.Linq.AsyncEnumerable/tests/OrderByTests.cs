@@ -38,6 +38,22 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        public void Empty_ProducesEmpty() // validating an optimization / implementation detail
+        {
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderBy(async (i, ct) => i));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderByDescending(i => i));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderByDescending(async (i, ct) => i));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderBy(i => i).ThenBy(i => i));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderBy(async (i, ct) => i).ThenBy(async (i, ct) => i));
+
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderByDescending(i => i).ThenByDescending(i => i));
+            Assert.Same(AsyncEnumerable.Empty<string>(), AsyncEnumerable.Empty<string>().OrderByDescending(async (i, ct) => i).ThenByDescending(async (i, ct) => i));
+        }
+
+        [Fact]
         public async Task VariousValues_MatchesEnumerable_Int32()
         {
             Random rand = new(42);
@@ -181,6 +197,22 @@ namespace System.Linq.Tests
                 Assert.Equal(100, source.CurrentCount);
                 Assert.Equal(1, source.DisposeAsyncCount);
             }
+        }
+
+        [Fact]
+        public async Task Callbacks_InvokedOnOriginalContext()
+        {
+            await Task.Run(async () =>
+            {
+                TrackingSynchronizationContext ctx = new();
+                SynchronizationContext.SetSynchronizationContext(ctx);
+
+                await ConsumeAsync(CreateSource(2, 4, 8, 16).Yield().OrderBy(i =>
+                {
+                    Assert.Same(ctx, SynchronizationContext.Current);
+                    return i;
+                }));
+            });
         }
     }
 }

@@ -66,7 +66,6 @@ RegMeta::RegMeta() :
     m_trLanguageType(0),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
-    m_bKeepKnownCa(false),
     m_ReorderingOptions(NoReordering)
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN
     , m_safeToDeleteStgdb(true)
@@ -79,8 +78,6 @@ RegMeta::RegMeta() :
     {
         _ASSERTE(!"RegMeta()");
     }
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_KeepKnownCA))
-        m_bKeepKnownCa = true;
 #endif // _DEBUG
 
 } // RegMeta::RegMeta()

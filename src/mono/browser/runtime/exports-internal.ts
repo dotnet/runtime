@@ -118,7 +118,7 @@ export function cwraps_internal (internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
         mono_wasm_profiler_init_aot: profiler_c_functions.mono_wasm_profiler_init_aot,
-        mono_wasm_profiler_init_browser: profiler_c_functions.mono_wasm_profiler_init_browser,
+        mono_wasm_profiler_init_browser_devtools: profiler_c_functions.mono_wasm_profiler_init_browser_devtools,
         mono_wasm_exec_regression: cwraps.mono_wasm_exec_regression,
         mono_wasm_print_thread_dump: WasmEnableThreads ? twraps.mono_wasm_print_thread_dump : undefined,
     });

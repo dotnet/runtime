@@ -232,7 +232,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     Path.Combine(req.TargetPath, "dotnet"),
                                                     $"workload install --skip-manifest-update --skip-sign-check --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {ExtraWorkloadInstallCommandArguments} {req.WorkloadId}",
                                                     workingDir: _tempDir,
-                                                    envVars: new Dictionary<string, string> () {
+                                                    envVars: new Dictionary<string, string>() {
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,

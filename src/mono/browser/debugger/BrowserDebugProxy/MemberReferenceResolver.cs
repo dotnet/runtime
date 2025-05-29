@@ -434,7 +434,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!isMultidimensional && type == "string")
                         {
                             var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
-                            variableDefinitions.Add(new (eaExpressionFormatted, rootObject, ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject)));
+                            variableDefinitions.Add(new(eaExpressionFormatted, rootObject, ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject)));
                             var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
                             var variableDef = await ExpressionEvaluator.GetVariableDefinitions(this, variableDefinitions, invokeToStringInObject: false, token);
                             return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDef, logger, token);

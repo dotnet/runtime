@@ -139,10 +139,7 @@ namespace System
         /// <param name="data">The string data.</param>
         public BinaryData(string data)
         {
-            if (data is null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
+            ArgumentNullException.ThrowIfNull(data);
 
             _bytes = Encoding.UTF8.GetBytes(data);
         }
@@ -238,10 +235,7 @@ namespace System
         /// <seealso cref="MediaTypeNames"/>
         public static BinaryData FromStream(Stream stream, string? mediaType)
         {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             return FromStreamAsync(stream, useAsync: false, mediaType).GetAwaiter().GetResult();
         }
@@ -269,10 +263,7 @@ namespace System
         public static Task<BinaryData> FromStreamAsync(Stream stream, string? mediaType,
             CancellationToken cancellationToken = default)
         {
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             return FromStreamAsync(stream, useAsync: true, mediaType, cancellationToken);
         }
@@ -332,10 +323,7 @@ namespace System
         /// <seealso cref="MediaTypeNames"/>
         public static BinaryData FromFile(string path, string? mediaType)
         {
-            if (path is null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
+            ArgumentNullException.ThrowIfNull(path);
 
             return new BinaryData(File.ReadAllBytes(path), mediaType);
         }
@@ -361,10 +349,7 @@ namespace System
         public static Task<BinaryData> FromFileAsync(string path, string? mediaType,
             CancellationToken cancellationToken = default)
         {
-            if (path is null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
+            ArgumentNullException.ThrowIfNull(path);
 
             return Core();
 

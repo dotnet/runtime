@@ -8,6 +8,7 @@
 #include "winwrap.h"
 #include "assert.h"
 #include "utilcode.h"
+#include "minipal/time.h"
 
 bool CycleTimer::GetThreadCyclesS(uint64_t* cycles)
 {
@@ -26,25 +27,21 @@ double CycleTimer::CyclesPerSecond()
     // Windows *does* allow you to translate QueryPerformanceCounter counts into time,
     // however.  So we'll assume that the clock speed stayed constant, and measure both the
     // QPC counts and cycles of a short loop, to get a conversion factor.
-    LARGE_INTEGER lpFrequency;
-    if (!QueryPerformanceFrequency(&lpFrequency)) return 0.0;
-    // Otherwise...
-    LARGE_INTEGER qpcStart;
+    int64_t lpFrequency = minipal_hires_tick_frequency();
+    int64_t qpcStart = minipal_hires_ticks();
     uint64_t cycleStart;
-    if (!QueryPerformanceCounter(&qpcStart)) return 0.0;
     if (!GetThreadCyclesS(&cycleStart)) return 0.0;
     volatile int sum = 0;
     for (int k = 0; k < SampleLoopSize; k++)
     {
         sum += k;
     }
-    LARGE_INTEGER qpcEnd;
-    if (!QueryPerformanceCounter(&qpcEnd)) return 0.0;
+    int64_t qpcEnd = minipal_hires_ticks();
     uint64_t cycleEnd;
     if (!GetThreadCyclesS(&cycleEnd)) return 0.0;
 
-    double qpcTicks = ((double)qpcEnd.QuadPart) - ((double)qpcStart.QuadPart);
-    double secs = (qpcTicks / ((double)lpFrequency.QuadPart));
+    double qpcTicks = ((double)qpcEnd) - ((double)qpcStart);
+    double secs = (qpcTicks / ((double)lpFrequency));
     double cycles = ((double)cycleEnd) - ((double)cycleStart);
     return cycles / secs;
 }

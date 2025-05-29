@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
@@ -78,7 +79,7 @@ namespace System.Net.Security
                                 // Add everything except the root
                                 for (int index = count; index < intermediates.Count - 1; index++)
                                 {
-                                    store.Add(intermediates[index]);
+                                    TryAddToStore(store, intermediates[index]);
                                 }
 
                                 osCanBuildChain = chain.Build(target);
@@ -94,8 +95,8 @@ namespace System.Net.Security
                                 if (!osCanBuildChain)
                                 {
                                     // Add also root to Intermediate CA store so OS can complete building chain.
-                                    // (This does not make it trusted.
-                                    store.Add(intermediates[intermediates.Count - 1]);
+                                    // (This does not make it trusted.)
+                                    TryAddToStore(store, intermediates[intermediates.Count - 1]);
                                 }
                             }
                         }
@@ -106,6 +107,22 @@ namespace System.Net.Security
             IntermediateCertificates = intermediates;
             TargetCertificate = target;
             Trust = trust;
+
+            static void TryAddToStore(X509Store store, X509Certificate2 certificate)
+            {
+                try
+                {
+                    store.Add(certificate);
+                }
+                catch (CryptographicException ex)
+                {
+                    // Continue even if we can't add certificates due to permission issues
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Error(null, $"Failed to add certificate to store: {ex.Message}, certificate: {certificate}");
+                    }
+                }
+            }
         }
     }
 }

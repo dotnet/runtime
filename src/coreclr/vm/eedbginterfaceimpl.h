@@ -21,6 +21,7 @@
 #include "eetwain.h"
 #include "jitinterface.h"
 #include "stubmgr.h"
+#include "exinfo.h"
 
 #include "eedbginterface.h"
 #include "debugdebugger.h"

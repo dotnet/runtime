@@ -426,4 +426,7 @@
   <data name="ReferralChasingOptionsNotSupported" xml:space="preserve">
     <value>Only ReferralChasingOptions.None and ReferralChasingOptions.All are supported on Linux.</value>
   </data>
+  <data name="DirectoryNotFound" xml:space="preserve">
+    <value>The directory '{0}' does not exist.</value>
+  </data>
 </root>

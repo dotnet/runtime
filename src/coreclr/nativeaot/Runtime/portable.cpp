@@ -13,7 +13,6 @@
 
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -318,12 +317,6 @@ FCIMPL0(void, RhpInterfaceDispatch32)
 FCIMPLEND
 
 FCIMPL0(void, RhpInterfaceDispatch64)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpVTableOffsetDispatch)
 {
     ASSERT_UNCONDITIONALLY("NYI");
 }

@@ -98,7 +98,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         je      LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     rax, rdi
         shr     rax, 0xC // SoftwareWriteWatch::AddressToTableByteIndexShift
-        add     rax, qword ptr [C_VAR(g_sw_ww_table)]
+        add     rax, qword ptr [C_VAR(g_write_watch_table)]
         cmp     byte ptr [rax], 0x0
         jne     LOCAL_LABEL(CheckCardTable_ByRefWriteBarrier)
         mov     byte ptr [rax], 0xFF

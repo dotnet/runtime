@@ -70,18 +70,9 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddResource(string name, string value, string typeName)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (typeName is null)
-            {
-                throw new ArgumentNullException(nameof(typeName));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(typeName);
 
             // determine if the type is a primitive type
             if (s_primitiveTypes.TryGetValue(typeName, out Type? primitiveType))
@@ -127,18 +118,9 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddTypeConverterResource(string name, byte[] value, string typeName)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (typeName is null)
-            {
-                throw new ArgumentNullException(nameof(typeName));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(typeName);
 
             AddResourceData(name, typeName, new ResourceDataRecord(SerializationFormat.TypeConverterByteArray, value));
 
@@ -155,14 +137,8 @@ namespace System.Resources.Extensions
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void AddBinaryFormattedResource(string name, byte[] value, string? typeName = null)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
 
             // Some resx-files are missing type information for binary-formatted resources.
             // These would have previously been handled by deserializing once, capturing the type
@@ -188,18 +164,9 @@ namespace System.Resources.Extensions
         /// <param name="closeAfterWrite">Indicates that the stream should be closed after resources have been written</param>
         public void AddActivatorResource(string name, Stream value, string typeName, bool closeAfterWrite = false)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (typeName is null)
-            {
-                throw new ArgumentNullException(nameof(typeName));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentNullException.ThrowIfNull(typeName);
 
             if (!value.CanSeek)
                 throw new ArgumentException(SR.NotSupported_UnseekableStream);

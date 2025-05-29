@@ -8,33 +8,33 @@ using System.IO;
 
 namespace ILVerify
 {
-    internal sealed class ILVerifyRootCommand : CliRootCommand
+    internal sealed class ILVerifyRootCommand : RootCommand
     {
-        public CliArgument<Dictionary<string, string>> InputFilePath { get; } =
+        public Argument<Dictionary<string, string>> InputFilePath { get; } =
             new("input-file-path") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, true), Description = "Input file(s)", Arity = ArgumentArity.OneOrMore };
-        public CliOption<Dictionary<string, string>> Reference { get; } =
+        public Option<Dictionary<string, string>> Reference { get; } =
             new("--reference", "-r") { CustomParser = result => Helpers.BuildPathDictionary(result.Tokens, false), DefaultValueFactory = result => Helpers.BuildPathDictionary(result.Tokens, false), Description = "Reference metadata from the specified assembly" };
-        public CliOption<string> SystemModule { get; } =
+        public Option<string> SystemModule { get; } =
             new("--system-module", "-s") { Description = "System module name (default: mscorlib)" };
-        public CliOption<bool> SanityChecks { get; } =
+        public Option<bool> SanityChecks { get; } =
             new("--sanity-checks", "-c") { Description = "Check for valid constructs that are likely mistakes" };
-        public CliOption<string[]> Include { get; } =
+        public Option<string[]> Include { get; } =
             new("--include", "-i") { Description = "Use only methods/types/namespaces, which match the given regular expression(s)" };
-        public CliOption<FileInfo> IncludeFile { get; } =
-            new CliOption<FileInfo>("--include-file") { Description = "Same as --include, but the regular expression(s) are declared line by line in the specified file." }.AcceptExistingOnly();
-        public CliOption<string[]> Exclude { get; } =
+        public Option<FileInfo> IncludeFile { get; } =
+            new Option<FileInfo>("--include-file") { Description = "Same as --include, but the regular expression(s) are declared line by line in the specified file." }.AcceptExistingOnly();
+        public Option<string[]> Exclude { get; } =
             new("--exclude", "-e") { Description = "Skip methods/types/namespaces, which match the given regular expression(s)" };
-        public CliOption<FileInfo> ExcludeFile { get; } =
-            new CliOption<FileInfo>("--exclude-file") { Description = "Same as --exclude, but the regular expression(s) are declared line by line in the specified file." }.AcceptExistingOnly();
-        public CliOption<string[]> IgnoreError { get; } =
+        public Option<FileInfo> ExcludeFile { get; } =
+            new Option<FileInfo>("--exclude-file") { Description = "Same as --exclude, but the regular expression(s) are declared line by line in the specified file." }.AcceptExistingOnly();
+        public Option<string[]> IgnoreError { get; } =
             new("--ignore-error", "-g") { Description = "Ignore errors, which match the given regular expression(s)" };
-        public CliOption<FileInfo> IgnoreErrorFile { get; } =
-            new CliOption<FileInfo>("--ignore-error-file") { Description = "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file." }.AcceptExistingOnly();
-        public CliOption<bool> Statistics { get; } =
+        public Option<FileInfo> IgnoreErrorFile { get; } =
+            new Option<FileInfo>("--ignore-error-file") { Description = "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file." }.AcceptExistingOnly();
+        public Option<bool> Statistics { get; } =
             new("--statistics") { Description = "Print verification statistics" };
-        public CliOption<bool> Verbose { get; } =
+        public Option<bool> Verbose { get; } =
             new("--verbose") { Description = "Verbose output" };
-        public CliOption<bool> Tokens { get; } =
+        public Option<bool> Tokens { get; } =
             new("--tokens", "-t") { Description = "Include metadata tokens in error messages" };
 
         public ParseResult Result;

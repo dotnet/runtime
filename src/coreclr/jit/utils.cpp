@@ -23,6 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "opcode.h"
 #include "jitstd/algorithm.h"
+#include "minipal/time.h"
 
 /*****************************************************************************/
 
@@ -1518,7 +1519,7 @@ void HelperCallProperties::init()
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
         bool isNoEscape    = false; // true if none of the GC ref arguments can escape
-        bool isNoGC        = false; // true is the helper cannot trigger GC
+        bool isNoGC        = false; // true if the helper cannot trigger GC
 
         switch (helper)
         {
@@ -1529,7 +1530,9 @@ void HelperCallProperties::init()
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_LMUL:
+            case CORINFO_HELP_LNG2FLT:
             case CORINFO_HELP_LNG2DBL:
+            case CORINFO_HELP_ULNG2FLT:
             case CORINFO_HELP_ULNG2DBL:
             case CORINFO_HELP_DBL2INT:
             case CORINFO_HELP_DBL2LNG:
@@ -1667,6 +1670,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_UNBOX:
                 isNoEscape = true;
                 isPure     = true;
+                break;
+
+            case CORINFO_HELP_MEMCPY:
+            case CORINFO_HELP_MEMZERO:
+            case CORINFO_HELP_MEMSET:
+            case CORINFO_HELP_NATIVE_MEMSET:
+                isNoEscape = true;
                 break;
 
             case CORINFO_HELP_LDELEMA_REF:
@@ -2189,22 +2199,15 @@ double CycleCount::ElapsedTime()
 
 bool PerfCounter::Start()
 {
-    bool result = QueryPerformanceFrequency(&beg) != 0;
-    if (!result)
-    {
-        return result;
-    }
-    freq = (double)beg.QuadPart / 1000.0;
-    (void)QueryPerformanceCounter(&beg);
-    return result;
+    freq = (double)minipal_hires_tick_frequency() / 1000.0;
+    beg  = minipal_hires_ticks();
+    return true;
 }
 
 // Return elapsed time from Start() in millis.
 double PerfCounter::ElapsedTime()
 {
-    LARGE_INTEGER li;
-    (void)QueryPerformanceCounter(&li);
-    return (double)(li.QuadPart - beg.QuadPart) / freq;
+    return (double)(minipal_hires_ticks() - beg) / freq;
 }
 
 #endif

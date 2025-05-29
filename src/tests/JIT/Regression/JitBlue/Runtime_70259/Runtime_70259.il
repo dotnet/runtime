@@ -10,6 +10,7 @@
 // Metadata version: v4.0.30319
 .assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 .assembly Runtime_70259
 {
 }
@@ -65,9 +66,11 @@
   .method public hidebysig static int32
           Main() cil managed
   {
-    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-        01 00 00 00
-    )
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = { }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
+        string('https://github.com/dotnet/runtime/issues/70279')
+        int32(0x2) // Mono
+    }
     .entrypoint
     // Code size       31 (0x1f)
     .maxstack  8

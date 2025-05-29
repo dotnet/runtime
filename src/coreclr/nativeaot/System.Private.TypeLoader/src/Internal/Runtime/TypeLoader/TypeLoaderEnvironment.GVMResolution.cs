@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection.Runtime.General;
 using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -105,7 +106,7 @@ namespace Internal.Runtime.TypeLoader
                 sb.AppendLine();
                 sb.AppendLine("Declaring type: " + GetTypeNameDebug(slotMethod.OwningType));
                 sb.AppendLine("Target type: " + GetTypeNameDebug(targetType));
-                sb.AppendLine("Method name: " + slotMethod.NameAndSignature.Name);
+                sb.AppendLine("Method name: " + slotMethod.Name);
                 sb.AppendLine("Instantiation:");
                 for (int i = 0; i < slotMethod.Instantiation.Length; i++)
                 {
@@ -133,7 +134,7 @@ namespace Internal.Runtime.TypeLoader
                 sb.AppendLine("Failed to create generic virtual method implementation");
                 sb.AppendLine();
                 sb.AppendLine("Declaring type: " + GetTypeNameDebug(result.OwningType));
-                sb.AppendLine("Method name: " + result.NameAndSignature.Name);
+                sb.AppendLine("Method name: " + result.Name);
                 sb.AppendLine("Instantiation:");
                 for (int i = 0; i < result.Instantiation.Length; i++)
                 {
@@ -146,19 +147,9 @@ namespace Internal.Runtime.TypeLoader
             return FunctionPointerOps.GetGenericMethodFunctionPointer(methodPointer, dictionaryPointer);
         }
 
-        private static MethodNameAndSignature GetMethodNameAndSignatureFromNativeReader(NativeReader nativeLayoutReader, TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
+        public static MethodNameAndSignature GetMethodNameAndSignatureFromToken(TypeManagerHandle moduleHandle, uint token)
         {
-            NativeParser parser = new NativeParser(nativeLayoutReader, nativeLayoutOffset);
-
-            string methodName = parser.GetString();
-
-            // Signatures are indirected to through a relative offset so that we don't have to parse them
-            // when not comparing signatures (parsing them requires resolving types and is tremendously
-            // expensive).
-            NativeParser sigParser = parser.GetParserFromRelativeOffset();
-            RuntimeSignature methodSig = RuntimeSignature.CreateFromNativeLayoutSignature(moduleHandle, sigParser.Offset);
-
-            return new MethodNameAndSignature(methodName, methodSig);
+            return new MethodNameAndSignature(ModuleList.Instance.GetMetadataReaderForModule(moduleHandle), token.AsHandle().ToMethodHandle(null));
         }
 
         private static RuntimeTypeHandle GetTypeDefinition(RuntimeTypeHandle typeHandle)
@@ -191,7 +182,7 @@ namespace Internal.Runtime.TypeLoader
 
                 if (nameAndSigToken != SpecialGVMInterfaceEntry.Diamond && nameAndSigToken != SpecialGVMInterfaceEntry.Reabstraction)
                 {
-                    targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, nameAndSigToken);
+                    targetMethodNameAndSignature = GetMethodNameAndSignatureFromToken(module.Handle, nameAndSigToken);
                     targetTypeHandle = extRefs.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                     isDefaultInterfaceMethodImplementation = RuntimeAugments.IsInterface(targetTypeHandle);
 #if GVM_RESOLUTION_TRACE
@@ -263,11 +254,22 @@ namespace Internal.Runtime.TypeLoader
                                 DefType interfaceImplType;
 
                                 // We found the GVM slot target for the input interface GVM call, so let's update the interface GVM slot and return success to the caller
-                                if (!RuntimeAugments.IsInterface(targetTypeHandle) || !RuntimeAugments.IsGenericTypeDefinition(targetTypeHandle))
+                                if (!RuntimeAugments.IsGenericTypeDefinition(targetTypeHandle))
                                 {
-                                    // Not a default interface method or default interface method on a non-generic type.
-                                    // We have a usable type handle.
+                                    // No genericness involved, we can use the type as-is.
                                     interfaceImplType = (DefType)context.ResolveRuntimeTypeHandle(targetTypeHandle);
+                                }
+                                else if (!isDefaultInterfaceMethodImplementation)
+                                {
+                                    // Target type is in open form. We know the concrete form is somewhere in the inheritance hierarchy of targetType.
+                                    // This covers cases like:
+                                    // interface IFoo { void Frob(); }
+                                    // class Base<T> { public void Frob() { } }
+                                    // class Derived<T> : Base<Gen<T>>, IFoo { }
+                                    // In the above case, targetTypeHandle is Base<T>, targetType is Derived<object> and we want Base<Gen<object>>.
+                                    interfaceImplType = targetType;
+                                    while (!interfaceImplType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
+                                        interfaceImplType = (DefType)interfaceImplType.BaseType;
                                 }
                                 else if (currentIfaceType.HasInstantiation && currentIfaceType.GetTypeDefinition().RuntimeTypeHandle.Equals(targetTypeHandle))
                                 {
@@ -357,7 +359,7 @@ namespace Internal.Runtime.TypeLoader
                         continue;
 
                     uint nameAndSigToken = entryParser.GetUnsigned();
-                    MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, nameAndSigToken);
+                    MethodNameAndSignature interfaceMethodNameAndSignature = GetMethodNameAndSignatureFromToken(module.Handle, nameAndSigToken);
 
                     if (!interfaceMethodNameAndSignature.Equals(slotMethod.NameAndSignature))
                         continue;
@@ -489,13 +491,13 @@ namespace Internal.Runtime.TypeLoader
                         continue;
 
                     uint parsedCallingNameAndSigToken = entryParser.GetUnsigned();
-                    MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, parsedCallingNameAndSigToken);
+                    MethodNameAndSignature parsedCallingNameAndSignature = GetMethodNameAndSignatureFromToken(module.Handle, parsedCallingNameAndSigToken);
 
                     if (!parsedCallingNameAndSignature.Equals(slotMethod.NameAndSignature))
                         continue;
 
                     uint parsedTargetMethodNameAndSigToken = entryParser.GetUnsigned();
-                    MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromNativeReader(nativeLayoutReader, module.Handle, parsedTargetMethodNameAndSigToken);
+                    MethodNameAndSignature targetMethodNameAndSignature = GetMethodNameAndSignatureFromToken(module.Handle, parsedTargetMethodNameAndSigToken);
 
                     Debug.Assert(targetMethodNameAndSignature != null);
 

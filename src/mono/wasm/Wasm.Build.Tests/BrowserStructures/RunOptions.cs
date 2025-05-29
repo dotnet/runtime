@@ -27,6 +27,7 @@ public abstract record RunOptions
     string Locale = "en-US",
     int? ExpectedExitCode = 0,
     string CustomBundleDir = "",
+    int? TimeoutSeconds = 10,
     Func<RunOptions, IPage, Task>? ExecuteAfterLoaded = null
 );
 

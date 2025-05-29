@@ -48,7 +48,7 @@ namespace Microsoft.Android.Build.Ndk
         {
             string ret = "";
 
-            foreach(string path in probingPaths)
+            foreach (string path in probingPaths)
             {
                 if (Directory.Exists(path))
                 {
@@ -104,7 +104,7 @@ namespace Microsoft.Android.Build.Ndk
 
             var splitChars = new char[] {'='};
             string? ver = null;
-            foreach(string l in File.ReadAllLines(sourcePropertiesPath))
+            foreach (string l in File.ReadAllLines(sourcePropertiesPath))
             {
                 string line = l.Trim ();
                 if (!line.StartsWith("Pkg.Revision", StringComparison.Ordinal))

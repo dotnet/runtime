@@ -16,6 +16,8 @@ namespace Internal.TypeSystem.Ecma
     {
         private readonly PEReader _peReader;
         protected readonly MetadataReader _metadataReader;
+        private volatile bool _isWrapNonExceptionThrowsComputed;
+        private volatile bool _isWrapNonExceptionThrows;
 
         internal interface IEntityHandleObject
         {
@@ -689,6 +691,53 @@ namespace Internal.TypeSystem.Ecma
         {
             ModuleDefinition moduleDefinition = _metadataReader.GetModuleDefinition();
             return _metadataReader.GetString(moduleDefinition.Name);
+        }
+
+        public bool IsWrapNonExceptionThrows
+        {
+            get
+            {
+                if (!_isWrapNonExceptionThrowsComputed)
+                {
+                    ComputeIsWrapNonExceptionThrows();
+                    _isWrapNonExceptionThrowsComputed = true;
+                }
+                return _isWrapNonExceptionThrows;
+            }
+        }
+
+        private void ComputeIsWrapNonExceptionThrows()
+        {
+            var reader = MetadataReader;
+            var c = reader.StringComparer;
+            bool foundAttribute = false;
+            foreach (var attr in reader.GetAssemblyDefinition().GetCustomAttributes())
+            {
+                if (reader.GetAttributeNamespaceAndName(attr, out var ns, out var n))
+                {
+                    if (c.Equals(ns, "System.Runtime.CompilerServices") && c.Equals(n, "RuntimeCompatibilityAttribute"))
+                    {
+                        var dec = reader.GetCustomAttribute(attr).DecodeValue(new CustomAttributeTypeProvider(this));
+
+                        foreach (var arg in dec.NamedArguments)
+                        {
+                            if (arg.Name == "WrapNonExceptionThrows")
+                            {
+                                if (!(arg.Value is bool))
+                                    ThrowHelper.ThrowBadImageFormatException();
+                                _isWrapNonExceptionThrows = (bool)arg.Value;
+                                foundAttribute = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (foundAttribute)
+                {
+                    break;
+                }
+            }
         }
     }
 }

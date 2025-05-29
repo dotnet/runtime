@@ -22,7 +22,7 @@ extends:
       jobs:
       - job: windows
         displayName: Build & Deploy to OneFuzz
-        timeoutInMinutes: 120
+        timeoutInMinutes: 240
         pool:
           name: $(DncEngInternalBuildPool)
           demands: ImageOverride -equals windows.vs2022.amd64
@@ -169,4 +169,12 @@ extends:
             onefuzzDropDirectory: $(fuzzerProject)/deployment/Utf8JsonWriterFuzzer
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)
           displayName: Send Utf8JsonWriterFuzzer to OneFuzz
+
+        - task: onefuzz-task@0
+          inputs:
+            onefuzzOSes: 'Windows'
+          env:
+            onefuzzDropDirectory: $(fuzzerProject)/deployment/ZipArchiveFuzzer
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          displayName: Send ZipArchiveFuzzer to OneFuzz
 # ONEFUZZ_TASK_WORKAROUND_END

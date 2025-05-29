@@ -1041,7 +1041,8 @@ int fx_muxer_t::handle_cli(
     //
 
     sdk_resolver resolver = sdk_resolver::from_nearest_global_file();
-    auto sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/);
+    pal::string_t sdk_root;
+    pal::string_t sdk_dotnet = resolver.resolve(host_info.dotnet_root, false /*print_errors*/, &sdk_root);
     if (sdk_dotnet.empty())
     {
         assert(argc > 1);
@@ -1073,6 +1074,11 @@ int fx_muxer_t::handle_cli(
     append_path(&sdk_dotnet, SDK_DOTNET_DLL);
     assert(pal::file_exists(sdk_dotnet));
 
+    // Use the root path from the resolved SDK to run the SDK dll
+    host_startup_info_t host_info_local = pal::strcmp(sdk_root.c_str(), host_info.dotnet_root.c_str()) == 0
+        ? host_info
+        : host_startup_info_t(host_info.host_path.c_str(), sdk_root.c_str(), host_info.app_path.c_str());
+
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 
     std::vector<const pal::char_t*> new_argv;
@@ -1086,13 +1092,13 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t sdk_app_candidate;
     opt_map_t opts;
-    int result = command_line::parse_args_for_sdk_command(host_info, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
+    int result = command_line::parse_args_for_sdk_command(host_info_local, (int32_t)new_argv.size(), new_argv.data(), &new_argoff, sdk_app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
         result = handle_exec_host_command(
             pal::string_t{} /*host_command*/,
-            host_info,
+            host_info_local,
             sdk_app_candidate,
             opts,
             (int32_t)new_argv.size(),

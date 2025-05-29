@@ -66,6 +66,10 @@ namespace Internal.ReadyToRunConstants
         Gfni=53,
         Gfni_V256=54,
         Gfni_V512=55,
+        RiscV64Base=56,
+        Zba=57,
+        Zbb=58,
+        Sve2=59,
 
     }
 }

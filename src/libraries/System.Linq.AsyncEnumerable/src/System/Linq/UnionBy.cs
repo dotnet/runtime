@@ -26,11 +26,13 @@ namespace System.Linq
             Func<TSource, TKey> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(first, second, keySelector, comparer, default);
+            return
+                first.IsKnownEmpty() && second.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -41,7 +43,7 @@ namespace System.Linq
             {
                 HashSet<TKey> set = new(comparer);
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in first.WithCancellation(cancellationToken))
                 {
                     if (set.Add(keySelector(element)))
                     {
@@ -49,7 +51,7 @@ namespace System.Linq
                     }
                 }
 
-                await foreach (TSource element in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in second.WithCancellation(cancellationToken))
                 {
                     if (set.Add(keySelector(element)))
                     {
@@ -75,11 +77,13 @@ namespace System.Linq
             Func<TSource, CancellationToken, ValueTask<TKey>> keySelector,
             IEqualityComparer<TKey>? comparer = null)
         {
-            ThrowHelper.ThrowIfNull(first);
-            ThrowHelper.ThrowIfNull(second);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(first);
+            ArgumentNullException.ThrowIfNull(second);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
-            return Impl(first, second, keySelector, comparer, default);
+            return
+                first.IsKnownEmpty() && second.IsKnownEmpty() ? Empty<TSource>() :
+                Impl(first, second, keySelector, comparer, default);
 
             static async IAsyncEnumerable<TSource> Impl(
                 IAsyncEnumerable<TSource> first,
@@ -90,17 +94,17 @@ namespace System.Linq
             {
                 HashSet<TKey> set = new(comparer);
 
-                await foreach (TSource element in first.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in first.WithCancellation(cancellationToken))
                 {
-                    if (set.Add(await keySelector(element, cancellationToken).ConfigureAwait(false)))
+                    if (set.Add(await keySelector(element, cancellationToken)))
                     {
                         yield return element;
                     }
                 }
 
-                await foreach (TSource element in second.WithCancellation(cancellationToken).ConfigureAwait(false))
+                await foreach (TSource element in second.WithCancellation(cancellationToken))
                 {
-                    if (set.Add(await keySelector(element, cancellationToken).ConfigureAwait(false)))
+                    if (set.Add(await keySelector(element, cancellationToken)))
                     {
                         yield return element;
                     }

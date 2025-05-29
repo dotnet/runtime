@@ -908,6 +908,12 @@ void UpdateRuntimeStateForAssemblyCustomAttribute(Module* pModule, mdToken tkCus
         Assembly* pAssembly = pModule->GetAssembly();
         pAssembly->UpdateCachedFriendAssemblyInfo();
     }
+
+    // System.Runtime.CompilerServices.RuntimeCompatibilityAttribute processing
+    if (((strcmp(szNamespace, RUNTIMECOMPATIBILITY_TYPE_NAMESPACE) == 0) && (strcmp(szName, RUNTIMECOMPATIBILITY_TYPE_NAME) == 0)))
+    {
+        pModule->UpdateCachedIsRuntimeWrapExceptions();
+    }
 }
 
 extern "C" void QCALLTYPE TypeBuilder_DefineCustomAttribute(QCall::ModuleHandle pModule, INT32 token, INT32 conTok, LPCBYTE pBlob, INT32 cbBlob)

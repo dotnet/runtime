@@ -17,63 +17,46 @@ namespace System.Collections.Frozen
     internal sealed class DenseIntegralFrozenDictionary
     {
         /// <summary>
-        /// Maximum allowed ratio of the number of key/value pairs to the range between the minimum and maximum keys.
+        /// Maximum allowed factor by which the spread between the min and max of keys in the dictionary may exceed the count.
         /// </summary>
         /// <remarks>
-        /// <para>
-        /// This is dialable. The closer the value gets to 0, the more likely this implementation will be used,
-        /// and the more memory will be consumed to store the values. The value of 0.1 means that up to 90% of the
+        /// This is dialable. The larger this value, the more likely this implementation will be used,
+        /// and the more memory will be consumed to store the values. The value of 10 means that up to 90% of the
         /// slots in the values array may be unused.
-        /// </para>
-        /// <para>
-        /// As an example, DaysOfWeek's min is 0, its max is 6, and it has 7 values, such that 7 / (6 - 0 + 1) = 1.0; thus
-        /// with a threshold of 0.1, DaysOfWeek will use this implementation. But SocketError's min is -1, its max is 11004, and
-        /// it has 47 values, such that 47 / (11004 - (-1) + 1) = 0.004; thus, SocketError will not use this implementation.
-        /// </para>
         /// </remarks>
-        private const double CountToLengthRatio = 0.1;
+        private const int LengthToCountFactor = 10;
 
-        public static bool TryCreate<TKey, TValue>(Dictionary<TKey, TValue> source, [NotNullWhen(true)] out FrozenDictionary<TKey, TValue>? result)
+        public static FrozenDictionary<TKey, TValue>? CreateIfValid<TKey, TValue>(Dictionary<TKey, TValue> source)
             where TKey : notnull
         {
             // Int32 and integer types that fit within Int32. This is to minimize difficulty later validating that
-            // inputs are in range of int: we can always cast everything to Int32 without loss of information.
-
-            if (typeof(TKey) == typeof(byte) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(byte)))
-                return TryCreate<TKey, byte, TValue>(source, out result);
-
-            if (typeof(TKey) == typeof(sbyte) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(sbyte)))
-                return TryCreate<TKey, sbyte, TValue>(source, out result);
-
-            if (typeof(TKey) == typeof(ushort) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(ushort)))
-                return TryCreate<TKey, ushort, TValue>(source, out result);
-
-            if (typeof(TKey) == typeof(short) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(short)))
-                return TryCreate<TKey, short, TValue>(source, out result);
-
-            if (typeof(TKey) == typeof(int) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(int)))
-                return TryCreate<TKey, int, TValue>(source, out result);
-
-            result = null;
-            return false;
+            // inputs are in range of int: we can always cast everything here to Int32 without loss of information.
+            return
+                typeof(TKey) == typeof(byte) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(byte)) ? CreateIfValid<TKey, byte, TValue>(source) :
+                typeof(TKey) == typeof(sbyte) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(sbyte)) ? CreateIfValid<TKey, sbyte, TValue>(source) :
+                typeof(TKey) == typeof(ushort) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(ushort)) ? CreateIfValid<TKey, ushort, TValue>(source) :
+                typeof(TKey) == typeof(short) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(short)) ? CreateIfValid<TKey, short, TValue>(source) :
+                typeof(TKey) == typeof(char) ? CreateIfValid<TKey, char, TValue>(source) :
+                typeof(TKey) == typeof(int) || (typeof(TKey).IsEnum && typeof(TKey).GetEnumUnderlyingType() == typeof(int)) ? CreateIfValid<TKey, int, TValue>(source) :
+                null;
         }
 
-        private static bool TryCreate<TKey, TKeyUnderlying, TValue>(Dictionary<TKey, TValue> source, [NotNullWhen(true)] out FrozenDictionary<TKey, TValue>? result)
+        private static FrozenDictionary<TKey, TValue>? CreateIfValid<TKey, TKeyUnderlying, TValue>(Dictionary<TKey, TValue> source)
             where TKey : notnull
             where TKeyUnderlying : unmanaged, IBinaryInteger<TKeyUnderlying>
         {
-            // Start enumerating the dictionary to ensure it has at least one element.
+            int count = source.Count;
+
             Dictionary<TKey, TValue>.Enumerator e = source.GetEnumerator();
             if (e.MoveNext())
             {
-                // Get that element and treat it as the min and max. Then continue enumerating the remainder
-                // of the dictionary to count the number of elements and track the full min and max.
-                int count = 1;
+                // Get the first element and treat it as the min and max. Then continue enumerating the remainder
+                // of the dictionary to track the full min and max. Along the way, bail if at any point the length
+                // exceeds the allowed limit based on the known count.
                 int min = int.CreateTruncating((TKeyUnderlying)(object)e.Current.Key);
                 int max = min;
                 while (e.MoveNext())
                 {
-                    count++;
                     int key = int.CreateTruncating((TKeyUnderlying)(object)e.Current.Key);
                     if (key < min)
                     {
@@ -85,51 +68,26 @@ namespace System.Collections.Frozen
                     }
                 }
 
-                // Based on the min and max, determine the spread. If the range fits within a non-negative Int32
-                // and the ratio of the number of elements in the dictionary to the length is within the allowed
-                // threshold, create the new dictionary.
+                long maxAllowedLength = Math.Min((long)count * LengthToCountFactor, Array.MaxLength);
                 long length = (long)max - min + 1;
-                Debug.Assert(length > 0);
-                if (length <= int.MaxValue &&
-                    (double)count / length >= CountToLengthRatio)
+                if (length <= maxAllowedLength)
                 {
-                    // Create arrays of the keys and values, sorted ascending by key.
                     var keys = new TKey[count];
                     var values = new TValue[keys.Length];
-                    int i = 0;
-                    foreach (KeyValuePair<TKey, TValue> entry in source)
-                    {
-                        keys[i] = entry.Key;
-                        values[i] = entry.Value;
-                        i++;
-                    }
 
-                    if (i != keys.Length)
-                    {
-                        throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
-                    }
-
-                    // Sort the values so that we can more easily check for contiguity but also so that
-                    // the keys/values returned from various properties/enumeration are in a predictable order.
-                    Array.Sort(keys, values);
-
-                    // Determine whether all of the keys are contiguous starting at 0.
-                    bool isFull = true;
-                    for (i = 0; i < keys.Length; i++)
-                    {
-                        if (int.CreateTruncating((TKeyUnderlying)(object)keys[i]) != i)
-                        {
-                            isFull = false;
-                            break;
-                        }
-                    }
-
-                    if (isFull)
+                    if (min == 0 && length == count)
                     {
                         // All of the keys are contiguous starting at 0, so we can use an implementation that
                         // just stores all the values in an array indexed by key. This both provides faster access
                         // and allows the single values array to be used for lookups and for ValuesCore.
-                        result = new WithFullValues<TKey, TKeyUnderlying, TValue>(keys, values);
+                        foreach (KeyValuePair<TKey, TValue> entry in source)
+                        {
+                            int index = int.CreateTruncating((TKeyUnderlying)(object)entry.Key);
+                            keys[index] = entry.Key;
+                            values[index] = entry.Value;
+                        }
+
+                        return new WithFullValues<TKey, TKeyUnderlying, TValue>(keys, values);
                     }
                     else
                     {
@@ -137,20 +95,22 @@ namespace System.Collections.Frozen
                         // and populate the entries just for the elements we have. The 0th element of the optional
                         // values array corresponds to the element with the min key.
                         var optionalValues = new Optional<TValue>[length];
-                        for (i = 0; i < keys.Length; i++)
+                        int i = 0;
+                        foreach (KeyValuePair<TKey, TValue> entry in source)
                         {
-                            optionalValues[int.CreateTruncating((TKeyUnderlying)(object)keys[i]) - min] = new(values[i], hasValue: true);
+                            keys[i] = entry.Key;
+                            values[i] = entry.Value;
+                            i++;
+
+                            optionalValues[int.CreateTruncating((TKeyUnderlying)(object)entry.Key) - min] = new(entry.Value, hasValue: true);
                         }
 
-                        result = new WithOptionalValues<TKey, TKeyUnderlying, TValue>(keys, values, optionalValues, min);
+                        return new WithOptionalValues<TKey, TKeyUnderlying, TValue>(keys, values, optionalValues, min);
                     }
-
-                    return true;
                 }
             }
 
-            result = null;
-            return false;
+            return null;
         }
 
         /// <summary>Implementation used when all keys are contiguous starting at 0.</summary>

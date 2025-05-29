@@ -149,6 +149,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TSource value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TSource>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ArrayWhereIterator<TSource>
@@ -279,6 +294,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TSource value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TSource>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ListWhereIterator<TSource> : Iterator<TSource>
@@ -347,6 +377,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TSource value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TSource>.Default.Equals(item, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
 
@@ -481,6 +526,21 @@ namespace System.Linq
                 found = false;
                 return default;
             }
+
+            public override bool Contains(TResult value) => Contains(_source, _predicate, _selector, value);
+
+            public static bool Contains(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector, TResult value)
+            {
+                foreach (TSource item in source)
+                {
+                    if (predicate(item) && EqualityComparer<TResult>.Default.Equals(selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         private sealed partial class ListWhereSelectIterator<TSource, TResult>
@@ -496,6 +556,8 @@ namespace System.Linq
             public override TResult? TryGetFirst(out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetFirst(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
 
             public override TResult? TryGetLast(out bool found) => ArrayWhereSelectIterator<TSource, TResult>.TryGetLast(CollectionsMarshal.AsSpan(_source), _predicate, _selector, out found);
+
+            public override bool Contains(TResult value) => ArrayWhereSelectIterator<TSource, TResult>.Contains(CollectionsMarshal.AsSpan(_source), _predicate, _selector, value);
         }
 
         private sealed partial class IEnumerableWhereSelectIterator<TSource, TResult>
@@ -644,6 +706,21 @@ namespace System.Linq
 
                 found = false;
                 return default;
+            }
+
+            public override bool Contains(TResult value)
+            {
+                Func<TSource, bool> predicate = _predicate;
+
+                foreach (TSource item in _source)
+                {
+                    if (predicate(item) && EqualityComparer<TResult>.Default.Equals(_selector(item), value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

@@ -227,7 +227,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         private HttpHeaders GetTrailingHeaders(HttpResponseMessage responseMessage)
         {
-#if !NET48
+#if !NETFRAMEWORK
             return responseMessage.TrailingHeaders;
 #else
 #pragma warning disable CS0618 // Type or member is obsolete

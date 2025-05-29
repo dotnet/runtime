@@ -39,7 +39,7 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
     std::vector<framework_info>* framework_infos)
 {
     std::vector<pal::string_t> hive_dir;
-    get_framework_and_sdk_locations(own_dir, disable_multilevel_lookup, &hive_dir);
+    get_framework_locations(own_dir, disable_multilevel_lookup, &hive_dir);
 
     int32_t hive_depth = 0;
 

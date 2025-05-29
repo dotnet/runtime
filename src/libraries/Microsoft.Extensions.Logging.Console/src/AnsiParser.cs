@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly Action<string, int, int, ConsoleColor?, ConsoleColor?> _onParseWrite;
         public AnsiParser(Action<string, int, int, ConsoleColor?, ConsoleColor?> onParseWrite)
         {
-            ThrowHelper.ThrowIfNull(onParseWrite);
+            ArgumentNullException.ThrowIfNull(onParseWrite);
 
             _onParseWrite = onParseWrite;
         }

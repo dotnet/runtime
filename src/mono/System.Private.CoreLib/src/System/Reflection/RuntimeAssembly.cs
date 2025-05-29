@@ -474,6 +474,12 @@ namespace System.Reflection
             return res;
         }
 
+        internal unsafe bool TryGetRawMetadata(out byte* blob, out int length)
+        {
+            var this_assembly = this;
+            return InternalTryGetRawMetadata(new QCallAssembly(ref this_assembly), out blob, out length);
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool GetManifestResourceInfoInternal(QCallAssembly assembly, string name, ManifestResourceInfo info);
 
@@ -488,6 +494,9 @@ namespace System.Reflection
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern IntPtr InternalGetReferencedAssemblies(Assembly assembly);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe bool InternalTryGetRawMetadata(QCallAssembly assembly, out byte* blob, out int length);
 
         internal string? GetSimpleName()
         {

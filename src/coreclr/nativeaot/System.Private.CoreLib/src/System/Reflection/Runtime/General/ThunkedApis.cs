@@ -95,6 +95,8 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool IsSecurityCritical => true;
         public sealed override bool IsSecuritySafeCritical => false;
         public sealed override bool IsSecurityTransparent => false;
+
+        public sealed override bool IsCollectible => false;
     }
 }
 
@@ -105,6 +107,8 @@ namespace System.Reflection.Runtime.EventInfos
         public sealed override MethodInfo GetAddMethod(bool nonPublic) => AddMethod.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetRemoveMethod(bool nonPublic) => RemoveMethod.FilterAccessor(nonPublic);
         public sealed override MethodInfo GetRaiseMethod(bool nonPublic) => RaiseMethod?.FilterAccessor(nonPublic);
+
+        public sealed override bool IsCollectible => false;
     }
 }
 
@@ -119,6 +123,16 @@ namespace System.Reflection.Runtime.MethodInfos
         public sealed override bool IsSecurityCritical => true;
         public sealed override bool IsSecuritySafeCritical => false;
         public sealed override bool IsSecurityTransparent => false;
+
+        public sealed override bool IsCollectible => false;
+    }
+}
+
+namespace System.Reflection.Runtime.FieldInfos
+{
+    internal abstract partial class RuntimeFieldInfo
+    {
+        public sealed override bool IsCollectible => false;
     }
 }
 
@@ -145,6 +159,8 @@ namespace System.Reflection.Runtime.PropertyInfos
                 accessors[index++] = setter;
             return accessors;
         }
+
+        public sealed override bool IsCollectible => false;
     }
 }
 

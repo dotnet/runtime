@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public byte[] KeyAlgorithmParameters
+        public byte[]? KeyAlgorithmParameters
         {
             get
             {
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             byte* NULL_ASN_TAG = (byte*)0x5;
 
-                            byte[] keyAlgorithmParameters;
+                            byte[]? keyAlgorithmParameters;
 
                             if (algId == AlgId.CALG_DSS_SIGN
                                 && pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.cbData == 0
@@ -121,7 +121,16 @@ namespace System.Security.Cryptography.X509Certificates
                             }
                             else
                             {
-                                keyAlgorithmParameters = pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters.ToByteArray();
+                                Interop.Crypt32.DATA_BLOB parametersBlob = pCertContext->pCertInfo->SubjectPublicKeyInfo.Algorithm.Parameters;
+
+                                if (parametersBlob.pbData == IntPtr.Zero)
+                                {
+                                    keyAlgorithmParameters = null;
+                                }
+                                else
+                                {
+                                    keyAlgorithmParameters = parametersBlob.ToByteArray();
+                                }
                             }
 
                             return keyAlgorithmParameters;
@@ -541,6 +550,22 @@ namespace System.Security.Cryptography.X509Certificates
                 byte[]? exported = storePal.Export(contentType, password);
                 Debug.Assert(exported != null);
                 return exported;
+            }
+        }
+
+        public byte[] ExportPkcs12(Pkcs12ExportPbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
+            }
+        }
+
+        public byte[] ExportPkcs12(PbeParameters exportParameters, SafePasswordHandle password)
+        {
+            using (IExportPal storePal = StorePal.FromCertificate(this))
+            {
+                return storePal.ExportPkcs12(exportParameters, password);
             }
         }
 

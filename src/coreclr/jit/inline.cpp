@@ -792,15 +792,38 @@ void InlineResult::Report()
         // IS_NOINLINE, then we've uncovered a reason why this method
         // can't ever be inlined. Update the callee method attributes
         // so that future inline attempts for this callee fail faster.
-
+        //
         InlineObservation obs = m_Policy->GetObservation();
 
-        if ((m_Callee != nullptr) && (obs != InlineObservation::CALLEE_IS_NOINLINE))
+        bool report     = (m_Callee != nullptr);
+        bool suppress   = (obs == InlineObservation::CALLEE_IS_NOINLINE);
+        bool dynamicPgo = m_RootCompiler->fgPgoDynamic;
+
+        // If dynamic pgo is active, only propagate noinline back to metadata
+        // when there is a CALLEE FATAL observation. We want to make sure
+        // not to block future inlines based on performance or throughput considerations.
+        //
+        // Note fgPgoDynamic (and hence dynamicPgo) is true iff TieredPGO is enabled globally.
+        // In particular this value does not depend on the root method having PGO data.
+        //
+        if (dynamicPgo)
         {
-            JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, InlGetObservationString(obs));
+            InlineTarget target = InlGetTarget(obs);
+            InlineImpact impact = InlGetImpact(obs);
+            suppress            = (target != InlineTarget::CALLEE) || (impact != InlineImpact::FATAL);
+        }
+
+        if (report && !suppress)
+        {
+            JITDUMP("\nINLINER: Marking %s as NOINLINE (observation %s)\n", callee, InlGetObservationString(obs));
 
             COMP_HANDLE comp = m_RootCompiler->info.compCompHnd;
             comp->setMethodAttribs(m_Callee, CORINFO_FLG_BAD_INLINEE);
+        }
+        else if (suppress)
+        {
+            JITDUMP("\nINLINER: Not marking %s NOINLINE; %s (observation %s)\n", callee,
+                    dynamicPgo ? "pgo active" : "already known", InlGetObservationString(obs));
         }
     }
 
@@ -927,7 +950,14 @@ InlineContext* InlineStrategy::GetRootContext()
         // Set the initial budget for inlining. Note this is
         // deliberately set very high and is intended to catch
         // only pathological runaway inline cases.
-        m_InitialTimeBudget = BUDGET * m_InitialTimeEstimate;
+        const unsigned budget = JitConfig.JitInlineBudget();
+
+        if (budget != DEFAULT_INLINE_BUDGET)
+        {
+            JITDUMP("Using non-default inline budget %u\n", budget);
+        }
+
+        m_InitialTimeBudget = budget * m_InitialTimeEstimate;
         m_CurrentTimeBudget = m_InitialTimeBudget;
 
         // Estimate the code size  if there's no inlining
@@ -1452,14 +1482,13 @@ void InlineStrategy::DumpData()
 void InlineStrategy::DumpDataEnsurePolicyIsSet()
 {
     // Cache references to compiler substructures.
-    const Compiler::Info&    info = m_Compiler->info;
-    const Compiler::Options& opts = m_Compiler->opts;
+    const Compiler::Info& info = m_Compiler->info;
 
     // If there weren't any successful inlines, we won't have a
     // successful policy, so fake one up.
     if (m_LastSuccessfulPolicy == nullptr)
     {
-        const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+        const bool isPrejitRoot = m_Compiler->IsAot();
         m_LastSuccessfulPolicy  = InlinePolicy::GetPolicy(m_Compiler, isPrejitRoot);
 
         // Add in a bit of data....
@@ -1597,10 +1626,9 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     }
 
     // Cache references to compiler substructures.
-    const Compiler::Info&    info = m_Compiler->info;
-    const Compiler::Options& opts = m_Compiler->opts;
+    const Compiler::Info& info = m_Compiler->info;
 
-    const bool isPrejitRoot = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT);
+    const bool isPrejitRoot = m_Compiler->IsAot();
 
     // We'd really like the method identifier to be unique and
     // durable across crossgen invocations. Not clear how to

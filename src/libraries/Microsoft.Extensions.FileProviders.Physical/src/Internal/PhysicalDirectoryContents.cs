@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.FileProviders.Internal
         /// <param name="filters">Specifies which files or directories are excluded from enumeration.</param>
         public PhysicalDirectoryContents(string directory, ExclusionFilters filters)
         {
-            ThrowHelper.ThrowIfNull(directory);
+            ArgumentNullException.ThrowIfNull(directory);
 
             _info = new PhysicalDirectoryInfo(new DirectoryInfo(directory), filters);
         }

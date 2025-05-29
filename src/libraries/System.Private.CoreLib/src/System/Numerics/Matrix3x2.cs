@@ -13,6 +13,9 @@ namespace System.Numerics
     [Intrinsic]
     public partial struct Matrix3x2 : IEquatable<Matrix3x2>
     {
+        private const int RowCount = 3;
+        private const int ColumnCount = 2;
+
         // In an ideal world, we'd have 3x Vector2 fields. However, Matrix3x2 was shipped with
         // 6x public float fields and as such we cannot change the "backing" fields without it being
         // a breaking change. Likewise, we cannot switch to using something like ExplicitLayout
@@ -24,37 +27,41 @@ namespace System.Numerics
         // at the relevant points.
 
         /// <summary>The first element of the first row.</summary>
+        /// <remarks>This element exists at index: <c>[0, 0]</c> and is part of row <see cref="X" />.</remarks>
         public float M11;
 
         /// <summary>The second element of the first row.</summary>
+        /// <remarks>This element exists at index: <c>[0, 1]</c> and is part of row <see cref="X" />.</remarks>
         public float M12;
 
         /// <summary>The first element of the second row.</summary>
+        /// <remarks>This element exists at index: <c>[1, 0]</c> and is part of row <see cref="Y" />.</remarks>
         public float M21;
 
         /// <summary>The second element of the second row.</summary>
+        /// <remarks>This element exists at index: <c>[1, 1]</c> and is part of row <see cref="Y" />.</remarks>
         public float M22;
 
         /// <summary>The first element of the third row.</summary>
+        /// <remarks>This element exists at index: <c>[2, 0]</c> and is part of row <see cref="Z" />.</remarks>
         public float M31;
 
         /// <summary>The second element of the third row.</summary>
+        /// <remarks>This element exists at index: <c>[2, 1]</c> and is part of row <see cref="Z" />.</remarks>
         public float M32;
 
-        /// <summary>Creates a 3x2 matrix from the specified components.</summary>
-        /// <param name="m11">The value to assign to the first element in the first row.</param>
-        /// <param name="m12">The value to assign to the second element in the first row.</param>
-        /// <param name="m21">The value to assign to the first element in the second row.</param>
-        /// <param name="m22">The value to assign to the second element in the second row.</param>
-        /// <param name="m31">The value to assign to the first element in the third row.</param>
-        /// <param name="m32">The value to assign to the second element in the third row.</param>
+        /// <summary>Initializes a <see cref="Matrix3x2"/> using the specified elements.</summary>
+        /// <param name="m11">The value to assign to <see cref="M11" />.</param>
+        /// <param name="m12">The value to assign to <see cref="M12" />.</param>
+        /// <param name="m21">The value to assign to <see cref="M21" />.</param>
+        /// <param name="m22">The value to assign to <see cref="M22" />.</param>
+        /// <param name="m31">The value to assign to <see cref="M31" />.</param>
+        /// <param name="m32">The value to assign to <see cref="M32" />.</param>
         public Matrix3x2(float m11, float m12,
                          float m21, float m22,
                          float m31, float m32)
         {
-            Unsafe.SkipInit(out this);
-
-            AsImpl().Init(
+            this = Create(
                 m11, m12,
                 m21, m22,
                 m31, m32
@@ -62,48 +69,260 @@ namespace System.Numerics
         }
 
         /// <summary>Gets the multiplicative identity matrix.</summary>
-        /// <value>The multiplicative identify matrix.</value>
+        /// <value>The multiplicative identity matrix.</value>
         public static Matrix3x2 Identity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => Impl.Identity.AsM3x2();
+            get => Create(Vector2.UnitX, Vector2.UnitY, Vector2.Zero);
         }
 
-        /// <summary>Gets or sets the element at the specified indices.</summary>
-        /// <param name="row">The index of the row containing the element to get or set.</param>
-        /// <param name="column">The index of the column containing the element to get or set.</param>
-        /// <returns>The element at [<paramref name="row" />][<paramref name="column" />].</returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="row" /> was less than zero or greater than the number of rows.
-        /// -or-
-        /// <paramref name="column" /> was less than zero or greater than the number of columns.
-        /// </exception>
-        public float this[int row, int column]
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => AsROImpl()[row, column];
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => AsImpl()[row, column] = value;
-        }
-
-        /// <summary>Gets a value that indicates whether the current matrix is the identity matrix.</summary>
-        /// <value><see langword="true" /> if the current matrix is the identity matrix; otherwise, <see langword="false" />.</value>
+        /// <summary>Gets a value that indicates whether the current matrix is an identity matrix.</summary>
+        /// <value><see langword="true" /> if the current matrix is an identity matrix; otherwise, <see langword="false" />.</value>
         public readonly bool IsIdentity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => AsROImpl().IsIdentity;
+            get => (X == Vector2.UnitX)
+                && (Y == Vector2.UnitY)
+                && (Z == Vector2.Zero);
         }
 
         /// <summary>Gets or sets the translation component of this matrix.</summary>
-        /// <value>The translation component of the current instance.</value>
+        /// <remarks>The translation component is stored as <see cref="Z" />.</remarks>
         public Vector2 Translation
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            readonly get => AsROImpl().Translation;
+            readonly get => Z;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => AsImpl().Translation = value;
+            set => Z = value;
+        }
+
+        /// <summary>Gets or sets the first row of the matrix.</summary>
+        /// <remarks>This row comprises <see cref="M11" /> and <see cref="M12" />; it exists at index: <c>[0]</c>.</remarks>
+        public Vector2 X
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get => AsROImpl().X;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => AsImpl().X = value;
+        }
+
+        /// <summary>Gets or sets the second row of the matrix.</summary>
+        /// <remarks>This row comprises <see cref="M21" /> and <see cref="M22" />; it exists at index: <c>[1]</c>.</remarks>
+        public Vector2 Y
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get => AsROImpl().Y;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => AsImpl().Y = value;
+        }
+
+        /// <summary>Gets or sets the third row of the matrix.</summary>
+        /// <remarks>This row comprises <see cref="M31" /> and <see cref="M32" />; it exists at index: <c>[2]</c>.</remarks>
+        public Vector2 Z
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get => AsROImpl().Z;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => AsImpl().Z = value;
+        }
+
+        /// <summary>Gets or sets the row at the specified index.</summary>
+        /// <param name="row">The index of the row to get or set.</param>
+        /// <returns>The row at index: [<paramref name="row" />].</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="row" /> was less than zero or greater than or equal to the number of rows (<c>3</c>).</exception>
+        public Vector2 this[int row]
+        {
+            // When row is a known constant, we can use a switch to get
+            // optimal codegen as we are likely coming from register.
+            //
+            // However, if either is non constant we're going to end up having
+            // to touch memory so just directly compute the relevant index.
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                if (RuntimeHelpers.IsKnownConstant(row))
+                {
+                    switch (row)
+                    {
+                        case 0:
+                        {
+                            return X;
+                        }
+
+                        case 1:
+                        {
+                            return Y;
+                        }
+
+                        case 2:
+                        {
+                            return Z;
+                        }
+
+                        default:
+                        {
+                            ThrowHelper.ThrowArgumentOutOfRangeException();
+                            return default;
+                        }
+                    }
+                }
+                else
+                {
+                    if ((uint)row >= RowCount)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException();
+                    }
+                    return Unsafe.Add(ref Unsafe.AsRef(in AsROImpl()).X, row);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (RuntimeHelpers.IsKnownConstant(row))
+                {
+                    switch (row)
+                    {
+                        case 0:
+                        {
+                            X = value;
+                            break;
+                        }
+
+                        case 1:
+                        {
+                            Y = value;
+                            break;
+                        }
+
+                        case 2:
+                        {
+                            Z = value;
+                            break;
+                        }
+
+                        default:
+                        {
+                            ThrowHelper.ThrowArgumentOutOfRangeException();
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    if ((uint)row >= RowCount)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException();
+                    }
+                    Unsafe.Add(ref AsImpl().X, row) = value;
+                }
+            }
+        }
+
+        /// <summary>Gets or sets the element at the specified row and column.</summary>
+        /// <param name="row">The index of the row containing the element to get or set.</param>
+        /// <param name="column">The index of the column containing the element to get or set.</param>
+        /// <returns>The element at index: [<paramref name="row" />, <paramref name="column" />].</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="row" /> was less than zero or greater than or equal to the number of rows (<c>3</c>).
+        /// -or-
+        /// <paramref name="column" /> was less than zero or greater than or equal to the number of columns (<c>2</c>).
+        /// </exception>
+        public float this[int row, int column]
+        {
+            // When both row and column are known constants, we can use a switch to
+            // get optimal codegen as we are likely coming from register.
+            //
+            // However, if either is non constant we're going to end up having to
+            // touch memory so just directly compute the relevant index.
+            //
+            // The JIT will elide any dead code paths if only one of the inputs is constant.
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            readonly get
+            {
+                if (RuntimeHelpers.IsKnownConstant(row) && RuntimeHelpers.IsKnownConstant(column))
+                {
+                    switch (row)
+                    {
+                        case 0:
+                        {
+                            return X.GetElement(column);
+                        }
+
+                        case 1:
+                        {
+                            return Y.GetElement(column);
+                        }
+
+                        case 2:
+                        {
+                            return Z.GetElement(column);
+                        }
+
+                        default:
+                        {
+                            ThrowHelper.ThrowArgumentOutOfRangeException();
+                            return default;
+                        }
+                    }
+                }
+                else
+                {
+                    if (((uint)row >= RowCount) || ((uint)column >= ColumnCount))
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException();
+                    }
+                    return Unsafe.Add(ref Unsafe.AsRef(in M11), (row * ColumnCount) + column);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set
+            {
+                if (RuntimeHelpers.IsKnownConstant(row) && RuntimeHelpers.IsKnownConstant(column))
+                {
+                    switch (row)
+                    {
+                        case 0:
+                        {
+                            X = X.WithElement(column, value);
+                            break;
+                        }
+
+                        case 1:
+                        {
+                            Y = Y.WithElement(column, value);
+                            break;
+                        }
+
+                        case 2:
+                        {
+                            Z = Z.WithElement(column, value);
+                            break;
+                        }
+
+                        default:
+                        {
+                            ThrowHelper.ThrowArgumentOutOfRangeException();
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    if (((uint)row >= RowCount) || ((uint)column >= ColumnCount))
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException();
+                    }
+                    Unsafe.Add(ref M11, (row * ColumnCount) + column) = value;
+                }
+            }
         }
 
         /// <summary>Adds each element in one matrix with its corresponding element in a second matrix.</summary>
@@ -173,6 +392,52 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Matrix3x2 Add(Matrix3x2 value1, Matrix3x2 value2)
             => (value1.AsImpl() + value2.AsImpl()).AsM3x2();
+
+        /// <summary>Creates a <see cref="Matrix3x2" /> whose 6 elements are set to the specified value.</summary>
+        /// <param name="value">The value to assign to all 6 elements.</param>
+        /// <returns>A <see cref="Matrix3x2" /> whose 6 elements are set to <paramref name="value" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Create(float value) => Create(Vector2.Create(value));
+
+        /// <summary>Creates a <see cref="Matrix3x2" /> whose 3 rows are set to the specified value.</summary>
+        /// <param name="value">The value to assign to all 3 rows.</param>
+        /// <returns>A <see cref="Matrix3x2" /> whose 3 rows are set to <paramref name="value" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Create(Vector2 value) => Create(value, value, value);
+
+        /// <summary>Creates a <see cref="Matrix3x2" /> from the specified rows.</summary>
+        /// <param name="x">The value to assign to <see cref="X" />.</param>
+        /// <param name="y">The value to assign to <see cref="Y" />.</param>
+        /// <param name="z">The value to assign to <see cref="Z" />.</param>
+        /// <returns>A <see cref="Matrix3x2" /> whose rows are set to the specified values.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Create(Vector2 x, Vector2 y, Vector2 z)
+        {
+            Unsafe.SkipInit(out Matrix3x2 result);
+
+            result.X = x;
+            result.Y = y;
+            result.Z = z;
+
+            return result;
+        }
+
+        /// <summary>Creates a <see cref="Matrix3x2" /> from the specified elements.</summary>
+        /// <param name="m11">The value to assign to <see cref="M11" />.</param>
+        /// <param name="m12">The value to assign to <see cref="M12" />.</param>
+        /// <param name="m21">The value to assign to <see cref="M21" />.</param>
+        /// <param name="m22">The value to assign to <see cref="M22" />.</param>
+        /// <param name="m31">The value to assign to <see cref="M31" />.</param>
+        /// <param name="m32">The value to assign to <see cref="M32" />.</param>
+        /// <returns>A <see cref="Matrix3x2" /> whose elements are set to the specified values.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix3x2 Create(float m11, float m12,
+                                       float m21, float m22,
+                                       float m31, float m32) => Create(
+            Vector2.Create(m11, m12),
+            Vector2.Create(m21, m22),
+            Vector2.Create(m31, m32)
+        );
 
         /// <summary>Creates a rotation matrix using the given rotation in radians.</summary>
         /// <param name="radians">The amount of rotation, in radians.</param>
@@ -314,7 +579,7 @@ namespace System.Numerics
         public override readonly bool Equals([NotNullWhen(true)] object? obj)
             => AsROImpl().Equals(obj);
 
-        /// <summary>Returns a value that indicates whether this instance and another 3x2 matrix are equal.</summary>
+        /// <summary>Returns a value that indicates whether this instance and another <see cref="Matrix3x2" /> are equal.</summary>
         /// <param name="other">The other matrix.</param>
         /// <returns><see langword="true" /> if the two matrices are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two matrices are equal if all their corresponding elements are equal.</remarks>
@@ -329,6 +594,25 @@ namespace System.Numerics
         public readonly float GetDeterminant()
             => AsROImpl().GetDeterminant();
 
+        /// <summary>Gets the element at the specified row and column.</summary>
+        /// <param name="row">The index of the row containing the element to get.</param>
+        /// <param name="column">The index of the column containing the element to get.</param>
+        /// <returns>The element at index: [<paramref name="row" />, <paramref name="column" />].</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="row" /> was less than zero or greater than or equal to the number of rows (<c>3</c>).
+        /// -or-
+        /// <paramref name="column" /> was less than zero or greater than or equal to the number of columns (<c>2</c>).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly float GetElement(int row, int column) => this[row, column];
+
+        /// <summary>Gets or sets the row at the specified index.</summary>
+        /// <param name="index">The index of the row to get.</param>
+        /// <returns>The row at index: [<paramref name="index" />].</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than or equal to the number of rows (<c>3</c>).</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly Vector2 GetRow(int index) => this[index];
+
         /// <summary>Returns the hash code for this instance.</summary>
         /// <returns>The hash code.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -340,5 +624,36 @@ namespace System.Numerics
         /// <remarks>The numeric values in the returned string are formatted by using the conventions of the current culture. For example, for the en-US culture, the returned string might appear as <c>{ {M11:1.1 M12:1.2} {M21:2.1 M22:2.2} {M31:3.1 M32:3.2} }</c>.</remarks>
         public override readonly string ToString()
             => $"{{ {{M11:{M11} M12:{M12}}} {{M21:{M21} M22:{M22}}} {{M31:{M31} M32:{M32}}} }}";
+
+        /// <summary>Creates a new <see cref="Matrix3x2"/> with the element at the specified row and column set to the given value and the remaining elements set to the same value as that in the current matrix.</summary>
+        /// <param name="row">The index of the row containing the element to replace.</param>
+        /// <param name="column">The index of the column containing the element to replace.</param>
+        /// <param name="value">The value to assign to the element at index: [<paramref name="row"/>, <paramref name="column"/>].</param>
+        /// <returns>A <see cref="Matrix3x2" /> with the value of the element at index: [<paramref name="row"/>, <paramref name="column"/>] set to <paramref name="value" /> and the remaining elements set to the same value as that in the current matrix.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="row" /> was less than zero or greater than or equal to the number of rows (<c>3</c>).
+        /// -or-
+        /// <paramref name="column" /> was less than zero or greater than or equal to the number of columns (<c>2</c>).
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly Matrix3x2 WithElement(int row, int column, float value)
+        {
+            Matrix3x2 result = this;
+            result[row, column] = value;
+            return result;
+        }
+
+        /// <summary>Creates a new <see cref="Matrix3x2"/> with the row at the specified index set to the given value and the remaining rows set to the same value as that in the current matrix.</summary>
+        /// <param name="index">The index of the row to replace.</param>
+        /// <param name="value">The value to assign to the row at index: [<paramref name="index"/>].</param>
+        /// <returns>A <see cref="Matrix3x2" /> with the value of the row at index: [<paramref name="index"/>] set to <paramref name="value" /> and the remaining rows set to the same value as that in the current matrix.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than or equal to the number of rows (<c>3</c>).</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly Matrix3x2 WithRow(int index, Vector2 value)
+        {
+            Matrix3x2 result = this;
+            result[index] = value;
+            return result;
+        }
     }
 }

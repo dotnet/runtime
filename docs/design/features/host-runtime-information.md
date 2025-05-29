@@ -80,6 +80,10 @@ List of directory paths corresponding to shared store paths and additional probi
 
 ### Single-file
 
+`BUNDLE_EXTRACTION_PATH`
+
+**Added in .NET 10** Path to extraction directory, if the single-file bundle extracted any files. This is used by the runtime to search for native libraries associated with bundled managed assemblies.
+
 `BUNDLE_PROBE`
 
 Hex string representation of a function pointer. It is set when running a single-file application. The function is called by the runtime to look for assemblies bundled into the application. The expected signature is defined as `BundleProbeFn` in [`coreclrhost.h`](/src/coreclr/hosts/inc/coreclrhost.h)

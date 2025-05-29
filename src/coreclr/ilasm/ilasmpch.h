@@ -24,6 +24,7 @@
 
 #include "mdfileformat.h"
 #include "stgpooli.h"
+#include "minipal/time.h"
 
 #ifdef _EXPORT
 #undef _EXPORT

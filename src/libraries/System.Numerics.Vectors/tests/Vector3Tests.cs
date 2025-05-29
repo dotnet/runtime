@@ -1876,5 +1876,42 @@ namespace System.Numerics.Tests
             Assert.Equal(y, vector.Y);
             Assert.Equal(z, vector.Z);
         }
+
+        [Theory]
+        [InlineData(1.0f, 2.0f, 3.0f)]
+        [InlineData(5.0f, 6.0f, 7.0f)]
+        public void AsVector2Test(float x, float y, float z)
+        {
+            var vector = Vector3.Create(x, y, z).AsVector2();
+
+            Assert.Equal(x, vector.X);
+            Assert.Equal(y, vector.Y);
+        }
+
+        [Fact]
+        public void CreateScalarTest()
+        {
+            var vector = Vector3.CreateScalar(float.Pi);
+
+            Assert.Equal(float.Pi, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+
+            vector = Vector3.CreateScalar(float.E);
+
+            Assert.Equal(float.E, vector.X);
+            Assert.Equal(0, vector.Y);
+            Assert.Equal(0, vector.Z);
+        }
+
+        [Fact]
+        public void CreateScalarUnsafeTest()
+        {
+            var vector = Vector3.CreateScalarUnsafe(float.Pi);
+            Assert.Equal(float.Pi, vector.X);
+
+            vector = Vector3.CreateScalarUnsafe(float.E);
+            Assert.Equal(float.E, vector.X);
+        }
     }
 }

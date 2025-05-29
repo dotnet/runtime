@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <Import Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" Project="$(CommonTestPath)System/Net/Prerequisites/LocalEchoServer.props" />
 
   <PropertyGroup>
@@ -27,6 +28,10 @@
     <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <XunitShowProgress Condition="'$(FeatureWasmManagedThreads)' == 'true'">true</XunitShowProgress>
+    <!-- Enable diagnostic features. They will add appropriate RuntimeHostConfigurationOption values to runtime config and ILLink.
+    https://github.com/dotnet/docs/blob/main/docs/core/deploying/trimming/trimming-options.md#trim-framework-library-features 
+    -->
+    <MetricsSupport>true</MetricsSupport>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'wasi'">
@@ -51,6 +56,8 @@
 
   <ItemGroup>
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptor.xml" Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"/>
+
+    <RuntimeHostConfigurationOption Include="System.Net.Http.EnableActivityPropagation" Value="true" Trim="true" Condition="'$(TargetOS)' == 'browser'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -240,21 +247,25 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
+
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="NtAuthTests.Windows.cs" />
     <Compile Include="ImpersonatedAuthTests.cs" />
   </ItemGroup>
+
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
+
   <!-- OSX specific files -->
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'osx' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
+
   <!-- Android specific files -->
   <ItemGroup Condition=" '$(TargetPlatformIdentifier)' == 'android' ">
     <Compile Include="AndroidKeyStoreHelper.cs" />
@@ -271,6 +282,7 @@
     <Compile Include="$(CommonPath)Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs"
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\SafeKeyHandle.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="CustomContent.netcore.cs" />
     <Compile Include="HPackTest.cs" />
@@ -312,6 +324,7 @@
     <Compile Include="LoopbackSocksServer.cs" />
     <Compile Include="SocksProxyTest.cs" />
   </ItemGroup>
+
   <!-- NTLM/Negotiate authentication fakes -->
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
@@ -323,17 +336,17 @@
     <Compile Include="$(CommonTestPath)System\Net\Security\FakeNegotiateServer.cs"
              Link="Common\System\Net\Security\FakeNegotiateServer.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Include="SelectedSitesTest.txt">
       <Link>SelectedSitesTest.txt</Link>
     </EmbeddedResource>
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices.Protocols\src\System.DirectoryServices.Protocols.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\src\System.IO.Pipelines.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
   </ItemGroup>
+
 </Project>

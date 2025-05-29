@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Choice
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="MLKemPrivateKeyAsn"
+  namespace="System.Security.Cryptography.Asn1">
+
+  <!--
+    https://github.com/lamps-wg/kyber-certificates/blob/0049058dafdd2d103e924f70d47363548b3026df/draft-ietf-lamps-kyber-certificates.md
+
+  ML-KEM-512-PrivateKey ::= CHOICE {
+    seed [0] OCTET STRING (SIZE (64)),
+    expandedKey OCTET STRING (SIZE (1632)),
+    both SEQUENCE {
+      seed OCTET STRING (SIZE (64)),
+      expandedKey OCTET STRING (SIZE (1632))
+      }
+    }
+
+  ML-KEM-768-PrivateKey ::= CHOICE {
+    seed [0] OCTET STRING (SIZE (64)),
+    expandedKey OCTET STRING (SIZE (2400)),
+    both SEQUENCE {
+      seed OCTET STRING (SIZE (64)),
+      expandedKey OCTET STRING (SIZE (2400))
+      }
+    }
+
+  ML-KEM-1024-PrivateKey ::= CHOICE {
+    seed [0] OCTET STRING (SIZE (64)),
+    expandedKey OCTET STRING (SIZE (3168)),
+    both SEQUENCE {
+      seed OCTET STRING (SIZE (64)),
+      expandedKey OCTET STRING (SIZE (3168))
+      }
+    }
+  -->
+  <asn:OctetString name="Seed" implicitTag="0" />
+  <asn:OctetString name="ExpandedKey" />
+  <asn:AsnType name="Both" typeName="System.Security.Cryptography.Asn1.MLKemPrivateKeyBothAsn" />
+</asn:Choice>

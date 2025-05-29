@@ -135,18 +135,8 @@ submit-tests-helix:
 		$(_MSBUILD_WASM_BUILD_ARGS) \
 		$(MSBUILD_ARGS)
 
-run-debugger-tests:
-	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
-	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
-	else \
-		$(DOTNET) test  $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(LOG_PATH) --filter "category!=failing" $(TEST_ARGS); \
-	fi
-
 build-dbg-proxy:
 	$(DOTNET) build $(TOP)/src/mono/browser/debugger/BrowserDebugHost $(MSBUILD_ARGS)
-build-dbg-testsuite:
-	$(DOTNET) build $(TOP)/src/mono/browser/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
 build-app-host:
 	$(DOTNET) build $(TOP)/src/mono/wasm/host $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 

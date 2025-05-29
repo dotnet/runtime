@@ -1230,8 +1230,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				void PrivateMethod () { }
 			}
 
-			[Kept(By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
-			[KeptBaseType (typeof (MethodAnnotatedBase), By = Tool.Trimmer)]
+			[Kept]
+			[KeptBaseType (typeof (MethodAnnotatedBase))]
 			class AnotherMethodsDerived : MethodAnnotatedBase
 			{
 				[Kept(By = Tool.Trimmer)]
@@ -1343,9 +1343,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				void InterfaceMethod ();
 			}
 
-			[Kept (By = Tool.Trimmer /* only used in a method signature, not legitimate to keep beyond IL-level trimming */)]
+			[Kept]
 			[KeptMember (".ctor()", By = Tool.Trimmer)]
-			[KeptBaseType (typeof (AnnotatedBase), By = Tool.Trimmer)]
+			[KeptBaseType (typeof (AnnotatedBase))]
 			class AnotherAnnotatedType : AnnotatedBase
 			{
 				[Kept (By = Tool.Trimmer)]

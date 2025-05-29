@@ -58,21 +58,6 @@ public class BuildPublishTests : BlazorWasmTestBase
         PublishProject(info, config, new PublishOptions(AOT: true, UseCache: false));
     }
 
-    [Theory]
-    [InlineData(Configuration.Debug, false)]
-    [InlineData(Configuration.Release, false)]
-    [InlineData(Configuration.Debug, true)]
-    [InlineData(Configuration.Release, true)]
-    public void DefaultTemplate_CheckFingerprinting(Configuration config, bool expectFingerprintOnDotnetJs)
-    {
-        var extraProperty = expectFingerprintOnDotnetJs ?
-            "<WasmFingerprintDotnetJs>true</WasmFingerprintDotnetJs><WasmBuildNative>true</WasmBuildNative>" :
-            "<WasmBuildNative>true</WasmBuildNative>";
-        ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_checkfingerprinting", extraProperties: extraProperty);
-        BlazorBuild(info, config, isNativeBuild: true);
-        BlazorPublish(info, config, new PublishOptions(UseCache: false), isNativeBuild: true);
-    }
-
     // Disabling for now - publish folder can have more than one dotnet*hash*js, and not sure
     // how to pick which one to check, for the test
     //[Theory]

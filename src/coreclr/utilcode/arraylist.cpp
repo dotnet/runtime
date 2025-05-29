@@ -51,7 +51,7 @@ PTR_VOID * ArrayListBase::GetPtr(DWORD index) const
     ArrayListBlock *b = (ArrayListBlock*)&m_firstBlock;
     while (index >= b->m_blockSize)
     {
-        PREFIX_ASSUME(b->m_next != NULL);
+        _ASSERTE(b->m_next != NULL);
         index -= b->m_blockSize;
         b = b->m_next;
     }

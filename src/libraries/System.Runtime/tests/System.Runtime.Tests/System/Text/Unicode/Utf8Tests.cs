@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Text.Unicode.Tests
@@ -64,13 +63,29 @@ namespace System.Text.Unicode.Tests
         {
             Assert.Matches(@"^([0-9a-fA-F]{2})*$", inputHex.ToString());
 
+#if NET
             return Convert.FromHexString(inputHex);
+#else
+            byte[] result = new byte[inputHex.Length / 2];
+            for (int i = 0; i < result.Length; i++)
+            {
+                var h = FromHex(inputHex[i * 2]);
+                var l = FromHex(inputHex[i * 2 + 1]);
+                result[i] = (byte)((h << 4) | l);
+            }
+            return result;
+
+            static int FromHex(char c) =>
+                c >= '0' && c <= '9' ? c - '0' :
+                c >= 'a' && c <= 'f' ? c - 'a' + 10 :
+                c - 'A' + 10;
+#endif
         }
 
         // !! IMPORTANT !!
         // Don't delete this implementation, as we use it as a reference to make sure the framework's
         // transcoding logic is correct.
-        public static byte[] ToUtf8(Rune rune)
+        private static byte[] ToUtf8(Rune rune)
         {
             Assert.True(Rune.IsValid(rune.Value), $"Rune with value U+{(uint)rune.Value:X4} is not well-formed.");
 
@@ -781,4 +796,189 @@ namespace System.Text.Unicode.Tests
             }
         }
     }
+
+#if !NET
+    internal readonly struct Rune //: IComparable, IComparable<Rune>, IEquatable<Rune>
+    {
+        private readonly uint _value;
+
+        public Rune(uint value)
+        {
+            //if (!UnicodeUtility.IsValidUnicodeScalar(value))
+            //{
+            //    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value);
+            //}
+            _value = value;
+        }
+
+        public Rune(int value)
+            : this((uint)value)
+        {
+        }
+        private Rune(uint scalarValue, bool _)
+        {
+            UnicodeDebug.AssertIsValidScalar(scalarValue);
+            _value = scalarValue;
+        }
+
+        internal static Rune UnsafeCreate(uint scalarValue) => new Rune(scalarValue, false);
+
+        public bool IsBmp => UnicodeUtility.IsBmpCodePoint(_value);
+
+        public static Rune ReplacementChar => UnsafeCreate(UnicodeUtility.ReplacementChar);
+
+        public int Utf16SequenceLength
+        {
+            get
+            {
+                int codeUnitCount = UnicodeUtility.GetUtf16SequenceLength(_value);
+                //Debug.Assert(codeUnitCount > 0 && codeUnitCount <= MaxUtf16CharsPerRune);
+                return codeUnitCount;
+            }
+        }
+
+        public int Utf8SequenceLength
+        {
+            get
+            {
+                int codeUnitCount = UnicodeUtility.GetUtf8SequenceLength(_value);
+                //Debug.Assert(codeUnitCount > 0 && codeUnitCount <= MaxUtf8BytesPerRune);
+                return codeUnitCount;
+            }
+        }
+
+        public int Value => (int)_value;
+
+        public static bool IsValid(int value) => IsValid((uint)value);
+        public static bool IsValid(uint value) => UnicodeUtility.IsValidUnicodeScalar(value);
+
+        public static bool TryGetRuneAt(string input, int index, out Rune value)
+        {
+            int runeValue = ReadRuneFromString(input, index);
+            if (runeValue >= 0)
+            {
+                value = UnsafeCreate((uint)runeValue);
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
+            }
+        }
+
+        private static int ReadRuneFromString(string input, int index)
+        {
+            if (input is null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            if ((uint)index >= (uint)input.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index));
+            }
+
+            // Optimistically assume input is within BMP.
+
+            uint returnValue = input[index];
+            if (UnicodeUtility.IsSurrogateCodePoint(returnValue))
+            {
+                if (!UnicodeUtility.IsHighSurrogateCodePoint(returnValue))
+                {
+                    return -1;
+                }
+
+                // Treat 'returnValue' as the high surrogate.
+                //
+                // If this becomes a hot code path, we can skip the below bounds check by reading
+                // off the end of the string using unsafe code. Since strings are null-terminated,
+                // we're guaranteed not to read a valid low surrogate, so we'll fail correctly if
+                // the string terminates unexpectedly.
+
+                index++;
+                if ((uint)index >= (uint)input.Length)
+                {
+                    return -1; // not an argument exception - just a "bad data" failure
+                }
+
+                uint potentialLowSurrogate = input[index];
+                if (!UnicodeUtility.IsLowSurrogateCodePoint(potentialLowSurrogate))
+                {
+                    return -1;
+                }
+
+                returnValue = UnicodeUtility.GetScalarFromUtf16SurrogatePair(returnValue, potentialLowSurrogate);
+            }
+
+            return (int)returnValue;
+        }
+    }
+
+    internal static class StringExtensions
+    {
+        public static StringRuneEnumerator EnumerateRunes(this string value) => new StringRuneEnumerator(value);
+    }
+
+    // An enumerator for retrieving System.Text.Rune instances from a System.String.
+    internal struct StringRuneEnumerator : IEnumerable<Rune>, IEnumerator<Rune>
+    {
+        private readonly string _string;
+        private Rune _current;
+        private int _nextIndex;
+
+        internal StringRuneEnumerator(string value)
+        {
+            _string = value;
+            _current = default;
+            _nextIndex = 0;
+        }
+
+        public Rune Current => _current;
+
+        public StringRuneEnumerator GetEnumerator() => this;
+
+        public bool MoveNext()
+        {
+            if ((uint)_nextIndex >= _string.Length)
+            {
+                // reached the end of the string
+                _current = default;
+                return false;
+            }
+
+            if (!Rune.TryGetRuneAt(_string, _nextIndex, out _current))
+            {
+                // replace invalid sequences with U+FFFD
+                _current = Rune.ReplacementChar;
+            }
+
+            // In UTF-16 specifically, invalid sequences always have length 1, which is the same
+            // length as the replacement character U+FFFD. This means that we can always bump the
+            // next index by the current scalar's UTF-16 sequence length. This optimization is not
+            // generally applicable; for example, enumerating scalars from UTF-8 cannot utilize
+            // this same trick.
+
+            _nextIndex += _current.Utf16SequenceLength;
+            return true;
+        }
+
+        object? IEnumerator.Current => _current;
+
+        void IDisposable.Dispose()
+        {
+            // no-op
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => this;
+
+        IEnumerator<Rune> IEnumerable<Rune>.GetEnumerator() => this;
+
+        void IEnumerator.Reset()
+        {
+            _current = default;
+            _nextIndex = 0;
+        }
+    }
+#endif
 }

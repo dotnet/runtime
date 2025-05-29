@@ -467,12 +467,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
     return original_ICorJitInfo->getTypeForBox(cls);
 }
 
-CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
-          CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
-}
-
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -849,6 +843,12 @@ void interceptor_ICJI::getEEInfo(
     original_ICorJitInfo->getEEInfo(pEEInfoOut);
 }
 
+void interceptor_ICJI::getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut)
+{
+    original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
+}
+
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -949,13 +949,6 @@ CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
     return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->embedModuleHandle(handle, ppIndirection);
-}
-
 CORINFO_CLASS_HANDLE interceptor_ICJI::embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection)
@@ -968,13 +961,6 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::embedMethodHandle(
           void** ppIndirection)
 {
     return original_ICorJitInfo->embedMethodHandle(handle, ppIndirection);
-}
-
-CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
-          void** ppIndirection)
-{
-    return original_ICorJitInfo->embedFieldHandle(handle, ppIndirection);
 }
 
 void interceptor_ICJI::embedGenericHandle(
@@ -1120,6 +1106,11 @@ bool interceptor_ICJI::getTailCallHelpers(
           CORINFO_TAILCALL_HELPERS* pResult)
 {
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    return original_ICorJitInfo->getAsyncResumptionStub();
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(

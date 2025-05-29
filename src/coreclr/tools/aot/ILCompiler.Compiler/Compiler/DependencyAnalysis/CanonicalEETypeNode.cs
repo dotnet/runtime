@@ -45,15 +45,10 @@ namespace ILCompiler.DependencyAnalysis
 
             dependencyList.Add(factory.VTable(closestDefType), "VTable");
 
-            if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                dependencyList.Add(factory.NativeLayout.TemplateTypeLayout(_type), "Universal generic types always have template layout");
-
             // Track generic virtual methods that will get added to the GVM tables
             if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
             {
                 dependencyList.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
-
-                AddDependenciesForUniversalGVMSupport(factory, _type, ref dependencyList);
             }
 
             return dependencyList;
@@ -75,22 +70,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                // No GCDescs for universal canonical types
-                if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                    return 0;
-
-                Debug.Assert(_type.IsCanonicalSubtype(CanonicalFormKind.Specific));
                 return GCDescEncoder.GetGCDescSize(_type);
             }
         }
 
         protected override void OutputGCDesc(ref ObjectDataBuilder builder)
         {
-            // No GCDescs for universal canonical types
-            if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal))
-                return;
-
-            Debug.Assert(_type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             GCDescEncoder.EncodeGCDesc(ref builder, _type);
         }
 
@@ -104,26 +89,6 @@ namespace ILCompiler.DependencyAnalysis
 
                 // Interface omitted for canonical instantiations (constructed at runtime for dynamic types from the native layout info)
                 objData.EmitZeroPointer();
-            }
-        }
-
-        protected override int BaseSize
-        {
-            get
-            {
-                if (_type.IsCanonicalSubtype(CanonicalFormKind.Universal) && _type.IsDefType)
-                {
-                    LayoutInt instanceByteCount = ((DefType)_type).InstanceByteCount;
-
-                    if (instanceByteCount.IsIndeterminate)
-                    {
-                        // For USG types, they may be of indeterminate size, and the size of the type may be meaningless.
-                        // In that case emit a fixed constant.
-                        return MinimumObjectSize;
-                    }
-                }
-
-                return base.BaseSize;
             }
         }
 

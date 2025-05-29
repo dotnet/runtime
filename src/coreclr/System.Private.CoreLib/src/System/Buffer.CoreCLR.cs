@@ -10,13 +10,13 @@ namespace System
     public partial class Buffer
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_Clear")]
-        private static unsafe partial void __ZeroMemory(void* b, nuint byteLength);
+        private static unsafe partial void ZeroMemoryInternal(void* b, nuint byteLength);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Buffer_MemMove")]
-        private static unsafe partial void __Memmove(byte* dest, byte* src, nuint len);
+        private static unsafe partial void MemmoveInternal(byte* dest, byte* src, nuint len);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void __BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount);
+        private static extern void BulkMoveWithWriteBarrierInternal(ref byte destination, ref byte source, nuint byteCount);
 
         // Used by ilmarshalers.cpp
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)

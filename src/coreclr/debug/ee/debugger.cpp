@@ -71,7 +71,6 @@ InteropSafe interopsafe;
 
 DebuggerRCThread        *g_pRCThread = NULL;
 
-#ifndef _PREFAST_
 // Do some compile time checking on the events in DbgIpcEventTypes.h
 // No one ever calls this. But the compiler should still compile it,
 // and that should be sufficient.
@@ -184,7 +183,6 @@ void DoCompileTimeCheckOnDbgIpcEventTypes()
     static_assert_no_msg(f2);
 
 } // end checks
-#endif // _PREFAST_
 
 //-----------------------------------------------------------------------------
 // Ctor for AtSafePlaceHolder
@@ -2774,6 +2772,13 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     }
     CONTRACTL_END;
 
+#ifdef DACCESS_COMPILE
+    if (!HasLazyData())
+    {
+        return NULL;
+    }
+#endif // #ifdef DACCESS_COMPILE
+
     DebuggerMethodInfo *info = NULL;
 
     // When dump debugging, we don't expect to have a lock,
@@ -3301,7 +3306,7 @@ void Debugger::getBoundaries(MethodDesc * md,
     // lives in, then don't grab specific boundaries from the symbol
     // store since any boundaries we give the JIT will be pretty much
     // ignored anyway.
-    if (!CORDisableJITOptimizations(md->GetModule()->GetDebuggerInfoBits()))
+    if (!md->GetModule()->AreJITOptimizationsDisabled())
     {
         *implicitBoundaries  = ICorDebugInfo::BoundaryTypes(ICorDebugInfo::STACK_EMPTY_BOUNDARIES |
                                          ICorDebugInfo::CALL_SITE_BOUNDARIES);
@@ -3379,13 +3384,10 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
     // free to ignore *extendOthers
     *extendOthers = true;
 
-    DWORD bits = md->GetModule()->GetDebuggerInfoBits();
-
     if (CORDBUnrecoverableError(this))
         goto Exit;
 
-    if (CORDisableJITOptimizations(bits))
-//    if (!CORDebuggerAllowJITOpts(bits))
+    if (md->GetModule()->AreJITOptimizationsDisabled())
     {
         //
         // @TODO: Do we really need this code since *extendOthers==true?
@@ -4961,7 +4963,7 @@ HRESULT Debugger::MapPatchToDJI(DebuggerControllerPatch *dcp, DebuggerJitInfo *d
     // If the patch has no DJI then we're doing a UnbindFunctionPatches/RebindFunctionPatches.  Either
     // way, we simply want the most recent version.  In the absence of EnC we should have djiCur == djiTo.
     DebuggerJitInfo *djiCur = dcp->HasDJI() ? dcp->GetDJI() : djiTo;
-    PREFIX_ASSUME(djiCur != NULL);
+    _ASSERTE(djiCur != NULL);
 
     // If the source and destination are the same version, then this method
     // decays into BindFunctionPatch's BindPatch function
@@ -5087,7 +5089,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     pDCB = m_pRCThread->GetDCB();
     (void)pDCB; //prevent "unused variable" error from GCC
 
-    PREFIX_ASSUME(pDCB != NULL); // must have DCB by the time we're sending IPC events.
+    _ASSERTE(pDCB != NULL); // must have DCB by the time we're sending IPC events.
 #ifdef FEATURE_INTEROP_DEBUGGING
     // The synccomplete can't be the first IPC event over. That's b/c the LS needs to know
     // if we're interop-debugging and the RS needs to know special addresses for interop-debugging
@@ -5901,8 +5903,7 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
     LOG((LF_CORDB, LL_INFO10000, "D::SDB: breakpoint BP:0x%x\n", breakpoint));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
-        !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-        g_fInControlC);
+        !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -5949,8 +5950,7 @@ void Debugger::SendBreakpoint(Thread *thread, CONTEXT *context,
     LOG((LF_CORDB, LL_INFO10000, "D::SB: breakpoint BP:0x%x\n", breakpoint));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
-             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-             g_fInControlC);
+             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -6093,8 +6093,7 @@ void Debugger::SendStep(Thread *thread, CONTEXT *context,
         stepper, reason));
 
     _ASSERTE((g_pEEInterface->GetThread() &&
-             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-             g_fInControlC);
+             !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -6421,8 +6420,7 @@ void Debugger::SyncAllThreads(DebuggerLockHolder *dbgLockHolder)
     Thread *pThread = g_pEEInterface->GetThread();
     (void)pThread; //prevent "unused variable" error from GCC
     _ASSERTE((pThread &&
-             !pThread->m_fPreemptiveGCDisabled) ||
-              g_fInControlC);
+             !pThread->m_fPreemptiveGCDisabled));
 
     _ASSERTE(ThreadHoldsLock());
 
@@ -7571,7 +7569,8 @@ HRESULT Debugger::SendException(Thread *pThread,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "D::SendException\n"));
+    LOG((LF_CORDB, LL_INFO10000, "D::SendException pThread=0x%p fFirstChance=%s currentIP=0x%p currentSP= 0x%p fContinuable=%s fAttaching=%s fForceNonInterceptable=%s\n",
+        pThread, fFirstChance ? "true" : "false", (void*)currentIP, (void*)currentSP, fContinuable ? "true" : "false", fAttaching ? "true" : "false", fForceNonInterceptable ? "true" : "false"));
 
     if (CORDBUnrecoverableError(this))
     {
@@ -8258,7 +8257,7 @@ void Debugger::ManagedExceptionUnwindBegin(Thread *pThread)
  *
  * This function is called by the VM to release any debugger specific information for an
  * exception object.  It is called when the VM releases its internal exception stuff, i.e.
- * ExInfo on X86 and ExceptionTracker on WIN64.
+ * ExInfo.
  *
  *
  * Parameters:
@@ -9005,8 +9004,7 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     //
 
         _ASSERTE((g_pEEInterface->GetThread() &&
-                 !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) ||
-                 g_fInControlC);
+                 !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
         _ASSERTE(ThreadHoldsLock());
 
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -9143,7 +9141,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
     // We can't throw here (we're in the middle of the runtime suspension logic).
     // But things below us throw. So we catch the exception, but then what state are we in?
 
-    if (!isEESuspendedForGC) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC); }
+    if (!isEESuspendedForGC) {_ASSERTE((!g_pEEInterface->GetThread() || !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled)); }
     if (!isEESuspendedForGC) { _ASSERTE(ThisIsHelperThreadWorker()); }
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::SC: suspension complete\n");
@@ -9477,7 +9475,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule)
         return; // Non-PDB symbols
 
     DebuggerModule* module = LookupOrCreateModule(pRuntimeModule);
-    PREFIX_ASSUME(module != NULL);
+    _ASSERTE(module != NULL);
 
     DebuggerIPCEvent* ipce = NULL;
     ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -9980,7 +9978,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
 
 
     _ASSERTE(pDE->m_completed);
-    _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled) || g_fInControlC);
+    _ASSERTE((g_pEEInterface->GetThread() && !g_pEEInterface->GetThread()->m_fPreemptiveGCDisabled));
     _ASSERTE(ThreadHoldsLock());
 
     //
@@ -10219,11 +10217,6 @@ BYTE* Debugger::SerializeModuleMetaData(Module * pModule, DWORD * countBytes)
 //
 //
 //---------------------------------------------------------------------------------------
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:21000) // Suppress PREFast warning about overly large function
-#endif
 bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 {
     CONTRACTL
@@ -10714,7 +10707,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             // Just send back an HR.
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
 
-            PREFIX_ASSUME(pIPCResult != NULL);
+            _ASSERTE(pIPCResult != NULL);
 
             InitIPCEvent(pIPCResult, DB_IPCE_SET_DEBUG_STATE_RESULT, NULL, NULL);
 
@@ -10732,7 +10725,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
             DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
 
-            PREFIX_ASSUME(pIPCResult != NULL);
+            _ASSERTE(pIPCResult != NULL);
 
             InitIPCEvent(pIPCResult, DB_IPCE_GET_GCHANDLE_INFO_RESULT, NULL, NULL);
 
@@ -11360,9 +11353,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
     // dbgLockHolder goes out of scope - implicit Release
     return fContinue;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 /*
  * GetAndSendInterceptCommand
@@ -11582,19 +11572,8 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                         // Set up the VM side of intercepting.
                         //
                         StackFrame sfInterceptFramePointer;
-                        if (g_isNewExceptionHandlingEnabled)
-                        {
-                            sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
-                        }
-                        else
-                        {
-#if defined (TARGET_ARM )|| defined (TARGET_ARM64 )
-                            // ARM requires the caller stack pointer, not the current stack pointer
-                            sfInterceptFramePointer = CallerStackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
-#else
-                            sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
-#endif
-                        }
+                        sfInterceptFramePointer = StackFrame::FromRegDisplay(&(csi.m_activeFrame.registers));
+
                         if (pExState->GetDebuggerState()->SetDebuggerInterceptInfo(csi.m_activeFrame.pIJM,
                                                               pThread,
                                                               csi.m_activeFrame.MethodToken,
@@ -11687,7 +11666,7 @@ void Debugger::PollWaitingForHelper()
 
     DebuggerIPCControlBlock * pDCB = g_pRCThread->GetDCB();
 
-    PREFIX_ASSUME(pDCB != NULL);
+    _ASSERTE(pDCB != NULL);
 
     int nTotalMSToWait = 8 * 1000;
 
@@ -12088,7 +12067,7 @@ HRESULT Debugger::GetAndSendBuffer(DebuggerRCThread* rcThread, ULONG bufSize)
 
     // This is a synchronous event (reply required)
     DebuggerIPCEvent* event = rcThread->GetIPCEventReceiveBuffer();
-    PREFIX_ASSUME(event != NULL);
+    _ASSERTE(event != NULL);
     InitIPCEvent(event, DB_IPCE_GET_BUFFER_RESULT, NULL, NULL);
 
     // Allocate the buffer
@@ -12161,7 +12140,7 @@ HRESULT Debugger::SendReleaseBuffer(DebuggerRCThread* rcThread, void *pBuffer)
 
     // This is a synchronous event (reply required)
     DebuggerIPCEvent* event = rcThread->GetIPCEventReceiveBuffer();
-    PREFIX_ASSUME(event != NULL);
+    _ASSERTE(event != NULL);
     InitIPCEvent(event, DB_IPCE_RELEASE_BUFFER_RESULT, NULL, NULL);
 
     _ASSERTE(pBuffer != NULL);
@@ -12465,7 +12444,7 @@ void Debugger::UnrecoverableError(HRESULT errorHR,
     //
     DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
 
-    PREFIX_ASSUME(pDCB != NULL);
+    _ASSERTE(pDCB != NULL);
 
     pDCB->m_errorHR = errorHR;
     pDCB->m_errorCode = errorCode;
@@ -12682,7 +12661,7 @@ void Debugger::GetVarInfo(MethodDesc *       fd,   // [IN] method of interest
     }
     _ASSERTE(fd == ji->m_nativeCodeVersion.GetMethodDesc());
 
-    PREFIX_ASSUME(ji != NULL);
+    _ASSERTE(ji != NULL);
 
     *vars = ji->GetVarNativeInfo();
     *cVars = ji->GetVarNativeInfoCount();
@@ -13475,10 +13454,7 @@ void Debugger::UnhandledHijackWorker(CONTEXT * pContext, EXCEPTION_RECORD * pRec
          fSOException))
     {
 
-        FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(FEATURE_EH_FUNCLETS)
-        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
+        FaultingExceptionFrame fef;
         if ((pContext != NULL) && fSOException)
         {
             GCX_COOP();     // Must be cooperative to modify frame chain.
@@ -14273,9 +14249,9 @@ void Debugger::SendMDANotification(
     }
     CONTRACTL_END;
 
-    PREFIX_ASSUME(szName != NULL);
-    PREFIX_ASSUME(szDescription != NULL);
-    PREFIX_ASSUME(szXML != NULL);
+    _ASSERTE(szName != NULL);
+    _ASSERTE(szDescription != NULL);
+    _ASSERTE(szXML != NULL);
 
     // Note: we normally don't send events like this when there is an unrecoverable error. However,
     // if a host attempts to setup fiber mode on a thread, then we'll set an unrecoverable error
@@ -15025,6 +15001,14 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     {
         return CORDBG_E_ILLEGAL_IN_STACK_OVERFLOW;
     }
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+    if (pThread->m_hasPendingActivation)
+    {
+        _ASSERTE(!"Should never get here with a pending activation. (Debugger::FuncEvalSetup)");
+        return CORDBG_E_ILLEGAL_IN_NATIVE_CODE;
+    }
+#endif
 
     bool fInException = pEvalInfo->evalDuringException;
 
@@ -16797,6 +16781,265 @@ void Debugger::ExternalMethodFixupNextStep(PCODE address)
 {
     DebuggerController::DispatchExternalMethodFixup(address);
 }
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void Debugger::SingleStepToExitApcCall(Thread* pThread, CONTEXT *interruptedContext)
+{
+    pThread->SetThreadState(Thread::TS_SSToExitApcCall);
+    g_pEEInterface->SetThreadFilterContext(pThread, interruptedContext);
+    DebuggerController::EnableSingleStep(pThread);
+    g_pEEInterface->SetThreadFilterContext(pThread, NULL);
+}
+#endif //FEATURE_SPECIAL_USER_MODE_APC
 #endif //DACCESS_COMPILE
+
+unsigned FuncEvalFrame::GetFrameAttribs_Impl(void)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (GetDebuggerEval()->m_evalDuringException)
+    {
+        return FRAME_ATTR_NONE;
+    }
+    else
+    {
+        return FRAME_ATTR_RESUMABLE;    // Treat the next frame as the top frame.
+    }
+}
+
+TADDR FuncEvalFrame::GetReturnAddressPtr_Impl()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    if (GetDebuggerEval()->m_evalDuringException)
+    {
+        return (TADDR)NULL;
+    }
+    else
+    {
+        return PTR_HOST_MEMBER_TADDR(FuncEvalFrame, this, m_ReturnAddress);
+    }
+}
+
+//
+// This updates the register display for a FuncEvalFrame.
+//
+void FuncEvalFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
+{
+    SUPPORTS_DAC;
+    DebuggerEval * pDE = GetDebuggerEval();
+
+    // No context to update if we're doing a func eval from within exception processing.
+    if (pDE->m_evalDuringException)
+    {
+        return;
+    }
+
+#ifndef FEATURE_EH_FUNCLETS
+    // Reset pContext; it's only valid for active (top-most) frame.
+    pRD->pContext = NULL;
+#endif // !FEATURE_EH_FUNCLETS
+
+
+#ifdef TARGET_X86
+    // Update all registers in the reg display from the CONTEXT we stored when the thread was hijacked for this func
+    // eval. We have to update all registers, not just the callee saved registers, because we can hijack a thread at any
+    // point for a func eval, not just at a call site.
+    pRD->SetEdiLocation(&(pDE->m_context.Edi));
+    pRD->SetEsiLocation(&(pDE->m_context.Esi));
+    pRD->SetEbxLocation(&(pDE->m_context.Ebx));
+    pRD->SetEdxLocation(&(pDE->m_context.Edx));
+    pRD->SetEcxLocation(&(pDE->m_context.Ecx));
+    pRD->SetEaxLocation(&(pDE->m_context.Eax));
+    pRD->SetEbpLocation(&(pDE->m_context.Ebp));
+    SetRegdisplayPCTAddr(pRD, GetReturnAddressPtr());
+
+#ifdef FEATURE_EH_FUNCLETS
+
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
+
+    pRD->pCurrentContext->Esp = (DWORD)GetSP(&pDE->m_context);
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+#else // FEATURE_EH_FUNCLETS
+
+    pRD->SP = (DWORD)GetSP(&pDE->m_context);
+
+#endif // FEATURE_EH_FUNCLETS
+
+#elif defined(TARGET_AMD64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(CONTEXT));
+
+    pRD->pCurrentContextPointers->Rax = &(pDE->m_context.Rax);
+    pRD->pCurrentContextPointers->Rcx = &(pDE->m_context.Rcx);
+    pRD->pCurrentContextPointers->Rdx = &(pDE->m_context.Rdx);
+    pRD->pCurrentContextPointers->R8  = &(pDE->m_context.R8);
+    pRD->pCurrentContextPointers->R9  = &(pDE->m_context.R9);
+    pRD->pCurrentContextPointers->R10 = &(pDE->m_context.R10);
+    pRD->pCurrentContextPointers->R11 = &(pDE->m_context.R11);
+
+    pRD->pCurrentContextPointers->Rbx = &(pDE->m_context.Rbx);
+    pRD->pCurrentContextPointers->Rsi = &(pDE->m_context.Rsi);
+    pRD->pCurrentContextPointers->Rdi = &(pDE->m_context.Rdi);
+    pRD->pCurrentContextPointers->Rbp = &(pDE->m_context.Rbp);
+    pRD->pCurrentContextPointers->R12 = &(pDE->m_context.R12);
+    pRD->pCurrentContextPointers->R13 = &(pDE->m_context.R13);
+    pRD->pCurrentContextPointers->R14 = &(pDE->m_context.R14);
+    pRD->pCurrentContextPointers->R15 = &(pDE->m_context.R15);
+
+    // SyncRegDisplayToCurrentContext() sets the pRD->SP and pRD->ControlPC on AMD64.
+    SyncRegDisplayToCurrentContext(pRD);
+
+#elif defined(TARGET_ARM)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->R4 = &(pDE->m_context.R4);
+    pRD->pCurrentContextPointers->R5 = &(pDE->m_context.R5);
+    pRD->pCurrentContextPointers->R6 = &(pDE->m_context.R6);
+    pRD->pCurrentContextPointers->R7 = &(pDE->m_context.R7);
+    pRD->pCurrentContextPointers->R8 = &(pDE->m_context.R8);
+    pRD->pCurrentContextPointers->R9 = &(pDE->m_context.R9);
+    pRD->pCurrentContextPointers->R10 = &(pDE->m_context.R10);
+    pRD->pCurrentContextPointers->R11 = &(pDE->m_context.R11);
+    pRD->pCurrentContextPointers->Lr = &(pDE->m_context.Lr);
+
+    pRD->volatileCurrContextPointers.R0 = &(pDE->m_context.R0);
+    pRD->volatileCurrContextPointers.R1 = &(pDE->m_context.R1);
+    pRD->volatileCurrContextPointers.R2 = &(pDE->m_context.R2);
+    pRD->volatileCurrContextPointers.R3 = &(pDE->m_context.R3);
+    pRD->volatileCurrContextPointers.R12 = &(pDE->m_context.R12);
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+#elif defined(TARGET_ARM64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->X19 = &(pDE->m_context.X19);
+    pRD->pCurrentContextPointers->X20 = &(pDE->m_context.X20);
+    pRD->pCurrentContextPointers->X21 = &(pDE->m_context.X21);
+    pRD->pCurrentContextPointers->X22 = &(pDE->m_context.X22);
+    pRD->pCurrentContextPointers->X23 = &(pDE->m_context.X23);
+    pRD->pCurrentContextPointers->X24 = &(pDE->m_context.X24);
+    pRD->pCurrentContextPointers->X25 = &(pDE->m_context.X25);
+    pRD->pCurrentContextPointers->X26 = &(pDE->m_context.X26);
+    pRD->pCurrentContextPointers->X27 = &(pDE->m_context.X27);
+    pRD->pCurrentContextPointers->X28 = &(pDE->m_context.X28);
+    pRD->pCurrentContextPointers->Lr = &(pDE->m_context.Lr);
+    pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
+
+    pRD->volatileCurrContextPointers.X0 = &(pDE->m_context.X0);
+    pRD->volatileCurrContextPointers.X1 = &(pDE->m_context.X1);
+    pRD->volatileCurrContextPointers.X2 = &(pDE->m_context.X2);
+    pRD->volatileCurrContextPointers.X3 = &(pDE->m_context.X3);
+    pRD->volatileCurrContextPointers.X4 = &(pDE->m_context.X4);
+    pRD->volatileCurrContextPointers.X5 = &(pDE->m_context.X5);
+    pRD->volatileCurrContextPointers.X6 = &(pDE->m_context.X6);
+    pRD->volatileCurrContextPointers.X7 = &(pDE->m_context.X7);
+    pRD->volatileCurrContextPointers.X8 = &(pDE->m_context.X8);
+    pRD->volatileCurrContextPointers.X9 = &(pDE->m_context.X9);
+    pRD->volatileCurrContextPointers.X10 = &(pDE->m_context.X10);
+    pRD->volatileCurrContextPointers.X11 = &(pDE->m_context.X11);
+    pRD->volatileCurrContextPointers.X12 = &(pDE->m_context.X12);
+    pRD->volatileCurrContextPointers.X13 = &(pDE->m_context.X13);
+    pRD->volatileCurrContextPointers.X14 = &(pDE->m_context.X14);
+    pRD->volatileCurrContextPointers.X15 = &(pDE->m_context.X15);
+    pRD->volatileCurrContextPointers.X16 = &(pDE->m_context.X16);
+    pRD->volatileCurrContextPointers.X17 = &(pDE->m_context.X17);
+
+    SyncRegDisplayToCurrentContext(pRD);
+#elif defined(TARGET_RISCV64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->S1 = &(pDE->m_context.S1);
+    pRD->pCurrentContextPointers->S2 = &(pDE->m_context.S2);
+    pRD->pCurrentContextPointers->S3 = &(pDE->m_context.S3);
+    pRD->pCurrentContextPointers->S4 = &(pDE->m_context.S4);
+    pRD->pCurrentContextPointers->S5 = &(pDE->m_context.S5);
+    pRD->pCurrentContextPointers->S6 = &(pDE->m_context.S6);
+    pRD->pCurrentContextPointers->S7 = &(pDE->m_context.S7);
+    pRD->pCurrentContextPointers->S8 = &(pDE->m_context.S8);
+    pRD->pCurrentContextPointers->S9 = &(pDE->m_context.S9);
+    pRD->pCurrentContextPointers->S10 = &(pDE->m_context.S10);
+    pRD->pCurrentContextPointers->S11 = &(pDE->m_context.S11);
+    pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
+    pRD->pCurrentContextPointers->Gp = &(pDE->m_context.Gp);
+    pRD->pCurrentContextPointers->Tp = &(pDE->m_context.Tp);
+    pRD->pCurrentContextPointers->Ra = &(pDE->m_context.Ra);
+
+    pRD->volatileCurrContextPointers.R0 = &(pDE->m_context.R0);
+    pRD->volatileCurrContextPointers.A0 = &(pDE->m_context.A0);
+    pRD->volatileCurrContextPointers.A1 = &(pDE->m_context.A1);
+    pRD->volatileCurrContextPointers.A2 = &(pDE->m_context.A2);
+    pRD->volatileCurrContextPointers.A3 = &(pDE->m_context.A3);
+    pRD->volatileCurrContextPointers.A4 = &(pDE->m_context.A4);
+    pRD->volatileCurrContextPointers.A5 = &(pDE->m_context.A5);
+    pRD->volatileCurrContextPointers.A6 = &(pDE->m_context.A6);
+    pRD->volatileCurrContextPointers.A7 = &(pDE->m_context.A7);
+    pRD->volatileCurrContextPointers.T0 = &(pDE->m_context.T0);
+    pRD->volatileCurrContextPointers.T1 = &(pDE->m_context.T1);
+    pRD->volatileCurrContextPointers.T2 = &(pDE->m_context.T2);
+    pRD->volatileCurrContextPointers.T3 = &(pDE->m_context.T3);
+    pRD->volatileCurrContextPointers.T4 = &(pDE->m_context.T4);
+    pRD->volatileCurrContextPointers.T5 = &(pDE->m_context.T5);
+    pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
+
+    SyncRegDisplayToCurrentContext(pRD);
+#elif defined(TARGET_LOONGARCH64)
+    pRD->IsCallerContextValid = FALSE;
+    pRD->IsCallerSPValid = FALSE;        // Don't add usage of this flag.  This is only temporary.
+
+    memcpy(pRD->pCurrentContext, &(pDE->m_context), sizeof(T_CONTEXT));
+
+    pRD->pCurrentContextPointers->S0 = &(pDE->m_context.S0);
+    pRD->pCurrentContextPointers->S1 = &(pDE->m_context.S1);
+    pRD->pCurrentContextPointers->S2 = &(pDE->m_context.S2);
+    pRD->pCurrentContextPointers->S3 = &(pDE->m_context.S3);
+    pRD->pCurrentContextPointers->S4 = &(pDE->m_context.S4);
+    pRD->pCurrentContextPointers->S5 = &(pDE->m_context.S5);
+    pRD->pCurrentContextPointers->S6 = &(pDE->m_context.S6);
+    pRD->pCurrentContextPointers->S7 = &(pDE->m_context.S7);
+    pRD->pCurrentContextPointers->S8 = &(pDE->m_context.S8);
+    pRD->pCurrentContextPointers->Fp = &(pDE->m_context.Fp);
+    pRD->pCurrentContextPointers->Ra = &(pDE->m_context.Ra);
+
+    pRD->volatileCurrContextPointers.R0 = &(pDE->m_context.R0);
+    pRD->volatileCurrContextPointers.A0 = &(pDE->m_context.A0);
+    pRD->volatileCurrContextPointers.A1 = &(pDE->m_context.A1);
+    pRD->volatileCurrContextPointers.A2 = &(pDE->m_context.A2);
+    pRD->volatileCurrContextPointers.A3 = &(pDE->m_context.A3);
+    pRD->volatileCurrContextPointers.A4 = &(pDE->m_context.A4);
+    pRD->volatileCurrContextPointers.A5 = &(pDE->m_context.A5);
+    pRD->volatileCurrContextPointers.A6 = &(pDE->m_context.A6);
+    pRD->volatileCurrContextPointers.A7 = &(pDE->m_context.A7);
+    pRD->volatileCurrContextPointers.T0 = &(pDE->m_context.T0);
+    pRD->volatileCurrContextPointers.T1 = &(pDE->m_context.T1);
+    pRD->volatileCurrContextPointers.T2 = &(pDE->m_context.T2);
+    pRD->volatileCurrContextPointers.T3 = &(pDE->m_context.T3);
+    pRD->volatileCurrContextPointers.T4 = &(pDE->m_context.T4);
+    pRD->volatileCurrContextPointers.T5 = &(pDE->m_context.T5);
+    pRD->volatileCurrContextPointers.T6 = &(pDE->m_context.T6);
+    pRD->volatileCurrContextPointers.T7 = &(pDE->m_context.T7);
+    pRD->volatileCurrContextPointers.T8 = &(pDE->m_context.T8);
+    pRD->volatileCurrContextPointers.X0 = &(pDE->m_context.X0);
+
+    SyncRegDisplayToCurrentContext(pRD);
+
+#else
+    PORTABILITY_ASSERT("FuncEvalFrame::UpdateRegDisplay is not implemented on this platform.");
+#endif
+}
 
 #endif //DEBUGGING_SUPPORTED

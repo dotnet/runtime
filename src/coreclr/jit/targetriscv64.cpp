@@ -62,13 +62,15 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
 
     unsigned intFields = 0, floatFields = 0;
     unsigned passedSize;
+    bool     passedByRef = false;
 
     if (varTypeIsStruct(type))
     {
         passedSize = structLayout->GetSize();
         if (passedSize > MAX_PASS_MULTIREG_BYTES)
         {
-            passedSize = TARGET_POINTER_SIZE; // pass by reference
+            passedByRef = true;
+            passedSize  = TARGET_POINTER_SIZE;
         }
         else if (!structLayout->IsBlockLayout())
         {
@@ -83,7 +85,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                     floatFields += (unsigned)varTypeIsFloating(type);
                     INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
                 }
-                intFields = lowering->numLoweredElements - floatFields;
+                intFields = static_cast<unsigned>(lowering->numLoweredElements) - floatFields;
                 assert(debugIntFields == intFields);
             }
         }
@@ -113,7 +115,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             assert(varTypeIsFloating(type));
 
             ABIPassingSegment seg = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, passedSize);
-            return ABIPassingInformation::FromSegment(comp, seg);
+            return ABIPassingInformation::FromSegmentByValue(comp, seg);
         }
         else
         {
@@ -151,7 +153,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             if (passedSize <= TARGET_POINTER_SIZE)
             {
                 ABIPassingSegment seg = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, passedSize);
-                return ABIPassingInformation::FromSegment(comp, seg);
+                return ABIPassingInformation::FromSegment(comp, passedByRef, seg);
             }
             else
             {
@@ -168,7 +170,7 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
         else
         {
-            return ABIPassingInformation::FromSegment(comp, passOnStack(0, passedSize));
+            return ABIPassingInformation::FromSegment(comp, passedByRef, passOnStack(0, passedSize));
         }
     }
 }

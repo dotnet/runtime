@@ -32,9 +32,22 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public unsafe void SizeOf_FunctionPointer_ReturnsExpected()
+        {
+            Assert.Equal(IntPtr.Size, Marshal.SizeOf(typeof(delegate*<void>)));
+        }
+
+        [Fact]
         public void SizeOf_Pointer_ReturnsExpected()
         {
             Assert.Equal(IntPtr.Size, Marshal.SizeOf(typeof(int).MakePointerType()));
+        }
+
+        [Fact]
+        public void SizeOf_Primitives_ReturnsExpected()
+        {
+            Assert.Equal(1, Marshal.SizeOf<char>());
+            Assert.Equal(4, Marshal.SizeOf<bool>());
         }
 
         [Fact]

@@ -44,14 +44,13 @@
 
     # Perform the rest of the PInvokeTransitionFrame initialization.
     sd  \threadReg, OFFSETOF__PInvokeTransitionFrame__m_pThread(sp)        # Thread * (unused by stackwalker)
-    sd  \BITMASK, (OFFSETOF__PInvokeTransitionFrame__m_pThread + 8)(sp)    # Save the register bitmask passed in by caller
+    sd  \BITMASK, OFFSETOF__PInvokeTransitionFrame__m_Flags(sp)            # Save the register bitmask passed in by caller
 
     addi  \trashReg, sp, PROBE_FRAME_SIZE                                  # Recover value of caller's SP
     sd  \trashReg, 0x78(sp)                                                # Save caller's SP
 
     # Link the frame into the Thread
-    mv  \trashReg, sp
-    sd  \trashReg, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
+    sd  sp, OFFSETOF__Thread__m_pDeferredTransitionFrame(\threadReg)
 
 .endm
 
@@ -84,11 +83,9 @@
 .macro FixupHijackedCallstack
 
     // a2 <- GetThread()
-#ifdef FEATURE_EMULATED_TLS
-    GETTHREAD_ETLS_2
-#else
+    mv  t1, a0
     INLINE_GETTHREAD a2
-#endif
+    mv  a0, t1
 
     // Fix the stack by restoring the original return address
     ld  ra, OFFSETOF__Thread__m_pvHijackedReturnAddress(a2)
@@ -104,14 +101,13 @@
 NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
     FixupHijackedCallstack
 
-    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, a3
-    andi  t3, a3, 1 << TrapThreadsFlags_TrapThreads_Bit
+    PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t3
+    andi  t3, t3, 1 << TrapThreadsFlags_TrapThreads_Bit
     bnez  t3, LOCAL_LABEL(WaitForGC)
     jr  ra
 
 LOCAL_LABEL(WaitForGC):
-    li  t6, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A0 + PTFF_SAVE_A1 + PTFF_THREAD_HIJACK_HI)
-    or  t3, t3, t6
+    li  t3, (DEFAULT_FRAME_SAVE_FLAGS + PTFF_SAVE_A0 + PTFF_SAVE_A1 + (PTFF_THREAD_HIJACK_HI << 32))
     tail  C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack
 

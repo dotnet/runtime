@@ -35,6 +35,7 @@
 #define IDS_DS_DSOTHREADMODEL                   0x1707
 
 #define IDS_EE_NDIRECT_UNSUPPORTED_SIG          0x1708
+#define IDS_EE_NDIRECT_UNSUPPORTED_UNMANAGEDCALLERSONLY 0x1709
 #define IDS_EE_NDIRECT_BADNATL                  0x170a
 #define IDS_EE_NDIRECT_LOADLIB_WIN              0x170b
 #define IDS_EE_NDIRECT_GETPROCADDRESS_WIN       0x170c
@@ -414,10 +415,11 @@
 #define BFA_BAD_TYPEREF_TOKEN                   0x2046
 #define BFA_BAD_CLASS_INT_CA_FORMAT             0x2048
 #define BFA_BAD_COMPLUS_SIG                     0x2049
-#define BFA_BAD_ELEM_IN_SIZEOF                  0x204b
-#define BFA_IJW_IN_COLLECTIBLE_ALC              0x204c
-#define BFA_INVALID_UNSAFEACCESSOR              0x204d
-
+#define BFA_BAD_ELEM_IN_SIZEOF                  0x204a
+#define BFA_IJW_IN_COLLECTIBLE_ALC              0x204b
+#define BFA_INVALID_UNSAFEACCESSOR              0x204c
+#define BFA_INVALID_UNSAFEACCESSORTYPE          0x204d
+#define BFA_INVALID_UNSAFEACCESSORTYPE_VALUETYPE 0x204e
 #define IDS_CLASSLOAD_INTERFACE_NO_ACCESS       0x204f
 
 #define BFA_BAD_CA_HEADER                       0x2050

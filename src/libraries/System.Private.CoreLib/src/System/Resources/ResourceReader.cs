@@ -119,10 +119,7 @@ namespace System.Resources
 #endif
         {
 #if RESOURCES_EXTENSIONS
-            if (stream is null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 #else
             ArgumentNullException.ThrowIfNull(stream);
 #endif

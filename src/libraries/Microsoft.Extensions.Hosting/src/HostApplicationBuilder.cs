@@ -343,7 +343,7 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
             {
-                ThrowHelper.ThrowIfNull(configureDelegate);
+                ArgumentNullException.ThrowIfNull(configureDelegate);
 
                 _configureHostConfigActions.Add(configureDelegate);
                 return this;
@@ -351,7 +351,7 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
             {
-                ThrowHelper.ThrowIfNull(configureDelegate);
+                ArgumentNullException.ThrowIfNull(configureDelegate);
 
                 _configureAppConfigActions.Add(configureDelegate);
                 return this;
@@ -359,7 +359,7 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
             {
-                ThrowHelper.ThrowIfNull(configureDelegate);
+                ArgumentNullException.ThrowIfNull(configureDelegate);
 
                 _configureServicesActions.Add(configureDelegate);
                 return this;
@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
             {
-                ThrowHelper.ThrowIfNull(factory);
+                ArgumentNullException.ThrowIfNull(factory);
 
                 _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
                 return this;
@@ -376,7 +376,7 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
             {
-                ThrowHelper.ThrowIfNull(factory);
+                ArgumentNullException.ThrowIfNull(factory);
 
                 _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory);
                 return this;
@@ -384,7 +384,7 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
             {
-                ThrowHelper.ThrowIfNull(configureDelegate);
+                ArgumentNullException.ThrowIfNull(configureDelegate);
 
                 _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
                 return this;

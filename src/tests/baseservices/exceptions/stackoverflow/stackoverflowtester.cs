@@ -24,6 +24,7 @@ namespace TestStackOverflow
             testProcess.StartInfo.UseShellExecute = false;
             testProcess.StartInfo.RedirectStandardError = true;
             testProcess.StartInfo.Environment.Add("DOTNET_DbgEnableMiniDump", "0");
+            testProcess.StartInfo.Environment.Add("DOTNET_LogStackOverflowExit", "1");
             bool endOfStackTrace = false;
             
             testProcess.ErrorDataReceived += (sender, line) => 
@@ -40,7 +41,7 @@ namespace TestStackOverflow
                     {
                         lines.Add(line.Data);
                     }
-                    else
+                    else if (!line.Data.StartsWith("@"))
                     {
                         endOfStackTrace = true;
                     }

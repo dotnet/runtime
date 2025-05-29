@@ -159,10 +159,9 @@ struct TransitionBlock
             INT64 s6;
             INT64 s7;
             INT64 s8;
-            INT64 tp;
         };
     };
-    //TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
     ArgumentRegisters       m_argumentRegisters;
 #elif defined(TARGET_RISCV64)
     union {
@@ -186,6 +185,16 @@ struct TransitionBlock
         };
     };
     TADDR padding; // Keep size of TransitionBlock as multiple of 16-byte. Simplifies code in PROLOG_WITH_TRANSITION_BLOCK
+    ArgumentRegisters       m_argumentRegisters;
+#elif defined(TARGET_WASM)
+    // No transition block on WASM yet
+    union {
+        CalleeSavedRegisters m_calleeSavedRegisters;
+        // alias saved link register as m_ReturnAddress
+        struct {
+            TADDR m_ReturnAddress;
+        };
+    };
     ArgumentRegisters       m_argumentRegisters;
 #else
     PORTABILITY_ASSERT("TransitionBlock");
@@ -925,6 +934,16 @@ public:
     }
 
 #endif // TARGET_LOONGARCH64 || TARGET_RISCV64
+
+#ifdef TARGET_WASM
+
+    // Get layout information for the argument that the ArgIterator is currently visiting.
+    void GetArgLoc(int argOffset, ArgLocDesc *pLoc)
+    {
+        _ASSERTE(!"GetArgLoc not implemented for WASM");
+    }
+#endif // TARGET_WASM
+
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
@@ -2129,6 +2148,18 @@ public:
         return m_pSig->IsVarArg() || m_pSig->IsTreatAsVarArg();
     }
 
+    BOOL IsAsyncCall()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pSig->IsAsyncCall();
+    }
+
+    BOOL HasAsyncContinuation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pSig->HasAsyncContinuation();
+    }
+
     DWORD NumFixedArgs()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2207,6 +2238,30 @@ inline BOOL IsRetBuffPassedAsFirstArg()
 #else
     return FALSE;
 #endif
+}
+
+inline TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, ECX);
+#endif
+
+    return pArgument;
+}
+
+inline TADDR GetSecondArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
+{
+    TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
+#ifdef TARGET_X86
+    // x86 is special as always
+    pArgument += offsetof(ArgumentRegisters, EDX);
+#else
+    pArgument += sizeof(TADDR);
+#endif
+
+    return pArgument;
 }
 
 #endif // __CALLING_CONVENTION_INCLUDED

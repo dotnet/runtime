@@ -967,7 +967,7 @@ struct MSLAYOUT DACEHInfo
     CLRDATA_ADDRESS tryEndOffset = 0;
     CLRDATA_ADDRESS handlerStartOffset = 0;
     CLRDATA_ADDRESS handlerEndOffset = 0;
-    BOOL isDuplicateClause = FALSE;
+    BOOL isDuplicateClause = FALSE;     // unused
     CLRDATA_ADDRESS filterOffset = 0;   // valid when clauseType is EHFilter
     BOOL isCatchAllHandler = FALSE;     // valid when clauseType is EHTyped
     CLRDATA_ADDRESS moduleAddr = 0;     // when == 0 mtCatch contains a MethodTable, when != 0 tokCatch contains a type token

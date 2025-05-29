@@ -660,7 +660,7 @@ namespace SuperFileCheck
                         Console.Write(String.Join(' ', methodDeclInfos.Select(x => x.FullyQualifiedName)));
                         return 0;
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine(ex.Message);

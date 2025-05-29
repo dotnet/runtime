@@ -28,6 +28,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/115467", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_ConnectionInfoInCallback_DoesNotThrow()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, SslProtocols.Tls12, SslProtocolSupport.DefaultSslProtocols, AllowAnyServerCertificateAndVerifyConnectionInfo);
@@ -145,7 +146,7 @@ namespace System.Net.Security.Tests
                     Task clientTask = client.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                     {
                         EnabledSslProtocols = clientSslProtocols,
-                        RemoteCertificateValidationCallback = AllowAnyServerCertificate,
+                        RemoteCertificateValidationCallback = certificateCallback ?? AllowAnyServerCertificate,
                         TargetHost = serverName
                     });
                     serverTask = server.AuthenticateAsServerAsync(new SslServerAuthenticationOptions

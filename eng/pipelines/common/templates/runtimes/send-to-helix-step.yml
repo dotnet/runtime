@@ -19,6 +19,7 @@ parameters:
   runCrossGen2: ''
   compositeBuildMode: false
   helixProjectArguments: ''
+  extraHelixArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
   hotColdSplitting: ''
@@ -29,6 +30,7 @@ parameters:
   runtimeVariant: ''
   shouldContinueOnError: false
   SuperPmiCollect: ''
+  SuperPmiReplayType: ''
   SuperPmiDiffType: ''
   SuperPmiBaseJitOptions: ''
   SuperPmiDiffJitOptions: ''
@@ -38,7 +40,7 @@ steps:
 - template: send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
-    sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }}
+    sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }} ${{ parameters.extraHelixArguments }}
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
@@ -64,6 +66,7 @@ steps:
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      _SuperPmiReplayType: ${{ parameters.SuperPmiReplayType }}
       _SuperPmiDiffType: ${{ parameters.SuperPmiDiffType }}
       _SuperPmiBaseJitOptions: ${{ parameters.SuperPmiBaseJitOptions }}
       _SuperPmiDiffJitOptions: ${{ parameters.SuperPmiDiffJitOptions }}
