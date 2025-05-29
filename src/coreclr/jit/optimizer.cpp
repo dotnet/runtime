@@ -65,8 +65,8 @@ PhaseStatus Compiler::optSetBlockWeights()
 
     for (FlowGraphNaturalLoop* const loop : m_loops->InReversePostOrder())
     {
-        madeChanges = true;
         optScaleLoopBlocks(loop);
+        madeChanges = true;
     }
 
     bool firstBBDominatesAllReturns = true;
@@ -2300,8 +2300,6 @@ PhaseStatus Compiler::optInvertLoops()
             //
             if (block->bbWeight == BB_ZERO_WEIGHT)
             {
-                // Zero weighted block can't have a LOOP_HEAD flag
-                noway_assert(block->isLoopHead() == false);
                 continue;
             }
 
@@ -2440,8 +2438,6 @@ void Compiler::optResetLoopInfo()
             block->bbWeight = BB_UNITY_WEIGHT;
             block->RemoveFlags(BBF_RUN_RARELY);
         }
-
-        block->RemoveFlags(BBF_LOOP_HEAD);
     }
 }
 
