@@ -2488,15 +2488,35 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(dstCount == 2);
                 assert(isRMW);
 
-                // mulEAX always have op1 in EAX
-                srcCount = BuildOperandUses(op1, SRBM_EAX);
-                SingleTypeRegSet apxAwareRegCandidates =
-                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
-                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+                if ((baseType == TYP_ULONG || baseType == TYP_UINT) &&
+                    compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+                {
+                    isRMW = false;
 
-                // result put in EAX and EDX
-                BuildDef(intrinsicTree, SRBM_EAX, 0);
-                BuildDef(intrinsicTree, SRBM_EDX, 1);
+                    // mulx alway have op1 in EDX
+                    srcCount = BuildOperandUses(op1, SRBM_EDX);
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                    // result in any register
+                    SingleTypeRegSet apxAwareDestCandidates =
+                        ForceLowGprForApxIfNeeded(intrinsicTree, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 0);
+                    BuildDef(intrinsicTree, apxAwareDestCandidates, 1);
+                }
+                else // Signed multiply or normal unsigned multiply in one operand form
+                {
+                    // mulEAX always have op1 in EAX
+                    srcCount = BuildOperandUses(op1, SRBM_EAX);
+                    SingleTypeRegSet apxAwareRegCandidates =
+                        ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                    srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
+
+                    // result put in EAX and EDX
+                    BuildDef(intrinsicTree, SRBM_EAX, 0);
+                    BuildDef(intrinsicTree, SRBM_EDX, 1);
+                }
 
                 buildUses = false;
                 break;
