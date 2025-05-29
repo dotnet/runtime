@@ -805,11 +805,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
             else if ((normalLclVN == lenVN) && comp->vnStore->IsVNInt32Constant(indexVN))
             {
-                // We have "Const < arr.Length" assertion, it means that "arr.Length >= Const"
+                // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
                 int indexCns = comp->vnStore->GetConstantInt32(indexVN);
                 if (indexCns >= 0)
                 {
-                    cmpOper = GT_GE;
+                    cmpOper = GT_GT;
                     limit   = Limit(Limit::keConstant, indexCns);
                 }
                 else
