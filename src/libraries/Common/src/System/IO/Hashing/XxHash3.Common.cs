@@ -66,21 +66,21 @@ namespace System.IO.Hashing
             //
             // if (length <= 16)
             // {
-            //     return HashLength0To16(sourcePtr, length, (ulong)seed);
+            //     return HashLength0To16(sourcePtr, length, 0UL);
             // }
             Debug.Assert(length > 16);
 
             if (length <= 128)
             {
-                return (int)HashLength17To128(sourcePtr, length, (ulong)seed);
+                return (int)HashLength17To128(sourcePtr, length, 0UL);
             }
 
             if (length <= MidSizeMaxBytes)
             {
-                return (int)HashLength129To240(sourcePtr, length, (ulong)seed);
+                return (int)HashLength129To240(sourcePtr, length, 0UL);
             }
 
-            return (int)HashLengthOver240(sourcePtr, length, (ulong)seed);
+            return (int)HashLengthOver240(sourcePtr, length, 0UL);
         }
 #endif
 
