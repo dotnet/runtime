@@ -365,22 +365,15 @@ namespace System.IO.Pipelines.Tests
         public void UnflushedBytesShouldOverflowInt()
         {
             PipeWriter writer = PipeWriter.Create(Stream.Null);
+            int bufferSize = 10000;
+
             while (writer.UnflushedBytes >= 0 && writer.UnflushedBytes <= int.MaxValue)
             {
-                Memory<byte> buffer = writer.GetMemory();
-                if (buffer.Length < 47)
-                {
-                    writer.Advance(21);
-                    buffer = writer.GetMemory(47);
-                    writer.Advance(14);
-                }
-                else
-                {
-                    writer.Advance(35);
-                }
+                writer.GetMemory(bufferSize);
+                writer.Advance(bufferSize);
             }
 
-            Assert.True(writer.UnflushedBytes > int.MaxValue);
+            Assert.Equal(2147490000, writer.UnflushedBytes);
         }
     }
 }

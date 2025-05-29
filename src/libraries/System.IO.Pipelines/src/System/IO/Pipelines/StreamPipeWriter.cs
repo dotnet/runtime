@@ -76,10 +76,7 @@ namespace System.IO.Pipelines
             }
 
             _tailBytesBuffered += bytes;
-            checked
-            {
-                _bytesBuffered += bytes;
-            }
+            _bytesBuffered += bytes;
 
             _tailMemory = _tailMemory.Slice(bytes);
         }
