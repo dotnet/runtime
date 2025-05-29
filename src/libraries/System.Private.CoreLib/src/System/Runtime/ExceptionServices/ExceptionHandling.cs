@@ -41,23 +41,6 @@ namespace System.Runtime.ExceptionServices
         }
 
         /// <summary>
-        /// Raises the <see cref="AppDomain.UnhandledException"/> event.
-        /// </summary>
-        /// <param name="exception">Exception to pass to event handlers.</param>
-        /// <remarks>
-        /// This method will raise the <see cref="AppDomain.UnhandledException"/>
-        /// event and then return.
-        ///
-        /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
-        /// </remarks>
-        public static void RaiseAppDomainUnhandledExceptionEvent(object exception)
-        {
-            ArgumentNullException.ThrowIfNull(exception);
-
-            AppContext.OnUnhandledException(exception);
-        }
-
-        /// <summary>
         /// .NET runtime is going to call `fatalErrorHandler` set by this method before its own
         /// fatal error handling (creating .NET runtime-specific crash dump, etc.).
         /// </summary>
@@ -74,6 +57,23 @@ namespace System.Runtime.ExceptionServices
             }
 
             // set the handler here. (QCall)
+        }
+
+        /// <summary>
+        /// Raises the <see cref="AppDomain.UnhandledException"/> event.
+        /// </summary>
+        /// <param name="exception">Exception to pass to event handlers.</param>
+        /// <remarks>
+        /// This method will raise the <see cref="AppDomain.UnhandledException"/>
+        /// event and then return.
+        ///
+        /// It will not raise the the handler registered with <see cref="SetUnhandledExceptionHandler"/>.
+        /// </remarks>
+        public static void RaiseAppDomainUnhandledExceptionEvent(object exception)
+        {
+            ArgumentNullException.ThrowIfNull(exception);
+
+            AppContext.OnUnhandledException(exception);
         }
     }
 }
