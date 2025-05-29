@@ -37,7 +37,15 @@ internal static partial class Interop
         {
             if (OperatingSystem.IsLinux())
             {
-                return procfs.GetFileSystemTypeForMountPoint(name, out format);
+                // Resolve symbolic links.
+                string? path = Sys.RealPath(name);
+                if (path is null)
+                {
+                    format = "";
+                    return GetLastError();
+                }
+
+                return procfs.GetFileSystemTypeForRealPath(path, out format);
             }
             else
             {

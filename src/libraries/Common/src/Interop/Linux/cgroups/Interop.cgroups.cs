@@ -207,7 +207,7 @@ internal static partial class Interop
         private static unsafe CGroupVersion FindCGroupVersion()
         {
             CGroupVersion cgroupVersion = CGroupVersion.None;
-            Interop.Error error = Interop.procfs.GetFileSystemTypeForMountPoint(SysFsCgroupFileSystemPath, out string format);
+            Interop.Error error = Interop.procfs.GetFileSystemTypeForRealPath(SysFsCgroupFileSystemPath, out string format);
             if (error == Interop.Error.SUCCESS)
             {
                 if (format == "cgroup2")

@@ -19,7 +19,7 @@ internal static partial class Interop
             public required ReadOnlySpan<char> SuperOptions { get; init; }
         }
 
-        internal static Error GetFileSystemTypeForMountPoint(string name, out string format)
+        internal static Error GetFileSystemTypeForRealPath(string path, out string format)
         {
             format = "";
 
@@ -27,6 +27,9 @@ internal static partial class Interop
             {
                 try
                 {
+                    ReadOnlySpan<char> currentFormat = default;
+                    int currentBestLength = 0;
+
                     using StreamReader reader = new(ProcMountInfoFilePath);
 
                     string? line;
@@ -34,14 +37,37 @@ internal static partial class Interop
                     {
                         if (TryParseMountInfoLine(line, out ParsedMount mount))
                         {
-                            if (mount.MountPoint.SequenceEqual(name))
+                            if (mount.MountPoint.Length < currentBestLength)
                             {
-                                format = mount.FileSystemType.ToString();
-                                return Error.SUCCESS;
+                                continue;
                             }
+
+                            if (!path.StartsWith(mount.MountPoint))
+                            {
+                                continue;
+                            }
+
+                            if (mount.MountPoint.Length == path.Length)
+                            {
+                                currentFormat = mount.FileSystemType;
+                                break;
+                            }
+
+                            if (path[mount.MountPoint.Length] != '/')
+                            {
+                                continue;
+                            }
+
+                            currentBestLength = mount.MountPoint.Length;
+                            currentFormat = mount.FileSystemType;
                         }
                     }
 
+                    if (currentFormat.Length > 0)
+                    {
+                        format = currentFormat.ToString();
+                        return Error.SUCCESS;
+                    }
                     return Error.ENOENT;
                 }
                 catch (Exception e)
