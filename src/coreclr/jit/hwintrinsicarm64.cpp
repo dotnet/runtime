@@ -552,11 +552,6 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 7;
                 break;
 
-            case NI_Sve2_XorRotateRight:
-                immLowerBound = 1;
-                immUpperBound = genTypeSize(baseType) * BITS_PER_BYTE;
-                break;
-
             default:
                 unreached();
         }
