@@ -3220,6 +3220,17 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!IsVersionableWithPrecode());
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
+    // Updates are expressed via metadata diff and a methoddef of a runtime async method
+    // would be resolved to the thunk.
+    // If we see athink here, fetch the other variant that owns the IL and reset that.
+    if (IsAsyncThunkMethod())
+    {
+        MethodDesc *otherVariant =  GetAsyncOtherVariantNoCreate();
+        _ASSERTE(otherVariant != NULL);
+        otherVariant->ResetCodeEntryPointForEnC();
+        return;
+    }
+
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
         this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
@@ -3234,19 +3245,6 @@ void MethodDesc::ResetCodeEntryPointForEnC()
         LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
             ppCode, pCode));
         *ppCode = (PCODE)NULL;
-    }
-
-    // update of a Task-returning method effectively updates both variants,
-    // so reset the entry for the other variant as well.
-    if (IsTaskReturningMethod())
-    {
-        // TODO: (async) revisit and examine if the following is sufficient for actual runtime async methods when EnC is supported.
-        //       for now we only expect to see ordinary Task-returning methods here (not thunks).
-        _ASSERTE(!IsAsyncThunkMethod());
-
-        MethodDesc *otherVariant =  GetAsyncOtherVariantNoCreate();
-        _ASSERTE(otherVariant != NULL);
-        otherVariant->ResetCodeEntryPointForEnC();
     }
 }
 
