@@ -86,11 +86,6 @@ public class BootJsonData
     public string globalizationMode { get; set; }
 
     /// <summary>
-    /// Gets or sets a value that determines if the caching startup memory is enabled.
-    /// </summary>
-    public bool? startupMemoryCache { get; set; }
-
-    /// <summary>
     /// Gets a value for mono runtime options.
     /// </summary>
     public string[] runtimeOptions { get; set; }

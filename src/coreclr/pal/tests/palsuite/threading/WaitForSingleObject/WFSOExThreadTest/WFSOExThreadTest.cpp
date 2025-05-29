@@ -136,8 +136,8 @@ VOID PALAPI APCFunc_WFSOExThreadTest(ULONG_PTR dwParam)
 DWORD PALAPI WaiterProc_WFSOExThreadTest(LPVOID lpParameter)
 {
     HANDLE hWaitThread;
-    UINT64 OldTimeStamp;
-    UINT64 NewTimeStamp;
+    int64_t OldTimeStamp;
+    int64_t NewTimeStamp;
     BOOL Alertable;
     DWORD ret;
     DWORD dwThreadId = 0;
@@ -163,20 +163,14 @@ satisfying any threads that were waiting on the object.
 
     Alertable = (BOOL)(SIZE_T) lpParameter;
 
-    LARGE_INTEGER performanceFrequency;
-    if (!QueryPerformanceFrequency(&performanceFrequency))
-    {
-        Fail("Failed to query performance frequency!");
-    }
-
-    OldTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    OldTimeStamp = minipal_hires_ticks();
     s_preWaitTimestampRecorded = true;
 
     ret = WaitForSingleObjectEx(	hWaitThread, 
 								ChildThreadWaitTime, 
         							Alertable);
     
-    NewTimeStamp = GetHighPrecisionTimeStamp(performanceFrequency);
+    NewTimeStamp = minipal_hires_ticks();
 
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -190,7 +184,7 @@ satisfying any threads that were waiting on the object.
             "Expected return of WAIT_TIMEOUT, got %d.\n", ret);
     }
 
-    ThreadWaitDelta_WFSOExThreadTest = NewTimeStamp - OldTimeStamp;
+    ThreadWaitDelta_WFSOExThreadTest = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
 
     ret = CloseHandle(hWaitThread);
     if (!ret)

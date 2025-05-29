@@ -455,10 +455,19 @@ private:
     static void WeGotAFaultNowWhat(UnlockedLoaderHeap *pHeap);
 };
 
+struct InterleavedLoaderHeapConfig
+{
+    uint32_t StubSize;
+    void* Template;
+    void (*CodePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size);
+};
+
+void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stubSize, void* templateInImage, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
+
 //===============================================================================
 // This is the base class for InterleavedLoaderHeap It's used as a simple
 // allocator for stubs in a scheme where each stub is a small fixed size, and is paired
-// with memory which is GetOSStubPageSize() bytes away. In addition there is an
+// with memory which is GetStubCodePageSize() bytes away. In addition there is an
 // ability to free is via a "backout" mechanism that is not considered to have good performance.
 //
 //===============================================================================
@@ -492,16 +501,13 @@ private:
 
     InterleavedStubFreeListNode  *m_pFreeListHead;
 
-public:
-public:
-    void                (*m_codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size);
+    const InterleavedLoaderHeapConfig *m_pConfig;
 
 #ifndef DACCESS_COMPILE
 protected:
     UnlockedInterleavedLoaderHeap(
         RangeList *pRangeList,
-        void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
-        DWORD dwGranularity);
+        const InterleavedLoaderHeapConfig *pConfig);
 
     virtual ~UnlockedInterleavedLoaderHeap();
 #endif
@@ -1039,13 +1045,11 @@ private:
 public:
     InterleavedLoaderHeap(RangeList *pRangeList,
                BOOL fUnlocked,
-               void (*codePageGenerator)(BYTE* pageBase, BYTE* pageBaseRX, SIZE_T size),
-               DWORD dwGranularity
+               const InterleavedLoaderHeapConfig *pConfig
                )
       : UnlockedInterleavedLoaderHeap(
                            pRangeList,
-                           codePageGenerator,
-                           dwGranularity),
+                           pConfig),
         m_CriticalSection(fUnlocked ? NULL : CreateLoaderHeapLock())
     {
         WRAPPER_NO_CONTRACT;

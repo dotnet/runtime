@@ -1721,8 +1721,18 @@ struct JIT_LOAD_DATA
                                         //   Otherwise, this will be S_OK (which is zero).
 };
 
-// Here's the global data for JIT load and initialization state.
+#ifdef FEATURE_STATICALLY_LINKED
+
+EXTERN_C void jitStartup(ICorJitHost* host);
+EXTERN_C ICorJitCompiler* getJit();
+
+#endif // FEATURE_STATICALLY_LINKED
+
+#if !defined(FEATURE_STATICALLY_LINKED) || defined(FEATURE_JIT)
+
+#ifdef FEATURE_JIT
 JIT_LOAD_DATA g_JitLoadData;
+#endif // FEATURE_JIT
 
 #ifdef FEATURE_INTERPRETER
 JIT_LOAD_DATA g_interpreterLoadData;
@@ -1897,12 +1907,30 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath)
         LogJITInitializationError("LoadAndInitializeJIT: failed to load %s, hr=0x%08X", utf8JitName, hr);
     }
 }
+#endif // !FEATURE_STATICALLY_LINKED || FEATURE_JIT
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-EXTERN_C void jitStartup(ICorJitHost* host);
-EXTERN_C ICorJitCompiler* getJit();
-#endif // FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_STATICALLY_LINKED
+static ICorJitCompiler* InitializeStaticJIT()
+{
+    ICorJitCompiler* newJitCompiler = NULL;
+    EX_TRY
+    {
+        jitStartup(JitHost::getJitHost());
 
+        newJitCompiler = getJit();
+
+        // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+
+    return newJitCompiler;
+}
+#endif // FEATURE_STATICALLY_LINKED
+
+#ifdef FEATURE_JIT
 BOOL EEJitManager::LoadJIT()
 {
     STANDARD_VM_CONTRACT;
@@ -1922,22 +1950,9 @@ BOOL EEJitManager::LoadJIT()
 
     ICorJitCompiler* newJitCompiler = NULL;
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
-
-    EX_TRY
-    {
-        jitStartup(JitHost::getJitHost());
-
-        newJitCompiler = getJit();
-
-        // We don't need to call getVersionIdentifier(), since the JIT is linked together with the VM.
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-
-#else // !FEATURE_MERGE_JIT_AND_ENGINE
+#ifdef FEATURE_STATICALLY_LINKED
+    newJitCompiler = InitializeStaticJIT();
+#else // !FEATURE_STATICALLY_LINKED
 
     m_JITCompiler = NULL;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -1950,7 +1965,7 @@ BOOL EEJitManager::LoadJIT()
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPath, &mainJitPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetJitName() DEBUGARG(mainJitPath), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_STATICALLY_LINKED
 
 #ifdef ALLOW_SXS_JIT
 
@@ -2048,6 +2063,7 @@ BOOL EEJitManager::LoadJIT()
     // In either failure case, we'll rip down the VM (so no need to clean up (unload) either JIT that did load successfully.
     return IsJitLoaded();
 }
+#endif // FEATURE_JIT
 
 //**************************************************************************
 
@@ -2430,7 +2446,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     bool fAllocatedFromEmergencyJumpStubReserve = false;
 
     size_t allocationSize = pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(initialRequestSize);
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (!pInfo->IsInterpreted())
     {
         allocationSize += pCodeHeap->m_LoaderHeap.AllocMem_TotalSize(JUMP_ALLOCATE_SIZE);
@@ -2490,7 +2506,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     // this first allocation is critical as it sets up correctly the loader heap info
     HeapList *pHp = new HeapList;
 
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (pInfo->IsInterpreted())
     {
         pHp->CLRPersonalityRoutine = NULL;
@@ -2498,6 +2514,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     }
     else
     {
+        // Set the personality routine. This is needed even outside Windows because IsIPInEpilog relies on it being set.
         pHp->CLRPersonalityRoutine = (BYTE *)pCodeHeap->m_LoaderHeap.AllocMemForCode_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     }
 #else
@@ -2531,7 +2548,7 @@ HeapList* LoaderCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, LoaderHeap 
     pHp->mapBase         = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(heapSize));
     pHp->pHdrMap         = (DWORD*)(void*)pJitMetaHeap->AllocMem(S_SIZE_T(nibbleMapSize));
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (pHp->CLRPersonalityRoutine != NULL)
     {
         ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
@@ -2660,7 +2677,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
 
     size_t reserveSize = initialRequestSize;
 
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     if (!pInfo->IsInterpreted())
     {
         reserveSize += JUMP_ALLOCATE_SIZE;
@@ -3739,12 +3756,19 @@ BOOL InterpreterJitManager::LoadInterpreter()
     ICorJitCompiler* newInterpreter = NULL;
     m_interpreter = NULL;
 
+// If both JIT and interpret are available, statically link the JIT. Interpreter can be loaded dynamically
+// via config switch for testing purposes. 
+#if defined(FEATURE_STATICALLY_LINKED) && !defined(FEATURE_JIT)
+    newInterpreter = InitializeStaticJIT();
+#else // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
     g_interpreterLoadData.jld_id = JIT_LOAD_INTERPRETER;
+
     LPWSTR interpreterPath = NULL;
 #ifdef _DEBUG
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InterpreterPath, &interpreterPath));
 #endif
     LoadAndInitializeJIT(ExecutionManager::GetInterpreterName() DEBUGARG(interpreterPath), &m_interpreterHandle, &newInterpreter, &g_interpreterLoadData, getClrVmOs());
+#endif // FEATURE_STATICALLY_LINKED && !FEATURE_JIT
 
     // Publish the interpreter.
     m_interpreter = newInterpreter;
@@ -5148,7 +5172,7 @@ BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
     return FALSE;
 }
 
-#ifndef FEATURE_MERGE_JIT_AND_ENGINE
+#ifndef FEATURE_STATICALLY_LINKED
 /*********************************************************************/
 // This static method returns the name of the jit dll
 //
@@ -5169,7 +5193,7 @@ LPCWSTR ExecutionManager::GetJitName()
     return pwzJitName;
 }
 
-#endif // !FEATURE_MERGE_JIT_AND_ENGINE
+#endif // !FEATURE_STATICALLY_LINKED
 
 #ifdef FEATURE_INTERPRETER
 
