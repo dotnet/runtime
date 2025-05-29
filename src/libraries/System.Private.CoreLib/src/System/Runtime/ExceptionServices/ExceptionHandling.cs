@@ -32,12 +32,16 @@ namespace System.Runtime.ExceptionServices
         /// </remarks>
         public static void SetUnhandledExceptionHandler(Func<Exception, bool> handler)
         {
+#if MONO
+            throw new PlatformNotSupportedException();
+#else
             ArgumentNullException.ThrowIfNull(handler);
 
             if (Interlocked.CompareExchange(ref s_handler, handler, null) != null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondHandler);
             }
+#endif
         }
 
         /// <summary>
@@ -49,6 +53,7 @@ namespace System.Runtime.ExceptionServices
         [System.CLSCompliantAttribute(false)]
         public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> fatalErrorHandler)
         {
+#if CORECLR
             ArgumentNullException.ThrowIfNull(fatalErrorHandler);
 
             if (Interlocked.CompareExchange(ref s_crashHandlerSet, true, false))
@@ -57,6 +62,9 @@ namespace System.Runtime.ExceptionServices
             }
 
             // set the handler here. (QCall)
+#else
+            throw new PlatformNotSupportedException();
+#endif
         }
 
         /// <summary>
