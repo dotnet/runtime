@@ -729,8 +729,6 @@ void    SplitPathInterior(
 
 #include "ostype.h"
 
-#define CLRGetTickCount64() GetTickCount64()
-
 //
 // Allocate free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to allocate it.

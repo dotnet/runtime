@@ -63,7 +63,7 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     // This is needed to synchronize threads that were running in preemptive mode while
     // the runtime was suspended and that will return to cooperative mode after the runtime
     // is restarted.
-    ::FlushProcessWriteBuffers();
+    PalFlushProcessWriteBuffers();
 #endif // !defined(TARGET_X86) && !defined(TARGET_AMD64)
 
     SyncClean::CleanUp();
@@ -404,7 +404,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
             // See: http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/346765
-            FlushProcessWriteBuffers();
+            PalFlushProcessWriteBuffers();
         }
 #endif
 
@@ -415,7 +415,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed state before observing future allocations.
-            FlushProcessWriteBuffers();
+            PalFlushProcessWriteBuffers();
         }
 #endif
         return;
@@ -574,7 +574,7 @@ static bool CreateNonSuspendableThread(void (*threadStart)(void*), void* arg, co
 
     // Helper used to wrap the start routine of GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
@@ -618,7 +618,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
 
     // Helper used to wrap the start routine of background GC threads so we can do things like initialize the
     // thread state which requires running in the new thread's context.
-    auto threadStub = [](void* argument) -> DWORD
+    auto threadStub = [](void* argument) -> uint32_t
         {
             ThreadStubArguments* pStartContext = (ThreadStubArguments*)argument;
 

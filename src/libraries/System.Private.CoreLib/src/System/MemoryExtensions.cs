@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -5819,7 +5820,7 @@ namespace System
         /// Enables enumerating each split within a <see cref="ReadOnlySpan{T}"/> that has been divided using one or more separators.
         /// </summary>
         /// <typeparam name="T">The type of items in the <see cref="SpanSplitEnumerator{T}"/>.</typeparam>
-        public ref struct SpanSplitEnumerator<T> where T : IEquatable<T>
+        public ref struct SpanSplitEnumerator<T> : IEnumerator<Range> where T : IEquatable<T>
         {
             /// <summary>The input span being split.</summary>
             private readonly ReadOnlySpan<T> _source;
@@ -5961,6 +5962,15 @@ namespace System
 
                 return true;
             }
+
+            /// <inheritdoc />
+            object IEnumerator.Current => Current;
+
+            /// <inheritdoc />
+            void IEnumerator.Reset() => throw new NotSupportedException();
+
+            /// <inheritdoc />
+            void IDisposable.Dispose() { }
         }
 
         /// <summary>Indicates in which mode <see cref="SpanSplitEnumerator{T}"/> is operating, with regards to how it should interpret its state.</summary>
@@ -6082,6 +6092,11 @@ namespace System
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                if (value is null)
+                {
+                    return true;
+                }
+
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
                 // derives from the former.  For value types, it won't matter as the type checks devolve into
                 // JIT-time constants.  For reference types, they're more likely to implement IFormattable
@@ -6120,7 +6135,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);
@@ -6136,6 +6151,11 @@ namespace System
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                if (value is null)
+                {
+                    return true;
                 }
 
                 // Check first for IFormattable, even though we'll prefer to use ISpanFormattable, as the latter
@@ -6176,7 +6196,7 @@ namespace System
                 }
                 else
                 {
-                    s = value?.ToString();
+                    s = value.ToString();
                 }
 
                 return s is null || AppendLiteral(s);

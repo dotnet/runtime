@@ -77,7 +77,7 @@
 %token VALUE_ VALUETYPE_ NATIVE_ INSTANCE_ SPECIALNAME_ FORWARDER_
 %token STATIC_ PUBLIC_ PRIVATE_ FAMILY_ FINAL_ SYNCHRONIZED_ INTERFACE_ SEALED_ NESTED_
 %token ABSTRACT_ AUTO_ SEQUENTIAL_ EXPLICIT_ ANSI_ UNICODE_ AUTOCHAR_ IMPORT_ ENUM_
-%token VIRTUAL_ NOINLINING_ AGGRESSIVEINLINING_ NOOPTIMIZATION_ AGGRESSIVEOPTIMIZATION_ UNMANAGEDEXP_ BEFOREFIELDINIT_
+%token VIRTUAL_ NOINLINING_ AGGRESSIVEINLINING_ NOOPTIMIZATION_ AGGRESSIVEOPTIMIZATION_ UNMANAGEDEXP_ BEFOREFIELDINIT_ ASYNC_
 %token STRICT_ RETARGETABLE_ WINDOWSRUNTIME_ NOPLATFORM_
 %token METHOD_ FIELD_ PINNED_ MODREQ_ MODOPT_ SERIALIZABLE_ PROPERTY_ TYPE_
 %token ASSEMBLY_ FAMANDASSEM_ FAMORASSEM_ PRIVATESCOPE_ HIDEBYSIG_ NEWSLOT_ RTSPECIALNAME_ PINVOKEIMPL_
@@ -244,6 +244,22 @@ languageDecl            : _LANGUAGE SQSTRING                                    
                         ;
 /*  Basic tokens  */
 id                      : ID                                  { $$ = $1; }
+                        /* Allow methodImpl attributes to be used as identifiers */
+                        | NATIVE_                             { $$ = newString("native"); }
+                        | CIL_                                { $$ = newString("cil"); }
+                        | OPTIL_                              { $$ = newString("optil"); }
+                        | MANAGED_                            { $$ = newString("managed"); }
+                        | UNMANAGED_                          { $$ = newString("unmanaged"); }
+                        | FORWARDREF_                         { $$ = newString("forwardref"); }
+                        | PRESERVESIG_                        { $$ = newString("preservesig"); }
+                        | RUNTIME_                            { $$ = newString("runtime"); }
+                        | INTERNALCALL_                       { $$ = newString("internalcall"); }
+                        | SYNCHRONIZED_                       { $$ = newString("synchronized"); }
+                        | NOINLINING_                         { $$ = newString("noinlining"); }
+                        | AGGRESSIVEINLINING_                 { $$ = newString("aggressiveinlining"); }
+                        | NOOPTIMIZATION_                     { $$ = newString("nooptimization"); }
+                        | AGGRESSIVEOPTIMIZATION_             { $$ = newString("aggressiveoptimization"); }
+                        | ASYNC_                              { $$ = newString("async"); }
                         | SQSTRING                            { $$ = $1; }
                         ;
 
@@ -857,6 +873,7 @@ implAttr                : /* EMPTY */                       { $$ = (CorMethodImp
                         | implAttr AGGRESSIVEINLINING_      { $$ = (CorMethodImpl) ($1 | miAggressiveInlining); }
                         | implAttr NOOPTIMIZATION_          { $$ = (CorMethodImpl) ($1 | miNoOptimization); }
                         | implAttr AGGRESSIVEOPTIMIZATION_  { $$ = (CorMethodImpl) ($1 | miAggressiveOptimization); }
+                        | implAttr ASYNC_                   { $$ = (CorMethodImpl) ($1 | miAsync); }
                         | implAttr FLAGS_ '(' int32 ')'     { $$ = (CorMethodImpl) ($4); }
                         ;
 
