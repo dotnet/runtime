@@ -5350,7 +5350,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
             if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
             {
-                return dropBoundsCheck("a[a.Length-cns] when a.Length is known to be >= cns");
+                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
             }
         }
     }
