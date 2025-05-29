@@ -28,7 +28,6 @@ resources:
       type: git
       name: internal/dotnet-performance
 
-
 variables:
 - template: /eng/pipelines/common/variables.yml
 
