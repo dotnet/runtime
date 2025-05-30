@@ -178,6 +178,10 @@ namespace Microsoft.Extensions.FileProviders.Physical
             sha256.AppendData(_byteBuffer, 0, length);
             sha256.AppendData(Separator, 0, Separator.Length);
 
+#if NET
+            bool success = BitConverter.TryWriteBytes(_byteBuffer, lastChangedUtc.Ticks);
+            Debug.Assert(success);
+#else
             Debug.Assert(_byteBuffer.Length > sizeof(long));
             unsafe
             {
@@ -186,6 +190,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     *((long*)b) = lastChangedUtc.Ticks;
                 }
             }
+#endif
+
             sha256.AppendData(_byteBuffer, 0, sizeof(long));
             sha256.AppendData(Separator, 0, Separator.Length);
         }

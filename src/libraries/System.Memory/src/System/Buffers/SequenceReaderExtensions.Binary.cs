@@ -29,7 +29,7 @@ namespace System.Buffers
             if (span.Length < sizeof(T))
                 return TryReadMultisegment(ref reader, out value);
 
-            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(span));
+            value = MemoryMarshal.Read<T>(span);
             reader.Advance(sizeof(T));
             return true;
         }
@@ -39,8 +39,7 @@ namespace System.Buffers
             Debug.Assert(reader.UnreadSpan.Length < sizeof(T));
 
             // Not enough data in the current segment, try to peek for the data we need.
-            T buffer = default;
-            Span<byte> tempSpan = new Span<byte>(&buffer, sizeof(T));
+            Span<byte> tempSpan = stackalloc byte[sizeof(T)];
 
             if (!reader.TryCopyTo(tempSpan))
             {
@@ -48,7 +47,7 @@ namespace System.Buffers
                 return false;
             }
 
-            value = Unsafe.ReadUnaligned<T>(ref MemoryMarshal.GetReference(tempSpan));
+            value = MemoryMarshal.Read<T>(tempSpan);
             reader.Advance(sizeof(T));
             return true;
         }
