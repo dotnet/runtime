@@ -14,7 +14,7 @@ using System.Runtime.Loader;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    public class ActivatorUtilitiesTests
+    public sealed class ActivatorUtilitiesTests
     {
         [Fact]
         public void CreateInstance_ClassWithABCS_UsesTheLongestAvailableConstructor()
@@ -621,38 +621,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [InlineData(false)]
         public void CreateInstance_CollectibleAssembly(bool useDynamicCode)
         {
-            if (PlatformDetection.IsNonBundledAssemblyLoadingSupported)
+            if (!PlatformDetection.IsNonBundledAssemblyLoadingSupported)
             {
-                RemoteInvokeOptions options = new();
-                if (!useDynamicCode)
-                {
-                    DisableDynamicCode(options);
-                }
-
-                using var remoteHandle = RemoteExecutor.Invoke(static () =>
-                {
-                    Assert.False(Collectible_IsAssemblyLoaded());
-                    Collectible_LoadAndCreate(useCollectibleAssembly : true, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
-
-                    for (int i = 0; (typeWeakRef.IsAlive || asmWeakRef.IsAlive) && (i < 10); i++)
-                    {
-                        GC.Collect();
-                        GC.WaitForPendingFinalizers();
-                    }
-
-                    // These should be GC'd.
-                    Assert.False(asmWeakRef.IsAlive, "asmWeakRef.IsAlive");
-                    Assert.False(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
-                    Assert.False(Collectible_IsAssemblyLoaded());
-                }, options);
+                return;
             }
-        }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void CreateInstance_NormalAssembly(bool useDynamicCode)
-        {
             RemoteInvokeOptions options = new();
             if (!useDynamicCode)
             {
@@ -661,40 +634,48 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             using var remoteHandle = RemoteExecutor.Invoke(static () =>
             {
-                Assert.False(Collectible_IsAssemblyLoaded());
-                Collectible_LoadAndCreate(useCollectibleAssembly: false, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
-
-                for (int i = 0; (typeWeakRef.IsAlive || asmWeakRef.IsAlive) && (i < 10); i++)
+                AssemblyLoadContext loadContext = new("CollectibleAssembly", isCollectible: true);
+                try
                 {
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                }
+                    Assert.False(Collectible_IsAssemblyLoaded());
 
-                // These will not be GC'd.
-                Assert.True(asmWeakRef.IsAlive, "alcWeakRef.IsAlive");
-                Assert.True(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
-                Assert.True(Collectible_IsAssemblyLoaded());
+                    Collectible_LoadAndCreate(loadContext, out WeakReference asmWeakRef, out WeakReference typeWeakRef);
+
+                    Assert.True(asmWeakRef.IsAlive, "asmWeakRef.IsAlive");
+                    Assert.True(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
+                    Assert.True(Collectible_IsAssemblyLoaded());
+
+                    loadContext.Unload();
+                    loadContext = null;
+
+                    for (int i = 0; i < 10; i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+
+                    // These should be GC'd by now.
+                    Assert.False(asmWeakRef.IsAlive, "asmWeakRef.IsAlive");
+                    Assert.False(typeWeakRef.IsAlive, "typeWeakRef.IsAlive");
+                    Assert.False(Collectible_IsAssemblyLoaded());
+                }
+                finally
+                {
+                    if (loadContext is not null)
+                    {
+                        loadContext.Unload();
+                    }
+                }
             }, options);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static void Collectible_LoadAndCreate(bool useCollectibleAssembly, out WeakReference asmWeakRef, out WeakReference typeWeakRef)
+        static void Collectible_LoadAndCreate(AssemblyLoadContext loadContext, out WeakReference asmWeakRef, out WeakReference typeWeakRef)
         {
-            Assembly asm;
-            object obj;
+            Assembly asm = loadContext.LoadFromAssemblyPath(Path.Combine(AppContext.BaseDirectory, "CollectibleAssembly.dll"));
 
-            if (useCollectibleAssembly)
-            {
-                asm = MyLoadContext.LoadAsCollectable();
-                obj = CreateWithActivator(asm);
-                Assert.True(obj.GetType().Assembly.IsCollectible);
-            }
-            else
-            {
-                asm = MyLoadContext.LoadNormal();
-                obj = CreateWithActivator(asm);
-                Assert.False(obj.GetType().Assembly.IsCollectible);
-            }
+            object obj = CreateWithActivator(asm);
+            Assert.True(obj.GetType().Assembly.IsCollectible);
 
             Assert.True(Collectible_IsAssemblyLoaded());
             asmWeakRef = new WeakReference(asm);
@@ -1058,36 +1039,4 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Text = text;
         }
     }
-
-#if NET
-    internal class MyLoadContext : AssemblyLoadContext
-    {
-        private MyLoadContext() : base(isCollectible: true)
-        {
-        }
-
-        public Assembly LoadAssembly()
-        {
-            Assembly asm = LoadFromAssemblyPath(GetPath());
-            Assert.Equal(GetLoadContext(asm), this);
-            return asm;
-        }
-
-        public static Assembly LoadAsCollectable()
-        {
-            MyLoadContext alc = new MyLoadContext();
-            return alc.LoadAssembly();
-        }
-
-        public static Assembly LoadNormal()
-        {
-            return Assembly.LoadFrom(GetPath());
-        }
-
-        private static string GetPath()
-        {
-            return Path.Combine(Directory.GetCurrentDirectory(), "CollectibleAssembly.dll");
-        }
-    }
-#endif
 }
