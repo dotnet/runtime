@@ -14,6 +14,7 @@ PAGE_SIZE = 4096
 #define DATA_SLOT(stub, field) . - (. - stub##Code) + PAGE_SIZE + stub##Data__##field
 
     LEAF_ENTRY StubPrecodeCode
+        dmb
         ldr r12, DATA_SLOT(StubPrecode, SecretParam)
         ldr pc, DATA_SLOT(StubPrecode, Target)
     LEAF_END_MARKED StubPrecodeCode
@@ -22,6 +23,7 @@ PAGE_SIZE = 4096
 
     LEAF_ENTRY FixupPrecodeCode
         ldr pc, DATA_SLOT(FixupPrecode, Target)
+        dmb
         ldr r12, DATA_SLOT(FixupPrecode, MethodDesc)
         ldr pc, DATA_SLOT(FixupPrecode, PrecodeFixupThunk)
     LEAF_END_MARKED FixupPrecodeCode
@@ -29,6 +31,7 @@ PAGE_SIZE = 4096
     .align 4
 
     LEAF_ENTRY CallCountingStubCode
+        dmb
         push {r0}
         ldr r12, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh r0, [r12]
