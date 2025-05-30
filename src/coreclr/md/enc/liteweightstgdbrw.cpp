@@ -410,16 +410,6 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     // Save off everything.
     IfFailGo(SetFileName(szDatabase));
 
-    // If this was a file...
-    if (pbData == NULL)
-    {
-        minipal_file_attr_t attr;
-        if (!minipal_file_get_attributes_utf16(szDatabase, &attr))
-            IfFailGo(E_FAIL);
-        m_dwDatabaseLFS = (DWORD)attr.size;
-        m_dwDatabaseLFT = (DWORD)attr.lastWriteTime;
-    }
-
 ErrExit:
     if (SUCCEEDED(hr))
     {

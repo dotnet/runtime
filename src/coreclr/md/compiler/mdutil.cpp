@@ -242,14 +242,6 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
 
         // The cache is locked for read, so the list will not change.
 
-        // Figure out the size and timestamp of this file
-        minipal_file_attr_t attr;
-        if (!minipal_file_get_attributes_utf16(szName, &attr))
-            return E_FAIL;
-
-        dwLowFileSize = (DWORD)attr.size;
-        dwLowFileTime = (DWORD)attr.lastWriteTime;
-
         // Check the hash first.
         ixHash = HashFileName(szName);
         if ((pRegMeta = m_HashedModules[ixHash]) != NULL)
