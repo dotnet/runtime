@@ -1802,7 +1802,7 @@ ep_event_filter_free (EventPipeEventFilter *event_filter)
 void
 ep_tracepoint_set_fini (ProviderTracepointSet *tracepoint_set)
 {
-	EP_ASSERT (tracepoint_set != NULL);
+	ep_return_void_if_nok (tracepoint_set != NULL);
 
 	if (tracepoint_set->tracepoint_name) {
 		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
@@ -1827,7 +1827,7 @@ ep_tracepoint_set_free (ProviderTracepointSet *tracepoint_set)
 void
 ep_tracepoint_config_fini (ProviderTracepointConfiguration *tracepoint_config)
 {
-	EP_ASSERT (tracepoint_config != NULL);
+	ep_return_void_if_nok (tracepoint_config != NULL);
 
 	if (tracepoint_config->default_tracepoint_name) {
 		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
