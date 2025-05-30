@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -17,6 +18,7 @@ namespace System.Text.Json.Serialization
         private ReadOnlySequence<byte> _sequence;
         private bool _isFinalBlock;
         private bool _isFirstBlock = true;
+        private int _unsuccessfulReadBytes;
 
         public PipeReadBufferState(PipeReader utf8Json)
         {
@@ -29,8 +31,14 @@ namespace System.Text.Json.Serialization
 
         public void Advance(int bytesConsumed)
         {
-            _utf8Json.AdvanceTo(_sequence.Slice(bytesConsumed).Start);
-            _sequence = default;
+            _unsuccessfulReadBytes = 0;
+            if (bytesConsumed == 0)
+            {
+                long leftOver = _sequence.Length - bytesConsumed;
+                _unsuccessfulReadBytes = checked((int)leftOver * 2);
+            }
+            _utf8Json.AdvanceTo(_sequence.Slice(bytesConsumed).Start, _sequence.End);
+            _sequence = ReadOnlySequence<byte>.Empty;
         }
 
         /// <summary>
@@ -44,11 +52,11 @@ namespace System.Text.Json.Serialization
             // make all updates on a copy which is returned once complete.
             PipeReadBufferState bufferState = this;
 
-            int minBufferSize = JsonConstants.Utf8Bom.Length;
+            int minBufferSize = _unsuccessfulReadBytes > 0 ? _unsuccessfulReadBytes : JsonConstants.Utf8Bom.Length;
             ReadResult readResult = await _utf8Json.ReadAtLeastAsync(minBufferSize, cancellationToken).ConfigureAwait(false);
 
             bufferState._sequence = readResult.Buffer;
-            bufferState._isFinalBlock = readResult.IsCompleted; // || readResult.IsCanceled;?
+            bufferState._isFinalBlock = readResult.IsCompleted;
             bufferState.ProcessReadBytes();
 
             if (readResult.IsCanceled)
@@ -70,7 +78,6 @@ namespace System.Text.Json.Serialization
                 // Handle the UTF-8 BOM if present
                 if (_sequence.Length > 0)
                 {
-                    //Debug.Assert(_sequence.Length >= JsonConstants.Utf8Bom.Length);
                     if (_sequence.First.Length >= JsonConstants.Utf8Bom.Length)
                     {
                         if (_sequence.First.Span.StartsWith(JsonConstants.Utf8Bom))
@@ -80,12 +87,24 @@ namespace System.Text.Json.Serialization
                     }
                     else
                     {
-                        // TODO
-                        //_sequence = _sequence.Slice(JsonConstants.Utf8Bom.Length);
-                        //_sequence.PositionOf(JsonConstants.Utf8Bom[0]);
-                        //if (_sequence.StartsWith(JsonConstants.Utf8Bom))
+                        // TODO: Tests
+                        //SequencePosition pos = _sequence.Start;
+                        //int matched = 0;
+                        //while (matched < JsonConstants.Utf8Bom.Length && _sequence.TryGet(ref pos, out ReadOnlyMemory<byte> mem, advance: true))
                         //{
-                        //    _offset = (byte)JsonConstants.Utf8Bom.Length;
+                        //    ReadOnlySpan<byte> span = mem.Span;
+                        //    for (int i = 0; i < span.Length && matched < JsonConstants.Utf8Bom.Length; i++, matched++)
+                        //    {
+                        //        if (span[i] != JsonConstants.Utf8Bom[matched])
+                        //        {
+                        //            matched = 0;
+                        //            break;
+                        //        }
+                        //    }
+                        //}
+                        //if (matched == JsonConstants.Utf8Bom.Length)
+                        //{
+                        //    _sequence = _sequence.Slice(JsonConstants.Utf8Bom.Length);
                         //}
                     }
                 }
@@ -94,6 +113,12 @@ namespace System.Text.Json.Serialization
 
         public void Dispose()
         {
+            if (_sequence.Equals(ReadOnlySequence<byte>.Empty))
+            {
+                return;
+            }
+            _utf8Json.AdvanceTo(_sequence.Start);
+            _sequence = ReadOnlySequence<byte>.Empty;
         }
     }
 }

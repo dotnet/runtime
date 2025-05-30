@@ -169,15 +169,22 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 reader = new Utf8JsonReader(bufferState.Bytes, bufferState.IsFinalBlock, jsonReaderState);
             }
-            bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
+            try
+            {
+                bool success = EffectiveConverter.ReadCore(ref reader, out value, Options, ref readStack);
 
-            Debug.Assert(reader.BytesConsumed <= (bufferState.Bytes.IsEmpty ? bufferState.Bytes.Length : bufferState.Bytes.Length));
-            Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == (bufferState.Bytes.IsEmpty ? bufferState.Bytes.Length : bufferState.Bytes.Length),
-                "The reader should have thrown if we have remaining bytes.");
+                Debug.Assert(reader.BytesConsumed <= bufferState.Bytes.Length);
+                Debug.Assert(!bufferState.IsFinalBlock || reader.AllowMultipleValues || reader.BytesConsumed == bufferState.Bytes.Length,
+                    "The reader should have thrown if we have remaining bytes.");
 
-            bufferState.Advance((int)reader.BytesConsumed);
-            jsonReaderState = reader.CurrentState;
-            return success;
+                //bufferState.Advance((int)reader.BytesConsumed);
+                jsonReaderState = reader.CurrentState;
+                return success;
+            }
+            finally
+            {
+                bufferState.Advance((int)reader.BytesConsumed);
+            }
         }
     }
 }
