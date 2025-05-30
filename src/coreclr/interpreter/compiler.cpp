@@ -3840,7 +3840,7 @@ void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
     CORINFO_SIG_INFO sig;
     m_compHnd->getMethodSig(method, &sig, cls);
 
-    TArray<char> methodName = ::PrintMethodName(m_compHnd, m_classHnd, m_methodHnd, &sig,
+    TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
                             /* includeClassInstantiation */ true,
                             /* includeMethodInstantiation */ true,
                             /* includeSignature */ true,
