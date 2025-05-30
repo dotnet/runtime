@@ -7085,12 +7085,8 @@ protected:
 #endif
 
     void optResetLoopInfo();
-    void optFindAndScaleGeneralLoopBlocks();
 
-    // Determine if there are any potential loops, and set BBF_LOOP_HEAD on potential loop heads.
-    void optMarkLoopHeads();
-
-    void optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
+    void optScaleLoopBlocks(FlowGraphNaturalLoop* loop);
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);

@@ -820,8 +820,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock     = bbIsTryBeg(block);
                 const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock || isFuncletEntryBlock ||
-                    block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock || block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -836,10 +835,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (block->HasFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
-                    }
-                    if (block->HasFlag(BBF_LOOP_HEAD))
-                    {
-                        fprintf(fgxFile, "L");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -967,10 +962,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (block->HasFlag(BBF_HAS_NEWARR))
             {
                 fprintf(fgxFile, "\n            callsNewArr=\"true\"");
-            }
-            if (block->HasFlag(BBF_LOOP_HEAD))
-            {
-                fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
 
             const char* rootTreeOpName = "n/a";
