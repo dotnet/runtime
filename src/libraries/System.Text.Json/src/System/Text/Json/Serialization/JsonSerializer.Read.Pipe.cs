@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Pipelines;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -279,7 +282,7 @@ namespace System.Text.Json
         /// When <paramref name="topLevelValues"/> is set to <see langword="false" />, treats the stream as a JSON array and
         /// attempts to serialize each element into <typeparamref name="TValue"/>.
         /// </remarks>
-        private static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
+        public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
             PipeReader utf8Json,
             JsonTypeInfo<TValue> jsonTypeInfo,
             bool topLevelValues,
@@ -296,7 +299,7 @@ namespace System.Text.Json
             }
 
             jsonTypeInfo.EnsureConfigured();
-            return DeserializeAsyncEnumerableCore(utf8Json.AsStream(leaveOpen: true), jsonTypeInfo, topLevelValues, cancellationToken);
+            return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
         }
 
         /// <summary>
@@ -320,7 +323,7 @@ namespace System.Text.Json
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        private static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
+        public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
             PipeReader utf8Json,
             bool topLevelValues,
             JsonSerializerOptions? options = null,
@@ -332,112 +335,111 @@ namespace System.Text.Json
             }
 
             JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
-            return DeserializeAsyncEnumerableCore(utf8Json.AsStream(leaveOpen: true), jsonTypeInfo, topLevelValues, cancellationToken);
+            return DeserializeAsyncEnumerableCore(utf8Json, jsonTypeInfo, topLevelValues, cancellationToken);
         }
 
-        //private static IAsyncEnumerable<T?> DeserializeAsyncEnumerableCore<T>(
-        //    PipeReader utf8Json,
-        //    JsonTypeInfo<T> jsonTypeInfo,
-        //    bool topLevelValues,
-        //    CancellationToken cancellationToken)
-        //{
-        //    Debug.Assert(jsonTypeInfo.IsConfigured);
+        private static IAsyncEnumerable<T?> DeserializeAsyncEnumerableCore<T>(
+            PipeReader utf8Json,
+            JsonTypeInfo<T> jsonTypeInfo,
+            bool topLevelValues,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
 
-        //    JsonTypeInfo<List<T?>> listTypeInfo;
-        //    JsonReaderOptions readerOptions = jsonTypeInfo.Options.GetReaderOptions();
-        //    if (topLevelValues)
-        //    {
-        //        listTypeInfo = GetOrAddListTypeInfoForRootLevelValueMode(jsonTypeInfo);
-        //        readerOptions.AllowMultipleValues = true;
-        //    }
-        //    else
-        //    {
-        //        listTypeInfo = GetOrAddListTypeInfoForArrayMode(jsonTypeInfo);
-        //    }
+            JsonTypeInfo<List<T?>> listTypeInfo;
+            JsonReaderOptions readerOptions = jsonTypeInfo.Options.GetReaderOptions();
+            if (topLevelValues)
+            {
+                listTypeInfo = GetOrAddListTypeInfoForRootLevelValueMode(jsonTypeInfo);
+                readerOptions.AllowMultipleValues = true;
+            }
+            else
+            {
+                listTypeInfo = GetOrAddListTypeInfoForArrayMode(jsonTypeInfo);
+            }
 
-        //    return CreateAsyncEnumerableFromArray(utf8Json, listTypeInfo, readerOptions, cancellationToken);
+            return CreateAsyncEnumerableFromArray(utf8Json, listTypeInfo, readerOptions, cancellationToken);
 
-        //    static async IAsyncEnumerable<T?> CreateAsyncEnumerableFromArray(
-        //        PipeReader utf8Json,
-        //        JsonTypeInfo<List<T?>> listTypeInfo,
-        //        JsonReaderOptions readerOptions,
-        //        [EnumeratorCancellation] CancellationToken cancellationToken)
-        //    {
-        //        Debug.Assert(listTypeInfo.IsConfigured);
+            static async IAsyncEnumerable<T?> CreateAsyncEnumerableFromArray(
+                PipeReader utf8Json,
+                JsonTypeInfo<List<T?>> listTypeInfo,
+                JsonReaderOptions readerOptions,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                Debug.Assert(listTypeInfo.IsConfigured);
 
-        //        ReadStack readStack = default;
-        //        readStack.Initialize(listTypeInfo, supportContinuation: true);
-        //        JsonReaderState jsonReaderState = new(readerOptions);
-        //        // Note: The ReadBufferState ctor rents pooled buffers.
-        //        ReadBufferState bufferState = new(listTypeInfo.Options.DefaultBufferSize);
+                ReadStack readStack = default;
+                readStack.Initialize(listTypeInfo, supportContinuation: true);
+                JsonReaderState jsonReaderState = new(readerOptions);
+                PipeReadBufferState bufferState = new PipeReadBufferState(utf8Json);//, listTypeInfo.Options.DefaultBufferSize);
 
-        //        try
-        //        {
-        //            bool success;
-        //            do
-        //            {
-        //                bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
-        //                success = listTypeInfo.ContinueDeserialize(
-        //                    ref bufferState,
-        //                    ref jsonReaderState,
-        //                    ref readStack,
-        //                    out List<T?>? _);
+                try
+                {
+                    bool success;
+                    do
+                    {
+                        bufferState = await bufferState.ReadAsync(cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                        success = listTypeInfo.ContinueDeserialize(
+                            ref bufferState,
+                            ref jsonReaderState,
+                            ref readStack,
+                            out List<T?>? _);
 
-        //                if (readStack.Current.ReturnValue is { } returnValue)
-        //                {
-        //                    var list = (List<T?>)returnValue;
-        //                    foreach (T? item in list)
-        //                    {
-        //                        yield return item;
-        //                    }
+                        if (readStack.Current.ReturnValue is { } returnValue)
+                        {
+                            var list = (List<T?>)returnValue;
+                            foreach (T? item in list)
+                            {
+                                yield return item;
+                            }
 
-        //                    list.Clear();
-        //                }
+                            list.Clear();
+                        }
 
-        //            } while (!success);
-        //        }
-        //        finally
-        //        {
-        //            bufferState.Dispose();
-        //        }
-        //    }
+                    } while (!success);
+                }
+                finally
+                {
+                    bufferState.Dispose();
+                }
+            }
 
-        //    static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode(JsonTypeInfo<T> elementTypeInfo)
-        //    {
-        //        if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
-        //        {
-        //            return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
-        //        }
+            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForArrayMode(JsonTypeInfo<T> elementTypeInfo)
+            {
+                if (elementTypeInfo._asyncEnumerableArrayTypeInfo != null)
+                {
+                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableArrayTypeInfo;
+                }
 
-        //        var converter = new ListOfTConverter<List<T>, T>();
-        //        var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-        //        {
-        //            CreateObject = static () => new List<T?>(),
-        //            ElementTypeInfo = elementTypeInfo,
-        //        };
+                var converter = new ListOfTConverter<List<T>, T>();
+                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
+                {
+                    CreateObject = static () => new List<T?>(),
+                    ElementTypeInfo = elementTypeInfo,
+                };
 
-        //        listTypeInfo.EnsureConfigured();
-        //        elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
-        //        return listTypeInfo;
-        //    }
+                listTypeInfo.EnsureConfigured();
+                elementTypeInfo._asyncEnumerableArrayTypeInfo = listTypeInfo;
+                return listTypeInfo;
+            }
 
-        //    static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode(JsonTypeInfo<T> elementTypeInfo)
-        //    {
-        //        if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
-        //        {
-        //            return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
-        //        }
+            static JsonTypeInfo<List<T?>> GetOrAddListTypeInfoForRootLevelValueMode(JsonTypeInfo<T> elementTypeInfo)
+            {
+                if (elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo != null)
+                {
+                    return (JsonTypeInfo<List<T?>>)elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo;
+                }
 
-        //        var converter = new RootLevelListConverter<T>(elementTypeInfo);
-        //        var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
-        //        {
-        //            ElementTypeInfo = elementTypeInfo,
-        //        };
+                var converter = new RootLevelListConverter<T>(elementTypeInfo);
+                var listTypeInfo = new JsonTypeInfo<List<T?>>(converter, elementTypeInfo.Options)
+                {
+                    ElementTypeInfo = elementTypeInfo,
+                };
 
-        //        listTypeInfo.EnsureConfigured();
-        //        elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
-        //        return listTypeInfo;
-        //    }
-        //}
+                listTypeInfo.EnsureConfigured();
+                elementTypeInfo._asyncEnumerableRootLevelValueTypeInfo = listTypeInfo;
+                return listTypeInfo;
+            }
+        }
     }
 }
