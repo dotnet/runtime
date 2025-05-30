@@ -1561,7 +1561,7 @@ ds_ipc_stream_read_fd (
 	DiagnosticsIpcStream *ipc_stream,
 	uint32_t *data_fd)
 {
-#ifdef HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H
 	EP_ASSERT (ipc_stream != NULL);
 	EP_ASSERT (data_fd != NULL);
 
