@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -48,36 +45,6 @@ namespace Microsoft.Extensions.DependencyInjection
             // ensure MakeReadOnly can be called twice, and it is just ignored
             serviceCollection.MakeReadOnly();
             Assert.True(serviceCollection.IsReadOnly);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        public void ServiceProviderListGetResizedAfterCapacityThresholdHit()
-        {
-            RemoteExecutor.Invoke(async () =>
-            {
-                await Task.Run(() =>
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        ServiceCollection sc = new();
-                        sc.AddSingleton(new object());
-                        sc.BuildServiceProvider();
-                    }
-                });
-
-                GC.Collect(2, GCCollectionMode.Forced, true);
-                GC.WaitForPendingFinalizers();
-
-                ServiceCollection newSc = new();
-                newSc.AddSingleton(new object());
-                newSc.BuildServiceProvider();
-
-                var providersField = typeof(DependencyInjectionEventSource).GetField("_providers", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                Assert.NotNull(providersField);
-                object? providersValue = providersField.GetValue(DependencyInjectionEventSource.Log);
-                var result = Assert.IsType<List<WeakReference<ServiceProvider>>>(providersValue);
-                Assert.Single(result);
-            }).Dispose();
         }
     }
 }
