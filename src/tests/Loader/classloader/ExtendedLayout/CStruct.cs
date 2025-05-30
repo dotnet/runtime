@@ -24,6 +24,7 @@ public static class CStructTests
     [Fact]
     public static void NonBlittableUnmanagedPrimitiveFields_TreatedAsBlittable()
     {
+        var c = default(CStructNonBlittablePrimitiveFields);
         Assert.Equal(Unsafe.SizeOf<CStructNonBlittablePrimitiveFields>(), Marshal.SizeOf<CStructNonBlittablePrimitiveFields>());
         Assert.Equal(4, Unsafe.SizeOf<CStructNonBlittablePrimitiveFields>());
         Assert.Equal(0, Unsafe.ByteOffset(ref Unsafe.As<CStructBlittablePrimitiveFields, byte>(ref c), ref Unsafe.As<bool, byte>(ref c.a)));
