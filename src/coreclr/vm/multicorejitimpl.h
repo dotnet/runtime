@@ -270,7 +270,7 @@ private:
     LONG                               m_nMySession;
     unsigned                           m_nStartTime;
     BYTE                             * m_pFileBuffer;
-    unsigned                           m_nFileSize;
+    int64_t                            m_nFileSize;
     MulticoreJitPlayerStat           & m_stats;
     MulticoreJitCounter              & m_appdomainSession;
 

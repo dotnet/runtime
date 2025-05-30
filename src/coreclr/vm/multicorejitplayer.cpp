@@ -22,6 +22,7 @@
 #include "hash.h"
 #include "clrex.h"
 #include "minipal/time.h"
+#include <dn-stdio.h>
 
 #include "appdomain.hpp"
 
@@ -1029,18 +1030,17 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
     HRESULT hr = S_OK;
 
     {
-        HANDLE hFile = WszCreateFile(pFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-        if (hFile == INVALID_HANDLE_VALUE)
+        FILE* fp;
+        if (fopen_u16(&fp, pFileName, W("rb")) != 0)
         {
             return COR_E_FILENOTFOUND;
         }
 
         HeaderRecord header;
 
-        DWORD cbRead = 0;
+        size_t cbRead = fread(&header, sizeof(header), 1, fp);
 
-        if (! ::ReadFile(hFile, & header, sizeof(header), &cbRead, NULL))
+        if (ferror(fp))
         {
             hr = COR_E_BADIMAGEFORMAT;
         }
@@ -1072,7 +1072,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         if (SUCCEEDED(hr))
         {
-            m_nFileSize = SafeGetFileSize(hFile, 0);
+            m_nFileSize = fgetsize(fp);
 
             if (m_nFileSize > sizeof(header))
             {
@@ -1084,7 +1084,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
                 {
                     hr = E_OUTOFMEMORY;
                 }
-                else if (::ReadFile(hFile, m_pFileBuffer, m_nFileSize, & cbRead, NULL))
+                else if ((cbRead = fread(m_pFileBuffer, 1, m_nFileSize, fp)) > 0)
                 {
                     if (cbRead != m_nFileSize)
                     {
@@ -1102,7 +1102,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
             }
         }
 
-        CloseHandle(hFile);
+        fclose(fp);
 
         _FireEtwMulticoreJit(W("PLAYER"), W("Header"), hr, m_headerModuleCount, header.methodCount);
     }

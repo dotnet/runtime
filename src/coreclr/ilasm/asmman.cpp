@@ -10,6 +10,7 @@
 #include "assembler.h"
 #include "strongnameinternal.h"
 #include <limits.h>
+#include <dn-stdio.h>
 
 extern WCHAR*   pwzInputFiles[];
 
@@ -404,28 +405,23 @@ void    AsmMan::EndAssembly()
                 else
                 {
                     // Read public key or key pair from file.
-                    HANDLE hFile = WszCreateFile(((Assembler*)m_pAssembler)->m_wzKeySourceName,
-                                                 GENERIC_READ,
-                                                 FILE_SHARE_READ,
-                                                 NULL,
-                                                 OPEN_EXISTING,
-                                                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                                                 NULL);
-                    if(hFile == INVALID_HANDLE_VALUE)
+                    FILE* fp;
+                    int err = fopen_u16(&fp, ((Assembler*)m_pAssembler)->m_wzKeySourceName, W("rb"));
+                    if (err != 0)
                     {
-                        hr = GetLastError();
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
-                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
+                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,err);
                         m_pCurAsmRef = NULL;
                         return;
                     }
 
                     // Determine file size and allocate an appropriate buffer.
-                    m_sStrongName.m_cbPublicKey = SafeGetFileSize(hFile, NULL);
-                    if (m_sStrongName.m_cbPublicKey == 0xffffffff) {
+                    int64_t fSize = fgetsize(fp);
+                    m_sStrongName.m_cbPublicKey = (DWORD)fSize;
+                    if (fSize > UINT32_MAX) {
                         report->error("File size too large\n");
                         m_pCurAsmRef = NULL;
-                        CloseHandle(hFile);
+                        fclose(fp);
                         return;
                     }
 
@@ -433,23 +429,23 @@ void    AsmMan::EndAssembly()
                     if (m_sStrongName.m_pbPublicKey == NULL) {
                         report->error("Failed to allocate key buffer\n");
                         m_pCurAsmRef = NULL;
-                        CloseHandle(hFile);
+                        fclose(fp);
                         return;
                     }
                     m_sStrongName.m_dwPublicKeyAllocated = AsmManStrongName::AllocatedByNew;
 
                     // Read the file into the buffer.
-                    DWORD dwBytesRead;
-                    if (!ReadFile(hFile, m_sStrongName.m_pbPublicKey, m_sStrongName.m_cbPublicKey, &dwBytesRead, NULL)) {
-                        hr = GetLastError();
+                    size_t dwBytesRead;
+                    
+                    if ((dwBytesRead = fread(m_sStrongName.m_pbPublicKey, 1, m_sStrongName.m_cbPublicKey, fp)) <= m_sStrongName.m_cbPublicKey) {
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
-                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
+                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,ferror(fp));
                         m_pCurAsmRef = NULL;
-                        CloseHandle(hFile);
+                        fclose(fp);
                         return;
                     }
 
-                    CloseHandle(hFile);
+                    fclose(fp);
 
                     // Guess whether we're full or delay signing based on
                     // whether the blob passed to us looks like a public
