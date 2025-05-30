@@ -2949,6 +2949,251 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> DuplicateSelectedScalarToVector(Vector<ulong> data, [ConstantExpected(Min = 0, Max = (byte)(7))] byte index) { throw new PlatformNotSupportedException(); }
 
 
+        // Extract element after last
+
+        /// <summary>
+        ///   <para>svuint8_t svlasta[_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Btied, Pg, Zdata.B</para>
+        /// </summary>
+        public static Vector<byte> ExtractAfterLastActiveElement(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint8_t svlasta[_n_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static byte ExtractAfterLastActiveElementScalar(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat64_t svlasta[_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<double> ExtractAfterLastActiveElement(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float64_t svlasta[_n_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static double ExtractAfterLastActiveElementScalar(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint16_t svlasta[_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTA Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<short> ExtractAfterLastActiveElement(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int16_t svlasta[_n_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static short ExtractAfterLastActiveElementScalar(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint32_t svlasta[_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<int> ExtractAfterLastActiveElement(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int32_t svlasta[_n_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static int ExtractAfterLastActiveElementScalar(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint64_t svlasta[_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<long> ExtractAfterLastActiveElement(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int64_t svlasta[_n_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTA Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static long ExtractAfterLastActiveElementScalar(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint8_t svlasta[_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTA Btied, Pg, Btied, Zdata.B</para>
+        /// </summary>
+        public static Vector<sbyte> ExtractAfterLastActiveElement(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int8_t svlasta[_n_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static sbyte ExtractAfterLastActiveElementScalar(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat32_t svlasta[_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<float> ExtractAfterLastActiveElement(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float32_t svlasta[_n_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static float ExtractAfterLastActiveElementScalar(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint16_t svlasta[_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTA Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<ushort> ExtractAfterLastActiveElement(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint16_t svlasta[_n_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static ushort ExtractAfterLastActiveElementScalar(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint32_t svlasta[_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTA Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<uint> ExtractAfterLastActiveElement(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint32_t svlasta[_n_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static uint ExtractAfterLastActiveElementScalar(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint64_t svlasta[_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTA Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<ulong> ExtractAfterLastActiveElement(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint64_t svlasta[_n_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTA Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static ulong ExtractAfterLastActiveElementScalar(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+
+        // Extract last element
+
+        /// <summary>
+        ///   <para>svuint8_t svlastb[_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTB Btied, Pg, Zdata.B</para>
+        /// </summary>
+        public static Vector<byte> ExtractLastActiveElement(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint8_t svlastb[_n_u8](svbool_t pg, svuint8_t data)</para>
+        ///   <para>  LASTA Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static byte ExtractLastActiveElementScalar(Vector<byte> mask, Vector<byte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat64_t svlastb[_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<double> ExtractLastActiveElement(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float64_t svlastb[_n_f64](svbool_t pg, svfloat64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static double ExtractLastActiveElementScalar(Vector<double> mask, Vector<double> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint16_t svlastb[_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTB Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<short> ExtractLastActiveElement(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int16_t svlastb[_n_s16](svbool_t pg, svint16_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static short ExtractLastActiveElementScalar(Vector<short> mask, Vector<short> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint32_t svlastb[_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<int> ExtractLastActiveElement(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int32_t svlastb[_n_s32](svbool_t pg, svint32_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static int ExtractLastActiveElementScalar(Vector<int> mask, Vector<int> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint64_t svlastb[_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<long> ExtractLastActiveElement(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int64_t svlastb[_n_s64](svbool_t pg, svint64_t data)</para>
+        ///   <para>  LASTB Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static long ExtractLastActiveElementScalar(Vector<long> mask, Vector<long> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svint8_t svlastb[_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTB Btied, Pg, Btied, Zdata.B</para>
+        /// </summary>
+        public static Vector<sbyte> ExtractLastActiveElement(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>int8_t svlastb[_n_s8](svbool_t pg, svint8_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.B</para>
+        /// </summary>
+        public static sbyte ExtractLastActiveElementScalar(Vector<sbyte> mask, Vector<sbyte> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svfloat32_t svlastb[_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<float> ExtractLastActiveElement(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>float32_t svlastb[_n_f32](svbool_t pg, svfloat32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static float ExtractLastActiveElementScalar(Vector<float> mask, Vector<float> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint16_t svlastb[_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTB Htied, Pg, Htied, Zdata.H</para>
+        /// </summary>
+        public static Vector<ushort> ExtractLastActiveElement(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint16_t svlastb[_n_u16](svbool_t pg, svuint16_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.H</para>
+        /// </summary>
+        public static ushort ExtractLastActiveElementScalar(Vector<ushort> mask, Vector<ushort> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint32_t svlastb[_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTB Stied, Pg, Stied, Zdata.S</para>
+        /// </summary>
+        public static Vector<uint> ExtractLastActiveElement(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint32_t svlastb[_n_u32](svbool_t pg, svuint32_t data)</para>
+        ///   <para>  LASTB Wtied, Pg, Wtied, Zdata.S</para>
+        /// </summary>
+        public static uint ExtractLastActiveElementScalar(Vector<uint> mask, Vector<uint> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>svuint64_t svlastb[_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTB Dtied, Pg, Dtied, Zdata.D</para>
+        /// </summary>
+        public static Vector<ulong> ExtractLastActiveElement(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   <para>uint64_t svlastb[_n_u64](svbool_t pg, svuint64_t data)</para>
+        ///   <para>  LASTB Xtied, Pg, Xtied, Zdata.D</para>
+        /// </summary>
+        public static ulong ExtractLastActiveElementScalar(Vector<ulong> mask, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         ///   <para>svuint8_t svext[_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)</para>
         ///   <para>  EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3</para>
