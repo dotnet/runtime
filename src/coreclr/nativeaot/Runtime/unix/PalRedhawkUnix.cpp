@@ -1154,3 +1154,8 @@ void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwLowDateTime = (uint32_t)result;
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
+
+extern "C" uint64_t PalGetCurrentOSThreadId()
+{
+    return (uint64_t)minipal_get_current_thread_id();
+}
