@@ -224,8 +224,6 @@ bool InitGSCookie()
 #endif // TARGET_UNIX
 
 #ifdef PROFILE_STARTUP
-#define STD_OUTPUT_HANDLE ((uint32_t)-11)
-
 static void AppendInt64(char * pBuffer, uint32_t* pLen, uint64_t value)
 {
     char localBuffer[20];
