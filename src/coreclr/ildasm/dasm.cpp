@@ -5794,7 +5794,7 @@ void DumpHeaderDetails(IMAGE_COR20_HEADER *CORHeader, void* GUICookie)
 
 void WritePerfData(const char *KeyDesc, const char *KeyName, const char *UnitDesc, const char *UnitName, void* Value, BOOL IsInt)
 {
-
+#ifdef HOST_WINDOWS
     DWORD BytesWritten;
 
     if(!g_fDumpToPerfWriter) return;
@@ -5838,6 +5838,7 @@ void WritePerfData(const char *KeyDesc, const char *KeyName, const char *UnitDes
 
     sprintf_s(TmpStr, 201, "%s IDirection=%s\r\n", KeyName, "False");
     WriteFile(g_PerfDataFilePtr, TmpStr, (DWORD)strlen(TmpStr), &BytesWritten, NULL);
+#endif // HOST_WINDOWS
 }
 
 void WritePerfDataInt(const char *KeyDesc, const char *KeyName, const char *UnitDesc, const char *UnitName, int Value)
