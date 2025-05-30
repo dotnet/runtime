@@ -68,6 +68,10 @@
 // we have to (in which case these definitions will move to CommonTypes.h).
 typedef int32_t             HRESULT;
 
+#define S_OK  0x0
+#define E_FAIL 0x80004005
+#define E_OUTOFMEMORY 0x8007000E
+
 typedef WCHAR *             LPWSTR;
 typedef const WCHAR *       LPCWSTR;
 typedef char *              LPSTR;
