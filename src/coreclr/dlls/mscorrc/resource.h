@@ -159,7 +159,6 @@
 #define IDS_CLASSLOAD_BYREF_OF_BYREF            0x17af
 #define IDS_CLASSLOAD_POINTER_OF_BYREF          0x17b0
 
-
 #define IDS_INVALID_REDIM                       0x17c3
 #define IDS_INVALID_PINVOKE_CALLCONV            0x17c4
 #define IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   0x17c7
