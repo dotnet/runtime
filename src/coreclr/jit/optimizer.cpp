@@ -199,44 +199,33 @@ void Compiler::optScaleLoopBlocks(FlowGraphNaturalLoop* loop)
             return BasicBlockVisit::Continue;
         }
 
-        // If `curBlk` reaches any of the back edge blocks we set `reachable`.
         // If `curBlk` dominates any of the back edge blocks we set `dominates`.
-        bool reachable = false;
         bool dominates = false;
 
         for (FlowEdge* const backEdge : loop->BackEdges())
         {
-            BasicBlock* backEdgeSource = backEdge->getSourceBlock();
-
-            reachable |= m_reachabilitySets->CanReach(curBlk, backEdgeSource);
+            BasicBlock* const backEdgeSource = backEdge->getSourceBlock();
             dominates |= m_domTree->Dominates(curBlk, backEdgeSource);
 
-            if (dominates && reachable)
+            if (dominates)
             {
                 // No need to keep looking; we've already found all the info we need.
                 break;
             }
         }
 
-        if (reachable)
+        weight_t scale = BB_LOOP_WEIGHT_SCALE;
+
+        if (!dominates)
         {
-            weight_t scale = BB_LOOP_WEIGHT_SCALE;
-
-            if (!dominates)
-            {
-                // If `curBlk` reaches but doesn't dominate any back edge to `endBlk` then there must be at least
-                // some other path to `endBlk`, so don't give `curBlk` all the execution weight.
-                scale = scale / 2;
-            }
-
-            curBlk->scaleBBWeight(scale);
-
-            reportBlockWeight("");
+            // If `curBlk` reaches but doesn't dominate any back edge to `endBlk` then there must be at least
+            // some other path to `endBlk`, so don't give `curBlk` all the execution weight.
+            scale = scale / 2;
         }
-        else
-        {
-            reportBlockWeight("; unchanged: back edge unreachable");
-        }
+
+        curBlk->scaleBBWeight(scale);
+
+        reportBlockWeight("");
 
         return BasicBlockVisit::Continue;
     });
