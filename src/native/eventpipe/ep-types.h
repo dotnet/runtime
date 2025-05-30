@@ -222,12 +222,10 @@ struct _EventPipeProviderConfiguration {
 #else
 struct _EventPipeProviderConfiguration_Internal {
 #endif
-	// V0
 	const ep_char8_t *provider_name;
 	const ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
-	// V1
 	EventPipeEventFilter *event_filter;
 	ProviderTracepointConfiguration *tracepoint_config;
 };

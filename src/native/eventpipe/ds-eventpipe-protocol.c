@@ -76,11 +76,10 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 
 static
 bool
-eventpipe_collect_tracing_command_try_parse_one_provider_config (
+eventpipe_collect_tracing_command_try_parse_provider_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	uint32_t output_format,
-	uint32_t provider_config_version,
+	EventPipeProviderOptionalFieldFlags optional_field_flags,
 	EventPipeProviderConfiguration *provider_config);
 
 static
@@ -96,8 +95,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	dn_vector_t **result,
-	uint32_t output_format,
-	uint32_t provider_config_version);
+	EventPipeProviderOptionalFieldFlags optional_field_flags);
 
 static
 uint8_t *
@@ -413,38 +411,22 @@ ep_on_error:
 }
 
 /*
- *  eventpipe_collect_tracing_command_try_parse_one_provider_config
+ *  eventpipe_collect_tracing_command_try_parse_provider_config
  *
- *  With the introduction of CollectTracing5, provider configurations vary in format.
- *  `provider_config_version` == 0:
- *  - provider_name
- *  - keywords
- *  - logging_level
- *  - filter_data
- *
- *  `provider_config_version` == 1:
- *  - provider_name
- *  - keywords
- *  - logging_level
- *  - filter_data
- *  - event_filter
- *  - tracepoint_config (only for user_events sessions `output_format` == 1)
+ *  Deserializes a single EventPipeProviderConfiguration from the IPC Stream
  *
  *  Dynamically allocates memory for the EventPipeProviderConfiguration fields and passes ownership to the caller.
  */
 static
 bool
-eventpipe_collect_tracing_command_try_parse_one_provider_config (
+eventpipe_collect_tracing_command_try_parse_provider_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	uint32_t output_format,
-	uint32_t provider_config_version,
+	EventPipeProviderOptionalFieldFlags optional_field_flags,
 	EventPipeProviderConfiguration *provider_config)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
-	EP_ASSERT (provider_config_version <= 1);
-	EP_ASSERT (output_format <= 1);
 	EP_ASSERT (provider_config != NULL);
 
 	bool result = false;
@@ -477,16 +459,16 @@ eventpipe_collect_tracing_command_try_parse_one_provider_config (
 		filter_data_byte_array = NULL;
 	}
 
-	if (provider_config_version != 0) {
+	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_EVENT_FILTER) != 0) {
 		provider_config->event_filter = ep_rt_object_alloc (EventPipeEventFilter);
 		ep_raise_error_if_nok (provider_config->event_filter != NULL);
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_event_filter (buffer, buffer_len, provider_config->event_filter));
+	}
 
-		if (output_format == 1) {
-			provider_config->tracepoint_config = ep_rt_object_alloc (ProviderTracepointConfiguration);
-			ep_raise_error_if_nok (provider_config->tracepoint_config != NULL);
-			ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, provider_config->tracepoint_config));
-		}
+	if ((optional_field_flags & EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG) != 0) {
+		provider_config->tracepoint_config = ep_rt_object_alloc (ProviderTracepointConfiguration);
+		ep_raise_error_if_nok (provider_config->tracepoint_config != NULL);
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_tracepoint_config (buffer, buffer_len, provider_config->tracepoint_config));
 	}
 
 	result = true;
@@ -608,7 +590,8 @@ ep_on_error:
  * eventpipe_collect_tracing_command_try_parse_config
  *
  * With the introduction of CollectTracing5, there is more flexiblity in provider configuration encoding.
- * This function deserializes provider configurations one at a time based on the `output_format` parameter:
+ * This function deserializes all provider configurations from the IPC Stream, providing callers the flexibility
+ * to specify which optional fields are present for the particular CollectTracingN command.
  *
  * Ownership of all EventPipeProviderConfigurations data is transferred to the caller.
  */
@@ -618,14 +601,11 @@ eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	dn_vector_t **result,
-	uint32_t output_format,
-	uint32_t provider_config_version)
+	EventPipeProviderOptionalFieldFlags optional_field_flags)
 {
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (buffer_len != NULL);
 	EP_ASSERT (result != NULL);
-	EP_ASSERT (output_format <= 1);
-	EP_ASSERT (provider_config_version <= 1);
 
 	// Picking an arbitrary upper bound,
 	// This should be larger than any reasonable client request.
@@ -644,11 +624,10 @@ eventpipe_collect_tracing_command_try_parse_config (
 	for (uint32_t i = 0; i < count_configs; ++i) {
 		provider_config = ep_rt_object_alloc (EventPipeProviderConfiguration);
 		ep_raise_error_if_nok (provider_config != NULL);
-		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_one_provider_config (
+		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_provider_config (
 			buffer,
 			buffer_len,
-			output_format,
-			provider_config_version,
+			optional_field_flags,
 			provider_config));
 
 		ep_raise_error_if_nok (dn_vector_push_back (*result, *provider_config));
@@ -855,6 +834,8 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 	uint8_t * buffer_cursor = buffer;
 	uint32_t buffer_cursor_len = buffer_len;
 
+	EventPipeProviderOptionalFieldFlags optional_field_flags = EP_PROVIDER_OPTFIELD_EVENT_FILTER;
+
 	EventPipeCollectTracingCommandPayload *instance = ds_eventpipe_collect_tracing_command_payload_alloc ();
 	ep_raise_error_if_nok (instance != NULL);
 
@@ -879,7 +860,10 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 		instance->stackwalk_requested = false;
 	}
 
-	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, instance->output_format, 1 /* provider_config_version */));
+	if (instance->output_format == 1)
+		optional_field_flags = (EventPipeProviderOptionalFieldFlags)(optional_field_flags | EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG);
+
+	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, optional_field_flags));
 
 	instance->rundown_requested = instance->rundown_keyword != 0;
 
