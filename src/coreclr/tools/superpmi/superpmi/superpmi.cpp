@@ -495,17 +495,16 @@ int __cdecl main(int argc, char* argv[])
                 {
                     char buff[500];
                     sprintf_s(buff, 500, "%s-%d.mc", o.reproName, reader->GetMethodContextIndex());
-                    HANDLE hFileOut = CreateFileA(buff, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-                    if (hFileOut == INVALID_HANDLE_VALUE)
+                    FILE* fpOut = NULL;
+                    if (fopen_s(&fpOut, buff, "wb") != 0)
                     {
-                        LogError("Failed to open output '%s'. GetLastError()=%u", buff, GetLastError());
+                        LogError("Failed to open output '%s'. errno=%d", buff, errno);
                         return (int)SpmiResult::GeneralFailure;
                     }
-                    mc->saveToFile(hFileOut);
-                    if (CloseHandle(hFileOut) == 0)
+                    mc->saveToFile(fpOut);
+                    if (fclose(fpOut) != 0)
                     {
-                        LogError("CloseHandle for output file failed. GetLastError()=%u", GetLastError());
+                        LogError("Closing output file failed. errno=%u", errno);
                         return (int)SpmiResult::GeneralFailure;
                     }
                     LogInfo("Wrote out repro to '%s'", buff);

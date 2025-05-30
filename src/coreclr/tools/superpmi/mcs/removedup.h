@@ -9,6 +9,7 @@
 
 #include "methodcontext.h"
 #include "lightweightmap.h"
+#include <stdio.h>
 
 class RemoveDup
 {
@@ -35,7 +36,7 @@ public:
 
     ~RemoveDup();
 
-    bool CopyAndRemoveDups(const char* nameOfInput, HANDLE hFileOut);
+    bool CopyAndRemoveDups(const char* nameOfInput, FILE* fpOut);
 
 private:
 
