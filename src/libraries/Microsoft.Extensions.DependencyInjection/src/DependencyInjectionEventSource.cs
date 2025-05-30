@@ -151,10 +151,9 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 int providersCount = _providers.Count;
                 if (providersCount > 0 &&
-                    ((_survivingProvidersCount is null && _providers.Capacity == providersCount)
-                    || (_survivingProvidersCount is not null && providersCount > 2 * _survivingProvidersCount.Value)))
+                    (_survivingProvidersCount is int spc ? (uint)providersCount > 2 * (uint)spc : providersCount == _providers.Capacity))
                 {
-                    _providers.RemoveAll(p => !p.TryGetTarget(out _));
+                    _providers.RemoveAll(static p => !p.TryGetTarget(out _));
                     _survivingProvidersCount = _providers.Count;
                 }
 
