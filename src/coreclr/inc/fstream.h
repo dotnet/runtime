@@ -40,8 +40,8 @@ class CFileStream : public IStream
         BOOL Close();
 
     private:
-        LONG                                _cRef;
-        HANDLE                              _hFile;
+        LONG   _cRef;
+        FILE*  _fp;
 
 };
 

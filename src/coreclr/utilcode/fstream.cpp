@@ -4,10 +4,11 @@
 
 #include "stdafx.h"                     // Precompiled header key.
 #include "fstream.h"
+#include <dn-stdio.h>
 
 CFileStream::CFileStream()
 : _cRef(1)
-, _hFile(INVALID_HANDLE_VALUE)
+, _fp(NULL)
 {
 }
 
@@ -19,49 +20,26 @@ CFileStream::~CFileStream()
 HRESULT CFileStream::OpenForRead(LPCWSTR wzFilePath)
 {
     HRESULT         hr = S_OK;
-    DWORD           dwShareMode = FILE_SHARE_READ;
 
-    dwShareMode |= FILE_SHARE_DELETE;
-
-    _ASSERTE(_hFile == INVALID_HANDLE_VALUE && wzFilePath);
-    if (_hFile != INVALID_HANDLE_VALUE || !wzFilePath) {
-        hr = E_INVALIDARG;
-        goto Exit;
+    int err = fopen_u16(&_fp, wzFilePath, W("rb"));
+    if (err != 0)
+    {
+        hr = HRESULT_FROM_LAST_STDIO();
     }
 
-    _hFile = WszCreateFile(wzFilePath, GENERIC_READ,
-                           dwShareMode, NULL,
-                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (_hFile == INVALID_HANDLE_VALUE) {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto Exit;
-    }
-
-Exit:
     return hr;
 }
 
 HRESULT CFileStream::OpenForWrite(LPCWSTR wzFilePath)
 {
     HRESULT         hr = S_OK;
-
-    _ASSERTE(_hFile == INVALID_HANDLE_VALUE && wzFilePath);
-    if (_hFile != INVALID_HANDLE_VALUE || !wzFilePath) {
-        hr = E_INVALIDARG;
-        goto Exit;
-    }
-
-    _hFile = WszCreateFile(wzFilePath, GENERIC_WRITE,
-                           FILE_SHARE_READ, NULL,
-                           CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (_hFile == INVALID_HANDLE_VALUE)
+    
+    int err = fopen_u16(&_fp, wzFilePath, W("wb"));
+    if (err != 0)
     {
-        hr = HRESULT_FROM_WIN32(GetLastError());
-        goto Exit;
+        hr = HRESULT_FROM_LAST_STDIO();
     }
 
-Exit:
     return hr;
 }
 
@@ -113,14 +91,16 @@ HRESULT CFileStream::Read(void *pv, ULONG cb, ULONG *pcbRead)
         *pcbRead = 0;
     }
 
-    _ASSERTE(_hFile != INVALID_HANDLE_VALUE);
-    if (_hFile == INVALID_HANDLE_VALUE) {
+    _ASSERTE(_fp != NULL);
+    if (_fp == NULL) {
         hr = E_UNEXPECTED;
         goto Exit;
     }
 
-    if (!::ReadFile(_hFile, pv, cb, &cbRead, NULL)) {
-        hr = HRESULT_FROM_WIN32(::GetLastError());
+    cbRead = (ULONG)fread(pv, 1, cb, _fp);
+
+    if (cbRead <= 0) {
+        hr = HRESULT_FROM_LAST_STDIO();
         goto Exit;
     }
 
@@ -148,14 +128,16 @@ HRESULT CFileStream::Write(void const *pv, ULONG cb, ULONG *pcbWritten)
         *pcbWritten = 0;
     }
 
-    _ASSERTE(_hFile != INVALID_HANDLE_VALUE);
-    if (_hFile == INVALID_HANDLE_VALUE) {
+    _ASSERTE(_fp != NULL);
+    if (_fp == NULL) {
         hr = E_UNEXPECTED;
         goto Exit;
     }
 
-    if (!::WriteFile(_hFile, pv, cb, &cbWritten, NULL)) {
-        hr = HRESULT_FROM_WIN32(::GetLastError());
+    cbWritten = (ULONG)fwrite(pv, 1, cb, _fp);
+
+    if (cbWritten <= 0) {
+        hr = HRESULT_FROM_LAST_STDIO();
         goto Exit;
     }
 
@@ -236,13 +218,13 @@ BOOL CFileStream::Close()
 {
     BOOL                            fSuccess = FALSE;
 
-    if (_hFile != INVALID_HANDLE_VALUE) {
-        if (!::CloseHandle(_hFile)) {
-            _hFile = INVALID_HANDLE_VALUE;
+    if (_fp != NULL) {
+        if (fclose(_fp) == 0) {
+            _fp = NULL;
             goto Exit;
         }
 
-        _hFile = INVALID_HANDLE_VALUE;
+        _fp = NULL;
     }
 
     fSuccess = TRUE;
