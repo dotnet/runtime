@@ -2458,6 +2458,33 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
+        case NI_X86Base_Multiply:
+        case NI_X86Base_X64_Multiply:
+        {
+            assert(node->GetOperandCount() == 2);
+            assert(instOptions == INS_OPTS_NONE);
+
+            // SIMD base type is from signature and can distinguish signed and unsigned
+            var_types   targetType = node->GetSimdBaseType();
+            GenTree*    op1        = node->Op(1);
+            GenTree*    op2        = node->Op(2);
+            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+
+            regNumber op1Reg = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            emitAttr attr = emitTypeSize(targetType);
+            emitter* emit = GetEmitter();
+
+            // op1: EAX, op2: reg/mem
+            emit->emitIns_Mov(INS_mov, attr, REG_EAX, op1Reg, /* canSkip */ true);
+
+            // emit the MUL/IMUL instruction
+            emit->emitInsBinary(ins, attr, node, op2);
+
+            break;
+        }
+
         default:
             unreached();
             break;

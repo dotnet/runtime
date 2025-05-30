@@ -4381,6 +4381,27 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_X86Base_Multiply:
+        case NI_X86Base_X64_Multiply:
+        {
+            assert(sig->numArgs == 2);
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
+            assert(retType == TYP_STRUCT);
+            assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            GenTreeHWIntrinsic* multiplyIntrinsic = gtNewScalarHWIntrinsicNode(retType, op1, op2, intrinsic);
+
+            // Store the type from signature into SIMD base type for convenience
+            multiplyIntrinsic->SetSimdBaseJitType(simdBaseJitType);
+
+            retNode = impStoreMultiRegValueToVar(multiplyIntrinsic,
+                                                 sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
+            break;
+        }
+
         case NI_SSE_CompareScalarGreaterThan:
         case NI_SSE_CompareScalarGreaterThanOrEqual:
         case NI_SSE_CompareScalarNotGreaterThan:

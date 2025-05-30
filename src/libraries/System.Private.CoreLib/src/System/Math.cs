@@ -159,16 +159,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(uint a, uint b)
         {
-#if false // TARGET_32BIT
-            // This generates slower code currently than the simple multiplication
-            // https://github.com/dotnet/runtime/issues/11782
-            if (Bmi2.IsSupported)
-            {
-                uint low;
-                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
-                return ((ulong)high << 32) | low;
-            }
-#endif
             return ((ulong)a) * b;
         }
 
@@ -181,7 +171,7 @@ namespace System
             return ((long)a) * b;
         }
 
-
+#if !(TARGET_ARM64 || (TARGET_AMD64 && !MONO)) // BigMul 64*64 has high performance intrinsics on ARM64 and AMD64 (but not yet on MONO)
         /// <summary>
         /// Perform multiplication between 64 and 32 bit numbers, returning lower 64 bits in <paramref name="low"/>
         /// </summary>
@@ -190,21 +180,18 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ulong BigMul(ulong a, uint b, out ulong low)
         {
-#if TARGET_64BIT
-            return Math.BigMul((ulong)a, (ulong)b, out low);
-#else
             ulong prodL = ((ulong)(uint)a) * b;
             ulong prodH = (prodL >> 32) + (((ulong)(uint)(a >> 32)) * b);
 
             low = ((prodH << 32) | (uint)prodL);
             return (prodH >> 32);
-#endif
         }
 
         /// <inheritdoc cref="BigMul(ulong, uint, out ulong)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ulong BigMul(uint a, ulong b, out ulong low)
             => BigMul(b, a, out low);
+#endif
 
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
@@ -215,6 +202,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
         {
+#if MONO // Multiply is not yet implemented in MONO
             if (Bmi2.X64.IsSupported)
             {
                 ulong tmp;
@@ -222,6 +210,13 @@ namespace System
                 low = tmp;
                 return high;
             }
+#else
+            if (X86Base.X64.IsSupported)
+            {
+                (low, ulong hi) = X86Base.X64.Multiply(a, b);
+                return hi;
+            }
+#endif
             else if (ArmBase.Arm64.IsSupported)
             {
                 low = a * b;
@@ -261,6 +256,13 @@ namespace System
         /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
+#if !MONO // Multiply is not yet implemented in MONO
+            if (X86Base.X64.IsSupported)
+            {
+                (low, long hi) = X86Base.X64.Multiply(a, b);
+                return hi;
+            }
+#endif
             if (ArmBase.Arm64.IsSupported)
             {
                 low = a * b;
