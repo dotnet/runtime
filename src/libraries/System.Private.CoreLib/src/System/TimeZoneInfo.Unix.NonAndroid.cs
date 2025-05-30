@@ -328,12 +328,7 @@ namespace System
 
             try
             {
-                var timeZoneDirectoryEnumerable = new FileSystemEnumerable<string>(
-                    timeZoneDirectory,
-                    transform: (ref entry) => entry.ToSpecifiedFullPath(),
-                    new EnumerationOptions { RecurseSubdirectories = true });
-
-                foreach (string filePath in timeZoneDirectoryEnumerable)
+                foreach (string filePath in Directory.EnumerateFiles(timeZoneDirectory, "*", SearchOption.AllDirectories))
                 {
                     // skip the localtime and posixrules file, since they won't give us the correct id
                     if (!string.Equals(filePath, localtimeFilePath, StringComparison.OrdinalIgnoreCase)
