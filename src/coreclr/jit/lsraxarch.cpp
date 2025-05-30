@@ -2490,7 +2490,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 // mulEAX always have op1 in EAX
                 srcCount += BuildOperandUses(op1, SRBM_EAX);
-                srcCount += BuildOperandUses(op2);
+                SingleTypeRegSet apxAwareRegCandidates =
+                    ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
+                srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
 
                 // result put in EAX and EDX
                 BuildDef(intrinsicTree, SRBM_EAX, 0);
