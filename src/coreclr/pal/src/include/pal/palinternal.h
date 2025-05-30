@@ -164,6 +164,7 @@ function_name() to call the system's implementation
 #undef __real_type_class
 #endif
 
+#include <minipal/mutex.h>
 
 #include "pal.h"
 #include "palprivate.h"

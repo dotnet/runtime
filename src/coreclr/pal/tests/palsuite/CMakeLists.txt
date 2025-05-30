@@ -48,15 +48,6 @@ add_executable_clr(paltests
   #composite/object_management/semaphore/nonshared/semaphore.cpp
   #composite/object_management/semaphore/shared/main.cpp
   #composite/object_management/semaphore/shared/semaphore.cpp
-  #composite/synchronization/criticalsection/criticalsection.cpp
-  #composite/synchronization/criticalsection/mainWrapper.cpp
-  #composite/synchronization/nativecriticalsection/mtx_critsect.cpp
-  #composite/synchronization/nativecriticalsection/pal_composite_native_cs.cpp
-  #composite/synchronization/nativecriticalsection/resultbuffer.cpp
-  #composite/synchronization/nativecs_interlocked/interlocked.cpp
-  #composite/synchronization/nativecs_interlocked/mtx_critsect.cpp
-  #composite/synchronization/nativecs_interlocked/pal_composite_native_cs.cpp
-  #composite/synchronization/nativecs_interlocked/resultbuffer.cpp
   #composite/wfmo/main.cpp
   #composite/wfmo/mutex.cpp
   c_runtime/atof/test1/test1.cpp
@@ -405,13 +396,6 @@ add_executable_clr(paltests
   threading/CreateThread/test1/test1.cpp
   threading/CreateThread/test2/test2.cpp
   threading/CreateThread/test3/test3.cpp
-  threading/CriticalSectionFunctions/test1/InitializeCriticalSection.cpp
-  threading/CriticalSectionFunctions/test2/test2.cpp
-  threading/CriticalSectionFunctions/test4/test4.cpp
-  threading/CriticalSectionFunctions/test5/test5.cpp
-  threading/CriticalSectionFunctions/test6/test6.cpp
-  threading/CriticalSectionFunctions/test7/test7.cpp
-  threading/CriticalSectionFunctions/test8/test8.cpp
   threading/DuplicateHandle/test1/test1.cpp
   threading/DuplicateHandle/test10/test10.cpp
   threading/DuplicateHandle/test11/childprocess.cpp

@@ -68,8 +68,6 @@
 
 using std::nullptr_t;
 
-#define PalRaiseFailFastException RaiseFailFastException
-
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
 #define PAGE_NOACCESS           0x01
@@ -88,7 +86,7 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
-extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
+void RhFailFast()
 {
     // Causes creation of a crash dump if enabled
     PalCreateCrashDumpIfEnabled();
@@ -632,7 +630,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
     return false;
 }
 
-extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
+UInt32_BOOL PalCloseHandle(HANDLE handle)
 {
     if ((handle == NULL) || (handle == INVALID_HANDLE_VALUE))
     {
@@ -868,67 +866,26 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
 #endif
 }
 
-extern "C" uint32_t GetCurrentProcessId()
+uint32_t PalGetCurrentProcessId()
 {
     return getpid();
 }
 
-extern "C" UInt32_BOOL InitializeCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutexattr_t mutexAttributes;
-    int st = pthread_mutexattr_init(&mutexAttributes);
-    if (st != 0)
-    {
-        return false;
-    }
-
-    st = pthread_mutexattr_settype(&mutexAttributes, PTHREAD_MUTEX_RECURSIVE);
-    if (st == 0)
-    {
-        st = pthread_mutex_init(&lpCriticalSection->mutex, &mutexAttributes);
-    }
-
-    pthread_mutexattr_destroy(&mutexAttributes);
-
-    return (st == 0);
-}
-
-extern "C" UInt32_BOOL InitializeCriticalSectionEx(CRITICAL_SECTION * lpCriticalSection, uint32_t arg2, uint32_t arg3)
-{
-    return InitializeCriticalSection(lpCriticalSection);
-}
-
-
-extern "C" void DeleteCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutex_destroy(&lpCriticalSection->mutex);
-}
-
-extern "C" void EnterCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutex_lock(&lpCriticalSection->mutex);;
-}
-
-extern "C" void LeaveCriticalSection(CRITICAL_SECTION * lpCriticalSection)
-{
-    pthread_mutex_unlock(&lpCriticalSection->mutex);
-}
-
-extern "C" UInt32_BOOL SetEvent(HANDLE event)
+UInt32_BOOL PalSetEvent(HANDLE event)
 {
     UnixEvent* unixEvent = (UnixEvent*)event;
     unixEvent->Set();
     return UInt32_TRUE;
 }
 
-extern "C" UInt32_BOOL ResetEvent(HANDLE event)
+UInt32_BOOL PalResetEvent(HANDLE event)
 {
     UnixEvent* unixEvent = (UnixEvent*)event;
     unixEvent->Reset();
     return UInt32_TRUE;
 }
 
-extern "C" uint32_t GetEnvironmentVariableA(const char * name, char * buffer, uint32_t size)
+uint32_t PalGetEnvironmentVariable(const char * name, char * buffer, uint32_t size)
 {
     const char* value = getenv(name);
     if (value == NULL)
@@ -947,7 +904,7 @@ extern "C" uint32_t GetEnvironmentVariableA(const char * name, char * buffer, ui
     return (valueLen < UINT32_MAX) ? (valueLen + 1) : 0;
 }
 
-extern "C" uint16_t RtlCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
+uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
 {
     // UNIXTODO: Implement this function
     return 0;
@@ -1062,7 +1019,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(Thread* pThreadToHijack)
 }
 #endif // FEATURE_HIJACK
 
-extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
+uint32_t PalWaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_BOOL alertable)
 {
     UnixEvent* unixEvent = (UnixEvent*)handle;
     return unixEvent->Wait(milliseconds);
@@ -1073,7 +1030,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     // Only a single handle wait for event is supported
     ASSERT(handleCount == 1);
 
-    return WaitForSingleObjectEx(pHandles[0], timeout, alertable);
+    return PalWaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
 
 REDHAWK_PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
@@ -1178,7 +1135,7 @@ REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOu
 #endif // defined(HOST_WASM)
 }
 
-extern "C" void FlushProcessWriteBuffers()
+void PalFlushProcessWriteBuffers()
 {
     GCToOSInterface::FlushProcessWriteBuffers();
 }
@@ -1186,7 +1143,7 @@ extern "C" void FlushProcessWriteBuffers()
 static const int64_t SECS_BETWEEN_1601_AND_1970_EPOCHS = 11644473600LL;
 static const int64_t SECS_TO_100NS = 10000000; /* 10^7 */
 
-extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
+void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
 {
     struct timeval time = { 0 };
     gettimeofday(&time, NULL);
