@@ -33,7 +33,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
         internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPUTF8Str)] string name, out MountPointInformation mpi);
 
-        internal static Error GetFileSystemTypeNameForMountPoint(string name, out string format)
+        internal static unsafe Error GetFileSystemTypeNameForMountPoint(string name, out string format)
         {
             if (OperatingSystem.IsLinux())
             {
@@ -49,7 +49,18 @@ internal static partial class Interop
             }
             else
             {
-                return GetFileSystemTypeNameForMountPoint(name, out format);
+                byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
+                int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes);
+                if (result == 0)
+                {
+                    format = Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
+                    return Error.SUCCESS;
+                }
+                else
+                {
+                    format = string.Empty;
+                    return GetLastError();
+                }
             }
         }
 
@@ -65,22 +76,6 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
             byte* formatNameBuffer,
             int bufferLength);
-
-        private static unsafe Error GetFileSystemTypeNameForMountPoint(string name, out ReadOnlySpan<char> format)
-        {
-            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
-            int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes);
-            if (result == 0)
-            {
-                format = Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
-                return Error.SUCCESS;
-            }
-            else
-            {
-                format = string.Empty;
-                return GetLastError();
-            }
-        }
 
         /// <summary>Categorizes a file system name into a drive type.</summary>
         /// <param name="fileSystemName">The name to categorize.</param>

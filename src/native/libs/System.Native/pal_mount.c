@@ -155,9 +155,9 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
     if (result == 0)
     {
 #ifdef HAVE_STATFS_FSTYPENAME
-        if (bufferLength < MFSNAMELEN)
+        if (bufferLength < (MFSNAMELEN + 1)) // MFSNAMELEN does not include the null byte
 #elif HAVE_STATVFS_FSTYPENAME
-        if (bufferLength < VFS_NAMELEN)
+        if (bufferLength < VFS_NAMELEN) // VFS_NAMELEN includes the null byte
 #endif
         {
             errno = ERANGE;

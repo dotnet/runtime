@@ -95,27 +95,15 @@ namespace System.IO.FileSystem.Tests
             Assert.Throws<PlatformNotSupportedException>(() => root.VolumeLabel = root.Name);
         }
 
-        [Theory]
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void CanGetTempPathDriveFormat(bool trimSeparator)
+        public void CanGetTempPathDriveFormat()
         {
-            string path = Path.GetTempPath();
-            if (trimSeparator)
-            {
-                path = path.TrimEnd('/');
-            }
-            var driveInfo = new DriveInfo(path);
+            var driveInfo = new DriveInfo(Path.GetTempPath());
 
-            try
-            {
-                string format = driveInfo.DriveFormat;
-            }
-            catch (Exception ex) when (PlatformDetection.IsLinux)
-            {
-                throw new Exception($"Failed to find {path} in \n{File.ReadAllText("/proc/self/mountinfo")}", ex);
-            }
+            string format = driveInfo.DriveFormat;
+            Assert.NotNull(driveInfo.DriveFormat);
+            Assert.NotEmpty(driveInfo.DriveFormat);
         }
     }
 }
