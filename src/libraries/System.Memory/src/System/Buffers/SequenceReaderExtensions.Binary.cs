@@ -39,7 +39,8 @@ namespace System.Buffers
             Debug.Assert(reader.UnreadSpan.Length < sizeof(T));
 
             // Not enough data in the current segment, try to peek for the data we need.
-            Span<byte> tempSpan = stackalloc byte[sizeof(T)];
+            T buffer = default;
+            Span<byte> tempSpan = new Span<byte>(&buffer, sizeof(T));
 
             if (!reader.TryCopyTo(tempSpan))
             {
