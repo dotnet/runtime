@@ -1608,9 +1608,6 @@ public:
         return (m_OptionValue.m_ThreadSafetyOptions & MDThreadSafetyOn) == MDThreadSafetyOn;
     }
 
-    LPCWSTR GetNameOfDBFile() { return (m_pStgdb->m_wszFileName == NULL) ? W("") : m_pStgdb->m_wszFileName; }
-    DWORD   GetLowFileTimeOfDBFile() { return m_pStgdb->m_dwDatabaseLFT; }
-    DWORD   GetLowFileSizeOfDBFile() { return m_pStgdb->m_dwDatabaseLFS; }
 protected:
     // Helper functions used for implementation of MetaData APIs.
     HRESULT RefToDefOptimization();
