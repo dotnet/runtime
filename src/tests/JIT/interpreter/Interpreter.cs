@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public interface ITest
 {
@@ -429,6 +430,10 @@ public class InterpreterTest
             Environment.FailFast(null);
         */
 
+        if (!TestPInvoke())
+            Environment.FailFast(null);
+
+        // For stackwalking validation
         System.GC.Collect();
     }
 
@@ -709,11 +714,44 @@ public class InterpreterTest
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    static object BoxedSubtraction (object lhs, object rhs) {
-        return (int)lhs - (int)rhs;
+    static object BoxedSubtraction (object lhs, object rhs) =>
+        (int)lhs - (int)rhs;
+
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern int sumTwoInts(int x, int y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl)]
+    public static extern double sumTwoDoubles(double x, double y);
+    [DllImport("pinvoke", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    public static extern int writeToStdout(string s);
+    [DllImport("missingLibrary", CallingConvention = CallingConvention.Cdecl)]
+    public static extern void missingPInvoke();
+
+    public static bool TestPInvoke()
+    {
+        if (sumTwoInts(1, 2) != 3)
+            return false;
+
+        double summed = sumTwoDoubles(1, 2);
+        if (summed != 3)
+            return false;
+
+        // This asserts at compile time because we do not have a way to get the IL stub for the marshaling
+        //  in order to invoke it from the interpreter.
+        // writeToStdout("Hello world from pinvoke.dll!writeToStdout\n");
+
+        // We don't currently have exception handling support so the DllNotFoundException from this will make everything explode
+        /*
+        try {
+            missingPInvoke();
+            return false;
+        } catch (DllNotFoundException) {
+        }
+        */
+
+        return true;
     }
 
-  public static bool TestArray()
+    public static bool TestArray()
     {
         // sbyte
         if (!ArraySByte(0, 0)) return false;

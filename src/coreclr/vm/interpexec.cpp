@@ -8,7 +8,7 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE pCode)
 {
     CONTRACTL
     {
@@ -41,7 +41,8 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetNativeCode()); // The method to call
+    _ASSERTE(pCode);
+    pHeader->SetTarget(pCode); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -151,7 +152,7 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_LDC_R8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                    memcpy(LOCAL_VAR_ADDR(ip[1], double), &ip[2], sizeof(double));
                     ip += 4;
                     break;
                 case INTOP_LDPTR:
@@ -1103,6 +1104,30 @@ MAIN_LOOP:
                     goto CALL_TARGET_IP;
                 }
 
+                case INTOP_CALL_PINVOKE:
+                {
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+                    size_t possiblyIndirectAddress = (size_t)pMethod->pDataItems[ip[4]];
+                    ip += 5;
+
+                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
+                    assert(targetMethod & INTERP_METHOD_HANDLE_TAG);
+                    MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
+
+                    PCODE actualCallTarget = (possiblyIndirectAddress & INTERP_PVALUE_TAG)
+                        ? *(PCODE *)(possiblyIndirectAddress & ~INTERP_PVALUE_TAG)
+                        : (PCODE)possiblyIndirectAddress;
+
+                    {
+                        pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                        GCX_PREEMP();
+                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, actualCallTarget);
+                    }
+                    break;
+                }
+
                 case INTOP_CALL:
                 {
                     returnOffset = ip[1];
@@ -1151,7 +1176,7 @@ CALL_TARGET_IP:
                     else if (codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
                     {
                         MethodDesc *pMD = codeInfo.GetMethodDesc();
-                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset);
+                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, pMD->GetNativeCode());
                         break;
                     }
 
@@ -1283,11 +1308,14 @@ CALL_TARGET_IP:
                     else
                         helper = (HELPER_FTN_BOX_UNBOX)helperDirectOrIndirect;
 
-                    if (opcode == INTOP_BOX) {
+                    if (opcode == INTOP_BOX)
+                    {
                         // internal static object Box(MethodTable* typeMT, ref byte unboxedData)
                         void *unboxedData = LOCAL_VAR_ADDR(sreg, void);
                         LOCAL_VAR(dreg, Object*) = (Object*)helper(pMT, unboxedData);
-                    } else {
+                    }
+                    else
+                    {
                         // private static ref byte Unbox(MethodTable* toTypeHnd, object obj)
                         Object *src = LOCAL_VAR(sreg, Object*);
                         void *unboxedData = helper(pMT, src);

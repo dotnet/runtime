@@ -107,6 +107,7 @@ inline float getR4LittleEndian(const uint8_t* ptr)
     return *(float*)&val;
 }
 
+// FIXME: This may be broken, but I'm not sure how -kg
 inline double getR8LittleEndian(const uint8_t* ptr)
 {
     int64_t val = getI8LittleEndian(ptr);
