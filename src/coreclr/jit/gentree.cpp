@@ -24532,6 +24532,54 @@ GenTree* Compiler::gtNewSimdMinNode(
             return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x04), minMaxIntrinsic, simdBaseJitType,
                                             simdSize);
         }
+        if (IsBaselineVector512IsaSupportedOpportunistically())
+        {
+            // If AVX512 is supported, we can use vrangeps/vrangepd to correctly handle the Vector.Min(-0.0, 0.0) = -0.0
+            // case. We still need to check for NaN as vrangeps/vrangepd does not handle NaN as specified in IEEE 754
+            // 2019.
+            //
+            // This can be represented as the following managed code:
+            //      Vector128<float> range = Avx512DQ.VL.Range(op1, op2, 0x4);
+            //      Vector128<float> fixup1 = Avx512F.VL.Fixup(op1, op2, Vector128<int>.One, 0);
+            //      Vector128<float> fixup2 = Avx512F.VL.Fixup(range, fixup1, Vector128<int>.One, 0);
+            //      return fixup2;
+            //
+            // 0x4 is the control byte for vrangeps/vrangepd:
+            //      Imm8[1:0] = 00b : Select Min value
+            //      Imm8[3:2] = 01b : Select sign(Compare_Result)
+
+            GenTree*       op1Dup     = fgMakeMultiUse(&op1);
+            GenTree*       op2Dup     = fgMakeMultiUse(&op2);
+            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x4),
+                                                        simdSize == 64 ? NI_AVX512DQ_Range : NI_AVX512DQ_VL_Range,
+                                                                 simdBaseJitType, simdSize);
+            GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
+            GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
+
+            if (simdBaseType == TYP_FLOAT)
+            {
+                for (unsigned i = 0; i < (simdSize / sizeof(float)); i++)
+                {
+                    tblVecCon1->gtSimdVal.i32[i] = tblVecCon2->gtSimdVal.i32[i] = 0x1;
+                }
+            }
+            else
+            {
+                assert(simdBaseType == TYP_DOUBLE);
+                for (unsigned i = 0; i < (simdSize / sizeof(double)); i++)
+                {
+                    tblVecCon1->gtSimdVal.i64[i] = tblVecCon2->gtSimdVal.i64[i] = 0x1;
+                }
+            }
+
+            NamedIntrinsic fixupIntrinsic = simdSize == 64 ? NI_AVX512F_Fixup : NI_AVX512F_VL_Fixup;
+            GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
+                                                                     fixupIntrinsic, simdBaseJitType, simdSize);
+            GenTree*       fixup2 = gtNewSimdHWIntrinsicNode(type, rangeOp, fixup1, tblVecCon2, gtNewIconNode(0),
+                                                             fixupIntrinsic, simdBaseJitType, simdSize);
+            return fixup2;
+        }
+
         GenTree* op1Dup1 = fgMakeMultiUse(&op1);
         GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
         GenTree* op1Dup3 = gtCloneExpr(op1Dup2);
