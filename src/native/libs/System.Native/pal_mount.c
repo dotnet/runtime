@@ -154,10 +154,10 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
 #if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_FSTYPENAME
     if (result == 0)
     {
-#ifdef VFS_NAMELEN
-        if (bufferLength < VFS_NAMELEN)
-#else
+#ifdef HAVE_STATFS_FSTYPENAME
         if (bufferLength < MFSNAMELEN)
+#elif HAVE_STATVFS_FSTYPENAME
+        if (bufferLength < VFS_NAMELEN)
 #endif
         {
             errno = ERANGE;
