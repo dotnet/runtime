@@ -3592,6 +3592,12 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
         }
 
+        private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
+        { throw new NotImplementedException("embedModuleHandle"); }
+
+        private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
+        { throw new NotImplementedException("embedFieldHandle"); }
+
         private static CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
         {
             if (method.RequiresInstMethodDescArg())
