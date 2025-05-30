@@ -440,9 +440,9 @@ namespace System.CommandLine
 
             public override int Invoke(ParseResult parseResult)
             {
-                int result = _helpAction.Invoke(parseResult);
+                int result = _helpAction(parseResult);
 
-                _customizer.Invoke(parseResult);
+                _customizer(parseResult);
 
                 return result;
             }
