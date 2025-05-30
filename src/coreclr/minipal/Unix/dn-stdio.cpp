@@ -4,11 +4,12 @@
 typedef char16_t WCHAR;
 
 #include <stdio.h>
+#include <errno.h>
 #include <dn-stdio.h>
 #include <dn-u16.h>
 #include <minipal/utf8.h>
 
-FILE* fopen_u16(const WCHAR* path, const WCHAR* mode)
+int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode)
 {
     size_t pathLen = u16_strlen(path);
     size_t pathU8Len = minipal_get_length_utf16_to_utf8((CHAR16_T*)path, pathLen, 0);
@@ -20,9 +21,19 @@ FILE* fopen_u16(const WCHAR* path, const WCHAR* mode)
     char* modeU8 = new char[modeU8Len + 1];
     minipal_convert_utf16_to_utf8((CHAR16_T*)mode, modeLen, modeU8, modeU8Len, 0);
 
-    FILE* ret = fopen(pathU8, modeU8);
+    FILE* result = fopen(pathU8, modeU8);
 
     delete[] pathU8;
     delete[] modeU8;
-    return ret;
+
+    if (result)
+    {
+        *stream = result;
+        return 0;
+    }
+    else
+    {
+        *stream = NULL;
+        return errno;
+    }
 }

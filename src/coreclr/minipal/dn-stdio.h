@@ -7,4 +7,4 @@
 // Wrappers for stdio with UTF-16 path.
 //
 
-FILE* fopen_u16(const WCHAR* path, const WCHAR* mode);
+int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode);
