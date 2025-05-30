@@ -8,7 +8,7 @@
     <BuildRidSpecificProjects Condition="'$(BuildingAnOfficialBuildLeg)' != 'true'">true</BuildRidSpecificProjects>
     <!-- In the VMR, we're always in a RID-specific leg. -->
     <BuildRidSpecificProjects Condition="'$(BuildRidSpecificProjects)' == '' and
-                                         '$(DotNetBuildOrchestrator)' == 'true'">true</BuildRidSpecificProjects>
+                                         '$(DotNetBuildFromVMR)' == 'true'">true</BuildRidSpecificProjects>
     <!--
       Outside the VMR, only RID-specific packages in official build legs when we're not building AllConfigurations,
       but we're building everything for this RID target (ie don't build on specialized legs like Mono LLVMAOT).
