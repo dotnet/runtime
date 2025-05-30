@@ -849,7 +849,7 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 		ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format));
 	} else if (instance->output_format == 1) {
 		instance->circular_buffer_size_in_mb = 0;
-		instance->serialization_format = EP_SERIALIZATION_FORMAT_COUNT; // No serialization format for user_events sessions.
+		instance->serialization_format = EP_SERIALIZATION_FORMAT_NETTRACE_V4; // Serialization format isn't used for user_events sessions, default for check_options_valid.
 	}
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword));
