@@ -45,7 +45,7 @@ internal static partial class Interop
                                 break;
                             }
 
-                            if (path[mount.MountPoint.Length] != '/')
+                            if (mount.MountPoint.Length > 1 && path[mount.MountPoint.Length] != '/')
                             {
                                 continue;
                             }
