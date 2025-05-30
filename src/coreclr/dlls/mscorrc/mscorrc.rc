@@ -292,8 +292,6 @@ BEGIN
     IDS_EE_INTEROP_STUB_CA_NO_ACCESS_TO_STUB_METHOD "The interop method '%1' cannot access the stub method '%2' specified in ManagedToNativeComInteropStubAttribute. Please make sure they have compatible access modifiers and security accessibility."
 #endif // FEATURE_COMINTEROP
 
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
 
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."
@@ -417,7 +415,6 @@ BEGIN
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
-
 
     IDS_EE_FILELOAD_ERROR_GENERIC           "Could not load file or assembly '%1'. %2"
 
