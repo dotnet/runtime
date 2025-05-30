@@ -80,7 +80,7 @@ namespace System.Text.Json
         // False means that property is not set (not yet occurred in the payload).
         // Length of the BitArray is equal to number of required properties.
         // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
-        public BitArray? RequiredPropertiesSet;
+        public ValueBitArray RequiredPropertiesSet;
 
         // Tracks state related to property population.
         public bool HasParentObject;
@@ -127,37 +127,29 @@ namespace System.Text.Json
             return JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MarkRequiredPropertyAsRead(JsonPropertyInfo propertyInfo)
         {
             if (propertyInfo.IsRequired)
             {
-                Debug.Assert(RequiredPropertiesSet != null);
                 RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(RequiredPropertiesSet == null);
-
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
+                RequiredPropertiesSet = new ValueBitArray(typeInfo.NumberOfRequiredProperties);
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
         {
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                Debug.Assert(RequiredPropertiesSet != null);
-
                 if (!RequiredPropertiesSet.HasAllSet())
                 {
-                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, ref RequiredPropertiesSet);
                 }
             }
         }

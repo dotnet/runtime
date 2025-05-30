@@ -288,7 +288,7 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, BitArray requiredPropertiesSet)
+        public static void ThrowJsonException_JsonRequiredPropertyMissing(JsonTypeInfo parent, ref readonly ValueBitArray requiredPropertiesSet)
         {
             StringBuilder listOfMissingPropertiesBuilder = new();
             bool first = true;
