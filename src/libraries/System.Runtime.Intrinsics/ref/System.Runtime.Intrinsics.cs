@@ -6079,6 +6079,22 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> ShiftLeftAndInsert(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<uint> ShiftLeftAndInsert(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<ulong> ShiftLeftAndInsert(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte shift) { throw null; }
+        public static System.Numerics.Vector<byte> Xor(System.Numerics.Vector<byte> value1, System.Numerics.Vector<byte> value2, System.Numerics.Vector<byte> value3) { throw null; }
+        public static System.Numerics.Vector<short> Xor(System.Numerics.Vector<short> value1, System.Numerics.Vector<short> value2, System.Numerics.Vector<short> value3) { throw null; }
+        public static System.Numerics.Vector<int> Xor(System.Numerics.Vector<int> value1, System.Numerics.Vector<int> value2, System.Numerics.Vector<int> value3) { throw null; }
+        public static System.Numerics.Vector<long> Xor(System.Numerics.Vector<long> value1, System.Numerics.Vector<long> value2, System.Numerics.Vector<long> value3) { throw null; }
+        public static System.Numerics.Vector<sbyte> Xor(System.Numerics.Vector<sbyte> value1, System.Numerics.Vector<sbyte> value2, System.Numerics.Vector<sbyte> value3) { throw null; }
+        public static System.Numerics.Vector<ushort> Xor(System.Numerics.Vector<ushort> value1, System.Numerics.Vector<ushort> value2, System.Numerics.Vector<ushort> value3) { throw null; }
+        public static System.Numerics.Vector<uint> Xor(System.Numerics.Vector<uint> value1, System.Numerics.Vector<uint> value2, System.Numerics.Vector<uint> value3) { throw null; }
+        public static System.Numerics.Vector<ulong> Xor(System.Numerics.Vector<ulong> value1, System.Numerics.Vector<ulong> value2, System.Numerics.Vector<ulong> value3) { throw null; }
+        public static System.Numerics.Vector<byte> XorRotateRight(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<short> XorRotateRight(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<int> XorRotateRight(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<long> XorRotateRight(System.Numerics.Vector<long> left, System.Numerics.Vector<long> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<sbyte> XorRotateRight(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ushort> XorRotateRight(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<uint> XorRotateRight(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right, [ConstantExpected] byte count) { throw null; }
+        public static System.Numerics.Vector<ulong> XorRotateRight(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right, [ConstantExpected] byte count) { throw null; }
     }
 
     public enum SveMaskPattern : byte
