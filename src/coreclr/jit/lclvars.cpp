@@ -3551,8 +3551,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
         assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
-               (tree->TypeIs(TYP_BYREF) && (varDsc->TypeIs(TYP_I_IMPL))) || // Created by inliner substitution.
-               (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG)));        // Created by "optNarrowTree".
+               (tree->TypeIs(TYP_BYREF) && varDsc->TypeIs(TYP_I_IMPL)) || // Created by inliner substitution.
+               (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG)));      // Created by "optNarrowTree".
     }
 }
 

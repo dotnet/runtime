@@ -14232,7 +14232,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeIs(TYP_I_IMPL)))
+    if ((tree->OperGet() == GT_CNS_INT) && tree->TypeIs(TYP_I_IMPL))
     {
         assert(tree->IsIconHandle(GTF_ICON_CLASS_HDL));
         result = (CORINFO_CLASS_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
@@ -14278,7 +14278,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
     CORINFO_METHOD_HANDLE result = NO_METHOD_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeIs(TYP_I_IMPL)))
+    if ((tree->OperGet() == GT_CNS_INT) && tree->TypeIs(TYP_I_IMPL))
     {
         assert(tree->IsIconHandle(GTF_ICON_METHOD_HDL));
         result = (CORINFO_METHOD_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
@@ -14297,7 +14297,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeIs(TYP_I_IMPL)))
+            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && handleTreeInternal->TypeIs(TYP_I_IMPL))
             {
                 // These handle constants should be method handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_METHOD_HDL));

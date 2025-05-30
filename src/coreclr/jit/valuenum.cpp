@@ -11996,7 +11996,7 @@ void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
         }
         else
         {
-            assert(((varDsc->TypeIs(TYP_I_IMPL)) && lcl->TypeIs(TYP_BYREF)) ||
+            assert((varDsc->TypeIs(TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
                    (varDsc->TypeIs(TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
             lcl->gtVNPair = wholeLclVarVNP;
         }

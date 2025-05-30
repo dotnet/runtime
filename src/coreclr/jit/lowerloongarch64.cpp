@@ -382,7 +382,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 return;
             }
 
-            assert(dstAddr->TypeIs(TYP_BYREF) || (dstAddr->TypeIs(TYP_I_IMPL)));
+            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindCpObjUnroll;
         }
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))

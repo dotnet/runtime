@@ -341,7 +341,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 // Must be an LEA (i.e., an AddrMode)
                 assert(tgtAddr->OperGet() == GT_LEA);
                 tgtAddr = tgtAddr->AsAddrMode()->Base();
-                if (tgtAddr->TypeIs(TYP_BYREF) || tgtAddr->TypeIs(TYP_REF))
+                if (tgtAddr->TypeIs(TYP_BYREF, TYP_REF))
                 {
                     simplifiedExpr = true;
                 }

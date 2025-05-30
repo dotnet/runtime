@@ -7097,7 +7097,7 @@ unsigned emitter::emitEndCodeGen(Compiler*         comp,
                 assert(dsc->lvTracked);
                 assert(dsc->lvRefCnt() != 0);
 
-                assert(dsc->TypeIs(TYP_REF) || dsc->TypeIs(TYP_BYREF));
+                assert(dsc->TypeIs(TYP_REF, TYP_BYREF));
 
                 assert(indx < emitComp->lvaTrackedCount);
 

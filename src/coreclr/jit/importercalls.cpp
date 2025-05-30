@@ -2067,7 +2067,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* s
     {
         GenTree* thisPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
         impBashVarAddrsToI(thisPtr);
-        assert(thisPtr->TypeIs(TYP_I_IMPL) || thisPtr->TypeIs(TYP_BYREF));
+        assert(thisPtr->TypeIs(TYP_I_IMPL, TYP_BYREF));
     }
 
     impRetypeUnmanagedCallArgs(call);
@@ -3749,7 +3749,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
-                assert(ptrToSpan->TypeIs(TYP_BYREF) || ptrToSpan->TypeIs(TYP_I_IMPL));
+                assert(ptrToSpan->TypeIs(TYP_BYREF, TYP_I_IMPL));
 
 #if defined(DEBUG)
                 if (verbose)
@@ -6403,7 +6403,7 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
 
             GenTree* obj = thisPtr;
 
-            assert(obj->TypeIs(TYP_BYREF) || obj->TypeIs(TYP_I_IMPL));
+            assert(obj->TypeIs(TYP_BYREF, TYP_I_IMPL));
             ClassLayout* layout;
             var_types    objType = TypeHandleToVarType(pConstrainedResolvedToken->hClass, &layout);
             obj                  = (objType == TYP_STRUCT) ? gtNewBlkIndir(layout, obj) : gtNewIndir(objType, obj);

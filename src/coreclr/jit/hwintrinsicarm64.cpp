@@ -2596,7 +2596,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(retType == TYP_VOID);
 
-            if (!mustExpand && !impStackTop(0).val->IsCnsIntOrI() && (impStackTop(1).val->TypeIs(TYP_STRUCT)))
+            if (!mustExpand && !impStackTop(0).val->IsCnsIntOrI() && impStackTop(1).val->TypeIs(TYP_STRUCT))
             {
                 // TODO-ARM64-CQ: Support rewriting nodes that involves
                 // GenTreeFieldList as user calls during rationalization

@@ -502,7 +502,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 return;
             }
 
-            assert(dstAddr->TypeIs(TYP_BYREF) || (dstAddr->TypeIs(TYP_I_IMPL)));
+            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
 
             // If we have a long enough sequence of slots that do not require write barriers then
             // we can use REP MOVSD/Q instead of a sequence of MOVSD/Q instructions. According to the
