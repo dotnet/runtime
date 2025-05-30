@@ -37,7 +37,7 @@ internal static partial class Interop
         {
             if (OperatingSystem.IsLinux())
             {
-                // Resolve symbolic links.
+                // Canonicalize and resolve symbolic links.
                 string? path = Sys.RealPath(name);
                 if (path is null)
                 {
