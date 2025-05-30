@@ -113,7 +113,7 @@ namespace System.IO.Pipes
         public override int ReadByte()
         {
             byte b = 0;
-            return Read([b]) > 0 ? b : -1;
+            return Read(new Span<byte>(ref b)) > 0 ? b : -1;
         }
 
         public override void WriteByte(byte value)
