@@ -16868,7 +16868,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool igno
     {
         GenTree* potentialCall = tree;
 
-        if (potentialCall->OperIs(GT_RET_EXPR))
+        while (potentialCall->OperIs(GT_RET_EXPR))
         {
             // We need to preserve return expressions where the underlying call
             // has side effects. Otherwise early folding can result in us dropping
