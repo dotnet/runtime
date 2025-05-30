@@ -118,19 +118,7 @@ ep_event_filter_allows_event_id (
 	if (event_filter->event_ids == NULL)
 		return !event_filter->enable;
 
-	bool event_filter_contains_event_id = false;
-	dn_vector_t *event_ids = event_filter->event_ids;
-	if (event_ids != NULL) {
-		for (uint32_t i = 0; i < event_ids->size; ++i) {
-			uint32_t id = *(uint32_t *)dn_vector_index_t (event_ids, uint32_t, i);
-			if (id == event_id) {
-				event_filter_contains_event_id = true;
-				break;
-			}
-		}
-	}
-
-	return event_filter->enable == event_filter_contains_event_id;
+	return event_filter->enable == dn_umap_contains (event_filter->event_ids, &event_id);
 }
 
 bool

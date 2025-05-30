@@ -1782,10 +1782,10 @@ ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallb
 void
 ep_event_filter_fini (EventPipeEventFilter *event_filter)
 {
-	EP_ASSERT (event_filter != NULL);
+	ep_return_void_if_nok (event_filter != NULL);
 
 	if (event_filter->event_ids) {
-		dn_vector_free (event_filter->event_ids);
+		dn_umap_free (event_filter->event_ids);
 		event_filter->event_ids = NULL;
 	}
 }

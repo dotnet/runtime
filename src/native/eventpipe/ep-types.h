@@ -182,7 +182,7 @@ struct EventPipeTracepoint {
 
 struct EventPipeEventFilter {
 	bool enable;
-	dn_vector_t *event_ids;
+	dn_umap_t *event_ids;
 };
 
 void

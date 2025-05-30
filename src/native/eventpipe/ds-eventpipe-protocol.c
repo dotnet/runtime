@@ -231,6 +231,14 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
 	return ds_ipc_message_try_parse_bool (buffer, buffer_len, stackwalk_requested);
 }
 
+static
+void
+DN_CALLBACK_CALLTYPE
+event_id_hashset_key_dispose_func (void *data)
+{
+	ep_rt_object_free ((uint32_t *)data);
+}
+
 /*
  *  eventpipe_collect_tracing_command_try_parse_event_filter
  *
@@ -241,7 +249,7 @@ eventpipe_collect_tracing_command_try_parse_stackwalk_requested (
  *  - bool enable: 0 to disable events, 1 to enable events
  *  - array<uint> event_ids: If specified, a list of Event IDs to disable or enable
  *
- *  Dynamically allocates memory for the event_ids vector and passes ownership to the caller.
+ *  Dynamically allocates memory for the event_ids hashset and passes ownership to the caller.
  */
 static
 bool
@@ -256,20 +264,26 @@ eventpipe_collect_tracing_command_try_parse_event_filter (
 
 	bool result = false;
 	uint32_t event_id_array_len = 0;
+	uint32_t *event_id = NULL;
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_bool (buffer, buffer_len, &event_filter->enable));
 
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id_array_len));
 	if (event_id_array_len > 0) {
-		dn_vector_custom_alloc_params_t event_id_array_params = {0, };
-		event_id_array_params.capacity = event_id_array_len;
-		event_filter->event_ids = dn_vector_custom_alloc_t (&event_id_array_params, uint32_t);
+		dn_umap_custom_alloc_params_t event_id_hashset_params = {0, };
+		event_id_hashset_params.hash_func = dn_int_hash;
+		event_id_hashset_params.equal_func = dn_int_equal;
+		event_id_hashset_params.key_dispose_func = event_id_hashset_key_dispose_func;
+		event_filter->event_ids = dn_umap_custom_alloc (&event_id_hashset_params);
 		ep_raise_error_if_nok (event_filter->event_ids != NULL);
 
 		for (uint32_t i = 0; i < event_id_array_len; ++i) {
-			uint32_t event_id = 0;
-			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &event_id));
-			ep_raise_error_if_nok (dn_vector_push_back (event_filter->event_ids, event_id));
+			event_id = ep_rt_object_alloc (uint32_t);
+			ep_raise_error_if_nok (event_id != NULL);
+			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, event_id));
+			dn_umap_result_t result = dn_umap_insert (event_filter->event_ids, event_id, NULL);
+			event_id = NULL; // Ownership transferred to the hashset.
+			ep_raise_error_if_nok (result.result);
 		}
 	} else {
 		event_filter->event_ids = NULL;
@@ -281,6 +295,11 @@ ep_on_exit:
 	return result;
 
 ep_on_error:
+	if (event_id != NULL) {
+		ep_rt_object_free (event_id);
+		event_id = NULL;
+	}
+
 	ep_event_filter_fini (event_filter);
 
 	ep_exit_error_handler ();
