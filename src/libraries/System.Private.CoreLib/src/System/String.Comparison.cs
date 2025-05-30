@@ -827,7 +827,7 @@ namespace System
         // restructure the comparison so that for odd-length spans, we simulate the null terminator and include
         // it in the hash computation exactly as does str.GetNonRandomizedHashCode().
 
-        internal int GetNonRandomizedHashCode()
+        internal unsafe int GetNonRandomizedHashCode()
         {
             fixed (char* src = &_firstChar)
             {
