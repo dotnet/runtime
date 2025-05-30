@@ -2012,17 +2012,14 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
             block->bbNum, bTop->bbNum, bTest->bbNum);
 
-    // Don't bother inverting the loop if PGO data suggests it doesn't iterate more than a few times.
     weight_t   loopIterations     = BB_LOOP_WEIGHT_SCALE;
     const bool haveProfileWeights = fgIsUsingProfileWeights();
+
+    // If we have PGO data, we can estimate the loop iteration count
+    // by computing how many times the loop entry branch is taken per method invoke, on average.
     if (haveProfileWeights)
     {
         loopIterations = bTest->GetTrueEdge()->getLikelyWeight() / BasicBlock::getCalledCount(this);
-        if (loopIterations < BB_LOOP_WEIGHT_SCALE)
-        {
-            JITDUMP("Loop iterates only " FMT_WT " times. Skipping loop inversion.\n", loopIterations);
-            return false;
-        }
     }
 
     // Estimate the cost of cloning the entire test block.
