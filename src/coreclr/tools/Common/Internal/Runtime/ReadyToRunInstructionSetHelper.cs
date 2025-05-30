@@ -40,6 +40,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Sha256: return ReadyToRunInstructionSet.Sha256;
                             case InstructionSet.ARM64_Sha256_Arm64: return ReadyToRunInstructionSet.Sha256;
                             case InstructionSet.ARM64_Atomics: return ReadyToRunInstructionSet.Atomics;
+                            case InstructionSet.ARM64_Vector: return null;
                             case InstructionSet.ARM64_Vector64: return null;
                             case InstructionSet.ARM64_Vector128: return null;
                             case InstructionSet.ARM64_Dczva: return null;

@@ -2329,6 +2329,92 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                     }
                     break;
                 }
+                case TYP_SIMD32:
+                {
+                    // Use scalable registers
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        // Use Scalable_B because for Ones, it doesn't matter.
+                        emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, -1, INS_OPTS_SCALABLE_B);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        // Use Scalable_B because for Zero, it doesn't matter.
+                        emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, 0, INS_OPTS_SCALABLE_B);
+                    }
+                    else
+                    {
+                        simd32_t val = vecCon->gtSimd32Val;
+                        if (ElementsAreSame(val.i8, 32))
+                        {
+                            emit->emitIns_R_I(INS_sve_dup, EA_SCALABLE, targetReg, val.i8[0], INS_OPTS_SCALABLE_B);
+                        }
+                        else if (ElementsAreSame(val.i16, 16))
+                        {
+                            emit->emitIns_R_I(INS_sve_dup, EA_SCALABLE, targetReg, val.i16[0], INS_OPTS_SCALABLE_H);
+                        }
+                        else if (ElementsAreSame(val.i32, 8))
+                        {
+                            emit->emitIns_R_I(INS_sve_dup, EA_SCALABLE, targetReg, val.i32[0], INS_OPTS_SCALABLE_S);
+                        }
+                        else
+                        {
+                            // Get a temp integer register to compute long address.
+                            regNumber            addrReg = internalRegisters.GetSingle(tree);
+                            CORINFO_FIELD_HANDLE hnd;
+                            hnd = emit->emitSimdConst(&vecCon->gtSimdVal, emitTypeSize(tree->TypeGet()));
+                            emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
+                            // emit->emitIns_R_C(INS_adr, EA_8BYTE, addrReg, REG_NA, hnd, 0);
+                            // emit->emitIns_R_R_R_I(INS_sve_ld1b, EA_SCALABLE, targetReg, REG_P1, addrReg, 0,
+                            // INS_OPTS_SCALABLE_B);
+                        }
+                    }
+                    break;
+                }
+                case TYP_SIMD64:
+                {
+                    // Use scalable registers
+                    if (vecCon->IsAllBitsSet())
+                    {
+                        // Use Scalable_B because for Ones, it doesn't matter.
+                        emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, -1, INS_OPTS_SCALABLE_B);
+                    }
+                    else if (vecCon->IsZero())
+                    {
+                        // Use Scalable_B because for Zero, it doesn't matter.
+                        emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, 0, INS_OPTS_SCALABLE_B);
+                    }
+                    else
+                    {
+                        simd64_t val = vecCon->gtSimd64Val;
+                        if (ElementsAreSame(val.i32, 16) && emitter::isValidSimm_MultipleOf<8, 256>(val.i32[0]))
+                        {
+                            emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i32[0], INS_OPTS_SCALABLE_S,
+                                              INS_SCALABLE_OPTS_IMM_BITMASK);
+                        }
+                        else if (ElementsAreSame(val.i16, 32) && emitter::isValidSimm_MultipleOf<8, 256>(val.i16[0]))
+                        {
+                            emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i16[0], INS_OPTS_SCALABLE_H,
+                                              INS_SCALABLE_OPTS_IMM_BITMASK);
+                        }
+                        else if (ElementsAreSame(val.i8, 64) && emitter::isValidSimm<8>(val.i8[0]))
+                        {
+                            emit->emitIns_R_I(INS_sve_mov, EA_SCALABLE, targetReg, val.i8[0], INS_OPTS_SCALABLE_B,
+                                              INS_SCALABLE_OPTS_IMM_BITMASK);
+                        }
+                        else
+                        {
+                            // Get a temp integer register to compute long address.
+                            regNumber            addrReg = internalRegisters.GetSingle(tree);
+                            CORINFO_FIELD_HANDLE hnd;
+                            simd64_t             constValue;
+                            memcpy(&constValue, &vecCon->gtSimdVal, sizeof(simd64_t));
+                            hnd = emit->emitSimdConst(&vecCon->gtSimdVal, emitTypeSize(tree->TypeGet()));
+                            emit->emitIns_R_C(INS_sve_ldr, attr, targetReg, addrReg, hnd, 0);
+                        }
+                    }
+                    break;
+                }
 
                 default:
                 {
@@ -2955,7 +3041,16 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         }
     }
     emitAttr attr = emitActualTypeSize(targetType);
-    GetEmitter()->emitIns_Mov(INS_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired);
+    if (attr == EA_SCALABLE)
+    {
+        // TODO-VL: Should we check the baseType or it doesn't matter because it is just reg->reg move
+        GetEmitter()->emitIns_Mov(INS_sve_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired,
+                                  INS_OPTS_SCALABLE_Q);
+    }
+    else
+    {
+        GetEmitter()->emitIns_Mov(INS_mov, attr, retReg, op1->GetRegNum(), /* canSkip */ !movRequired);
+    }
 }
 
 /***********************************************************************************************
@@ -5248,13 +5343,27 @@ void CodeGen::genSimdUpperSave(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
-
-    regNumber tgtReg = node->GetRegNum();
-    assert(tgtReg != REG_NA);
+    unsigned       varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
+    assert((varSize == 16) || (Compiler::SizeMatchesVectorTLength(varSize)));
 
     regNumber op1Reg = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
+
+    regNumber tgtReg = node->GetRegNum();
+#ifdef TARGET_ARM64
+    // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
+    if (Compiler::UseSveForType(op1->TypeGet()))
+    {
+        // Until we custom ABI for SVE, we will just store entire contents of Z* registers
+        // on stack. If we don't do it, we will need multiple free registers to save the
+        // contents of everything but lower 8-bytes.
+        assert(tgtReg == REG_NA);
+
+        GetEmitter()->emitIns_S_R(INS_sve_str, EA_SCALABLE, op1Reg, lclNode->GetLclNum(), 0);
+        return;
+    }
+#endif // TARGET_ARM64
+    assert(tgtReg != REG_NA);
 
     GetEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, tgtReg, op1Reg, 0, 1);
 
@@ -5304,10 +5413,12 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
 
     GenTreeLclVar* lclNode = op1->AsLclVar();
     LclVarDsc*     varDsc  = compiler->lvaGetDesc(lclNode);
-    assert(emitTypeSize(varDsc->GetRegisterType(lclNode)) == 16);
+
+    unsigned varSize = emitTypeSize(varDsc->GetRegisterType(lclNode));
+    assert((varSize == 16) || (Compiler::SizeMatchesVectorTLength(varSize)));
 
     regNumber srcReg = node->GetRegNum();
-    assert(srcReg != REG_NA);
+    assert((srcReg != REG_NA) || (Compiler::UseSveForType(node->TypeGet())));
 
     regNumber lclVarReg = genConsumeReg(lclNode);
     assert(lclVarReg != REG_NA);
@@ -5318,6 +5429,19 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
     {
         // The localVar must have a stack home.
         assert(varDsc->lvOnFrame);
+
+#ifdef TARGET_ARM64
+        // TODO-VL: Write a helper to do this check for LclVars*, GenTree*, etc.
+        if (Compiler::UseSveForType(op1->TypeGet()))
+        {
+            // Until we custom ABI for SVE, we will just store entire contents of Z* registers
+            // on stack. If we don't do it, we will need multiple free registers to save the
+            // contents of everything but lower 8-bytes.
+
+            GetEmitter()->emitIns_R_S(INS_sve_ldr, EA_SCALABLE, lclVarReg, varNum, 0);
+            return;
+        }
+#endif // TARGET_ARM64
 
         // We will load this from the upper 8 bytes of this localVar's home.
         int offset = 8;

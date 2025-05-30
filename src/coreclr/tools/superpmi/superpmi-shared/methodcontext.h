@@ -798,6 +798,10 @@ public:
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
 
+    void recGetTargetVectorLength(DWORD result);
+    void dmpGetTargetVectorLength(DWORD key, DWORD result);
+    DWORD repGetTargetVectorLength();
+
     void recGetExpectedTargetArchitecture(DWORD result);
     void dmpGetExpectedTargetArchitecture(DWORD key, DWORD result);
     DWORD repGetExpectedTargetArchitecture();
@@ -1210,6 +1214,7 @@ enum mcPackets
     Packet_NotifyInstructionSetUsage = 229,
     Packet_GetAsyncInfo = 230,
     Packet_GetAsyncResumptionStub = 231,
+    Packet_GetTargetVectorLength = 232,
 };
 
 void SetDebugDumpVariables();

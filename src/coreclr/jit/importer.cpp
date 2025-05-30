@@ -3905,6 +3905,13 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                     }
                     else
 #endif // TARGET_XARCH
+#ifdef TARGET_ARM64
+                        if (UseSveForType(simdType))
+                    {
+                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_Sve);
+                    }
+                    else
+#endif // TARGET_ARM64
                     {
                         // SIMD8, SIMD12, SIMD16 are covered by IsBaselineSimdIsaSupported check
                         assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));

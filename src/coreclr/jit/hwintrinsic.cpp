@@ -986,6 +986,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Sha1, LAST_NI_Sha1 },
     { FIRST_NI_Sha256, LAST_NI_Sha256 },
     { NI_Illegal, NI_Illegal },                         // Atomics
+    { FIRST_NI_Vector, LAST_NI_Vector },
     { FIRST_NI_Vector64, LAST_NI_Vector64 },
     { FIRST_NI_Vector128, LAST_NI_Vector128 },
     { NI_Illegal, NI_Illegal },                         // Dczva
@@ -1286,6 +1287,13 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             return NI_Illegal;
         }
     }
+    else if (isa == InstructionSet_Vector)
+    {
+        if (!comp->IsBaselineSimdIsaSupported())
+        {
+            return NI_Illegal;
+        }
+    }
 #endif
 
     size_t isaIndex = static_cast<size_t>(isa) - 1;
@@ -1362,6 +1370,13 @@ unsigned HWIntrinsicInfo::lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORI
     {
         return simdSize;
     }
+#if defined(TARGET_ARM64)
+    else if ((FIRST_NI_Vector <= id) && (id <= LAST_NI_Vector))
+    {
+        assert(Compiler::UseSveForVectorT());
+        return Compiler::GetVectorTLength();
+    }
+#endif
 
     CORINFO_CLASS_HANDLE typeHnd = nullptr;
 
@@ -2137,7 +2152,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
 #if defined(TARGET_ARM64)
-            if ((simdSize != 8) && (simdSize != 16))
+            if ((simdSize != 8) && (simdSize != 16) && (!SizeMatchesVectorTLength(simdSize)))
 #elif defined(TARGET_XARCH)
             if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
 #endif // TARGET_*

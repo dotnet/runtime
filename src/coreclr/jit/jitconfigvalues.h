@@ -385,6 +385,9 @@ CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0
 CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 #endif
 
+#if defined(TARGET_ARM64)
+CONFIG_INTEGER(UseSveForVectorT,     "UseSveForVectorT",   0) // Prefer SVE instructions for VectorT
+#endif
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //

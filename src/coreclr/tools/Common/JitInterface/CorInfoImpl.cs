@@ -3296,7 +3296,7 @@ namespace Internal.JitInterface
                 ValueTypeShapeCharacteristics.Float32Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_FLOAT,
                 ValueTypeShapeCharacteristics.Float64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_DOUBLE,
                 ValueTypeShapeCharacteristics.Vector64Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR64,
-                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR128,
+                ValueTypeShapeCharacteristics.Vector128Aggregate => CorInfoHFAElemType.CORINFO_HFA_ELEM_VECTOR128, //TODO-VL: Need for VL too?
                 _ => CorInfoHFAElemType.CORINFO_HFA_ELEM_NONE
             };
         }
@@ -4125,6 +4125,14 @@ namespace Internal.JitInterface
                 default:
                     return ushort.MaxValue;
             }
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private uint getTargetVectorLength()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // Temporary. Can use Sve.GetActiveElementCount or equivalent
+            return 0;
         }
 
         private uint getExpectedTargetArchitecture()

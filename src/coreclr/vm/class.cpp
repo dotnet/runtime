@@ -1727,7 +1727,27 @@ CorInfoHFAElemType MethodTable::GetHFAType()
         int vectorSize = pMT->GetVectorSize();
         if (vectorSize != 0)
         {
-            return (vectorSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
+            if (vectorSize == 8)
+            {
+                return CORINFO_HFA_ELEM_VECTOR64;
+            }
+            else if (vectorSize == 16)
+            {
+                return CORINFO_HFA_ELEM_VECTOR128;
+            }
+            else if (vectorSize == 32)
+            {
+                return CORINFO_HFA_ELEM_VECTOR256;
+            }
+            else if (vectorSize == 64)
+            {
+                return CORINFO_HFA_ELEM_VECTOR512;
+            }
+            else
+            {
+                _ASSERTE("Invalid vectorSize");
+                return CORINFO_HFA_ELEM_VECTOR128;
+            }
         }
 
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
@@ -1832,7 +1852,29 @@ EEClass::CheckForHFA()
                 int thisElemSize = pMT->GetVectorSize();
                 if (thisElemSize != 0)
                 {
-                    fieldHFAType = (thisElemSize == 8) ? CORINFO_HFA_ELEM_VECTOR64 : CORINFO_HFA_ELEM_VECTOR128;
+                    if (thisElemSize == 8)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR64;
+                    }
+                    else if (thisElemSize == 16)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR128;
+                    }
+#ifdef TARGET_ARM64                    
+                    else if (thisElemSize == 32)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR256;
+                    }
+                    else if (thisElemSize == 64)
+                    {
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR512;
+                    }
+#endif // TARGET_ARM64
+                    else
+                    {
+                        _ASSERTE ("Invalid element size");
+                        fieldHFAType = CORINFO_HFA_ELEM_VECTOR128;
+                    }
                 }
                 else
 #endif // TARGET_ARM64
@@ -1903,6 +1945,12 @@ EEClass::CheckForHFA()
     case CORINFO_HFA_ELEM_VECTOR128:
         elemSize = 16;
         break;
+    case CORINFO_HFA_ELEM_VECTOR256:
+        elemSize = 32;
+        break;
+    case CORINFO_HFA_ELEM_VECTOR512:
+        elemSize = 64;
+        break;        
 #endif
     default:
         // ELEMENT_TYPE_END

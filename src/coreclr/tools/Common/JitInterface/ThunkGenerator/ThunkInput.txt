@@ -339,5 +339,6 @@ FUNCTIONS
     void recordRelocation(void* location, void* locationRW, void* target, uint16_t fRelocType, int32_t addlDelta)
     uint16_t getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
+    uint32_t getTargetVectorLength()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
     CORINFO_METHOD_HANDLE getSpecialCopyHelper(CORINFO_CLASS_HANDLE type) = 0;

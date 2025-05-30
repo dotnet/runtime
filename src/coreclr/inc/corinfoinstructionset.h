@@ -25,24 +25,25 @@ enum CORINFO_InstructionSet
     InstructionSet_Sha1=7,
     InstructionSet_Sha256=8,
     InstructionSet_Atomics=9,
-    InstructionSet_Vector64=10,
-    InstructionSet_Vector128=11,
-    InstructionSet_Dczva=12,
-    InstructionSet_Rcpc=13,
-    InstructionSet_VectorT128=14,
-    InstructionSet_Rcpc2=15,
-    InstructionSet_Sve=16,
-    InstructionSet_Sve2=17,
-    InstructionSet_ArmBase_Arm64=18,
-    InstructionSet_AdvSimd_Arm64=19,
-    InstructionSet_Aes_Arm64=20,
-    InstructionSet_Crc32_Arm64=21,
-    InstructionSet_Dp_Arm64=22,
-    InstructionSet_Rdm_Arm64=23,
-    InstructionSet_Sha1_Arm64=24,
-    InstructionSet_Sha256_Arm64=25,
-    InstructionSet_Sve_Arm64=26,
-    InstructionSet_Sve2_Arm64=27,
+    InstructionSet_Vector=10,
+    InstructionSet_Vector64=11,
+    InstructionSet_Vector128=12,
+    InstructionSet_Dczva=13,
+    InstructionSet_Rcpc=14,
+    InstructionSet_VectorT128=15,
+    InstructionSet_Rcpc2=16,
+    InstructionSet_Sve=17,
+    InstructionSet_Sve2=18,
+    InstructionSet_ArmBase_Arm64=19,
+    InstructionSet_AdvSimd_Arm64=20,
+    InstructionSet_Aes_Arm64=21,
+    InstructionSet_Crc32_Arm64=22,
+    InstructionSet_Dp_Arm64=23,
+    InstructionSet_Rdm_Arm64=24,
+    InstructionSet_Sha1_Arm64=25,
+    InstructionSet_Sha256_Arm64=26,
+    InstructionSet_Sve_Arm64=27,
+    InstructionSet_Sve2_Arm64=28,
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
     InstructionSet_RiscV64Base=1,
@@ -459,6 +460,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Sve);
         if (resultflags.HasInstructionSet(InstructionSet_Sve2) && !resultflags.HasInstructionSet(InstructionSet_Sve))
             resultflags.RemoveInstructionSet(InstructionSet_Sve2);
+        if (resultflags.HasInstructionSet(InstructionSet_Vector) && !resultflags.HasInstructionSet(InstructionSet_Sve))
+            resultflags.RemoveInstructionSet(InstructionSet_Vector);
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
         if (resultflags.HasInstructionSet(InstructionSet_Zbb) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
@@ -883,6 +886,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Sha256_Arm64";
         case InstructionSet_Atomics :
             return "Atomics";
+        case InstructionSet_Vector :
+            return "Vector";
         case InstructionSet_Vector64 :
             return "Vector64";
         case InstructionSet_Vector128 :
