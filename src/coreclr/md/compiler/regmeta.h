@@ -2016,11 +2016,8 @@ private:
     ULONG       m_OpenFlags;                // Open time flags.
 
     LONG        m_cRef;                     // Ref count.
-    IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
 
     OptionValue m_OptionValue;
-
-    mdTypeRef   m_trLanguageType;
 
     // Specifies whether the caller of the Set API is one of the Define functions
     // or an external API.  This allows for performance optimization in the Set APIs
