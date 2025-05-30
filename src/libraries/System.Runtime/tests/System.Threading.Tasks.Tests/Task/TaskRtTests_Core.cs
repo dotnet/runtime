@@ -1057,8 +1057,10 @@ namespace System.Threading.Tasks.Tests
             { }
         }
 
+        public static bool ShouldRunInterruptTest() => PlatformDetection.IsThreadingSupported && PlatformDetection.IsOSX && PlatformDetection.IsReleaseRuntime;
+
         // This test seems to be reliable on OSX 64-bit release builds.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsReleaseRuntime))]
+        [ConditionalFact(typeof(TaskRtTests_Core), nameof(TaskRtTests_Core.ShouldRunInterruptTest))]
         public static void RunInlineTaskInterruptTest()
         {
             if (PlatformDetection.IsReleaseLibrary(typeof(Task).Assembly))
