@@ -6979,7 +6979,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
             // could mark the trees just before argument processing, but it would require a full
             // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
             // mark non-argument trees (that will still get converted to calls, anyway).
-            return (this->TypeGet() == TYP_LONG) && (gtGetOp2()->OperGet() != GT_CNS_INT);
+            return this->TypeIs(TYP_LONG) && (gtGetOp2()->OperGet() != GT_CNS_INT);
 #endif // FEATURE_FIXED_OUT_ARGS && !TARGET_64BIT
 
         default:
@@ -7431,7 +7431,7 @@ var_types GenTreeLclVar::GetFieldTypeByIndex(Compiler* compiler, unsigned idx)
     assert(IsMultiReg());
     LclVarDsc* varDsc      = compiler->lvaGetDesc(GetLclNum());
     LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + idx);
-    assert(fieldVarDsc->TypeGet() != TYP_STRUCT); // Don't expect struct fields.
+    assert(!fieldVarDsc->TypeIs(TYP_STRUCT)); // Don't expect struct fields.
     return fieldVarDsc->TypeGet();
 }
 
@@ -12029,7 +12029,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 ssize_t iconVal    = tree->AsIntCon()->gtIconVal;
                 ssize_t dspIconVal = tree->IsIconHandle() ? dspPtr(iconVal) : iconVal;
 
-                if (tree->TypeGet() == TYP_REF)
+                if (tree->TypeIs(TYP_REF))
                 {
                     if (iconVal == 0)
                     {
@@ -13711,7 +13711,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Type_op_Equality:
         case NI_System_Type_op_Inequality:
         {
-            noway_assert(call->TypeGet() == TYP_INT);
+            noway_assert(call->TypeIs(TYP_INT));
             GenTree* op1 = call->gtArgs.GetArgByIndex(0)->GetNode();
             GenTree* op2 = call->gtArgs.GetArgByIndex(1)->GetNode();
 
@@ -14232,7 +14232,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
+    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeIs(TYP_I_IMPL)))
     {
         assert(tree->IsIconHandle(GTF_ICON_CLASS_HDL));
         result = (CORINFO_CLASS_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
@@ -14251,7 +14251,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeGet() == TYP_I_IMPL))
+            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeIs(TYP_I_IMPL)))
             {
                 // These handle constants should be class handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
@@ -14278,7 +14278,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
     CORINFO_METHOD_HANDLE result = NO_METHOD_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
+    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeIs(TYP_I_IMPL)))
     {
         assert(tree->IsIconHandle(GTF_ICON_METHOD_HDL));
         result = (CORINFO_METHOD_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
@@ -14297,7 +14297,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeGet() == TYP_I_IMPL))
+            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeIs(TYP_I_IMPL)))
             {
                 // These handle constants should be method handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_METHOD_HDL));
@@ -16644,7 +16644,7 @@ GenTree* Compiler::gtNewTempStore(
 
     LclVarDsc* varDsc = lvaGetDesc(tmp);
 
-    if (varDsc->TypeGet() == TYP_I_IMPL && val->TypeGet() == TYP_BYREF)
+    if (varDsc->TypeIs(TYP_I_IMPL) && val->TypeIs(TYP_BYREF))
     {
         impBashVarAddrsToI(val);
     }
@@ -16762,11 +16762,11 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         if (access & CORINFO_ACCESS_SET)
         {
             assert(value != nullptr);
-            if ((lclTyp == TYP_DOUBLE) && (value->TypeGet() == TYP_FLOAT))
+            if ((lclTyp == TYP_DOUBLE) && value->TypeIs(TYP_FLOAT))
             {
                 value = gtNewCastNode(TYP_DOUBLE, value, false, TYP_DOUBLE);
             }
-            else if (lclTyp == TYP_FLOAT && value->TypeGet() == TYP_DOUBLE)
+            else if (lclTyp == TYP_FLOAT && value->TypeIs(TYP_DOUBLE))
             {
                 value = gtNewCastNode(TYP_FLOAT, value, false, TYP_FLOAT);
             }

@@ -658,7 +658,7 @@ private:
 
             // If we're storing to a ref typed local that has one definition,
             // we may be able to sharpen the type for the local.
-            if (tree->TypeGet() == TYP_REF)
+            if (tree->TypeIs(TYP_REF))
             {
                 LclVarDsc* lcl = m_compiler->lvaGetDesc(lclNum);
 

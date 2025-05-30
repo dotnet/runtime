@@ -2620,7 +2620,7 @@ typeInfo Compiler::makeTypeInfoForLocal(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-    if (varDsc->TypeGet() == TYP_REF)
+    if (varDsc->TypeIs(TYP_REF))
     {
         return typeInfo(varDsc->lvClassHnd);
     }
@@ -2733,7 +2733,7 @@ bool Compiler::checkTailCallConstraint(OPCODE                  opcode,
         if (opcode == CEE_CALLI)
         {
             // For CALLI, we don't know the methodClassHnd. Therefore, let's check the "this" object on the stack.
-            if (impStackTop(popCount).val->TypeGet() != TYP_REF)
+            if (!impStackTop(popCount).val->TypeIs(TYP_REF))
             {
                 return false;
             }
@@ -5658,7 +5658,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
 GenTree* Compiler::impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass)
 {
-    assert(op1->TypeGet() == TYP_REF);
+    assert(op1->TypeIs(TYP_REF));
 
     // Don't optimize for minopts or debug codegen.
     if (opts.OptimizationDisabled())
@@ -5834,7 +5834,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
                                               bool*                   booleanCheck,
                                               IL_OFFSET               ilOffset)
 {
-    assert(op1->TypeGet() == TYP_REF);
+    assert(op1->TypeIs(TYP_REF));
 
     // Optimistically assume the jit should expand this as an inline test
     bool isClassExact = info.compCompHnd->isExactType(pResolvedToken->hClass);
@@ -8282,7 +8282,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                    // TYP_BYREF could be used as TYP_I_IMPL which is long.
                                    // TODO-CQ: remove this when we lower casts long/ulong --> float/double
                                    // and generate SSE2 code instead of going through helper calls.
-                               || (impStackTop().val->TypeGet() == TYP_BYREF)
+                               || (impStackTop().val->TypeIs(TYP_BYREF))
 #endif
                         ;
                 }
@@ -8993,7 +8993,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // Append a tree to zero-out the temp
                             GenTree* newObjInit =
-                                gtNewZeroConNode((lclDsc->TypeGet() == TYP_STRUCT) ? TYP_INT : lclDsc->TypeGet());
+                                gtNewZeroConNode(lclDsc->TypeIs(TYP_STRUCT) ? TYP_INT : lclDsc->TypeGet());
 
                             impStoreToTemp(lclNum, newObjInit, CHECK_SPILL_NONE);
                         }
@@ -11206,8 +11206,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             op2 = impImplicitR4orR8Cast(op2, info.compRetType);
 
             assertImp((genActualType(op2->TypeGet()) == genActualType(info.compRetType)) ||
-                      ((op2->TypeGet() == TYP_I_IMPL) && (info.compRetType == TYP_BYREF)) ||
-                      ((op2->TypeGet() == TYP_BYREF) && (info.compRetType == TYP_I_IMPL)) ||
+                      ((op2->TypeIs(TYP_I_IMPL)) && (info.compRetType == TYP_BYREF)) ||
+                      (op2->TypeIs(TYP_BYREF) && (info.compRetType == TYP_I_IMPL)) ||
                       (varTypeIsFloating(op2->gtType) && varTypeIsFloating(info.compRetType)) ||
                       (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
 
@@ -11893,21 +11893,21 @@ SPILLSTACK:
             // the stack. Thus the value would not get GC-tracked. Hence,
             // change the temp to TYP_BYREF and reimport the clique.
             LclVarDsc* tempDsc = lvaGetDesc(tempNum);
-            if (tree->TypeIs(TYP_BYREF) && (tempDsc->TypeGet() == TYP_I_IMPL))
+            if (tree->TypeIs(TYP_BYREF) && (tempDsc->TypeIs(TYP_I_IMPL)))
             {
                 tempDsc->lvType     = TYP_BYREF;
                 reimportSpillClique = true;
             }
 
 #ifdef TARGET_64BIT
-            if ((genActualType(tree) == TYP_I_IMPL) && (tempDsc->TypeGet() == TYP_INT))
+            if ((genActualType(tree) == TYP_I_IMPL) && tempDsc->TypeIs(TYP_INT))
             {
                 // Some other block in the spill clique set this to "int", but now we have "native int".
                 // Change the type and go back to re-import any blocks that used the wrong type.
                 tempDsc->lvType     = TYP_I_IMPL;
                 reimportSpillClique = true;
             }
-            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_I_IMPL))
+            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeIs(TYP_I_IMPL)))
             {
                 // Spill clique has decided this should be "native int", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique.
@@ -11922,14 +11922,14 @@ SPILLSTACK:
             // imported already, we need to change the type of the local and reimport the spill clique.
             // If the 'byref' side has imported, we insert a cast from int to 'native int' to match
             // the 'byref' size.
-            if ((genActualType(tree) == TYP_BYREF) && (tempDsc->TypeGet() == TYP_INT))
+            if ((genActualType(tree) == TYP_BYREF) && tempDsc->TypeIs(TYP_INT))
             {
                 // Some other block in the spill clique set this to "int", but now we have "byref".
                 // Change the type and go back to re-import any blocks that used the wrong type.
                 tempDsc->lvType     = TYP_BYREF;
                 reimportSpillClique = true;
             }
-            else if ((genActualType(tree) == TYP_INT) && (tempDsc->TypeGet() == TYP_BYREF))
+            else if ((genActualType(tree) == TYP_INT) && tempDsc->TypeIs(TYP_BYREF))
             {
                 // Spill clique has decided this should be "byref", but this block only pushes an "int".
                 // Insert a sign-extension to "native int" so we match the clique size.
@@ -11945,7 +11945,7 @@ SPILLSTACK:
                 tempDsc->lvType     = TYP_DOUBLE;
                 reimportSpillClique = true;
             }
-            else if (tree->TypeIs(TYP_FLOAT) && (tempDsc->TypeGet() == TYP_DOUBLE))
+            else if (tree->TypeIs(TYP_FLOAT) && tempDsc->TypeIs(TYP_DOUBLE))
             {
                 // Spill clique has decided this should be "double", but this block only pushes a "float".
                 // Insert a cast to "double" so we match the clique.
@@ -13465,8 +13465,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
         GenTree* thisArgNode = thisArg->GetEarlyNode();
 
-        assert(varTypeIsGC(thisArgNode->TypeGet()) ||     // "this" is managed
-               ((thisArgNode->TypeGet() == TYP_I_IMPL) && // "this" is unmgd but the method's class doesnt care
+        assert(varTypeIsGC(thisArgNode->TypeGet()) || // "this" is managed
+               ((thisArgNode->TypeIs(TYP_I_IMPL)) &&  // "this" is unmgd but the method's class doesnt care
                 isValueClassThis));
 
         if (genActualType(thisArgNode) != genActualType(sigType))
@@ -13481,7 +13481,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
             /* This can only happen with byrefs <-> ints/shorts */
 
             assert(sigType == TYP_BYREF);
-            assert((genActualType(thisArgNode) == TYP_I_IMPL) || (thisArgNode->TypeGet() == TYP_BYREF));
+            assert((genActualType(thisArgNode) == TYP_I_IMPL) || thisArgNode->TypeIs(TYP_BYREF));
         }
     }
 
@@ -13556,7 +13556,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         // normalized to an int (on the IL stack)
         if (genTypeSize(inlArgNode) >= genTypeSize(sigType))
         {
-            if ((sigType != TYP_BYREF) && (inlArgNode->TypeGet() == TYP_BYREF))
+            if ((sigType != TYP_BYREF) && inlArgNode->TypeIs(TYP_BYREF))
             {
                 assert(varTypeIsIntOrI(sigType));
 
@@ -13883,7 +13883,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
         // So here we may have argument type mismatches that are benign, for instance
         // passing a TYP_SHORT local (eg. normalized-on-load) as a TYP_INT arg.
         // The exception is when the inlining means we should start tracking the argument.
-        if (argInfo.argIsUsed || ((lclTyp == TYP_BYREF) && (op1->TypeGet() != TYP_BYREF)))
+        if (argInfo.argIsUsed || ((lclTyp == TYP_BYREF) && !op1->TypeIs(TYP_BYREF)))
         {
             assert(op1->gtOper == GT_LCL_VAR);
 
@@ -13915,7 +13915,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
            then we change the argument tree (of "ldloca.s V_1") to TYP_I_IMPL to match the callee signature. We'll
            soon afterwards reject the inlining anyway, since the tree we return isn't a GT_LCL_VAR.
         */
-        assert(argNode->TypeGet() == TYP_BYREF || argNode->TypeGet() == TYP_I_IMPL);
+        assert(argNode->TypeIs(TYP_BYREF) || argNode->TypeIs(TYP_I_IMPL));
         op1 = gtCloneExpr(argNode);
     }
     else

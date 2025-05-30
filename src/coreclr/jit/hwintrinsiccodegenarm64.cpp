@@ -1166,26 +1166,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case NI_AdvSimd_AddWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (intrin.op1->TypeGet() == TYP_SIMD8)
+                if (intrin.op1->TypeIs(TYP_SIMD8))
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddl : INS_saddl;
                 }
                 else
                 {
-                    assert(intrin.op1->TypeGet() == TYP_SIMD16);
+                    assert(intrin.op1->TypeIs(TYP_SIMD16));
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_uaddw : INS_saddw;
                 }
                 break;
 
             case NI_AdvSimd_SubtractWideningLower:
                 assert(varTypeIsIntegral(intrin.baseType));
-                if (intrin.op1->TypeGet() == TYP_SIMD8)
+                if (intrin.op1->TypeIs(TYP_SIMD8))
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubl : INS_ssubl;
                 }
                 else
                 {
-                    assert(intrin.op1->TypeGet() == TYP_SIMD16);
+                    assert(intrin.op1->TypeIs(TYP_SIMD16));
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_usubw : INS_ssubw;
                 }
                 break;

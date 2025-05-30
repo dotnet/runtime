@@ -2493,7 +2493,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     GenTreeLclVarCommon* lclNode = treeNode->AsLclVarCommon();
     unsigned             lclNum  = lclNode->GetLclNum();
     LclVarDsc*           varDsc  = compiler->lvaGetDesc(lclNum);
-    assert(varDsc->TypeGet() == TYP_LONG);
+    assert(varDsc->TypeIs(TYP_LONG));
     assert(!varDsc->lvPromoted);
     GenTree* op1 = treeNode->AsOp()->gtOp1;
 

@@ -1765,7 +1765,7 @@ private:
                     case TYP_SIMD12:
                     {
                         // Handle the Vector3 field of case 2
-                        assert(varDsc->TypeGet() == TYP_SIMD16);
+                        assert(varDsc->TypeIs(TYP_SIMD16));
 
                         // We effectively inverse the operands here and take elementNode as the main value and
                         // simdLclNode[3] as the new value. This gives us a new TYP_SIMD16 with all elements in the
@@ -1914,7 +1914,7 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (indir->TypeGet() != TYP_STRUCT)
+        if (!indir->TypeIs(TYP_STRUCT))
         {
             if (indir->TypeGet() == varDsc->TypeGet())
             {
@@ -1950,7 +1950,7 @@ private:
                 }
                 else if (indir->TypeIs(TYP_SIMD12))
                 {
-                    if ((offset == 0) && (varDsc->TypeGet() == TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
+                    if ((offset == 0) && varDsc->TypeIs(TYP_SIMD16) && m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1958,8 +1958,7 @@ private:
 #ifdef TARGET_ARM64
                 else if (indir->TypeIs(TYP_SIMD8))
                 {
-                    if ((varDsc->TypeGet() == TYP_SIMD16) && ((offset % 8) == 0) &&
-                        m_compiler->IsBaselineSimdIsaSupported())
+                    if (varDsc->TypeIs(TYP_SIMD16) && ((offset % 8) == 0) && m_compiler->IsBaselineSimdIsaSupported())
                     {
                         return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
                     }
@@ -1995,7 +1994,7 @@ private:
             return IndirTransform::LclFld;
         }
 
-        if (varDsc->TypeGet() != TYP_STRUCT)
+        if (!varDsc->TypeIs(TYP_STRUCT))
         {
             return IndirTransform::LclFld;
         }

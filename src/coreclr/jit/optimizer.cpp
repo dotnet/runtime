@@ -330,7 +330,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 
         // Increment should be by a const int.
         // TODO-CQ: CLONE: allow variable increments.
-        if ((incrVal->gtOper != GT_CNS_INT) || (incrVal->TypeGet() != TYP_INT))
+        if ((incrVal->gtOper != GT_CNS_INT) || !incrVal->TypeIs(TYP_INT))
         {
             return BAD_VAR_NUM;
         }
@@ -4422,7 +4422,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         {
             // TODO-CQ: This is a more restrictive version of a check that optIsCSEcandidate already does - it allows
             // a struct typed node if a class handle can be recovered from it.
-            if (node->TypeGet() == TYP_STRUCT)
+            if (node->TypeIs(TYP_STRUCT))
             {
                 return false;
             }
@@ -5398,7 +5398,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
 
                     GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal();
 
-                    if (addr->TypeGet() == TYP_BYREF && addr->OperGet() == GT_LCL_VAR)
+                    if (addr->TypeIs(TYP_BYREF) && addr->OperGet() == GT_LCL_VAR)
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = addr->AsLclVar();
@@ -6109,7 +6109,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // CQ heuristic: avoid removing defs of enregisterable locals where this is likely to
                     // make them "must-init", extending live ranges. Here we assume the first SSA def was
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
-                    if ((defIndex == 1) && (varDsc->TypeGet() != TYP_STRUCT))
+                    if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
                         JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
                         continue;

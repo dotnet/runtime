@@ -2085,14 +2085,14 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         // Watch out for cases where long local(s) are implicitly truncated.
         //
         LclVarDsc* const lcl1Dsc = lvaGetDesc(op1->AsLclVarCommon());
-        if ((lcl1Dsc->TypeGet() == TYP_LONG) && (op1->TypeGet() != TYP_LONG))
+        if (lcl1Dsc->TypeIs(TYP_LONG) && !op1->TypeIs(TYP_LONG))
         {
             return NO_ASSERTION_INDEX;
         }
         if (op2->OperIs(GT_LCL_VAR))
         {
             LclVarDsc* const lcl2Dsc = lvaGetDesc(op2->AsLclVarCommon());
-            if ((lcl2Dsc->TypeGet() == TYP_LONG) && (op2->TypeGet() != TYP_LONG))
+            if (lcl2Dsc->TypeIs(TYP_LONG) && !op2->TypeIs(TYP_LONG))
             {
                 return NO_ASSERTION_INDEX;
             }
@@ -2809,7 +2809,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             float value = vnStore->ConstantValue<float>(vnCns);
 
-            if (tree->TypeGet() == TYP_INT)
+            if (tree->TypeIs(TYP_INT))
             {
                 // Same sized reinterpretation of bits to integer
                 conValTree = gtNewIconNode(*(reinterpret_cast<int*>(&value)));
@@ -2827,7 +2827,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             double value = vnStore->ConstantValue<double>(vnCns);
 
-            if (tree->TypeGet() == TYP_LONG)
+            if (tree->TypeIs(TYP_LONG))
             {
                 conValTree = gtNewLconNode(*(reinterpret_cast<INT64*>(&value)));
             }
@@ -2890,7 +2890,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
 
         case TYP_REF:
         {
-            if (tree->TypeGet() == TYP_REF)
+            if (tree->TypeIs(TYP_REF))
             {
                 const size_t value = vnStore->ConstantValue<size_t>(vnCns);
                 if (value == 0)
@@ -3736,7 +3736,7 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
     // does not kill the zerobj assertion for s.
     //
     unsigned const       dstLclNum      = store->GetLclNum();
-    bool const           dstLclIsStruct = lvaGetDesc(dstLclNum)->TypeGet() == TYP_STRUCT;
+    bool const           dstLclIsStruct = lvaGetDesc(dstLclNum)->TypeIs(TYP_STRUCT);
     AssertionIndex const dstIndex =
         optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, dstLclNum, dstLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT, 0,
                                            assertions);
@@ -4486,19 +4486,19 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             {
                 printf("%d\n", vnStore->ConstantValue<int>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_LONG)
+            else if (op1->TypeIs(TYP_LONG))
             {
                 printf("%lld\n", vnStore->ConstantValue<INT64>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_DOUBLE)
+            else if (op1->TypeIs(TYP_DOUBLE))
             {
                 printf("%f\n", vnStore->ConstantValue<double>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_FLOAT)
+            else if (op1->TypeIs(TYP_FLOAT))
             {
                 printf("%f\n", vnStore->ConstantValue<float>(vnCns));
             }
-            else if (op1->TypeGet() == TYP_REF)
+            else if (op1->TypeIs(TYP_REF))
             {
                 // The only constant of TYP_REF that ValueNumbering supports is 'null'
                 if (vnStore->ConstantValue<size_t>(vnCns) == 0)
@@ -4510,7 +4510,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                     printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
                 }
             }
-            else if (op1->TypeGet() == TYP_BYREF)
+            else if (op1->TypeIs(TYP_BYREF))
             {
                 printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
@@ -4531,7 +4531,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
-        else if (op1->TypeGet() == TYP_LONG)
+        else if (op1->TypeIs(TYP_LONG))
         {
             op1->BashToConst(vnStore->ConstantValue<INT64>(vnCns));
 
@@ -4540,7 +4540,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
-        else if (op1->TypeGet() == TYP_DOUBLE)
+        else if (op1->TypeIs(TYP_DOUBLE))
         {
             double constant = vnStore->ConstantValue<double>(vnCns);
             op1->BashToConst(constant);
@@ -4551,7 +4551,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // assertion we have made.
             allowReverse = !FloatingPointUtils::isNaN(constant);
         }
-        else if (op1->TypeGet() == TYP_FLOAT)
+        else if (op1->TypeIs(TYP_FLOAT))
         {
             float constant = vnStore->ConstantValue<float>(vnCns);
             op1->BashToConst(constant);
@@ -4559,11 +4559,11 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // See comments for TYP_DOUBLE.
             allowReverse = !FloatingPointUtils::isNaN(constant);
         }
-        else if (op1->TypeGet() == TYP_REF)
+        else if (op1->TypeIs(TYP_REF))
         {
             op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
-        else if (op1->TypeGet() == TYP_BYREF)
+        else if (op1->TypeIs(TYP_BYREF))
         {
             op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
         }
@@ -6341,7 +6341,7 @@ Compiler::fgWalkResult Compiler::optVNBasedFoldCurStmt(BasicBlock* block,
 
     // Don't propagate floating-point constants into a TYP_STRUCT LclVar
     // This can occur for HFA return values (see hfa_sf3E_r.exe)
-    if (tree->TypeGet() == TYP_STRUCT)
+    if (tree->TypeIs(TYP_STRUCT))
     {
         return WALK_CONTINUE;
     }

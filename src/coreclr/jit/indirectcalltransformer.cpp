@@ -1065,7 +1065,7 @@ private:
                     else
                     {
                         // We should always have a return temp if we return results by value
-                        assert(origCall->TypeGet() == TYP_VOID);
+                        assert(origCall->TypeIs(TYP_VOID));
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
                 }

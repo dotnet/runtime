@@ -2032,7 +2032,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
     unsigned    simdSize        = node->GetSimdSize();
 
     assert(varTypeIsArithmetic(simdBaseType));
-    assert(op1->TypeGet() == TYP_MASK);
+    assert(op1->TypeIs(TYP_MASK));
     assert(simdSize == 64);
 
     GenTree* loResult = nullptr;
@@ -2399,7 +2399,7 @@ void DecomposeLongs::TryPromoteLongVar(unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-    assert(varDsc->TypeGet() == TYP_LONG);
+    assert(varDsc->TypeIs(TYP_LONG));
 
     if (varDsc->lvDoNotEnregister)
     {

@@ -291,13 +291,13 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
     }
 
     // No point in trying to further deconstruct a TYP_I_IMPL address.
-    if (tgtAddr->TypeGet() == TYP_I_IMPL)
+    if (tgtAddr->TypeIs(TYP_I_IMPL))
     {
         return GCInfo::WBF_BarrierUnknown;
     }
 
     // Otherwise...
-    assert(tgtAddr->TypeGet() == TYP_BYREF);
+    assert(tgtAddr->TypeIs(TYP_BYREF));
     bool simplifiedExpr = true;
     while (simplifiedExpr)
     {
@@ -341,7 +341,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
                 // Must be an LEA (i.e., an AddrMode)
                 assert(tgtAddr->OperGet() == GT_LEA);
                 tgtAddr = tgtAddr->AsAddrMode()->Base();
-                if (tgtAddr->TypeGet() == TYP_BYREF || tgtAddr->TypeGet() == TYP_REF)
+                if (tgtAddr->TypeIs(TYP_BYREF) || tgtAddr->TypeIs(TYP_REF))
                 {
                     simplifiedExpr = true;
                 }
@@ -354,7 +354,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         }
     }
 
-    if (tgtAddr->TypeGet() == TYP_REF)
+    if (tgtAddr->TypeIs(TYP_REF))
     {
         return GCInfo::WBF_BarrierUnchecked;
     }
@@ -494,7 +494,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
 
             untrackedCount++;
         }
-        else if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame)
+        else if (varDsc->TypeIs(TYP_STRUCT) && varDsc->lvOnFrame)
         {
             untrackedCount += varDsc->GetLayout()->GetGCPtrCount();
         }

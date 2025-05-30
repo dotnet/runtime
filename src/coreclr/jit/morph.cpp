@@ -60,7 +60,7 @@ PhaseStatus Compiler::fgMorphInit()
     {
         for (unsigned i = 0; i < info.compArgsCount; i++)
         {
-            if (lvaGetDesc(i)->TypeGet() == TYP_REF)
+            if (lvaGetDesc(i)->TypeIs(TYP_REF))
             {
                 // confirm that the argument is a GC pointer (for debugging (GC stress))
                 GenTree* op = gtNewLclvNode(i, TYP_REF);
@@ -2838,7 +2838,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
         // is negative. It also requires the address generation be in a fully-interruptible
         // code region.
         //
-        if (varTypeIsGC(op1->TypeGet()) && op2->TypeGet() == TYP_I_IMPL)
+        if (varTypeIsGC(op1->TypeGet()) && op2->TypeIs(TYP_I_IMPL))
         {
             assert(varTypeIsGC(tree->TypeGet()) && (oper == GT_ADD));
             break;
@@ -2868,10 +2868,10 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
 
         if (varTypeIsGC(op1->TypeGet()))
         {
-            noway_assert((varTypeIsGC(tree->TypeGet()) && op2->TypeGet() == TYP_I_IMPL &&
-                          oper == GT_ADD) || // byref(ref + (int+int))
-                         (varTypeIsI(tree->TypeGet()) && op2->TypeGet() == TYP_I_IMPL &&
-                          oper == GT_OR)); // int(gcref | int(gcref|intval))
+            noway_assert(
+                (varTypeIsGC(tree->TypeGet()) && op2->TypeIs(TYP_I_IMPL) && oper == GT_ADD) || // byref(ref + (int+int))
+                (varTypeIsI(tree->TypeGet()) && op2->TypeIs(TYP_I_IMPL) && oper == GT_OR));    // int(gcref |
+                                                                                               // int(gcref|intval))
 
             new_op1->gtType = tree->gtType;
         }
@@ -3056,7 +3056,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
         // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case
         // of a 64 bit architecture this means the array index can potentially be a TYP_LONG, so for this case,
         // the comparison will have to be widened to 64 bits.
-        if (index->TypeGet() == TYP_I_IMPL)
+        if (index->TypeIs(TYP_I_IMPL))
         {
             bndsChkType = TYP_I_IMPL;
         }
@@ -3083,7 +3083,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 
 #ifdef TARGET_64BIT
     // Widen 'index' on 64-bit targets
-    if (index->TypeGet() != TYP_I_IMPL)
+    if (!index->TypeIs(TYP_I_IMPL))
     {
         if (index->OperGet() == GT_CNS_INT)
         {
@@ -4490,7 +4490,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // result. TODO-CQ: Fix this.
     if (info.compRetBuffArg != BAD_VAR_NUM)
     {
-        noway_assert(call->TypeGet() == TYP_VOID);
+        noway_assert(call->TypeIs(TYP_VOID));
         noway_assert(call->gtArgs.HasRetBuffer());
         GenTree* retValBuf = call->gtArgs.GetRetBufferArg()->GetNode();
         if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
@@ -7259,9 +7259,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             {
                 helper = CORINFO_HELP_DBLREM;
                 noway_assert(op2);
-                if (op1->TypeGet() == TYP_FLOAT)
+                if (op1->TypeIs(TYP_FLOAT))
                 {
-                    if (op2->TypeGet() == TYP_FLOAT)
+                    if (op2->TypeIs(TYP_FLOAT))
                     {
                         helper = CORINFO_HELP_FLTREM;
                     }
@@ -7270,7 +7270,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                         tree->AsOp()->gtOp1 = op1 = gtNewCastNode(TYP_DOUBLE, op1, false, TYP_DOUBLE);
                     }
                 }
-                else if (op2->TypeGet() == TYP_FLOAT)
+                else if (op2->TypeIs(TYP_FLOAT))
                 {
                     tree->AsOp()->gtOp2 = op2 = gtNewCastNode(TYP_DOUBLE, op2, false, TYP_DOUBLE);
                 }
@@ -7571,7 +7571,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             return fgMorphTree(op1);
 
         case GT_COMMA:
-            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -8276,7 +8276,7 @@ DONE_MORPHING_CHILDREN:
         case GT_COMMA:
         {
             /* Special case: trees that don't produce a value */
-            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeGet() == TYP_VOID) || fgIsThrow(op2))
+            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -13492,7 +13492,7 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             // Must be a void return node with null operand; delete it as this block branches to
             // oneReturn block
             GenTree* const retVal = ret->AsOp()->GetReturnValue();
-            noway_assert(ret->TypeGet() == TYP_VOID);
+            noway_assert(ret->TypeIs(TYP_VOID));
             noway_assert(retVal == nullptr);
 
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
@@ -14023,7 +14023,7 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     }
     else
     {
-        assert(qmark->TypeGet() == TYP_VOID);
+        assert(qmark->TypeIs(TYP_VOID));
     }
 
     if (hasTrueExpr)
@@ -14481,8 +14481,8 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     // which is a precondition for this phase when optimizing.
                     assert(fgFirstBB->bbPreds == nullptr);
                     GenTree* addr  = gtNewLclvNode(lclNum, TYP_BYREF);
-                    GenTree* data  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
-                                                                       : gtNewIndir(varDsc->TypeGet(), addr);
+                    GenTree* data  = varDsc->TypeIs(TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
+                                                                : gtNewIndir(varDsc->TypeGet(), addr);
                     GenTree* store = gtNewStoreLclVarNode(newLclNum, data);
                     fgNewStmtAtBeg(fgFirstBB, store);
                 }
@@ -14715,7 +14715,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 #ifndef TARGET_64BIT
     // Transforming 64-bit ADD to 64-bit MUL on 32-bit system results in replacing
     // ADD ops with a helper function call. Don't apply optimization in that case.
-    if (tree->TypeGet() == TYP_LONG)
+    if (tree->TypeIs(TYP_LONG))
     {
         return tree;
     }

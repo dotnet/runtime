@@ -641,7 +641,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
 #ifdef FEATURE_SIMD
             // Need an additional register to read upper 4 bytes of Vector3.
-            if (tree->TypeGet() == TYP_SIMD12)
+            if (tree->TypeIs(TYP_SIMD12))
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
@@ -796,13 +796,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETFILT:
             assert(dstCount == 0);
-            if (tree->TypeGet() == TYP_VOID)
+            if (tree->TypeIs(TYP_VOID))
             {
                 srcCount = 0;
             }
             else
             {
-                assert(tree->TypeGet() == TYP_INT);
+                assert(tree->TypeIs(TYP_INT));
                 srcCount = 1;
                 BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
@@ -1867,7 +1867,7 @@ int LinearScan::BuildContainedCselUses(GenTreeHWIntrinsic* containedCselOpNode,
     for (size_t opNum = 1; opNum <= containedCselOpNode->GetOperandCount(); opNum++)
     {
         GenTree* currentOp = containedCselOpNode->Op(opNum);
-        if (currentOp->TypeGet() == TYP_MASK)
+        if (currentOp->TypeIs(TYP_MASK))
         {
             srcCount += BuildOperandUses(currentOp, candidates);
         }
@@ -2265,7 +2265,7 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             break;
 
         case NI_AdvSimd_Arm64_DuplicateToVector64:
-            if (intrinsicTree->Op(1)->TypeGet() == TYP_DOUBLE)
+            if (intrinsicTree->Op(1)->TypeIs(TYP_DOUBLE))
             {
                 delayFreeOp = intrinsicTree->Op(1);
                 assert(delayFreeOp != nullptr);

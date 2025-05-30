@@ -1578,7 +1578,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         JITDUMP("GetRangeWorker not tractable within max stack depth.\n");
     }
     // TYP_LONG is not supported anyway.
-    else if (expr->TypeGet() == TYP_LONG)
+    else if (expr->TypeIs(TYP_LONG))
     {
         range = Range(Limit(Limit::keUnknown));
         JITDUMP("GetRangeWorker long, setting to unknown value.\n");

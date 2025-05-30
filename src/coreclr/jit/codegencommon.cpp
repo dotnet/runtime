@@ -805,8 +805,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     {
         unsigned   varNum     = lvaTrackedIndexToLclNum(deadVarIndex);
         LclVarDsc* varDsc     = lvaGetDesc(varNum);
-        bool       isGCRef    = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef    = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isGCRef    = varDsc->TypeIs(TYP_REF);
+        bool       isByRef    = varDsc->TypeIs(TYP_BYREF);
         bool       isInReg    = varDsc->lvIsInReg();
         bool       isInMemory = !isInReg || varDsc->IsAlwaysAliveInMemory();
 
@@ -841,8 +841,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
     {
         unsigned   varNum  = lvaTrackedIndexToLclNum(bornVarIndex);
         LclVarDsc* varDsc  = lvaGetDesc(varNum);
-        bool       isGCRef = (varDsc->TypeGet() == TYP_REF);
-        bool       isByRef = (varDsc->TypeGet() == TYP_BYREF);
+        bool       isGCRef = varDsc->TypeIs(TYP_REF);
+        bool       isByRef = varDsc->TypeIs(TYP_BYREF);
 
         if (varDsc->lvIsInReg())
         {
@@ -2585,7 +2585,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
             {
                 wbKind = CWBKind_RetBuf
             }
-            else if (varDsc->TypeGet() == TYP_BYREF)
+            else if (varDsc->TypeIs(TYP_BYREF))
             {
                 wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
             }
@@ -2967,7 +2967,7 @@ void CodeGen::genSpillOrAddRegisterParam(
         LclVarDsc* paramVarDsc = compiler->lvaGetDesc(paramLclNum);
 
         var_types storeType = genParamStackType(paramVarDsc, segment);
-        if ((varDsc->TypeGet() != TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
+        if (!varDsc->TypeIs(TYP_STRUCT) && (genTypeSize(genActualType(varDsc)) < genTypeSize(storeType)))
         {
             // Can happen for struct fields due to padding.
             storeType = genActualType(varDsc);
@@ -3818,10 +3818,10 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // or when compInitMem is true
             // or when in debug code
 
-            noway_assert(varTypeIsGC(varDsc->TypeGet()) || (varDsc->TypeGet() == TYP_STRUCT) ||
-                         compiler->info.compInitMem || compiler->opts.compDbgCode);
+            noway_assert(varTypeIsGC(varDsc->TypeGet()) || varDsc->TypeIs(TYP_STRUCT) || compiler->info.compInitMem ||
+                         compiler->opts.compDbgCode);
 
-            if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem &&
+            if (varDsc->TypeIs(TYP_STRUCT) && !compiler->info.compInitMem &&
                 (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
@@ -4140,7 +4140,7 @@ void CodeGen::genHomeSwiftStructStackParameters()
         }
 
         LclVarDsc* dsc = compiler->lvaGetDesc(lclNum);
-        if ((dsc->TypeGet() != TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
+        if (!dsc->TypeIs(TYP_STRUCT) || compiler->lvaIsImplicitByRefLocal(lclNum) || !dsc->lvOnFrame)
         {
             continue;
         }
@@ -4949,7 +4949,7 @@ void CodeGen::genFnProlog()
                     }
                 }
             }
-            else if (varDsc->TypeGet() == TYP_DOUBLE)
+            else if (varDsc->TypeIs(TYP_DOUBLE))
             {
                 initDblRegs |= regMask;
             }
@@ -7618,7 +7618,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
-                assert(varDsc->TypeGet() == TYP_LONG);
+                assert(varDsc->TypeIs(TYP_LONG));
                 assert(offset <= genTypeSize(TYP_LONG));
             }
 #endif // !TARGET_64BIT

@@ -999,7 +999,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     assert(call->gtArgs.CountArgs() == 3);
     assert(!call->gtArgs.AreArgsComplete());
     GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetNode();
-    noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
+    noway_assert(targetMethod->TypeIs(TYP_I_IMPL));
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
     GenTree*              qmarkNode       = nullptr;

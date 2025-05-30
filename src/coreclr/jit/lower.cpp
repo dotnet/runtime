@@ -3752,7 +3752,7 @@ void Lowering::MoveCFGCallArgs(GenTreeCall* call)
 //
 GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 {
-    assert(cmp->gtGetOp1()->TypeGet() == TYP_LONG);
+    assert(cmp->gtGetOp1()->TypeIs(TYP_LONG));
 
     GenTree* src1 = cmp->gtGetOp1();
     GenTree* src2 = cmp->gtGetOp2();
@@ -4265,7 +4265,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 GenTree* Lowering::LowerCompare(GenTree* cmp)
 {
 #ifndef TARGET_64BIT
-    if (cmp->gtGetOp1()->TypeGet() == TYP_LONG)
+    if (cmp->gtGetOp1()->TypeIs(TYP_LONG))
     {
         return DecomposeLongCompare(cmp);
     }
@@ -5218,7 +5218,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
     const var_types lclRegType = varDsc->GetRegisterType(lclStore);
 
-    if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg)
+    if (lclStore->TypeIs(TYP_STRUCT) && !srcIsMultiReg)
     {
         bool convertToStoreObj;
         if (lclStore->OperIs(GT_STORE_LCL_FLD))
@@ -8209,7 +8209,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 {
 #ifdef FEATURE_SIMD
-    if (node->TypeGet() == TYP_SIMD12)
+    if (node->TypeIs(TYP_SIMD12))
     {
         // Assumption 1:
         // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
@@ -8682,7 +8682,7 @@ unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const Lo
         return BAD_VAR_NUM;
     }
 
-    if (destLclDsc->TypeGet() == TYP_STRUCT)
+    if (destLclDsc->TypeIs(TYP_STRUCT))
     {
         return BAD_VAR_NUM;
     }
@@ -8778,7 +8778,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_HWINTRINSIC:
-            assert(node->TypeGet() != TYP_SIMD12);
+            assert(!node->TypeIs(TYP_SIMD12));
             break;
 #endif // FEATURE_SIMD
 
@@ -9076,7 +9076,7 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
 
                 for (int i = 0; i < varDsc->lvFieldCnt; i++)
                 {
-                    if (comp->lvaGetDesc(varDsc->lvFieldLclStart + i)->TypeGet() == TYP_SIMD12)
+                    if (comp->lvaGetDesc(varDsc->lvFieldLclStart + i)->TypeIs(TYP_SIMD12))
                     {
                         canEnregisterAsMultiReg = false;
                         break;
@@ -9270,7 +9270,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
 #if !defined(TARGET_64BIT)
-    if (ret->TypeGet() == TYP_LONG)
+    if (ret->TypeIs(TYP_LONG))
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
         noway_assert(op1->OperGet() == GT_LONG);
@@ -10206,7 +10206,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 //
 GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
-    assert(ind->TypeGet() != TYP_STRUCT);
+    assert(!ind->TypeIs(TYP_STRUCT));
 
     TryRetypingFloatingPointStoreToIntegerStore(ind);
 

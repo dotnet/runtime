@@ -2856,8 +2856,8 @@ public:
     //
     static bool Equals(GenTreeFieldList* list1, GenTreeFieldList* list2)
     {
-        assert(list1->TypeGet() == TYP_STRUCT);
-        assert(list2->TypeGet() == TYP_STRUCT);
+        assert(list1->TypeIs(TYP_STRUCT));
+        assert(list2->TypeIs(TYP_STRUCT));
 
         UseIterator i1   = list1->Uses().begin();
         UseIterator end1 = list1->Uses().end();
@@ -5724,7 +5724,7 @@ struct GenTreeMultiRegOp : public GenTreeOp
 
     unsigned GetRegCount() const
     {
-        return (TypeGet() == TYP_LONG) ? 2 : 1;
+        return TypeIs(TYP_LONG) ? 2 : 1;
     }
 
     //---------------------------------------------------------------------------
@@ -10110,7 +10110,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
     {
-        assert(TypeGet() == TYP_STRUCT);
+        assert(TypeIs(TYP_STRUCT));
 #ifdef TARGET_ARM64
         if (AsHWIntrinsic()->GetSimdSize() == 16)
         {
@@ -10131,11 +10131,11 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 
     if (OperIsScalarLocal())
     {
-        if (TypeGet() == TYP_LONG)
+        if (TypeIs(TYP_LONG))
         {
             return TYP_INT;
         }
-        assert(TypeGet() == TYP_STRUCT);
+        assert(TypeIs(TYP_STRUCT));
         assert((gtFlags & GTF_VAR_MULTIREG) != 0);
         // The register type for a multireg lclVar requires looking at the LclVarDsc,
         // which requires a Compiler instance. The caller must use the GetFieldTypeByIndex
