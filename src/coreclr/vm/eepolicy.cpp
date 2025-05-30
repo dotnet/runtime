@@ -23,6 +23,17 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
+using char8_t = unsigned char;
+
+#include "../native/public/FatalErrorHandling.h"
+
+FatalErrorHandlerResult (*g_fatalErrorHandler)(int32_t hresult, struct FatalErrorInfo* data);
+
+void EEPolicy::SetFatalErrorHandler(PVOID handler)
+{
+    g_fatalErrorHandler = (FatalErrorHandlerResult (*)(int32_t hresult, struct FatalErrorInfo* data))handler;
+}
+
 void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownComplete)
 {
     STRESS_LOG2(LF_SYNC, LL_INFO10, "SafeExitProcess: exitCode = %d sca = %d\n", exitCode, sca);
@@ -800,6 +811,21 @@ int NOINLINE WrapperClrCaptureContext(CONTEXT* context)
 int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
+
+    // TODO: VS this is probably not the place where the handler needs to be called, or not the only one place.
+    //       Also handler nees various data passed. Just test that the handler is called fro now.
+
+    // We are going to call a handler, if set up.
+    // We shoulb not be in COOP mode whan calling random native code.
+    GCX_PREEMP_NO_DTOR();
+
+    if (g_fatalErrorHandler != NULL)
+    {
+        if (g_fatalErrorHandler(exitCode, NULL) == SkipDefaultHandler)
+        {
+            return -1;
+        }
+    }
 
     // All of the code from here on out is robust to any failures in any API's that are called.
     FAULT_NOT_FATAL();
