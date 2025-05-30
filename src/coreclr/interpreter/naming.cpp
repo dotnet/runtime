@@ -58,7 +58,7 @@ void AppendCorInfoType(TArray<char>* printer, CorInfoType corInfoType)
     };
 
     const char *corInfoTypeName = "CORINFO_TYPE_INVALID";
-    if (corInfoType >= 0 || corInfoType < CORINFO_TYPE_COUNT)
+    if (corInfoType >= 0 && corInfoType < CORINFO_TYPE_COUNT)
     {
         corInfoTypeName = preciseVarTypeMap[corInfoType];
     }
