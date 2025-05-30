@@ -22,7 +22,7 @@ check_include_files(
     HAVE_LINUX_USER_EVENTS_H
 )
 
-check_include_files(
+check_include_file(
     "sys/uio.h"
     HAVE_SYS_UIO_H
 )

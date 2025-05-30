@@ -665,7 +665,7 @@ ep_tracepoint_write (
 	ep_rt_thread_handle_t event_thread,
 	EventPipeStackContents *stack)
 {
-#ifdef HAVE_SYS_UIO_H
+#if HAVE_SYS_UIO_H
 	EventPipeProvider *provider = ep_event_get_provider (ep_event);
 
 	EventPipeSessionProviderList *session_provider_list = ep_session_get_providers (session);
