@@ -90,7 +90,7 @@ LOCAL_LABEL(NewOutOfMemory):
 
     NESTED_END RhpNewObject, _TEXT
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 //  a0 == MethodTable
 //  a1 == character/element count
 //  a2 == string/array size
@@ -190,7 +190,9 @@ LOCAL_LABEL(ArraySizeOverflow):
 //  $a1 == element count
     LEAF_ENTRY RhpNewObjectArrayFast, _Text
 
-        li.w  $a2, ((ASM_LARGE_OBJECT_SIZE - 256)/8) // sizeof(void*)
+        // Delegate overflow handling to the generic helper conservatively
+
+        li.w  $a2, (0x40000000 / 8) // sizeof(void*)
         bgeu  $a1, $a2, C_FUNC(RhpNewArray)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64

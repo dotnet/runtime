@@ -104,7 +104,7 @@ LOCAL_LABEL(NewOutOfMemory):
 NESTED_END RhpNewObject, _TEXT
 
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 //  RAX == string/array size
 //  RDI == MethodTable
 //  ESI == character/element count
@@ -226,7 +226,9 @@ NESTED_END RhpNewArrayFast, _TEXT
 //  ESI == element count
 NESTED_ENTRY RhpNewObjectArrayFast, _TEXT, NoHandler
 
-        cmp         rsi, (ASM_LARGE_OBJECT_SIZE - 256)/8 // sizeof(void*)
+        // Delegate overflow handling to the generic helper conservatively
+
+        cmp         rsi, (0x40000000 / 8) // sizeof(void*)
         jae         C_FUNC(RhpNewArray)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64

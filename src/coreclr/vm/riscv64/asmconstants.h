@@ -134,9 +134,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComp
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
 
-#define               ASM_LARGE_OBJECT_SIZE 85000
-ASMCONSTANTS_C_ASSERT(ASM_LARGE_OBJECT_SIZE == LARGE_OBJECT_SIZE);
-
 #define               MAX_STRING_LENGTH 0x3FFFFFDF
 ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
 

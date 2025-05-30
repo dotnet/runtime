@@ -95,7 +95,7 @@ LOCAL_LABEL(NewOutOfMemory):
     NESTED_END RhpNewObject, _TEXT
 
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 //  x0 == MethodTable
 //  x1 == character/element count
 //  x2 == string/array size
@@ -209,7 +209,9 @@ LOCAL_LABEL(ArraySizeOverflow):
 //  x1 == element count
     LEAF_ENTRY RhpNewObjectArrayFast, _Text
 
-        mov         x2, #((ASM_LARGE_OBJECT_SIZE - 256)/8) // sizeof(void*)
+        // Delegate overflow handling to the generic helper conservatively
+
+        mov         x2, #(0x40000000 / 8) // sizeof(void*)
         cmp         x1, x2
 #if defined(__APPLE__)
         bhs         1f

@@ -330,7 +330,9 @@ LEAF_END RhpNewArrayFast, _TEXT
 LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         NEW_ARRAY_FAST_PROLOG
 
-        MOV32       r2, (ASM_LARGE_OBJECT_SIZE - 256)/4 // sizeof(void*)
+        // Delegate overflow handling to the generic helper conservatively
+
+        mov         r2, #1 << 28 ; 0x40000000 / sizeof(void*)
         cmp         r1, r2
         bhs         LOCAL_LABEL(RhpNewObjectArrayFast_RarePath)
 
