@@ -2327,18 +2327,20 @@ namespace System.Tests
             {
                 throw new SkipTestException($"The file {tzPath} does not exist.");
             }
-            
+
+            string tmp = Path.GetTempPath() + Path.GetRandomFileName();
+            File.WriteAllBytes(tmp, File.ReadAllBytes(tzPath));
+
+            ProcessStartInfo psi = new ProcessStartInfo() { UseShellExecute = false };
+            psi.Environment.Add("TZ", tzPath);
+
             RemoteExecutor.Invoke(() =>
             {
-                string tmp = Path.GetTempPath() + Path.GetRandomFileName();
-                File.WriteAllBytes(tmp, File.ReadAllBytes(tzPath));
-
-                Environment.SetEnvironmentVariable("TZ", tmp);
                 TimeZoneInfo tzi = TimeZoneInfo.GetSystemTimeZones().FirstOrDefault(t => t.Id == tzId);
 
                 Assert.NotNull(tzi);
                 Assert.Equal(tzi.Id, TimeZoneInfo.Local.Id);
-            }).Dispose();
+            }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
