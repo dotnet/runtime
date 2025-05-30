@@ -652,7 +652,7 @@ HRESULT CBlobFetcher::Write(FILE* file)
             size_t dwWritten = 0;
             if ((dwWritten = fwrite(m_pIndex[idx].GetRawDataStart(), 1, length, file)) <= 0)
             {
-                return HRESULT_FROM_WIN32(ferror(file));
+                return HRESULT_FROM_LAST_STDIO();
             }
             _ASSERTE(dwWritten == length);
         }
@@ -1343,7 +1343,7 @@ HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
     int err = fopen_u16(&m_file, fileName, W("wb"));
 
     if (err != 0)
-        hr = HRESULT_FROM_WIN32(err);
+        hr = HRESULT_FROM_LAST_STDIO();
 
     return hr;
 }
@@ -1354,7 +1354,7 @@ HRESULT PEWriter::Seek(int offset)
     if (fseek(m_file, offset, SEEK_SET) == 0)
         return S_OK;
     else
-        return HRESULT_FROM_WIN32(ferror(m_file));
+        return HRESULT_FROM_LAST_STDIO();
 }
 
 HRESULT PEWriter::Write(const void *data, int size)
@@ -1381,7 +1381,7 @@ HRESULT PEWriter::Write(const void *data, int size)
             _ASSERTE(dwWritten == (size_t)size);
         }
         else
-            hr = HRESULT_FROM_WIN32(ferror(m_file));
+            hr = HRESULT_FROM_LAST_STDIO();
     }
 
     return hr;
@@ -1407,7 +1407,7 @@ HRESULT PEWriter::Close()
     if (err == 0)
         hr = S_OK;
     else
-        hr = HRESULT_FROM_WIN32(err);
+        hr = HRESULT_FROM_LAST_STDIO();
 
     m_file = NULL;
 

@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <stdint.h>
+
 typedef char16_t WCHAR;
+typedef uint32_t HRESULT;
 
 #include <stdio.h>
 #include <errno.h>
@@ -46,4 +49,88 @@ int64_t fgetsize(FILE* stream)
     int64_t length = ftell(stream);
     fsetpos(stream, &current);
     return length;
+}
+
+#define FACILITY_WIN32                   7
+#define HRESULT_FROM_WIN32(x) ((HRESULT)(x) <= 0 ? ((HRESULT)(x)) : ((HRESULT) (((x) & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000)))
+
+#define ERROR_SUCCESS 0L
+#define ERROR_FILE_NOT_FOUND 2L
+#define ERROR_PATH_NOT_FOUND 3L
+#define ERROR_TOO_MANY_OPEN_FILES 4L
+#define ERROR_ACCESS_DENIED 5L
+#define ERROR_INVALID_HANDLE 6L
+#define ERROR_NOT_ENOUGH_MEMORY 8L
+#define ERROR_WRITE_FAULT 29L
+#define ERROR_GEN_FAILURE 31L
+#define ERROR_DISK_FULL 112L
+#define ERROR_DIR_NOT_EMPTY 145L
+#define ERROR_BAD_PATHNAME 161L
+#define ERROR_BUSY 170L
+#define ERROR_ALREADY_EXISTS 183L
+#define ERROR_FILENAME_EXCED_RANGE 206L
+
+HRESULT HRESULT_FROM_LAST_STDIO()
+{
+    // maps the common I/O errors
+    // based on FILEGetLastErrorFromErrno
+    
+    uint32_t win32Err;
+
+    switch(errno)
+    {
+    case 0:
+        win32Err = ERROR_SUCCESS;
+        break;
+    case ENAMETOOLONG:
+        win32Err = ERROR_FILENAME_EXCED_RANGE;
+        break;
+    case ENOTDIR:
+        win32Err = ERROR_PATH_NOT_FOUND;
+        break;
+    case ENOENT:
+        win32Err = ERROR_FILE_NOT_FOUND;
+        break;
+    case EACCES:
+    case EPERM:
+    case EROFS:
+    case EISDIR:
+        win32Err = ERROR_ACCESS_DENIED;
+        break;
+    case EEXIST:
+        win32Err = ERROR_ALREADY_EXISTS;
+        break;
+    case ENOTEMPTY:
+        win32Err = ERROR_DIR_NOT_EMPTY;
+        break;
+    case EBADF:
+        win32Err = ERROR_INVALID_HANDLE;
+        break;
+    case ENOMEM:
+        win32Err = ERROR_NOT_ENOUGH_MEMORY;
+        break;
+    case EBUSY:
+        win32Err = ERROR_BUSY;
+        break;
+    case ENOSPC:
+    case EDQUOT:
+        win32Err = ERROR_DISK_FULL;
+        break;
+    case ELOOP:
+        win32Err = ERROR_BAD_PATHNAME;
+        break;
+    case EIO:
+        win32Err = ERROR_WRITE_FAULT;
+        break;
+    case EMFILE:
+        win32Err = ERROR_TOO_MANY_OPEN_FILES;
+        break;
+    case ERANGE:
+        win32Err = ERROR_BAD_PATHNAME;
+        break;
+    default:
+        win32Err = ERROR_GEN_FAILURE;
+    }
+
+    return HRESULT_FROM_WIN32(win32Err);
 }

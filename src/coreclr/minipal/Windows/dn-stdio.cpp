@@ -18,3 +18,8 @@ int64_t fgetsize(FILE* stream)
     fsetpos(stream, &current);
     return length;
 }
+
+HRESULT HRESULT_FROM_LAST_STDIO()
+{
+    return HRESULT_FROM_WIN32(::GetLastError());
+}

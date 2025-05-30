@@ -10,3 +10,4 @@
 
 int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode);
 int64_t fgetsize(FILE* stream);
+HRESULT HRESULT_FROM_LAST_STDIO();

@@ -1040,11 +1040,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         size_t cbRead = fread(&header, sizeof(header), 1, fp);
 
-        if (ferror(fp))
-        {
-            hr = COR_E_BADIMAGEFORMAT;
-        }
-        else if (cbRead != sizeof(header))
+        if (cbRead != sizeof(header))
         {
             hr = COR_E_BADIMAGEFORMAT;
         }
