@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -178,19 +179,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             sha256.AppendData(_byteBuffer, 0, length);
             sha256.AppendData(Separator, 0, Separator.Length);
 
-#if NET
-            bool success = BitConverter.TryWriteBytes(_byteBuffer, lastChangedUtc.Ticks);
-            Debug.Assert(success);
-#else
-            Debug.Assert(_byteBuffer.Length > sizeof(long));
-            unsafe
-            {
-                fixed (byte* b = _byteBuffer)
-                {
-                    *((long*)b) = lastChangedUtc.Ticks;
-                }
-            }
-#endif
+            BinaryPrimitives.WriteInt64LittleEndian(_byteBuffer, lastChangedUtc.Ticks);
 
             sha256.AppendData(_byteBuffer, 0, sizeof(long));
             sha256.AppendData(Separator, 0, Separator.Length);
