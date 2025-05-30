@@ -113,6 +113,9 @@ ep_event_filter_allows_event_id (
 	uint32_t event_id)
 {
 	if (event_filter == NULL)
+		return true;
+
+	if (event_filter->event_ids == NULL)
 		return !event_filter->enable;
 
 	bool event_filter_contains_event_id = false;
