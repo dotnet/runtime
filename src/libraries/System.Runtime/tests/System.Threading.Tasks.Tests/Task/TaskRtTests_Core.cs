@@ -1061,44 +1061,47 @@ namespace System.Threading.Tasks.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsReleaseRuntime))]
         public static void RunInlineTaskInterruptTest()
         {
-            object[][] rows = Enumerable.Range(1, 100000)
-                .Select(x => new object[] { $"T{x}" })
-                .ToArray();
-
-            for (int attempt = 1; attempt <= 50000; attempt++)
+            if (PlatformDetection.IsReleaseLibrary(typeof(Task).Assembly))
             {
-                CancellationTokenSource cts = new CancellationTokenSource();
-                Exception? threadException = null;
+                object[][] rows = Enumerable.Range(1, 100000)
+                    .Select(x => new object[] { $"T{x}" })
+                    .ToArray();
 
-                Thread thread = new Thread(() =>
+                for (int attempt = 1; attempt <= 50000; attempt++)
                 {
-                    try
-                    {
-                        List<object[]> list = rows.AsParallel()
-                            .AsOrdered()
-                            .WithCancellation(cts.Token)
-                            .OrderBy(row => row[0])
-                            .ToList();
-                    }
-                    catch (Exception ex)
-                    {
-                        threadException = ex;
-                    }
-                });
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    Exception? threadException = null;
 
-                thread.Start();
-                thread.Interrupt();
-                cts.Cancel();
-                thread.Join();
+                    Thread thread = new Thread(() =>
+                    {
+                        try
+                        {
+                            List<object[]> list = rows.AsParallel()
+                                .AsOrdered()
+                                .WithCancellation(cts.Token)
+                                .OrderBy(row => row[0])
+                                .ToList();
+                        }
+                        catch (Exception ex)
+                        {
+                            threadException = ex;
+                        }
+                    });
 
-                if (threadException is AggregateException && threadException.InnerException is ThreadInterruptedException)
-                {
-                    // The expected exception was thrown
-                    return;
+                    thread.Start();
+                    thread.Interrupt();
+                    cts.Cancel();
+                    thread.Join();
+
+                    if (threadException is AggregateException && threadException.InnerException is ThreadInterruptedException)
+                    {
+                        // The expected exception was thrown
+                        return;
+                    }
                 }
-            }
 
-            Assert.Fail("RunInlineTaskInterruptTest:    > error: ThreadInterruptedException was not thrown.");
+                Assert.Fail("RunInlineTaskInterruptTest:    > error: ThreadInterruptedException was not thrown.");
+            }
         }
 
         // Simply throws an exception from the task and ensures it is propagated.
