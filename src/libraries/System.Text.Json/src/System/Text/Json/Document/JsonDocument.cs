@@ -666,28 +666,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(segment.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            // Segment needs to be unescaped
-            if (row.HasComplexChildren)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTime(segment, out value);
-            }
-
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(segment, out DateTime tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(segment, row.HasComplexChildren, out value);
         }
 
         internal bool TryGetValue(int index, out DateTimeOffset value)
@@ -701,28 +680,7 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (!JsonHelpers.IsValidDateTimeOffsetParseLength(segment.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            // Segment needs to be unescaped
-            if (row.HasComplexChildren)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTimeOffset(segment, out value);
-            }
-
-            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
+            return JsonReaderHelper.TryGetValue(segment, row.HasComplexChildren, out value);
         }
 
         internal bool TryGetValue(int index, out Guid value)
