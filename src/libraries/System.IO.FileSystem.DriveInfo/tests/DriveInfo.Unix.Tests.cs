@@ -108,7 +108,14 @@ namespace System.IO.FileSystem.Tests
             }
             var driveInfo = new DriveInfo(path);
 
-            string format = driveInfo.DriveFormat;
+            try
+            {
+                string format = driveInfo.DriveFormat;
+            }
+            catch (Exception ex) when (PlatformDetection.IsLinux)
+            {
+                throw new Exception($"Failed to find {path} in \n{File.ReadAllText("/proc/self/mountinfo")}", ex);
+            }
         }
     }
 }
