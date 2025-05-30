@@ -160,7 +160,7 @@ static
 uint32_t
 event_reg(uint32_t fd, const char *command, uint32_t *write, uint32_t *enabled)
 {
-#ifdef HAVE_LINUX_USER_EVENTS_H
+#if HAVE_LINUX_USER_EVENTS_H
 	struct user_reg reg = {0};
 
 	reg.size = sizeof(reg); // uint32_t
