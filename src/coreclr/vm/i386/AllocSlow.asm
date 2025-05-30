@@ -90,6 +90,7 @@ FASTCALL_FUNC   RhpNewFast_UP, 4
 
         mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
         add         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        jc          AllocFailed_Unlock
         cmp         eax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         ja          AllocFailed_Unlock
         mov         [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax

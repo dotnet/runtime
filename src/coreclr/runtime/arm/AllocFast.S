@@ -34,6 +34,7 @@
         add         r2, ASM_MIN_OBJECT_SIZE
         ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
         add         r2, r3
+        bcs         2f // AllocFailed
         ldr         r1, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
         cmp         r2, r1
         bhi         2f // AllocFailed
@@ -67,6 +68,7 @@
 
         ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
         add         r2, r3
+        bcs         2f // AllocFailed
         ldr         r1, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
         cmp         r2, r1
         bhi         2f // AllocFailed
