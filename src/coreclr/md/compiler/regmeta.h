@@ -1560,16 +1560,10 @@ public:
 
     HRESULT SetOption(OptionValue *pOptionValue);
 
-    // HRESULT Init();
-    // void Cleanup();
-
     HRESULT InitWithStgdb(
         IUnknown            *pUnk,          // The IUnknown that owns the life time for the existing stgdb
         CLiteWeightStgdbRW *pStgdb);        // existing light weight stgdb
 
-    ULONG   GetRefCount() { return m_cRef; }
-    HRESULT AddToCache();
-    static HRESULT FindCachedReadOnlyEntry(LPCWSTR szName, DWORD dwOpenFlags, RegMeta **ppMeta);
     BOOL IsReadOnly() { return IsOfReadOnly(m_OpenFlags); }
     BOOL IsCopyMemory() { return IsOfCopyMemory(m_OpenFlags); }
 
@@ -1627,9 +1621,6 @@ protected:
     }
 
     HRESULT PreSave();
-
-    // Initialize the EE
-    HRESULT StartupEE();
 
     // Define a TypeRef given the name.
     enum eCheckDups {eCheckDefault=0, eCheckNo=1, eCheckYes=2};
@@ -2029,10 +2020,6 @@ private:
 
     LONG        m_cRef;                     // Ref count.
     IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
-
-    // If true, cached in list of global scopes. This is very dangerous because it may allow
-    // unpredictable state sharing between seemingly unrelated dispensers.
-    bool        m_bCached;
 
     OptionValue m_OptionValue;
 

@@ -37,10 +37,6 @@
 #endif
 #include <log.h>
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4102)
-#endif
-
 RegMeta::RegMeta() :
     m_pStgdb(0),
     m_pStgdbFreeList(NULL),
@@ -62,7 +58,6 @@ RegMeta::RegMeta() :
     m_OpenFlags(0),
     m_cRef(0),
 	m_pFreeThreadedMarshaler(NULL),
-    m_bCached(false),
     m_trLanguageType(0),
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
@@ -84,8 +79,6 @@ RegMeta::RegMeta() :
 
 RegMeta::~RegMeta()
 {
-    _ASSERTE(!m_bCached);
-
     HRESULT hr = S_OK;
 
     LOCKWRITENORET();
@@ -528,6 +521,17 @@ ULONG RegMeta::AddRef()
     return InterlockedIncrement(&m_cRef);
 } // ULONG RegMeta::AddRef()
 
+ULONG RegMeta::Release()
+{
+    ULONG cRef = InterlockedDecrement(&m_cRef);
+    // If no references left...
+    if (cRef == 0)
+    {
+        delete this;
+    }
+
+    return cRef;
+} // RegMeta::Release
 
 HRESULT
 RegMeta::QueryInterface(
