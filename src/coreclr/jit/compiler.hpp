@@ -1827,12 +1827,6 @@ inline void GenTree::gtBashToNOP()
 
 inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
 {
-    if (expr->OperIs(GT_RET_EXPR))
-    {
-        JITDUMP("\nmarking RET_EXPR [%06u] as unused\n", dspTreeID(expr));
-        expr->AsRetExpr()->SetUnused();
-    }
-
     return gtNewOperNode(GT_COMMA, TYP_VOID, expr, gtNewNothingNode());
 }
 

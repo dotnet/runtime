@@ -483,6 +483,7 @@ private:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
             , returnTemp(BAD_VAR_NUM)
+            , returnValueUnused(false)
         {
         }
 
@@ -796,16 +797,36 @@ private:
             }
 
             GenTreeRetExpr* const retExpr       = retExprNode->AsRetExpr();
-            bool const            noRetValue    = origCall->TypeIs(TYP_VOID);
-            bool const            retExprUnused = retExpr->IsUnused();
+            bool const            noReturnValue = origCall->TypeIs(TYP_VOID);
 
-            if (noRetValue)
+            // If there is a return value, search the next statement to see if we can find
+            // retExprNode's parent. If we find it, see if retExprNode's value is unused.
+            //
+            // If we fail to find it, we will assume the return value is used.
+            //
+            if (!noReturnValue)
             {
-                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID  return to NOP\n",
+                Statement* const nextStmt = stmt->GetNextStmt();
+                if (nextStmt != nullptr)
+                {
+                    Compiler::FindLinkData fld    = compiler->gtFindLink(nextStmt, retExprNode);
+                    GenTree* const         parent = fld.parent;
+
+                    if ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtGetOp1() == retExprNode))
+                    {
+                        returnValueUnused = true;
+                        JITDUMP("GT_RET_EXPR [%06u] value is unused\n", compiler->dspTreeID(retExprNode));
+                    }
+                }
+            }
+
+            if (noReturnValue)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
                         compiler->dspTreeID(inlineInfo->retExpr));
                 inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
-            else if (retExprUnused)
+            else if (returnValueUnused)
             {
                 JITDUMP("Linking GT_RET_EXPR [%06u] for UNUSED return to NOP\n",
                         compiler->dspTreeID(inlineInfo->retExpr));
@@ -1070,8 +1091,8 @@ private:
                     else
                     {
                         // We should always have a return temp if we return results by value
-                        // and that value is not unused.
-                        assert((origCall->TypeGet() == TYP_VOID) || oldRetExpr->IsUnused());
+                        // and that value is used.
+                        assert((origCall->TypeGet() == TYP_VOID) || returnValueUnused);
                         newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
@@ -1477,6 +1498,7 @@ private:
         unsigned   returnTemp;
         Statement* lastStmt;
         bool       checkFallsThrough;
+        bool       returnValueUnused;
 
         //------------------------------------------------------------------------
         // CreateTreeForLookup: Create a tree representing a lookup of a method address.

@@ -12381,14 +12381,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_RET_EXPR:
         {
-            GenTreeRetExpr* const retExpr    = tree->AsRetExpr();
-            GenTreeCall* const    inlineCand = retExpr->gtInlineCandidate;
-
-            if ((retExpr->gtFlags & GTF_RET_EXPR_UNUSED) != 0)
-            {
-                printf("[unused] ");
-            }
-
+            GenTreeCall* inlineCand = tree->AsRetExpr()->gtInlineCandidate;
             printf("(for ");
             printTreeID(inlineCand);
             printf(")");

@@ -339,9 +339,7 @@ private:
     {
         while ((*use)->OperIs(GT_RET_EXPR))
         {
-            GenTree* const  tree     = *use;
-            GenTreeRetExpr* retExpr  = tree->AsRetExpr();
-            bool const      isUnused = retExpr->IsUnused();
+            GenTree* tree = *use;
 
             // Skip through chains of GT_RET_EXPRs (say from nested inlines)
             // to the actual tree to use.
@@ -350,11 +348,9 @@ private:
             GenTree*    inlineCandidate = tree;
             do
             {
-                assert(isUnused || !retExpr->IsUnused());
-
-                retExpr         = inlineCandidate->AsRetExpr();
-                inlineCandidate = retExpr->gtSubstExpr;
-                inlineeBB       = retExpr->gtSubstBB;
+                GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
+                inlineCandidate         = retExpr->gtSubstExpr;
+                inlineeBB               = retExpr->gtSubstBB;
             } while (inlineCandidate->OperIs(GT_RET_EXPR));
 
             // We might as well try and fold the return value. Eg returns of
@@ -366,7 +362,7 @@ private:
             // If this use is an unused ret expr, is the first child of a comma, the return value is ignored.
             // Extract any side effects.
             //
-            if (isUnused || ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->gtGetOp1() == *use)))
+            if ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->gtGetOp1() == *use))
             {
                 JITDUMP("\nReturn expression placeholder [%06u] value [%06u] unused\n", m_compiler->dspTreeID(tree),
                         m_compiler->dspTreeID(inlineCandidate));

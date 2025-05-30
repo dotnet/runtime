@@ -551,8 +551,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
-    GTF_RET_EXPR_UNUSED = 0x80000000, // GT_RET_EXPR -- value of this ret expr is unused
-
 #ifdef FEATURE_HW_INTRINSICS
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
@@ -8122,15 +8120,6 @@ struct GenTreeRetExpr : public GenTree
     // The basic block that gtSubstExpr comes from, to enable propagating mandatory flags.
     // nullptr for cases where gtSubstExpr is not a tree from the inlinee.
     BasicBlock* gtSubstBB;
-
-    bool IsUnused() const
-    {
-        return (gtFlags & GTF_RET_EXPR_UNUSED) != 0;
-    }
-    void SetUnused()
-    {
-        gtFlags |= GTF_RET_EXPR_UNUSED;
-    }
 
     GenTreeRetExpr(var_types type)
         : GenTree(GT_RET_EXPR, type)
