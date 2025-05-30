@@ -2213,6 +2213,7 @@ void ObjectAllocator::UpdateAncestorTypes(
     assert(parentStack != nullptr);
     int  parentIndex  = 1;
     bool keepChecking = true;
+    bool sawIndir     = false;
 
     while (keepChecking && (parentStack->Height() > parentIndex))
     {
@@ -2416,7 +2417,7 @@ void ObjectAllocator::UpdateAncestorTypes(
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if (retypeFields)
+                if (retypeFields && !sawIndir)
                 {
                     bool didRetype = false;
 
@@ -2460,7 +2461,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     {
                         ++parentIndex;
                         keepChecking = true;
-                        retypeFields = false;
+                        sawIndir     = true;
                     }
                 }
 
