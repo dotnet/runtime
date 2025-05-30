@@ -964,7 +964,7 @@ ep_session_type_uses_buffer_manager (EventPipeSessionType session_type)
 {
 	if (session_type == EP_SESSION_TYPE_SYNCHRONOUS || session_type == EP_SESSION_TYPE_USEREVENTS)
 		return false;
-	
+
 	return true;
 }
 

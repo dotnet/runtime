@@ -522,7 +522,7 @@ enable (
 
 	EP_ASSERT (options != NULL);
 	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (ep_session_type_uses_buffer_manager (options->session_type) || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (options->session_type) || options->circular_buffer_size_in_mb > 0);
 	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;
