@@ -20,7 +20,6 @@
 #endif // HRESULT_CODE
 
 
-//-----------------------------------------------------------------------------
 
 
 #define IDS_EE_NDIRECT_UNSUPPORTED_SIG          0x1708
