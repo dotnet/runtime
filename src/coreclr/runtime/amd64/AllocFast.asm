@@ -90,7 +90,7 @@ NewOutOfMemory:
 NESTED_END RhpNewObject, _TEXT
 
 
-;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 ;;  RAX == string/array size
 ;;  RCX == MethodTable
 ;;  RDX == character/element count
@@ -185,11 +185,9 @@ IFNDEF FEATURE_NATIVEAOT
 ;;  EDX == element count
 LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
-        ; Verifies that LARGE_OBJECT_SIZE fits in 32-bit.  This allows us to do array size
-        ; arithmetic using 32-bit registers.
-        .erre ASM_LARGE_OBJECT_SIZE lt 100000000h
+        ; Delegate overflow handling to the generic helper conservatively
 
-        cmp         rdx, (ASM_LARGE_OBJECT_SIZE - 256)/8 ; sizeof(void*)
+        cmp         rdx, (40000000h / 8) ; sizeof(void*)
         jae         RhpNewArray
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64

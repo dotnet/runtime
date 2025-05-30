@@ -74,7 +74,7 @@ LOCAL_LABEL(NewOutOfMemory):
         jmp         RhExceptionHandling_FailedAllocation
 LEAF_END RhpNewObject, _TEXT
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 //  EAX == string/array size
 //  ECX == MethodTable
 //  EDX == character/element count
@@ -216,7 +216,9 @@ LEAF_END RhpNewArrayFast, _TEXT
 //  ECX == MethodTable
 //  EDX == element count
 LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
-        cmp         edx, (ASM_LARGE_OBJECT_SIZE - 256)/4 // sizeof(void*)
+        // Delegate overflow handling to the generic helper conservatively
+
+        cmp         edx, (0x40000000 / 4) // sizeof(void*)
         jae         RhpNewArray
 
         // In this case we know the element size is sizeof(void *), or 4 for x86

@@ -115,7 +115,7 @@ RhpNewFast_UP_RarePath:
 LEAF_END RhpNewFast_UP, _TEXT
 
 ;
-; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewObjectArray_UP
+; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewObjectArrayFast_UP
 ;  RAX == string/array size
 ;  RCX == MethodTable
 ;  RDX == character/element count
@@ -197,10 +197,8 @@ LEAF_ENTRY RhpNewArrayFast_UP, _TEXT
 
         ; Compute overall allocation size (align(base size + (element size * elements), 8)).
         movzx       eax, word ptr [rcx + OFFSETOF__MethodTable__m_usComponentSize]
-        mul         rdx
-        mov         edx, [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         rax, rdx
-        add         rax, 7
+        imul        rax, rdx
+        lea         rax, [rax + SZARRAY_BASE_SIZE + 7]
         and         rax, -8
 
         mov         rdx, r8
@@ -226,19 +224,16 @@ LEAF_END RhpNewArrayFast_UP, _TEXT
 ;
 LEAF_ENTRY RhpNewObjectArrayFast_UP, _TEXT
 
-        ; Verifies that LARGE_OBJECT_SIZE fits in 32-bit.  This allows us to do array size
-        ; arithmetic using 32-bit registers.
-        .erre ASM_LARGE_OBJECT_SIZE lt 100000000h
+        ; Delegate overflow handling to the generic helper conservatively
 
-        cmp         rdx, (ASM_LARGE_OBJECT_SIZE - 256)/8 ; sizeof(void*)
+        cmp         rdx, (40000000h / 8) ; sizeof(void*)
         jae         ArraySizeOverflow
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
         ; This helps us in two ways - we can shift instead of multiplying, and
         ; there's no need to align the size either
 
-        mov         eax, dword ptr [rcx + OFFSETOF__MethodTable__m_uBaseSize]
-        lea         eax, [eax + edx * 8]
+        lea         eax, [edx * 8 + SZARRAY_BASE_SIZE]
 
         ; No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
         ; to be a multiple of 8.

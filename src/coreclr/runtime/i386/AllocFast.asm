@@ -76,7 +76,7 @@ NewOutOfMemory:
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
-; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 ;  EAX == string/array size
 ;  ECX == MethodTable
 ;  EDX == character/element count
@@ -208,7 +208,9 @@ IFNDEF FEATURE_NATIVEAOT
 ;  ECX == MethodTable
 ;  EDX == element count
 FASTCALL_FUNC   RhpNewObjectArrayFast, 8
-        cmp         edx, (ASM_LARGE_OBJECT_SIZE - 256)/4 ; sizeof(void*)
+        ; Delegate overflow handling to the generic helper conservatively
+
+        cmp         edx, (40000000h / 4) ; sizeof(void*)
         jae         @RhpNewArray@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86

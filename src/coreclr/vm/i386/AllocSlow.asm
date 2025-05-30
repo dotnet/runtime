@@ -110,7 +110,7 @@ AllocFailed:
 FASTCALL_ENDFUNC
 
 ;
-; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewObjectArray_UP
+; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewObjectArrayFast_UP
 ;  EAX == string/array size
 ;  ECX == MethodTable
 ;  EDX == character/element count
@@ -209,8 +209,7 @@ FASTCALL_FUNC   RhpNewArrayFast_UP, 8
         cmp         edx,010000h
         ja          ArraySizeBig
         mul         edx
-        add         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, 3
+        lea         eax, [eax + SZARRAY_BASE_SIZE + 3]
 ArrayAlignSize:
         and         eax, -4
 
@@ -255,15 +254,16 @@ FASTCALL_ENDFUNC
 ; uniprocessor version
 ;
 FASTCALL_FUNC   RhpNewObjectArrayFast_UP, 8
-        cmp         edx, (ASM_LARGE_OBJECT_SIZE - 256)/4 ; sizeof(void*)
+        ; Delegate overflow handling to the generic helper conservatively
+
+        cmp         edx, (40000000h / 4) ; sizeof(void*)
         jae         @RhpNewArray@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and
         ; there's no need to align the size either
 
-        mov         eax, dword ptr [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        lea         eax, [eax + edx * 8]
+        lea         eax, [edx * 4 + SZARRAY_BASE_SIZE]
 
         NEW_ARRAY_FAST_PROLOG_UP
         NEW_ARRAY_FAST_UP

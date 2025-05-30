@@ -90,7 +90,7 @@ NewOutOfMemory
 
     NESTED_END RhpNewObject
 
-;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArray
+;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
 ;;  x0 == MethodTable
 ;;  x1 == character/element count
 ;;  x2 == string/array size
@@ -190,7 +190,9 @@ ArraySizeOverflow
 ;;  x1 == element count
     LEAF_ENTRY RhpNewObjectArrayFast
 
-        mov         x2, #((ASM_LARGE_OBJECT_SIZE - 256)/8) ; sizeof(void*)
+        ; Delegate overflow handling to the generic helper conservatively
+
+        mov         x2, #(0x40000000 / 8) ; sizeof(void*)
         cmp         x1, x2
         bhs         RhpNewArray
 
