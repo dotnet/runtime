@@ -282,25 +282,34 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 Debug.Assert(parameterName is UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
-                if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
-                {
-                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
-                    return SyntaxFactory.ParseExpression(optionsLiteral);
-                }
-                else if (argument.Value is ILiteralOperation literalOperation)
-                {
-                    return literalOperation.Syntax;
-                }
-                else if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
+
+                // First check if it's a constant field reference - these should be preserved for both pattern and options
+                if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
                     fieldReferenceOperation.Member is IFieldSymbol fieldSymbol && fieldSymbol.IsConst)
                 {
                     return generator.Argument(fieldReferenceOperation.Syntax);
                 }
+
+                // Handle literal operations for pattern
+                if (parameterName == UpgradeToGeneratedRegexAnalyzer.PatternArgumentName && argument.Value is ILiteralOperation literalOperation)
+                {
+                    return literalOperation.Syntax;
+                }
+
+                // Handle options
+                if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
+                {
+                    // For RegexOptions that are not constant field references, expand the value
+                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
+                    return SyntaxFactory.ParseExpression(optionsLiteral);
+                }
+                // Special handling for string patterns with escaped characters
                 else if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
                 {
                     string escapedVerbatimText = str.Replace("\"", "\"\"");
                     return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
                 }
+                // Default handling for other constants
                 else
                 {
                     return generator.LiteralExpression(argument.Value.ConstantValue.Value);
