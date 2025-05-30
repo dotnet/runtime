@@ -226,5 +226,8 @@ ep_session_resume (EventPipeSession *session);
 bool
 ep_session_has_started (EventPipeSession *session);
 
+bool
+ep_session_type_uses_buffer_manager (EventPipeSessionType session_type);
+
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_SESSION_H__ */

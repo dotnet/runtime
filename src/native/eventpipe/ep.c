@@ -497,7 +497,7 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 {
 	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
 		return false;
-	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS && options->session_type != EP_SESSION_TYPE_USEREVENTS)
+	if (options->circular_buffer_size_in_mb <= 0 && ep_session_type_uses_buffer_manager (options->session_type))
 		return false;
 	if (options->providers == NULL || options->providers_len <= 0)
 		return false;
@@ -522,7 +522,7 @@ enable (
 
 	EP_ASSERT (options != NULL);
 	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->session_type == EP_SESSION_TYPE_USEREVENTS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (ep_session_type_uses_buffer_manager (options->session_type) || options->circular_buffer_size_in_mb > 0);
 	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;

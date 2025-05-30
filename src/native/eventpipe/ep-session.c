@@ -296,7 +296,7 @@ ep_session_alloc (
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || session_type == EP_SESSION_TYPE_USEREVENTS || circular_buffer_size_in_mb > 0);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (session_type) || circular_buffer_size_in_mb > 0);
 	EP_ASSERT (providers_len > 0);
 	EP_ASSERT (providers != NULL);
 	EP_ASSERT ((sync_callback != NULL) == (session_type == EP_SESSION_TYPE_SYNCHRONOUS));
@@ -328,7 +328,7 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
-	if (session_type != EP_SESSION_TYPE_SYNCHRONOUS && session_type != EP_SESSION_TYPE_USEREVENTS) {
+	if (ep_session_type_uses_buffer_manager (session_type)) {
 		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
 		ep_raise_error_if_nok (instance->buffer_manager != NULL);
 	}
@@ -957,6 +957,15 @@ ep_session_has_started (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 	return ep_rt_volatile_load_uint32_t (&session->started) == 1 ? true : false;
+}
+
+bool
+ep_session_type_uses_buffer_manager (EventPipeSessionType session_type)
+{
+	if (session_type == EP_SESSION_TYPE_SYNCHRONOUS || session_type == EP_SESSION_TYPE_USEREVENTS)
+		return false;
+	
+	return true;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
