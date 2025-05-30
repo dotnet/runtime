@@ -2076,6 +2076,12 @@ public:
         assert(IsValue());
         gtFlags &= ~GTF_CONTAINED;
         ClearRegOptional();
+#ifdef FEATURE_HW_INTRINSICS
+        if (OperIsHWIntrinsic())
+        {
+            ClearEmbMaskOp();
+        }
+#endif
     }
 
     bool CanCSE() const
@@ -2296,6 +2302,12 @@ public:
         assert(OperIsHWIntrinsic());
         assert(!IsEmbMaskOp());
         gtFlags |= GTF_HW_EM_OP;
+    }
+
+    void ClearEmbMaskOp()
+    {
+        assert(OperIsHWIntrinsic());
+        gtFlags &= ~GTF_HW_EM_OP;
     }
 
 #endif // FEATURE_HW_INTRINSICS
@@ -9755,7 +9767,8 @@ inline bool GenTree::IsMaskZero() const
             assert(op1->OperIsHWIntrinsic());
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
-        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
+        return ((id == NI_Sve_CreateFalseMaskAll) ||
+                ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64)));
     }
 
 #endif

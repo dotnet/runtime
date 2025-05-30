@@ -2850,6 +2850,79 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Sve_CreateFalseMaskByte:
+        case NI_Sve_CreateFalseMaskDouble:
+        case NI_Sve_CreateFalseMaskInt16:
+        case NI_Sve_CreateFalseMaskInt32:
+        case NI_Sve_CreateFalseMaskInt64:
+        case NI_Sve_CreateFalseMaskSByte:
+        case NI_Sve_CreateFalseMaskSingle:
+        case NI_Sve_CreateFalseMaskUInt16:
+        case NI_Sve_CreateFalseMaskUInt32:
+        case NI_Sve_CreateFalseMaskUInt64:
+        {
+            // Import as a constant vector 0
+            GenTreeVecCon* vecCon = gtNewVconNode(retType);
+            vecCon->gtSimdVal     = simd_t::Zero();
+            retNode               = vecCon;
+            break;
+        }
+
+        case NI_Sve_CreateTrueMaskByte:
+        case NI_Sve_CreateTrueMaskDouble:
+        case NI_Sve_CreateTrueMaskInt16:
+        case NI_Sve_CreateTrueMaskInt32:
+        case NI_Sve_CreateTrueMaskInt64:
+        case NI_Sve_CreateTrueMaskSByte:
+        case NI_Sve_CreateTrueMaskSingle:
+        case NI_Sve_CreateTrueMaskUInt16:
+        case NI_Sve_CreateTrueMaskUInt32:
+        case NI_Sve_CreateTrueMaskUInt64:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impPopStack().val;
+
+            // Where possible, import a constant vector to allow for optimisations.
+            if (op1->IsIntegralConst())
+            {
+                int64_t pattern = op1->AsIntConCommon()->IntegralValue();
+                switch (pattern)
+                {
+                    case 0:  // POW2
+                    case 1:  // VL1
+                    case 2:  // VL2
+                    case 3:  // VL3
+                    case 4:  // VL4
+                    case 5:  // VL5
+                    case 6:  // VL6
+                    case 7:  // VL7
+                    case 8:  // VL8
+                    case 9:  // VL16
+                    case 10: // VL32
+                    case 11: // VL64
+                    case 12: // VL128
+                    case 13: // VL256
+                    case 29: // MUL4
+                    case 30: // MUL3
+                    case 31: // ALL
+                        retNode = gtNewSimdCnsVecTrueMaskPattern(retType, simdSize, simdBaseType, pattern);
+                        break;
+
+                    default:
+                        // Invalid enum, so generate the create true mask node.
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
+                        break;
+                }
+            }
+            else
+            {
+                // Do not know the pattern, so generate the create true mask node.
+                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
         case NI_Sve_Load2xVectorAndUnzip:
         case NI_Sve_Load3xVectorAndUnzip:
         case NI_Sve_Load4xVectorAndUnzip:
@@ -3367,6 +3440,89 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
 {
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskByte, CORINFO_TYPE_UBYTE, simdSize);
+}
+
+//------------------------------------------------------------------------
+// gtNewSimdCnsVecTrueMaskPattern: Create a constant vector with a true mask bit pattern
+//
+// Arguments:
+//    retType         -- return type of the intrinsic.
+//    simdSize        -- the simd size of the nodes being created
+//    simdBaseJitType -- the base jit type of the nodes being created
+//    pattern         -- The pattern to use as defined by the Arm PTRUE instruction
+//
+// Return Value:
+//    The node
+//
+GenTree* Compiler::gtNewSimdCnsVecTrueMaskPattern(var_types retType,
+                                                  int       simdSize,
+                                                  var_types simdBaseType,
+                                                  int64_t   pattern)
+{
+    int64_t lanes    = simdSize / genTypeSize(simdBaseType);
+    int64_t laneBits = genTypeSize(simdBaseType) * 8;
+    int64_t laneVal  = (laneBits > 32) ? UINT64_MAX : (((int64_t)1 << laneBits) - 1);
+
+    // Ensure the base type is integral
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        simdBaseType = TYP_ULONG;
+    }
+    else if (simdBaseType == TYP_FLOAT)
+    {
+        simdBaseType = TYP_UINT;
+    }
+
+    GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+    int64_t lanesToFill = 0;
+    switch (pattern)
+    {
+        case 0:  // POW2 - The largest power of 2
+        case 31: // ALL - All lanes
+            lanesToFill = lanes;
+            break;
+
+        case 1: // VL1 - exactly 1 lane, etc
+        case 2: // VL2
+        case 3: // VL3
+        case 4: // VL4
+        case 5: // VL5
+        case 6: // VL6
+        case 7: // VL7
+        case 8: // VL8
+            lanesToFill = pattern;
+            break;
+
+        case 9:  // VL16 - exactly 16 lanes, etc
+        case 10: // VL32
+        case 11: // VL64
+        case 12: // VL128
+        case 13: // VL256
+            lanesToFill = ((pattern - 8) * 16);
+            break;
+
+        case 29: // MUL4 - The largest multiple of 4
+            lanesToFill = (lanes - (lanes % 4));
+            break;
+
+        case 30: // MUL3 - The largest multiple of 3
+            lanesToFill = (lanes - (lanes % 3));
+            break;
+
+        default:
+            assert(false);
+            break;
+    }
+
+    lanesToFill = std::min(lanesToFill, lanes);
+
+    for (int index = 0; index < lanesToFill; index++)
+    {
+        vecCon->SetElementIntegral(simdBaseType, index, laneVal);
+    }
+
+    return vecCon;
 }
 
 #endif // FEATURE_HW_INTRINSICS
