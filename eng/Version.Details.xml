@@ -263,7 +263,7 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>da5dd054a531e6fea65643b7e754285b73eab433</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App.Runtime.win-x64" Version="10.0.0-preview.5.25260.104">
+    <Dependency Name="Microsoft.NETCore.App.Ref" Version="10.0.0-preview.5.25260.104">
       <Uri>https://github.com/dotnet/dotnet</Uri>
       <Sha>85778473549347b3e4bad3ea009e9438df7b11bb</Sha>
     </Dependency>
