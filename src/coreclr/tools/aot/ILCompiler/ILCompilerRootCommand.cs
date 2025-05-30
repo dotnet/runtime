@@ -329,7 +329,7 @@ namespace ILCompiler
             });
         }
 
-        public static void GetExtendedHelp(ParseResult _)
+        public static void PrintExtendedHelp(ParseResult _)
         {
             Console.WriteLine("Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing " +
                 "the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file " +

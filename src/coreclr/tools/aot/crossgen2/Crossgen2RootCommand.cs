@@ -285,7 +285,7 @@ namespace ILCompiler
             });
         }
 
-        public static void GetExtendedHelp(ParseResult _)
+        public static void PrintExtendedHelp(ParseResult _)
         {
             Console.WriteLine(SR.OptionPassingHelp);
             Console.WriteLine();

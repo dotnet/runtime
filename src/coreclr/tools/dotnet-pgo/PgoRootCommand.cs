@@ -260,7 +260,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public static void GetExtendedHelp(ParseResult parseResult)
+        public static void PrintExtendedHelp(ParseResult parseResult)
         {
             if (parseResult.CommandResult.Command.Name is "create-mibc" or "create-jittrace")
             {
