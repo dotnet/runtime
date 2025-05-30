@@ -4,12 +4,26 @@
 // crosscomp.h - cross-compilation enablement structures.
 //
 
-
 #pragma once
+
+#include <minipal/mutex.h>
 
 #if (!defined(HOST_64BIT) && defined(TARGET_64BIT)) || (defined(HOST_64BIT) && !defined(TARGET_64BIT))
 #define CROSSBITNESS_COMPILE
+
+#ifndef CROSS_COMPILE
+#define CROSS_COMPILE
+#endif // !CROSS_COMPILE
+
 #endif
+
+#if defined(TARGET_WINDOWS) && !defined(HOST_WINDOWS) && !defined(CROSS_COMPILE)
+#define CROSS_COMPILE
+#endif // TARGET_WINDOWS && !HOST_WINDOWS && !CROSS_COMPILE
+
+#if defined(TARGET_UNIX) && !defined(HOST_UNIX) && !defined(CROSS_COMPILE)
+#define CROSS_COMPILE
+#endif // TARGET_UNIX && !HOST_UNIX && !CROSS_COMPILE
 
 // Target platform-specific library naming
 //
@@ -705,77 +719,42 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 
 #endif
 
-#if defined(DACCESS_COMPILE) && defined(TARGET_UNIX)
-// This is a TARGET oriented copy of CRITICAL_SECTION and PAL_CS_NATIVE_DATA_SIZE
-// It is configured based on TARGET configuration rather than HOST configuration
-// There is validation code in src/coreclr/vm/crst.cpp to keep these from
-// getting out of sync
-
-#define T_CRITICAL_SECTION_VALIDATION_MESSAGE "T_CRITICAL_SECTION validation failed. It is not in sync with CRITICAL_SECTION"
-
-#if defined(TARGET_OSX) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 76
-#elif defined(TARGET_APPLE) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 120
-#elif defined(TARGET_APPLE) && defined(TARGET_ARM64)
-#define DAC_CS_NATIVE_DATA_SIZE 120
-#elif defined(TARGET_FREEBSD) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 12
-#elif defined(TARGET_FREEBSD) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 24
-#elif defined(TARGET_FREEBSD) && defined(TARGET_ARM64)
-#define DAC_CS_NATIVE_DATA_SIZE 24
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_ARM)
-#define DAC_CS_NATIVE_DATA_SIZE 80
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_ARM64)
-#define DAC_CS_NATIVE_DATA_SIZE 104
-#elif defined(TARGET_LINUX) && defined(TARGET_LOONGARCH64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 76
-#elif (defined(TARGET_LINUX) || defined(TARGET_ANDROID)) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_S390X)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_RISCV64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_LINUX) && defined(TARGET_POWERPC64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_NETBSD) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 96
-#elif defined(TARGET_NETBSD) && defined(TARGET_ARM)
-#define DAC_CS_NATIVE_DATA_SIZE 56
-#elif defined(TARGET_NETBSD) && defined(TARGET_X86)
-#define DAC_CS_NATIVE_DATA_SIZE 56
-#elif defined(__sun) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 48
-#elif defined(TARGET_HAIKU) && defined(TARGET_AMD64)
-#define DAC_CS_NATIVE_DATA_SIZE 56
-#elif defined(TARGET_WASM)
-#define DAC_CS_NATIVE_DATA_SIZE 76
+#if defined(TARGET_APPLE)
+#define DAC_MUTEX_MAX_SIZE 96
+#elif defined(TARGET_FREEBSD)
+#define DAC_MUTEX_MAX_SIZE 16
+#elif defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+#define DAC_MUTEX_MAX_SIZE 64
+#elif defined(TARGET_WINDOWS)
+#ifdef TARGET_64BIT
+#define DAC_MUTEX_MAX_SIZE 40
 #else
-#warning
-#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture. This should be same value as PAL_CS_NATIVE_DATA_SIZE (aka sizeof(PAL_CS_NATIVE_DATA)).
+#define DAC_MUTEX_MAX_SIZE 24
+#endif // TARGET_64BIT
+#else
+// Fallback to a conservative default value
+#define DAC_MUTEX_MAX_SIZE 128
 #endif
 
-struct T_CRITICAL_SECTION {
-    PVOID DebugInfo;
-    LONG LockCount;
-    LONG RecursionCount;
-    HANDLE OwningThread;
-    ULONG_PTR SpinCount;
+#ifndef CROSS_COMPILE
+static_assert(DAC_MUTEX_MAX_SIZE >= sizeof(minipal_mutex), "DAC_MUTEX_MAX_SIZE must be greater than or equal to the size of minipal_mutex");
+#endif // !CROSS_COMPILE
 
-#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
-    BOOL bInternal;
-#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
-    volatile DWORD dwInitState;
-
-    union CSNativeDataStorage
+// This type is used to ensure a consistent size of mutexes
+// contained with our Crst types.
+// We have this requirement for cross OS compiling the DAC.
+struct tgt_minipal_mutex final
+{
+    union
     {
-        BYTE rgNativeDataStorage[DAC_CS_NATIVE_DATA_SIZE];
-        PVOID pvAlign; // make sure the storage is machine-pointer-size aligned
-    } csnds;
+        // DAC builds want to have the data layout of the target system.
+        // Make sure that the host minipal_mutex does not influence
+        // the target data layout
+#ifndef DACCESS_COMPILE
+        minipal_mutex _mtx;
+#endif // !DACCESS_COMPILE
+
+        // This is unused padding to ensure struct size.
+        alignas(void*) BYTE _dacPadding[DAC_MUTEX_MAX_SIZE];
+    };
 };
-#else
-#define T_CRITICAL_SECTION CRITICAL_SECTION
-#endif

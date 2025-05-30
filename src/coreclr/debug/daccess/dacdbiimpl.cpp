@@ -59,7 +59,7 @@
 
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 
 //---------------------------------------------------------------------------------------
@@ -362,7 +362,7 @@ interface IMDInternalImport* DacDbiInterfaceImpl::GetMDImport(
     const ReflectionModule * pReflectionModule,
     bool fThrowEx)
 {
-    // Since this is called from an existing DAC-primitive, we already hold the g_dacCritSec lock.
+    // Since this is called from an existing DAC-primitive, we already hold the g_dacMutex lock.
     // The lock conveniently protects our cache.
     SUPPORTS_DAC;
 

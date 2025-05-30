@@ -698,26 +698,26 @@ Dictionary::PopulateEntry(
         BYTE fixupKind = *pBlob++;
 
         ModuleBase * pInfoModule = pModule;
-        if (fixupKind & ENCODE_MODULE_OVERRIDE)
+        if (fixupKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             pInfoModule = pModule->GetModuleFromIndex(moduleIndex);
-            fixupKind &= ~ENCODE_MODULE_OVERRIDE;
+            fixupKind &= ~READYTORUN_FIXUP_ModuleOverride;
         }
 
-        _ASSERTE(fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ ||
-                 fixupKind == ENCODE_DICTIONARY_LOOKUP_TYPE ||
-                 fixupKind == ENCODE_DICTIONARY_LOOKUP_METHOD);
+        _ASSERTE(fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup ||
+                 fixupKind == READYTORUN_FIXUP_TypeDictionaryLookup ||
+                 fixupKind == READYTORUN_FIXUP_MethodDictionaryLookup);
 
-        if (fixupKind == ENCODE_DICTIONARY_LOOKUP_THISOBJ)
+        if (fixupKind == READYTORUN_FIXUP_ThisObjDictionaryLookup)
         {
             SigPointer p(pBlob);
             p.SkipExactlyOne();
             pBlob = p.GetPtr();
         }
 
-        BYTE signatureKind = *pBlob++;
-        if (signatureKind & ENCODE_MODULE_OVERRIDE)
+        ReadyToRunFixupKind signatureKind = (ReadyToRunFixupKind)*pBlob++;
+        if (signatureKind & READYTORUN_FIXUP_ModuleOverride)
         {
             DWORD moduleIndex = CorSigUncompressData(pBlob);
             ModuleBase * pSignatureModule = pModule->GetModuleFromIndex(moduleIndex);
@@ -726,20 +726,20 @@ Dictionary::PopulateEntry(
                 pInfoModule = pSignatureModule;
             }
             _ASSERTE(pInfoModule == pSignatureModule);
-            signatureKind &= ~ENCODE_MODULE_OVERRIDE;
+            signatureKind = (ReadyToRunFixupKind)(signatureKind & ~READYTORUN_FIXUP_ModuleOverride);
         }
 
-        switch ((CORCOMPILE_FIXUP_BLOB_KIND) signatureKind)
+        switch (signatureKind)
         {
-            case ENCODE_DECLARINGTYPE_HANDLE:   kind = DeclaringTypeHandleSlot; break;
-            case ENCODE_TYPE_HANDLE:            kind = TypeHandleSlot; break;
-            case ENCODE_FIELD_HANDLE:           kind = FieldDescSlot; break;
-            case ENCODE_METHOD_HANDLE:          kind = MethodDescSlot; break;
-            case ENCODE_METHOD_ENTRY:           kind = MethodEntrySlot; break;
-            case ENCODE_VIRTUAL_ENTRY:          kind = DispatchStubAddrSlot; break;
+            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleSlot; break;
+            case READYTORUN_FIXUP_TypeHandle:            kind = TypeHandleSlot; break;
+            case READYTORUN_FIXUP_FieldHandle:           kind = FieldDescSlot; break;
+            case READYTORUN_FIXUP_MethodHandle:          kind = MethodDescSlot; break;
+            case READYTORUN_FIXUP_MethodEntry:           kind = MethodEntrySlot; break;
+            case READYTORUN_FIXUP_VirtualEntry:          kind = DispatchStubAddrSlot; break;
 
             default:
-                _ASSERTE(!"Unexpected CORCOMPILE_FIXUP_BLOB_KIND");
+                _ASSERTE(!"Unexpected ReadyToRunFixupKind");
                 ThrowHR(COR_E_BADIMAGEFORMAT);
         }
 

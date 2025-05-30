@@ -61,6 +61,8 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\AggregationManager.cs" />
     <Compile Include="System\Diagnostics\Metrics\Aggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\AggregatorStore.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Base2ExponentialHistogramAggregator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\CircularBufferBuckets.cs" />
     <Compile Include="System\Diagnostics\Metrics\Counter.cs" />
     <Compile Include="System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Gauge.cs" />

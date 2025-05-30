@@ -7,7 +7,7 @@ import { PromiseAndController } from "../types/internal";
 import { loaderHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
 import { collectCpuSamples } from "./dotnet-cpu-profiler";
-import { collectPerfCounters } from "./dotnet-counters";
+import { collectMetrics } from "./dotnet-counters";
 import { collectGcDump } from "./dotnet-gcdump";
 
 //let diagClient:IDiagClient|undefined = undefined as any;
@@ -140,6 +140,9 @@ export function cleanupClient () {
 }
 
 export function setupJsClient (client:IDiagnosticClient) {
+    if (nextJsClient.promise_control.isDone) {
+        throw new Error("multiple clients in parallel are not allowed");
+    }
     nextJsClient.promise_control.resolve(client);
 }
 
@@ -150,7 +153,7 @@ export function createDiagConnectionJs (socket_handle:number, scenarioName:strin
             collectGcDump({});
         }
         if (scenarioName.startsWith("js://counters")) {
-            collectPerfCounters({});
+            collectMetrics({});
         }
         if (scenarioName.startsWith("js://cpu-samples")) {
             collectCpuSamples({});
