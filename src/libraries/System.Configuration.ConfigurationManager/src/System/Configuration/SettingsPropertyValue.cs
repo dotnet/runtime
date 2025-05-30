@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -30,6 +31,7 @@ namespace System.Configuration
 
         public object PropertyValue
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 if (!Deserialized)
@@ -59,6 +61,7 @@ namespace System.Configuration
 
         public object SerializedValue
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 if (_changedSinceLastSerialized)
@@ -75,6 +78,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private object Deserialize()
         {
             object value = null;
@@ -170,6 +174,7 @@ namespace System.Configuration
             return value;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static object GetObjectFromString(Type type, SettingsSerializeAs serializeAs, string serializedValue)
         {
             // Deal with string types
@@ -214,6 +219,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private object SerializePropertyValue()
         {
             if (_value == null)
@@ -243,6 +249,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static string ConvertObjectToString(object propertyValue, Type type, SettingsSerializeAs serializeAs, bool throwOnError)
         {
             if (serializeAs == SettingsSerializeAs.ProviderSpecific)

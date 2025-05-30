@@ -4,11 +4,13 @@
 using System.Collections;
 using System.Collections.Specialized;
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Diagnostics
 {
     [ConfigurationCollection(typeof(SwitchElement))]
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class SwitchElementsCollection : ConfigurationElementCollection
     {
         public new SwitchElement this[string name] => (SwitchElement)BaseGet(name);
@@ -17,6 +19,7 @@ namespace System.Diagnostics
         protected override object GetElementKey(ConfigurationElement element) => ((SwitchElement)element).Name;
     }
 
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class SwitchElement : ConfigurationElement
     {
         private static readonly ConfigurationPropertyCollection _properties = new ConfigurationPropertyCollection();
@@ -33,11 +36,15 @@ namespace System.Diagnostics
 
         public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("name", DefaultValue = "", IsRequired = true, IsKey = true)]
         public string Name => (string)this[_propName];
 
         protected internal override ConfigurationPropertyCollection Properties => _properties;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("value", IsRequired = true)]
         public string Value => (string)this[_propValue];
 

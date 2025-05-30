@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System.Configuration;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal class TypedElement : ConfigurationElement
     {
         protected static readonly ConfigurationProperty s_propTypeName = new("type", typeof(string), string.Empty, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsTypeStringTransformationRequired);
@@ -22,6 +24,8 @@ namespace System.Diagnostics
             _baseType = baseType;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("initializeData", DefaultValue = "")]
         public string InitData
         {
@@ -38,6 +42,8 @@ namespace System.Diagnostics
 
         protected internal override ConfigurationPropertyCollection Properties => _properties;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("type", IsRequired = true, DefaultValue = "")]
         public virtual string TypeName
         {

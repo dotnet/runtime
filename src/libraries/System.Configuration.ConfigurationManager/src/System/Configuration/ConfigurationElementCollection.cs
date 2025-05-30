@@ -3,11 +3,13 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Configuration
 {
     [DebuggerDisplay("Count = {Count}")]
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public abstract class ConfigurationElementCollection : ConfigurationElement, ICollection
     {
         internal const string DefaultAddItemName = "add";

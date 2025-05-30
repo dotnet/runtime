@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration.Internal;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -105,6 +106,7 @@ namespace System.Configuration
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         protected ConfigurationErrorsException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {

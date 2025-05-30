@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Configuration
@@ -17,7 +18,11 @@ namespace System.Configuration
         private volatile bool _isTypeInited;
         private ConfigurationPropertyOptions _options;
 
-        public ConfigurationProperty(string name, Type type)
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
+        public ConfigurationProperty(
+            string name,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type type)
         {
             object defaultValue = null;
 
@@ -35,14 +40,17 @@ namespace System.Configuration
             SetDefaultValue(defaultValue);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public ConfigurationProperty(string name, Type type, object defaultValue)
             : this(name, type, defaultValue, ConfigurationPropertyOptions.None)
         { }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public ConfigurationProperty(string name, Type type, object defaultValue, ConfigurationPropertyOptions options)
             : this(name, type, defaultValue, null, null, options)
         { }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public ConfigurationProperty(string name,
             Type type,
             object defaultValue,
@@ -52,6 +60,7 @@ namespace System.Configuration
             : this(name, type, defaultValue, typeConverter, validator, options, null)
         { }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public ConfigurationProperty(string name,
             Type type,
             object defaultValue,
@@ -65,6 +74,7 @@ namespace System.Configuration
             SetDefaultValue(defaultValue);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal ConfigurationProperty(PropertyInfo info)
         {
             Debug.Assert(info != null, "info != null");
@@ -179,6 +189,7 @@ namespace System.Configuration
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public Type Type { get; private set; }
 
         public object DefaultValue { get; private set; }
@@ -199,6 +210,7 @@ namespace System.Configuration
 
         public TypeConverter Converter
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 CreateConverter();
@@ -214,6 +226,7 @@ namespace System.Configuration
 
         internal string ClearElementName { get; }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private void ConstructorInit(
             string name,
             Type type,
@@ -260,6 +273,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private static void ValidatePropertyName(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -269,6 +283,7 @@ namespace System.Configuration
                 throw new ArgumentException(SR.Format(SR.Property_name_reserved, name));
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private void SetDefaultValue(object value)
         {
             // Validate the default value if any. This should make errors from invalid defaults easier to catch
@@ -287,6 +302,7 @@ namespace System.Configuration
             DefaultValue = value;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private void InitDefaultValueFromTypeInfo(
             ConfigurationPropertyAttribute configurationProperty,
             DefaultValueAttribute defaultValueAttribute)
@@ -327,6 +343,7 @@ namespace System.Configuration
             SetDefaultValue(defaultValue);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal object ConvertFromString(string value)
         {
             object result;
@@ -344,6 +361,7 @@ namespace System.Configuration
             return result;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal string ConvertToString(object value)
         {
             try
@@ -378,6 +396,7 @@ namespace System.Configuration
             }
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         private void CreateConverter()
         {
             if (_converter != null) return;

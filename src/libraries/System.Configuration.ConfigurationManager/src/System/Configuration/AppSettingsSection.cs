@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public sealed class AppSettingsSection : ConfigurationSection
     {
         private static volatile ConfigurationPropertyCollection s_properties;
@@ -25,9 +27,13 @@ namespace System.Configuration
         internal NameValueCollection InternalSettings
             => _keyValueCollection ??= new KeyValueInternalCollection(this);
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("", IsDefaultCollection = true)]
         public KeyValueConfigurationCollection Settings => (KeyValueConfigurationCollection)base[s_propAppSettings];
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("file", DefaultValue = "")]
         public string File
         {
