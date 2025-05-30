@@ -94,26 +94,24 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (setter == null)
                 return getter;
 
-            // Compare accessibility of getter and setter, returning the most accessible one
-            static MethodAttributes GetAccessibility(MethodInfo method) => method.Attributes & MethodAttributes.MemberAccessMask;
-
-            MethodAttributes getterAccess = GetAccessibility(getter);
-            MethodAttributes setterAccess = GetAccessibility(setter);
-
             // Define accessibility ranking
-            static int GetAccessibilityRank(MethodAttributes access) => access switch
+            static int GetAccessibilityRank(MethodInfo method)
             {
-                MethodAttributes.Public => 4,
-                MethodAttributes.Family => 3,          // protected
-                MethodAttributes.Assembly => 3,        // internal
-                MethodAttributes.FamORAssem => 3,      // protected internal
-                MethodAttributes.FamANDAssem => 2,     // protected and internal
-                MethodAttributes.Private => 1,
-                _ => 0
-            };
+                MethodAttributes access = method.Attributes & MethodAttributes.MemberAccessMask;
+                return access switch
+                {
+                    MethodAttributes.Public => 4,
+                    MethodAttributes.Family => 3,          // protected
+                    MethodAttributes.Assembly => 3,        // internal
+                    MethodAttributes.FamORAssem => 3,      // protected internal
+                    MethodAttributes.FamANDAssem => 2,     // protected and internal
+                    MethodAttributes.Private => 1,
+                    _ => 0
+                };
+            }
 
             // Return the setter if it's more accessible, otherwise return the getter (preserving original behavior when equal)
-            return GetAccessibilityRank(setterAccess) > GetAccessibilityRank(getterAccess) ? setter : getter;
+            return GetAccessibilityRank(setter) > GetAccessibilityRank(getter) ? setter : getter;
         }
     }
 }
