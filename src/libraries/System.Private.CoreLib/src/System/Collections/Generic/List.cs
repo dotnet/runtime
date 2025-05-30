@@ -1201,27 +1201,26 @@ namespace System.Collections.Generic
             {
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext()
             {
                 List<T> localList = _list;
 
-                if (_version == localList._version && ((uint)_index < (uint)localList._size))
-                {
-                    _current = localList._items[_index];
-                    _index++;
-                    return true;
-                }
-                return MoveNextRare();
-            }
-
-            private bool MoveNextRare()
-            {
-                if (_version != _list._version)
+                if (_version != localList._version)
                 {
                     ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                 }
 
-                _index = _list._size + 1;
+                T[] items = localList._items;
+                int index = _index;
+                if ((uint)index < (uint)items.Length &&
+                    (uint)index < (uint)localList._size)
+                {
+                    _current = items[index];
+                    _index++;
+                    return true;
+                }
+
                 _current = default;
                 return false;
             }
