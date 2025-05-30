@@ -76,7 +76,7 @@ namespace System.Linq
 
         private static TSource? TryGetFirstNonIterator<TSource>(IEnumerable<TSource> source, out bool found)
         {
-            if (source is IList<TSource> list)
+            if (source is IReadOnlyList<TSource> list)
             {
                 if (list.Count > 0)
                 {
