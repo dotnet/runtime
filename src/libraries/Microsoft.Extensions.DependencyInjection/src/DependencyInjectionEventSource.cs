@@ -172,11 +172,11 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     // remove the provider, along with any stale references
                     WeakReference<ServiceProvider> reference = _providers[i];
-                    if (!reference.TryGetTarget(out ServiceProvider? target))
+                    if (!reference.TryGetTarget(out ServiceProvider? target) || target == provider)
                     {
                         _providers.RemoveAt(i);
 
-                        if (target == provider)
+                        if (target is not null)
                         {
                             break;
                         }
