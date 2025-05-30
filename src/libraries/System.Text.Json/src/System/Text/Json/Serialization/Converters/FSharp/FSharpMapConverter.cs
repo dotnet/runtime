@@ -45,21 +45,7 @@ namespace System.Text.Json.Serialization.Converters
             if (!options.AllowDuplicateProperties)
             {
                 int totalItemsAdded = listToConvert.Count;
-                int mapCount = 0;
-
-                if (map is ICollection<KeyValuePair<TKey, TValue>> collection)
-                {
-                    mapCount = collection.Count;
-                }
-                else
-                {
-                    Debug.Fail("F# Map is a collection");
-
-                    foreach (KeyValuePair<TKey, TValue> _ in map)
-                    {
-                        mapCount++;
-                    }
-                }
+                int mapCount = ((ICollection<KeyValuePair<TKey, TValue>>)map).Count;
 
                 if (mapCount != totalItemsAdded)
                 {
