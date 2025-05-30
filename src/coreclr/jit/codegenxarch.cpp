@@ -805,38 +805,74 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     // to get the high bits of the multiply, we are constrained to using the
     // 1-op form:  RDX:RAX = RAX * rm
     // The 3-op form (Rx=Ry*Rz) does not support it.
-
+    // When BMI2 is available, we can use the MULX instruction to get the high bits
     genConsumeOperands(treeNode->AsOp());
 
     GenTree* regOp = op1;
     GenTree* rmOp  = op2;
 
-    // Set rmOp to the memory operand (if any)
-    if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX)))
+    if ((treeNode->gtFlags & GTF_UNSIGNED) != 0 && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
-        regOp = op2;
-        rmOp  = op1;
-    }
-    assert(regOp->isUsedFromReg());
+       // Set rmOp to the memory operand (if any)
+        if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RDX)))
+        {
+            regOp = op2;
+            rmOp  = op1;
+        }
+        assert(regOp->isUsedFromReg());
 
-    // Setup targetReg when neither of the source operands was a matching register
-    inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
 
-    instruction ins;
-    if ((treeNode->gtFlags & GTF_UNSIGNED) == 0)
-    {
-        ins = INS_imulEAX;
+        if (treeNode->OperGet() == GT_MULHI)
+        {
+            // Move the result to the desired register, if necessary
+            // emit MULX instruction, use same register for both hi and low result
+            inst_RV_RV_TT(INS_mulx, size, targetReg, targetReg, op2, /* isRMW */ false, INS_OPTS_NONE);
+        }
+        else
+        {
+#if TARGET_64BIT
+            assert(false);
+#else
+            assert(treeNode->OperGet() == GT_MUL_LONG);
+                // Move the result to the desired register, if necessary
+            // emit MULX instruction, use same register for both hi and low result
+            regNumber hiReg  = targetReg;
+            regNumber lowReg  = treeNode->AsMultiRegOp()->GetRegByIndex(1);
+            inst_RV_RV_TT(INS_mulx, size, hiReg, lowReg, op2, /* isRMW */ false, INS_OPTS_NONE);
+#endif
+        }
     }
-    else
+    else // Generate MUL or IMUL instruction
     {
-        ins = INS_mulEAX;
-    }
-    emit->emitInsBinary(ins, size, treeNode, rmOp);
+        // Set rmOp to the memory operand (if any)
+        if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX)))
+        {
+            regOp = op2;
+            rmOp  = op1;
+        }
+        assert(regOp->isUsedFromReg());
 
-    // Move the result to the desired register, if necessary
-    if (treeNode->OperGet() == GT_MULHI)
-    {
-        inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+
+        instruction ins;
+        if ((treeNode->gtFlags & GTF_UNSIGNED) == 0)
+        {
+            ins = INS_imulEAX;
+        }
+        else
+        {
+            ins = INS_mulEAX;
+        }
+        emit->emitInsBinary(ins, size, treeNode, rmOp);
+
+        // Move the result to the desired register, if necessary
+        if (treeNode->OperGet() == GT_MULHI)
+        {
+            inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
+        }
     }
 
     genProduceReg(treeNode);

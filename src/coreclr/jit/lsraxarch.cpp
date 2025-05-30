@@ -817,6 +817,15 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
             }
             return (!tree->gtGetOp2()->isContainedIntOrIImmed() && !tree->gtGetOp1()->isContainedIntOrIImmed());
         }
+#ifdef TARGET_X86
+        case GT_MUL_LONG:
+#endif
+        case GT_MULHI:
+        {
+            // For unsigned mulhi, we can use mulx which has 3-op form if BMI2 is available.
+            return ((tree->gtFlags & GTF_UNSIGNED) == 0) ||
+                   !compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+        }
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -3230,18 +3239,53 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
-    int srcCount = BuildBinaryUses(tree->AsOp(), BuildApxIncompatibleGPRMask(tree->AsOp(), RBM_NONE, true));
-    int dstCount = 1;
-    SingleTypeRegSet dstCandidates = RBM_NONE;
-
     bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
     bool requiresOverflowCheck = tree->gtOverflowEx();
+    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
+                   compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+
+    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
+    // TODO: Call BuildOperandUses manually for each operand so we can specify register (RDX or RAX) dependeng in
+    // mulx/mul
+    int              srcCount;
+    int              dstCount       = 1;
+    SingleTypeRegSet dstCandidates  = RBM_NONE;
+    SingleTypeRegSet srcCandidates1 = BuildApxIncompatibleGPRMask(tree->AsOp(), RBM_NONE, true);
+    SingleTypeRegSet srcCandidates2 = srcCandidates1;
+
+    if (useMulx)
+    {
+        if (!op1->isContained())
+        {
+            srcCandidates1 = SRBM_RDX;
+        }
+        else
+        {
+            srcCandidates2 = SRBM_RDX;
+        }
+
+        srcCount = BuildOperandUses(op1, srcCandidates1);
+        srcCount += BuildOperandUses(op2, srcCandidates2);
+    }
+    else
+    {
+        if (!op1->isContained())
+        {
+            srcCandidates1 = SRBM_RAX;
+        }
+        else
+        {
+            srcCandidates2 = SRBM_RAX;
+        }
+
+        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, srcCandidates2);
+    }
 
     // There are three forms of x86 multiply:
     // one-op form:     RDX:RAX = RAX * r/m
     // two-op form:     reg *= r/m
     // three-op form:   reg = r/m * imm
+    // mulx             reg1:reg2 = RDX * reg3/m  (unly for unsigned multiply, when BMI2 is supported)
 
     // This special widening 32x32->64 MUL is not used on x64
 #if defined(TARGET_X86)
@@ -3265,16 +3309,32 @@ int LinearScan::BuildMul(GenTree* tree)
     }
     else if (tree->OperGet() == GT_MULHI)
     {
-        // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
-        // upper 32 bits of the result set the destination candidate to REG_RDX.
-        dstCandidates = SRBM_RDX;
+        if (useMulx)
+        {
+            // ToDo-APX
+            dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
+        }
+        else
+        {
+            // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
+            // upper 32 bits of the result set the destination candidate to REG_RDX.
+            dstCandidates = SRBM_RDX;
+        }
     }
 #if defined(TARGET_X86)
     else if (tree->OperGet() == GT_MUL_LONG)
     {
-        // have to use the encoding:RDX:RAX = RAX * rm
-        dstCandidates = SRBM_RAX | SRBM_RDX;
-        dstCount      = 2;
+        dstCount = 2;
+        if (useMulx)
+        {
+            // ToDo-APX
+            dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
+        }
+        else
+        {
+            // We have to use the encoding:RDX:RAX = RAX * rm
+            dstCandidates = SRBM_RAX | SRBM_RDX;
+        }
     }
 #endif
     else
