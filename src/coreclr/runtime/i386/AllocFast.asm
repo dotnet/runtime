@@ -17,6 +17,7 @@ FASTCALL_FUNC   RhpNewFast, 4
 
         mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
         add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        jc          AllocFailed
         cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
         ja          AllocFailed
         mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
