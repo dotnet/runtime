@@ -394,6 +394,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public System.Runtime.InteropServices.Marshalling.ComInterfaceOptions Options { get { throw null; } set { } }
         public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
         public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
+        public System.Type? ExceptionToUnmanagedMarshaller { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass

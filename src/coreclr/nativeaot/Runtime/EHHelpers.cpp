@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
@@ -31,6 +28,8 @@
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "NativeContext.h"
+#include <minipal/debugger.h>
+#include "corexcep.h"
 
 struct MethodRegionInfo
 {
@@ -84,6 +83,26 @@ FCIMPL0(void, RhpValidateExInfoStack)
     pThisThread->ValidateExInfoStack();
 }
 FCIMPLEND
+
+#ifdef TARGET_WINDOWS
+FCIMPL0(void, RhpFirstChanceExceptionNotification)
+{
+    // Throw an SEH exception and immediately catch it. This is used to notify debuggers and other tools
+    // that an exception has been thrown.
+    if (minipal_is_native_debugger_present())
+    {
+        __try
+        {
+            RaiseException(EXCEPTION_COMPLUS, 0, 0, NULL);
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER)
+        {
+            // Do nothing, we just want to notify the debugger.
+        }
+    }
+}
+FCIMPLEND
+#endif // TARGET_WINDOWS
 
 FCIMPL0(void, RhpClearThreadDoNotTriggerGC)
 {
@@ -328,7 +347,7 @@ static uintptr_t UnwindSimpleHelperToCaller(
 
 #ifdef TARGET_UNIX
 
-int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
+int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress,
     PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg)
 {
     uintptr_t faultingIP = palContext->GetIp();

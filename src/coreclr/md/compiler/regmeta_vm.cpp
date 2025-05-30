@@ -157,7 +157,7 @@ RegMeta::ResolveTypeRef(
     HRESULT hr;
 
     TypeRefRec * pTypeRefRec;
-    WCHAR        wzNameSpace[_MAX_PATH];
+    WCHAR        wzNameSpace[MAX_PATH];
     CMiniMdRW *  pMiniMd = NULL;
 
     LOCKREAD();

@@ -7772,8 +7772,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            tree = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)pValue);
+            tree = gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)pValue);
             break;
 
         case IAT_PVALUE: // The value needs to be accessed via an indirection
@@ -8137,14 +8136,7 @@ GenTree* Compiler::gtNewGenericCon(var_types type, uint8_t* cnsVal)
         case TYP_REF:
         {
             READ_VALUE(ssize_t);
-            if (val == 0)
-            {
-                return gtNewNull();
-            }
-            else
-            {
-                return gtNewIconEmbHndNode((void*)val, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-            }
+            return val == 0 ? gtNewNull() : gtNewIconEmbObjHndNode((CORINFO_OBJECT_HANDLE)val);
         }
 #ifdef FEATURE_SIMD
         case TYP_SIMD8:
@@ -12975,6 +12967,11 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 disp();
             }
 
+            if (call->IsAsync())
+            {
+                printf(" (async)");
+            }
+
             if ((call->gtFlags & GTF_CALL_UNMANAGED) && (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
             {
                 printf(" (FramesRoot last use)");
@@ -15684,7 +15681,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                             case TYP_FLOAT:
                             {
-#ifdef TARGET_64BIT
                                 if (tree->IsUnsigned() && (lval1 < 0))
                                 {
                                     f1 = FloatingPointUtils::convertUInt64ToFloat((uint64_t)lval1);
@@ -15693,20 +15689,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                                 {
                                     f1 = (float)lval1;
                                 }
-#else
-                                // 32-bit currently does a 2-step conversion, which is incorrect
-                                // but which we are going to take a breaking change around early
-                                // in a release cycle.
-
-                                if (tree->IsUnsigned() && (lval1 < 0))
-                                {
-                                    f1 = forceCastToFloat(FloatingPointUtils::convertUInt64ToDouble((uint64_t)lval1));
-                                }
-                                else
-                                {
-                                    f1 = forceCastToFloat((double)lval1);
-                                }
-#endif
 
                                 d1 = f1;
                                 goto CNS_DOUBLE;
@@ -17734,35 +17716,10 @@ bool Compiler::gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInf
 //
 bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
 {
-    class Visitor final : public GenTreeVisitor<Visitor>
-    {
-        genTreeOps m_oper;
-
-    public:
-        Visitor(Compiler* comp, genTreeOps oper)
-            : GenTreeVisitor(comp)
-            , m_oper(oper)
-        {
-        }
-
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            if ((*use)->OperIs(m_oper))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
+    auto hasOper = [oper](GenTree* tree) {
+        return tree->OperGet() == oper;
     };
-
-    Visitor visitor(this, oper);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtFindNodeInTree<GTF_EMPTY>(tree, hasOper) != nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -20009,13 +19966,13 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
 bool GenTree::SupportsSettingZeroFlag()
 {
 #if defined(TARGET_XARCH)
-    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG))
+    if (OperIs(GT_AND, GT_OR, GT_XOR, GT_ADD, GT_SUB, GT_NEG, GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR))
     {
         return true;
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic())))
+    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic(), nullptr)))
     {
         return true;
     }
@@ -20618,6 +20575,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 #endif
 }
 
+#if defined(TARGET_XARCH)
 //------------------------------------------------------------------------
 // isEvexCompatibleHWIntrinsic: Checks if the intrinsic has a compatible
 // EVEX form for its intended lowering instruction.
@@ -20627,7 +20585,6 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
 //
 bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
 {
-#if defined(TARGET_XARCH)
     if (OperIsHWIntrinsic())
     {
         NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
@@ -20645,16 +20602,47 @@ bool GenTree::isEvexCompatibleHWIntrinsic(Compiler* comp) const
             }
         }
     }
-#endif
     return false;
 }
+
+//------------------------------------------------------------------------
+// isEmbeddedBroadcastCompatibleHWIntrinsic: Checks if the intrinsic is compatible
+// with the EVEX embedded broadcast form for its intended lowering instruction.
+//
+// Return Value:
+//   true if the intrinsic node lowering instruction has a EVEX embedded broadcast support
+//
+bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
+{
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
+        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
+        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+
+        if (CodeGenInterface::instIsEmbeddedBroadcastCompatible(ins))
+        {
+            insTupleType tupleType = emitter::insTupleTypeInfo(ins);
+
+            if ((tupleType & INS_TT_MEM128) != 0)
+            {
+                assert(AsHWIntrinsic()->GetOperandCount() == 2);
+                return HWIntrinsicInfo::isImmOp(intrinsicId, AsHWIntrinsic()->Op(2));
+            }
+
+            return true;
+        }
+    }
+    return false;
+}
+#endif // TARGET_XARCH
 
 //------------------------------------------------------------------------
 // isEmbeddedMaskingCompatibleHWIntrinsic : Checks if the intrinsic is compatible
 // with the EVEX embedded masking form for its intended lowering instruction.
 //
 // Return Value:
-// true if the intrinsic node lowering instruction has an EVEX embedded masking
+//   true if the intrinsic node lowering instruction has a EVEX embedded masking support
 //
 bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 {
@@ -20664,23 +20652,21 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
 #if defined(TARGET_XARCH)
         var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
 
-        switch (intrinsicId)
+        if (simdBaseType == TYP_UNKNOWN)
         {
-            case NI_AVX512F_ConvertToVector256Int32:
-            case NI_AVX512F_ConvertToVector256UInt32:
-            case NI_AVX512F_ConvertToVector512Int32:
-            case NI_AVX512F_ConvertToVector512UInt32:
-            case NI_AVX512F_VL_ConvertToVector128UInt32:
-            case NI_AVX10v1_ConvertToVector128UInt32:
-            {
-                return varTypeIsFloating(simdBaseType);
-            }
-
-            default:
-            {
-                return HWIntrinsicInfo::IsEmbMaskingCompatible(intrinsicId);
-            }
+            // Various scalar intrinsics don't support masking
+            return false;
         }
+
+        if (AsHWIntrinsic()->OperIsMemoryLoadOrStore())
+        {
+            // Direct loads and stores cannot be embedded masking compatible
+            // as they may suppress faults that should otherwise be raised
+            return false;
+        }
+
+        instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        return CodeGenInterface::instIsEmbeddedMaskingCompatible(ins);
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||
                HWIntrinsicInfo::IsOptionalEmbeddedMaskedOperation(intrinsicId);
@@ -21113,13 +21099,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             std::swap(op1, op2);
 #endif // TARGET_XARCH
         }
-#ifdef TARGET_XARCH
-        if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic) && varTypeIsSmall(simdBaseType))
-        {
-            simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
-            simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
-        }
-#endif // TARGET_XARCH
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
@@ -25383,14 +25362,11 @@ GenTree* Compiler::gtNewSimdNarrowNode(
     else
     {
         // var tmp1 = op1.ToVector128Unsafe();
-        // var tmp2 = AdvSimd.InsertScalar(tmp1.AsUInt64(), 1, op2.AsUInt64()).As<T>(); - signed integer use int64,
-        // unsigned integer use uint64
+        // var tmp2 = tmp1.WithUpper(op2);
         // return AdvSimd.ExtractNarrowingLower(tmp2);
 
-        CorInfoType tmp2BaseJitType = varTypeIsSigned(simdBaseType) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
-
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize);
-        tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseJitType, 16);
+        tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, simdBaseJitType, 16);
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, simdSize);
     }
@@ -27190,15 +27166,6 @@ GenTree* Compiler::gtNewSimdTernaryLogicNode(var_types   type,
         intrinsic = NI_AVX512F_VL_TernaryLogic;
     }
 
-#ifdef TARGET_XARCH
-    assert(HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsic));
-    if (varTypeIsSmall(simdBaseType))
-    {
-        simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
-        simdBaseType    = JitType2PreciseVarType(simdBaseJitType);
-    }
-#endif // TARGET_XARCH
-
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, op4, intrinsic, simdBaseJitType, simdSize);
 }
 #endif // TARGET_XARCH
@@ -28528,45 +28495,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 }
 
 //------------------------------------------------------------------------
-// OperIsEmbBroadcastCompatible: Checks if the intrinsic is a embedded broadcast compatible intrinsic.
-//
-// Return Value:
-//     true if the intrinsic node lowering instruction is embedded broadcast compatible.
-//
-bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
-{
-#if defined(TARGET_XARCH)
-    NamedIntrinsic intrinsicId  = GetHWIntrinsicId();
-    var_types      simdBaseType = GetSimdBaseType();
-
-    // MaybeImm intrinsics support embedded broadcasts only for their IMM variants (e.g. PSLLQ)
-    if (HWIntrinsicInfo::MaybeImm(intrinsicId) &&
-        !HWIntrinsicInfo::isImmOp(intrinsicId, GetOperandArray()[GetOperandCount() - 1]))
-    {
-        return false;
-    }
-
-    switch (intrinsicId)
-    {
-        case NI_AVX512F_ConvertToVector256Int32:
-        case NI_AVX512F_ConvertToVector256UInt32:
-        case NI_AVX512F_VL_ConvertToVector128UInt32:
-        case NI_AVX10v1_ConvertToVector128UInt32:
-        {
-            return varTypeIsFloating(simdBaseType);
-        }
-
-        default:
-        {
-            return !varTypeIsSmall(simdBaseType) && HWIntrinsicInfo::IsEmbBroadcastCompatible(intrinsicId);
-        }
-    }
-#else
-    return false;
-#endif // TARGET_XARCH
-}
-
-//------------------------------------------------------------------------
 // OperIsBroadcastScalar: Is this HWIntrinsic a broadcast node from scalar.
 //
 // Return Value:
@@ -28770,10 +28698,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
 
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
             case NI_Sve_GatherPrefetch16Bit:
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
@@ -28786,6 +28710,10 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GetFfrUInt16:
             case NI_Sve_GetFfrUInt32:
             case NI_Sve_GetFfrUInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_SetFfr:
             {
                 return true;
@@ -28918,6 +28846,15 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
 #endif // DEBUG
 
     gtHWIntrinsicId = intrinsicId;
+
+#ifdef TARGET_XARCH
+    var_types simdBaseType = GetSimdBaseType();
+
+    if (HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) && varTypeIsSmall(simdBaseType))
+    {
+        SetSimdBaseJitType(varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT);
+    }
+#endif // TARGET_XARCH
 }
 
 /* static */ bool GenTreeHWIntrinsic::Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2)
@@ -28979,10 +28916,10 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_GetFfrByte:
             case NI_Sve_GetFfrInt16:
             case NI_Sve_GetFfrInt32:
@@ -31696,7 +31633,7 @@ unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) con
     // Copy over all of the already encoded numbers.
     if (!baseNum.IsInvalid())
     {
-        for (int i = 0; i < SIMPLE_NUM_COUNT; i++)
+        for (int i = 0; i < count; i++)
         {
             pFirstSlot[i] = baseNum.GetNum(compiler, i);
         }

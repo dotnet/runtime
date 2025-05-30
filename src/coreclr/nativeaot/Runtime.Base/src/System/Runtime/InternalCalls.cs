@@ -248,6 +248,12 @@ namespace System.Runtime
         internal static extern void RhpValidateExInfoStack();
 
 #if TARGET_WINDOWS
+        [RuntimeImport(Redhawk.BaseName, "RhpFirstChanceExceptionNotification")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void RhpFirstChanceExceptionNotification();
+#endif
+
+#if TARGET_WINDOWS
         [RuntimeImport(Redhawk.BaseName, "RhpCopyContextFromExInfo")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void RhpCopyContextFromExInfo(void* pOSContext, int cbOSContext, EH.PAL_LIMITED_CONTEXT* pPalContext);
@@ -279,9 +285,6 @@ namespace System.Runtime
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName)]
         internal static extern void RhpSignalFinalizationComplete(uint fCount, int observedFullGcCount);
-
-        [DllImport(Redhawk.BaseName)]
-        internal static extern ulong RhpGetTickCount64();
 
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
         // memory available to satisfy the caller's request.

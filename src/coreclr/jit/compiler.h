@@ -72,22 +72,22 @@ inline var_types genActualType(T value);
  *                  Forward declarations
  */
 
-struct InfoHdr;             // defined in GCInfo.h
-struct escapeMapping_t;     // defined in fgdiagnostic.cpp
-class emitter;              // defined in emit.h
-struct ShadowParamVarInfo;  // defined in GSChecks.cpp
-struct InitVarDscInfo;      // defined in registerargconvention.h
-class FgStack;              // defined in fgbasic.cpp
-class Instrumentor;         // defined in fgprofile.cpp
-class SpanningTreeVisitor;  // defined in fgprofile.cpp
-class CSE_DataFlow;         // defined in optcse.cpp
-struct CSEdsc;              // defined in optcse.h
-class CSE_HeuristicCommon;  // defined in optcse.h
-class OptBoolsDsc;          // defined in optimizer.cpp
-struct JumpThreadInfo;      // defined in redundantbranchopts.cpp
-class ProfileSynthesis;     // defined in profilesynthesis.h
-class LoopLocalOccurrences; // defined in inductionvariableopts.cpp
-class RangeCheck;           // defined in rangecheck.h
+struct InfoHdr;            // defined in GCInfo.h
+struct escapeMapping_t;    // defined in fgdiagnostic.cpp
+class emitter;             // defined in emit.h
+struct ShadowParamVarInfo; // defined in GSChecks.cpp
+struct InitVarDscInfo;     // defined in registerargconvention.h
+class FgStack;             // defined in fgbasic.cpp
+class Instrumentor;        // defined in fgprofile.cpp
+class SpanningTreeVisitor; // defined in fgprofile.cpp
+class CSE_DataFlow;        // defined in optcse.cpp
+struct CSEdsc;             // defined in optcse.h
+class CSE_HeuristicCommon; // defined in optcse.h
+class OptBoolsDsc;         // defined in optimizer.cpp
+struct JumpThreadInfo;     // defined in redundantbranchopts.cpp
+class ProfileSynthesis;    // defined in profilesynthesis.h
+class PerLoopInfo;         // defined in inductionvariableopts.cpp
+class RangeCheck;          // defined in rangecheck.h
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -3003,6 +3003,7 @@ public:
     GenTree* gtNewIconEmbHndNode(void* value, void* pValue, GenTreeFlags flags, void* compileTimeHandle);
 
     GenTree* gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd);
+    GenTree* gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd);
     GenTree* gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd);
     GenTree* gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd);
     GenTree* gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd);
@@ -3132,6 +3133,7 @@ public:
 
 #if defined(TARGET_ARM64)
     GenTree* gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize);
+    GenTree* gtNewSimdFalseMaskByteNode(unsigned simdSize);
 #endif
 
     GenTree* gtNewSimdBinOpNode(genTreeOps  op,
@@ -4796,6 +4798,7 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
+    bool impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call);
     GenTree* impStoreStructPtr(GenTree* destAddr, GenTree* value, unsigned curLevel, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* impGetNodeAddr(GenTree* val, unsigned curLevel, GenTreeFlags* pDerefFlags);
@@ -6159,6 +6162,7 @@ public:
     bool fgHeadMerge(BasicBlock* block, bool early);
     bool fgTryOneHeadMerge(BasicBlock* block, bool early);
     bool gtTreeContainsTailCall(GenTree* tree);
+    bool gtTreeContainsAsyncCall(GenTree* tree);
     bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
 
     enum FG_RELOCATE_TYPE
@@ -6473,6 +6477,7 @@ public:
     bool                                   fgPgoSynthesized;
     bool                                   fgPgoDynamic;
     bool                                   fgPgoConsistent;
+    bool                                   fgPgoSingleEdge = false;
 
 #ifdef DEBUG
     bool                                   fgPgoDeferredInconsistency;
@@ -6691,6 +6696,15 @@ private:
     GenTree* fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree);
     GenTree* fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node);
     GenTree* fgOptimizeHWIntrinsicAssociative(GenTreeHWIntrinsic* node);
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    GenTreeHWIntrinsic* fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* node);
+#endif // FEATURE_MASKED_HW_INTRINSICS
+#ifdef TARGET_ARM64
+    bool canMorphVectorOperandToMask(GenTree* node);
+    bool canMorphAllVectorOperandsToMasks(GenTreeHWIntrinsic* node);
+    GenTree* doMorphVectorOperandToMask(GenTree* node, GenTreeHWIntrinsic* parent);
+    GenTreeHWIntrinsic* fgMorphTryUseAllMaskVariant(GenTreeHWIntrinsic* node);
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
     GenTree* fgOptimizeCommutativeArithmetic(GenTreeOp* tree);
     GenTree* fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp);
@@ -6899,6 +6913,9 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
 
+    template<GenTreeFlags RequiredFlagsToDescendIntoTree, typename Predicate>
+    GenTree* gtFindNodeInTree(GenTree* tree, Predicate predicate);
+
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
 
@@ -7068,12 +7085,8 @@ protected:
 #endif
 
     void optResetLoopInfo();
-    void optFindAndScaleGeneralLoopBlocks();
 
-    // Determine if there are any potential loops, and set BBF_LOOP_HEAD on potential loop heads.
-    void optMarkLoopHeads();
-
-    void optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
+    void optScaleLoopBlocks(FlowGraphNaturalLoop* loop);
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
@@ -7654,33 +7667,30 @@ public:
     void optVisitBoundingExitingCondBlocks(FlowGraphNaturalLoop* loop, TFunctor func);
     bool optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
                                      FlowGraphNaturalLoop*   loop,
-                                     LoopLocalOccurrences*   loopLocals);
+                                     PerLoopInfo*            loopLocals);
     bool optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevContext,
                                          FlowGraphNaturalLoop*   loop,
                                          BasicBlock*             exiting,
-                                         LoopLocalOccurrences*   loopLocals);
+                                         PerLoopInfo*            loopLocals);
     bool optCanAndShouldChangeExitTest(GenTree* cond, bool dump);
-    bool optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
     bool optLocalIsLiveIntoBlock(unsigned lclNum, BasicBlock* block);
 
-    bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
-    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
-                           unsigned              lclNum,
-                           ScevAddRec*           addRec,
-                           LoopLocalOccurrences* loopLocals);
+    bool optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
+    bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, PerLoopInfo* loopLocals);
 
     bool optCanSinkWidenedIV(unsigned lclNum, FlowGraphNaturalLoop* loop);
     bool optIsIVWideningProfitable(unsigned              lclNum,
                                    BasicBlock*           initBlock,
                                    bool                  initedToConstant,
                                    FlowGraphNaturalLoop* loop,
-                                   LoopLocalOccurrences* loopLocals);
+                                   PerLoopInfo*          loopLocals);
     void optBestEffortReplaceNarrowIVUses(
         unsigned lclNum, unsigned ssaNum, unsigned newLclNum, BasicBlock* block, Statement* firstStmt);
     void optReplaceWidenedIV(unsigned lclNum, unsigned ssaNum, unsigned newLclNum, Statement* stmt);
     void optSinkWidenedIV(unsigned lclNum, unsigned newLclNum, FlowGraphNaturalLoop* loop);
 
-    bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
+    bool optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, PerLoopInfo* loopLocals);
     bool optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum);
 
     // Redundant branch opts
@@ -7708,6 +7718,7 @@ public:
     BitVecTraits* apTraits;
     ASSERT_TP     apFull;
     ASSERT_TP     apLocal;
+    ASSERT_TP     apLocalPostorder;
     ASSERT_TP     apLocalIfTrue;
 
     enum optAssertionKind : uint8_t
@@ -11621,6 +11632,7 @@ public:
 #endif // defined(UNIX_AMD64_ABI)
 
     bool fgTryMorphStructArg(CallArg* arg);
+    bool FieldsMatchAbi(LclVarDsc* varDsc, const ABIPassingInformation& abiInfo);
 
     bool killGCRefs(GenTree* tree);
 

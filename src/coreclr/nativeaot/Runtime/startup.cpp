@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
@@ -27,6 +24,7 @@
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
 #include <minipal/cpufeatures.h>
+#include <minipal/time.h>
 
 #ifdef FEATURE_PERFTRACING
 #include "EventPipeInterface.h"
@@ -208,7 +206,7 @@ bool InitGSCookie()
 #endif
 
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)PalGetTickCount64();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie

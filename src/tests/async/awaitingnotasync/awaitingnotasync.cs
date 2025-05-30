@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -14,6 +13,7 @@ public class AwaitNotAsync
         AsyncEntryPoint().Wait();
     }
 
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async Task<T> GetTask<T>(T arg)
     {
         await Task.Yield();
@@ -21,6 +21,7 @@ public class AwaitNotAsync
     }
 
     // TODO: switch every other scenario to use ValueTask
+    [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
     private static async ValueTask<T> GetValueTask<T>(T arg)
     {
         await Task.Yield();
@@ -33,13 +34,13 @@ public class AwaitNotAsync
 
     private static T sIdentity<T>(T arg) => arg;
 
-    private static async2 Task AsyncEntryPoint()
+    private static async Task AsyncEntryPoint()
     {
         // static field
         sField = GetTask(5);
         Assert.Equal(5, await sField);
 
-        // property 
+        // property
         Assert.Equal(6, await sProp);
 
         // generic identity
