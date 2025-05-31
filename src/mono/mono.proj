@@ -127,7 +127,7 @@
   </PropertyGroup>
 
   <!-- CI specific build options -->
-  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DotNetBuildOrchestrator)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(Targetsillumos)' == 'true')">
+  <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DotNetBuildFromVMR)' != 'true' and ('$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(Targetsillumos)' == 'true')">
     <_MonoCMakeArgs Include="-DENABLE_WERROR=1"/>
   </ItemGroup>
 
