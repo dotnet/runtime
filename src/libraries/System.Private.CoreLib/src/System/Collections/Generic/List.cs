@@ -666,7 +666,7 @@ namespace System.Collections.Generic
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() =>
             Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
-            GetEnumerator();
+            new EnumeratorObject(this);
 
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
@@ -1223,6 +1223,73 @@ namespace System.Collections.Generic
 
                 _index = _list._size + 1;
                 _current = default;
+                return false;
+            }
+
+            public T Current => _current!;
+
+            object? IEnumerator.Current
+            {
+                get
+                {
+                    if (_index == 0 || _index == _list._size + 1)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
+                    }
+                    return Current;
+                }
+            }
+
+            void IEnumerator.Reset()
+            {
+                if (_version != _list._version)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+                }
+
+                _index = 0;
+                _current = default;
+            }
+        }
+
+        private sealed class EnumeratorObject : IEnumerator<T>, IEnumerator
+        {
+            private readonly List<T> _list;
+            private int _index;
+            private readonly int _version;
+            private T? _current;
+
+            internal EnumeratorObject(List<T> list)
+            {
+                _list = list;
+                _index = 0;
+                _version = list._version;
+                _current = default;
+            }
+
+            void IDisposable.Dispose()
+            {
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public bool MoveNext()
+            {
+                List<T> localList = _list;
+
+                if (_version != localList._version)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+                }
+
+                if ((uint)_index < (uint)localList._size)
+                {
+                    _current = localList._items[_index];
+                    _index++;
+                    return true;
+                }
+
+                _current = default;
+                _index = localList._size + 1;
                 return false;
             }
 
