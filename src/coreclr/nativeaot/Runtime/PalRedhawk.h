@@ -68,6 +68,10 @@
 // we have to (in which case these definitions will move to CommonTypes.h).
 typedef int32_t             HRESULT;
 
+#define S_OK  0x0
+#define E_FAIL 0x80004005
+#define E_OUTOFMEMORY 0x8007000E
+
 typedef WCHAR *             LPWSTR;
 typedef const WCHAR *       LPCWSTR;
 typedef char *              LPSTR;
@@ -79,21 +83,6 @@ typedef void *              LPOVERLAPPED;
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
-typedef union _LARGE_INTEGER {
-    struct {
-#if BIGENDIAN
-        int32_t HighPart;
-        uint32_t LowPart;
-#else
-        uint32_t LowPart;
-        int32_t HighPart;
-#endif
-    } u;
-    int64_t QuadPart;
-} LARGE_INTEGER, *PLARGE_INTEGER;
-
-#define DECLARE_HANDLE(_name) typedef HANDLE _name
-
 struct FILETIME
 {
     uint32_t dwLowDateTime;
@@ -102,30 +91,12 @@ struct FILETIME
 
 typedef struct _CONTEXT CONTEXT, *PCONTEXT;
 
-#define EXCEPTION_MAXIMUM_PARAMETERS 15 // maximum number of exception parameters
-
-typedef struct _EXCEPTION_RECORD32 {
-    uint32_t      ExceptionCode;
-    uint32_t      ExceptionFlags;
-    uintptr_t  ExceptionRecord;
-    uintptr_t  ExceptionAddress;
-    uint32_t      NumberParameters;
-    uintptr_t  ExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
-} EXCEPTION_RECORD, *PEXCEPTION_RECORD;
+typedef struct _EXCEPTION_RECORD EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 
 #define EXCEPTION_CONTINUE_EXECUTION (-1)
 #define EXCEPTION_CONTINUE_SEARCH (0)
 #define EXCEPTION_EXECUTE_HANDLER (1)
 
-typedef enum _EXCEPTION_DISPOSITION {
-    ExceptionContinueExecution,
-    ExceptionContinueSearch,
-    ExceptionNestedException,
-    ExceptionCollidedUnwind
-} EXCEPTION_DISPOSITION;
-
-#define STATUS_BREAKPOINT                              ((uint32_t   )0x80000003L)
-#define STATUS_SINGLE_STEP                             ((uint32_t   )0x80000004L)
 #define STATUS_ACCESS_VIOLATION                        ((uint32_t   )0xC0000005L)
 #define STATUS_STACK_OVERFLOW                          ((uint32_t   )0xC00000FDL)
 
@@ -161,9 +132,6 @@ typedef char TCHAR;
 #define INVALID_HANDLE_VALUE    ((HANDLE)(intptr_t)-1)
 
 #define INFINITE                0xFFFFFFFF
-
-#define DUPLICATE_CLOSE_SOURCE  0x00000001
-#define DUPLICATE_SAME_ACCESS   0x00000002
 
 #define PAGE_NOACCESS           0x01
 #define PAGE_READONLY           0x02

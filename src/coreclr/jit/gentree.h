@@ -6464,7 +6464,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
 #else
@@ -6475,7 +6475,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertVectorToMask);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
 #else

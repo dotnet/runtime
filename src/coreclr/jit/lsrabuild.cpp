@@ -959,7 +959,7 @@ regMaskTP LinearScan::getKillSetForHWIntrinsic(GenTreeHWIntrinsic* node)
 #ifdef TARGET_XARCH
     switch (node->GetHWIntrinsicId())
     {
-        case NI_SSE2_MaskMove:
+        case NI_X86Base_MaskMove:
             // maskmovdqu uses edi as the implicit address register.
             // Although it is set as the srcCandidate on the address, if there is also a fixed
             // assignment for the definition of the address, resolveConflictingDefAndUse() may

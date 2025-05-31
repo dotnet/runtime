@@ -2456,25 +2456,28 @@ void ObjectAllocator::RewriteUses()
                     CallArg* const thisArg      = call->gtArgs.GetThisArg();
                     GenTree* const delegateThis = thisArg->GetNode();
 
-                    if (delegateThis->OperIs(GT_LCL_VAR))
+                    if (delegateThis->OperIs(GT_LCL_VAR, GT_LCL_ADDR))
                     {
                         GenTreeLclVarCommon* const lcl = delegateThis->AsLclVarCommon();
+                        bool const                 isStackAllocatedDelegate =
+                            delegateThis->OperIs(GT_LCL_ADDR) || m_allocator->DoesLclVarPointToStack(lcl->GetLclNum());
 
-                        if (m_allocator->DoesLclVarPointToStack(lcl->GetLclNum()))
+                        if (isStackAllocatedDelegate)
                         {
                             JITDUMP("Expanding delegate invoke [%06u]\n", m_compiler->dspTreeID(call));
+
                             // Expand the delgate invoke early, so that physical promotion has
                             // a chance to promote the delegate fields.
                             //
                             // Note the instance field may also be stack allocatable (someday)
                             //
-                            GenTree* const cloneThis      = m_compiler->gtClone(lcl);
+                            GenTree* const cloneThis      = m_compiler->gtClone(lcl, /* complexOk */ true);
                             unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
                             GenTree* const newThisAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
                                                           m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
 
-                            // For now assume the instance is heap...
+                            // For now assume the instance field is on the heap...
                             //
                             GenTree* const newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
                             thisArg->SetEarlyNode(newThis);
