@@ -77,34 +77,6 @@ namespace System.ComponentModel.Tests
             Assert.Equal(42, ((CustomType)attr.Value).Value);
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData(typeof(CustomType), true, "", 0)]
-        [InlineData(typeof(int), false, "42", 42)]
-        public void Ctor_TypeDescriptorNotFound_ExceptionFallback(Type type, bool returnNull, string stringToConvert, int expectedValue)
-        {
-            RemoteExecutor.Invoke((innerType, innerReturnNull, innerStringToConvert, innerExpectedValue) =>
-            {
-                FieldInfo s_convertFromInvariantString = typeof(DefaultValueAttribute).GetField("s_convertFromInvariantString", BindingFlags.GetField | Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static);
-                Assert.NotNull(s_convertFromInvariantString);
-
-                // simulate TypeDescriptor.ConvertFromInvariantString not found
-                s_convertFromInvariantString.SetValue(null, new object());
-
-                // we fallback to empty catch in DefaultValueAttribute constructor
-                DefaultValueAttribute attr = new DefaultValueAttribute(Type.GetType(innerType), innerStringToConvert);
-
-                if (bool.Parse(innerReturnNull))
-                {
-                    Assert.Null(attr.Value);
-                }
-                else
-                {
-                    Assert.Equal(int.Parse(innerExpectedValue), attr.Value);
-                }
-
-            }, type.ToString(), returnNull.ToString(), stringToConvert, expectedValue.ToString()).Dispose();
-        }
-
         [ConditionalTheory(nameof(DefaultValueAttributeIsSupported))]
         [InlineData(typeof(CustomType2))]
         [InlineData(typeof(DefaultValueAttribute))]

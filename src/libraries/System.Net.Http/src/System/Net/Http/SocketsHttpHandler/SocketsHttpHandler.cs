@@ -24,6 +24,9 @@ namespace System.Net.Http
         private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
 
+        // Accessed via UnsafeAccessor from HttpWebRequest.
+        internal HttpConnectionSettings Settings => _settings;
+
         private void CheckDisposedOrStarted()
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
