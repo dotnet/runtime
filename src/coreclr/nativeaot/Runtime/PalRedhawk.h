@@ -286,7 +286,7 @@ HANDLE PalLoadLibrary(const char* moduleName);
 void* PalGetProcAddress(HANDLE module, const char* functionName);
 
 #ifdef TARGET_UNIX
-int32_t __cdecl _stricmp(const char *string1, const char *string2);
+int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
 #include "PalRedhawkInline.h"
