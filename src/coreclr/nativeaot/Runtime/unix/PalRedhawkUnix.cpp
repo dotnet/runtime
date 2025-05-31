@@ -395,7 +395,7 @@ void InitializeOsPageSize()
 #endif
 }
 
-uint32_t NATIVEAOT_PALAPI PalGetOsPageSize()
+uint32_t PalGetOsPageSize()
 {
     return g_RhPageSize;
 }
@@ -410,7 +410,7 @@ bool InitializeSignalHandling();
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-bool NATIVEAOT_PALAPI PalInit()
+bool PalInit()
 {
 #ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
@@ -517,7 +517,7 @@ extern "C" void PalAttachThread(void* thread)
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
-UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
+UInt32_BOOL PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
 #ifdef TARGET_APPLE
     vm_address_t addr, taddr;
@@ -561,7 +561,7 @@ UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModul
 #endif
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
+UInt32_BOOL PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
 {
 #ifdef TARGET_APPLE
     kern_return_t ret;
@@ -578,7 +578,7 @@ UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress, size_
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
-UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
@@ -592,7 +592,7 @@ UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
     return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
-void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds)
+void PalSleep(uint32_t milliseconds)
 {
 #if HAVE_CLOCK_NANOSLEEP
     timespec endTime;
@@ -614,7 +614,7 @@ void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds)
 #endif // HAVE_CLOCK_NANOSLEEP
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI __stdcall PalSwitchToThread()
+UInt32_BOOL __stdcall PalSwitchToThread()
 {
     // sched_yield yields to another thread in the current process.
     sched_yield();
@@ -625,7 +625,7 @@ UInt32_BOOL NATIVEAOT_PALAPI __stdcall PalSwitchToThread()
     return false;
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled()
+UInt32_BOOL PalAreShadowStacksEnabled()
 {
     return false;
 }
@@ -644,7 +644,7 @@ UInt32_BOOL PalCloseHandle(HANDLE handle)
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
-HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
+HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
 {
     UnixEvent* event = new (nothrow) UnixEvent(manualReset, initialState);
     if (event == NULL)
@@ -661,7 +661,7 @@ HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAtt
 
 typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
-bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
+bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
 #ifdef HOST_WASM
     // No threads, so we can't start one
@@ -700,7 +700,7 @@ bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _
     return st == 0;
 }
 
-bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
+bool PalSetCurrentThreadName(const char* name)
 {
     // Ignore requests to set the main thread name because
     // it causes the value returned by Process.ProcessName to change.
@@ -713,22 +713,22 @@ bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
     return true;
 }
 
-bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
 }
 
-bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
 
@@ -800,7 +800,7 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     return prot;
 }
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(size_t size, uint32_t protect)
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(size_t size, uint32_t protect)
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
@@ -818,12 +818,12 @@ _Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtua
     return pMappedMemory;
 }
 
-void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)
+void PalVirtualFree(_In_ void* pAddress, size_t size)
 {
     munmap(pAddress, size);
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
+UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
@@ -979,12 +979,12 @@ bool InitializeSignalHandling()
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
 }
 
-HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 {
     return defaultHijackTarget;
 }
 
-void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack)
+void PalHijack(Thread* pThreadToHijack)
 {
     pThreadToHijack->SetActivationPending(true);
 
@@ -1025,7 +1025,7 @@ uint32_t PalWaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_B
     return unixEvent->Wait(milliseconds);
 }
 
-uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     // Only a single handle wait for event is supported
     ASSERT(handleCount == 1);
