@@ -3,9 +3,7 @@
 
 //
 // FCall is a high-performance call into unmanaged runtime code from managed code.
-// The managed code calls directly to the FCall entry point.  It is possible to do
-// operations that need to have a frame within an FCall, you need to manually set up
-// the frame before you do such operations.
+// The managed code calls directly to the FCall entry point.
 
 // Causing GC or EH in an FCALL is illegal. QCalls should be used instead.
 
