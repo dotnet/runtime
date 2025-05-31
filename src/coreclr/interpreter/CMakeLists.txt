@@ -10,6 +10,8 @@ set(INTERPRETER_SOURCES
   interpconfig.cpp
   eeinterp.cpp
   stackmap.cpp
+  naming.cpp
+  methodset.cpp
   ../../native/containers/dn-simdhash.c
   ../../native/containers/dn-simdhash-ptr-ptr.c)
 

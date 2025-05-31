@@ -64,9 +64,7 @@ CorJitResult CILInterp::compileMethod(ICorJitInfo*         compHnd,
         // interpret everything on wasm
         doInterpret = true;
 #else
-        // TODO: replace this by something like the JIT does to support multiple methods being specified
-        const char *methodToInterpret = InterpConfig.Interpreter();
-        doInterpret = (methodName != NULL && strcmp(methodName, methodToInterpret) == 0);
+        doInterpret = (InterpConfig.Interpreter().contains(compHnd, methodInfo->ftn, compHnd->getMethodClass(methodInfo->ftn), &methodInfo->args));
 #endif
 
         if (doInterpret)
