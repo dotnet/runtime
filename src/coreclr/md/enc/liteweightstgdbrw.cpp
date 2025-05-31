@@ -23,7 +23,6 @@
 #include "pedecoder.h"
 
 #include <log.h>
-#include <minipal/file.h>
 
 //*****************************************************************************
 // Checks the given storage object to see if it is an NT PE image.
