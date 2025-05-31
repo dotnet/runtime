@@ -11,6 +11,7 @@
 #include "methodcontext.h"
 #include "tocfile.h"
 #include <stdio.h>
+#include <vector>
 
 struct MethodContextBuffer
 {
@@ -82,12 +83,7 @@ private:
     int Offset;
     int Increment;
 
-    struct StringList
-    {
-        StringList* next;
-        std::string hash;
-    };
-    StringList* excludedMethodsList;
+    std::vector<std::string> excludedMethodsList;
 
     // Binary search to get this method number from the index
     // Returns -1 for not found, or -2 for not indexed

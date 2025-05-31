@@ -8,6 +8,8 @@
 #include "standardpch.h"
 #include "mclist.h"
 #include "logging.h"
+#include <fstream>
+#include <sstream>
 
 bool MCList::processArgAsMCL(char* input, int* count, int** list)
 {
@@ -151,71 +153,23 @@ checkMCL: // check that mcl list is increasing only
 /* static */
 bool MCList::getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes)
 {
-    HANDLE hFile = CreateFileA(nameOfInput, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-        LogError("Unable to open '%s'. GetLastError()=%u", nameOfInput, GetLastError());
-        return false;
-    }
-    LARGE_INTEGER DataTemp;
-    if (!GetFileSizeEx(hFile, &DataTemp))
-    {
-        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
-        return false;
-    }
+    std::ifstream    fs(nameOfInput);
+    std::vector<int> indexes;
+    std::string      line;
 
-    if (DataTemp.QuadPart > MAXMCLFILESIZE)
+    while (std::getline(fs, line))
     {
-        LogError("Size %d exceeds max size of %d", DataTemp.QuadPart, MAXMCLFILESIZE);
-        return false;
-    }
-
-    int   sz   = DataTemp.u.LowPart;
-    char* buff = new char[sz];
-    DWORD bytesRead;
-    if (ReadFile(hFile, buff, sz, &bytesRead, nullptr) == 0)
-    {
-        LogError("ReadFile failed. GetLastError()=%u", GetLastError());
-        delete[] buff;
-        return false;
-    }
-    if (!CloseHandle(hFile))
-    {
-        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
-        delete[] buff;
-        return false;
-    }
-
-    // Count the lines. Note that the last line better be terminated by a newline.
-    int lineCount = 0;
-    for (int i = 0; i < sz; i++)
-    {
-        if (buff[i] == '\n')
+        int n;
+        // This will skip empty lines and lines with no digits.
+        if (std::istringstream(std::move(line)) >> n)
         {
-            lineCount++;
+            indexes.push_back(n);
         }
     }
 
-    int* indexes    = new int[lineCount];
-    int  indexCount = 0;
-    int  i          = 0;
-    while (i < sz)
-    {
-        // seek the first number on the line. This will skip empty lines and lines with no digits.
-        while (!isdigit((unsigned char)buff[i]))
-            i++;
-        // read in the number
-        indexes[indexCount++] = atoi(&buff[i]);
-        // seek to the start of next line
-        while ((i < sz) && (buff[i] != '\n'))
-            i++;
-        i++;
-    }
-    delete[] buff;
-
-    *pIndexCount = indexCount;
-    *pIndexes    = indexes;
+    *pIndexCount = (int)indexes.size();
+    *pIndexes    = new int[indexes.size()];
+    std::copy(indexes.begin(), indexes.end(), *pIndexes);
     return true;
 }
 
