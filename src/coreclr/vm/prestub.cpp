@@ -2016,9 +2016,11 @@ extern "C" void STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlo
     }
     frames(pTransitionBlock);
 
+    StackVal retVal;
+
     frames.interpMethodContextFrame.startIp = (int32_t*)byteCodeAddr;
     frames.interpMethodContextFrame.pStack = sp;
-    frames.interpMethodContextFrame.pRetVal = sp;
+    frames.interpMethodContextFrame.pRetVal = (int8_t*)&retVal;
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
 

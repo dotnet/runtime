@@ -16,6 +16,7 @@ struct StackVal
     {
         int32_t i;
         int64_t l;
+        size_t s;
         float f;
         double d;
         void *o;
@@ -61,6 +62,18 @@ struct InterpThreadContext
     ~InterpThreadContext();
 };
 
-void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
+struct ExceptionClauseArgs
+{
+    // Address of the exception clause IR code
+    const int32_t *ip;
+    // Frame in which context the exception clause is executed
+    InterpMethodContextFrame *pFrame;
+    // Set to true if the exception clause is a filter
+    bool isFilter;
+    // The exception object passed to the filter or catch clause
+    OBJECTREF throwable;
+};
+
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs = NULL);
 
 #endif
