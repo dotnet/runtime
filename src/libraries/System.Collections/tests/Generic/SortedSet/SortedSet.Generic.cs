@@ -62,6 +62,50 @@ namespace System.Collections.Tests
             Assert.Equal(new[] { 3, 5, 7 }, set);
         }
 
+        // https://github.com/dotnet/runtime/issues/102118
+        [Fact]
+        public void SortedSet_Generic_SetEquals_UnbalancedWithDup()
+        {
+            var data = new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 17 };
+            var set = new SortedSet<int>();
+
+            foreach(var item in data)
+            {
+                set.Add(item);
+            }
+
+            Assert.True(set.SetEquals(data));
+        }
+
+        [Fact]
+        public void SortedSet_Generic_SetEquals_CountAboveThresholdInGetInternalIndexOfBitHelperLength()
+        {
+            const int AboveInternalIndexOfCountThreshold = 255;
+
+            var setData = new int[AboveInternalIndexOfCountThreshold];
+            for(int i = 0; i < AboveInternalIndexOfCountThreshold; i++)
+            {
+                setData[i] = i;
+            }
+            var set = new SortedSet<int>(setData);
+
+            var superSetData = new int[AboveInternalIndexOfCountThreshold + 1];
+            Array.Copy(setData, superSetData, AboveInternalIndexOfCountThreshold);
+            superSetData[AboveInternalIndexOfCountThreshold] = -1;
+
+            var subSetData = new int[AboveInternalIndexOfCountThreshold - 1];
+            Array.Copy(setData, subSetData, AboveInternalIndexOfCountThreshold - 1);
+
+            var differentSet = new int[AboveInternalIndexOfCountThreshold];
+            Array.Copy(setData, differentSet, AboveInternalIndexOfCountThreshold);
+            differentSet[0] = -1;
+
+            Assert.True(set.SetEquals(setData));
+            Assert.False(set.SetEquals(superSetData));
+            Assert.False(set.SetEquals(subSetData));
+            Assert.False(set.SetEquals(differentSet));
+        }
+
         [Fact]
         public void SortedSet_Generic_GetViewBetween_MinMax_Exhaustive()
         {
