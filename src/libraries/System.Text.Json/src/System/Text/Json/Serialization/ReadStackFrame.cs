@@ -73,14 +73,33 @@ namespace System.Text.Json
         public ArgumentState? CtorArgumentState;
 
         // Whether to use custom number handling.
-        public JsonNumberHandling? NumberHandling;
+        // The underlying type for JsonNumberHandling is int, so Nullable<JsonNumberHandling> requires 8 bytes.
+        // Instead we store it as a bool and JsonNumberHandling for 5 bytes.
+        private JsonNumberHandling _numberHandling;
+        private bool _numberHandlingIsSet;
+        public JsonNumberHandling? NumberHandling
+        {
+            readonly get => _numberHandlingIsSet ? _numberHandling : null;
+            set
+            {
+                if (value is null)
+                {
+                    _numberHandlingIsSet = false;
+                }
+                else
+                {
+                    _numberHandling = value.Value;
+                    _numberHandlingIsSet = true;
+                }
+            }
+        }
 
         // Represents required properties which have value assigned.
         // Each bit corresponds to a required property.
         // False means that property is not set (not yet occurred in the payload).
         // Length of the BitArray is equal to number of required properties.
         // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
-        public BitArray? RequiredPropertiesSet;
+        public ValueBitArray RequiredPropertiesSet;
 
         // Tracks state related to property population.
         public bool HasParentObject;
@@ -132,7 +151,6 @@ namespace System.Text.Json
         {
             if (propertyInfo.IsRequired)
             {
-                Debug.Assert(RequiredPropertiesSet != null);
                 RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
             }
         }
@@ -140,11 +158,9 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
         {
-            Debug.Assert(RequiredPropertiesSet == null);
-
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
+                RequiredPropertiesSet = new ValueBitArray(typeInfo.NumberOfRequiredProperties);
             }
         }
 
@@ -153,11 +169,9 @@ namespace System.Text.Json
         {
             if (typeInfo.NumberOfRequiredProperties > 0)
             {
-                Debug.Assert(RequiredPropertiesSet != null);
-
                 if (!RequiredPropertiesSet.HasAllSet())
                 {
-                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, ref RequiredPropertiesSet);
                 }
             }
         }
