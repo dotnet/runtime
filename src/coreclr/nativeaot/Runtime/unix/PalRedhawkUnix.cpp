@@ -500,7 +500,7 @@ FCIMPLEND
 // It fails fast if a different thread was already registered.
 // Parameters:
 //  thread        - thread to attach
-extern "C" void PalAttachThread(void* thread)
+void PalAttachThread(void* thread)
 {
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_setspecific(key, thread) != 0)
@@ -1048,7 +1048,7 @@ extern "C" void _mm_pause()
 }
 #endif
 
-extern "C" int32_t _stricmp(const char *string1, const char *string2)
+int32_t _stricmp(const char *string1, const char *string2)
 {
     return strcasecmp(string1, string2);
 }
@@ -1155,7 +1155,7 @@ void PalGetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
-extern "C" uint64_t PalGetCurrentOSThreadId()
+uint64_t PalGetCurrentOSThreadId()
 {
     return (uint64_t)minipal_get_current_thread_id();
 }
