@@ -31,6 +31,23 @@ bool install_info::print_environment(const pal::char_t* leading_whitespace)
     return found_any;
 }
 
+bool install_info::try_get_install_location(pal::architecture arch, pal::string_t& out_install_location, bool* out_is_registered)
+{
+    pal::string_t install_location;
+    bool is_registered = pal::get_dotnet_self_registered_dir_for_arch(arch, &install_location);
+    bool found = is_registered
+        || (pal::get_default_installation_dir_for_arch(arch, &install_location) && pal::directory_exists(install_location));
+    if (!found)
+        return false;
+
+    remove_trailing_dir_separator(&install_location);
+    out_install_location = install_location;
+    if (out_is_registered != nullptr)
+        *out_is_registered = is_registered;
+
+    return true;
+}
+
 bool install_info::enumerate_other_architectures(std::function<void(pal::architecture, const pal::string_t&, bool)> callback)
 {
     bool found_any = false;
@@ -40,13 +57,11 @@ bool install_info::enumerate_other_architectures(std::function<void(pal::archite
         if (arch == get_current_arch())
             continue;
 
+        bool is_registered;
         pal::string_t install_location;
-        bool is_registered = pal::get_dotnet_self_registered_dir_for_arch(arch, &install_location);
-        if (is_registered
-            || (pal::get_default_installation_dir_for_arch(arch, &install_location) && pal::directory_exists(install_location)))
+        if (try_get_install_location(arch, install_location, &is_registered))
         {
             found_any = true;
-            remove_trailing_dir_separator(&install_location);
             callback(arch, install_location, is_registered);
         }
     }

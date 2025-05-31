@@ -462,26 +462,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [InlineData(true)]
         [InlineData(null)]
         [InlineData(false)]
-        public void ListSdks(bool? multiLevelLookup)
-        {
-            // Multi-level lookup is only supported on Windows.
-            if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
-                return;
-
-            var expectedList = AddSdkVersionsAndGetExpectedList();
-            string expectedOutput = string.Join(string.Empty, expectedList.Select(t => $"{t.version} [{t.rootPath}]{Environment.NewLine}"));
-
-            // !!IMPORTANT!!: This test verifies the exact match of the entire output of the command (not a substring!)
-            // This is important as the output of --list-sdks is considered machine readable and thus must not change even in a minor way (unintentionally)
-            RunTest("--list-sdks", multiLevelLookup)
-                .Should().Pass()
-                .And.HaveStdOut(expectedOutput);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(null)]
-        [InlineData(false)]
         public void SdkResolutionError(bool? multiLevelLookup)
         {
             // Multi-level lookup is only supported on Windows.
@@ -499,26 +479,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             RunTest("help", multiLevelLookup)
                 .Should().Fail()
                 .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
-                .And.HaveStdOutContaining(expectedOutput);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(null)]
-        [InlineData(false)]
-        public void DotnetInfo(bool? multiLevelLookup)
-        {
-            // Multi-level lookup is only supported on Windows.
-            if (!OperatingSystem.IsWindows() && multiLevelLookup != false)
-                return;
-
-            var expectedList = AddSdkVersionsAndGetExpectedList();
-            string expectedOutput =
-                $".NET SDKs installed:{Environment.NewLine}" +
-                string.Join(string.Empty, expectedList.Select(t => $"  {t.version} [{t.rootPath}]{Environment.NewLine}"));
-
-            RunTest("--info", multiLevelLookup)
-                .Should().Pass()
                 .And.HaveStdOutContaining(expectedOutput);
         }
 

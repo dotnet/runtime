@@ -353,16 +353,16 @@ void command_line::print_muxer_usage(bool is_sdk_present)
     for (const auto& opt : known_opts)
     {
         const host_option &arg = get_host_option(opt);
-        trace::println(_X("  %s %-*s  %s"), arg.option, 29 - (int)pal::strlen(arg.option), arg.argument, arg.description);
+        trace::println(_X("  %s %-*s  %s"), arg.option, 30 - (int)pal::strlen(arg.option), arg.argument, arg.description);
     }
-    trace::println(_X("  --list-runtimes                 Display the installed runtimes"));
-    trace::println(_X("  --list-sdks                     Display the installed SDKs"));
+    trace::println(_X("  --list-runtimes [--arch <arch>]  Display the installed runtimes."));
+    trace::println(_X("  --list-sdks [--arch <arch>]      Display the installed SDKs."));
 
     if (!is_sdk_present)
     {
         trace::println();
         trace::println(_X("Common Options:"));
-        trace::println(_X("  -h|--help                       Displays this help."));
-        trace::println(_X("  --info                          Display .NET information."));
+        trace::println(_X("  -h|--help                        Displays this help."));
+        trace::println(_X("  --info                           Display .NET information."));
     }
 }
