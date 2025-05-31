@@ -589,7 +589,7 @@ inline bool leafInRange(GenTree* leaf, int lower, int upper, int multiple)
 
 inline bool leafAddInRange(GenTree* leaf, int lower, int upper, int multiple = 1)
 {
-    if (leaf->OperGet() != GT_ADD)
+    if (!leaf->OperIs(GT_ADD))
     {
         return false;
     }

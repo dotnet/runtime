@@ -786,7 +786,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                                         emitSwCase);
                     }
                 }
-                else if (node->TypeGet() == TYP_VOID)
+                else if (node->TypeIs(TYP_VOID))
                 {
                     genHWIntrinsic_R_RM(node, ins, simdSize, op1Reg, op2, instOptions);
                 }
@@ -2806,7 +2806,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, maskReg, maskReg, maskReg, instOptions);
             }
 
-            bool isVector128GatherWithVector256Index = (targetType == TYP_SIMD16) && (indexOp->TypeGet() == TYP_SIMD32);
+            bool isVector128GatherWithVector256Index = (targetType == TYP_SIMD16) && indexOp->TypeIs(TYP_SIMD32);
 
             // hwintrinsiclistxarch.h uses Dword index instructions in default
             if (varTypeIsLong(node->GetAuxiliaryType()))

@@ -185,7 +185,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
         return nullptr;
     }
 
-    if (tree->OperGet() == GT_ARR_LENGTH)
+    if (tree->OperIs(GT_ARR_LENGTH))
     {
         objectRefPtr = tree->AsOp()->gtOp1;
         propKind     = optPropKind::OPK_ARRAYLEN;
@@ -282,8 +282,8 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
 
         if (actualValClone->gtType != tree->gtType)
         {
-            assert(actualValClone->gtType == TYP_LONG);
-            assert(tree->gtType == TYP_INT);
+            assert(actualValClone->TypeIs(TYP_LONG));
+            assert(tree->TypeIs(TYP_INT));
             assert((actualConstVal >= 0) && (actualConstVal <= INT32_MAX));
             actualValClone->gtType = tree->gtType;
         }
@@ -422,7 +422,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
 #ifdef DEBUG
-    if (tree->OperGet() == GT_NULLCHECK)
+    if (tree->OperIs(GT_NULLCHECK))
     {
         optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
                             compCurBB);
@@ -476,7 +476,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         folded = true;
     }
 
-    if ((tree->OperGet() == GT_NULLCHECK) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
+    if (tree->OperIs(GT_NULLCHECK) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
     {
         nullCheckMap->Set(tree->gtGetOp1()->AsLclVarCommon()->GetLclNum(), tree,
                           LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
@@ -518,13 +518,13 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 
     ssize_t offsetValue = 0;
 
-    if ((addr->OperGet() == GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
+    if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
         offsetValue += addr->gtGetOp2()->AsIntConCommon()->IconValue();
         addr = addr->gtGetOp1();
     }
 
-    if (addr->OperGet() != GT_LCL_VAR)
+    if (!addr->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
@@ -546,7 +546,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
     {
         GenTree* nullCheckAddr = nullCheckTree->AsIndir()->Addr();
-        if ((nullCheckAddr->OperGet() != GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
+        if (!nullCheckAddr->OperIs(GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
         {
             nullCheckTree = nullptr;
         }
@@ -575,21 +575,21 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         }
 
         GenTree* defValue = defNode->Data();
-        if (defValue->OperGet() != GT_COMMA)
+        if (!defValue->OperIs(GT_COMMA))
         {
             return nullptr;
         }
 
         GenTree* commaOp1EffectiveValue = defValue->gtGetOp1()->gtEffectiveVal();
 
-        if (commaOp1EffectiveValue->OperGet() != GT_NULLCHECK)
+        if (!commaOp1EffectiveValue->OperIs(GT_NULLCHECK))
         {
             return nullptr;
         }
 
         GenTree* nullCheckAddress = commaOp1EffectiveValue->gtGetOp1();
 
-        if ((nullCheckAddress->OperGet() != GT_LCL_VAR) || (defValue->gtGetOp2()->OperGet() != GT_ADD))
+        if (!nullCheckAddress->OperIs(GT_LCL_VAR) || (defValue->gtGetOp2()->OperGet() != GT_ADD))
         {
             return nullptr;
         }
@@ -599,7 +599,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         GenTree* additionNode = defValue->gtGetOp2();
         GenTree* additionOp1  = additionNode->gtGetOp1();
         GenTree* additionOp2  = additionNode->gtGetOp2();
-        if ((additionOp1->OperGet() == GT_LCL_VAR) &&
+        if (additionOp1->OperIs(GT_LCL_VAR) &&
             (additionOp1->AsLclVarCommon()->GetLclNum() == nullCheckAddress->AsLclVarCommon()->GetLclNum()) &&
             (additionOp2->IsCnsIntOrI()))
         {

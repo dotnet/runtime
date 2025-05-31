@@ -1092,7 +1092,7 @@ private:
                     {
                         // We should always have a return temp if we return results by value
                         // and that value is used.
-                        assert((origCall->TypeGet() == TYP_VOID) || returnValueUnused);
+                        assert(origCall->TypeIs(TYP_VOID) || returnValueUnused);
                         newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);

@@ -512,7 +512,7 @@ void Compiler::gsParamsToShadows()
         }
 
 #if defined(TARGET_X86) && defined(FEATURE_IJW)
-        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && (varDsc->TypeGet() == TYP_STRUCT))
+        if (lclNum < info.compArgsCount && argRequiresSpecialCopy(lclNum) && varDsc->TypeIs(TYP_STRUCT))
         {
             JITDUMP("arg%02u requires special copy, using special copy helper to copy to shadow var V%02u\n", lclNum,
                     shadowVarNum);

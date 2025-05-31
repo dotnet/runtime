@@ -997,6 +997,17 @@ public:
         return (var_types)lvType;
     }
 
+    bool TypeIs(var_types type) const
+    {
+        return TypeGet() == type;
+    }
+
+    template <typename... T>
+    bool TypeIs(var_types type, T... rest) const
+    {
+        return TypeIs(type) || TypeIs(rest...);
+    }
+
     // NormalizeOnLoad Rules:
     //     1. All small locals are actually TYP_INT locals.
     //     2. NOL locals are such that not all definitions can be controlled by the compiler and so the upper bits can
@@ -1030,7 +1041,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -4315,7 +4326,7 @@ public:
     bool lvaMapSimd12ToSimd16(unsigned varNum)
     {
         LclVarDsc* varDsc = lvaGetDesc(varNum);
-        assert(varDsc->TypeGet() == TYP_SIMD12);
+        assert(varDsc->TypeIs(TYP_SIMD12));
 
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 
