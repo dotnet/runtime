@@ -926,7 +926,7 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+extern "C" HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
     // the module from ever unloading.
