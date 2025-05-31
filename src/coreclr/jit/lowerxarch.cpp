@@ -7862,7 +7862,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX512_ConvertToVector256UInt32WithSaturation:
                 {
                     // These intrinsics are "ins reg/mem, xmm"
-                    instruction  ins       = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, comp);
+                    instruction  ins       = HWIntrinsicInfo::lookupIns(hwintrinsic);
                     insTupleType tupleType = emitter::insTupleTypeInfo(ins);
                     unsigned     simdSize  = hwintrinsic->GetSimdSize();
                     unsigned     memSize   = 0;
@@ -8800,7 +8800,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case HW_Category_SimpleSIMD:
         case HW_Category_IMM:
         {
-            instruction  ins       = HWIntrinsicInfo::lookupIns(parentIntrinsicId, parentBaseType, comp);
+            instruction  ins       = HWIntrinsicInfo::lookupIns(parentNode);
             insTupleType tupleType = emitter::insTupleTypeInfo(ins);
 
             switch (parentIntrinsicId)
@@ -10375,7 +10375,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                         var_types      op2SimdBaseType = op2->AsHWIntrinsic()->GetSimdBaseType();
 
                                         instruction ins =
-                                            HWIntrinsicInfo::lookupIns(op2IntrinsicId, op2SimdBaseType, comp);
+                                            HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
 
                                         unsigned expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
 
@@ -10390,89 +10390,73 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                         if (actualMaskBaseSize != expectedMaskBaseSize)
                                         {
+                                            // Some intrinsics are effectively bitwise operations and so we
+                                            // can freely update them to match the size of the actual mask
+
+                                            bool supportsMaskBaseSize1Or2 = false;
+                                            bool supportsMaskBaseSize4Or8 = false;
+
                                             switch (op2IntrinsicId)
                                             {
-                                                case NI_Vector128_ToVector256:
-                                                case NI_Vector128_ToVector256Unsafe:
-                                                case NI_Vector128_ToVector512:
-                                                case NI_Vector256_GetLower:
-                                                case NI_Vector256_ToVector512:
-                                                case NI_Vector256_ToVector512Unsafe:
-                                                case NI_Vector512_GetLower:
-                                                case NI_Vector512_GetLower128:
                                                 case NI_X86Base_And:
                                                 case NI_X86Base_AndNot:
                                                 case NI_X86Base_Or:
                                                 case NI_X86Base_Xor:
                                                 case NI_AVX_And:
                                                 case NI_AVX_AndNot:
-                                                case NI_AVX_BroadcastVector128ToVector256:
-                                                case NI_AVX_ExtractVector128:
-                                                case NI_AVX_InsertVector128:
                                                 case NI_AVX_Or:
                                                 case NI_AVX_Xor:
                                                 case NI_AVX2_And:
                                                 case NI_AVX2_AndNot:
-                                                case NI_AVX2_BroadcastVector128ToVector256:
-                                                case NI_AVX2_ExtractVector128:
-                                                case NI_AVX2_InsertVector128:
                                                 case NI_AVX2_Or:
                                                 case NI_AVX2_Xor:
                                                 case NI_AVX512_And:
                                                 case NI_AVX512_AndNot:
+                                                case NI_AVX512_Shuffle2x128:
+                                                case NI_AVX512_Shuffle4x128:
+                                                case NI_AVX512_Or:
+                                                case NI_AVX512_Xor:
+                                                {
+                                                    // These intrinsics support embedded broadcast and have masking support for 4 or 8
+                                                    assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
+
+                                                    if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, op2->AsHWIntrinsic()->Op(2)))
+                                                    {
+                                                        // We cannot change the base type if we've already contained a broadcast
+                                                        supportsMaskBaseSize4Or8 = true;
+                                                    }
+                                                    break;
+                                                }
+
+                                                case NI_AVX512_TernaryLogic:
+                                                {
+                                                    // These intrinsics support embedded broadcast and have masking support for 4 or 8
+                                                    assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
+
+                                                    if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, op2->AsHWIntrinsic()->Op(3)))
+                                                    {
+                                                        // We cannot change the base type if we've already contained a broadcast
+                                                        supportsMaskBaseSize4Or8 = true;
+                                                    }
+                                                    break;
+                                                }
+
+                                                case NI_AVX_BroadcastVector128ToVector256:
+                                                case NI_AVX_ExtractVector128:
+                                                case NI_AVX_InsertVector128:
+                                                case NI_AVX2_BroadcastVector128ToVector256:
+                                                case NI_AVX2_ExtractVector128:
+                                                case NI_AVX2_InsertVector128:
                                                 case NI_AVX512_BroadcastVector128ToVector512:
                                                 case NI_AVX512_BroadcastVector256ToVector512:
                                                 case NI_AVX512_ExtractVector128:
                                                 case NI_AVX512_ExtractVector256:
                                                 case NI_AVX512_InsertVector128:
                                                 case NI_AVX512_InsertVector256:
-                                                case NI_AVX512_Or:
-                                                case NI_AVX512_Shuffle2x128:
-                                                case NI_AVX512_Shuffle4x128:
-                                                case NI_AVX512_TernaryLogic:
-                                                case NI_AVX512_Xor:
                                                 {
-                                                    // Some intrinsics are effectively bitwise operations and so we
-                                                    // can freely update them to match the size of the actual mask
-
-                                                    if (expectedMaskBaseSize == 4)
-                                                    {
-                                                        if (actualMaskBaseSize == 8)
-                                                        {
-                                                            if (op2SimdBaseType == TYP_FLOAT)
-                                                            {
-                                                                op2AdjustedSimdBaseJitType = CORINFO_TYPE_DOUBLE;
-                                                            }
-                                                            else if (op2SimdBaseType == TYP_INT)
-                                                            {
-                                                                op2AdjustedSimdBaseJitType = CORINFO_TYPE_LONG;
-                                                            }
-                                                            else
-                                                            {
-                                                                assert(op2SimdBaseType == TYP_UINT);
-                                                                op2AdjustedSimdBaseJitType = CORINFO_TYPE_ULONG;
-                                                            }
-                                                        }
-                                                    }
-                                                    else if (expectedMaskBaseSize == 8)
-                                                    {
-                                                        if (actualMaskBaseSize == 4)
-                                                        {
-                                                            if (op2SimdBaseType == TYP_DOUBLE)
-                                                            {
-                                                                op2AdjustedSimdBaseJitType = CORINFO_TYPE_FLOAT;
-                                                            }
-                                                            else if (op2SimdBaseType == TYP_LONG)
-                                                            {
-                                                                op2AdjustedSimdBaseJitType = CORINFO_TYPE_INT;
-                                                            }
-                                                            else
-                                                            {
-                                                                assert(op2SimdBaseType == TYP_ULONG);
-                                                                op2AdjustedSimdBaseJitType = CORINFO_TYPE_UINT;
-                                                            }
-                                                        }
-                                                    }
+                                                    // These intrinsics don't support embedded broadcast and have masking support for 4 or 8
+                                                    assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
+                                                    supportsMaskBaseSize4Or8 = true;
                                                     break;
                                                 }
 
@@ -10481,12 +10465,72 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                                     break;
                                                 }
                                             }
+
+                                            if (supportsMaskBaseSize1Or2)
+                                            {
+                                                if (actualMaskBaseSize == 1)
+                                                {
+                                                    if (varTypeIsSigned(op2SimdBaseType))
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_BYTE;
+                                                    }
+                                                    else
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_UBYTE;
+                                                    }
+                                                }
+                                                else if (actualMaskBaseSize == 2)
+                                                {
+                                                    if (varTypeIsSigned(op2SimdBaseType))
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_SHORT;
+                                                    }
+                                                    else
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_USHORT;
+                                                    }
+                                                }
+                                            }
+
+                                            if (supportsMaskBaseSize4Or8)
+                                            {
+                                                if (actualMaskBaseSize == 8)
+                                                {
+                                                    if (varTypeIsFloating(op2SimdBaseType))
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_DOUBLE;
+                                                    }
+                                                    else if (varTypeIsSigned(op2SimdBaseType))
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_LONG;
+                                                    }
+                                                    else
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_ULONG;
+                                                    }
+                                                }
+                                                else if (actualMaskBaseSize == 4)
+                                                {
+                                                    if (varTypeIsFloating(op2SimdBaseType))
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_FLOAT;
+                                                    }
+                                                    else if (varTypeIsSigned(op2SimdBaseType))
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_INT;
+                                                    }
+                                                    else
+                                                    {
+                                                        op2AdjustedSimdBaseJitType = CORINFO_TYPE_UINT;
+                                                    }
+                                                }
+                                            }
                                         }
 
                                         if (op2AdjustedSimdBaseJitType != CORINFO_TYPE_UNDEF)
                                         {
-                                            ins = HWIntrinsicInfo::lookupIns(op2IntrinsicId, op2SimdBaseType, comp);
-                                            unsigned expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
+                                            ins = HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
+                                            expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
                                         }
 
                                         unsigned expectedMaskSize =

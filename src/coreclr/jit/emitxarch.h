@@ -943,7 +943,7 @@ void emitIns_R_R_AR_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, int ival);
 
 void emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival);
-void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival);
+void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival, insOpts instOptions = INS_OPTS_NONE);
 void emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm);
 
 void emitIns_R_R_C_I(instruction          ins,
@@ -1008,12 +1008,12 @@ void emitIns_R_R_R_R(instruction ins,
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
+void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_S(
     instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
-void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val);
+void emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_R_C(instruction          ins,
                  emitAttr             attr,

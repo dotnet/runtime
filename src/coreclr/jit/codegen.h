@@ -938,18 +938,15 @@ protected:
     void genHWIntrinsic_R_R_R_RM_I(
         GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival, insOpts instOptions);
 
-    void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE41Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
-    void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
+    void genBaseIntrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genSSE41Intrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genSSE42Intrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genFMAIntrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
+    void genPermuteVar2x(GenTreeHWIntrinsic* node, instruction ins, insOpts instOptions);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
-    void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
 
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
@@ -960,8 +957,7 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 
-    void genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* lastOp);
-
+    void genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* embRndOp, instruction ins, insOpts instOptions);
     static insOpts AddEmbBroadcastMode(insOpts instOptions);
 #endif // defined(TARGET_XARCH)
 

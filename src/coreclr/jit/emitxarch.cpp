@@ -6050,12 +6050,13 @@ void emitter::spillIntArgRegsToShadowSlots()
 // instruction for a GT_IND node.
 //
 // Arguments:
-//    ins - the instruction to emit
-//    attr - the instruction operand size
-//    dstReg - the destination register
-//    mem - the GT_IND node
+//    ins         - the instruction to emit
+//    attr        - the instruction operand size
+//    dstReg      - the destination register
+//    mem         - the GT_IND node
+//    instOptions - The options used to when generating the instruction.
 //
-void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem)
+void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, GenTreeIndir* mem, insOpts instOptions)
 {
     assert(mem->OperIs(GT_IND, GT_NULLCHECK));
 
@@ -6065,7 +6066,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
-        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset);
+        emitIns_R_S(ins, attr, dstReg, varNode->GetLclNum(), offset, instOptions);
 
         // Updating variable liveness after instruction was emitted.
         // TODO-Review: it appears that this call to genUpdateLife does nothing because it
@@ -6083,8 +6084,13 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     id->idIns(ins);
     id->idReg1(dstReg);
     emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_RRD_ARD), ins);
+
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
+
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
+
     dispIns(id);
     emitCurIGsize += sz;
 }
@@ -6094,11 +6100,12 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 // instruction for a GT_STOREIND node.
 //
 // Arguments:
-//    ins - the instruction to emit
-//    attr - the instruction operand size
-//    mem - the GT_STOREIND node
+//    ins         - the instruction to emit
+//    attr        - the instruction operand size
+//    mem         - the GT_STOREIND node
+//    instOptions - The options used to when generating the instruction.
 //
-void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem)
+void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* mem, insOpts instOptions)
 {
     assert(mem->OperIs(GT_STOREIND));
 
@@ -6122,7 +6129,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
         if (data->isContainedIntOrIImmed())
         {
-            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
+            emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue(), instOptions);
         }
 #if defined(FEATURE_HW_INTRINSICS)
         else if (data->OperIsHWIntrinsic() && data->isContained())
@@ -6134,21 +6141,21 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
 
             if (numArgs == 1)
             {
-                emitIns_S_R(ins, attr, op1->GetRegNum(), varNode->GetLclNum(), offset);
+                emitIns_S_R(ins, attr, op1->GetRegNum(), varNode->GetLclNum(), offset, instOptions);
             }
             else
             {
                 assert(numArgs == 2);
 
                 int icon = static_cast<int>(hwintrinsic->Op(2)->AsIntConCommon()->IconValue());
-                emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon);
+                emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon, instOptions);
             }
         }
 #endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
-            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset);
+            emitIns_S_R(ins, attr, data->GetRegNum(), varNode->GetLclNum(), offset, instOptions);
         }
 
         // Updating variable liveness after instruction was emitted
@@ -6167,7 +6174,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         id->idIns(ins);
         emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_CNS), ins);
         sz = emitInsSizeAM(id, insCodeMI(ins), icon);
-        id->idCodeSize(sz);
     }
 #if defined(FEATURE_HW_INTRINSICS)
     else if (data->OperIsHWIntrinsic() && data->isContained())
@@ -6184,7 +6190,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
             id->idReg1(op1->GetRegNum());
             sz = emitInsSizeAM(id, insCodeMR(ins));
-            id->idCodeSize(sz);
         }
         else
         {
@@ -6196,7 +6201,6 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             id->idReg1(op1->GetRegNum());
             emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD_CNS), ins);
             sz = emitInsSizeAM(id, insCodeMR(ins), icon);
-            id->idCodeSize(sz);
         }
     }
 #endif // FEATURE_HW_INTRINSICS
@@ -6208,8 +6212,12 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
         id->idReg1(data->GetRegNum());
         sz = emitInsSizeAM(id, insCodeMR(ins));
-        id->idCodeSize(sz);
     }
+
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
+
+    id->idCodeSize(sz);
 
     dispIns(id);
     emitCurIGsize += sz;
@@ -9287,14 +9295,15 @@ void emitter::emitIns_C_R_I(
 //                a register operand, and an immediate.
 //
 // Arguments:
-//    ins       - The instruction being emitted
-//    attr      - The emit attribute
-//    varNum    - The varNum of the stack operand
-//    offs      - The offset for the stack operand
-//    reg       - The register operand
-//    ival      - The immediate value
+//    ins         - The instruction being emitted
+//    attr        - The emit attribute
+//    varNum      - The varNum of the stack operand
+//    offs        - The offset for the stack operand
+//    reg         - The register operand
+//    ival        - The immediate value
+//    instOptions - The options used to when generating the instruction.
 //
-void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival)
+void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival, insOpts instOptions)
 {
     assert(IsSimdInstruction(ins));
     assert(reg != REG_NA);
@@ -9308,6 +9317,9 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
+
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeMR(ins), varNum, offs, ival);
     id->idCodeSize(sz);
@@ -10699,7 +10711,7 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     return false;
 }
 
-void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
+void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs, insOpts instOptions)
 {
     insFormat fmt = (ins == INS_xchg) ? IF_SRW_RRW : emitInsModeFormat(ins, IF_SRD_RRD);
     if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
@@ -10713,6 +10725,9 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
     id->idInsFmt(fmt);
     id->idReg1(ireg);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
 
     sz = emitInsSizeSV(id, insCodeMR(ins), varx, offs);
 
@@ -10762,7 +10777,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     emitCurIGsize += sz;
 }
 
-void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val)
+void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, int val, insOpts instOptions)
 {
 #ifdef TARGET_AMD64
     // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
@@ -10796,11 +10811,15 @@ void emitter::emitIns_S_I(instruction ins, emitAttr attr, int varx, int offs, in
     id->idInsFmt(fmt);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
+    assert((instOptions & INS_OPTS_EVEX_b_MASK) == 0);
+    SetEvexEmbMaskIfNeeded(id, instOptions);
+
     UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeMI(ins), varx, offs, val);
     id->idCodeSize(sz);
 #ifdef DEBUG
     id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
 #endif
+
     dispIns(id);
     emitCurIGsize += sz;
 }

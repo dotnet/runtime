@@ -599,26 +599,7 @@ struct HWIntrinsicInfo
         return lookup(id).numArgs;
     }
 
-    static instruction lookupIns(NamedIntrinsic id, var_types type, Compiler* comp);
-
-    static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode, Compiler* comp)
-    {
-        assert(intrinsicNode != nullptr);
-
-        NamedIntrinsic intrinsic = intrinsicNode->GetHWIntrinsicId();
-        var_types      type      = TYP_UNKNOWN;
-
-        if (lookupCategory(intrinsic) == HW_Category_Scalar)
-        {
-            type = intrinsicNode->TypeGet();
-        }
-        else
-        {
-            type = intrinsicNode->GetSimdBaseType();
-        }
-
-        return lookupIns(intrinsic, type, comp);
-    }
+    static instruction lookupIns(const GenTreeHWIntrinsic* intrinsicNode);
 
     static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {
@@ -1300,7 +1281,7 @@ struct HWIntrinsic final
         assert(HWIntrinsicInfo::RequiresCodegen(id));
 
         InitializeOperands(node);
-        InitializeBaseType(node);
+        baseType = GetBaseType(node);
     }
 
     bool codeGenIsTableDriven() const
@@ -1321,6 +1302,46 @@ struct HWIntrinsic final
     GenTree*            op5;
     size_t              numOperands;
     var_types           baseType;
+
+    static var_types GetBaseType(const GenTreeHWIntrinsic* node)
+    {
+        NamedIntrinsic id       = node->GetHWIntrinsicId();
+        var_types      baseType = node->GetSimdBaseType();
+
+        if (id == NI_Sve_StoreNarrowing)
+        {
+            baseType = node->GetAuxiliaryType();
+        }
+        else if (baseType == TYP_UNKNOWN)
+        {
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(id);
+            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
+
+            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+            {
+                GenTree* op1 = node->Op(1);
+                assert(op1 != nullptr);
+                baseType = op1->TypeGet();
+            }
+            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+            {
+                GenTree* op2 = node->Op(2);
+                assert(op2 != nullptr);
+                baseType = op2->TypeGet();
+            }
+            else
+            {
+                baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
+            }
+        }
+
+        return baseType;
+    }
 
 private:
     void InitializeOperands(const GenTreeHWIntrinsic* node)
@@ -1349,36 +1370,6 @@ private:
 
             default:
                 unreached();
-        }
-    }
-
-    void InitializeBaseType(const GenTreeHWIntrinsic* node)
-    {
-        baseType = node->GetSimdBaseType();
-
-        if (baseType == TYP_UNKNOWN)
-        {
-            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
-
-            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
-            {
-                assert(op1 != nullptr);
-                baseType = op1->TypeGet();
-            }
-            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
-            {
-                assert(op2 != nullptr);
-                baseType = op2->TypeGet();
-            }
-            else
-            {
-                baseType = node->TypeGet();
-            }
-
-            if (category == HW_Category_Scalar)
-            {
-                baseType = genActualType(baseType);
-            }
         }
     }
 };

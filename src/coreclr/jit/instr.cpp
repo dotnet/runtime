@@ -1204,7 +1204,7 @@ void CodeGen::inst_RV_TT_IV(
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, rmOp))
+    if (IsEmbeddedBroadcastEnabled(ins, rmOp))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
     }
@@ -1319,7 +1319,7 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
+    if (IsEmbeddedBroadcastEnabled(ins, op2))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
 
@@ -1431,7 +1431,7 @@ void CodeGen::inst_RV_RV_TT_IV(instruction ins,
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    if (CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2))
+    if (IsEmbeddedBroadcastEnabled(ins, op2))
     {
         instOptions = AddEmbBroadcastMode(instOptions);
     }

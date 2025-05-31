@@ -62,135 +62,90 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 // lookupIns: Gets the instruction associated with a given NamedIntrinsic and base type
 //
 // Arguments:
-//    id   -- The NamedIntrinsic associated for which to lookup its instruction
-//    type -- The base type for which to lookup the instruction
-//    comp -- The optional compiler instance which is used to special case instruction lookup
+//    intrinsicNode - The hwintrinsic node for which to lookup its instruction
 //
 // Return Value:
-//    The instruction for id and type
-instruction HWIntrinsicInfo::lookupIns(NamedIntrinsic id, var_types type, Compiler* comp)
+//    The instruction for intrinsicNode given comp
+instruction HWIntrinsicInfo::lookupIns(const GenTreeHWIntrinsic* intrinsicNode)
 {
+    assert(intrinsicNode != nullptr);
+
+    NamedIntrinsic intrinsic = intrinsicNode->GetHWIntrinsicId();
+    var_types      type      = TYP_UNKNOWN;
+
+#if defined(TARGET_XARCH)
+    if (lookupCategory(intrinsic) == HW_Category_Scalar)
+    {
+        if ((intrinsic == NI_X86Base_DivRem) || (intrinsic == NI_X86Base_X64_DivRem))
+        {
+            type = intrinsicNode->GetSimdBaseType();
+        }
+        else
+        {
+            type = intrinsicNode->TypeGet();
+        }
+    }
+    else
+    {
+        type = intrinsicNode->GetSimdBaseType();
+    }
+#elif defined(TARGET_ARM64)
+    type = HWIntrinsic::GetBaseType(intrinsicNode);
+#endif
+
     if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
     {
         assert(!"Unexpected type");
         return INS_invalid;
     }
 
-    uint16_t    result = lookup(id).ins[type - TYP_BYTE];
+    uint16_t    result = lookup(intrinsic).ins[type - TYP_BYTE];
     instruction ins    = static_cast<instruction>(result);
 
-#if defined(TARGET_X86)
-    if (ins == INS_movd64)
+    if (ins == INS_invalid)
     {
-        ins = INS_movd32;
-    }
-#endif // TARGET_X86
-
+        switch (intrinsic)
+        {
 #if defined(TARGET_XARCH)
-    instruction evexIns = ins;
+            case NI_X86Base_LoadFence:
+            {
+                ins = INS_lfence;
+                break;
+            }
 
-    switch (ins)
-    {
-        case INS_movdqa32:
-        {
-            if (varTypeIsLong(type))
+            case NI_X86Base_MemoryFence:
             {
-                evexIns = INS_vmovdqa64;
+                ins = INS_mfence;
+                break;
             }
-            break;
-        }
 
-        case INS_movdqu32:
-        {
-            if (varTypeIsLong(type))
+            case NI_X86Base_Pause:
             {
-                evexIns = INS_vmovdqu64;
+                ins = INS_pause;
+                break;
             }
-            break;
-        }
 
-        case INS_vbroadcastf32x4:
-        {
-            if (type == TYP_DOUBLE)
+            case NI_X86Base_StoreFence:
             {
-                evexIns = INS_vbroadcastf64x2;
+                ins = INS_sfence;
+                break;
             }
-            break;
-        }
 
-        case INS_vbroadcasti32x4:
-        {
-            if (varTypeIsLong(type))
+            case NI_X86Serialize_Serialize:
             {
-                evexIns = INS_vbroadcasti64x2;
+                ins = INS_serialize;
+                break;
             }
-            break;
-        }
-
-        case INS_vextractf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vextractf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vextracti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vextracti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vextracti64x2;
-            }
-            break;
-        }
-
-        case INS_vinsertf32x4:
-        {
-            if (type == TYP_DOUBLE)
-            {
-                evexIns = INS_vinsertf64x2;
-            }
-            else if (varTypeIsInt(type))
-            {
-                evexIns = INS_vinserti32x4;
-            }
-            else if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        case INS_vinserti32x4:
-        {
-            if (varTypeIsLong(type))
-            {
-                evexIns = INS_vinserti64x2;
-            }
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    if ((evexIns != ins) && (comp != nullptr) && comp->canUseEvexEncoding())
-    {
-        ins = evexIns;
-    }
 #endif // TARGET_XARCH
 
+            default:
+            {
+                assert(!HWIntrinsicInfo::RequiresCodegen(intrinsic) ||
+                       HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_Helper);
+                break;
+            }
+        }
+    }
     return ins;
 }
 
@@ -2151,12 +2106,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         if (!isScalar)
         {
-            if (HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType, this) == INS_invalid)
-            {
-                assert(!"Unexpected HW intrinsic");
-                return nullptr;
-            }
-
 #if defined(TARGET_ARM64)
             if ((simdSize != 8) && (simdSize != 16))
 #elif defined(TARGET_XARCH)

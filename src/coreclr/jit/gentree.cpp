@@ -18123,10 +18123,12 @@ bool GenTree::canBeContained() const
     {
         return false;
     }
+#if defined(FEATURE_HW_INTRINSICS)
     else if (OperIsHWIntrinsic() && !isContainableHWIntrinsic())
     {
         return isEmbeddedMaskingCompatibleHWIntrinsic();
     }
+#endif // FEATURE_HW_INTRINSICS
 
     return true;
 }
@@ -19972,7 +19974,7 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic(), nullptr)))
+    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic())))
     {
         return true;
     }
@@ -20575,9 +20577,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
 {
     if (OperIsHWIntrinsic())
     {
-        NamedIntrinsic intrinsicId  = AsHWIntrinsic()->GetHWIntrinsicId();
-        var_types      simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
-        instruction    ins          = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        instruction ins = HWIntrinsicInfo::lookupIns(AsHWIntrinsic());
 
         if (CodeGenInterface::instIsEmbeddedBroadcastCompatible(ins))
         {
@@ -20586,7 +20586,7 @@ bool GenTree::isEmbeddedBroadcastCompatibleHWIntrinsic() const
             if ((tupleType & INS_TT_MEM128) != 0)
             {
                 assert(AsHWIntrinsic()->GetOperandCount() == 2);
-                return HWIntrinsicInfo::isImmOp(intrinsicId, AsHWIntrinsic()->Op(2));
+                return HWIntrinsicInfo::isImmOp(AsHWIntrinsic()->GetHWIntrinsicId(), AsHWIntrinsic()->Op(2));
             }
 
             return true;
@@ -20609,9 +20609,7 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
     {
         NamedIntrinsic intrinsicId = AsHWIntrinsic()->GetHWIntrinsicId();
 #if defined(TARGET_XARCH)
-        var_types simdBaseType = AsHWIntrinsic()->GetSimdBaseType();
-
-        if (simdBaseType == TYP_UNKNOWN)
+        if (HWIntrinsicInfo::lookupCategory(intrinsicId) == HW_Category_Scalar)
         {
             // Various scalar intrinsics don't support masking
             return false;
@@ -20624,7 +20622,7 @@ bool GenTree::isEmbeddedMaskingCompatibleHWIntrinsic() const
             return false;
         }
 
-        instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType, nullptr);
+        instruction ins = HWIntrinsicInfo::lookupIns(AsHWIntrinsic());
         return CodeGenInterface::instIsEmbeddedMaskingCompatible(ins);
 #elif defined(TARGET_ARM64)
         return HWIntrinsicInfo::IsEmbeddedMaskedOperation(intrinsicId) ||

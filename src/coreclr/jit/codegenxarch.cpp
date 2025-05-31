@@ -5739,7 +5739,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX2_ConvertToUInt32:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+                            ins  = HWIntrinsicInfo::lookupIns(hwintrinsic);
                             attr = emitActualTypeSize(baseType);
 #if defined(TARGET_X86)
                             if (varTypeIsLong(baseType))
@@ -5766,7 +5766,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+                            ins  = HWIntrinsicInfo::lookupIns(hwintrinsic);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
 
                             if (intrinsicId == NI_X86Base_Extract)
@@ -5819,7 +5819,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX512_ConvertToVector256UInt32WithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
+                            ins  = HWIntrinsicInfo::lookupIns(hwintrinsic);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
                             break;
                         }
