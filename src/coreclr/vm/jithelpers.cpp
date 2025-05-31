@@ -2449,11 +2449,9 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 
 // The following JIT_ReversePInvoke helpers are special.
 // They handle setting up Reverse P/Invoke calls and transitioning back to unmanaged code.
-// As a result, we may not have a thread in JIT_ReversePInvokeEnter and we will be in the wrong GC mode for the HCALL prolog.
-// Additionally, we set up and tear down SEH handlers when we're on x86, so we can't use dynamic contracts anyway.
-// As a result, we specially decorate this method to have the correct calling convention
-// and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
-// since this method doesn't follow the contracts.
+// We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
+// On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
+// This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
 HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
