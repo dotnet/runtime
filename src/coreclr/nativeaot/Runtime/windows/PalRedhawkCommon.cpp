@@ -22,10 +22,8 @@
 #include "CommonMacros.h"
 #include "rhassert.h"
 
-#define NATIVEAOT_PALAPI __stdcall
-
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
+void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
 {
     BYTE *pbModule = (BYTE*)hOsHandle;
     DWORD cbModule;
@@ -42,7 +40,7 @@ void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLo
 
 uint32_t g_RhNumberOfProcessors;
 
-int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount()
+int32_t PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
@@ -51,7 +49,7 @@ int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount()
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
     // VirtualQuery on the address of a local variable to get the allocation
     // base of the stack.  Then use the StackBase field in the TEB to give
