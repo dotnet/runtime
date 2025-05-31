@@ -26,7 +26,6 @@
     <TargetRid>$(OutputRID)</TargetRid>
 
     <!-- The final stage of the runtime official build should publish everything. -->
-    <EnableDefaultRidSpecificArtifacts Condition="'$(DotNetFinalPublish)' != ''">false</EnableDefaultRidSpecificArtifacts>
     <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildOrchestrator)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
     <UseDotNetCertificate>true</UseDotNetCertificate>
@@ -62,7 +61,7 @@
     <FileSignInfo Include="Mono.Cecil.Rocks.dll" CertificateName="3PartySHA2" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(DotNetFinalPublish)' != 'true'">
+  <ItemGroup>
     <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.tar.gz;
                            $(ArtifactsPackagesDir)**\*.zip;
                            $(ArtifactsPackagesDir)**\*.deb;
@@ -76,14 +75,6 @@
       <!-- Exclude wixpack.zip files from checksum generation -->
       <ChecksumPath Condition="$([System.String]::Copy('%(Filename)%(Extension)').EndsWith('.wixpack.zip')) != 'true'">%(FullPath).sha512</ChecksumPath>
     </BlobArtifact>
-  </ItemGroup>
-
-  <!-- In the runtime official build, we only sign a subset of files. -->
-  <ItemGroup Condition="'$(DotNetFinalPublish)' == 'true'">
-    <BlobArtifact Include="$(ArtifactsPackagesDir)**\*.msi;
-                    $(ArtifactsPackagesDir)**\*.exe;
-                    $(ArtifactsPackagesDir)**\*.zip"
-                  SkipPublish="true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(EnableBlobArtifacts)' == 'true'">

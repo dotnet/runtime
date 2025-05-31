@@ -37,8 +37,8 @@ ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
 #if defined(HOST_ARM64)
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-// ARM64IntrinsicConstants_Atomics = 0x0080
-ASM_CONST(     7,     7, ARM64_ATOMICS_FEATURE_FLAG_BIT)
+// ARM64IntrinsicConstants_Atomics = 0x0040
+ASM_CONST(     6,     6, ARM64_ATOMICS_FEATURE_FLAG_BIT)
 #endif
 
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)

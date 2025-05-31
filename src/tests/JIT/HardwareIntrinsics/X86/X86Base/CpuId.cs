@@ -67,31 +67,38 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             int xarchCpuInfo = eax;
 
-            if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "SSE", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // The runtime currently requires that all of SSE and SSE2 be supported together or none
+                // are supported. To handle this we simple check them all twice so that if any of them are disabled
+                // the first time around, we'll then assert that they are all actually disabled the second time around
+
+                if (IsBitIncorrect(edx, 25, typeof(Sse), Sse.IsSupported, "SSE", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(edx, 26, typeof(Sse2), Sse2.IsSupported, "SSE2", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
-            if (IsBitIncorrect(edx, 26, typeof(Sse2), Sse2.IsSupported, "SSE2", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
-
-            bool isSse2HierarchyDisabled = isHierarchyDisabled;
+            bool isBaselineHierarchyDisabled = isHierarchyDisabled;
 
             if (IsBitIncorrect(ecx, 25, typeof(Aes), Aes.IsSupported, "AES", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isSse2HierarchyDisabled;
+            isHierarchyDisabled = isBaselineHierarchyDisabled;
 
             if (IsBitIncorrect(ecx, 1, typeof(Pclmulqdq), Pclmulqdq.IsSupported, "PCLMULQDQ", ref isHierarchyDisabled))
             {
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isSse2HierarchyDisabled | !GetDotnetEnable("SSE3_4");
+            isHierarchyDisabled = isBaselineHierarchyDisabled | !GetDotnetEnable("SSE3_4");
 
             if (IsBitIncorrect(ecx, 0, typeof(Sse3), Sse3.IsSupported, "SSE3", ref isHierarchyDisabled))
             {
@@ -173,9 +180,8 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
             for (int i = 0; i < 2; i++)
             {
-                // The runtime currently requires that all of F + BW + CD + DQ + VL be supported together or none
-                // are supported. To handle this we simple check them all twice so that if any of them are disabled
-                // the first time around, we'll then assert that they are all actually disabled the second time around
+                // AVX512F + BW + CD + DQ + VL are likewise provided together or not at all
+                // so we loop twice to ensure it all lines up as expected.
 
                 if (IsBitIncorrect(ebx, 16, typeof(Avx512F), Avx512F.IsSupported, "AVX512F", ref isHierarchyDisabled))
                 {
@@ -269,15 +275,23 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 }
             }
 
-            if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // AVX512VBMI and AVX512VBMI.VL are likewise provided together or not at all
+                // so we loop twice to ensure it all lines up as expected.
+
+                if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi.VL), Avx512Vbmi.VL.IsSupported, "AVX512VBMI_VL", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
-            if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi.VL), Avx512Vbmi.VL.IsSupported, "AVX512VBMI_VL", ref isHierarchyDisabled))
-            {
-                testResult = Fail;
-            }
+            bool isAvx10HierarchyDisabled = isHierarchyDisabled;
 
             isHierarchyDisabled = isX86BaseDisabled;
 
@@ -330,11 +344,22 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            isHierarchyDisabled = isAvxHierarchyDisabled | isFmaHierarchyDisabled;
+            isHierarchyDisabled = isAvx10HierarchyDisabled;
 
-            if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+            for (int i = 0; i < 2; i++)
             {
-                testResult = Fail;
+                // AVX10v1 and AVX10v1.V512 are likewise provided together or not at all
+                // so we loop twice to ensure it all lines up as expected.
+
+                if (IsBitIncorrect(edx, 19, typeof(Avx10v1), Avx10v1.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
+
+                if (IsBitIncorrect(edx, 19, typeof(Avx10v1.V512), Avx10v1.V512.IsSupported, "AVX10V1", ref isHierarchyDisabled))
+                {
+                    testResult = Fail;
+                }
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000000), 0x00000000);
@@ -361,7 +386,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector128), Vector128.IsHardwareAccelerated, isSse2HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector128), Vector128.IsHardwareAccelerated, isBaselineHierarchyDisabled))
             {
                 testResult = Fail;
             }
@@ -376,7 +401,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector), Vector.IsHardwareAccelerated, isSse2HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector), Vector.IsHardwareAccelerated, isBaselineHierarchyDisabled))
             {
                 testResult = Fail;
             }

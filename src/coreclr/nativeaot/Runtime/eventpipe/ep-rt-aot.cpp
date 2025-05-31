@@ -9,7 +9,7 @@
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
 #include <windows.h>
 #else
 #include <fcntl.h>
@@ -18,6 +18,7 @@
 #endif
 
 #include <minipal/random.h>
+#include <minipal/time.h>
 
 #include "gcenv.h"
 #include "thread.h"
@@ -397,7 +398,7 @@ uint32_t
 ep_rt_aot_current_process_get_id (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return static_cast<uint32_t>(GetCurrentProcessId ());
+    return PalGetCurrentProcessId ();
 }
 
 ep_rt_thread_id_t
@@ -415,14 +416,14 @@ int64_t
 ep_rt_aot_perf_counter_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceCounter();
+    return minipal_hires_ticks();
 }
 
 int64_t
 ep_rt_aot_perf_frequency_query (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    return (int64_t)PalQueryPerformanceFrequency();
+    return minipal_hires_tick_frequency();
 }
 
 int64_t
@@ -431,7 +432,7 @@ ep_rt_aot_system_timestamp_get (void)
     STATIC_CONTRACT_NOTHROW;
 
     FILETIME value;
-    GetSystemTimeAsFileTime (&value);
+    PalGetSystemTimeAsFileTime (&value);
     return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
 }
 

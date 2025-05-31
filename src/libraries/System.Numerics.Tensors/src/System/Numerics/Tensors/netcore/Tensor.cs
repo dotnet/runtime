@@ -67,7 +67,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="source">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
+        /// <exception cref="ArgumentException">The shapes are not broadcast compatible.</exception>
         public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped ReadOnlySpan<nint> lengths)
         {
             TensorOperation.ValidateCompatibility<T>(source, lengths);
@@ -1440,7 +1440,7 @@ namespace System.Numerics.Tensors
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
@@ -1508,12 +1508,12 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(in this TensorSpan<T> tensor, scoped ReadOnlySpan<nint> lengths)
+        public static TensorSpan<T> Reshape<T>(this scoped in TensorSpan<T> tensor, scoped ReadOnlySpan<nint> lengths)
         {
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
@@ -1584,12 +1584,12 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static ReadOnlyTensorSpan<T> Reshape<T>(in this ReadOnlyTensorSpan<T> tensor, scoped ReadOnlySpan<nint> lengths)
+        public static ReadOnlyTensorSpan<T> Reshape<T>(this scoped in ReadOnlyTensorSpan<T> tensor, scoped ReadOnlySpan<nint> lengths)
         {
             if (tensor.Lengths.SequenceEqual(lengths))
                 return tensor;
 
-            if (!tensor.IsContiguousAndDense && !tensor.Strides.Contains(0))
+            if (!tensor.IsDense && !tensor.Strides.Contains(0))
             {
                 ThrowHelper.ThrowArgument_CannotReshapeNonContiguousOrDense();
             }
@@ -1983,7 +1983,7 @@ namespace System.Numerics.Tensors
         /// Removes all dimensions of length one from the <paramref name="tensor"/>.
         /// </summary>
         /// <param name="tensor">The <see cref="TensorSpan{T}"/> to remove all dimensions of length 1.</param>
-        public static TensorSpan<T> Squeeze<T>(in this TensorSpan<T> tensor)
+        public static TensorSpan<T> Squeeze<T>(this scoped in TensorSpan<T> tensor)
         {
             return SqueezeDimension(tensor, -1);
         }
@@ -1994,7 +1994,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor">The <see cref="TensorSpan{T}"/> to remove dimension of length 1.</param>
         /// <param name="dimension">The dimension to remove.</param>
-        public static TensorSpan<T> SqueezeDimension<T>(in this TensorSpan<T> tensor, int dimension)
+        public static TensorSpan<T> SqueezeDimension<T>(this scoped in TensorSpan<T> tensor, int dimension)
         {
             if (dimension >= tensor.Rank || dimension < -1)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -2065,7 +2065,7 @@ namespace System.Numerics.Tensors
         /// Removes all dimensions of length one from the <paramref name="tensor"/>.
         /// </summary>
         /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> to remove all dimensions of length 1.</param>
-        public static ReadOnlyTensorSpan<T> Squeeze<T>(in this ReadOnlyTensorSpan<T> tensor)
+        public static ReadOnlyTensorSpan<T> Squeeze<T>(this scoped in ReadOnlyTensorSpan<T> tensor)
         {
             return SqueezeDimension(tensor, -1);
         }
@@ -2076,7 +2076,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> to remove dimension of length 1.</param>
         /// <param name="dimension">The dimension to remove.</param>
-        public static ReadOnlyTensorSpan<T> SqueezeDimension<T>(in this ReadOnlyTensorSpan<T> tensor, int dimension)
+        public static ReadOnlyTensorSpan<T> SqueezeDimension<T>(this scoped in ReadOnlyTensorSpan<T> tensor, int dimension)
         {
             if (dimension >= tensor.Rank || dimension < -1)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -2467,7 +2467,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor">The <see cref="TensorSpan{T}"/> to add a dimension of length 1.</param>
         /// <param name="dimension">The index of the dimension to add.</param>
-        public static TensorSpan<T> Unsqueeze<T>(in this TensorSpan<T> tensor, int dimension)
+        public static TensorSpan<T> Unsqueeze<T>(this scoped in TensorSpan<T> tensor, int dimension)
         {
             if (dimension > tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -2504,7 +2504,7 @@ namespace System.Numerics.Tensors
         /// </summary>
         /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> to add a dimension of length 1.</param>
         /// <param name="dimension">The index of the dimension to add.</param>
-        public static ReadOnlyTensorSpan<T> Unsqueeze<T>(in this ReadOnlyTensorSpan<T> tensor, int dimension)
+        public static ReadOnlyTensorSpan<T> Unsqueeze<T>(this scoped in ReadOnlyTensorSpan<T> tensor, int dimension)
         {
             if (dimension > tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
@@ -4203,7 +4203,7 @@ namespace System.Numerics.Tensors
 
         #region Max
         /// <summary>Searches for the largest number in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T Max<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
@@ -4266,7 +4266,7 @@ namespace System.Numerics.Tensors
 
         #region MaxMagnitude
         /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MaxMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
@@ -4329,7 +4329,7 @@ namespace System.Numerics.Tensors
 
         #region MaxMagnitudeNumber
         /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MaxMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
@@ -4392,7 +4392,7 @@ namespace System.Numerics.Tensors
 
         #region MaxNumber
         /// <summary>Searches for the largest number in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MaxNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
@@ -4454,8 +4454,8 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Min
-        /// <summary>Searches for the largest number in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T Min<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
@@ -4469,7 +4469,7 @@ namespace System.Numerics.Tensors
             return result;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> Min<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
@@ -4480,7 +4480,7 @@ namespace System.Numerics.Tensors
             return output;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4492,7 +4492,7 @@ namespace System.Numerics.Tensors
             return ref destination;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> Min<T>(in ReadOnlyTensorSpan<T> x, T y)
@@ -4503,7 +4503,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4517,8 +4517,8 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region MinMagnitude
-        /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <summary>Searches for the number with the smallest magnitude in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MinMagnitude<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
@@ -4532,7 +4532,7 @@ namespace System.Numerics.Tensors
             return result;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitude<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
@@ -4543,7 +4543,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4555,7 +4555,7 @@ namespace System.Numerics.Tensors
             return ref destination;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitude<T>(in ReadOnlyTensorSpan<T> x, T y)
@@ -4566,7 +4566,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4580,8 +4580,8 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region MinMagnitudeNumber
-        /// <summary>Searches for the number with the largest magnitude in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <summary>Searches for the number with the smallest magnitude in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MinMagnitudeNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumberBase<T>
         {
@@ -4595,7 +4595,7 @@ namespace System.Numerics.Tensors
             return result;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
@@ -4606,7 +4606,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4618,7 +4618,7 @@ namespace System.Numerics.Tensors
             return ref destination;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinMagnitudeNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
@@ -4629,7 +4629,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise number with the largest magnitude in the specified tensors.</summary>
+        /// <summary>Computes the element-wise number with the smallest magnitude in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4643,8 +4643,8 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region MinNumber
-        /// <summary>Searches for the largest number in the specified tensor.</summary>
-        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>..</param>
+        /// <summary>Searches for the smallest number in the specified tensor.</summary>
+        /// <param name="x">The input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         public static T MinNumber<T>(scoped in ReadOnlyTensorSpan<T> x)
             where T : INumber<T>
         {
@@ -4658,7 +4658,7 @@ namespace System.Numerics.Tensors
             return result;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinNumber<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
@@ -4669,7 +4669,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>
@@ -4681,7 +4681,7 @@ namespace System.Numerics.Tensors
             return ref destination;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         public static Tensor<T> MinNumber<T>(in ReadOnlyTensorSpan<T> x, T y)
@@ -4692,7 +4692,7 @@ namespace System.Numerics.Tensors
             return destination;
         }
 
-        /// <summary>Computes the element-wise Minimum of the numbers in the specified tensors.</summary>
+        /// <summary>Computes the element-wise minimum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
         /// <param name="y">The second tensor, represented as a span.</param>
         /// <param name="destination">The destination tensor, represented as a span.</param>

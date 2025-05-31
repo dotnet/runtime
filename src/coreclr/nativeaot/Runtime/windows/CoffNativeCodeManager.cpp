@@ -425,9 +425,16 @@ bool CoffNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
 #else
     // Extract the necessary information from the info block header
     hdrInfo info;
-    DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &info);
+    size_t infoSize = DecodeGCHdrInfo(GCInfoToken(gcInfo), codeOffset, &info);
+    PTR_CBYTE table = gcInfo + infoSize;
 
-    return info.interruptible && info.prologOffs == hdrInfo::NOT_IN_PROLOG && info.epilogOffs == hdrInfo::NOT_IN_EPILOG;
+    if (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
+        return false;
+
+    if (!info.interruptible)
+        return false;
+
+    return !IsInNoGCRegion(&info, table, codeOffset);
 #endif
 }
 
@@ -959,7 +966,7 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)registerSet.PCTAddr;
     return true;
-#endif 
+#endif
 }
 
 #ifdef TARGET_X86
@@ -1139,8 +1146,8 @@ PTR_VOID CoffNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     return dac_cast<PTR_VOID>(m_moduleBase + dataRVA);
 }
 
-extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
-extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange);
+extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange);
 
 extern "C"
 bool RhRegisterOSModule(void * pModule,

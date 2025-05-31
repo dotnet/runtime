@@ -161,7 +161,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
  *  could easily duplicate what they do, which is why we're calling into them.
  */
 
-HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
+ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
                                         EECodeInfo *     pOldCodeInfo,
                    const ICorDebugInfo::NativeVarInfo *  oldMethodVars,
                                         SIZE_T           oldMethodVarsCount,
@@ -206,6 +206,11 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         return E_FAIL; // stack should be empty - <TODO> @TODO : Barring localloc</TODO>
     }
 
+#ifdef FEATURE_EH_FUNCLETS
+    // EnC remap inside handlers is not supported
+    if (pOldCodeInfo->IsFunclet() || pNewCodeInfo->IsFunclet())
+        return CORDBG_E_ENC_IN_FUNCLET;
+#else
     if (oldInfo->handlers)
     {
         bool      hasInnerFilter;
@@ -229,13 +234,16 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             }
         }
     }
+#endif // FEATURE_EH_FUNCLETS
 
     /* @TODO: Check if we have grown out of space for locals, in the face of localloc */
     _ASSERTE(!oldInfo->localloc && !newInfo->localloc);
 
+#ifndef FEATURE_EH_FUNCLETS
     // @TODO: If nesting level grows above the MAX_EnC_HANDLER_NESTING_LEVEL,
     // we should return EnC_NESTED_HANLDERS
     _ASSERTE(oldInfo->handlers && newInfo->handlers);
+#endif
 
     LOG((LF_ENC, LL_INFO100, "EECM::FixContextForEnC: Checks out\n"));
 
@@ -851,18 +859,21 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
-    hdrInfo         info = { 0 };
+    hdrInfo info = { 0 };
 
     /* Extract the necessary information from the info block header */
 
-    pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
+    PTR_CBYTE table = pCodeInfo->DecodeGCHdrInfo(&info, dwRelOffset);
 
     /* workaround: prevent interruption within prolog/epilog */
 
     if  (info.prologOffs != hdrInfo::NOT_IN_PROLOG || info.epilogOffs != hdrInfo::NOT_IN_EPILOG)
         return false;
 
-    return (info.interruptible);
+    if  (!info.interruptible)
+        return false;
+
+    return !::IsInNoGCRegion(&info, table, dwRelOffset);
 }
 
 #endif // !USE_GC_INFO_DECODER
@@ -1279,16 +1290,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
         // We've been given an override offset for GC Info
-#ifdef _DEBUG
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_CODE_LENGTH
-                      );
-
-        // We only use override offset for wantsReportOnlyLeaf
-        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
-#endif // _DEBUG
-
         curOffs = relOffsetOverride;
 
 #ifdef TARGET_ARM
@@ -1494,13 +1495,20 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
 #endif
 
+    /* Skip over no-GC region table */
+    unsigned count = hdrInfoBody->noGCRegionCnt;
+    while (count-- > 0)
+    {
+        fastSkipUnsigned(table); fastSkipUnsigned(table);
+    }
+
 #ifndef FEATURE_EH_FUNCLETS
     /* Parse the untracked frame variable table */
 
     /* The 'this' pointer can never be located in the untracked table */
     /* as we only allow pinned and byrefs in the untracked table      */
 
-    unsigned count = hdrInfoBody->untrackedCnt;
+    count = hdrInfoBody->untrackedCnt;
     while (count-- > 0)
     {
         fastSkipSigned(table);
@@ -1542,7 +1550,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
 #endif
 
 #else // FEATURE_EH_FUNCLETS
-    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis()) // Generic Context is "this"
+    if (pCodeInfo->GetMethodDesc()->AcquiresInstMethodTableFromThis() && (hdrInfoBody->genericsContext)) // Generic Context is "this"
     {
         // Untracked table must have at least one entry - this pointer
         _ASSERTE(hdrInfoBody->untrackedCnt > 0);
@@ -1797,6 +1805,7 @@ bool EECodeManager::IsInPrologOrEpilog(DWORD       relPCoffset,
             (info.epilogOffs != hdrInfo::NOT_IN_EPILOG));
 }
 
+#ifndef FEATURE_EH_FUNCLETS
 /*****************************************************************************
  *
  *  Returns true if the given IP is in the synchronized region of the method (valid for synchronized functions only)
@@ -1827,6 +1836,7 @@ bool  EECodeManager::IsInSynchronizedRegion(DWORD       relOffset,
         // Everything after the epilog is also in synchronized region.
         (info.epilogCnt != 0 && info.syncEpilogStart + info.epilogSize <= relOffset);
 }
+#endif // FEATURE_EH_FUNCLETS
 #endif // !USE_GC_INFO_DECODER
 
 /*****************************************************************************
@@ -2485,16 +2495,6 @@ bool InterpreterCodeManager::EnumGcRefs(PREGDISPLAY     pContext,
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
         // We've been given an override offset for GC Info
-#ifdef _DEBUG
-        InterpreterGcInfoDecoder _gcInfoDecoder(
-                                                gcInfoToken,
-                                                DECODE_CODE_LENGTH
-                                                );
-
-        // We only use override offset for wantsReportOnlyLeaf
-        _ASSERTE(_gcInfoDecoder.WantsReportOnlyLeaf());
-#endif // _DEBUG
-
         curOffs = relOffsetOverride;
 
         LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset to provided override offset. Now reporting GC refs for %s at offset %04x.\n",
