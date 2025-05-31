@@ -26,15 +26,8 @@ namespace System.Text.Json.Schema
         /// <returns>A JSON object containing the schema for <paramref name="type"/>.</returns>
         public static JsonNode GetJsonSchemaAsNode(this JsonSerializerOptions options, Type type, JsonSchemaExporterOptions? exporterOptions = null)
         {
-            if (options is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(options));
-            }
-
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(type);
 
             ValidateOptions(options);
             JsonTypeInfo typeInfo = options.GetTypeInfoInternal(type);
@@ -49,10 +42,7 @@ namespace System.Text.Json.Schema
         /// <returns>A JSON object containing the schema for <paramref name="typeInfo"/>.</returns>
         public static JsonNode GetJsonSchemaAsNode(this JsonTypeInfo typeInfo, JsonSchemaExporterOptions? exporterOptions = null)
         {
-            if (typeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(typeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(typeInfo);
 
             ValidateOptions(typeInfo.Options);
             exporterOptions ??= JsonSchemaExporterOptions.Default;

@@ -1944,7 +1944,7 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (double Sin, double Cos) SinCos(double x) => Math.SinCos(x);
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
         public static (double SinPi, double CosPi) SinCosPi(double x)
         {
             // This code is based on `cospi` and `sinpi` from amd/aocl-libm-ose

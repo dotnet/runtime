@@ -1,11 +1,5 @@
 function(clr_unknown_arch)
-    if (WIN32)
-        message(FATAL_ERROR "Only AMD64, ARM64, ARM, I386, LOONGARCH64 and RISCV64 hosts are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
-    elseif(CLR_CROSS_COMPONENTS_BUILD)
-        message(FATAL_ERROR "Only AMD64, ARM64, I386, LOONGARCH64 and RISCV64 hosts are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
-    else()
-        message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
-    endif()
+    message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
 endfunction()
 
 # C to MASM include file translator
@@ -554,11 +548,11 @@ function(install_static_library targetName destination component)
   endif()
 endfunction()
 
-# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName] [INSTALL_ALL_ARTIFACTS])
+# install_clr(TARGETS targetName [targetName2 ...] [DESTINATIONS destination [destination2 ...]] [COMPONENT componentName])
 function(install_clr)
   set(multiValueArgs TARGETS DESTINATIONS)
   set(singleValueArgs COMPONENT)
-  set(options INSTALL_ALL_ARTIFACTS)
+  set(options "")
   cmake_parse_arguments(INSTALL_CLR "${options}" "${singleValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
@@ -594,14 +588,9 @@ function(install_clr)
     endif()
 
     foreach(destination ${destinations})
-        # Install the export libraries for static libraries.
-      if (${INSTALL_CLR_INSTALL_ALL_ARTIFACTS})
-        install(TARGETS ${targetName} DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      else()
-        # We don't need to install the export libraries for our DLLs
-        # since they won't be directly linked against.
-        install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
-      endif()
+      # We don't need to install the export libraries for our DLLs
+      # since they won't be directly linked against.
+      install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       if (NOT "${symbolFile}" STREQUAL "")
         install_symbol_file(${symbolFile} ${destination} COMPONENT ${INSTALL_CLR_COMPONENT})
       endif()

@@ -561,6 +561,9 @@ LOCAL_LABEL(stackProbe_loop):
         __\name\()__g_ephemeral_low_offset = 0xffff
         __\name\()__g_ephemeral_high_offset = 0xffff
         __\name\()__g_card_table_offset = 0xffff
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        __\name\()__g_sw_ww_table_offset = 0xffff
+#endif
      .endm
 
     .macro LOAD_GC_GLOBAL name, regName, globalName
@@ -603,6 +606,28 @@ LOCAL_LABEL(stackProbe_loop):
 0:
     .endm
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    .macro UPDATE_WRITE_WATCH_TABLE name, ptrReg, mp, tmpReg
+
+        LOAD_GC_GLOBAL \name, __wbScratch, g_write_watch_table
+        cbz __wbScratch, 2f
+        add __wbScratch, __wbScratch, \ptrReg, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+
+        .if(\mp)
+            ldrb \tmpReg, [__wbScratch]
+            cmp \tmpReg, #0xff
+            itt ne
+            movne \tmpReg, 0xff
+            strbne \tmpReg, [__wbScratch]
+        .else
+            mov \tmpReg, #0xff
+            strb \tmpReg, [__wbScratch]
+        .endif
+
+2:
+    .endm
+#endif
+
     .macro CHECK_GC_HEAP_RANGE name, ptrReg, label
         LOAD_GC_GLOBAL \name, __wbScratch, g_lowest_address
         cmp \ptrReg, __wbScratch
@@ -621,6 +646,9 @@ LOCAL_LABEL(stackProbe_loop):
 
         str r1, [r0]
         UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r1, \mp, \post, r0
         bx lr
     LEAF_END_MARKED \name, _TEXT
@@ -632,6 +660,9 @@ LOCAL_LABEL(stackProbe_loop):
         str r1, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, 0, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r1, 0, \post, r0
 1:
         bx lr
@@ -645,6 +676,9 @@ LOCAL_LABEL(stackProbe_loop):
         str r1, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r1
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, 1, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r1, 1, \post, r0
         bx lr
 1:
@@ -664,6 +698,9 @@ LOCAL_LABEL(stackProbe_loop):
         str r2, [r0]
         CHECK_GC_HEAP_RANGE \name, r0, 1f
         UPDATE_GC_SHADOW \name, r0, r2
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        UPDATE_WRITE_WATCH_TABLE \name, r0, \mp, r12
+#endif
         UPDATE_CARD_TABLE \name, r0, r2, \mp, \post, r2
 1:
         add r0, #4
@@ -681,6 +718,9 @@ LOCAL_LABEL(stackProbe_loop):
         .word __\name\()__g_ephemeral_low_offset
         .word __\name\()__g_ephemeral_high_offset
         .word __\name\()__g_card_table_offset
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        .word __\name\()__g_write_watch_table_offset
+#endif
     .endm
 
     // There 4 versions of each write barriers. A 2x2 combination of multi-proc/single-proc and pre/post grow version
@@ -844,22 +884,19 @@ DelayLoad_Helper\suffix:
 // ------------------------------------------------------------------
 // Hijack function for functions which return a value type
         NESTED_ENTRY OnHijackTripThread, _TEXT, NoHandler
-        PROLOG_PUSH "{r0,r4-r11,lr}"
+        // saving r1 as well, as it can have partial return value when return is > 32 bits
+        PROLOG_PUSH "{r0,r1,r2,r4-r11,lr}"
 
         PROLOG_VPUSH "{d0-d3}"    // saving as d0-d3 can have the floating point return value
-        PROLOG_PUSH "{r1}"        // saving as r1 can have partial return value when return is > 32 bits
-        alloc_stack 4             // 8 byte align
 
         CHECK_STACK_ALIGNMENT
 
-        add r0, sp, #40
+        add r0, sp, #32
         bl C_FUNC(OnHijackWorker)
 
-        free_stack 4
-        EPILOG_POP "{r1}"
         EPILOG_VPOP "{d0-d3}"
 
-        EPILOG_POP "{r0,r4-r11,pc}"
+        EPILOG_POP "{r0,r1,r2,r4-r11,pc}"
         NESTED_END OnHijackTripThread, _TEXT
 #endif
 
@@ -937,3 +974,15 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         ldr     r2, [r2]
         EPILOG_BRANCH_REG r2
     LEAF_END JIT_PollGC, _TEXT
+
+
+//x0 -This pointer
+//x1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ldr  r12, [r12, #ThisPtrRetBufPrecodeData__Target]
+    // Use XOR swap technique to set avoid the need to spill to the stack
+    eor  r0, r0, r1
+    eor  r1, r0, r1
+    eor  r0, r0, r1
+    EPILOG_BRANCH_REG r12
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

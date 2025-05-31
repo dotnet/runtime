@@ -13,7 +13,6 @@
 
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -366,9 +365,9 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL0(void*, RhAllocateThunksMapping)
+FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 {
-    return NULL;
+    return E_FAIL;
 }
 FCIMPLEND
 

@@ -14,9 +14,7 @@ FRAME_TYPE_NAME(ResumableFrame)
 FRAME_TYPE_NAME(RedirectedThreadFrame)
 #endif // FEATURE_HIJACK
 FRAME_TYPE_NAME(FaultingExceptionFrame)
-#ifdef FEATURE_EH_FUNCLETS
 FRAME_TYPE_NAME(SoftwareExceptionFrame)
-#endif // FEATURE_EH_FUNCLETS
 #ifdef DEBUGGING_SUPPORTED
 FRAME_TYPE_NAME(FuncEvalFrame)
 #endif // DEBUGGING_SUPPORTED
@@ -47,8 +45,8 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
 FRAME_TYPE_NAME(ExceptionFilterFrame)
-#if defined(_DEBUG)
-FRAME_TYPE_NAME(AssumeByrefFromJITStackFrame)
-#endif // _DEBUG
+#ifdef FEATURE_INTERPRETER
+FRAME_TYPE_NAME(InterpreterFrame)
+#endif // FEATURE_INTERPRETER
 
 #undef FRAME_TYPE_NAME

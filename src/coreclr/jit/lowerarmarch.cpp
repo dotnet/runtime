@@ -406,8 +406,21 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
             if (childNode->gtGetOp1()->OperIs(GT_CAST))
             {
-                // Grab the cast as well, we can contain this with cmn.
-                GenTreeCast* cast = childNode->gtGetOp1()->AsCast();
+                // Grab the cast as well, we can contain this with cmn (extended-register).
+                GenTreeCast* cast   = childNode->gtGetOp1()->AsCast();
+                GenTree*     castOp = cast->CastOp();
+
+                // Cannot contain the cast from floating point.
+                if (!varTypeIsIntegral(castOp))
+                {
+                    return false;
+                }
+
+                // Cannot contain the cast if it already contains it's CastOp.
+                if (castOp->isContained())
+                {
+                    return false;
+                }
 
                 assert(!cast->gtOverflow());
                 assert(varTypeIsIntegral(cast) && varTypeIsIntegral(cast->CastToType()));
@@ -955,22 +968,11 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 //    tree - GT_CAST node to be lowered
 //
 // Return Value:
-//    nextNode to be lowered if tree is modified else returns nullptr
+//    None.
 //
-// Notes:
-//    Casts from float/double to a smaller int type are transformed as follows:
-//    GT_CAST(float/double, byte)     =   GT_CAST(GT_CAST(float/double, int32), byte)
-//    GT_CAST(float/double, sbyte)    =   GT_CAST(GT_CAST(float/double, int32), sbyte)
-//    GT_CAST(float/double, int16)    =   GT_CAST(GT_CAST(double/double, int32), int16)
-//    GT_CAST(float/double, uint16)   =   GT_CAST(GT_CAST(double/double, int32), uint16)
-//
-//    Note that for the overflow conversions we still depend on helper calls and
-//    don't expect to see them here.
-//    i) GT_CAST(float/double, int type with overflow detection)
-//
-GenTree* Lowering::LowerCast(GenTree* tree)
+void Lowering::LowerCast(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_CAST);
+    assert(tree->OperIs(GT_CAST));
 
     JITDUMP("LowerCast for: ");
     DISPNODE(tree);
@@ -982,17 +984,16 @@ GenTree* Lowering::LowerCast(GenTree* tree)
 
     if (varTypeIsFloating(srcType))
     {
+        // Overflow casts should have been converted to helper call in morph.
         noway_assert(!tree->gtOverflow());
-        assert(!varTypeIsSmall(dstType)); // fgMorphCast creates intermediate casts when converting from float to small
-                                          // int.
+        // Small types should have had an intermediate int cast inserted in morph.
+        assert(!varTypeIsSmall(dstType));
     }
 
     assert(!varTypeIsSmall(srcType));
 
     // Now determine if we have operands that should be contained.
     ContainCheckCast(tree->AsCast());
-
-    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -2015,11 +2016,9 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
 {
-    assert((node->GetHWIntrinsicId() == NI_Vector64_Create) || (node->GetHWIntrinsicId() == NI_Vector128_Create) ||
-           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalar) ||
-           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalar) ||
-           (node->GetHWIntrinsicId() == NI_Vector64_CreateScalarUnsafe) ||
-           (node->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe) ||
+    assert(HWIntrinsicInfo::IsVectorCreate(node->GetHWIntrinsicId()) ||
+           HWIntrinsicInfo::IsVectorCreateScalar(node->GetHWIntrinsicId()) ||
+           HWIntrinsicInfo::IsVectorCreateScalarUnsafe(node->GetHWIntrinsicId()) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector64) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_DuplicateToVector128) ||
            (node->GetHWIntrinsicId() == NI_AdvSimd_Arm64_DuplicateToVector64) ||
@@ -2278,7 +2277,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     assert(simdSize != 0);
 
     bool   isConstant     = GenTreeVecCon::IsHWIntrinsicCreateConstant<simd_t>(node, simdVal);
-    bool   isCreateScalar = (intrinsicId == NI_Vector64_CreateScalar) || (intrinsicId == NI_Vector128_CreateScalar);
+    bool   isCreateScalar = HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId);
     size_t argCnt         = node->GetOperandCount();
 
     // Check if we have a cast that we can remove. Note that "IsValidConstForMovImm"
@@ -3148,107 +3147,6 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// TryLowerAndOrToCCMP : Lower AND/OR of two conditions into test + CCMP + SETCC nodes.
-//
-// Arguments:
-//    tree - pointer to the node
-//    next - [out] Next node to lower if this function returns true
-//
-// Return Value:
-//    false if no changes were made
-//
-bool Lowering::TryLowerAndOrToCCMP(GenTreeOp* tree, GenTree** next)
-{
-    assert(tree->OperIs(GT_AND, GT_OR));
-
-    if (!comp->opts.OptimizationEnabled())
-    {
-        return false;
-    }
-
-    GenTree* op1 = tree->gtGetOp1();
-    GenTree* op2 = tree->gtGetOp2();
-
-    if ((op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1())) ||
-        (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1())))
-    {
-        JITDUMP("[%06u] is a potential candidate for CCMP:\n", Compiler::dspTreeID(tree));
-        DISPTREERANGE(BlockRange(), tree);
-        JITDUMP("\n");
-    }
-
-    // Find out whether an operand is eligible to be converted to a conditional
-    // compare. It must be a normal integral relop; for example, we cannot
-    // conditionally perform a floating point comparison and there is no "ctst"
-    // instruction that would allow us to conditionally implement
-    // TEST_EQ/TEST_NE.
-    //
-    // For the other operand we can allow more arbitrary operations that set
-    // the condition flags; the final transformation into the flags def is done
-    // by TryLowerConditionToFlagsNode.
-    //
-    GenCondition cond1;
-    if (op2->OperIsCmpCompare() && varTypeIsIntegralOrI(op2->gtGetOp1()) && IsInvariantInRange(op2, tree) &&
-        TryLowerConditionToFlagsNode(tree, op1, &cond1))
-    {
-        // Fall through, converting op2 to the CCMP
-    }
-    else if (op1->OperIsCmpCompare() && varTypeIsIntegralOrI(op1->gtGetOp1()) && IsInvariantInRange(op1, tree) &&
-             TryLowerConditionToFlagsNode(tree, op2, &cond1))
-    {
-        std::swap(op1, op2);
-    }
-    else
-    {
-        JITDUMP("  ..could not turn [%06u] or [%06u] into a def of flags, bailing\n", Compiler::dspTreeID(op1),
-                Compiler::dspTreeID(op2));
-        return false;
-    }
-
-    BlockRange().Remove(op2);
-    BlockRange().InsertBefore(tree, op2);
-
-    GenCondition cond2 = GenCondition::FromRelop(op2);
-    op2->SetOper(GT_CCMP);
-    op2->gtType = TYP_VOID;
-    op2->gtFlags |= GTF_SET_FLAGS;
-
-    op2->gtGetOp1()->ClearContained();
-    op2->gtGetOp2()->ClearContained();
-
-    GenTreeCCMP* ccmp = op2->AsCCMP();
-
-    if (tree->OperIs(GT_AND))
-    {
-        // If the first comparison succeeds then do the second comparison.
-        ccmp->gtCondition = cond1;
-        // Otherwise set the condition flags to something that makes the second
-        // one fail.
-        ccmp->gtFlagsVal = TruthifyingFlags(GenCondition::Reverse(cond2));
-    }
-    else
-    {
-        // If the first comparison fails then do the second comparison.
-        ccmp->gtCondition = GenCondition::Reverse(cond1);
-        // Otherwise set the condition flags to something that makes the second
-        // one succeed.
-        ccmp->gtFlagsVal = TruthifyingFlags(cond2);
-    }
-
-    ContainCheckConditionalCompare(ccmp);
-
-    tree->SetOper(GT_SETCC);
-    tree->AsCC()->gtCondition = cond2;
-
-    JITDUMP("Conversion was legal. Result:\n");
-    DISPTREERANGE(BlockRange(), tree);
-    JITDUMP("\n");
-
-    *next = tree->gtNext;
-    return true;
-}
-
-//------------------------------------------------------------------------
 // TruthifyingFlags: Get a flags immediate that will make a specified condition true.
 //
 // Arguments:
@@ -3286,28 +3184,6 @@ insCflags Lowering::TruthifyingFlags(GenCondition condition)
             return INS_FLAGS_NONE;
     }
 }
-
-//------------------------------------------------------------------------
-// ContainCheckConditionalCompare: determine whether the source of a compare within a compare chain should be contained.
-//
-// Arguments:
-//    node - pointer to the node
-//
-void Lowering::ContainCheckConditionalCompare(GenTreeCCMP* cmp)
-{
-    GenTree* op2 = cmp->gtOp2;
-
-    if (op2->IsCnsIntOrI() && !op2->AsIntCon()->ImmedValNeedsReloc(comp))
-    {
-        target_ssize_t immVal = (target_ssize_t)op2->AsIntCon()->gtIconVal;
-
-        if (emitter::emitIns_valid_imm_for_ccmp(immVal))
-        {
-            MakeSrcContained(cmp, op2);
-        }
-    }
-}
-
 #endif // TARGET_ARM64
 
 //------------------------------------------------------------------------
@@ -3944,13 +3820,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_ExtractVector128:
             case NI_AdvSimd_StoreSelectedScalar:
             case NI_AdvSimd_Arm64_StoreSelectedScalar:
-            case NI_Sve_PrefetchBytes:
-            case NI_Sve_PrefetchInt16:
-            case NI_Sve_PrefetchInt32:
-            case NI_Sve_PrefetchInt64:
+            case NI_Sve_Prefetch16Bit:
+            case NI_Sve_Prefetch32Bit:
+            case NI_Sve_Prefetch64Bit:
+            case NI_Sve_Prefetch8Bit:
             case NI_Sve_ExtractVector:
             case NI_Sve_AddRotateComplex:
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
+            case NI_Sve2_ShiftLeftAndInsert:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())
@@ -4270,14 +4147,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 // CndSel(mask, embedded(trueValOp2), op3)
                 //
                 cndSelNode->Op(2) = nestedCndSel->Op(2);
-                if (nestedOp3->IsMaskZero())
-                {
-                    BlockRange().Remove(nestedOp3);
-                }
-                else
-                {
-                    nestedOp3->SetUnusedValue();
-                }
+                nestedOp3->SetUnusedValue();
 
                 BlockRange().Remove(nestedOp1);
                 BlockRange().Remove(nestedCndSel);
@@ -4314,14 +4184,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
                 op2->SetUnusedValue();
             }
 
-            if (op3->IsMaskZero())
-            {
-                BlockRange().Remove(op3);
-            }
-            else
-            {
-                op3->SetUnusedValue();
-            }
+            op3->SetUnusedValue();
             op1->SetUnusedValue();
 
             GenTree* next = cndSelNode->gtNext;

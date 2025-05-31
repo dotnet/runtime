@@ -131,6 +131,8 @@ configuration:
         - labelAdded:
             label: area-Codegen-Interpreter-mono
         - labelAdded:
+            label: area-CodeGen-Interpreter-coreclr
+        - labelAdded:
             label: area-Codegen-JIT-Mono
         - labelAdded:
             label: area-CodeGen-LLVM-Mono
@@ -377,6 +379,20 @@ configuration:
             mentionees:
             - brzvlad
             - kotlarmilos
+            replyTemplate: >-
+              Tagging subscribers to this area: ${mentionees}
+
+              See info in [area-owners.md](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you want to be subscribed.
+            assignMentionees: False
+      - if:
+        - hasLabel:
+            label: area-CodeGen-Interpreter-coreclr
+        then:
+        - mentionUsers:
+            mentionees:
+            - brzvlad
+            - janvorli
+            - kg
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -709,6 +725,7 @@ configuration:
             mentionees:
             - akoeplinger
             - matouskozak
+            - simonrozsival
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -917,7 +934,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -930,7 +947,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -943,7 +960,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -957,6 +974,7 @@ configuration:
             mentionees:
             - cheenamalhotra
             - david-engel
+            - roji
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1571,7 +1589,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - roji
-            - ajcvickers
+            - SamMonoRT
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 

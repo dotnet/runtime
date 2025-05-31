@@ -103,21 +103,6 @@ namespace Internal.Reflection.Augments
                 return RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(assemblyRef.ToRuntimeAssemblyName());
         }
 
-        public static Assembly Load(ReadOnlySpan<byte> rawAssembly, ReadOnlySpan<byte> pdbSymbolStore)
-        {
-            if (rawAssembly.IsEmpty)
-                throw new ArgumentNullException(nameof(rawAssembly));
-
-            return RuntimeAssemblyInfo.GetRuntimeAssemblyFromByteArray(rawAssembly, pdbSymbolStore);
-        }
-
-        public static Assembly Load(string assemblyPath)
-        {
-            ArgumentNullException.ThrowIfNull(assemblyPath);
-
-            return RuntimeAssemblyInfo.GetRuntimeAssemblyFromPath(assemblyPath);
-        }
-
         //
         // This overload of GetMethodForHandle only accepts handles for methods declared on non-generic types (the method, however,
         // can be an instance of a generic method.) To resolve handles for methods declared on generic types, you must pass

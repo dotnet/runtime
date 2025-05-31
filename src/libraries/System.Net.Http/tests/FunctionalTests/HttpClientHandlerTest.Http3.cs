@@ -1896,8 +1896,7 @@ namespace System.Net.Http.Functional.Tests
         public static TheoryData<string> InteropUris() =>
             new TheoryData<string>
             {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/83775")]
-                //{ "https://www.litespeedtech.com/" }, // LiteSpeed
+                { "https://www.litespeedtech.com/" }, // LiteSpeed
                 { "https://quic.tech:8443/" }, // Cloudflare
                 { "https://quic.aiortc.org:443/" }, // aioquic
                 { "https://h2o.examp1e.net/" } // h2o/quicly

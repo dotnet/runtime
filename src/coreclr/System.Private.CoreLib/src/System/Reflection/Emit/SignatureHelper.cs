@@ -64,11 +64,12 @@ namespace System.Reflection.Emit
                 intCall |= MdSigCallingConvention.Generic;
             }
 
-            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis)
-                intCall |= MdSigCallingConvention.HasThis;
+            const byte Mask = (byte)(CallingConventions.HasThis | CallingConventions.ExplicitThis);
+            intCall = (MdSigCallingConvention)((byte)intCall | (unchecked((byte)callingConvention) & Mask));
 
             sigHelp = new SignatureHelper(scope, intCall, cGenericParam, returnType,
-                                            requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers);
+                requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers);
+
             sigHelp.AddArguments(parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
 
             return sigHelp;
@@ -151,11 +152,12 @@ namespace System.Reflection.Emit
 
             MdSigCallingConvention intCall = MdSigCallingConvention.Property;
 
-            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis)
-                intCall |= MdSigCallingConvention.HasThis;
+            const byte Mask = (byte)(CallingConventions.HasThis | CallingConventions.ExplicitThis);
+            intCall = (MdSigCallingConvention)((byte)intCall | (unchecked((byte)callingConvention) & Mask));
 
             sigHelp = new SignatureHelper(mod, intCall,
                 returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers);
+
             sigHelp.AddArguments(parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
 
             return sigHelp;

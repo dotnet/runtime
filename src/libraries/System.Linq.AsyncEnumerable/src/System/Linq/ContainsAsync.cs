@@ -24,9 +24,9 @@ namespace System.Linq
             IEqualityComparer<TSource>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
-            return Impl(source.WithCancellation(cancellationToken).ConfigureAwait(false), value, comparer ?? EqualityComparer<TSource>.Default);
+            return Impl(source.WithCancellation(cancellationToken), value, comparer ?? EqualityComparer<TSource>.Default);
 
             async static ValueTask<bool> Impl(
                 ConfiguredCancelableAsyncEnumerable<TSource> source,

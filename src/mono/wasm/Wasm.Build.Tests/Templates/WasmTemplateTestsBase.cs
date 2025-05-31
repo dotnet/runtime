@@ -60,7 +60,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         Configuration config,
         bool aot,
         string idPrefix = "wbt",
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         string extraArgs = "",
         bool runAnalyzers = true,
         bool addFrameworkArg = false,
@@ -69,7 +69,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI);
 
         if (addFrameworkArg)
             extraArgs += $" -f {DefaultTargetFramework}";
@@ -80,26 +80,9 @@ public class WasmTemplateTestsBase : BuildTestBase
             .ExecuteWithCapturedOutput($"new {template.ToString().ToLower()} {extraArgs}")
             .EnsureSuccessful();
 
-        UpdateBootJsInHtmlFiles();
-
         string projectFilePath = Path.Combine(_projectDir, $"{projectName}.csproj");
         UpdateProjectFile(projectFilePath, runAnalyzers, extraProperties, extraItems, insertAtEnd);
         return new ProjectInfo(projectName, projectFilePath, logPath, nugetDir);
-    }
-
-    protected void UpdateBootJsInHtmlFiles()
-    {
-        foreach (var filePath in Directory.EnumerateFiles(_projectDir, "*.html", SearchOption.AllDirectories))
-        {
-            UpdateBootJsInHtmlFile(filePath);
-        }
-    }
-
-    protected void UpdateBootJsInHtmlFile(string filePath)
-    {
-        string fileContent = File.ReadAllText(filePath);
-        fileContent = StringReplaceWithAssert(fileContent, "<head>", "<head><script>window['__DOTNET_INTERNAL_BOOT_CONFIG_SRC'] = 'dotnet.boot.js';</script>");
-        File.WriteAllText(filePath, fileContent);
     }
 
     protected ProjectInfo CopyTestAsset(
@@ -107,14 +90,14 @@ public class WasmTemplateTestsBase : BuildTestBase
         bool aot,
         TestAsset asset,
         string idPrefix,
-        bool appendUnicodeToPath = true,
+        bool? appendUnicodeToPath = null,
         bool runAnalyzers = true,
         string extraProperties = "",
         string extraItems = "",
         string insertAtEnd = "")
     {
         (string projectName, string logPath, string nugetDir) =
-            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath, avoidAotLongPathIssue: s_isWindows && aot);
+            InitProjectLocation(idPrefix, config, aot, appendUnicodeToPath ?? s_buildEnv.IsRunningOnCI, avoidAotLongPathIssue: s_isWindows && aot);
         Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, asset.Name), Path.Combine(_projectDir));
         if (!string.IsNullOrEmpty(asset.RunnableProjectSubPath))
         {
@@ -136,39 +119,45 @@ public class WasmTemplateTestsBase : BuildTestBase
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
-        bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProjectCore(info, configuration, _defaultPublishOptions, isNativeBuild);
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) => // null for unset properties
+        BuildProjectCore(info, configuration, _defaultPublishOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     public virtual (string projectDir, string buildOutput) PublishProject(
         ProjectInfo info,
         Configuration configuration,
         PublishOptions publishOptions,
-        bool? isNativeBuild = null) =>
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) =>
         BuildProjectCore(
             info,
             configuration,
             publishOptions with { ExtraMSBuildArgs = $"{_extraBuildArgsPublish} {publishOptions.ExtraMSBuildArgs}" },
-            isNativeBuild
+            isNativeBuild,
+            wasmFingerprintDotnetJs
         );
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
-        bool? isNativeBuild = null) => // null for WasmBuildNative unset
-        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild);
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) => // null for unset properties
+        BuildProjectCore(info, configuration, _defaultBuildOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     public virtual (string projectDir, string buildOutput) BuildProject(
         ProjectInfo info,
         Configuration configuration,
         BuildOptions buildOptions,
-        bool? isNativeBuild = null) =>
-        BuildProjectCore(info, configuration, buildOptions, isNativeBuild);
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null) =>
+        BuildProjectCore(info, configuration, buildOptions, isNativeBuild, wasmFingerprintDotnetJs);
 
     private (string projectDir, string buildOutput) BuildProjectCore(
         ProjectInfo info,
         Configuration configuration,
         MSBuildOptions buildOptions,
-        bool? isNativeBuild = null)
+        bool? isNativeBuild = null,
+        bool? wasmFingerprintDotnetJs = null)
     {
         if (buildOptions.AOT)
         {
@@ -180,7 +169,11 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         buildOptions.ExtraBuildEnvironmentVariables["TreatPreviousAsCurrent"] = "false";
 
-        buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
+        if (buildOptions.BootConfigFileName != null)
+        {
+            // Omit implicit default
+            buildOptions = buildOptions with { ExtraMSBuildArgs = $"{buildOptions.ExtraMSBuildArgs} -p:WasmBootConfigFileName={buildOptions.BootConfigFileName}" };
+        }
 
         (CommandResult res, string logFilePath) = BuildProjectWithoutAssert(configuration, info.ProjectName, buildOptions);
 
@@ -195,7 +188,7 @@ public class WasmTemplateTestsBase : BuildTestBase
 
         if (buildOptions.AssertAppBundle)
         {
-            _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, res.Output);
+            _provider.AssertWasmSdkBundle(configuration, buildOptions, IsUsingWorkloads, isNativeBuild, wasmFingerprintDotnetJs, res.Output);
         }
         return (_projectDir, res.Output);
     }
@@ -342,7 +335,7 @@ public class WasmTemplateTestsBase : BuildTestBase
             await blazorOp.Test(page);
 
         _testOutput.WriteLine($"Waiting for additional 10secs to see if any errors are reported");
-        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(10));
+        int exitCode = await runner.WaitForExitMessageAsync(TimeSpan.FromSeconds(runOptions.TimeoutSeconds ?? 10));
         if (runOptions.ExpectedExitCode is not null && exitCode != runOptions.ExpectedExitCode)
             throw new Exception($"Expected exit code {runOptions.ExpectedExitCode} but got {exitCode}.\nconsoleOutput={string.Join("\n", consoleOutput)}");
 
@@ -388,6 +381,9 @@ public class WasmTemplateTestsBase : BuildTestBase
 
     public string GetBinFrameworkDir(Configuration config, bool forPublish, string? framework = null, string? projectDir = null) =>
         _provider.GetBinFrameworkDir(config, forPublish, framework ?? DefaultTargetFramework, projectDir);
+
+    public string GetObjDir(Configuration config, string? framework = null, string? projectDir = null) =>
+        _provider.GetObjDir(config, framework ?? DefaultTargetFramework, projectDir);
 
     public BuildPaths GetBuildPaths(Configuration config, bool forPublish) =>
         _provider.GetBuildPaths(config, forPublish);
