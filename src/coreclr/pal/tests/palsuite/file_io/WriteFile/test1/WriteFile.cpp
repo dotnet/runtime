@@ -101,7 +101,7 @@ PALTEST(file_io_WriteFile_test1_paltest_writefile_test1, "file_io/WriteFile/test
     }
 
 	//To delete file need to make it normal
-	if((last_error = chmod(szReadOnlyFile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)))
+	if ((last_error = chmod(szReadOnlyFile, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) != 0)
 	{
 	    Fail("WriteFile: ERROR[%ld] -> Unable to make the file attribute NORMAL.\n", last_error);
 
