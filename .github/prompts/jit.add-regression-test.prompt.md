@@ -68,7 +68,7 @@ using Xunit;
 
 public class Runtime_<issue_number>
 {
-    [Fact]`
+    [Fact]
     public static void Problem()
     {
     }
