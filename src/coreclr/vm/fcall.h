@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// FCall is a high-performance alternative to ECall. Unlike ECall, FCall
-// methods do not necessarily create a frame.   Jitted code calls directly
-// to the FCall entry point.   It is possible to do operations that need
-// to have a frame within an FCall, you need to manually set up the frame
-// before you do such operations.
+// FCall is a high-performance call into unmanaged runtime code from managed code.
+// The managed code calls directly to the FCall entry point.  It is possible to do
+// operations that need to have a frame within an FCall, you need to manually set up
+// the frame before you do such operations.
 
 // Causing GC or EH in an FCALL is illegal. QCalls should be used instead.
 
