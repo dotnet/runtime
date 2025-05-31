@@ -877,8 +877,7 @@ PhaseStatus Compiler::fgInline()
 
             // See if stmt is of the form GT_COMMA(call, nop)
             // If yes, we can get rid of GT_COMMA.
-            if (expr->OperIs(GT_COMMA) && expr->AsOp()->gtOp1->OperIs(GT_CALL) &&
-                expr->AsOp()->gtOp2->OperIs(GT_NOP))
+            if (expr->OperIs(GT_COMMA) && expr->AsOp()->gtOp1->OperIs(GT_CALL) && expr->AsOp()->gtOp2->OperIs(GT_NOP))
             {
                 madeChanges = true;
                 stmt->SetRootNode(expr->AsOp()->gtOp1);

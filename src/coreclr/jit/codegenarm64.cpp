@@ -3788,10 +3788,9 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         // These are imported normally if Atomics aren't supported.
         assert(!treeNode->OperIs(GT_XORR, GT_XAND));
 
-        regNumber exResultReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
-        regNumber storeDataReg =
-            treeNode->OperIs(GT_XCHG) ? dataReg : internalRegisters.Extract(treeNode, RBM_ALLINT);
-        regNumber loadReg = (targetReg != REG_NA) ? targetReg : storeDataReg;
+        regNumber exResultReg  = internalRegisters.Extract(treeNode, RBM_ALLINT);
+        regNumber storeDataReg = treeNode->OperIs(GT_XCHG) ? dataReg : internalRegisters.Extract(treeNode, RBM_ALLINT);
+        regNumber loadReg      = (targetReg != REG_NA) ? targetReg : storeDataReg;
 
         // Check allocator assumptions
         //
