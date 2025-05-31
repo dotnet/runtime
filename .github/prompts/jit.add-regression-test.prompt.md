@@ -47,7 +47,7 @@ relevant information about the test, such as environment variables.
     </ItemGroup>
   ```
 
-  environment variablies require the following property:
+  environment variables require the following property:
 
   ```xml
     <PropertyGroup>
