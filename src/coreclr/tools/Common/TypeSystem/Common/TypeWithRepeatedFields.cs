@@ -102,6 +102,8 @@ namespace Internal.TypeSystem
 
         public override bool IsSequentialLayout => MetadataType.IsSequentialLayout;
 
+        public override bool IsExtendedLayout => MetadataType.IsExtendedLayout;
+
         public override bool IsBeforeFieldInit => MetadataType.IsBeforeFieldInit;
 
         public override ModuleDesc Module => MetadataType.Module;
@@ -121,5 +123,7 @@ namespace Internal.TypeSystem
         public override TypeSystemContext Context => MetadataType.Context;
 
         public override IEnumerable<MethodDesc> GetMethods() => MethodDesc.EmptyMethods;
+
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo() => MetadataType.GetExtendedLayoutInfo();
     }
 }

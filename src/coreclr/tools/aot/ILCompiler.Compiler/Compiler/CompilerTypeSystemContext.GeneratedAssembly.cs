@@ -151,11 +151,12 @@ namespace ILCompiler
 
             public override ClassLayoutMetadata GetClassLayout()
             {
-                return new ClassLayoutMetadata
-                {
-                    PackingSize = 0,
-                    Size = 0,
-                };
+                return default;
+            }
+
+            public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+            {
+                return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
             }
 
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
@@ -205,6 +206,14 @@ namespace ILCompiler
             }
 
             public override bool IsSequentialLayout
+            {
+                get
+                {
+                    return false;
+                }
+            }
+
+            public override bool IsExtendedLayout
             {
                 get
                 {

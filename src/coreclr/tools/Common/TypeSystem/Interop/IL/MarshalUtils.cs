@@ -29,6 +29,12 @@ namespace Internal.TypeSystem.Interop
 
             var mdType = (MetadataType)type;
 
+            if (mdType.IsExtendedLayout && mdType.GetExtendedLayoutInfo() is { Kind: ExtendedLayoutKind.CStruct })
+            {
+                // CStruct layout is always blittable (non-blittable CStruct layout is blocked during type layout).
+                return true;
+            }
+
             if (!mdType.IsSequentialLayout && !mdType.IsExplicitLayout)
             {
                 return false;

@@ -264,6 +264,7 @@ namespace ILCompiler
             public override PInvokeStringFormat PInvokeStringFormat => PInvokeStringFormat.AutoClass;
             public override bool IsExplicitLayout => false;
             public override bool IsSequentialLayout => true;
+            public override bool IsExtendedLayout => true;
             public override bool IsBeforeFieldInit => false;
             public override MetadataType MetadataBaseType => (MetadataType)Context.GetWellKnownType(WellKnownType.Object);
             public override DefType BaseType => MetadataBaseType;
@@ -345,6 +346,11 @@ namespace ILCompiler
             public override IEnumerable<FieldDesc> GetFields()
             {
                 return Array.Empty<FieldDesc>();
+            }
+
+            public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+            {
+                return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
             }
         }
 

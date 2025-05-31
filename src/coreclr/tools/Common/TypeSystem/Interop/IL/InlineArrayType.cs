@@ -91,6 +91,14 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -177,6 +185,11 @@ namespace Internal.TypeSystem.Interop
             result.PackingSize = 0;
             result.Size = checked((int)Length * ElementType.GetElementSize().AsInt);
             return result;
+        }
+
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
         }
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)

@@ -75,11 +75,24 @@ namespace Internal.TypeSystem.Interop
             throw new InvalidOperationException();
         }
 
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            return ManagedStructType.GetExtendedLayoutInfo();
+        }
+
         public override bool IsSequentialLayout
         {
             get
             {
                 return ManagedStructType.IsSequentialLayout;
+            }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return ManagedStructType.IsExtendedLayout;
             }
         }
 
@@ -241,16 +254,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override ClassLayoutMetadata GetClassLayout()
-        {
-            ClassLayoutMetadata layout = ManagedStructType.GetClassLayout();
-
-            ClassLayoutMetadata result;
-            result.PackingSize = layout.PackingSize;
-            result.Size = layout.Size;
-
-            return result;
-        }
+        public override ClassLayoutMetadata GetClassLayout() => ManagedStructType.GetClassLayout();
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {

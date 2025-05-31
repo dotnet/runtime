@@ -18,6 +18,7 @@ namespace Internal.TypeSystem.Ecma
     /// </summary>
     public sealed partial class EcmaType : MetadataType, EcmaModule.IEntityHandleObject
     {
+        private const TypeAttributes TypeAttributesExtendedLayout = (TypeAttributes)0x00000018;
         private EcmaModule _module;
         private TypeDefinitionHandle _handle;
 
@@ -574,11 +575,41 @@ namespace Internal.TypeSystem.Ecma
             };
         }
 
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            Debug.Assert(this.IsExtendedLayout);
+
+            var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
+
+            if (attrHandle.IsNil)
+            {
+                ThrowHelper.ThrowTypeLoadException(this);
+            }
+
+            var attr = MetadataReader.GetCustomAttribute(attrHandle);
+
+            var attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(_module));
+
+            if (attrValue.FixedArguments is not [{ Value: int kind }])
+            {
+                ThrowHelper.ThrowTypeLoadException(this);
+                return default;
+            }
+
+            ExtendedLayoutKind extendedLayoutKind = kind is int intValue ? (ExtendedLayoutKind)intValue : ExtendedLayoutKind.None;
+
+            return new ExtendedLayoutInfo
+            {
+                Kind = extendedLayoutKind
+            };
+        }
+
         public override bool IsExplicitLayout
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.ExplicitLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.ExplicitLayout;
             }
         }
 
@@ -586,8 +617,13 @@ namespace Internal.TypeSystem.Ecma
         {
             get
             {
-                return (_typeDefinition.Attributes & TypeAttributes.SequentialLayout) != 0;
+                return (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributes.SequentialLayout;
             }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get => (_typeDefinition.Attributes & TypeAttributes.LayoutMask) == TypeAttributesExtendedLayout;
         }
 
         public override bool IsBeforeFieldInit

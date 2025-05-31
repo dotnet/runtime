@@ -82,6 +82,11 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        public override bool IsExtendedLayout
+        {
+            get => false;
+        }
+
         public override bool IsBeforeFieldInit
         {
             get
@@ -269,6 +274,11 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert((int)kind < _methods.Length);
 
             return _methods[(int)kind];
+        }
+
+        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
+        {
+            return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
         }
     }
 

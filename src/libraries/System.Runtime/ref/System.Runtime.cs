@@ -12785,6 +12785,7 @@ namespace System.Reflection
         VisibilityMask = 7,
         SequentialLayout = 8,
         ExplicitLayout = 16,
+        ExtendedLayout = 24,
         LayoutMask = 24,
         ClassSemanticsMask = 32,
         Interface = 32,
@@ -14196,11 +14197,21 @@ namespace System.Runtime.InteropServices
         protected void SetHandle(System.IntPtr handle) { }
         public void SetHandleAsInvalid() { }
     }
+
+    [System.AttributeUsageAttribute(System.AttributeTargets.Struct, Inherited = false)]
+    public sealed class ExtendedLayoutAttribute : System.Attribute
+    {
+        public ExtendedLayoutAttribute(System.Runtime.InteropServices.ExtendedLayoutKind layoutKind) { }
+    }
+    public enum ExtendedLayoutKind
+    {
+        CStruct = 0,
+    }
     public partial class ExternalException : System.SystemException
     {
         public ExternalException() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected ExternalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ExternalException(string? message) { }
         public ExternalException(string? message, System.Exception? inner) { }
@@ -14277,6 +14288,7 @@ namespace System.Runtime.InteropServices
     public enum LayoutKind
     {
         Sequential = 0,
+        Extended = 1,
         Explicit = 2,
         Auto = 3,
     }
