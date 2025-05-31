@@ -87,13 +87,6 @@ bool
 eventpipe_collect_tracing_command_try_parse_config (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
-	dn_vector_t **result);
-
-static
-bool
-eventpipe_collect_tracing_command_try_parse_config (
-	uint8_t **buffer,
-	uint32_t *buffer_len,
 	dn_vector_t **result,
 	EventPipeProviderOptionalFieldFlags optional_field_flags);
 
@@ -518,94 +511,6 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
-static
-bool
-eventpipe_collect_tracing_command_try_parse_config (
-	uint8_t **buffer,
-	uint32_t *buffer_len,
-	dn_vector_t **result)
-{
-	EP_ASSERT (buffer != NULL);
-	EP_ASSERT (buffer_len != NULL);
-	EP_ASSERT (result != NULL);
-
-	// Picking an arbitrary upper bound,
-	// This should be larger than any reasonable client request.
-	// TODO: This might be too large.
-	const uint32_t max_count_configs = 1000;
-	uint32_t count_configs = 0;
-
-	uint8_t *provider_name_byte_array = NULL;
-	uint8_t *filter_data_byte_array = NULL;
-
-	ep_char8_t *provider_name_utf8 = NULL;
-	ep_char8_t *filter_data_utf8 = NULL;
-
-	dn_vector_custom_alloc_params_t params = {0, };
-
-	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
-	ep_raise_error_if_nok (count_configs <= max_count_configs);
-
-	params.capacity = count_configs;
-
-	*result = dn_vector_custom_alloc_t (&params, EventPipeProviderConfiguration);
-	ep_raise_error_if_nok (*result);
-
-	for (uint32_t i = 0; i < count_configs; ++i) {
-		uint64_t keywords = 0;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, &keywords));
-
-		uint32_t log_level = 0;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &log_level));
-		ep_raise_error_if_nok (log_level <= EP_EVENT_LEVEL_VERBOSE);
-
-		uint32_t provider_name_byte_array_len = 0;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &provider_name_byte_array, &provider_name_byte_array_len));
-
-		provider_name_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)provider_name_byte_array);
-		ep_raise_error_if_nok (provider_name_utf8 != NULL);
-
-		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name_utf8));
-
-		ep_rt_byte_array_free (provider_name_byte_array);
-		provider_name_byte_array = NULL;
-
-		uint32_t filter_data_byte_array_len = 0;
-		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &filter_data_byte_array, &filter_data_byte_array_len));
-
-		// This parameter is optional.
-		if (filter_data_byte_array) {
-			filter_data_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)filter_data_byte_array);
-			ep_raise_error_if_nok (filter_data_utf8 != NULL);
-
-			ep_rt_byte_array_free (filter_data_byte_array);
-			filter_data_byte_array = NULL;
-		}
-
-		EventPipeProviderConfiguration provider_config;
-		if (ep_provider_config_init (&provider_config, provider_name_utf8, keywords, (EventPipeEventLevel)log_level, filter_data_utf8)) {
-			if (dn_vector_push_back (*result, provider_config)) {
-				// Ownership transferred.
-				provider_name_utf8 = NULL;
-				filter_data_utf8 = NULL;
-			}
-			ep_provider_config_fini (&provider_config);
-		}
-		ep_raise_error_if_nok (provider_name_utf8 == NULL && filter_data_utf8 == NULL);
-	}
-
-ep_on_exit:
-	return (count_configs > 0);
-
-ep_on_error:
-	count_configs = 0;
-	ep_rt_byte_array_free (provider_name_byte_array);
-	ep_rt_utf8_string_free (provider_name_utf8);
-	ep_rt_byte_array_free (filter_data_byte_array);
-	ep_rt_utf8_string_free (filter_data_utf8);
-	ep_exit_error_handler ();
-}
-
 /*
  * eventpipe_collect_tracing_command_try_parse_config
  *
@@ -730,7 +635,7 @@ eventpipe_collect_tracing_command_try_parse_payload (
 
 	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, EP_PROVIDER_OPTFIELD_NONE))
 		ep_raise_error ();
 	instance->rundown_requested = true;
 	instance->stackwalk_requested = true;
@@ -764,7 +669,7 @@ eventpipe_collect_tracing2_command_try_parse_payload (
 	if (!eventpipe_collect_tracing_command_try_parse_circular_buffer_size (&buffer_cursor, &buffer_cursor_len, &instance->circular_buffer_size_in_mb ) ||
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, EP_PROVIDER_OPTFIELD_NONE))
 		ep_raise_error ();
 
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
@@ -800,7 +705,7 @@ eventpipe_collect_tracing3_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_requested (&buffer_cursor, &buffer_cursor_len, &instance->rundown_requested) ||
 		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, EP_PROVIDER_OPTFIELD_NONE))
 		ep_raise_error ();
 
 	instance->rundown_keyword = instance->rundown_requested ? ep_default_rundown_keyword : 0;
@@ -834,7 +739,7 @@ eventpipe_collect_tracing4_command_try_parse_payload (
 		!eventpipe_collect_tracing_command_try_parse_serialization_format (&buffer_cursor, &buffer_cursor_len, &instance->serialization_format) ||
 		!eventpipe_collect_tracing_command_try_parse_rundown_keyword (&buffer_cursor, &buffer_cursor_len, &instance->rundown_keyword) ||
 		!eventpipe_collect_tracing_command_try_parse_stackwalk_requested (&buffer_cursor, &buffer_cursor_len, &instance->stackwalk_requested) ||
-		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs))
+		!eventpipe_collect_tracing_command_try_parse_config (&buffer_cursor, &buffer_cursor_len, &instance->provider_configs, EP_PROVIDER_OPTFIELD_NONE))
 		ep_raise_error ();
 
 	instance->rundown_requested = instance->rundown_keyword != 0;
