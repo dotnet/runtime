@@ -1404,7 +1404,7 @@ public:
 #ifdef TARGET_64BIT
         return false;
 #else
-        return (OperIs(GT_LSH_HI)) || (OperIs(GT_RSH_LO));
+        return StaticOperIs(gtOper, GT_LSH_HI, GT_RSH_LO);
 #endif
     }
 
@@ -1705,7 +1705,7 @@ public:
 #if defined(TARGET_64BIT)
         return false;
 #else
-        return OperIs(GT_LONG);
+        return gtOper == GT_LONG;
 #endif
     }
 
