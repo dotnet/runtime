@@ -2581,6 +2581,9 @@
   <data name="InvalidOperation_CannotRegisterSecondHandler" xml:space="preserve">
     <value>A handler for unhandled exceptions is already set.</value>
   </data>
+  <data name="InvalidOperation_CannotRegisterSecondFatalHandler" xml:space="preserve">
+    <value>A handler for fatal errors is already set.</value>
+  </data>
   <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
