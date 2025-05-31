@@ -282,7 +282,7 @@ public:
             {
                 GenTree* effectiveValue = value->gtEffectiveVal();
 
-                noway_assert(!varTypeIsStruct(effectiveValue) || (effectiveValue->OperGet() != GT_RET_EXPR) ||
+                noway_assert(!varTypeIsStruct(effectiveValue) || (!effectiveValue->OperIs(GT_RET_EXPR)) ||
                              !effectiveValue->AsRetExpr()->gtInlineCandidate->HasMultiRegRetVal());
             }
         }

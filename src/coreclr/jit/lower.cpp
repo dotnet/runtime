@@ -7483,7 +7483,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     assert(varTypeIsFloating(divMod->TypeGet()));
 #endif // USE_HELPERS_FOR_INT_DIV
 #if defined(TARGET_ARM64)
-    assert(divMod->OperGet() != GT_UMOD);
+    assert(!divMod->OperIs(GT_UMOD));
 #endif // TARGET_ARM64
 
     GenTree* dividend = divMod->gtGetOp1();
@@ -7797,7 +7797,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         *nextNode = node->gtNext;
         return true;
     }
-    assert(node->OperGet() != GT_MOD);
+    assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARM64
 
     if (!divisor->IsCnsIntOrI())

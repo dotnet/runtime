@@ -3808,7 +3808,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         assert(addr->isUsedFromReg());
         noway_assert(exResultReg != REG_NA);
         noway_assert(exResultReg != targetReg);
-        noway_assert((targetReg != REG_NA) || (treeNode->OperGet() != GT_XCHG));
+        noway_assert((targetReg != REG_NA) || (!treeNode->OperIs(GT_XCHG)));
 
         // Store exclusive unpredictable cases must be avoided
         noway_assert(exResultReg != storeDataReg);

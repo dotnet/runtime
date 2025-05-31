@@ -465,7 +465,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
         std::swap(op1, op2);
     }
 
-    if (op1->OperGet() != GT_LCL_VAR)
+    if (!op1->OperIs(GT_LCL_VAR))
     {
         JITDUMP("Not monotonically increasing because op1 is not lclVar.\n");
         return false;

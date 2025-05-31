@@ -15120,14 +15120,14 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         // over in impImportAndPushBox for the inlined box case.
         //
         GenTree* copyDstAddr = copy->AsIndir()->Addr();
-        if (copyDstAddr->OperGet() != GT_ADD)
+        if (!copyDstAddr->OperIs(GT_ADD))
         {
             JITDUMP("Unexpected copy dest address tree\n");
             return nullptr;
         }
 
         GenTree* copyDstAddrOp1 = copyDstAddr->AsOp()->gtOp1;
-        if ((copyDstAddrOp1->OperGet() != GT_LCL_VAR) || (copyDstAddrOp1->AsLclVarCommon()->GetLclNum() != boxTempLcl))
+        if ((!copyDstAddrOp1->OperIs(GT_LCL_VAR)) || (copyDstAddrOp1->AsLclVarCommon()->GetLclNum() != boxTempLcl))
         {
             JITDUMP("Unexpected copy dest address 1st addend\n");
             return nullptr;

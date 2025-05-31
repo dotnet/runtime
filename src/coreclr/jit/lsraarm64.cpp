@@ -1059,7 +1059,7 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 // GT_XCHG requires a single internal register; the others require two.
                 buildInternalIntRegisterDefForNode(tree);
-                if (tree->OperGet() != GT_XCHG)
+                if (!tree->OperIs(GT_XCHG))
                 {
                     buildInternalIntRegisterDefForNode(tree);
                 }

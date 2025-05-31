@@ -524,7 +524,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         addr = addr->gtGetOp1();
     }
 
-    if (addr->OperGet() != GT_LCL_VAR)
+    if (!addr->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
@@ -546,7 +546,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
     {
         GenTree* nullCheckAddr = nullCheckTree->AsIndir()->Addr();
-        if ((nullCheckAddr->OperGet() != GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
+        if ((!nullCheckAddr->OperIs(GT_LCL_VAR)) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
         {
             nullCheckTree = nullptr;
         }
@@ -575,21 +575,21 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         }
 
         GenTree* defValue = defNode->Data();
-        if (defValue->OperGet() != GT_COMMA)
+        if (!defValue->OperIs(GT_COMMA))
         {
             return nullptr;
         }
 
         GenTree* commaOp1EffectiveValue = defValue->gtGetOp1()->gtEffectiveVal();
 
-        if (commaOp1EffectiveValue->OperGet() != GT_NULLCHECK)
+        if (!commaOp1EffectiveValue->OperIs(GT_NULLCHECK))
         {
             return nullptr;
         }
 
         GenTree* nullCheckAddress = commaOp1EffectiveValue->gtGetOp1();
 
-        if ((nullCheckAddress->OperGet() != GT_LCL_VAR) || (defValue->gtGetOp2()->OperGet() != GT_ADD))
+        if ((!nullCheckAddress->OperIs(GT_LCL_VAR)) || (defValue->gtGetOp2()->OperGet() != GT_ADD))
         {
             return nullptr;
         }

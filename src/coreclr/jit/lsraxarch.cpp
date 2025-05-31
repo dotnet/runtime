@@ -3228,7 +3228,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     // This special widening 32x32->64 MUL is not used on x64
 #if defined(TARGET_X86)
-    if (tree->OperGet() != GT_MUL_LONG)
+    if (!tree->OperIs(GT_MUL_LONG))
 #endif
     {
         assert((tree->gtFlags & GTF_MUL_64RSLT) == 0);

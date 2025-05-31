@@ -1044,7 +1044,7 @@ bool BasicBlock::isEmpty() const
     {
         for (GenTree* node : LIR::AsRange(this))
         {
-            if (node->OperGet() != GT_IL_OFFSET)
+            if (!node->OperIs(GT_IL_OFFSET))
             {
                 return false;
             }
