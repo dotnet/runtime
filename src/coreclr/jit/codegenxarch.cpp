@@ -811,7 +811,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     GenTree* regOp = op1;
     GenTree* rmOp  = op2;
 
-    if ((treeNode->gtFlags & GTF_UNSIGNED) != 0 && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
        // Set rmOp to the memory operand (if any)
         if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RDX)))
@@ -820,15 +820,15 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             rmOp  = op1;
         }
         assert(regOp->isUsedFromReg());
+        assert(regOp->GetRegNum() == REG_RDX);
 
         // Setup targetReg when neither of the source operands was a matching register
         inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
 
         if (treeNode->OperGet() == GT_MULHI)
         {
-            // Move the result to the desired register, if necessary
-            // emit MULX instruction, use same register for both hi and low result
-            inst_RV_RV_TT(INS_mulx, size, targetReg, targetReg, op2, /* isRMW */ false, INS_OPTS_NONE);
+            // emit MULX instruction, use targetReg twice to only store high result
+            inst_RV_RV_TT(INS_mulx, size, targetReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
         }
         else
         {
@@ -836,11 +836,11 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             assert(false);
 #else
             assert(treeNode->OperGet() == GT_MUL_LONG);
-                // Move the result to the desired register, if necessary
-            // emit MULX instruction, use same register for both hi and low result
+
+            // emit MULX instruction
             regNumber hiReg  = targetReg;
             regNumber lowReg  = treeNode->AsMultiRegOp()->GetRegByIndex(1);
-            inst_RV_RV_TT(INS_mulx, size, hiReg, lowReg, op2, /* isRMW */ false, INS_OPTS_NONE);
+            inst_RV_RV_TT(INS_mulx, size, hiReg, lowReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
 #endif
         }
     }
@@ -858,7 +858,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
 
         instruction ins;
-        if ((treeNode->gtFlags & GTF_UNSIGNED) == 0)
+        if (!treeNode->IsUnsigned())
         {
             ins = INS_imulEAX;
         }

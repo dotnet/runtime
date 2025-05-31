@@ -822,9 +822,8 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 #endif
         case GT_MULHI:
         {
-            // For unsigned mulhi, we can use mulx which has 3-op form if BMI2 is available.
-            return ((tree->gtFlags & GTF_UNSIGNED) == 0) ||
-                   !compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+            // MUL, IMUL are RMW but mulx is not (which is used for unsigned operands when BMI2 is availible)
+            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2));
         }
 
 #ifdef FEATURE_HW_INTRINSICS
