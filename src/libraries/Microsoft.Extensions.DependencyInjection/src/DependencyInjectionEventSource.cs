@@ -168,14 +168,18 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             lock (_providers)
             {
-                _providers.RemoveAll(static p => !p.TryGetTarget(out _));
                 for (int i = _providers.Count - 1; i >= 0; i--)
                 {
                     // remove the provider, along with any stale references
-                    if (_providers[i].TryGetTarget(out ServiceProvider? target) && target == provider)
+                    WeakReference<ServiceProvider> reference = _providers[i];
+                    if (!reference.TryGetTarget(out ServiceProvider? target) || target == provider)
                     {
                         _providers.RemoveAt(i);
-                        break;
+
+                        if (target is not null)
+                        {
+                            break;
+                        }
                     }
                 }
             }
