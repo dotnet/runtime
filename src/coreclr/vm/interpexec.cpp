@@ -8,7 +8,7 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE pCode)
 {
     CONTRACTL
     {
@@ -41,7 +41,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetNativeCode()); // The method to call
+    pHeader->SetTarget(pCode); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -1151,7 +1151,7 @@ CALL_TARGET_IP:
                     else if (codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
                     {
                         MethodDesc *pMD = codeInfo.GetMethodDesc();
-                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset);
+                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, pMD->GetNativeCode());
                         break;
                     }
 
@@ -1212,6 +1212,28 @@ CALL_TARGET_IP:
 
                     ip += 5;
                     goto CALL_INTERP_SLOT;
+                }
+                case INTOP_NEWOBJ_VAROBJSIZE:
+                {
+                    returnOffset = ip[1];
+                    callArgsOffset = ip[2];
+                    methodSlot = ip[3];
+
+                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
+                    assert(targetMethod & INTERP_METHOD_HANDLE_TAG);
+                    MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
+
+                    // If we are constructing a type with a component size (i.e. a string) its constructor is a special
+                    //  fcall that is basically a static method that returns the new instance.
+                    // Get the address of the fcall that implements the ctor
+                    PCODE code = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+                    assert(code);
+
+                    // callArgsOffset points to the ctor arguments, which are what the fcall expects.
+                    // returnOffset points to where the new instance goes, and the fcall will write it there.
+                    InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, code);
+                    ip += 5;
+                    break;
                 }
                 case INTOP_ZEROBLK_IMM:
                     memset(LOCAL_VAR(ip[1], void*), 0, ip[2]);

@@ -3026,36 +3026,53 @@ retry_emit:
                 m_compHnd->getMethodSig(ctorMethod, &ctorSignature);
                 ctorClass = m_compHnd->getMethodClass(ctorMethod);
                 int32_t numArgs = ctorSignature.numArgs;
+                bool isStringOrArray = m_compHnd->getClassAttribs(ctorClass) & CORINFO_FLG_VAROBJSIZE;
+                int32_t numExtraArgs = isStringOrArray ? 1 : 2;
+                int32_t callArgOffset = isStringOrArray ? 0 : 1;
 
-                // TODO Special case array ctor / string ctor
                 m_pStackPointer -= numArgs;
 
                 // Allocate callArgs for the call, this + numArgs + terminator
-                int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + 2) * sizeof(int32_t));
+                int32_t *callArgs = (int32_t*) AllocMemPool((numArgs + numExtraArgs) * sizeof(int32_t));
                 for (int i = 0; i < numArgs; i++)
-                    callArgs[i + 1] = m_pStackPointer[i].var;
-                callArgs[numArgs + 1] = -1;
+                    callArgs[i + callArgOffset] = m_pStackPointer[i].var;
+                callArgs[numArgs + callArgOffset] = -1;
 
                 // Push the return value and `this` argument to the ctor
                 InterpType retType = GetInterpType(m_compHnd->asCorInfoType(ctorClass));
-                int32_t vtsize = 0;
-                if (retType == InterpTypeVT)
+                int32_t vtsize = 0, dVar, thisVar;
+                if (isStringOrArray)
+                {
+                    // result
+                    PushInterpType(retType, ctorClass);
+                    dVar = m_pStackPointer[-1].var;
+                    thisVar = -1;
+                }
+                else if (retType == InterpTypeVT)
                 {
                     vtsize = m_compHnd->getClassSize(ctorClass);
                     PushTypeVT(ctorClass, vtsize);
                     PushInterpType(InterpTypeByRef, NULL);
+                    dVar = m_pStackPointer[-2].var;
+                    thisVar = m_pStackPointer[-1].var;
                 }
                 else
                 {
+                    // result
                     PushInterpType(retType, ctorClass);
+                    // this-ref
                     PushInterpType(retType, ctorClass);
+                    dVar = m_pStackPointer[-2].var;
+                    thisVar = m_pStackPointer[-1].var;
                 }
-                int32_t dVar = m_pStackPointer[-2].var;
-                int32_t thisVar = m_pStackPointer[-1].var;
-                // Consider this arg as being defined, although newobj defines it
-                AddIns(INTOP_DEF);
-                m_pLastNewIns->SetDVar(thisVar);
-                callArgs[0] = thisVar;
+
+                if (!isStringOrArray)
+                {
+                    // Consider this arg as being defined, although newobj defines it
+                    AddIns(INTOP_DEF);
+                    m_pLastNewIns->SetDVar(thisVar);
+                    callArgs[0] = thisVar;
+                }
 
                 if (retType == InterpTypeVT)
                 {
@@ -3064,9 +3081,10 @@ retry_emit:
                 }
                 else
                 {
-                    AddIns(INTOP_NEWOBJ);
+                    AddIns(isStringOrArray ? INTOP_NEWOBJ_VAROBJSIZE : INTOP_NEWOBJ);
                     m_pLastNewIns->data[1] = GetDataItemIndex(ctorClass);
                 }
+
                 m_pLastNewIns->data[0] = GetMethodDataItemIndex(ctorMethod);
                 m_pLastNewIns->SetSVar(CALL_ARGS_SVAR);
                 m_pLastNewIns->SetDVar(dVar);
@@ -3076,7 +3094,8 @@ retry_emit:
                 m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
                 // Pop this, the result of the newobj still remains on the stack
-                m_pStackPointer--;
+                if (!isStringOrArray)
+                    m_pStackPointer--;
                 break;
             }
             case CEE_DUP:

@@ -413,6 +413,9 @@ public class InterpreterTest
         if (!TestBoxing())
             Environment.FailFast(null);
 
+        if (!TestStringCtor())
+            Environment.FailFast(null);
+
         if (!TestArray())
             Environment.FailFast(null);
 
@@ -706,6 +709,18 @@ public class InterpreterTest
         // `(s is int result)` generates isinst so we have to do this in steps
         int result = (int)s;
         return result == 3;
+    }
+
+    public static bool TestStringCtor()
+    {
+        string s = new string('a', 4);
+        if (s.Length != 4)
+            return false;
+        if (s[0] != 'a')
+            return false;
+        if (s != "aaaa")
+            return false;
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
