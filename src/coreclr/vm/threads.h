@@ -4589,7 +4589,6 @@ protected:
     FORCEINLINE_NONDEBUG
     void PopInternal()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -4772,7 +4771,6 @@ public:
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4785,7 +4783,6 @@ public:
     void Leave()
     {
         WRAPPER_NO_CONTRACT;
-        SCAN_SCOPE_BEGIN;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4796,7 +4793,6 @@ public:
     DEBUG_NOINLINE
     void Enter(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4808,7 +4804,6 @@ public:
     DEBUG_NOINLINE
     void Enter(Thread * pThreadNullOk, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4821,7 +4816,6 @@ public:
     DEBUG_NOINLINE
     void Leave()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4832,7 +4826,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         // The thread must be non-null to enter MODE_COOP
@@ -4842,7 +4835,6 @@ public:
     DEBUG_NOINLINE
     GCCoop(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4855,7 +4847,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoop()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4869,7 +4860,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop_HackNoThread(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4878,7 +4868,6 @@ public:
     DEBUG_NOINLINE
     GCCoopHackNoThread(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4890,7 +4879,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopHackNoThread()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>();  // Thread might be NULL
     }
 };
@@ -4901,7 +4889,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         this->EnterInternalCoop(pThread, true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4910,7 +4897,6 @@ public:
     DEBUG_NOINLINE
     GCCoopThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -4922,7 +4908,6 @@ public:
     DEBUG_NOINLINE
     ~GCCoopThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -4933,7 +4918,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp(true GCHOLDER_CONTRACT_ARGS_HasDtor);
@@ -4942,7 +4926,6 @@ public:
     DEBUG_NOINLINE
     GCPreemp(bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4954,7 +4937,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreemp()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<FALSE>(); // Thread may be NULL
     }
 };
@@ -4965,7 +4947,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternalPreemp<TRUE>(    // Thread must be non-NULL
@@ -4975,7 +4956,6 @@ public:
     DEBUG_NOINLINE
     GCPreempThreadExists(Thread * pThread, bool conditional GCHOLDER_DECLARE_CONTRACT_ARGS)
     {
-        SCAN_SCOPE_BEGIN;
         if (conditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -4988,7 +4968,6 @@ public:
     DEBUG_NOINLINE
     ~GCPreempThreadExists()
     {
-        SCAN_SCOPE_END;
         this->PopInternal<TRUE>();  // Thread must be non-NULL
     }
 };
@@ -5013,7 +4992,6 @@ class GCAssert
     DEBUG_NOINLINE void BeginGCAssert();
     DEBUG_NOINLINE void EndGCAssert()
     {
-        SCAN_SCOPE_END;
     }
 };
 
@@ -5026,7 +5004,6 @@ public:
 
     DEBUG_NOINLINE ~AutoCleanupGCAssert()
     {
-        SCAN_SCOPE_END;
         WRAPPER_NO_CONTRACT;
         // This is currently disabled; we currently have a lot of code which doesn't
         // back out the GC mode properly (instead relying on the EX_TRY macros.)
@@ -5069,7 +5046,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
  public:
     DEBUG_NOINLINE GCForbid(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_MODE_COOPERATIVE;
@@ -5097,7 +5073,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE GCForbid(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
@@ -5120,8 +5095,6 @@ class GCForbid : AutoCleanupGCAssert<TRUE>
 
     DEBUG_NOINLINE ~GCForbid()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             GetThread()->EndForbidGC();
@@ -5151,7 +5124,6 @@ class GCNoTrigger
  public:
     DEBUG_NOINLINE GCNoTrigger(BOOL fConditional, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         if (fConditional)
         {
             STATIC_CONTRACT_GC_NOTRIGGER;
@@ -5183,7 +5155,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE GCNoTrigger(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_NOTRIGGER;
 
         m_fConditional = TRUE;
@@ -5209,8 +5180,6 @@ class GCNoTrigger
 
     DEBUG_NOINLINE ~GCNoTrigger()
     {
-        SCAN_SCOPE_END;
-
         if (m_fConditional)
         {
             Thread * pThread = GetThreadNULLOk();
@@ -5293,7 +5262,6 @@ class FCallGCCanTrigger
 public:
     static DEBUG_NOINLINE void Enter()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
@@ -5304,14 +5272,12 @@ public:
 
     static DEBUG_NOINLINE void Enter(Thread* pThread)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_GC_TRIGGERS;
         pThread->EndForbidGC();
     }
 
     static DEBUG_NOINLINE void Leave(const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         Thread * pThread = GetThreadNULLOk();
         if (pThread != NULL)
         {
@@ -5321,13 +5287,11 @@ public:
 
     static DEBUG_NOINLINE void Leave(Thread* pThread, const char *szFunction, const char *szFile, int lineNum)
     {
-        SCAN_SCOPE_END;
         pThread->BeginForbidGC(szFile, lineNum);
     }
 };
 
-#define TRIGGERSGC_NOSTOMP()  do {                                           \
-                            ANNOTATION_GC_TRIGGERS;                         \
+#define TRIGGERSGC_NOSTOMP()  do {                                          \
                             Thread* curThread = GetThread();                \
                             if(curThread->GCNoTrigger())                    \
                             {                                               \
@@ -5345,8 +5309,8 @@ public:
 
 #define BEGINFORBIDGC()
 #define ENDFORBIDGC()
-#define TRIGGERSGC_NOSTOMP() ANNOTATION_GC_TRIGGERS
-#define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
+#define TRIGGERSGC_NOSTOMP()
+#define TRIGGERSGC()
 
 #endif // ENABLE_CONTRACTS_IMPL
 

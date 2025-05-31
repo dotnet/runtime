@@ -833,8 +833,6 @@ StackWalkAction Thread::StackWalkFramesEx(
     // that any C++ destructors pushed in this function will never execute, and it means that this function can
     // never have a dynamic contract.
     STATIC_CONTRACT_WRAPPER;
-    SCAN_IGNORE_THROW;            // see contract above
-    SCAN_IGNORE_TRIGGER;          // see contract above
 
     _ASSERTE(pRD);
     _ASSERTE(pCallback);
