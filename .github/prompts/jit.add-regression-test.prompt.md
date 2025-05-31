@@ -21,7 +21,7 @@ Examples: `https://github.com/dotnet/runtime/issues/116159` or `116159`.or `#116
 #### 4 — Implementation steps (must be completed in order)
 
 1. Fetch the issue details from the provided GitHub URL or number (it is always in the `dotnet/runtime` repository).
-Extract the repro code snippet (if available, otherise try to construct it from the issue description) and any 
+Extract the repro code snippet (if available, otherwise try to construct it from the issue description) and any 
 relevant information about the test, such as environment variables.
 2. Create the directory structure for the new test:
    * `<repo_root>/src/tests/JIT/Regression/JitBlue/Runtime_<issue_number>/`
