@@ -155,11 +155,8 @@ typedef char TCHAR;
 extern uint32_t g_RhNumberOfProcessors;
 
 #ifdef TARGET_UNIX
-#define PALIMPORT extern "C"
-#define PALEXPORT extern "C"
 #define NATIVEAOT_PALAPI
 #else
-#define PALIMPORT EXTERN_C
 #define NATIVEAOT_PALAPI __stdcall
 #endif // TARGET_UNIX
 
@@ -169,34 +166,34 @@ extern uint32_t g_RhNumberOfProcessors;
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-PALIMPORT bool NATIVEAOT_PALAPI PalInit();
+bool NATIVEAOT_PALAPI PalInit();
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-PALIMPORT void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
+void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
 struct NATIVE_CONTEXT;
 
 #if _WIN32
-PALIMPORT NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
-PALIMPORT bool NATIVEAOT_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
-PALIMPORT bool NATIVEAOT_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
-PALIMPORT void NATIVEAOT_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx);
+NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
+bool NATIVEAOT_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+bool NATIVEAOT_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+void NATIVEAOT_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx);
 
 // For platforms that have segment registers in the CONTEXT_CONTROL set that
 // are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
 // thread and saves them in `pContext`.
-PALIMPORT void NATIVEAOT_PALAPI PopulateControlSegmentRegisters(CONTEXT * pContext);
+void NATIVEAOT_PALAPI PopulateControlSegmentRegisters(CONTEXT * pContext);
 #endif
 
-PALIMPORT int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount();
+int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-PALIMPORT bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
+bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
 
 // Return value:  number of characters in name string
-PALIMPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
+int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 #if _WIN32
 
@@ -237,65 +234,65 @@ inline uint8_t * PalNtCurrentTeb()
 
 #endif // _WIN32
 
-PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
-PALIMPORT void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
-PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
-PALIMPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
-PALIMPORT void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds);
-PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalSwitchToThread();
-PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled();
-PALIMPORT HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-PALIMPORT HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
+void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
+UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
+void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
+void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds);
+UInt32_BOOL NATIVEAOT_PALAPI PalSwitchToThread();
+UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled();
+HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
+HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
-PALIMPORT uint32_t NATIVEAOT_PALAPI PalGetOsPageSize();
-PALIMPORT void NATIVEAOT_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
+uint32_t NATIVEAOT_PALAPI PalGetOsPageSize();
+void NATIVEAOT_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
 typedef uint32_t (*BackgroundCallback)(_In_opt_ void* pCallbackContext);
-PALIMPORT bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name);
+bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name);
 #ifdef HOST_WINDOWS
-PALIMPORT bool NATIVEAOT_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);
-PALIMPORT bool NATIVEAOT_PALAPI PalInitComAndFlsSlot();
+bool NATIVEAOT_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);
+bool NATIVEAOT_PALAPI PalInitComAndFlsSlot();
 #endif
-PALIMPORT bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-PALIMPORT bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-PALIMPORT bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 #ifdef FEATURE_HIJACK
 class Thread;
-PALIMPORT void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack);
-PALIMPORT HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
+void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack);
+HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
 #endif
 
-PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
-PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
+UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
+UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
 
-PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
     int thunkBlockSize,
     int thunkBlocksPerMapping);
 
-PALIMPORT uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
+uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
-PALIMPORT HANDLE PalCreateLowMemoryResourceNotification();
+HANDLE PalCreateLowMemoryResourceNotification();
 
-PALIMPORT void NATIVEAOT_PALAPI PalAttachThread(void* thread);
+void NATIVEAOT_PALAPI PalAttachThread(void* thread);
 
-PALIMPORT uint64_t PalGetCurrentOSThreadId();
+uint64_t PalGetCurrentOSThreadId();
 
-PALIMPORT void PalPrintFatalError(const char* message);
+void PalPrintFatalError(const char* message);
 
-PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
+char* PalCopyTCharAsChar(const TCHAR* toCopy);
 
-PALIMPORT HANDLE PalLoadLibrary(const char* moduleName);
+HANDLE PalLoadLibrary(const char* moduleName);
 
-PALIMPORT void* PalGetProcAddress(HANDLE module, const char* functionName);
+void* PalGetProcAddress(HANDLE module, const char* functionName);
 
 #ifdef TARGET_UNIX
-PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
+int32_t __cdecl _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
 #include "PalRedhawkInline.h"
