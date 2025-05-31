@@ -32,6 +32,7 @@ namespace System.Text.RegularExpressions
 
         private WeakReference<RegexReplacement?>? _replref;   // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
+        private RegexRunnerPool? _runnerPool;                 // pool of cached runners to spill into
 
 #if DEBUG
         // These members aren't used from Regex(), but we want to keep them in debug builds for now,
@@ -421,7 +422,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length, ExceptionResource.LengthNotNegative);
             }
 
-            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            RegexRunner runner = RentOrCreateRunner();
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
@@ -453,7 +454,7 @@ namespace System.Text.RegularExpressions
             finally
             {
                 runner.runtext = null; // drop reference to text to avoid keeping it alive in a cache.
-                _runner = runner;
+                ReturnRunner(runner);
             }
         }
 
@@ -466,7 +467,7 @@ namespace System.Text.RegularExpressions
             // that takes in startat.
             Debug.Assert(startat <= input.Length);
 
-            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            RegexRunner runner = RentOrCreateRunner();
             try
             {
                 runner.InitializeTimeout(internalMatchTimeout);
@@ -513,7 +514,7 @@ namespace System.Text.RegularExpressions
             }
             finally
             {
-                _runner = runner;
+                ReturnRunner(runner);
             }
         }
 
@@ -529,7 +530,7 @@ namespace System.Text.RegularExpressions
             Debug.Assert(inputString is null || inputSpan.SequenceEqual(inputString));
             Debug.Assert((uint)startat <= (uint)inputSpan.Length);
 
-            RegexRunner runner = Interlocked.Exchange(ref _runner, null) ?? CreateRunner();
+            RegexRunner runner = RentOrCreateRunner();
             try
             {
                 runner.runtext = inputString;
@@ -599,7 +600,7 @@ namespace System.Text.RegularExpressions
             finally
             {
                 runner.runtext = null; // drop reference to string to avoid keeping it alive in a cache.
-                _runner = runner;
+                ReturnRunner(runner);
             }
         }
 
@@ -643,11 +644,43 @@ namespace System.Text.RegularExpressions
             return RegularExpressions.Match.Empty;
         }
 
-        /// <summary>Creates a new runner instance.</summary>
-        private RegexRunner CreateRunner() =>
-            // The factory needs to be set by the ctor.  `factory` is a protected field, so it's possible a derived
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private RegexRunner RentOrCreateRunner()
+        {
+            RegexRunner? runner = Interlocked.Exchange(ref _runner, null);
+            if (runner != null)
+            {
+                return runner;
+            }
+
+            RegexRunnerPool? pool = _runnerPool;
+            if (pool != null && pool.TryGet(out runner))
+            {
+                return runner;
+            }
+
+            // The factory needs to be set by the ctor. `factory` is a protected field, so it's possible a derived
             // type nulls out the factory after we've set it, but that's the nature of the design.
-            factory!.CreateInstance();
+            return factory!.CreateInstance();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ReturnRunner(RegexRunner runner)
+        {
+            if (_runner is null)
+            {
+                // If we don't have a runner, then we can just store this one.
+                _runner = runner;
+            }
+            else
+            {
+                // If we reached here, it means that another operation has won the race and already stored a runner.
+                // Use this condition to detect contended runner usage and initialize a pool to store the runner in.
+                // Here, we may also lose the race and create more than one pool. This is acceptable as the goal is to
+                // reduce the number of ammortized allocations at reasonable cost rather than eliminating every single one.
+                (_runnerPool ??= new()).Return(runner);
+            }
+        }
 
         /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
         [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
