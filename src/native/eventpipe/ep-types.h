@@ -175,6 +175,44 @@ ep_provider_callback_data_queue_try_dequeue (
 	EventPipeProviderCallbackDataQueue *provider_callback_data_queue,
 	EventPipeProviderCallbackData *provider_callback_data);
 
+struct EventPipeTracepoint {
+	uint32_t write_index;
+	uint32_t enabled;
+};
+
+struct EventPipeEventFilter {
+	bool enable;
+	dn_umap_t *event_ids;
+};
+
+void
+ep_event_filter_fini (EventPipeEventFilter *event_filter);
+
+void
+ep_event_filter_free (EventPipeEventFilter *event_filter);
+
+struct ProviderTracepointSet {
+	const ep_char8_t *tracepoint_name;
+	dn_vector_t *event_ids;
+};
+
+void
+ep_tracepoint_set_fini (ProviderTracepointSet *tracepoint_set);
+
+void
+ep_tracepoint_set_free (ProviderTracepointSet *tracepoint_set);
+
+struct ProviderTracepointConfiguration {
+	const ep_char8_t *default_tracepoint_name;
+	dn_vector_t *tracepoints;
+};
+
+void
+ep_tracepoint_config_fini (ProviderTracepointConfiguration *tracepoint_config);
+
+void
+ep_tracepoint_config_free (ProviderTracepointConfiguration *tracepoint_config);
+
 /*
  * EventPipeProviderConfiguration.
  */
@@ -188,6 +226,8 @@ struct _EventPipeProviderConfiguration_Internal {
 	const ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
+	EventPipeEventFilter *event_filter;
+	ProviderTracepointConfiguration *tracepoint_config;
 };
 
 
@@ -201,6 +241,8 @@ EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_cha
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_char8_t *, filter_data)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeEventLevel, logging_level)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeEventFilter *, event_filter)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, ProviderTracepointConfiguration *, tracepoint_config)
 
 EventPipeProviderConfiguration *
 ep_provider_config_init (
@@ -209,6 +251,16 @@ ep_provider_config_init (
 	uint64_t keywords,
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data);
+
+EventPipeProviderConfiguration *
+ep_provider_config_init (
+	EventPipeProviderConfiguration *provider_config,
+	const ep_char8_t *provider_name,
+	uint64_t keywords,
+	EventPipeEventLevel logging_level,
+	const ep_char8_t *filter_data,
+	EventPipeEventFilter *event_filter,
+	ProviderTracepointConfiguration *tracepoint_config);
 
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config);

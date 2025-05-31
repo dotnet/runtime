@@ -147,7 +147,8 @@ typedef enum {
 	EP_SESSION_TYPE_LISTENER,
 	EP_SESSION_TYPE_IPCSTREAM,
 	EP_SESSION_TYPE_SYNCHRONOUS,
-	EP_SESSION_TYPE_FILESTREAM
+	EP_SESSION_TYPE_FILESTREAM,
+	EP_SESSION_TYPE_USEREVENTS
 } EventPipeSessionType ;
 
 typedef enum {
@@ -161,6 +162,19 @@ typedef enum {
 	EP_THREAD_TYPE_SESSION,
 	EP_THREAD_TYPE_SAMPLING
 } EventPipeThreadType;
+
+/*
+ *  CollectTracing5 introduces additional provider configuration fields.
+ *  For backwards compatibility, these fields are optional and
+ *  these flags indicate which of the optional fields should be
+ *  deserialized from the IPC Stream.
+ */
+typedef enum
+{
+    EP_PROVIDER_OPTFIELD_NONE = 0,
+    EP_PROVIDER_OPTFIELD_EVENT_FILTER = 1,
+    EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG = 2
+} EventPipeProviderOptionalFieldFlags;
 
 /*
  * EventPipe Basic Types.

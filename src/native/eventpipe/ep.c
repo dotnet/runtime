@@ -370,6 +370,26 @@ ep_provider_config_init (
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data)
 {
+	return ep_provider_config_init (
+		provider_config,
+		provider_name,
+		keywords,
+		logging_level,
+		filter_data,
+		NULL,
+		NULL);
+}
+
+EventPipeProviderConfiguration *
+ep_provider_config_init (
+	EventPipeProviderConfiguration *provider_config,
+	const ep_char8_t *provider_name,
+	uint64_t keywords,
+	EventPipeEventLevel logging_level,
+	const ep_char8_t *filter_data,
+	EventPipeEventFilter *event_filter,
+	ProviderTracepointConfiguration *tracepoint_config)
+{
 	EP_ASSERT (provider_config != NULL);
 	EP_ASSERT (provider_name != NULL);
 
@@ -377,6 +397,8 @@ ep_provider_config_init (
 	provider_config->keywords = keywords;
 	provider_config->logging_level = logging_level;
 	provider_config->filter_data = filter_data;
+	provider_config->event_filter = event_filter;
+	provider_config->tracepoint_config = tracepoint_config;
 
 	// Runtime specific rundown provider configuration.
 	ep_rt_provider_config_init (provider_config);
@@ -387,7 +409,13 @@ ep_provider_config_init (
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config)
 {
-	;
+	ep_return_void_if_nok (provider_config != NULL);
+
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (provider_config));
+	ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (provider_config));
+	ep_event_filter_free (ep_provider_config_get_event_filter (provider_config));
+	ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (provider_config));
+	provider_config = NULL;
 }
 
 /*
@@ -469,13 +497,16 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 {
 	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
 		return false;
-	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS)
+	if (options->circular_buffer_size_in_mb <= 0 && ep_session_type_uses_buffer_manager (options->session_type))
 		return false;
 	if (options->providers == NULL || options->providers_len <= 0)
 		return false;
 	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
 		return false;
 	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
+		return false;
+	// More UserEvents specific checks can be added here.
+	if (options->session_type == EP_SESSION_TYPE_USEREVENTS && options->user_events_data_fd == 0)
 		return false;
 
 	return true;
@@ -491,7 +522,7 @@ enable (
 
 	EP_ASSERT (options != NULL);
 	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (options->session_type) || options->circular_buffer_size_in_mb > 0);
 	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;
@@ -515,7 +546,8 @@ enable (
 		options->providers,
 		options->providers_len,
 		options->sync_callback,
-		options->callback_additional_data);
+		options->callback_additional_data,
+		options->user_events_data_fd);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -996,7 +1028,8 @@ ep_enable (
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
-		callback_additional_data);
+		callback_additional_data,
+		NULL);
 
 	sessionId = ep_enable_3(&options);
 
@@ -1126,7 +1159,8 @@ ep_session_options_init (
 	bool stackwalk_requested,
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void* callback_additional_data)
+	void* callback_additional_data,
+	uint32_t user_events_data_fd)
 {
 	EP_ASSERT (options != NULL);
 
@@ -1141,6 +1175,7 @@ ep_session_options_init (
 	options->stream = stream;
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
+	options->user_events_data_fd = user_events_data_fd;
 }
 
 void
@@ -1742,6 +1777,82 @@ void
 ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback)
 {
 	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
+}
+
+void
+ep_event_filter_fini (EventPipeEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	if (event_filter->event_ids) {
+		dn_umap_free (event_filter->event_ids);
+		event_filter->event_ids = NULL;
+	}
+}
+
+void
+ep_event_filter_free (EventPipeEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	ep_event_filter_fini (event_filter);
+	ep_rt_object_free (event_filter);
+}
+
+void
+ep_tracepoint_set_fini (ProviderTracepointSet *tracepoint_set)
+{
+	ep_return_void_if_nok (tracepoint_set != NULL);
+
+	if (tracepoint_set->tracepoint_name) {
+		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_set->tracepoint_name);
+		tracepoint_set->tracepoint_name = NULL;
+	}
+
+	if (tracepoint_set->event_ids) {
+		dn_vector_free (tracepoint_set->event_ids);
+		tracepoint_set->event_ids = NULL;
+	}
+}
+
+void
+ep_tracepoint_set_free (ProviderTracepointSet *tracepoint_set)
+{
+	ep_return_void_if_nok (tracepoint_set != NULL);
+
+	ep_tracepoint_set_fini (tracepoint_set);
+	ep_rt_object_free (tracepoint_set);
+}
+
+void
+ep_tracepoint_config_fini (ProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	if (tracepoint_config->default_tracepoint_name) {
+		ep_rt_utf8_string_free ((ep_char8_t *)tracepoint_config->default_tracepoint_name);
+		tracepoint_config->default_tracepoint_name = NULL;
+	}
+
+	if (tracepoint_config->tracepoints) {
+		for (uint32_t i = 0; i < tracepoint_config->tracepoints->size; ++i) {
+			ProviderTracepointSet *tracepoint_set = *dn_vector_index_t (tracepoint_config->tracepoints, ProviderTracepointSet *, i);
+			if (tracepoint_set != NULL) {
+				ep_tracepoint_set_free (tracepoint_set);
+			}
+		}
+		dn_vector_free (tracepoint_config->tracepoints);
+		tracepoint_config->tracepoints = NULL;
+	}
+}
+
+void
+ep_tracepoint_config_free (ProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	ep_tracepoint_config_fini (tracepoint_config);
+	ep_rt_object_free (tracepoint_config);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

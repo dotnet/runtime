@@ -52,6 +52,24 @@ ep_session_provider_alloc (
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data)
 {
+	return ep_session_provider_alloc (
+		provider_name,
+		keywords,
+		logging_level,
+		filter_data,
+		NULL,
+		NULL);
+}
+
+EventPipeSessionProvider *
+ep_session_provider_alloc (
+	const ep_char8_t *provider_name,
+	uint64_t keywords,
+	EventPipeEventLevel logging_level,
+	const ep_char8_t *filter_data,
+	EventPipeEventFilter *event_filter,
+	ProviderTracepointConfiguration *tracepoint_config)
+{
 	EventPipeSessionProvider *instance = ep_rt_object_alloc (EventPipeSessionProvider);
 	ep_raise_error_if_nok (instance != NULL);
 
@@ -67,6 +85,8 @@ ep_session_provider_alloc (
 
 	instance->keywords = keywords;
 	instance->logging_level = logging_level;
+	instance->event_filter = event_filter;
+	instance->tracepoint_config = tracepoint_config;
 
 ep_on_exit:
 	return instance;
@@ -85,6 +105,44 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 	ep_rt_utf8_string_free (session_provider->filter_data);
 	ep_rt_utf8_string_free (session_provider->provider_name);
 	ep_rt_object_free (session_provider);
+}
+
+bool
+ep_event_filter_allows_event_id (
+	const EventPipeEventFilter *event_filter,
+	uint32_t event_id)
+{
+	if (event_filter == NULL)
+		return true;
+
+	if (event_filter->event_ids == NULL)
+		return !event_filter->enable;
+
+	return event_filter->enable == dn_umap_contains (event_filter->event_ids, &event_id);
+}
+
+bool
+ep_session_provider_allows_event (
+	const EventPipeSessionProvider *session_provider,
+	const EventPipeEvent *ep_event)
+{
+	EP_ASSERT(session_provider != NULL);
+
+	uint64_t keywords = ep_event_get_keywords (ep_event);
+	uint64_t session_keywords = ep_session_provider_get_keywords(session_provider);
+	if ((keywords != 0) && ((session_keywords & keywords) == 0))
+		return false;
+
+	EventPipeEventLevel event_level = ep_event_get_level (ep_event);
+	EventPipeEventLevel session_level = ep_session_provider_get_logging_level(session_provider);
+	if ((event_level != EP_EVENT_LEVEL_LOGALWAYS) &&
+		(session_level != EP_EVENT_LEVEL_LOGALWAYS) &&
+		(session_level < event_level))
+		return false;
+
+	uint32_t event_id = ep_event_get_event_id (ep_event);
+	EventPipeEventFilter *event_filter = ep_session_provider_get_event_filter (session_provider);
+	return ep_event_filter_allows_event_id (event_filter, event_id);
 }
 
 /*
@@ -122,7 +180,9 @@ ep_session_provider_list_alloc (
 				ep_provider_config_get_provider_name (config),
 				ep_provider_config_get_keywords (config),
 				ep_provider_config_get_logging_level (config),
-				ep_provider_config_get_filter_data (config));
+				ep_provider_config_get_filter_data (config),
+				ep_provider_config_get_event_filter (config),
+				ep_provider_config_get_tracepoint_config (config));
 			ep_raise_error_if_nok (dn_list_push_back (instance->providers, session_provider));
 		}
 	}

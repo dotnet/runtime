@@ -13,6 +13,15 @@
 #endif
 #include "ep-getter-setter.h"
 
+#if HAVE_LINUX_USER_EVENTS_H
+#include <linux/user_events.h> // DIAG_IOCSREG
+#include <sys/ioctl.h> // event_reg
+#endif // HAVE_LINUX_USER_EVENTS_H
+
+
+#if HAVE_SYS_UIO_H
+#include <sys/uio.h> // iovec
+#endif // HAVE_SYS_UIO_H
 /*
  * EventPipeSession.
  */
@@ -69,6 +78,8 @@ struct _EventPipeSession_Internal {
 	volatile uint32_t started;
 	// Reference count for the session. This is used to track the number of references to the session.
 	volatile uint32_t ref_count;
+	// The user_events_data file descriptor to register Tracepoints and write user_events to.
+	uint32_t user_events_data_fd;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_GETTER_SETTER)
@@ -100,7 +111,8 @@ ep_session_alloc (
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data);
+	void *callback_additional_data,
+	uint32_t user_events_data_fd);
 
 void
 ep_session_inc_ref (EventPipeSession *session);
@@ -213,6 +225,9 @@ ep_session_resume (EventPipeSession *session);
 
 bool
 ep_session_has_started (EventPipeSession *session);
+
+bool
+ep_session_type_uses_buffer_manager (EventPipeSessionType session_type);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_SESSION_H__ */
