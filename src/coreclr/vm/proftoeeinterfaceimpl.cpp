@@ -10673,7 +10673,6 @@ GCX_COOP_THREAD_EXISTS(GET_THREAD());
 HCIMPL_PROLOG(ProfileEnter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
     if (GetThreadNULLOk() == NULL)
     {
@@ -10853,8 +10852,6 @@ HCIMPL_PROLOG(ProfileLeave)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
-
 #ifdef PROFILING_SUPPORTED
 
 #ifdef PROF_TEST_ONLY_FORCE_ELT
@@ -10979,8 +10976,6 @@ HCIMPLEND
 HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();            // we pulse GC mode, so we are doing a poll
 
 #ifdef PROFILING_SUPPORTED
 

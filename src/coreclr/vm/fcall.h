@@ -8,24 +8,9 @@
 // to have a frame within an FCall, you need to manually set up the frame
 // before you do such operations.
 
-// Causing GC or EH in an FCALL before setting up a frame is illegal.
-// Since the frame setup mechanism has been removed, QCalls should be used instead.
+// Causing GC or EH in an FCALL is illegal. QCalls should be used instead.
 
 // Compile time errors occur if you try to violate either of these rules.
-
-// Finally if your method is VERY small, you can get away without a poll,
-// you have to use FC_GC_POLL_NOT_NEEDED to mark this.
-// Use sparingly!
-
-// It is possible to set up the frame as the first operation in the FCALL and
-// tear it down as the last operation before returning.  This works and is
-// reasonably efficient (as good as an ECall), however, if it is the case that
-// you can defer the setup of the frame to an unlikely code path (exception path)
-// that is much better.
-
-// <TODO>TODO: we should have a way of doing a trial allocation (an allocation that
-// will fail if it would cause a GC).  That way even FCALLs that need to allocate
-// would not necessarily need to set up a frame.  </TODO>
 
 // Since FCALLS have to conform to the EE calling conventions and not to C
 // calling conventions, FCALLS, need to be declared using special macros (FCIMPL*)
@@ -251,10 +236,6 @@
 #define FORLAZYMACHSTATE(x) x
 #define FORLAZYMACHSTATE_BEGINLOOP(x) x do
 #define FORLAZYMACHSTATE_ENDLOOP(x) while(x)
-
-    // Very short routines, or routines that are guaranteed to force GC or EH
-    // don't need to poll the GC.  USE VERY SPARINGLY!!!
-#define FC_GC_POLL_NOT_NEEDED()    INCONTRACT(__fCallCheck.SetNotNeeded())
 
 #if defined(ENABLE_CONTRACTS)
 #define FC_CAN_TRIGGER_GC()         FCallGCCanTrigger::Enter()
@@ -572,16 +553,8 @@ public:
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(int /* EAX */, a2, a1, a3) {
 
-#define HCCALL0(funcname)               funcname()
 #define HCCALL1(funcname, a1)           funcname(0, 0, a1)
-#define HCCALL1_V(funcname, a1)         funcname(0, 0, 0, a1)
-#define HCCALL2(funcname, a1, a2)       funcname(0, a2, a1)
-#define HCCALL2_VV(funcname, a1, a2)    funcname(0, 0, 0, a2, a1)
-#define HCCALL3(funcname, a1, a2, a3)   funcname(0, a2, a1, a3)
-#define HCCALL4(funcname, a1, a2, a3, a4)       funcname(0, a2, a1, a4, a3)
-#define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(0, a2, a1, a5, a4, a3)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * funcptr)(int /* EAX */, int /* EDX */, a1)
-#define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * funcptr)(int /* EAX */, a2, a1)
 #else // SWIZZLE_REGARG_ORDER
 
 #define HCIMPL0(rettype, funcname) rettype F_CALL_CONV funcname() { HCIMPL_PROLOG(funcname)
@@ -594,16 +567,8 @@ public:
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
 
-#define HCCALL0(funcname)               funcname()
 #define HCCALL1(funcname, a1)           funcname(a1)
-#define HCCALL1_V(funcname, a1)         funcname(a1)
-#define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
-#define HCCALL2_VV(funcname, a1, a2)    funcname(a1, a2)
-#define HCCALL3(funcname, a1, a2, a3)   funcname(a1, a2, a3)
-#define HCCALL4(funcname, a1, a2, a3, a4)       funcname(a1, a2, a4, a3)
-#define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(a1, a2, a5, a4, a3)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
-#define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * (funcptr))(a1, a2)
 #endif // !SWIZZLE_REGARG_ORDER
 #else // SWIZZLE_STKARG_ORDER
 
@@ -617,16 +582,8 @@ public:
 #define HCIMPL3(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) { HCIMPL_PROLOG(funcname)
 #define HCIMPL3_RAW(rettype, funcname, a1, a2, a3) rettype F_CALL_CONV funcname(a1, a2, a3) {
 
-#define HCCALL0(funcname)               funcname()
 #define HCCALL1(funcname, a1)           funcname(a1)
-#define HCCALL1_V(funcname, a1)         funcname(a1)
-#define HCCALL2(funcname, a1, a2)       funcname(a1, a2)
-#define HCCALL2_VV(funcname, a1, a2)    funcname(a1, a2)
-#define HCCALL3(funcname, a1, a2, a3)   funcname(a1, a2, a3)
-#define HCCALL4(funcname, a1, a2, a3, a4)       funcname(a1, a2, a3, a4)
-#define HCCALL5(funcname, a1, a2, a3, a4, a5)   funcname(a1, a2, a3, a4, a5)
 #define HCCALL1_PTR(rettype, funcptr, a1)        rettype (F_CALL_CONV * (funcptr))(a1)
-#define HCCALL2_PTR(rettype, funcptr, a1, a2)    rettype (F_CALL_CONV * (funcptr))(a1, a2)
 
 #endif // !SWIZZLE_STKARG_ORDER
 

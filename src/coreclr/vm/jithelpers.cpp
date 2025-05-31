@@ -858,8 +858,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
     Thread *pThread = GetThread();
@@ -960,8 +958,6 @@ HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
@@ -1029,8 +1025,6 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
 
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
     GetThread()->GetExceptionState()->SetRaisingForeignException();
@@ -1336,8 +1330,6 @@ void JIT_RareDisableHelper()
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     Thread * pThread = GetThread();
     return pThread->GetThreadId();
@@ -2020,7 +2012,6 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
     if (!CheckSample(&valueProfile->Count, &sampleIndex))
@@ -2040,7 +2031,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
     if (!CheckSample(&valueProfile->Count, &sampleIndex))
@@ -2060,7 +2050,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2095,7 +2084,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2125,7 +2113,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2172,7 +2159,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2218,7 +2204,6 @@ HCIMPLEND
 HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2267,7 +2252,6 @@ HCIMPLEND
 HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2323,7 +2307,6 @@ HCIMPLEND
 HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     LONG count = *pCounter;
     LONG delta = 1;
@@ -2350,7 +2333,6 @@ HCIMPLEND
 HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;

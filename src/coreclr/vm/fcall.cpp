@@ -51,44 +51,4 @@ DEBUG_NOINLINE ForbidGC::~ForbidGC()
         m_pThread->EndNoTriggerGC();
 }
 
-/**************************************************************************************/
-DEBUG_NOINLINE FCallCheck::FCallCheck(const char *szFile, int lineNum) : ForbidGC(szFile, lineNum)
-{
-    SCAN_SCOPE_BEGIN;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-#ifdef _DEBUG
-    unbreakableLockCount = m_pThread->GetUnbreakableLockCount();
-#endif
-    didGCPoll = false;
-    notNeeded = false;
-    startTicks = getCycleCount();
-}
-
-/**************************************************************************************/
-DEBUG_NOINLINE FCallCheck::~FCallCheck()
-{
-    SCAN_SCOPE_END;
-
-    // Confirm that we don't starve the GC or thread-abort.
-    // Basically every control flow path through an FCALL must
-    // do a poll.
-
-    _ASSERTE(unbreakableLockCount == m_pThread->GetUnbreakableLockCount() ||
-             (!m_pThread->HasUnbreakableLock() && !m_pThread->HasThreadStateNC(Thread::TSNC_OwnsSpinLock)));
-
-    if (notNeeded) {
-
-        /*<TODO>    TODO, we want to actually measure the time to make certain we are not too far off
-
-		unsigned delta  = unsigned(getCycleCount() - startTicks);
-        </TODO>*/
-    }
-    else if (!didGCPoll) {
-        // <TODO>TODO turn this on!!! _ASSERTE(!"FCALL without a GC poll in it somewhere!");</TODO>
-    }
-
-}
-
 #endif // ENABLE_CONTRACTS

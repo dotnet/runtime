@@ -42,7 +42,7 @@ The CLR provides a [`mscorlib` binder](https://github.com/dotnet/runtime/blob/ma
 
 Two techniques exist for calling into the CLR from managed code. FCall allows you to call directly into the CLR code, and provides a lot of flexibility in terms of manipulating objects, though it is easy to cause GC holes by not tracking object references correctly. QCall also allows you to call into the CLR via the P/Invoke, but is much harder to accidentally mis-use. FCalls are identified in managed code as extern methods with the [`MethodImplOptions.InternalCall`](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.methodimploptions) bit set. QCalls are marked `static extern` methods similar to regular P/Invokes, but are directed toward a library called `"QCall"`.
 
-There is a small variant of FCall called HCall (for Helper call) for implementing JIT helpers. The HCall is intended for doing things like accessing multi-dimensional array elements, range checks, etc. The only difference between HCall and FCall is that HCall methods won't show up in an exception stack trace.
+There is a small variant of FCall called HCall (for Helper call) for implementing JIT helpers. The HCall is intended for doing things like accessing multi-dimensional array elements, range checks, etc. The only difference between HCall and FCall is that HCall methods are not mapped to a managed method in CoreLib.
 
 ### Choosing between FCall, QCall, P/Invoke, and writing in managed code
 
