@@ -28,6 +28,7 @@ public interface IPlatformAgnosticContext
         IRuntimeInfo runtimeInfo = target.Contracts.RuntimeInfo;
         return runtimeInfo.GetTargetArchitecture() switch
         {
+            RuntimeInfoArchitecture.X86 => new ContextHolder<X86Context>(),
             RuntimeInfoArchitecture.X64 => new ContextHolder<AMD64Context>(),
             RuntimeInfoArchitecture.Arm64 => new ContextHolder<ARM64Context>(),
             RuntimeInfoArchitecture.Unknown => throw new InvalidOperationException($"Processor architecture is required for creating a platform specific context and is not provided by the target"),

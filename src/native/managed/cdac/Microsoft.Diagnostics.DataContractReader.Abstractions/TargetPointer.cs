@@ -16,6 +16,8 @@ public readonly struct TargetPointer : IEquatable<TargetPointer>
     public static implicit operator ulong(TargetPointer p) => p.Value;
     public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
 
+    public static TargetPointer operator ++(TargetPointer p) => new TargetPointer(p.Value + 1);
+    public static TargetPointer operator --(TargetPointer p) => new TargetPointer(p.Value - 1);
     public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
     public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
 

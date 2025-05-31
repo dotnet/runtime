@@ -177,6 +177,7 @@ internal sealed class FrameIterator
     {
         return context switch
         {
+            ContextHolder<X86Context> contextHolder => new X86FrameHandler(target, contextHolder),
             ContextHolder<AMD64Context> contextHolder => new AMD64FrameHandler(target, contextHolder),
             ContextHolder<ARM64Context> contextHolder => new ARM64FrameHandler(target, contextHolder),
             _ => throw new InvalidOperationException("Unsupported context type"),

@@ -12,6 +12,8 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
     private sealed class EEJitManager : JitManager
     {
+        private const uint GCINFO_VERSION = 4;
+
         private readonly INibbleMap _nibbleMap;
         private readonly RuntimeFunctionLookup _runtimeFunctions;
         public EEJitManager(Target target, INibbleMap nibbleMap) : base(target)
@@ -83,6 +85,30 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return TargetPointer.Null;
 
             return _runtimeFunctions.GetRuntimeFunctionAddress(unwindInfos, index);
+        }
+
+        public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
+        {
+            gcInfo = TargetPointer.Null;
+            gcVersion = 0;
+
+            // EEJitManager::GetGCInfoToken
+            if (rangeSection.IsRangeList)
+                return;
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            TargetPointer codeStart = FindMethodCode(rangeSection, jittedCodeAddress);
+            if (codeStart == TargetPointer.Null)
+                return;
+            Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
+
+            if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
+                return;
+
+            gcVersion = GCINFO_VERSION;
+            gcInfo = realCodeHeader.GCInfo;
         }
 
         private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
