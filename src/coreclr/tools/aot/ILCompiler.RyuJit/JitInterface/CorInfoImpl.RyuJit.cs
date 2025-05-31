@@ -615,9 +615,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.NewArray;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayAlign8");
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFastAlign8");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewArray");
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFast");
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     return _compilation.NodeFactory.ExternSymbol("RhpStackProbe");

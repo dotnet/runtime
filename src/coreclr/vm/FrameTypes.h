@@ -36,9 +36,7 @@ FRAME_TYPE_NAME(PrestubMethodFrame)
 FRAME_TYPE_NAME(CallCountingHelperFrame)
 FRAME_TYPE_NAME(StubDispatchFrame)
 FRAME_TYPE_NAME(ExternalMethodFrame)
-#ifdef FEATURE_READYTORUN
 FRAME_TYPE_NAME(DynamicHelperFrame)
-#endif
 FRAME_TYPE_NAME(ProtectByRefsFrame)
 FRAME_TYPE_NAME(ProtectValueClassFrame)
 FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)

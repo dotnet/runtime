@@ -32,7 +32,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C void* F_CALL_CONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 static Object* AllocateObject(MethodTable* pEEType, uint32_t uFlags, uintptr_t numElements)
 {
@@ -88,7 +88,7 @@ FCIMPL1(Object *, RhpNewFinalizable, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array *, RhpNewArray, MethodTable * pArrayEEType, int numElements)
+FCIMPL2(Array *, RhpNewArrayFast, MethodTable * pArrayEEType, int numElements)
 {
     Thread * pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context * acontext = pCurThread->GetAllocContext();
@@ -129,9 +129,9 @@ FCIMPLEND
 
 FCIMPL2(String *, RhNewString, MethodTable * pArrayEEType, int numElements)
 {
-    // TODO: Implement. We tail call to RhpNewArray for now since there's a bunch of TODOs in the places
+    // TODO: Implement. We tail call to RhpNewArrayFast for now since there's a bunch of TODOs in the places
     // that matter anyway.
-    return (String*)RhpNewArray(pArrayEEType, numElements);
+    return (String*)RhpNewArrayFast(pArrayEEType, numElements);
 }
 FCIMPLEND
 
@@ -221,7 +221,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pEEType)
 }
 FCIMPLEND
 
-FCIMPL2(Array*, RhpNewArrayAlign8, MethodTable* pArrayEEType, int numElements)
+FCIMPL2(Array*, RhpNewArrayFastAlign8, MethodTable* pArrayEEType, int numElements)
 {
     Thread* pCurThread = ThreadStore::GetCurrentThread();
     gc_alloc_context* acontext = pCurThread->GetAllocContext();

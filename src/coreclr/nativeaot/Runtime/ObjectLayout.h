@@ -126,6 +126,9 @@ static uintptr_t const STRING_COMPONENT_SIZE = StringConstants::ComponentSize;
 static uintptr_t const STRING_BASE_SIZE = StringConstants::BaseSize;
 
 //-------------------------------------------------------------------------------------------------
+static uintptr_t const SZARRAY_BASE_SIZE = MIN_OBJECT_SIZE;
+
+//-------------------------------------------------------------------------------------------------
 static uintptr_t const MAX_STRING_LENGTH = 0x3FFFFFDF;
 
 //-------------------------------------------------------------------------------------------------

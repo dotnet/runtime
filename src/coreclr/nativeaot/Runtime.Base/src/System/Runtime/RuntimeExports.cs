@@ -58,18 +58,36 @@ namespace System.Runtime
         [RuntimeExport("RhNewArray")]
         public static unsafe object RhNewArray(MethodTable* pEEType, int length)
         {
+            Debug.Assert(pEEType->IsSzArray);
+
+#if FEATURE_64BIT_ALIGNMENT
+            MethodTable* pEEElementType = pEEType->RelatedParameterType;
+            if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
+            {
+                return InternalCalls.RhpNewArrayFastAlign8(pEEType, length);
+            }
+            else
+#endif // FEATURE_64BIT_ALIGNMENT
+            {
+                return InternalCalls.RhpNewArrayFast(pEEType, length);
+            }
+        }
+
+        [RuntimeExport("RhNewVariableSizeObject")]
+        public static unsafe object RhNewVariableSizeObject(MethodTable* pEEType, int length)
+        {
             Debug.Assert(pEEType->IsArray || pEEType->IsString);
 
 #if FEATURE_64BIT_ALIGNMENT
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
             if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArrayAlign8(pEEType, length);
+                return InternalCalls.RhpNewArray(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN8);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArray(pEEType, length);
+                return InternalCalls.RhpNewArray(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
             }
         }
 
@@ -380,10 +398,10 @@ namespace System.Runtime
 #if FEATURE_64BIT_ALIGNMENT
                     MethodTable* pEEElementType = pEEType->RelatedParameterType;
                     if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
-                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayAlign8;
+                        return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFastAlign8;
 #endif // FEATURE_64BIT_ALIGNMENT
 
-                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArray;
+                    return (IntPtr)(delegate*<MethodTable*, int, object>)&InternalCalls.RhpNewArrayFast;
 
                 default:
                     Debug.Fail("Unknown RuntimeHelperKind");

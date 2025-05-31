@@ -302,6 +302,8 @@ PUSH_COOP_PINVOKE_FRAME macro trashReg
 
     ;; allocate scratch space and any required alignment
     alloc_stack     28h
+
+    END_PROLOGUE
 endm
 
 ;;
@@ -322,6 +324,11 @@ POP_COOP_PINVOKE_FRAME macro
     pop         r10     ; discard caller RSP
 endm
 
+INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
+    INLINE_GET_TLS_VAR destReg, trashReg, tls_CurrentThread
+    lea         destReg, [destReg + OFFSETOF__Thread__m_eeAllocContext]
+endm
+
 ;  - TAILCALL_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction
 ;            sequence which is recognized by the unwinder as a valid epilogue terminator
 TAILJMP_RAX TEXTEQU <DB 048h, 0FFh, 0E0h>
@@ -335,10 +342,7 @@ TSF_DoNotTriggerGc              equ 10h
 ;;
 ;; Rename fields of nested structs
 ;;
-OFFSETOF__Thread__m_alloc_context__alloc_ptr        equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
-OFFSETOF__Thread__m_eeAllocContext__combined_limit  equ OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit
-
-
+OFFSETOF__ee_alloc_context__alloc_ptr               equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
 
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1

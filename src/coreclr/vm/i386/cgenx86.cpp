@@ -813,13 +813,11 @@ void TailCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloa
 }
 #endif // !UNIX_X86_ABI
 
-#ifdef FEATURE_READYTORUN
 void DynamicHelperFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
     WRAPPER_NO_CONTRACT;
     UpdateRegDisplayHelper(pRD, 0);
 }
-#endif // FEATURE_READYTORUN
 
 //------------------------------------------------------------------------
 // This is declared as returning WORD instead of PRD_TYPE because of
