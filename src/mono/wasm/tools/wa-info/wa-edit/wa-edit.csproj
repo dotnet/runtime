@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <RollForward>major</RollForward>
+    <RootNamespace>wa_info</RootNamespace>
+    <ToolCommandName>wa-edit</ToolCommandName>
+    <PackAsTool>true</PackAsTool>
+    <Version>$(ProductVersion)</Version>
+    <Company>Microsoft Corporation</Company>
+    <Copyright>2021 Microsoft Corporation</Copyright>
+    <Authors>Radek Doulik</Authors>
+    <PackageOutputPath>nupkg</PackageOutputPath>
+    <PackageDescription>wa-info is a tool that can disassemble the wasm functions code, show wasm binary format file summary information, show dotnet/wasm AOT stats and more</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/radekdoulik/wa-info</RepositoryUrl>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\wa-lib\wa-lib.csproj"/>
+    <PackageReference Include="Mono.Options" Version="6.12.0.148" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
+    <None Include="..\LICENSE" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+</Project>
