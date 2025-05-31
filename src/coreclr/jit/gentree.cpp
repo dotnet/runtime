@@ -2033,7 +2033,7 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 
     GenTree* arrayLength = nullptr;
 
-    if (tree->OperGet() == GT_CALL)
+    if (tree->OperIs(GT_CALL))
     {
         GenTreeCall* call = tree->AsCall();
 
@@ -4583,19 +4583,19 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                     GenTree* tmpOp2 = tmp->gtGetOp2();
                     assert(tmpOp2 != nullptr);
 
-                    if ((tmpOp1 != base) && (tmpOp1->OperGet() == GT_ADD))
+                    if ((tmpOp1 != base) && (tmpOp1->OperIs(GT_ADD)))
                     {
                         tmp = tmpOp1;
                     }
-                    else if (tmpOp2->OperGet() == GT_LSH)
+                    else if (tmpOp2->OperIs(GT_LSH))
                     {
                         tmp = tmpOp2;
                     }
-                    else if (tmpOp1->OperGet() == GT_LSH)
+                    else if (tmpOp1->OperIs(GT_LSH))
                     {
                         tmp = tmpOp1;
                     }
-                    else if (tmpOp2->OperGet() == GT_ADD)
+                    else if (tmpOp2->OperIs(GT_ADD))
                     {
                         tmp = tmpOp2;
                     }
@@ -12671,7 +12671,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
         }
-        else if (tree->OperGet() == GT_PUTARG_STK)
+        else if (tree->OperIs(GT_PUTARG_STK))
         {
             const GenTreePutArgStk* putArg = tree->AsPutArgStk();
             printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
@@ -12697,7 +12697,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
             }
         }
 #if FEATURE_ARG_SPLIT
-        else if (tree->OperGet() == GT_PUTARG_SPLIT)
+        else if (tree->OperIs(GT_PUTARG_SPLIT))
         {
             const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
@@ -14082,7 +14082,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     {
         GenTree* arg1;
 
-        if (op1->OperGet() == GT_INTRINSIC)
+        if (op1->OperIs(GT_INTRINSIC))
         {
             arg1 = op1->AsUnOp()->gtOp1;
         }
@@ -14095,7 +14095,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         GenTree* arg2;
 
-        if (op2->OperGet() == GT_INTRINSIC)
+        if (op2->OperIs(GT_INTRINSIC))
         {
             arg2 = op2->AsUnOp()->gtOp1;
         }
@@ -14161,7 +14161,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* objOp = nullptr;
 
     // Note we may see intrinsified or regular calls to GetType
-    if (opOther->OperGet() == GT_INTRINSIC)
+    if (opOther->OperIs(GT_INTRINSIC))
     {
         objOp = opOther->AsUnOp()->gtOp1;
     }
@@ -14231,13 +14231,13 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperGet() == GT_CNS_INT) && tree->TypeIs(TYP_I_IMPL))
+    if ((tree->OperIs(GT_CNS_INT)) && tree->TypeIs(TYP_I_IMPL))
     {
         assert(tree->IsIconHandle(GTF_ICON_CLASS_HDL));
         result = (CORINFO_CLASS_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
     }
     // Or the result of a runtime lookup
-    else if (tree->OperGet() == GT_RUNTIMELOOKUP)
+    else if (tree->OperIs(GT_RUNTIMELOOKUP))
     {
         result = tree->AsRuntimeLookup()->GetClassHandle();
     }
@@ -14250,7 +14250,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && handleTreeInternal->TypeIs(TYP_I_IMPL))
+            if ((handleTreeInternal->OperIs(GT_CNS_INT)) && handleTreeInternal->TypeIs(TYP_I_IMPL))
             {
                 // These handle constants should be class handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
@@ -14277,13 +14277,13 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
     CORINFO_METHOD_HANDLE result = NO_METHOD_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperGet() == GT_CNS_INT) && tree->TypeIs(TYP_I_IMPL))
+    if ((tree->OperIs(GT_CNS_INT)) && tree->TypeIs(TYP_I_IMPL))
     {
         assert(tree->IsIconHandle(GTF_ICON_METHOD_HDL));
         result = (CORINFO_METHOD_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
     }
     // Or the result of a runtime lookup
-    else if (tree->OperGet() == GT_RUNTIMELOOKUP)
+    else if (tree->OperIs(GT_RUNTIMELOOKUP))
     {
         result = tree->AsRuntimeLookup()->GetMethodHandle();
     }
@@ -14296,7 +14296,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && handleTreeInternal->TypeIs(TYP_I_IMPL))
+            if ((handleTreeInternal->OperIs(GT_CNS_INT)) && handleTreeInternal->TypeIs(TYP_I_IMPL))
             {
                 // These handle constants should be method handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_METHOD_HDL));
@@ -16636,7 +16636,7 @@ GenTree* Compiler::gtNewTempStore(
     unsigned tmp, GenTree* val, unsigned curLevel, Statement** pAfterStmt, const DebugInfo& di, BasicBlock* block)
 {
     // Self-assignment is a nop.
-    if (val->OperGet() == GT_LCL_VAR && val->AsLclVarCommon()->GetLclNum() == tmp)
+    if (val->OperIs(GT_LCL_VAR) && val->AsLclVarCommon()->GetLclNum() == tmp)
     {
         return gtNewNothingNode();
     }
@@ -16649,7 +16649,7 @@ GenTree* Compiler::gtNewTempStore(
     }
 
     var_types valTyp = val->TypeGet();
-    if (val->OperGet() == GT_LCL_VAR && lvaTable[val->AsLclVar()->GetLclNum()].lvNormalizeOnLoad())
+    if (val->OperIs(GT_LCL_VAR) && lvaTable[val->AsLclVar()->GetLclNum()].lvNormalizeOnLoad())
     {
         valTyp      = lvaGetRealType(val->AsLclVar()->GetLclNum());
         val->gtType = valTyp;
@@ -17513,7 +17513,7 @@ Compiler::fgWalkResult Compiler::gtClearColonCond(GenTree** pTree, fgWalkData* d
 
     assert(data->pCallbackData == nullptr);
 
-    if (tree->OperGet() == GT_COLON)
+    if (tree->OperIs(GT_COLON))
     {
         // Nodes below this will be conditionally executed.
         return WALK_SKIP_SUBTREES;
@@ -18071,7 +18071,7 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
 
         // Some operators, such as LEA, are currently declared as binary but may
         // not have two operands. We must check that both operands actually exist.
-        if ((op1 != nullptr) && (op2 != nullptr) && (op1->OperGet() == GT_LCL_VAR) &&
+        if ((op1 != nullptr) && (op2 != nullptr) && (op1->OperIs(GT_LCL_VAR)) &&
             (op1->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             *pOtherTree = op2;
@@ -19203,7 +19203,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
                 }
             }
-            else if (base->OperGet() == GT_ADD)
+            else if (base->OperIs(GT_ADD))
             {
                 // TODO-VNTypes: use "IsFieldAddr" here instead.
 
@@ -19833,7 +19833,7 @@ void GenTreeArrAddr::ParseArrayAddress(Compiler* comp, GenTree** pArr, ValueNum*
                 {
                     // If the other arg is an int constant, and is a "not-a-field", choose
                     // that as the multiplier, thus preserving constant index offsets...
-                    if (tree->AsOp()->gtOp2->OperGet() == GT_CNS_INT &&
+                    if (tree->AsOp()->gtOp2->OperIs(GT_CNS_INT) &&
                         tree->AsOp()->gtOp2->AsIntCon()->gtFieldSeq == nullptr)
                     {
                         assert(!tree->AsOp()->gtOp2->AsIntCon()->ImmedValNeedsReloc(comp));

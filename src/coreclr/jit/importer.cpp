@@ -1277,7 +1277,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, unsigned curLevel)
 
             // Is this GT_COMMA(op1, GT_COMMA())?
             GenTree* parent = structVal;
-            if (blockNode->OperGet() == GT_COMMA)
+            if (blockNode->OperIs(GT_COMMA))
             {
                 // Find the last node in the comma chain.
                 do
@@ -1285,7 +1285,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, unsigned curLevel)
                     assert(blockNode->gtType == structType);
                     parent    = blockNode;
                     blockNode = blockNode->AsOp()->gtOp2;
-                } while (blockNode->OperGet() == GT_COMMA);
+                } while (blockNode->OperIs(GT_COMMA));
             }
 
             if (blockNode->OperIsBlk())
@@ -1858,7 +1858,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
 
         // If we're assigning a GT_RET_EXPR, note the temp over on the call,
         // so the inliner can use it in case it needs a return spill temp.
-        if (tree->OperGet() == GT_RET_EXPR)
+        if (tree->OperIs(GT_RET_EXPR))
         {
             JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
             GenTreeCall* call = tree->AsRetExpr()->gtInlineCandidate->AsCall();
@@ -1905,7 +1905,7 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
         // Temps introduced by the importer itself don't need to be spilled
 
         bool isTempLcl =
-            (tree->OperGet() == GT_LCL_VAR) && (tree->AsLclVarCommon()->GetLclNum() >= info.compLocalsCount);
+            (tree->OperIs(GT_LCL_VAR)) && (tree->AsLclVarCommon()->GetLclNum() >= info.compLocalsCount);
 
         if (isTempLcl)
         {

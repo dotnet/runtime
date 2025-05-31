@@ -1692,14 +1692,14 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
-        assert(switchTree->OperGet() == GT_SWITCH_TABLE);
+        assert(switchTree->OperIs(GT_SWITCH_TABLE));
     }
     else
     {
         switchStmt = block->lastStmt();
         switchTree = switchStmt->GetRootNode();
 
-        assert(switchTree->OperGet() == GT_SWITCH);
+        assert(switchTree->OperIs(GT_SWITCH));
     }
 
     noway_assert(switchTree->TypeIs(TYP_VOID));
@@ -1812,7 +1812,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (block->IsLIR())
         {
             GenTree* jumpTable = switchTree->AsOp()->gtOp2;
-            assert(jumpTable->OperGet() == GT_JMPTABLE);
+            assert(jumpTable->OperIs(GT_JMPTABLE));
             blockRange->Remove(jumpTable);
         }
 
@@ -4578,7 +4578,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         GenTree* test = block->lastNode();
                         noway_assert(test->OperIsConditionalJump());
 
-                        if (test->OperGet() == GT_JTRUE)
+                        if (test->OperIs(GT_JTRUE))
                         {
                             GenTree* cond = gtReverseCond(test->AsOp()->gtOp1);
                             assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.

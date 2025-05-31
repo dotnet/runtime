@@ -131,11 +131,11 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 //
 int LinearScan::BuildShiftLongCarry(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO);
+    assert(tree->OperIs(GT_LSH_HI) || tree->OperIs(GT_RSH_LO));
 
     int      srcCount = 2;
     GenTree* source   = tree->AsOp()->gtOp1;
-    assert((source->OperGet() == GT_LONG) && source->isContained());
+    assert((source->OperIs(GT_LONG)) && source->isContained());
 
     GenTree* sourceLo = source->gtGetOp1();
     GenTree* sourceHi = source->gtGetOp2();
@@ -146,7 +146,7 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 
     if (!tree->isContained())
     {
-        if (tree->OperGet() == GT_LSH_HI)
+        if (tree->OperIs(GT_LSH_HI))
         {
             setDelayFree(sourceLoUse);
         }

@@ -1896,7 +1896,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     //    Dividend in RAX:RDX  and computes
     //    Quotient in RAX, Remainder in RDX
 
-    if (tree->OperGet() == GT_MOD || tree->OperGet() == GT_UMOD)
+    if (tree->OperIs(GT_MOD) || tree->OperIs(GT_UMOD))
     {
         // We are interested in just the remainder.
         // RAX is used as a trashable register during computation of remainder.
@@ -1910,7 +1910,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (op1->OperGet() == GT_LONG)
+    if (op1->OperIs(GT_LONG))
     {
         assert(op1->isContained());
 
@@ -1920,7 +1920,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         assert(!loVal->isContained() && !hiVal->isContained());
 
         assert(op2->IsCnsIntOrI());
-        assert(tree->OperGet() == GT_UMOD);
+        assert(tree->OperIs(GT_UMOD));
 
         // This situation also requires an internal register.
         buildInternalIntRegisterDefForNode(tree);
@@ -3246,14 +3246,14 @@ int LinearScan::BuildMul(GenTree* tree)
         //
         dstCandidates = SRBM_RAX;
     }
-    else if (tree->OperGet() == GT_MULHI)
+    else if (tree->OperIs(GT_MULHI))
     {
         // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
         // upper 32 bits of the result set the destination candidate to REG_RDX.
         dstCandidates = SRBM_RDX;
     }
 #if defined(TARGET_X86)
-    else if (tree->OperGet() == GT_MUL_LONG)
+    else if (tree->OperIs(GT_MUL_LONG))
     {
         // have to use the encoding:RDX:RAX = RAX * rm
         dstCandidates = SRBM_RAX | SRBM_RDX;

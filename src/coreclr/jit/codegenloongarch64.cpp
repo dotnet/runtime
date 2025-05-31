@@ -1354,7 +1354,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 //
 void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN) || treeNode->OperIs(GT_RETFILT));
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -1367,7 +1367,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
 
     if (!movRequired)
     {
-        if (op1->OperGet() == GT_LCL_VAR)
+        if (op1->OperIs(GT_LCL_VAR))
         {
             GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
             bool                 isRegCandidate = compiler->lvaTable[lcl->GetLclNum()].lvIsRegCandidate();
@@ -1408,7 +1408,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
  */
 void CodeGen::genLclHeap(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LCLHEAP);
+    assert(tree->OperIs(GT_LCLHEAP));
     assert(compiler->compLocallocUsed);
 
     emitter* emit = GetEmitter();
@@ -2675,7 +2675,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
 //
 void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 {
-    assert(tree->OperGet() == GT_RETURNTRAP);
+    assert(tree->OperIs(GT_RETURNTRAP));
 
     // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
     // based on the contents of 'data'
@@ -2837,7 +2837,7 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -2952,7 +2952,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
     // we don't expect to see overflow detecting float/double --> int type conversions here
     // as they should have been converted into helper calls by front-end.
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -3109,7 +3109,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_CKFINITE);
+    assert(treeNode->OperIs(GT_CKFINITE));
 
     GenTree*  op1        = treeNode->AsOp()->gtOp1;
     var_types targetType = treeNode->TypeGet();
@@ -4043,7 +4043,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (treeNode->IsReuseRegVal())
     {
         // For now, this is only used for constant nodes.
-        assert((treeNode->OperGet() == GT_CNS_INT) || (treeNode->OperGet() == GT_CNS_DBL));
+        assert((treeNode->OperIs(GT_CNS_INT)) || (treeNode->OperIs(GT_CNS_DBL)));
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
@@ -4584,7 +4584,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
 
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperGet() == GT_FIELD_LIST);
+    bool isStruct = (targetType == TYP_STRUCT) || (source->OperIs(GT_FIELD_LIST));
 
     if (!isStruct) // a normal non-Struct argument
     {
@@ -4599,7 +4599,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
         {
-            assert(source->OperGet() == GT_CNS_INT);
+            assert(source->OperIs(GT_CNS_INT));
             assert(source->AsIntConCommon()->IconValue() == 0);
 
             emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
@@ -4622,13 +4622,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     {
         assert(source->isContained()); // We expect that this node was marked as contained in Lower
 
-        if (source->OperGet() == GT_FIELD_LIST)
+        if (source->OperIs(GT_FIELD_LIST))
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
         else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
+            noway_assert((source->OperIs(GT_LCL_VAR)) || (source->OperIs(GT_BLK)));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -4641,13 +4641,13 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             GenTreeLclVarCommon* varNode  = nullptr;
             GenTree*             addrNode = nullptr;
 
-            if (source->OperGet() == GT_LCL_VAR)
+            if (source->OperIs(GT_LCL_VAR))
             {
                 varNode = source->AsLclVarCommon();
             }
             else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_BLK);
+                assert(source->OperIs(GT_BLK));
 
                 addrNode = source->AsOp()->gtOp1;
 
@@ -4684,7 +4684,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             // gcPtrCount = treeNode->gtNumSlots;
             // Setup the srcSize and layout
-            if (source->OperGet() == GT_LCL_VAR)
+            if (source->OperIs(GT_LCL_VAR))
             {
                 assert(varNode != nullptr);
                 LclVarDsc* varDsc = compiler->lvaGetDesc(varNode);
@@ -4700,7 +4700,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
             else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_BLK);
+                assert(source->OperIs(GT_BLK));
 
                 // If the source is an BLK node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
@@ -4865,7 +4865,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
     unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
 
-    if (source->OperGet() == GT_FIELD_LIST)
+    if (source->OperIs(GT_FIELD_LIST))
     {
         // Evaluate each of the GT_FIELD_LIST items into their register
         // and store their register into the outgoing argument area
@@ -4912,7 +4912,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_BLK);
+        assert(source->OperIs(GT_BLK));
         assert(varTypeIsStruct(targetType));
 
         regNumber baseReg = internalRegisters.Extract(treeNode);
@@ -6209,7 +6209,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
     // float <--> double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();

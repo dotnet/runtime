@@ -5003,7 +5003,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         int   offset = 0;
         DWORD lsl    = 0;
 
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             offset = addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)
@@ -5567,7 +5567,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 {
                     regNumber resultReg = REG_NA;
 
-                    if (dst->OperGet() == GT_ADD)
+                    if (dst->OperIs(GT_ADD))
                     {
                         resultReg = dstReg;
                         regOp1    = saveOperReg1;

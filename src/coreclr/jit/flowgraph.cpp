@@ -33,7 +33,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (tree->OperGet() == GT_CALL)
+                if (tree->OperIs(GT_CALL))
                 {
                     GenTreeCall* call = tree->AsCall();
                     if (call->IsUnmanaged())
@@ -48,7 +48,7 @@ static bool blockNeedsGCPoll(BasicBlock* block)
                         blockMayNeedGCPoll = true;
                     }
                 }
-                else if (tree->OperGet() == GT_GCPOLL)
+                else if (tree->OperIs(GT_GCPOLL))
                 {
                     blockMayNeedGCPoll = true;
                 }
@@ -1014,14 +1014,14 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
         GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
 
-        if (handleNode->OperGet() == GT_CNS_INT)
+        if (handleNode->OperIs(GT_CNS_INT))
         {
             // it's a ldvirtftn case, fetch the methodhandle off the helper for ldvirtftn. It's the 3rd arg
             targetMethodHnd = CORINFO_METHOD_HANDLE(handleNode->AsIntCon()->gtCompileTimeHandle);
         }
         // Sometimes the argument to this is the result of a generic dictionary lookup, which shows
         // up as a GT_QMARK.
-        else if (handleNode->OperGet() == GT_QMARK)
+        else if (handleNode->OperIs(GT_QMARK))
         {
             qmarkNode = handleNode;
         }
@@ -1034,7 +1034,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
     if (qmarkNode)
     {
-        noway_assert(qmarkNode->OperGet() == GT_QMARK);
+        noway_assert(qmarkNode->OperIs(GT_QMARK));
         // The argument is actually a generic dictionary lookup.  For delegate creation it looks
         // like:
         // GT_QMARK
@@ -1046,13 +1046,13 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         //
         // In this case I can find the token (which is a method handle) and that is the compile time
         // handle.
-        noway_assert(qmarkNode->AsOp()->gtOp2->OperGet() == GT_COLON);
-        noway_assert(qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->OperGet() == GT_CALL);
+        noway_assert(qmarkNode->AsOp()->gtOp2->OperIs(GT_COLON));
+        noway_assert(qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->OperIs(GT_CALL));
         GenTreeCall* runtimeLookupCall = qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->AsCall();
 
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
         GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
-        noway_assert(tokenNode->OperGet() == GT_CNS_INT);
+        noway_assert(tokenNode->OperIs(GT_CNS_INT));
         targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
     }
 
@@ -6780,7 +6780,7 @@ unsigned NaturalLoopIterInfo::VarLimit()
     assert(HasInvariantLocalLimit);
 
     GenTree* limit = Limit();
-    assert(limit->OperGet() == GT_LCL_VAR);
+    assert(limit->OperIs(GT_LCL_VAR));
     return limit->AsLclVarCommon()->GetLclNum();
 }
 

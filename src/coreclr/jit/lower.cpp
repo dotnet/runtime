@@ -4710,7 +4710,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 // Lower "jmp <method>" tail call to insert PInvoke method epilog if required.
 void Lowering::LowerJmpMethod(GenTree* jmp)
 {
-    assert(jmp->OperGet() == GT_JMP);
+    assert(jmp->OperIs(GT_JMP));
 
     JITDUMP("lowering GT_JMP\n");
     DISPNODE(jmp);
@@ -5225,7 +5225,7 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             convertToStoreObj = true;
         }
-        else if (src->OperGet() == GT_CALL)
+        else if (src->OperIs(GT_CALL))
         {
             GenTreeCall* call = src->AsCall();
 
@@ -7777,7 +7777,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 //
 bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 {
-    assert((node->OperGet() == GT_DIV) || (node->OperGet() == GT_MOD));
+    assert((node->OperIs(GT_DIV)) || (node->OperIs(GT_MOD)));
     assert(nextNode != nullptr);
 
     GenTree* divMod   = node;
@@ -7829,7 +7829,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         return false;
     }
 
-    bool isDiv = divMod->OperGet() == GT_DIV;
+    bool isDiv = divMod->OperIs(GT_DIV);
 
     if (isDiv)
     {
@@ -8047,7 +8047,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 //
 GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 {
-    assert((node->OperGet() == GT_DIV) || (node->OperGet() == GT_MOD));
+    assert((node->OperIs(GT_DIV)) || (node->OperIs(GT_MOD)));
 
     if (varTypeIsIntegral(node->TypeGet()))
     {
@@ -8913,8 +8913,8 @@ void Lowering::LowerBlock(BasicBlock* block)
  */
 bool Lowering::IndirsAreEquivalent(GenTree* candidate, GenTree* storeInd)
 {
-    assert(candidate->OperGet() == GT_IND);
-    assert(storeInd->OperGet() == GT_STOREIND);
+    assert(candidate->OperIs(GT_IND));
+    assert(storeInd->OperIs(GT_STOREIND));
 
     // We should check the size of the indirections.  If they are
     // different, say because of a cast, then we can't call them equivalent.  Doing so could cause us
@@ -9273,7 +9273,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     if (ret->TypeIs(TYP_LONG))
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
-        noway_assert(op1->OperGet() == GT_LONG);
+        noway_assert(op1->OperIs(GT_LONG));
         MakeSrcContained(ret, op1);
     }
 #endif // !defined(TARGET_64BIT)
@@ -9282,7 +9282,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
         // op1 must be either a lclvar or a multi-reg returning call
-        if (op1->OperGet() == GT_LCL_VAR)
+        if (op1->OperIs(GT_LCL_VAR))
         {
             const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVarCommon());
             // This must be a multi-reg return or an HFA of a single element.

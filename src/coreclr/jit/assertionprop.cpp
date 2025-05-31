@@ -1441,7 +1441,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
     // Is Local assertion prop?
     if (!vnBased)
     {
-        if (tree->OperGet() == GT_CNS_INT)
+        if (tree->OperIs(GT_CNS_INT))
         {
             *pConstant = tree->AsIntCon()->IconValue();
             *pFlags    = tree->GetIconHandleFlag();
@@ -2757,7 +2757,7 @@ GenTree* Compiler::optVNBasedFoldExpr(BasicBlock* block, GenTree* parent, GenTre
 //
 GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, GenTree* tree)
 {
-    if (tree->OperGet() == GT_JTRUE)
+    if (tree->OperIs(GT_JTRUE))
     {
         // Treat JTRUE separately to extract side effects into respective statements rather
         // than using a COMMA separated op1.
@@ -4644,7 +4644,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
  */
 GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt)
 {
-    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
+    assert(tree->OperIs(GT_EQ) || tree->OperIs(GT_NE));
 
     GenTree* op1 = tree->AsOp()->gtOp1;
     GenTree* op2 = tree->AsOp()->gtOp2;
@@ -6445,7 +6445,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, Statement* stmt, GenTr
 {
     ASSERT_TP empty   = BitVecOps::UninitVal();
     GenTree*  newTree = nullptr;
-    if (tree->OperGet() == GT_CALL)
+    if (tree->OperIs(GT_CALL))
     {
         newTree = optNonNullAssertionProp_Call(empty, tree->AsCall());
     }

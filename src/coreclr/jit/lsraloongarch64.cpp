@@ -630,7 +630,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 
     if (addr->isContained())
     {
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             GenTreeAddrMode* lea = addr->AsAddrMode();
             index                = lea->Index();
@@ -860,7 +860,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             buildInternalIntRegisterDefForNode(argNode);
             buildInternalIntRegisterDefForNode(argNode);
 
-            if (putArgChild->OperGet() == GT_BLK)
+            if (putArgChild->OperIs(GT_BLK))
             {
                 assert(putArgChild->isContained());
                 GenTree* objChild = putArgChild->gtGetOp1();
@@ -928,7 +928,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) ||
            ((argMask & availableFloatRegs) != RBM_NONE));
 
-    if (putArgChild->OperGet() == GT_FIELD_LIST)
+    if (putArgChild->OperIs(GT_FIELD_LIST))
     {
         // Generated code:
         // 1. Consume all of the items in the GT_FIELD_LIST (source)
@@ -962,7 +962,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     else
     {
         assert(putArgChild->TypeIs(TYP_STRUCT));
-        assert(putArgChild->OperGet() == GT_BLK);
+        assert(putArgChild->OperIs(GT_BLK));
 
         // We can use a ld/st sequence so we need an internal register
         buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);

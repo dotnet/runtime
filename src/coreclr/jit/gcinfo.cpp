@@ -309,7 +309,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         // source.
         while (tgtAddr->OperIs(GT_ADD, GT_LEA))
         {
-            if (tgtAddr->OperGet() == GT_ADD)
+            if (tgtAddr->OperIs(GT_ADD))
             {
                 GenTree*  addOp1     = tgtAddr->AsOp()->gtGetOp1();
                 GenTree*  addOp2     = tgtAddr->AsOp()->gtGetOp2();
@@ -339,7 +339,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
             else
             {
                 // Must be an LEA (i.e., an AddrMode)
-                assert(tgtAddr->OperGet() == GT_LEA);
+                assert(tgtAddr->OperIs(GT_LEA));
                 tgtAddr = tgtAddr->AsAddrMode()->Base();
                 if (tgtAddr->TypeIs(TYP_BYREF, TYP_REF))
                 {

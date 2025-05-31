@@ -2509,7 +2509,7 @@ GenTreeHWIntrinsic* LinearScan::getContainedCselOperand(GenTreeHWIntrinsic* intr
     {
         GenTree* currentOp = intrinsicTree->Op(opNum);
 
-        if ((currentOp->OperGet() == GT_HWINTRINSIC) &&
+        if ((currentOp->OperIs(GT_HWINTRINSIC)) &&
             (currentOp->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect) && currentOp->isContained())
         {
             return currentOp->AsHWIntrinsic();

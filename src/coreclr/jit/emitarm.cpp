@@ -7864,7 +7864,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     // Handle unaligned floating point loads/stores
     if ((indir->gtFlags & GTF_IND_UNALIGNED))
     {
-        if (indir->OperGet() == GT_STOREIND)
+        if (indir->OperIs(GT_STOREIND))
         {
             var_types type = indir->AsStoreInd()->Data()->TypeGet();
             if (type == TYP_FLOAT)
@@ -7884,7 +7884,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 return;
             }
         }
-        else if (indir->OperGet() == GT_IND)
+        else if (indir->OperIs(GT_IND))
         {
             var_types type = indir->TypeGet();
             if (type == TYP_FLOAT)
@@ -7920,7 +7920,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
         DWORD lsl = 0;
 
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             offset += addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)
@@ -7934,7 +7934,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
         if (indir->HasIndex())
         {
-            assert(addr->OperGet() == GT_LEA);
+            assert(addr->OperIs(GT_LEA));
 
             GenTree* index = indir->Index();
 
@@ -8208,7 +8208,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
         emitJumpKind jumpKind;
 
-        if (dst->OperGet() == GT_MUL)
+        if (dst->OperIs(GT_MUL))
         {
             jumpKind = EJ_ne;
         }

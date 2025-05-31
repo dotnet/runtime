@@ -1415,7 +1415,7 @@ bool BasicBlock::endsWithJmpMethod(Compiler* comp) const
     {
         GenTree* lastNode = this->lastNode();
         assert(lastNode != nullptr);
-        return lastNode->OperGet() == GT_JMP;
+        return lastNode->OperIs(GT_JMP);
     }
 
     return false;
@@ -1481,7 +1481,7 @@ bool BasicBlock::endsWithTailCall(Compiler*     comp,
         if (result)
         {
             GenTree* lastNode = this->lastNode();
-            if (lastNode->OperGet() == GT_CALL)
+            if (lastNode->OperIs(GT_CALL))
             {
                 GenTreeCall* call = lastNode->AsCall();
                 if (tailCallsConvertibleToLoopOnly)

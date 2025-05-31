@@ -877,7 +877,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 {
                     SetNeedsTemp(&arg);
                 }
-                else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperGet() == GT_CALL))
+                else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperIs(GT_CALL)))
                 {
                     // Spill all arguments that are floating point calls
                     SetNeedsTemp(&arg);
@@ -3085,7 +3085,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     // Widen 'index' on 64-bit targets
     if (!index->TypeIs(TYP_I_IMPL))
     {
-        if (index->OperGet() == GT_CNS_INT)
+        if (index->OperIs(GT_CNS_INT))
         {
             index->gtType = TYP_I_IMPL;
         }
@@ -7584,7 +7584,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             return fgMorphTree(op1);
 
         case GT_COMMA:
-            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
+            if (op2->OperIsStore() || (op2->OperIs(GT_COMMA) && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -7730,7 +7730,7 @@ DONE_MORPHING_CHILDREN:
     GenTree* qmarkOp1 = nullptr;
     GenTree* qmarkOp2 = nullptr;
 
-    if ((tree->OperGet() == GT_QMARK) && (tree->AsOp()->gtOp2->OperGet() == GT_COLON))
+    if ((tree->OperIs(GT_QMARK)) && (tree->AsOp()->gtOp2->OperIs(GT_COLON)))
     {
         qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
@@ -8289,7 +8289,7 @@ DONE_MORPHING_CHILDREN:
         case GT_COMMA:
         {
             /* Special case: trees that don't produce a value */
-            if (op2->OperIsStore() || (op2->OperGet() == GT_COMMA && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
+            if (op2->OperIsStore() || (op2->OperIs(GT_COMMA) && op2->TypeIs(TYP_VOID)) || fgIsThrow(op2))
             {
                 typ = tree->gtType = TYP_VOID;
             }
@@ -11199,11 +11199,11 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
 {
     JITDUMP("\nMorphing MOD/UMOD [%06u] to Sub/Mul/Div\n", dspTreeID(tree));
 
-    if (tree->OperGet() == GT_MOD)
+    if (tree->OperIs(GT_MOD))
     {
         tree->SetOper(GT_DIV);
     }
-    else if (tree->OperGet() == GT_UMOD)
+    else if (tree->OperIs(GT_UMOD))
     {
         tree->SetOper(GT_UDIV);
     }
@@ -11402,12 +11402,12 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     GenTree* op2            = tree->gtGetOp2();
     GenTree* leftShiftTree  = nullptr;
     GenTree* rightShiftTree = nullptr;
-    if ((op1->OperGet() == GT_LSH) && (op2->OperGet() == GT_RSZ))
+    if ((op1->OperIs(GT_LSH)) && (op2->OperIs(GT_RSZ)))
     {
         leftShiftTree  = op1;
         rightShiftTree = op2;
     }
-    else if ((op1->OperGet() == GT_RSZ) && (op2->OperGet() == GT_LSH))
+    else if ((op1->OperIs(GT_RSZ)) && (op2->OperIs(GT_LSH)))
     {
         leftShiftTree  = op2;
         rightShiftTree = op1;
@@ -11437,7 +11437,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         ssize_t leftShiftMask  = -1;
         ssize_t rightShiftMask = -1;
 
-        if ((leftShiftIndex->OperGet() == GT_AND))
+        if ((leftShiftIndex->OperIs(GT_AND)))
         {
             if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
@@ -11450,7 +11450,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             }
         }
 
-        if ((rightShiftIndex->OperGet() == GT_AND))
+        if ((rightShiftIndex->OperIs(GT_AND)))
         {
             if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
@@ -11477,13 +11477,13 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         genTreeOps rotateOp             = GT_NONE;
         GenTree*   rotateIndex          = nullptr;
 
-        if (leftShiftIndex->OperGet() == GT_ADD)
+        if (leftShiftIndex->OperIs(GT_ADD))
         {
             shiftIndexWithAdd    = leftShiftIndex;
             shiftIndexWithoutAdd = rightShiftIndex;
             rotateOp             = GT_ROR;
         }
-        else if (rightShiftIndex->OperGet() == GT_ADD)
+        else if (rightShiftIndex->OperIs(GT_ADD))
         {
             shiftIndexWithAdd    = rightShiftIndex;
             shiftIndexWithoutAdd = leftShiftIndex;

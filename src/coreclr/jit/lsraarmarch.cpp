@@ -50,11 +50,11 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     if (indirTree->gtFlags & GTF_IND_UNALIGNED)
     {
         var_types type = TYP_UNDEF;
-        if (indirTree->OperGet() == GT_STOREIND)
+        if (indirTree->OperIs(GT_STOREIND))
         {
             type = indirTree->AsStoreInd()->Data()->TypeGet();
         }
-        else if (indirTree->OperGet() == GT_IND)
+        else if (indirTree->OperIs(GT_IND))
         {
             type = indirTree->TypeGet();
         }
@@ -73,7 +73,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 
     if (addr->isContained())
     {
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             GenTreeAddrMode* lea = addr->AsAddrMode();
             index                = lea->Index();
@@ -430,7 +430,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) ||
            ((argMask & availableFloatRegs) != RBM_NONE));
 
-    if (src->OperGet() == GT_FIELD_LIST)
+    if (src->OperIs(GT_FIELD_LIST))
     {
         // Generated code:
         // 1. Consume all of the items in the GT_FIELD_LIST (source)
