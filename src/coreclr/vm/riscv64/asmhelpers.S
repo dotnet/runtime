@@ -304,45 +304,6 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
     ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-
-//
-// If a preserved register were pushed onto the stack between
-// the managed caller and the H_M_F, ptrS0_S8 will point to its
-// location on the stack and it would have been updated on the
-// stack by the GC already and it will be popped back into the
-// appropriate register when the appropriate epilog is run.
-//
-// Otherwise, the register is preserved across all the code
-// in this HCALL or FCALL, so we need to update those registers
-// here because the GC will have updated our copies in the
-// frame.
-//
-// So, if ptrS0_S8 points into the MachState, we need to update
-// the register here.  That's what this macro does.
-//
-.macro RestoreRegMS idx, reg
-    // Incoming:
-    //
-    // a0 = address of MachState
-    //
-    // idx: Index of the callee register
-    // s0/fp: 0, s1: 1, s3-s11: 4-11, gp: 12 tp: 13
-    //
-    // reg: Register name (e.g. s0, s1, etc)
-    //
-    // Get the address of the specified captured register from machine state
-    addi  a2, a0, (MachState__captureCalleeSavedRegisters + (\idx * 8))
-
-    //// Get the content of specified preserved register pointer from machine state
-    ld  a3, (MachState__ptrCalleeSavedRegisters + (\idx * 8))(a0)
-
-    bne  a2, a3, LOCAL_LABEL(NoRestore_\reg)
-
-    ld  \reg, 0(a2)
-LOCAL_LABEL(NoRestore_\reg):
-
-.endm
-
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     PROLOG_WITH_TRANSITION_BLOCK
 
@@ -355,79 +316,6 @@ NESTED_ENTRY ThePreStub, _TEXT, NoHandler
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
     EPILOG_BRANCH_REG  t4
 NESTED_END ThePreStub, _TEXT
-
-// ------------------------------------------------------------------
-
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-// INDEBUG_COMMA(HelperMethodFrame *pFrame)
-// MachState *pState
-// )
-LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-#ifdef _DEBUG
-    addi  a0, a1, 0
-#endif
-
-    // If machine state is invalid, then simply exit
-    lw  a1, MachState__isValid(a0)
-    beq  a1, zero, LOCAL_LABEL(Done)
-
-    // manually assign index
-    // s0/fp: 0, s1: 1, s3-s11: 4-11, gp: 12 tp: 13
-    RestoreRegMS  0, s0 
-    RestoreRegMS  1, s1
-    RestoreRegMS  2, s2
-    RestoreRegMS  3, s3
-    RestoreRegMS  4, s4
-    RestoreRegMS  5, s5
-    RestoreRegMS  6, s6
-    RestoreRegMS  7, s7
-    RestoreRegMS  8, s8
-    RestoreRegMS  9, s9
-    RestoreRegMS  10, s10
-    RestoreRegMS  11, s11
-    RestoreRegMS  12, gp
-    RestoreRegMS  13, tp
-LOCAL_LABEL(Done):
-    // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-    // as it is used in the state machine to loop until it becomes zero.
-    // Refer to HELPER_METHOD_FRAME_END macro for details.
-    addi  a0, zero, 0
-    ret
-LEAF_END HelperMethodFrameRestoreState, _TEXT
-
-//-----------------------------------------------------------------------------
-// This routine captures the machine state. It is used by helper method frame
-//-----------------------------------------------------------------------------
-//void LazyMachStateCaptureState(struct LazyMachState *pState)//
-LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-    // marks that this is not yet valid
-    sw  zero, (MachState__isValid)(a0)
-
-    sd  ra, (LazyMachState_captureIp)(a0)
-
-    // save sp register.
-    sd  sp, (LazyMachState_captureSp)(a0)
-
-    // save non-volatile registers that can contain object references
-    addi  a1, a0, LazyMachState_captureCalleeSavedRegisters
-
-    sd  s0, 0(a1)
-    sd  s1, 8(a1)
-    sd  s2, 16(a1)
-    sd  s3, 24(a1)
-    sd  s4, 32(a1)
-    sd  s5, 40(a1)
-    sd  s6, 48(a1)
-    sd  s7, 56(a1)
-    sd  s8, 64(a1)
-    sd  s9, 72(a1)
-    sd  s10, 80(a1)
-    sd  s11, 88(a1)
-    sd  gp, 96(a1)
-    sd  tp, 104(a1)
-
-    ret
-LEAF_END LazyMachStateCaptureState, _TEXT
 
 // ------------------------------------------------------------------
 // The call in ndirect import precode points to this function.

@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// THREADS.H -
-//
-
 
 //
 //
@@ -135,7 +132,6 @@ class     ThreadBaseObject;
 class     AppDomainStack;
 class     DomainAssembly;
 class     DeadlockAwareLock;
-struct    HelperMethodFrameCallerList;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
@@ -3503,14 +3499,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_dwUnbreakableLockCount;
     }
-#endif // _DEBUG
-
-#ifdef _DEBUG
-private:
-    friend class FCallTransitionState;
-    friend class PermitHelperMethodFrameState;
-    friend class CompletedFCallTransitionState;
-    HelperMethodFrameCallerList *m_pHelperMethodFrameCallerList;
 #endif // _DEBUG
 
 private:

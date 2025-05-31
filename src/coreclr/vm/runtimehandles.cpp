@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 #include "common.h"
 #include "corhdr.h"
 #include "runtimehandles.h"
@@ -1886,8 +1885,8 @@ FCIMPL2(MethodDesc*, RuntimeMethodHandle::GetStubIfNeededInternal,
     if (pMethod->IsAsyncVariantMethod())
         return NULL;
 
-    // Perf optimization: this logic is actually duplicated in FindOrCreateAssociatedMethodDescForReflection, but since it
-    // is the more common case it's worth the duplicate check here to avoid the helper method frame
+    // Perf optimization: this logic is duplicated from FindOrCreateAssociatedMethodDescForReflection,
+    // but it's worth repeating here to avoid unnecessary overhead in the common case.
     if (pMethod->HasMethodInstantiation()
         || (!instType.IsValueType()
             && (!instType.HasInstantiation() || instType.IsGenericTypeDefinition())))

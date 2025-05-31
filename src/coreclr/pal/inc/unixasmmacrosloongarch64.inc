@@ -399,13 +399,20 @@ C_FUNC(\Name\()_End):
 
 .endm
 
-.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+.macro EPILOG_WITH_TRANSITION_BLOCK
 
         RESTORE_CALLEESAVED_REGISTERS 3, __PWTB_CalleeSavedRegisters
 
         EPILOG_RESTORE_REG_PAIR 22, 1, __PWTB_CalleeSavedRegisters
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
+
+.endm
+
+
+.macro EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+        EPILOG_WITH_TRANSITION_BLOCK
 
         jirl  $r0, $ra, 0
 
@@ -430,6 +437,44 @@ C_FUNC(\Name\()_End):
 
         EPILOG_STACK_FREE                 __PWTB_StackAlloc
 
+.endm
+
+// Inlined version of GetThreadEEAllocContext. Target cannot be a0.
+.macro INLINE_GET_ALLOC_CONTEXT target
+        .ifc  \target, $a0
+                .error "target cannot be a0"
+        .endif
+
+        // Save $a0, $ra
+        PROLOG_SAVE_REG_PAIR_INDEXED   4, 1, 16, 0
+
+        // This instruction is recognized and potentially patched
+        // by the linker (GD->IE/LE relaxation).
+        la.tls.desc  $a0, t_runtime_thread_locals
+
+        addi.d  \target, $tp, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        add.d  \target, \target, $a0
+
+        // Restore $a0, $ra
+        EPILOG_RESTORE_REG_PAIR_INDEXED 4, 1, 16
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+        // Including fp, ra, s0-s8, padding, and (a0-a7)arguments. (1+1+9+1)*8 + 8*8 == 96.
+        PROLOG_STACK_ALLOC  160
+        //                   $fp,$ra
+        PROLOG_SAVE_REG_PAIR  22, 1, 0, 1
+        // Spill callee saved registers.  $sp=$r3.
+        SAVE_CALLEESAVED_REGISTERS  3, 0
+        move  \target, $sp
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        RESTORE_CALLEESAVED_REGISTERS  3, 0
+        EPILOG_RESTORE_REG_PAIR  22, 1, 0
+        EPILOG_STACK_FREE  160
 .endm
 
 // ------------------------------------------------------------------

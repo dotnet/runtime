@@ -20,7 +20,6 @@
 #pragma warning(disable:4663)
 
 #include "eeconfig.h"
-#include "gms.h"
 #include "utsem.h"
 #include "gccover.h"
 #include "virtualcallstub.h"
