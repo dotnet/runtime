@@ -437,9 +437,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
-                    // We must treat as a regular struct if AVX512F isn't supported
+                    // We must treat as a regular struct if AVX512 isn't supported
                     return CORINFO_TYPE_UNDEF;
                 }
 

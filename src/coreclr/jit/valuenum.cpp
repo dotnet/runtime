@@ -7986,10 +7986,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(GenTreeHWIntrinsic* tree,
 #endif // TARGET_ARM64
 
 #if defined(TARGET_XARCH)
-            case NI_AVX512CD_LeadingZeroCount:
-            case NI_AVX512CD_VL_LeadingZeroCount:
-            case NI_AVX10v1_V512_LeadingZeroCount:
-            case NI_AVX10v1_LeadingZeroCount:
+            case NI_AVX512_LeadingZeroCount:
             {
                 return EvaluateUnarySimd(this, GT_LZCNT, /* scalar */ false, type, baseType, arg0VN);
             }
@@ -13306,7 +13303,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (intrinsicId)
         {
 #ifdef TARGET_XARCH
-            case NI_SSE2_MaskMove:
+            case NI_X86Base_MaskMove:
             case NI_AVX_MaskStore:
             case NI_AVX2_MaskStore:
             case NI_AVX_MaskLoad:
