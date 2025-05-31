@@ -2786,7 +2786,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 
     GenTree* addr = indirNode->Addr();
 
-    if ((addr->OperIs(GT_LEA)) && IsInvariantInRange(addr, indirNode))
+    if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         bool makeContained = true;
 

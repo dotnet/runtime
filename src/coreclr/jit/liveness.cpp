@@ -38,7 +38,7 @@
 template <bool ssaLiveness>
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
-    assert((tree->OperIsLocal() && (!tree->OperIs(GT_PHI_ARG))) || tree->OperIs(GT_LCL_ADDR));
+    assert((tree->OperIsLocal() && !tree->OperIs(GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
     const unsigned   lclNum = tree->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);

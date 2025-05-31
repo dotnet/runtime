@@ -702,7 +702,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 #endif // FEATURE_SIMD
 
     GenTree* addr = indirNode->Addr();
-    if ((addr->OperIs(GT_LEA)) && IsInvariantInRange(addr, indirNode))
+    if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         MakeSrcContained(indirNode, addr);
     }

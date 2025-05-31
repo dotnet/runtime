@@ -7640,7 +7640,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
             MakeSrcContained(node, addr);
         }
     }
-    else if ((addr->OperIs(GT_LEA)) && IsInvariantInRange(addr, node))
+    else if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, node))
     {
         MakeSrcContained(node, addr);
     }

@@ -476,7 +476,7 @@ bool Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
         folded = true;
     }
 
-    if ((tree->OperIs(GT_NULLCHECK)) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
+    if (tree->OperIs(GT_NULLCHECK) && (tree->gtGetOp1()->OperGet() == GT_LCL_VAR))
     {
         nullCheckMap->Set(tree->gtGetOp1()->AsLclVarCommon()->GetLclNum(), tree,
                           LocalNumberToNullCheckTreeMap::SetKind::Overwrite);
@@ -518,7 +518,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 
     ssize_t offsetValue = 0;
 
-    if ((addr->OperIs(GT_ADD)) && addr->gtGetOp2()->IsCnsIntOrI())
+    if (addr->OperIs(GT_ADD) && addr->gtGetOp2()->IsCnsIntOrI())
     {
         offsetValue += addr->gtGetOp2()->AsIntConCommon()->IconValue();
         addr = addr->gtGetOp1();
@@ -546,7 +546,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
     if (nullCheckMap->Lookup(lclNum, &nullCheckTree))
     {
         GenTree* nullCheckAddr = nullCheckTree->AsIndir()->Addr();
-        if ((!nullCheckAddr->OperIs(GT_LCL_VAR)) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
+        if (!nullCheckAddr->OperIs(GT_LCL_VAR) || (nullCheckAddr->AsLclVarCommon()->GetSsaNum() != ssaNum))
         {
             nullCheckTree = nullptr;
         }
@@ -589,7 +589,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
 
         GenTree* nullCheckAddress = commaOp1EffectiveValue->gtGetOp1();
 
-        if ((!nullCheckAddress->OperIs(GT_LCL_VAR)) || (defValue->gtGetOp2()->OperGet() != GT_ADD))
+        if (!nullCheckAddress->OperIs(GT_LCL_VAR) || (defValue->gtGetOp2()->OperGet() != GT_ADD))
         {
             return nullptr;
         }
@@ -599,7 +599,7 @@ GenTree* Compiler::optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckT
         GenTree* additionNode = defValue->gtGetOp2();
         GenTree* additionOp1  = additionNode->gtGetOp1();
         GenTree* additionOp2  = additionNode->gtGetOp2();
-        if ((additionOp1->OperIs(GT_LCL_VAR)) &&
+        if (additionOp1->OperIs(GT_LCL_VAR) &&
             (additionOp1->AsLclVarCommon()->GetLclNum() == nullCheckAddress->AsLclVarCommon()->GetLclNum()) &&
             (additionOp2->IsCnsIntOrI()))
         {

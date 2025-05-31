@@ -2763,7 +2763,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
             static bool IsComma(GenTree* tree)
             {
-                return (tree != nullptr) && (tree->OperIs(GT_COMMA));
+                return (tree != nullptr) && tree->OperIs(GT_COMMA);
             }
         };
 

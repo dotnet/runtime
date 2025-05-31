@@ -4274,7 +4274,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 #if !defined(TARGET_64BIT)
     if (tree->TypeIs(TYP_LONG))
     {
-        assert((op1->OperIs(GT_LONG)) && op1->isContained());
+        assert(op1->OperIs(GT_LONG) && op1->isContained());
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         BuildUse(loVal, RBM_LNGRET_LO.GetIntRegSet());
@@ -4299,7 +4299,7 @@ int LinearScan::BuildReturn(GenTree* tree)
             if (varTypeIsStruct(tree))
             {
                 // op1 has to be either a lclvar or a multi-reg returning call
-                if ((op1->OperIs(GT_LCL_VAR)) && !op1->IsMultiRegLclVar())
+                if (op1->OperIs(GT_LCL_VAR) && !op1->IsMultiRegLclVar())
                 {
                     BuildUse(op1, useCandidates);
                 }

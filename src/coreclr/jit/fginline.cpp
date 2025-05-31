@@ -282,7 +282,7 @@ public:
             {
                 GenTree* effectiveValue = value->gtEffectiveVal();
 
-                noway_assert(!varTypeIsStruct(effectiveValue) || (!effectiveValue->OperIs(GT_RET_EXPR)) ||
+                noway_assert(!varTypeIsStruct(effectiveValue) || !effectiveValue->OperIs(GT_RET_EXPR) ||
                              !effectiveValue->AsRetExpr()->gtInlineCandidate->HasMultiRegRetVal());
             }
         }
@@ -395,7 +395,7 @@ private:
                 // If we end up swapping type we may need to retype the tree:
                 if (retType != newType)
                 {
-                    if ((retType == TYP_BYREF) && (tree->OperIs(GT_IND)))
+                    if ((retType == TYP_BYREF) && tree->OperIs(GT_IND))
                     {
                         // - in an RVA static if we've reinterpreted it as a byref;
                         assert(newType == TYP_I_IMPL);

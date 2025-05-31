@@ -4043,7 +4043,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (treeNode->IsReuseRegVal())
     {
         // For now, this is only used for constant nodes.
-        assert((treeNode->OperIs(GT_CNS_INT)) || (treeNode->OperIs(GT_CNS_DBL)));
+        assert(treeNode->OperIs(GT_CNS_INT) || treeNode->OperIs(GT_CNS_DBL));
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
@@ -4584,7 +4584,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
     }
 
-    bool isStruct = (targetType == TYP_STRUCT) || (source->OperIs(GT_FIELD_LIST));
+    bool isStruct = (targetType == TYP_STRUCT) || source->OperIs(GT_FIELD_LIST);
 
     if (!isStruct) // a normal non-Struct argument
     {
@@ -4628,7 +4628,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
         else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperIs(GT_LCL_VAR)) || (source->OperIs(GT_BLK)));
+            noway_assert(source->OperIs(GT_LCL_VAR) || source->OperIs(GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));

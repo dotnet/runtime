@@ -877,7 +877,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 {
                     SetNeedsTemp(&arg);
                 }
-                else if (varTypeIsFloating(argx->TypeGet()) && (argx->OperIs(GT_CALL)))
+                else if (varTypeIsFloating(argx->TypeGet()) && argx->OperIs(GT_CALL))
                 {
                     // Spill all arguments that are floating point calls
                     SetNeedsTemp(&arg);
@@ -7730,7 +7730,7 @@ DONE_MORPHING_CHILDREN:
     GenTree* qmarkOp1 = nullptr;
     GenTree* qmarkOp2 = nullptr;
 
-    if ((tree->OperIs(GT_QMARK)) && (tree->AsOp()->gtOp2->OperIs(GT_COLON)))
+    if (tree->OperIs(GT_QMARK) && (tree->AsOp()->gtOp2->OperIs(GT_COLON)))
     {
         qmarkOp1 = oldTree->AsOp()->gtOp2->AsOp()->gtOp1;
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
@@ -11402,12 +11402,12 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     GenTree* op2            = tree->gtGetOp2();
     GenTree* leftShiftTree  = nullptr;
     GenTree* rightShiftTree = nullptr;
-    if ((op1->OperIs(GT_LSH)) && (op2->OperIs(GT_RSZ)))
+    if (op1->OperIs(GT_LSH) && op2->OperIs(GT_RSZ))
     {
         leftShiftTree  = op1;
         rightShiftTree = op2;
     }
-    else if ((op1->OperIs(GT_RSZ)) && (op2->OperIs(GT_LSH)))
+    else if (op1->OperIs(GT_RSZ) && op2->OperIs(GT_LSH))
     {
         leftShiftTree  = op2;
         rightShiftTree = op1;
@@ -11437,7 +11437,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         ssize_t leftShiftMask  = -1;
         ssize_t rightShiftMask = -1;
 
-        if ((leftShiftIndex->OperIs(GT_AND)))
+        if (leftShiftIndex->OperIs(GT_AND))
         {
             if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
@@ -11450,7 +11450,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             }
         }
 
-        if ((rightShiftIndex->OperIs(GT_AND)))
+        if (rightShiftIndex->OperIs(GT_AND))
         {
             if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
             {
@@ -13889,8 +13889,8 @@ bool Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
     assert(!varTypeIsFloating(condExpr->TypeGet()));
 
-    bool hasTrueExpr  = (!trueExpr->OperIs(GT_NOP));
-    bool hasFalseExpr = (!falseExpr->OperIs(GT_NOP));
+    bool hasTrueExpr  = !trueExpr->OperIs(GT_NOP);
+    bool hasFalseExpr = !falseExpr->OperIs(GT_NOP);
     assert(hasTrueExpr || hasFalseExpr); // We expect to have at least one arm of the qmark!
 
     // Create remainder, cond and "else" blocks. After this, the blocks are in this order:

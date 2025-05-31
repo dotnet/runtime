@@ -1905,7 +1905,7 @@ void Compiler::impSpillStackEnsure(bool spillLeaves)
         // Temps introduced by the importer itself don't need to be spilled
 
         bool isTempLcl =
-            (tree->OperIs(GT_LCL_VAR)) && (tree->AsLclVarCommon()->GetLclNum() >= info.compLocalsCount);
+            tree->OperIs(GT_LCL_VAR) && (tree->AsLclVarCommon()->GetLclNum() >= info.compLocalsCount);
 
         if (isTempLcl)
         {

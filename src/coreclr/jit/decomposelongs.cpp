@@ -1048,7 +1048,7 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     GenTree* op2 = tree->gtGetOp2();
 
     // Both operands must have already been decomposed into GT_LONG operators.
-    noway_assert((op1->OperIs(GT_LONG)) && (op2->OperIs(GT_LONG)));
+    noway_assert(op1->OperIs(GT_LONG) && op2->OperIs(GT_LONG));
 
     // Capture the lo and hi halves of op1 and op2.
     GenTree* loOp1 = op1->gtGetOp1();

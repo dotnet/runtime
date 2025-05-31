@@ -623,7 +623,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(hashDsc->csdTreeList.tslTree != nullptr);
 
         // Check for mismatched types on GT_CNS_INT nodes
-        if ((tree->OperIs(GT_CNS_INT)) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
+        if (tree->OperIs(GT_CNS_INT) && (tree->TypeGet() != hashDsc->csdTreeList.tslTree->TypeGet()))
         {
             continue;
         }

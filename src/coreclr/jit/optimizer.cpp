@@ -309,7 +309,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
     GenTree* opr2 = relop->AsOp()->gtOp2;
 
     // Make sure we have jtrue (vtmp != 0)
-    if ((relop->OperIs(GT_NE)) && (opr1->OperIs(GT_LCL_VAR)) && (opr2->OperIs(GT_CNS_INT)) &&
+    if (relop->OperIs(GT_NE) && opr1->OperIs(GT_LCL_VAR) && opr2->OperIs(GT_CNS_INT) &&
         opr2->IsIntegralConst(0))
     {
         // Get the previous statement to get the def (rhs) of Vtmp to see

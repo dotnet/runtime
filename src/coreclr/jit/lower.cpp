@@ -7777,7 +7777,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 //
 bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 {
-    assert((node->OperIs(GT_DIV)) || (node->OperIs(GT_MOD)));
+    assert(node->OperIs(GT_DIV) || node->OperIs(GT_MOD));
     assert(nextNode != nullptr);
 
     GenTree* divMod   = node;
@@ -8047,7 +8047,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 //
 GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 {
-    assert((node->OperIs(GT_DIV)) || (node->OperIs(GT_MOD)));
+    assert(node->OperIs(GT_DIV) || node->OperIs(GT_MOD));
 
     if (varTypeIsIntegral(node->TypeGet()))
     {

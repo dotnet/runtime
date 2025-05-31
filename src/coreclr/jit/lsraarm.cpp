@@ -135,7 +135,7 @@ int LinearScan::BuildShiftLongCarry(GenTree* tree)
 
     int      srcCount = 2;
     GenTree* source   = tree->AsOp()->gtOp1;
-    assert((source->OperIs(GT_LONG)) && source->isContained());
+    assert(source->OperIs(GT_LONG) && source->isContained());
 
     GenTree* sourceLo = source->gtGetOp1();
     GenTree* sourceHi = source->gtGetOp2();

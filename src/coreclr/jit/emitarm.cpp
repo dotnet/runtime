@@ -8218,7 +8218,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             jumpKind                = isUnsignedOverflow ? EJ_lo : EJ_vs;
             if (jumpKind == EJ_lo)
             {
-                if ((!dst->OperIs(GT_SUB)) && (!dst->OperIs(GT_SUB_HI)))
+                if (!dst->OperIs(GT_SUB) && !dst->OperIs(GT_SUB_HI))
                 {
                     jumpKind = EJ_hs;
                 }

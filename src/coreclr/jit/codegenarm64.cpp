@@ -3790,7 +3790,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 
         regNumber exResultReg = internalRegisters.Extract(treeNode, RBM_ALLINT);
         regNumber storeDataReg =
-            (treeNode->OperIs(GT_XCHG)) ? dataReg : internalRegisters.Extract(treeNode, RBM_ALLINT);
+            treeNode->OperIs(GT_XCHG) ? dataReg : internalRegisters.Extract(treeNode, RBM_ALLINT);
         regNumber loadReg = (targetReg != REG_NA) ? targetReg : storeDataReg;
 
         // Check allocator assumptions
@@ -3803,12 +3803,12 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
         noway_assert(dataReg != loadReg);
 
         noway_assert(addrReg != storeDataReg);
-        noway_assert((treeNode->OperIs(GT_XCHG)) || (addrReg != dataReg));
+        noway_assert(treeNode->OperIs(GT_XCHG) || (addrReg != dataReg));
 
         assert(addr->isUsedFromReg());
         noway_assert(exResultReg != REG_NA);
         noway_assert(exResultReg != targetReg);
-        noway_assert((targetReg != REG_NA) || (!treeNode->OperIs(GT_XCHG)));
+        noway_assert((targetReg != REG_NA) || !treeNode->OperIs(GT_XCHG));
 
         // Store exclusive unpredictable cases must be avoided
         noway_assert(exResultReg != storeDataReg);

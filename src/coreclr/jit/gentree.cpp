@@ -4583,7 +4583,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                     GenTree* tmpOp2 = tmp->gtGetOp2();
                     assert(tmpOp2 != nullptr);
 
-                    if ((tmpOp1 != base) && (tmpOp1->OperIs(GT_ADD)))
+                    if ((tmpOp1 != base) && tmpOp1->OperIs(GT_ADD))
                     {
                         tmp = tmpOp1;
                     }
@@ -14231,7 +14231,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
     CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperIs(GT_CNS_INT)) && tree->TypeIs(TYP_I_IMPL))
+    if (tree->OperIs(GT_CNS_INT) && tree->TypeIs(TYP_I_IMPL))
     {
         assert(tree->IsIconHandle(GTF_ICON_CLASS_HDL));
         result = (CORINFO_CLASS_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
@@ -14250,7 +14250,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperIs(GT_CNS_INT)) && handleTreeInternal->TypeIs(TYP_I_IMPL))
+            if (handleTreeInternal->OperIs(GT_CNS_INT) && handleTreeInternal->TypeIs(TYP_I_IMPL))
             {
                 // These handle constants should be class handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
@@ -14277,7 +14277,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
     CORINFO_METHOD_HANDLE result = NO_METHOD_HANDLE;
 
     // The handle could be a literal constant
-    if ((tree->OperIs(GT_CNS_INT)) && tree->TypeIs(TYP_I_IMPL))
+    if (tree->OperIs(GT_CNS_INT) && tree->TypeIs(TYP_I_IMPL))
     {
         assert(tree->IsIconHandle(GTF_ICON_METHOD_HDL));
         result = (CORINFO_METHOD_HANDLE)tree->AsIntCon()->gtCompileTimeHandle;
@@ -14296,7 +14296,7 @@ CORINFO_METHOD_HANDLE Compiler::gtGetHelperArgMethodHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperIs(GT_CNS_INT)) && handleTreeInternal->TypeIs(TYP_I_IMPL))
+            if (handleTreeInternal->OperIs(GT_CNS_INT) && handleTreeInternal->TypeIs(TYP_I_IMPL))
             {
                 // These handle constants should be method handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_METHOD_HDL));
@@ -15127,7 +15127,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         }
 
         GenTree* copyDstAddrOp1 = copyDstAddr->AsOp()->gtOp1;
-        if ((!copyDstAddrOp1->OperIs(GT_LCL_VAR)) || (copyDstAddrOp1->AsLclVarCommon()->GetLclNum() != boxTempLcl))
+        if (!copyDstAddrOp1->OperIs(GT_LCL_VAR) || (copyDstAddrOp1->AsLclVarCommon()->GetLclNum() != boxTempLcl))
         {
             JITDUMP("Unexpected copy dest address 1st addend\n");
             return nullptr;
@@ -18071,7 +18071,7 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
 
         // Some operators, such as LEA, are currently declared as binary but may
         // not have two operands. We must check that both operands actually exist.
-        if ((op1 != nullptr) && (op2 != nullptr) && (op1->OperIs(GT_LCL_VAR)) &&
+        if ((op1 != nullptr) && (op2 != nullptr) && op1->OperIs(GT_LCL_VAR) &&
             (op1->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             *pOtherTree = op2;
