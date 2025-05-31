@@ -320,17 +320,109 @@ namespace System.IO.Compression
             public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
         }
 
-        public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, CompressionLevel level,
-            int windowBits, int memLevel, CompressionStrategy strategy)
+        public sealed class ZLibNativeException : Exception
         {
-            zLibStreamHandle = new ZLibStreamHandle();
-            return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
+            public string? Context { get; }
+
+            public string? NativeMessage { get; }
+
+            public ErrorCode NativeErrorCode { get; }
+
+            /// <summary>
+            /// Represents an exception that occurs when an error is returned by a native ZLib operation.
+            /// </summary>
+            /// <param name="zlibErrorContext">A string describing the context in which the ZLib error occurred.</param>
+            /// <param name="nativeErrorCode">The native error code returned by the ZLib library.</param>
+            /// <param name="zlibErrorMessage">An optional message provided by the ZLib library describing the error.</param>
+            public ZLibNativeException(string zlibErrorContext, ErrorCode nativeErrorCode, string zlibErrorMessage)
+                : base(GenerateExceptionMessage(nativeErrorCode))
+            {
+                Context = zlibErrorContext;
+                NativeErrorCode = nativeErrorCode;
+                NativeMessage = zlibErrorMessage;
+            }
+
+            /// <summary>
+            /// Represents an exception that occurs when the ZLib native library cannot be loaded.
+            /// </summary>
+            /// <param name="loadException">The exception that prevented the ZLib native library from being loaded.</param>
+            public ZLibNativeException(Exception loadException)
+                : base(SR.ZLibErrorDLLLoadError, loadException)
+            {
+                NativeErrorCode = ErrorCode.Ok;
+            }
+
+            private static string GenerateExceptionMessage(ErrorCode nativeErrorCode)
+                => nativeErrorCode switch
+                {
+                    // Not enough memory
+                    ErrorCode.MemError => SR.ZLibErrorNotEnoughMemory,
+
+                    // zlib library is incompatible with the version assumed
+                    ErrorCode.VersionError => SR.ZLibErrorVersionMismatch,
+
+                    // Parameters are invalid
+                    ErrorCode.StreamError => SR.ZLibErrorIncorrectInitParameters,
+
+                    _ => SR.Format(SR.ZLibErrorUnexpected, (int)nativeErrorCode)
+                };
         }
 
-        public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
+        public static ZLibStreamHandle CreateZLibStreamForDeflate(CompressionLevel level, int windowBits,
+            int memLevel, CompressionStrategy strategy)
         {
-            zLibStreamHandle = new ZLibStreamHandle();
-            return zLibStreamHandle.InflateInit2_(windowBits);
+            ZLibStreamHandle zLibStreamHandle = new ZLibStreamHandle();
+            ErrorCode errC;
+
+            try
+            {
+                errC = zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
+            }
+            catch (Exception cause) // could not load the ZLib dll
+            {
+                zLibStreamHandle.Dispose();
+                throw new ZLibNativeException(cause);
+            }
+
+            if (errC == ErrorCode.Ok)
+            {
+                return zLibStreamHandle;
+            }
+            else
+            {
+                string zlibErrorMessage = zLibStreamHandle.GetErrorMessage();
+
+                zLibStreamHandle.Dispose();
+                throw new ZLibNativeException("deflateInit2_", errC, zlibErrorMessage);
+            }
+        }
+
+        public static ZLibStreamHandle CreateZLibStreamForInflate(int windowBits)
+        {
+            ZLibStreamHandle zLibStreamHandle = new ZLibStreamHandle();
+            ErrorCode errC;
+
+            try
+            {
+                errC = zLibStreamHandle.InflateInit2_(windowBits);
+            }
+            catch (Exception cause) // could not load the ZLib dll
+            {
+                zLibStreamHandle.Dispose();
+                throw new ZLibNativeException(cause);
+            }
+
+            if (errC == ErrorCode.Ok)
+            {
+                return zLibStreamHandle;
+            }
+            else
+            {
+                string zlibErrorMessage = zLibStreamHandle.GetErrorMessage();
+
+                zLibStreamHandle.Dispose();
+                throw new ZLibNativeException("inflateInit2_", errC, zlibErrorMessage);
+            }
         }
     }
 }
