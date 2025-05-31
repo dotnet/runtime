@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
@@ -388,6 +390,28 @@ namespace System.Text.Json.Nodes
 
             var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
             return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
+        }
+
+        internal void InitializeComplexNodesEagerly()
+        {
+            switch (this)
+            {
+                case JsonObject jObject:
+                    foreach (KeyValuePair<string, JsonNode?> property in jObject)
+                    {
+                        property.Value?.InitializeComplexNodesEagerly();
+                    }
+                    break;
+                case JsonArray jArray:
+                    foreach (JsonNode? element in jArray)
+                    {
+                        element?.InitializeComplexNodesEagerly();
+                    }
+                    break;
+                default:
+                    Debug.Assert(this is JsonValue);
+                    break;
+            }
         }
     }
 }

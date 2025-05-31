@@ -31,7 +31,19 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(value == null || value is JsonNode);
             JsonNode? jNodeValue = value;
 
-            jObject[propertyName] = jNodeValue;
+            if (options.AllowDuplicateProperties)
+            {
+                jObject[propertyName] = jNodeValue;
+            }
+            else
+            {
+                if (jObject.ContainsKey(propertyName))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
+                }
+
+                jObject.Add(propertyName, jNodeValue);
+            }
         }
 
         public override void Write(Utf8JsonWriter writer, JsonObject? value, JsonSerializerOptions options)
@@ -50,7 +62,7 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartObject:
-                    return ReadObject(ref reader, options.GetNodeOptions());
+                    return ReadObject(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -59,11 +71,30 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
+        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            JsonElement jElement = JsonElement.ParseValue(ref reader);
-            JsonObject jObject = new JsonObject(jElement, options);
-            return jObject;
+            JsonNodeOptions nodeOptions = options.GetNodeOptions();
+
+            if (options.AllowDuplicateProperties)
+            {
+                JsonElement jElement = JsonElement.ParseValue(ref reader);
+                JsonObject jObject = new JsonObject(jElement, nodeOptions);
+                return jObject;
+            }
+            else if (options.PropertyNameCaseInsensitive)
+            {
+                // Do duplicate detection by expanding the JsonObject eagerly
+                JsonElement jElement = JsonElement.ParseValue(ref reader);
+                JsonObject jObject = new JsonObject(jElement, nodeOptions);
+                jObject.InitializeComplexNodesEagerly();
+                return jObject;
+            }
+            else
+            {
+                // Do duplicate detection with JsonElement.ParseValue
+                JsonElement jElement = JsonElement.ParseValue(ref reader, allowDuplicateProperties: false);
+                return new JsonObject(jElement, nodeOptions);
+            }
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };

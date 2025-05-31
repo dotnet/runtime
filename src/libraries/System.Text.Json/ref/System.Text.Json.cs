@@ -38,6 +38,7 @@ namespace System.Text.Json
     public partial struct JsonDocumentOptions
     {
         private int _dummyPrimitive;
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { readonly get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
@@ -393,6 +394,7 @@ namespace System.Text.Json
         public JsonSerializerOptions() { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults defaults) { }
         public JsonSerializerOptions(System.Text.Json.JsonSerializerOptions options) { }
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
@@ -1139,6 +1141,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonSourceGenerationOptionsAttribute() { }
         public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowDuplicateProperties { get { throw null; } set { } }
         public bool AllowOutOfOrderMetadataProperties { get { throw null; } set { } }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Type[]? Converters { get { throw null; } set { } }
