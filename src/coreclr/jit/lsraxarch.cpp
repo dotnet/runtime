@@ -3280,11 +3280,12 @@ int LinearScan::BuildMul(GenTree* tree)
         srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, srcCandidates2);
     }
 
-    // There are three forms of x86 multiply:
+    // There are three forms of x86 multiply in base instruction set
     // one-op form:     RDX:RAX = RAX * r/m
     // two-op form:     reg *= r/m
     // three-op form:   reg = r/m * imm
-    // mulx             reg1:reg2 = RDX * reg3/m  (unly for unsigned multiply, when BMI2 is supported)
+    // If the BMI2 instruction set is supported there is an additional unsigned multiply
+    // mulx             reg1:reg2 = RDX * reg3/m
 
     // This special widening 32x32->64 MUL is not used on x64
 #if defined(TARGET_X86)
