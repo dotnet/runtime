@@ -23,7 +23,6 @@
 #error Cannot handle hardware exceptions on this platform
 #endif
 
-#define PALEXPORT extern "C"
 #define NATIVEAOT_PALAPI
 
 #define EXCEPTION_ACCESS_VIOLATION          0xC0000005u
@@ -626,7 +625,7 @@ bool InitializeHardwareExceptionHandling()
 }
 
 // Set hardware exception handler
-PALEXPORT void NATIVEAOT_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
+void NATIVEAOT_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
 {
     ASSERT_MSG(g_hardwareExceptionHandler == NULL, "Hardware exception handler already set")
     g_hardwareExceptionHandler = handler;
