@@ -7226,6 +7226,13 @@ bool GenTree::OperMayThrow(Compiler* comp)
             assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
             return true;
         }
+#elif defined(TARGET_ARM64)
+        // If this node is embedding another node, then check that instead.
+        if (IsEmbeddingMaskOp())
+        {
+            assert(this->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Sve_ConditionalSelect);
+            return this->AsHWIntrinsic()->Op(2)->OperMayThrow(comp);
+        }
 #endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
