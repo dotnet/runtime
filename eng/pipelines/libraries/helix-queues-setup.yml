@@ -38,8 +38,9 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'linux_musl_x64') }}:
       # Alpine edge builds should only be used in main
-      # - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-      #   - (Alpine.edge.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
+      - ${{ if eq(contains(coalesce(variables['System.PullRequest.TargetBranch'], variables['Build.SourceBranch'], ''), 'main'), 'true') }}:
+        - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:     
+          - (Alpine.edge.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-edge-helix-amd64
       - ${{ if or(ne(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
         - (Alpine.322.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.22-helix-amd64
 
