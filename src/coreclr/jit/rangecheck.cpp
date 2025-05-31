@@ -805,11 +805,11 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
             }
             else if ((normalLclVN == lenVN) && comp->vnStore->IsVNInt32Constant(indexVN))
             {
-                // We have "Const < arr.Length" assertion, it means that "arr.Length >= Const"
+                // We have "Const < arr.Length" assertion, it means that "arr.Length > Const"
                 int indexCns = comp->vnStore->GetConstantInt32(indexVN);
                 if (indexCns >= 0)
                 {
-                    cmpOper = GT_GE;
+                    cmpOper = GT_GT;
                     limit   = Limit(Limit::keConstant, indexCns);
                 }
                 else
@@ -1048,7 +1048,20 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+    assert(binop->OperIs(GT_ADD, GT_XOR, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL));
+
+    // For XOR we only care about Log2 pattern for now
+    if (binop->OperIs(GT_XOR))
+    {
+        int upperBound;
+        if (m_pCompiler->vnStore->IsVNLog2(m_pCompiler->vnStore->VNConservativeNormalValue(binop->gtVNPair),
+                                           &upperBound))
+        {
+            assert(upperBound > 0);
+            return Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, upperBound));
+        }
+        return Range(Limit(Limit::keUnknown));
+    }
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
@@ -1472,6 +1485,8 @@ bool RangeCheck::DoesOverflow(BasicBlock* block, GenTree* expr, const Range& ran
 
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Range& range)
 {
+    ValueNumStore* vnStore = m_pCompiler->vnStore;
+
     JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
     GetSearchPath()->Set(expr, block, SearchPath::Overwrite);
 
@@ -1482,11 +1497,11 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
         overflows = true;
     }
     // If the definition chain resolves to a constant, it doesn't overflow.
-    else if (m_pCompiler->vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
+    else if (vnStore->IsVNConstant(expr->gtVNPair.GetConservative()))
     {
         overflows = false;
     }
-    else if (expr->OperIs(GT_IND))
+    else if (expr->OperIs(GT_IND, GT_ARR_LENGTH))
     {
         overflows = false;
     }
@@ -1508,6 +1523,11 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr, const Ran
     // Actually, GT_LSH can overflow so it depends on the analysis done in ComputeRangeForBinOp
     else if (expr->OperIs(GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_NEG))
     {
+        overflows = false;
+    }
+    else if (expr->OperIs(GT_XOR) && vnStore->IsVNLog2(m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair)))
+    {
+        // For XOR we only care about Log2 pattern for now, which never overflows.
         overflows = false;
     }
     // Walk through phi arguments to check if phi arguments involve arithmetic that overflows.
@@ -1597,7 +1617,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
+    else if (expr->OperIs(GT_XOR, GT_ADD, GT_AND, GT_RSH, GT_RSZ, GT_LSH, GT_UMOD, GT_MUL))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
@@ -1643,6 +1663,11 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
     {
         // TODO: consider computing range for CastOp and intersect it with this.
         range = GetRangeFromType(expr->AsCast()->CastToType());
+    }
+    else if (expr->OperIs(GT_ARR_LENGTH))
+    {
+        // Better than keUnknown
+        range = Range(Limit(Limit::keConstant, 0), Limit(Limit::keConstant, CORINFO_Array_MaxLength));
     }
     else
     {

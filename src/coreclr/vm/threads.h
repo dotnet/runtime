@@ -142,6 +142,7 @@ class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
+struct    InterpThreadContext;
 
 typedef void(*ADCallBackFcnType)(LPVOID);
 
@@ -391,15 +392,6 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
 
-// FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                         can be returned in multiple registers
-//                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
-//
-//
-// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-//                         specified by SystemV ABI for AMD64
-//
-
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
 EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #endif // FEATURE_HIJACK
@@ -496,7 +488,6 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend class ExceptionTracker;
     friend class ThreadExceptionState;
 
     friend class StackFrameIterator;
@@ -1218,7 +1209,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
+            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
         }
 #endif
 
@@ -2670,7 +2661,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind));
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -3698,7 +3689,7 @@ private:
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
     // corresponding try block, our exception system will execute the same catch clause again and again.
-    // So we save reference to the clause post which TA was reraised, which is used in ExceptionTracker::ProcessManagedCallFrame
+    // So we save reference to the clause post which TA was reraised, which is used in ExInfo::ProcessManagedCallFrame
     // to make ThreadAbort proceed ahead instead of going in a loop.
     // This problem only happens on Win64 due to JIT64.  The common scenario is VB's "On error resume next"
 #ifdef FEATURE_EH_FUNCLETS
@@ -3847,20 +3838,23 @@ private:
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
     ReturnKind m_HijackReturnKind;
+    bool m_HijackHasAsyncRet;
 
 public:
-    ReturnKind GetHijackReturnKind()
+    ReturnKind GetHijackReturnKind(bool* hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
+        *hasAsyncRet = m_HijackHasAsyncRet;
         return m_HijackReturnKind;
     }
 
-    void SetHijackReturnKind(ReturnKind returnKind)
+    void SetHijackReturnKind(ReturnKind returnKind, bool hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_HijackReturnKind = returnKind;
+        m_HijackHasAsyncRet = hasAsyncRet;
     }
 #endif
 #endif // FEATURE_HIJACK
@@ -3980,6 +3974,14 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
+
+#ifdef FEATURE_INTERPRETER
+private:
+    InterpThreadContext *m_pInterpThreadContext;
+
+public:
+    InterpThreadContext* GetInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 };
 
 template<>
@@ -4032,7 +4034,6 @@ typedef SList<Thread, false, PTR_Thread> ThreadList;
 #define CHECK_ONE_STORE()       _ASSERTE(this == ThreadStore::s_pThreadStore);
 
 typedef DPTR(class ThreadStore) PTR_ThreadStore;
-typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
 
 class ThreadStore
 {
@@ -4057,8 +4058,6 @@ public:
 
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
-
-    static BOOL CanAcquireLock();
 
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);
@@ -5448,13 +5447,6 @@ class GCForbidLoaderUseHolder
 // coverage.
 #if defined(DACCESS_COMPILE)
 
-// Disable (<non-zero constant> || <expression>) is always a non-zero constant.
-// <expression> is never evaluated and might have side effects, because
-// FORBIDGC_LOADER_USE_ENABLED is used in that pattern and additionally the rule
-// has little value.
-#ifdef _PREFAST_
-#pragma warning(disable:6286)
-#endif
 #define FORBIDGC_LOADER_USE_ENABLED() true
 
 #else // DACCESS_COMPILE
@@ -5664,11 +5656,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_APPLE
-    return TRUE;
-#else
-    return ExecutableAllocator::IsWXORXEnabled();
-#endif
+    return g_pConfig->IsWriteBarrierCopyEnabled();
 #endif // DACCESS_COMPILE
 }
 

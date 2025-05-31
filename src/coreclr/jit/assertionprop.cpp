@@ -239,30 +239,18 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_Vector256_op_Inequality:
                 case NI_Vector512_op_Equality:
                 case NI_Vector512_op_Inequality:
-                case NI_SSE_CompareScalarOrderedEqual:
-                case NI_SSE_CompareScalarOrderedNotEqual:
-                case NI_SSE_CompareScalarOrderedLessThan:
-                case NI_SSE_CompareScalarOrderedLessThanOrEqual:
-                case NI_SSE_CompareScalarOrderedGreaterThan:
-                case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedEqual:
-                case NI_SSE_CompareScalarUnorderedNotEqual:
-                case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedLessThan:
-                case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_SSE_CompareScalarUnorderedGreaterThan:
-                case NI_SSE2_CompareScalarOrderedEqual:
-                case NI_SSE2_CompareScalarOrderedNotEqual:
-                case NI_SSE2_CompareScalarOrderedLessThan:
-                case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
-                case NI_SSE2_CompareScalarOrderedGreaterThan:
-                case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedEqual:
-                case NI_SSE2_CompareScalarUnorderedNotEqual:
-                case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedLessThan:
-                case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
-                case NI_SSE2_CompareScalarUnorderedGreaterThan:
+                case NI_X86Base_CompareScalarOrderedEqual:
+                case NI_X86Base_CompareScalarOrderedNotEqual:
+                case NI_X86Base_CompareScalarOrderedLessThan:
+                case NI_X86Base_CompareScalarOrderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarOrderedGreaterThan:
+                case NI_X86Base_CompareScalarOrderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedEqual:
+                case NI_X86Base_CompareScalarUnorderedNotEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedLessThan:
+                case NI_X86Base_CompareScalarUnorderedGreaterThanOrEqual:
+                case NI_X86Base_CompareScalarUnorderedGreaterThan:
                 case NI_SSE41_TestC:
                 case NI_SSE41_TestZ:
                 case NI_SSE41_TestNotZAndNotC:
@@ -271,7 +259,7 @@ bool IntegralRange::Contains(int64_t value) const
                 case NI_AVX_TestNotZAndNotC:
                     return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
 
-                case NI_SSE2_Extract:
+                case NI_X86Base_Extract:
                 case NI_SSE41_Extract:
                 case NI_SSE41_X64_Extract:
                 case NI_Vector128_ToScalar:
@@ -675,6 +663,8 @@ void Compiler::optAssertionInit(bool isLocalProp)
             {
                 optMaxAssertionCount = (AssertionIndex)min(maxTrackedLocals, ((3 * lvaTrackedCount / 128) + 1) * 64);
             }
+
+            JITDUMP("Cross-block table size %u (for %u tracked locals)\n", optMaxAssertionCount, lvaTrackedCount);
         }
         else
         {
@@ -1337,6 +1327,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     assertion.assertionKind = assertionKind;
 
                     goto DONE_ASSERTION;
+                }
+
+                case GT_CALL:
+                {
+                    if (optLocalAssertionProp)
+                    {
+                        GenTreeCall* const call = op2->AsCall();
+                        if (call->IsHelperCall() && s_helperCallProperties.NonNullReturn(call->GetHelperNum()))
+                        {
+                            assertion.assertionKind  = OAK_NOT_EQUAL;
+                            assertion.op2.kind       = O2K_CONST_INT;
+                            assertion.op2.u1.iconVal = 0;
+                            goto DONE_ASSERTION;
+                        }
+                    }
+                    break;
                 }
 
                 default:
@@ -5293,6 +5299,50 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
     }
 #endif // FEATURE_ENABLE_NO_RANGE_CHECKS
 
+    GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
+    ValueNum          vnCurIdx   = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
+    ValueNum          vnCurLen   = vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair);
+
+    auto dropBoundsCheck = [&](INDEBUG(const char* reason)) -> GenTree* {
+        JITDUMP("\nVN based redundant (%s) bounds check assertion prop in " FMT_BB ":\n", reason, compCurBB->bbNum);
+        DISPTREE(tree);
+        if (arrBndsChk != stmt->GetRootNode())
+        {
+            // Defer the removal.
+            arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
+            return nullptr;
+        }
+
+        GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
+        return optAssertionProp_Update(newTree, arrBndsChk, stmt);
+    };
+
+    // First, check if we have arr[arr.Length - cns] when we know arr.Length is >= cns.
+    VNFuncApp funcApp;
+    if (vnStore->GetVNFunc(vnCurIdx, &funcApp) && (funcApp.m_func == VNF_ADD))
+    {
+        if (!vnStore->IsVNInt32Constant(funcApp.m_args[1]))
+        {
+            // Normalize constants to be on the right side
+            std::swap(funcApp.m_args[0], funcApp.m_args[1]);
+        }
+
+        Range rng = Range(Limit(Limit::keUnknown));
+        if ((funcApp.m_args[0] == vnCurLen) && vnStore->IsVNInt32Constant(funcApp.m_args[1]) &&
+            RangeCheck::TryGetRangeFromAssertions(this, vnCurLen, assertions, &rng) && rng.LowerLimit().IsConstant())
+        {
+            // Lower known limit of ArrLen:
+            const int lenLowerLimit = rng.LowerLimit().GetConstant();
+
+            // Negative delta in the array access (ArrLen + -CNS)
+            const int delta = vnStore->GetConstantInt32(funcApp.m_args[1]);
+            if ((lenLowerLimit > 0) && (delta < 0) && (delta > INT_MIN) && (lenLowerLimit >= -delta))
+            {
+                return dropBoundsCheck(INDEBUG("a[a.Length-cns] when a.Length is known to be >= cns"));
+            }
+        }
+    }
+
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
     while (iter.NextElem(&index))
@@ -5309,38 +5359,21 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             continue;
         }
 
-        GenTreeBoundsChk* arrBndsChk = tree->AsBoundsChk();
-
-        // Set 'isRedundant' to true if we can determine that 'arrBndsChk' can be
-        // classified as a redundant bounds check using 'curAssertion'
-        bool isRedundant = false;
-#ifdef DEBUG
-        const char* dbgMsg = "Not Set";
-#endif
-
         // Do we have a previous range check involving the same 'vnLen' upper bound?
         if (curAssertion->op1.bnd.vnLen == vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
         {
-            ValueNum vnCurIdx = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
-
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
             if (curAssertion->op1.bnd.vnIdx == vnCurIdx)
             {
-                isRedundant = true;
-#ifdef DEBUG
-                dbgMsg = "a[i] followed by a[i]";
-#endif
+                return dropBoundsCheck(INDEBUG("a[i] followed by a[i]"));
             }
             // Are we using zero as the index?
             // It can always be considered as redundant with any previous value
             //       a[*] followed by a[0]
             else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChk->GetIndex()->TypeGet()))
             {
-                isRedundant = true;
-#ifdef DEBUG
-                dbgMsg = "a[*] followed by a[0]";
-#endif
+                return dropBoundsCheck(INDEBUG("a[*] followed by a[0]"));
             }
             // Do we have two constant indexes?
             else if (vnStore->IsVNConstant(curAssertion->op1.bnd.vnIdx) && vnStore->IsVNConstant(vnCurIdx))
@@ -5361,10 +5394,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
                     //       a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2
                     if (index2 >= 0 && index1 >= index2)
                     {
-                        isRedundant = true;
-#ifdef DEBUG
-                        dbgMsg = "a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2";
-#endif
+                        return dropBoundsCheck(INDEBUG("a[K1] followed by a[K2], with K2 >= 0 and K1 >= K2"));
                     }
                 }
             }
@@ -5373,35 +5403,6 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             //       a[i]   followed by a[j]  when j is known to be >= i
             //       a[i]   followed by a[5]  when i is known to be >= 5
         }
-
-        if (!isRedundant)
-        {
-            continue;
-        }
-
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in " FMT_BB ":\n", dbgMsg,
-                   assertionIndex, compCurBB->bbNum);
-            gtDispTree(tree, nullptr, nullptr, true);
-        }
-#endif
-        if (arrBndsChk == stmt->GetRootNode())
-        {
-            // We have a top-level bounds check node.
-            // This can happen when trees are broken up due to inlining.
-            // optRemoveStandaloneRangeCheck will return the modified tree (side effects or a no-op).
-            GenTree* newTree = optRemoveStandaloneRangeCheck(arrBndsChk, stmt);
-
-            return optAssertionProp_Update(newTree, arrBndsChk, stmt);
-        }
-
-        // Defer actually removing the tree until processing reaches its parent comma, since
-        // optRemoveCommaBasedRangeCheck needs to rewrite the whole comma tree.
-        arrBndsChk->gtFlags |= GTF_CHK_INDEX_INBND;
-
-        return nullptr;
     }
 
     return nullptr;
@@ -5675,7 +5676,7 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
             //           default: %name.Length is >= 8 here%
             //       }
             //
-            if (value > 0)
+            if ((value > 0) && !vnStore->IsVNConstant(opVN))
             {
                 AssertionDsc dsc   = {};
                 dsc.assertionKind  = OAK_NOT_EQUAL;
@@ -5683,17 +5684,19 @@ bool Compiler::optCreateJumpTableImpliedAssertions(BasicBlock* switchBb)
                 dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
                 dsc.op2.u1.iconVal = 0;
                 dsc.op2.SetIconFlag(GTF_EMPTY);
-                if (vnStore->IsVNCheckedBound(opVN))
+                if (vnStore->IsVNNeverNegative(opVN))
                 {
-                    // Create "arrBnd >= value" assertion
+                    // Create "X >= value" assertion (both operands are never negative)
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBound(dsc.op1.vn));
                 }
                 else
                 {
                     // Create "X u>= value" assertion
                     dsc.op1.kind = O1K_CONSTANT_LOOP_BND_UN;
                     dsc.op1.vn   = vnStore->VNForFunc(TYP_INT, VNF_GE_UN, opVN, vnStore->VNForIntCon(value));
+                    assert(vnStore->IsVNConstantBoundUnsigned(dsc.op1.vn));
                 }
                 newAssertIdx = optAddAssertion(&dsc);
             }

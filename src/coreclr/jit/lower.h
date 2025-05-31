@@ -110,6 +110,11 @@ private:
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
 #endif
+#ifdef TARGET_RISCV64
+    bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextAddToAddUw(GenTreeOp* tree, GenTree** next);
+    bool TryLowerZextLeftShiftToSlliUw(GenTreeOp* tree, GenTree** next);
+#endif
     void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTreeUnOp* node);
     void ContainCheckCallOperands(GenTreeCall* call);
@@ -131,7 +136,6 @@ private:
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #ifdef TARGET_XARCH
     void TryFoldCnsVecForEmbeddedBroadcast(GenTreeHWIntrinsic* parentNode, GenTreeVecCon* childNode);
-    void TryCompressConstVecData(GenTreeStoreInd* node);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
 
@@ -180,11 +184,17 @@ private:
     GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
+    GenTree*   LowerAsyncContinuation(GenTree* asyncCont);
+    void       LowerReturnSuspend(GenTree* retSuspend);
     void       LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList);
-    bool       IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList);
-    void       LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList);
-    void       LowerCallStruct(GenTreeCall* call);
-    void       LowerStoreSingleRegCallStruct(GenTreeBlk* store);
+    unsigned   StoreFieldListToNewLocal(ClassLayout* layout, GenTreeFieldList* fieldList);
+    void       LowerArgFieldList(CallArg* arg, GenTreeFieldList* fieldList);
+    template <typename GetRegisterInfoFunc>
+    bool IsFieldListCompatibleWithRegisters(GenTreeFieldList* fieldList, unsigned numRegs, GetRegisterInfoFunc func);
+    template <typename GetRegisterInfoFunc>
+    void LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList, unsigned numRegs, GetRegisterInfoFunc func);
+    void LowerCallStruct(GenTreeCall* call);
+    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
@@ -421,7 +431,7 @@ private:
                                      GenTree*    switchValue,
                                      weight_t    defaultLikelihood);
 
-    GenTree* LowerCast(GenTree* node);
+    void LowerCast(GenTree* node);
 
 #if !CPU_LOAD_STORE_ARCH
     bool IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd);
@@ -556,6 +566,9 @@ private:
 
     // Check if marking an operand of a node as reg-optional is safe.
     bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;
+
+    // Checks if it's profitable to optimize an shift and rotate operations to set the zero flag.
+    bool IsProfitableToSetZeroFlag(GenTree* op) const;
 
     inline LIR::Range& BlockRange() const
     {

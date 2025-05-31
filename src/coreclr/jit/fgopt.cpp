@@ -2734,42 +2734,20 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
         newStmtList->SetPrevStmt(newLastStmt);
     }
 
-    //
-    // Reverse the sense of the compare
-    //
-    gtReverseCond(condTree);
-
     // We need to update the following flags of the bJump block if they were set in the bDest block
     bJump->CopyFlags(bDest, BBF_COPY_PROPAGATE);
 
     // Update bbRefs and bbPreds
     //
-    // For now we set the likelihood of the new branch to match
-    // the likelihood of the old branch.
-    //
-    // This may or may not match the block weight adjustments we're
-    // making. All this becomes easier to reconcile once we rely on
-    // edge likelihoods more and have synthesis running.
-    //
-    // Until then we won't worry that edges and blocks are potentially
-    // out of sync.
-    //
-    FlowEdge* const destFalseEdge = bDest->GetFalseEdge();
-    FlowEdge* const destTrueEdge  = bDest->GetTrueEdge();
+    FlowEdge* const falseEdge = bDest->GetFalseEdge();
+    FlowEdge* const trueEdge  = bDest->GetTrueEdge();
 
-    // bJump now falls through into the next block.
-    // Note that we're deriving the false edge's likelihood from 'destTrueEdge',
-    // because the comparison in 'bJump' is flipped.
-    // Similarly, we will derive the true edge's likelihood from 'destFalseEdge'.
-    //
-    FlowEdge* const falseEdge = fgAddRefPred(trueTarget, bJump, destTrueEdge);
-
-    // bJump now jumps to bDest's normal jump target
-    //
     fgRedirectTargetEdge(bJump, falseTarget);
-    bJump->GetTargetEdge()->setLikelihood(destFalseEdge->getLikelihood());
+    bJump->GetTargetEdge()->setLikelihood(falseEdge->getLikelihood());
 
-    bJump->SetCond(bJump->GetTargetEdge(), falseEdge);
+    FlowEdge* const newTrueEdge = fgAddRefPred(trueTarget, bJump, trueEdge);
+
+    bJump->SetCond(newTrueEdge, bJump->GetTargetEdge());
 
     // Update profile data
     //
@@ -3178,7 +3156,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 if (block->isBBCallFinallyPair())
                 {
                     BasicBlock* bNext = block->Next();
-                    PREFIX_ASSUME(bNext != nullptr);
+                    assert(bNext != nullptr);
                     bNext->bbSetRunRarely();
 #ifdef DEBUG
                     if (verbose)
@@ -5641,37 +5619,34 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 //
 bool Compiler::gtTreeContainsTailCall(GenTree* tree)
 {
-    struct HasTailCallCandidateVisitor : GenTreeVisitor<HasTailCallCandidateVisitor>
-    {
-        enum
-        {
-            DoPreOrder = true
-        };
-
-        HasTailCallCandidateVisitor(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-            if ((node->gtFlags & GTF_CALL) == 0)
-            {
-                return WALK_SKIP_SUBTREES;
-            }
-
-            if (node->IsCall() && (node->AsCall()->CanTailCall() || node->AsCall()->IsTailCall()))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
+    auto isTailCall = [](GenTree* tree) {
+        return tree->IsCall() && (tree->AsCall()->CanTailCall() || tree->AsCall()->IsTailCall());
     };
 
-    HasTailCallCandidateVisitor visitor(this);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtFindNodeInTree<GTF_CALL>(tree, isTailCall) != nullptr;
+}
+
+//------------------------------------------------------------------------
+// gtTreeContainsAsyncCall: Check if a tree contains any async call.
+//
+// Parameters:
+//   tree - The tree to check
+//
+// Returns:
+//   True if any node in the tree is an async call, false otherwise.
+//
+bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
+{
+    if (!compIsAsync())
+    {
+        return false;
+    }
+
+    auto isAsyncCall = [](GenTree* tree) {
+        return tree->IsCall() && tree->AsCall()->IsAsync();
+    };
+
+    return gtFindNodeInTree<GTF_CALL>(tree, isAsyncCall) != nullptr;
 }
 
 //------------------------------------------------------------------------

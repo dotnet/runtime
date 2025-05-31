@@ -96,30 +96,29 @@ enum CrstType
     CrstReadyToRunEntryPointToMethodDescMap = 78,
     CrstReflection = 79,
     CrstReJITGlobalRequest = 80,
-    CrstRetThunkCache = 81,
-    CrstSigConvert = 82,
-    CrstSingleUseLock = 83,
-    CrstStressLog = 84,
-    CrstStubCache = 85,
-    CrstStubDispatchCache = 86,
-    CrstSyncBlockCache = 87,
-    CrstSyncHashLock = 88,
-    CrstSystemDomain = 89,
-    CrstSystemDomainDelayedUnloadList = 90,
-    CrstThreadIdDispenser = 91,
-    CrstThreadLocalStorageLock = 92,
-    CrstThreadStore = 93,
-    CrstTieredCompilation = 94,
-    CrstTypeEquivalenceMap = 95,
-    CrstTypeIDMap = 96,
-    CrstUMEntryThunkCache = 97,
-    CrstUMEntryThunkFreeListLock = 98,
-    CrstUniqueStack = 99,
-    CrstUnresolvedClassLock = 100,
-    CrstUnwindInfoTableLock = 101,
-    CrstVSDIndirectionCellLock = 102,
-    CrstWrapperTemplate = 103,
-    kNumberOfCrstTypes = 104
+    CrstSigConvert = 81,
+    CrstSingleUseLock = 82,
+    CrstStressLog = 83,
+    CrstStubCache = 84,
+    CrstStubDispatchCache = 85,
+    CrstSyncBlockCache = 86,
+    CrstSyncHashLock = 87,
+    CrstSystemDomain = 88,
+    CrstSystemDomainDelayedUnloadList = 89,
+    CrstThreadIdDispenser = 90,
+    CrstThreadLocalStorageLock = 91,
+    CrstThreadStore = 92,
+    CrstTieredCompilation = 93,
+    CrstTypeEquivalenceMap = 94,
+    CrstTypeIDMap = 95,
+    CrstUMEntryThunkCache = 96,
+    CrstUMEntryThunkFreeListLock = 97,
+    CrstUniqueStack = 98,
+    CrstUnresolvedClassLock = 99,
+    CrstUnwindInfoTableLock = 100,
+    CrstVSDIndirectionCellLock = 101,
+    CrstWrapperTemplate = 102,
+    kNumberOfCrstTypes = 103
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -211,7 +210,6 @@ int g_rgCrstLevelMap[] =
     9,          // CrstReadyToRunEntryPointToMethodDescMap
     7,          // CrstReflection
     15,         // CrstReJITGlobalRequest
-    3,          // CrstRetThunkCache
     3,          // CrstSigConvert
     4,          // CrstSingleUseLock
     -1,         // CrstStressLog
@@ -320,7 +318,6 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstReadyToRunEntryPointToMethodDescMap",
     "CrstReflection",
     "CrstReJITGlobalRequest",
-    "CrstRetThunkCache",
     "CrstSigConvert",
     "CrstSingleUseLock",
     "CrstStressLog",

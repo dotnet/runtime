@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this ICacheEntry entry,
             IChangeToken expirationToken)
         {
-            ThrowHelper.ThrowIfNull(expirationToken);
+            ArgumentNullException.ThrowIfNull(expirationToken);
 
             entry.ExpirationTokens.Add(expirationToken);
             return entry;
@@ -91,14 +91,8 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <param name="entry">The <see cref="ICacheEntry"/>.</param>
         /// <param name="callback">The callback to run after the entry is evicted.</param>
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
-        public static ICacheEntry RegisterPostEvictionCallback(
-            this ICacheEntry entry,
-            PostEvictionDelegate callback)
-        {
-            ThrowHelper.ThrowIfNull(callback);
-
-            return entry.RegisterPostEvictionCallbackNoValidation(callback, state: null);
-        }
+        public static ICacheEntry RegisterPostEvictionCallback(this ICacheEntry entry, PostEvictionDelegate callback)
+            => RegisterPostEvictionCallback(entry, callback, state: null);
 
         /// <summary>
         /// Fires the given callback after the cache entry is evicted from the cache.
@@ -112,16 +106,8 @@ namespace Microsoft.Extensions.Caching.Memory
             PostEvictionDelegate callback,
             object? state)
         {
-            ThrowHelper.ThrowIfNull(callback);
+            ArgumentNullException.ThrowIfNull(callback);
 
-            return entry.RegisterPostEvictionCallbackNoValidation(callback, state);
-        }
-
-        private static ICacheEntry RegisterPostEvictionCallbackNoValidation(
-            this ICacheEntry entry,
-            PostEvictionDelegate callback,
-            object? state)
-        {
             entry.PostEvictionCallbacks.Add(new PostEvictionCallbackRegistration()
             {
                 EvictionCallback = callback,
@@ -171,7 +157,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <returns>The <see cref="ICacheEntry"/> for chaining.</returns>
         public static ICacheEntry SetOptions(this ICacheEntry entry, MemoryCacheEntryOptions options)
         {
-            ThrowHelper.ThrowIfNull(options);
+            ArgumentNullException.ThrowIfNull(options);
 
             entry.AbsoluteExpiration = options.AbsoluteExpiration;
             entry.AbsoluteExpirationRelativeToNow = options.AbsoluteExpirationRelativeToNow;
@@ -179,18 +165,24 @@ namespace Microsoft.Extensions.Caching.Memory
             entry.Priority = options.Priority;
             entry.Size = options.Size;
 
-            foreach (IChangeToken expirationToken in options.ExpirationTokens)
+            if (options.ExpirationTokensDirect is { } expirationTokens)
             {
-                entry.AddExpirationToken(expirationToken);
+                foreach (IChangeToken expirationToken in expirationTokens)
+                {
+                    entry.AddExpirationToken(expirationToken);
+                }
             }
 
-            for (int i = 0; i < options.PostEvictionCallbacks.Count; i++)
+            if (options.PostEvictionCallbacksDirect is { } postEvictionCallbacks)
             {
-                PostEvictionCallbackRegistration postEvictionCallback = options.PostEvictionCallbacks[i];
-                if (postEvictionCallback.EvictionCallback is null)
-                    ThrowNullCallback(i, nameof(options));
+                for (int i = 0; i < postEvictionCallbacks.Count; i++)
+                {
+                    PostEvictionCallbackRegistration postEvictionCallback = postEvictionCallbacks[i];
+                    if (postEvictionCallback.EvictionCallback is null)
+                        ThrowNullCallback(i, nameof(options));
 
-                entry.RegisterPostEvictionCallbackNoValidation(postEvictionCallback.EvictionCallback, postEvictionCallback.State);
+                    entry.PostEvictionCallbacks.Add(postEvictionCallback);
+                }
             }
 
             return entry;

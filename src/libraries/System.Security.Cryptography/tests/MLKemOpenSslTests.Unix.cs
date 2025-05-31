@@ -39,6 +39,12 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public void MLKemOpenSsl_Ctor_InvalidHandle()
+        {
+            AssertExtensions.Throws<ArgumentException>("pkeyHandle", static () => new MLKemOpenSsl(new SafeEvpPKeyHandle()));
+        }
+
+        [Fact]
         public void MLKemOpenSsl_WrongAlgorithm()
         {
             using RSAOpenSsl rsa = new RSAOpenSsl();

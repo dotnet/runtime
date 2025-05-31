@@ -42,14 +42,10 @@ extern TADDR g_ClrModuleBase;
 // To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
-CRITICAL_SECTION g_dacCritSec;
+minipal_mutex g_dacMutex;
 ClrDataAccess* g_dacImpl;
 
-EXTERN_C
-#ifdef TARGET_UNIX
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
-#endif
-BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
+EXTERN_C BOOL WINAPI DllMain2(HANDLE instance, DWORD reason, LPVOID reserved)
 {
     static bool g_procInitialized = false;
 
@@ -76,7 +72,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
             return FALSE;
         }
 #endif
-        InitializeCriticalSection(&g_dacCritSec);
+        minipal_mutex_init(&g_dacMutex);
 
         g_procInitialized = true;
         break;
@@ -86,7 +82,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
         // It's possible for this to be called without ATTACH completing (eg. if it failed)
         if (g_procInitialized)
         {
-            DeleteCriticalSection(&g_dacCritSec);
+            minipal_mutex_destroy(&g_dacMutex);
         }
         g_procInitialized = false;
         break;

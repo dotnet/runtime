@@ -28,8 +28,8 @@ namespace System.Linq
             IComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken);
 
@@ -138,8 +138,8 @@ namespace System.Linq
             IComparer<TKey>? comparer = null,
             CancellationToken cancellationToken = default)
         {
-            ThrowHelper.ThrowIfNull(source);
-            ThrowHelper.ThrowIfNull(keySelector);
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
             return Impl(source, keySelector, comparer ?? Comparer<TKey>.Default, cancellationToken);
 

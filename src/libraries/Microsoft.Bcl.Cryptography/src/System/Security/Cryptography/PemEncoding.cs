@@ -17,6 +17,7 @@ namespace System.Security.Cryptography
         private const string PreEBPrefix = "-----BEGIN ";
         private const string PostEBPrefix = "-----END ";
         private const string Ending = "-----";
+        private const int EncodedLineLength = 64;
 
         internal static PemFields Find(ReadOnlySpan<char> pemData)
         {
@@ -269,6 +270,144 @@ namespace System.Security.Cryptography
         {
             // Match white space characters from Convert.Base64
             return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+        }
+
+        internal static int GetEncodedSize(int labelLength, int dataLength)
+        {
+            // The largest possible label is MaxLabelSize - when included in the posteb
+            // and preeb lines new lines, assuming the base64 content is empty.
+            //     -----BEGIN {char * MaxLabelSize}-----\n
+            //     -----END {char * MaxLabelSize}-----
+            const int MaxLabelSize = 1_073_741_808;
+
+            // The largest possible binary value to fit in a padded base64 string
+            // is 1,610,612,733 bytes. RFC 7468 states:
+            //   Generators MUST wrap the base64-encoded lines so that each line
+            //   consists of exactly 64 characters except for the final line
+            // We need to account for new line characters, every 64 characters.
+            // This works out to 1,585,834,053 maximum bytes in data when wrapping
+            // is accounted for assuming an empty label.
+            const int MaxDataLength = 1_585_834_053;
+
+            if (labelLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPositiveNumber);
+            if (dataLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPositiveNumber);
+            if (labelLength > MaxLabelSize)
+                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
+            if (dataLength > MaxDataLength)
+                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
+
+            int preebLength = PreEBPrefix.Length + labelLength + Ending.Length;
+            int postebLength = PostEBPrefix.Length + labelLength + Ending.Length;
+            int totalEncapLength = preebLength + postebLength + 1; //Add one for newline after preeb
+
+            // dataLength is already known to not overflow here
+            int encodedDataLength = ((dataLength + 2) / 3) << 2;
+            int lineCount = Math.DivRem(encodedDataLength, EncodedLineLength, out int remainder);
+
+            if (remainder > 0)
+                lineCount++;
+
+            int encodedDataLengthWithBreaks = encodedDataLength + lineCount;
+
+            if (int.MaxValue - encodedDataLengthWithBreaks < totalEncapLength)
+                throw new ArgumentException(SR.Argument_PemEncoding_EncodedSizeTooLarge);
+
+            return encodedDataLengthWithBreaks + totalEncapLength;
+        }
+
+        internal static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
+        {
+            static int Write(ReadOnlySpan<char> str, Span<char> dest, int offset)
+            {
+                str.CopyTo(dest.Slice(offset));
+                return str.Length;
+            }
+
+            static int WriteBase64(ReadOnlySpan<byte> bytes, Span<char> dest, int offset, byte[] bytesBuffer)
+            {
+                Debug.Assert(bytesBuffer.Length >= bytes.Length);
+                bytes.CopyTo(bytesBuffer);
+                string encoded = Convert.ToBase64String(bytesBuffer, 0, bytes.Length);
+                encoded.AsSpan().CopyTo(dest.Slice(offset));
+                return encoded.Length;
+            }
+
+            if (!IsValidLabel(label))
+            {
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+            }
+
+            const string NewLine = "\n";
+            const int BytesPerLine = 48;
+            byte[] bytesBuffer = CryptoPool.Rent(BytesPerLine);
+
+            try
+            {
+                int encodedSize = GetEncodedSize(label.Length, data.Length);
+
+                if (destination.Length < encodedSize)
+                {
+                    charsWritten = 0;
+                    return false;
+                }
+
+                charsWritten = 0;
+                charsWritten += Write(PreEBPrefix, destination, charsWritten);
+                charsWritten += Write(label, destination, charsWritten);
+                charsWritten += Write(Ending, destination, charsWritten);
+                charsWritten += Write(NewLine, destination, charsWritten);
+
+                ReadOnlySpan<byte> remainingData = data;
+                while (remainingData.Length >= BytesPerLine)
+                {
+                    charsWritten += WriteBase64(remainingData.Slice(0, BytesPerLine), destination, charsWritten, bytesBuffer);
+                    charsWritten += Write(NewLine, destination, charsWritten);
+                    remainingData = remainingData.Slice(BytesPerLine);
+                }
+
+                Debug.Assert(remainingData.Length < BytesPerLine);
+
+                if (remainingData.Length > 0)
+                {
+                    charsWritten += WriteBase64(remainingData, destination, charsWritten, bytesBuffer);
+                    charsWritten += Write(NewLine, destination, charsWritten);
+                }
+
+                charsWritten += Write(PostEBPrefix, destination, charsWritten);
+                charsWritten += Write(label, destination, charsWritten);
+                charsWritten += Write(Ending, destination, charsWritten);
+
+                return true;
+            }
+            finally
+            {
+                CryptoPool.Return(bytesBuffer, BytesPerLine);
+            }
+        }
+
+        internal static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
+        {
+            if (!IsValidLabel(label))
+                throw new ArgumentException(SR.Argument_PemEncoding_InvalidLabel, nameof(label));
+
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+            char[] buffer = new char[encodedSize];
+
+            if (!TryWrite(label, data, buffer, out int charsWritten))
+            {
+                Debug.Fail("TryWrite failed with a pre-sized buffer");
+                throw new ArgumentException(null, nameof(data));
+            }
+
+            Debug.Assert(charsWritten == encodedSize);
+            return buffer;
+        }
+
+        internal static string WriteString(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
+        {
+            return new string(Write(label, data));
         }
     }
 

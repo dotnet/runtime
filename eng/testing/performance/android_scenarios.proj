@@ -39,6 +39,12 @@
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="Build Time - Android HelloWorld">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <PreCommands>cd $(ScenarioDirectory)helloandroid;mkdir traces;copy %HELIX_WORKITEM_ROOT%\androidHelloWorldBinlog\msbuild.binlog traces</PreCommands>
+      <Command>$(Python) test.py buildtime --scenario-name &quot;%(Identity)&quot; $(ScenarioArgs) --binlog-path msbuild.binlog</Command>
+      <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
     <!-- <HelixWorkItem Include="SOD - Android Benchmarks.Droid APK Size" Condition="'$(RuntimeType)' == 'Mono'"> # Disabled due to not working and needing consistent normal android results. https://github.com/dotnet/performance/issues/4729
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
         <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_WORKITEM_ROOT%\MonoBenchmarksDroid.apk .;$(Python) pre.py -1-apk-name MonoBenchmarksDroid.apk</PreCommands>
