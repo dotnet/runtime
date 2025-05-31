@@ -468,7 +468,7 @@ public partial class Program
         var isMatch = MyRegex().IsMatch("""");
     }
 
-    [GeneratedRegex("""", RegexOptions.None)]
+    [GeneratedRegex("""", Options)]
     private static partial Regex MyRegex();
 }" };
             }

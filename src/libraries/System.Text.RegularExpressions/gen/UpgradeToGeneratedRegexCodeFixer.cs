@@ -283,11 +283,24 @@ namespace System.Text.RegularExpressions.Generator
 
                 Debug.Assert(parameterName is UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
 
-                // First check if it's a constant field reference - these should be preserved for both pattern and options
+                // Check if it's a constant field reference (class-level) - these should be preserved
                 if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
                     fieldReferenceOperation.Member is IFieldSymbol fieldSymbol && fieldSymbol.IsConst)
                 {
-                    return generator.Argument(fieldReferenceOperation.Syntax);
+                    return argument.Value.Syntax;
+                }
+
+                // Local constants should be expanded because they won't be in scope for the generated method
+                if (argument.Value is ILocalReferenceOperation localReferenceOperation &&
+                    localReferenceOperation.Local is ILocalSymbol localSymbol && localSymbol.IsConst)
+                {
+                    // For local constants, expand to the value instead of preserving the name
+                    if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
+                    {
+                        string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
+                        return SyntaxFactory.ParseExpression(optionsLiteral);
+                    }
+                    // For patterns, let the normal logic below handle the formatting
                 }
 
                 // Handle literal operations for pattern
