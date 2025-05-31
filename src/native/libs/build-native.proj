@@ -10,6 +10,7 @@
     <_BuildNativeArgs>$(TargetArchitecture) $(Configuration) outconfig $(_BuildNativeOutConfig) -os $(_BuildNativeTargetOS)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
+    <_BuildNativeArgs Condition="'$(KeepNativeSymbols)' == 'true' or '$(TargetsWindows)' != 'true'">$(_BuildNativeArgs) -keepnativesymbols</_BuildNativeArgs>
 
     <_RuntimeVariant />
     <_RuntimeVariant Condition="'$(WasmEnableThreads)' == 'true'">-threads</_RuntimeVariant>
@@ -37,7 +38,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_CMakeBuildArgs Condition="'$(KeepNativeSymbols)' != 'false'" Include="-cmakeargs &quot;-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true&quot;" />
     <_CMakeBuildArgs Condition="'$(WasmEnableThreads)' == 'true'" Include="-cmakeargs &quot;-DMONO_WASM_MT=1&quot;" />
   </ItemGroup>
 
@@ -61,7 +61,7 @@
         used to force a specific compiler toolset.
       -->
       <_BuildNativeCompilerArg Condition="'$(BuildNativeCompiler)' != ''"> $(BuildNativeCompiler)</_BuildNativeCompilerArg>
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_KeepNativeSymbolsBuildArg)$(_CMakeArgs) @(_CMakeBuildArgs->'%(Identity)',' ') $(Compiler)</_BuildNativeUnixArgs>
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessorCountArg)$(_PortableBuildArg)$(_CrossBuildArg)$(_BuildNativeCompilerArg)$(_CMakeArgs) @(_CMakeBuildArgs->'%(Identity)',' ') $(Compiler)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
     <ItemGroup>
@@ -101,7 +101,8 @@
           Condition="$([MSBuild]::IsOsPlatform(Windows))">
     <PropertyGroup>
         <_BuildNativeArgs Condition="'$(Ninja)' == 'false'">$(_BuildNativeArgs) msbuild</_BuildNativeArgs>
-        <_BuildNativeArgs Condition="'$(CMakeArgs)' != '' or '$(_MonoWasmMTCMakeArgs)' != ''">$(_BuildNativeArgs) -cmakeargs "$(CMakeArgs)" @(_CMakeBuildArgs->'%(Identity)',' ')</_BuildNativeArgs>
+        <_BuildNativeArgs Condition="'$(CMakeArgs)' != ''">$(_BuildNativeArgs) -cmakeargs "$(CMakeArgs)"</_BuildNativeArgs>
+        <_BuildNativeArgs>$(_BuildNativeArgs) @(_CMakeBuildArgs->'%(Identity)',' ')</_BuildNativeArgs>
     </PropertyGroup>
     <!-- Run script that uses CMake to generate and build the native files. -->
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->

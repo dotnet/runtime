@@ -102,8 +102,8 @@
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_CMAKE_ESRP_CLIENT=$(DotNetEsrpToolPath)&quot;" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(KeepNativeSymbols)' != 'false'">
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true&quot;" />
+    <ItemGroup Condition="'$(KeepNativeSymbols)' == 'true' or '$(TargetsWindows)' != 'true'">
+      <_CoreClrBuildArg Include="-keepnativesymbols" />
     </ItemGroup>
 
     <PropertyGroup>
