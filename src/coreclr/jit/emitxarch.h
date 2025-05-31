@@ -136,11 +136,13 @@ static bool      HasEvexEncoding(instruction ins);
 static bool      HasRex2Encoding(instruction ins);
 static bool      HasApxNdd(instruction ins);
 static bool      HasApxNf(instruction ins);
+static bool      HasApxPpx(instruction ins);
 bool             IsVexEncodableInstruction(instruction ins) const;
 bool             IsEvexEncodableInstruction(instruction ins) const;
 bool             IsRex2EncodableInstruction(instruction ins) const;
 bool             IsApxNDDEncodableInstruction(instruction ins) const;
 bool             IsApxNFEncodableInstruction(instruction ins) const;
+bool             IsApxNFToBeSet(const instrDesc* id) const;
 bool             IsApxExtendedEvexInstruction(instruction ins) const;
 bool             IsShiftInstruction(instruction ins) const;
 bool             IsLegacyMap1(code_t code) const;
@@ -574,6 +576,26 @@ void SetEvexNfIfNeeded(instrDesc* id, insOpts instOptions)
     else
     {
         assert((instOptions & INS_OPTS_EVEX_nf_MASK) == 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// SetAPXPpxIfNeeded: set APX.ppx on instrDesc
+//
+// Arguments:
+//    id          - instruction descriptor
+//    instOptions - emit options
+//
+void SetAPXPpxIfNeeded(instrDesc* id, insOpts instOptions)
+{
+    if ((instOptions & INS_OPTS_APX_ppx_MASK) != 0)
+    {
+        assert(HasApxPpx(id->idIns()));
+        id->idSetApxPpxContext();
+    }
+    else
+    {
+        assert((instOptions & INS_OPTS_APX_ppx_MASK) == 0);
     }
 }
 

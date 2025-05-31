@@ -848,6 +848,9 @@ protected:
                                      */
 #define _idEvexNdContext _idCustom5 /* bits used for the APX-EVEX.nd context for promoted legacy instructions */
 #define _idEvexNfContext _idCustom6 /* bits used for the APX-EVEX.nf context for promoted legacy/vex instructions */
+        // We repurpose _idCustom6 for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 since these instructions have no
+        // NF.
+#define _idApxPpxContext _idCustom6 /* bits used for the APX-EVEX.ppx context for Push/Pop/Push2/Pop2 */
 
         // We repurpose 4 bits for the default flag value bits for ccmp instructions.
 #define _idEvexDFV (_idCustom4 << 3) | (_idCustom3 << 2) | (_idCustom2 << 1) | _idCustom1
@@ -1797,6 +1800,17 @@ protected:
         {
             assert(!idIsEvexNfContextSet());
             _idEvexNfContext = 1;
+        }
+
+        bool idIsApxPpxContextSet() const
+        {
+            return _idApxPpxContext != 0;
+        }
+
+        void idSetApxPpxContext()
+        {
+            assert(!idIsApxPpxContextSet());
+            _idApxPpxContext = 1;
         }
 
         bool idIsNoApxEvexPromotion() const
