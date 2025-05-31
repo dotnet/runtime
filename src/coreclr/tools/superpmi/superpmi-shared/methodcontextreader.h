@@ -10,6 +10,7 @@
 
 #include "methodcontext.h"
 #include "tocfile.h"
+#include <stdio.h>
 
 struct MethodContextBuffer
 {
@@ -47,7 +48,7 @@ class MethodContextReader
 {
 private:
     // The MC/MCH file
-    HANDLE fileHandle;
+    FILE* fp;
 
     // The size of the MC/MCH file
     int64_t fileSize;
@@ -93,7 +94,7 @@ private:
     int64_t GetOffset(unsigned int methodNumber);
 
     // Just a helper...
-    static HANDLE OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
+    static FILE* OpenFile(const char* inputFile);
 
     MethodContextBuffer ReadMethodContextNoLock(bool justSkip = false);
     MethodContextBuffer ReadMethodContext(bool acquireLock, bool justSkip = false);
