@@ -1012,7 +1012,7 @@ namespace System
             if (array.Length - index < length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
+            return ArraySortHelper<T>.BinarySearch(array, index, length, value, comparer);
         }
 
         public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, Converter<TInput, TOutput> converter)
@@ -2109,7 +2109,7 @@ namespace System
             if (array.Length > 1)
             {
                 var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
-                ArraySortHelper<T>.Default.Sort(span, null);
+                ArraySortHelper<T>.Sort(span);
             }
         }
 
@@ -2158,7 +2158,7 @@ namespace System
             if (length > 1)
             {
                 var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), length);
-                ArraySortHelper<T>.Default.Sort(span, comparer);
+                ArraySortHelper<T>.Sort(span, comparer);
             }
         }
 
@@ -2183,7 +2183,7 @@ namespace System
 
                 var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
                 var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
-                ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
+                ArraySortHelperPaired<TKey, TValue>.Sort(spanKeys, spanItems, comparer);
             }
         }
 

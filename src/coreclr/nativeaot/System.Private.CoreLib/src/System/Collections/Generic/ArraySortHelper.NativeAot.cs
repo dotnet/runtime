@@ -22,11 +22,11 @@ namespace System.Collections.Generic
         }
     }
 
-    internal partial class ArraySortHelper<TKey, TValue>
+    internal partial class ArraySortHelperPaired<TKey, TValue>
     {
-        private static readonly ArraySortHelper<TKey, TValue> s_defaultArraySortHelper = new ArraySortHelper<TKey, TValue>();
+        private static readonly ArraySortHelperPaired<TKey, TValue> s_defaultArraySortHelper = new ArraySortHelperPaired<TKey, TValue>();
 
-        public static ArraySortHelper<TKey, TValue> Default
+        public static ArraySortHelperPaired<TKey, TValue> Default
         {
             get
             {
