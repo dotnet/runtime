@@ -7959,6 +7959,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     GenTreeIntConCommon* imm                    = nullptr;
     GenTree*             other                  = nullptr;
     var_types            nodeType               = node->TypeGet();
+
     // Multiply should never be using small types
     assert(!varTypeIsSmall(node->TypeGet()));
 

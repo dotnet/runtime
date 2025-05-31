@@ -867,7 +867,9 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             rmOp  = op1;
         }
         assert(regOp->isUsedFromReg());
-        assert(regOp->GetRegNum() == REG_RAX);
+
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
 
         instruction ins;
         if (!treeNode->IsUnsigned())
@@ -883,6 +885,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         // Move the result to the desired register, if necessary
         if (treeNode->OperGet() == GT_MULHI)
         {
+            assert(targetReg == REG_RDX);
             inst_Mov(targetType, targetReg, REG_RDX, /* canSkip */ true);
         }
     }

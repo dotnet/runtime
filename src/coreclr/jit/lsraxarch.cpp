@@ -3223,15 +3223,20 @@ int LinearScan::BuildMul(GenTree* tree)
 
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
-    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
-                   compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply
+        && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
 
-    int              srcCount;
+    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
+    int              srcCount       = 0;
     int              dstCount       = 1;
     SingleTypeRegSet dstCandidates  = RBM_NONE;
     SingleTypeRegSet srcCandidates1 = RBM_NONE;
     SingleTypeRegSet srcCandidates2 = srcCandidates1;
 
+    // Start with building the uses, ensuring that one of the operands is in the implicit register (RAX or RDX)
+    // Place first operand in implicit register, unless:
+    //  * it is a memory address
+    // *  or the second operand is already in the register
     if (useMulx)
     {
         if (!op1->isContained() && op2->GetRegNum() != SRBM_RDX)
