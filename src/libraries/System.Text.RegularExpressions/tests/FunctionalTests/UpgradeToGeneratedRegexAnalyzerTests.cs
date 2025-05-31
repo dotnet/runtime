@@ -471,6 +471,38 @@ public partial class Program
     [GeneratedRegex("""", Options)]
     private static partial Regex MyRegex();
 }" };
+
+                // Test options as external constant field
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class RegexConstants
+{
+    public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"\"", "RegexConstants.DefaultOptions") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public class RegexConstants
+{
+    public const RegexOptions DefaultOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+}
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex("""", RegexConstants.DefaultOptions)]
+    private static partial Regex MyRegex();
+}" };
             }
         }
 
