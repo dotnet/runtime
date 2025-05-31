@@ -3226,13 +3226,10 @@ int LinearScan::BuildMul(GenTree* tree)
     bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
                    compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
 
-    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
-    // TODO: Call BuildOperandUses manually for each operand so we can specify register (RDX or RAX) dependeng in
-    // mulx/mul
     int              srcCount;
     int              dstCount       = 1;
     SingleTypeRegSet dstCandidates  = RBM_NONE;
-    SingleTypeRegSet srcCandidates1 = BuildApxIncompatibleGPRMask(tree->AsOp(), RBM_NONE, true);
+    SingleTypeRegSet srcCandidates1 = RBM_NONE;
     SingleTypeRegSet srcCandidates2 = srcCandidates1;
 
     if (useMulx)
@@ -3292,12 +3289,7 @@ int LinearScan::BuildMul(GenTree* tree)
     }
     else if (tree->OperGet() == GT_MULHI)
     {
-        if (useMulx)
-        {
-            // ToDo-APX
-            dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
-        }
-        else
+        if (!useMulx)
         {
             // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
             // upper 32 bits of the result set the destination candidate to REG_RDX.
@@ -3308,12 +3300,7 @@ int LinearScan::BuildMul(GenTree* tree)
     else if (tree->OperGet() == GT_MUL_LONG)
     {
         dstCount = 2;
-        if (useMulx)
-        {
-            // ToDo-APX
-            dstCandidates = BuildApxIncompatibleGPRMask(tree, dstCandidates, true);
-        }
-        else
+        if (!useMulx)
         {
             // We have to use the encoding:RDX:RAX = RAX * rm
             dstCandidates = SRBM_RAX | SRBM_RDX;
