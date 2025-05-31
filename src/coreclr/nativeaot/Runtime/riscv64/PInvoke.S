@@ -19,7 +19,7 @@
 NESTED_ENTRY RhpPInvoke, _TEXT, NoHandler
         sd    fp, OFFSETOF__PInvokeTransitionFrame__m_FramePointer(a0)
         sd    ra, OFFSETOF__PInvokeTransitionFrame__m_RIP(a0)
-        sd    t0, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs(a0)
+        sd    sp, OFFSETOF__PInvokeTransitionFrame__m_PreservedRegs(a0)
         li    t0, PTFF_SAVE_SP
         sd    t0, OFFSETOF__PInvokeTransitionFrame__m_Flags(a0)
 
@@ -40,7 +40,7 @@ LEAF_ENTRY RhpPInvokeReturn, _TEXT
 
         PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, t0
 
-        bnez    t1, 0f  // If TrapThreadsFlags_None is non-zero, branch
+        bnez    t0, 0f  // If TrapThreadsFlags_None is non-zero, branch
         ret
 
 0:

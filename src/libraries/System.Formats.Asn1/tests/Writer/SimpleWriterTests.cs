@@ -59,6 +59,10 @@ namespace System.Formats.Asn1.Tests.Writer
                 Assert.Equal(0, encoded.Length);
                 return null;
             });
+
+            writer.Encode<object>(null, (_, encoded) => {
+                Assert.Equal(0, encoded.Length);
+            });
 #endif
 
             Span<byte> negativeTest = stackalloc byte[] { 5, 0 };
@@ -275,6 +279,16 @@ namespace System.Formats.Asn1.Tests.Writer
 
                 Assert.Throws<InvalidOperationException>(() => writer.Reset());
                 return (object)null;
+            });
+
+            writer.Encode(writer, static (writer, encoded) =>
+            {
+                writer.Encode(writer, static (writer, encoded) =>
+                {
+                    Assert.Throws<InvalidOperationException>(() => writer.Reset());
+                });
+
+                Assert.Throws<InvalidOperationException>(() => writer.Reset());
             });
         }
 #endif

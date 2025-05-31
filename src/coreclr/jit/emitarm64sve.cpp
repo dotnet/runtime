@@ -2256,7 +2256,14 @@ void emitter::emitInsSve_R_R(instruction     ins,
             // Thus, MOV is the preferred disassembly.
             ins = INS_sve_mov;
             break;
-
+        case INS_sve_ldr:
+        case INS_sve_str:
+        {
+            // We might come here through emitIns_R_R() to emit "ldr Zx, [Xn]" and
+            // in the case, just generate the ldr variant, where offset is zero.
+            emitInsSve_R_R_I(ins, attr, reg1, reg2, 0, opt, sopt);
+            return;
+        }
         default:
             unreached();
             break;
@@ -10386,6 +10393,10 @@ BYTE* emitter::emitOutput_InstrSve(BYTE* dst, instrDesc* id)
             if (id->idIns() != INS_sve_mov)
             {
                 code |= insEncodeReg_V<20, 16>(id->idReg3()); // mmmmm
+            }
+            else
+            {
+                code |= insEncodeReg_V<20, 16>(id->idReg2()); // mmmmm
             }
             dst += emitOutput_Instr(dst, code);
             break;

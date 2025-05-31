@@ -497,13 +497,11 @@ void BasicBlock::dspFlags() const
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},
         {BBF_DOMINATED_BY_EXCEPTIONAL_ENTRY, "xentry"},
         {BBF_GC_SAFE_POINT, "gcsafe"},
-        {BBF_FUNCLET_BEG, "flet"},
         {BBF_HAS_IDX_LEN, "idxlen"},
         {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
@@ -528,6 +526,7 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_ALIGN, "has-align"},
         {BBF_HAS_MDARRAYREF, "mdarr"},
         {BBF_NEEDS_GCPOLL, "gcpoll"},
+        {BBF_ASYNC_RESUMPTION, "resume"},
     };
 
     bool first = true;
@@ -1742,12 +1741,7 @@ bool BasicBlock::isBBCallFinallyPairTail() const
 //
 bool BasicBlock::hasEHBoundaryIn() const
 {
-    bool returnVal = (bbCatchTyp != BBCT_NONE);
-    if (!returnVal)
-    {
-        assert(!HasFlag(BBF_FUNCLET_BEG));
-    }
-    return returnVal;
+    return (bbCatchTyp != BBCT_NONE);
 }
 
 //------------------------------------------------------------------------

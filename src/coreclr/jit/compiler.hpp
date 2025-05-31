@@ -887,7 +887,7 @@ inline FuncInfoDsc* Compiler::funGetFunc(unsigned funcIdx)
 /*****************************************************************************
  *  Get the funcIdx for the EH funclet that begins with block.
  *  This is only valid after funclets are created.
- *  It is only valid for blocks marked with BBF_FUNCLET_BEG because
+ *  It is only valid for blocks that begin a funclet because
  *  otherwise we would have to do a more expensive check to determine
  *  if this should return the filter funclet or the filter handler funclet.
  *
@@ -896,8 +896,7 @@ inline unsigned Compiler::funGetFuncIdx(BasicBlock* block)
 {
     if (UsesFunclets())
     {
-        assert(fgFuncletsCreated);
-        assert(block->HasFlag(BBF_FUNCLET_BEG));
+        assert(bbIsFuncletBeg(block));
 
         EHblkDsc*    eh      = ehGetDsc(block->getHndIndex());
         unsigned int funcIdx = eh->ebdFuncIndex;
@@ -1110,6 +1109,31 @@ inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask, var_typ
     return regNum;
 }
 
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
+// Arguments:
+//    mask               - the register mask
+//    type               - type of the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
+//
+
+inline regNumber genFirstRegNumFromMaskAndToggle(SingleTypeRegSet& mask)
+{
+    assert(mask != RBM_NONE); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+    mask ^= genSingleTypeRegMask(regNum);
+
+    return regNum;
+}
+
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.
@@ -1189,8 +1213,6 @@ inline bool isRegParamType(var_types type)
 //    type      - the basic jit var_type for the item being queried
 //    typeClass - the handle for the struct when 'type' is TYP_STRUCT
 //    typeSize  - Out param (if non-null) is updated with the size of 'type'.
-//    forReturn - this is true when we asking about a GT_RETURN context;
-//                this is false when we are asking about an argument context
 //    isVarArg  - whether or not this is a vararg fixed arg or variable argument
 //              - if so on arm64 windows getArgTypeForStruct will ignore HFA
 //              - types
@@ -1199,7 +1221,6 @@ inline bool isRegParamType(var_types type)
 inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
                                                     CORINFO_CLASS_HANDLE     typeClass,
                                                     unsigned*                typeSize,
-                                                    bool                     forReturn,
                                                     bool                     isVarArg,
                                                     CorInfoCallConvExtension callConv)
 {
@@ -1210,16 +1231,8 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
     {
         assert(typeClass != nullptr);
         size = info.compCompHnd->getClassSize(typeClass);
-        if (forReturn)
-        {
-            structPassingKind howToReturnStruct;
-            type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
-        }
-        else
-        {
-            structPassingKind howToPassStruct;
-            type = getArgTypeForStruct(typeClass, &howToPassStruct, isVarArg, size);
-        }
+        structPassingKind howToReturnStruct;
+        type = getReturnTypeForStruct(typeClass, callConv, &howToReturnStruct, size);
         if (type != TYP_UNKNOWN)
         {
             result = true;
@@ -1476,13 +1489,7 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
 inline GenTree* Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd)
 {
-    void *embedScpHnd, *pEmbedScpHnd;
-
-    embedScpHnd = (void*)info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
-
-    assert((!embedScpHnd) != (!pEmbedScpHnd));
-
-    return gtNewIconEmbHndNode(embedScpHnd, pEmbedScpHnd, GTF_ICON_SCOPE_HDL, scpHnd);
+    return gtNewIconEmbHndNode((void*)scpHnd, nullptr, GTF_ICON_SCOPE_HDL, scpHnd);
 }
 
 //-----------------------------------------------------------------------------
@@ -1496,6 +1503,13 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
     assert((!embedClsHnd) != (!pEmbedClsHnd));
 
     return gtNewIconEmbHndNode(embedClsHnd, pEmbedClsHnd, GTF_ICON_CLASS_HDL, clsHnd);
+}
+
+//-----------------------------------------------------------------------------
+
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+{
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -1515,13 +1529,7 @@ inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 
 inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 {
-    void *embedFldHnd, *pEmbedFldHnd;
-
-    embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
-
-    assert((!embedFldHnd) != (!pEmbedFldHnd));
-
-    return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, fldHnd);
+    return gtNewIconEmbHndNode((void*)fldHnd, nullptr, GTF_ICON_FIELD_HDL, fldHnd);
 }
 
 /*****************************************************************************/
@@ -1539,7 +1547,7 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 //    New CT_HELPER node
 //
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
-    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3, GenTree* arg4)
 {
     GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
 
@@ -1557,6 +1565,12 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
+
+    if (arg4 != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg4));
+        result->gtFlags |= arg4->gtFlags & GTF_ALL_EFFECT;
+    }
 
     if (arg3 != nullptr)
     {
@@ -2185,6 +2199,74 @@ inline bool GenTree::gtOverflowEx() const
     return OperMayOverflow() && gtOverflow();
 }
 
+//------------------------------------------------------------------------
+// gtFindNodeInTree:
+//   Check if a tree contains a node matching the specified predicate. Descend
+//   only into subtrees with the specified flags set on them (can be GTF_EMPTY
+//   to descend into all nodes).
+//
+// Type parameters:
+//   RequiredFlagsToDescendIntoNode - Flags that must be set on the node to
+//                                    descend into it (GTF_EMPTY to descend into all nodes)
+//   Predicate - Type of the predicate (GenTree* -> bool)
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   Node matching the predicate, or nullptr if no such node was found.
+//
+template <GenTreeFlags RequiredFlagsToDescendIntoNode, typename Predicate>
+GenTree* Compiler::gtFindNodeInTree(GenTree* tree, Predicate pred)
+{
+    struct FindNodeVisitor : GenTreeVisitor<FindNodeVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        GenTree* Result = nullptr;
+
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        FindNodeVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<FindNodeVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (m_pred(node))
+            {
+                Result = node;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+    {
+        return nullptr;
+    }
+
+    FindNodeVisitor findNode(this, pred);
+    findNode.WalkTree(&tree, nullptr);
+    return findNode.Result;
+}
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2493,21 +2575,17 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 #endif
 }
 
-/*****************************************************************************
- Is this a synchronized instance method? If so, we will need to report "this"
- in the GC information, so that the EE can release the object lock
- in case of an exception
-
- We also need to report "this" and keep it alive for all shared generic
- code that gets the actual generic context from the "this" pointer and
- has exception handlers.
-
- For example, if List<T>::m() is shared between T = object and T = string,
- then inside m() an exception handler "catch E<T>" needs to be able to fetch
- the 'this' pointer to find out what 'T' is in order to tell if we
- should catch the exception or not.
- */
-
+//------------------------------------------------------------------------
+// lvaKeepAliveAndReportThis: check if there implicit references to this during method execution
+//
+// Returns:
+//    true if this must remain alive throughout the method, even if unreferenced
+//
+// Notes:
+//  In a synchronized instance method we need to report "this"
+//  in the GC information, so that the EE can release the object lock
+//  in case of an exception
+//
 inline bool Compiler::lvaKeepAliveAndReportThis()
 {
     if (info.compIsStatic || (lvaTable[0].TypeGet() != TYP_REF))
@@ -2518,17 +2596,11 @@ inline bool Compiler::lvaKeepAliveAndReportThis()
     const bool genericsContextIsThis = (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0;
 
 #ifdef JIT32_GCENCODER
-
     if (info.compFlags & CORINFO_FLG_SYNCH)
         return true;
 
     if (genericsContextIsThis)
     {
-        // TODO: Check if any of the exception clauses are
-        // typed using a generic type. Else, we do not need to report this.
-        if (info.compXcptnsCount > 0)
-            return true;
-
         if (opts.compDbgCode)
             return true;
 
@@ -2913,6 +2985,12 @@ inline unsigned Compiler::compMapILargNum(unsigned ILargNum)
     }
 
     if (ILargNum >= info.compTypeCtxtArg)
+    {
+        ILargNum++;
+        assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
+    }
+
+    if (ILargNum >= lvaAsyncContinuationArg)
     {
         ILargNum++;
         assert(ILargNum < info.compLocalsCount); // compLocals count already adjusted.
@@ -3722,14 +3800,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline void Compiler::optAssertionReset(AssertionIndex limit)
 {
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     while (optAssertionCount > limit)
     {
         AssertionIndex index        = optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
         optAssertionCount--;
-        unsigned lclNum = curAssertion->op1.lcl.lclNum;
+        unsigned lclNum = curAssertion->op1.lclNum;
         assert(lclNum < lvaCount);
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
@@ -3740,9 +3818,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lcl.lclNum no longer depends upon this assertion
+            //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lcl.lclNum;
+            lclNum = curAssertion->op2.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
@@ -3750,7 +3828,7 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
     {
         AssertionIndex index        = ++optAssertionCount;
         AssertionDsc*  curAssertion = optGetAssertion(index);
-        unsigned       lclNum       = curAssertion->op1.lcl.lclNum;
+        unsigned       lclNum       = curAssertion->op1.lclNum;
         BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3760,9 +3838,9 @@ inline void Compiler::optAssertionReset(AssertionIndex limit)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lcl.lclNum now depends upon this assertion
+            //  op2.lclNum now depends upon this assertion
             //
-            lclNum = curAssertion->op2.lcl.lclNum;
+            lclNum = curAssertion->op2.lclNum;
             BitVecOps::AddElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
     }
@@ -3778,7 +3856,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 {
     assert(index > 0);
     assert(index <= optAssertionCount);
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     AssertionDsc* curAssertion = optGetAssertion(index);
 
@@ -3793,7 +3871,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
     //
     if (index == optAssertionCount)
     {
-        unsigned lclNum = curAssertion->op1.lcl.lclNum;
+        unsigned lclNum = curAssertion->op1.lclNum;
         BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
 
         //
@@ -3803,9 +3881,9 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
             (curAssertion->op2.kind == O2K_LCLVAR_COPY))
         {
             //
-            //  op2.lcl.lclNum no longer depends upon this assertion
+            //  op2.lclNum no longer depends upon this assertion
             //
-            lclNum = curAssertion->op2.lcl.lclNum;
+            lclNum = curAssertion->op2.lclNum;
             BitVecOps::RemoveElemD(apTraits, GetAssertionDep(lclNum), index - 1);
         }
 
@@ -4269,8 +4347,6 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
     result = result || (varNum == lvaOutgoingArgSpaceVar);
 #endif
 
-    result = result || (varNum == lvaPSPSym);
-
     return result;
 }
 
@@ -4371,6 +4447,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_LCL_FLD:
         case GT_LCL_ADDR:
         case GT_CATCH_ARG:
+        case GT_ASYNC_CONTINUATION:
         case GT_LABEL:
         case GT_FTN_ADDR:
         case GT_RET_EXPR:
@@ -4404,6 +4481,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_IL_OFFSET:
         case GT_NOP:
         case GT_SWIFT_ERROR:
+        case GT_GCPOLL:
             return;
 
         // Unary operators with an optional operand
@@ -4450,6 +4528,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+        case GT_RETURN_SUSPEND:
             visitor(this->AsUnOp()->gtOp1);
             return;
 

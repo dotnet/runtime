@@ -96,9 +96,8 @@ C_FUNC(\Name):
 .endm
 
 .macro PROLOG_SAVE_REG_PAIR_INDEXED reg1, reg2, ssize, __def_cfa_save=1
-    addi  sp, sp, \ssize
-    .cfi_adjust_cfa_offset  -\ssize
-    .cfi_def_cfa  sp, \ssize
+    addi  sp, sp, -\ssize
+    .cfi_adjust_cfa_offset  \ssize
 
     sd  \reg1, 0(sp)
     sd  \reg2, 8(sp)
@@ -113,8 +112,7 @@ C_FUNC(\Name):
 
 .macro PROLOG_SAVE_REG_PAIR_NO_FP_INDEXED reg1, reg2, ssize
     addi  sp, sp, -\ssize
-    //.cfi_adjust_cfa_offset  \ssize
-    .cfi_def_cfa  sp, \ssize
+    .cfi_adjust_cfa_offset  \ssize
 
     sd  \reg1, 0(sp)
     sd  \reg2, 8(sp)
@@ -163,31 +161,37 @@ C_FUNC(\Name):
         .error "target cannot be a0"
     .endif
 
-    addi sp, sp, -48
-    sd ra,  40(sp)
-    sd t1,  32(sp)
-    sd a1,  24(sp)
-    sd a2,  16(sp)
-    sd a3,   8(sp)
-    sd a4,   0(sp)
+    addi sp, sp, -72
+    sd ra,  64(sp)
+    sd t1,  56(sp)
+    sd a1,  48(sp)
+    sd a2,  40(sp)
+    sd a3,  32(sp)
+    sd a4,  24(sp)
+    sd a5,  16(sp)
+    sd a6,   8(sp)
+    sd a7,   0(sp)
 
     // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
     la.tls.gd a0, \var
     call C_FUNC(__tls_get_addr)
 
-    ld ra,  40(sp)
-    ld t1,  32(sp)
-    ld a1,  24(sp)
-    ld a2,  16(sp)
-    ld a3,   8(sp)
-    ld a4,   0(sp)
-    addi sp, sp, 48
+    ld ra,  64(sp)
+    ld t1,  56(sp)
+    ld a1,  48(sp)
+    ld a2,  40(sp)
+    ld a3,  32(sp)
+    ld a4,  24(sp)
+    ld a5,  16(sp)
+    ld a6,   8(sp)
+    ld a7,   0(sp)
+    addi sp, sp, 72
 
     mv \target, a0
 
     /*
-    In the future we should switch to TLS descriptors. The support was added in 2024 in glibc, musl, llvm, gcc and binutils,
-    so its support is currently unavailable on majority devices. See https://maskray.me/blog/2024-01-23-riscv-tlsdesc-works
+    In the future we should switch to TLS descriptors. Its support was added in 2024 in glibc, musl, llvm, gcc and binutils,
+    which is currently unavailable on majority devices. See https://maskray.me/blog/2024-01-23-riscv-tlsdesc-works
 
     When the support for TLS descriptors is available in NativeAOT baseline, actions to perform:
     * Apply this patch:
@@ -204,6 +208,7 @@ C_FUNC(\Name):
 
         add_subdirectory(Bootstrap)
         ```
+    * Remove global dynamic code including prolog and epilog.
     * Uncomment the following code and remove these comments.
 
     // TLS descriptor, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#tls-descriptors
@@ -244,12 +249,12 @@ C_FUNC(\Name):
 #define PTFF_SAVE_A0            0x00004000
 #define PTFF_SAVE_A1            0x00008000
 #define PTFF_SAVE_ALL_PRESERVED 0x000007FF  // NOTE: S1-S11
-#define PTFF_THREAD_HIJACK_HI   0x00000002  // upper 32 bits of the PTFF_THREAD_HIJACK
+#define PTFF_THREAD_HIJACK_HI   0x00000001  // upper 32 bits of the PTFF_THREAD_HIJACK
 
 #define DEFAULT_FRAME_SAVE_FLAGS PTFF_SAVE_ALL_PRESERVED + PTFF_SAVE_SP
 
 .macro PUSH_COOP_PINVOKE_FRAME trashReg
-    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, -128      // Push down stack pointer and store s0 (fp) and RA
+    PROLOG_SAVE_REG_PAIR_INDEXED   s0, ra, 128      // Push down stack pointer and store s0 (fp) and RA
 
     // 16 bytes reserved for Thread* and flags
 
@@ -259,10 +264,11 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR   s5, s6, 64
     PROLOG_SAVE_REG_PAIR   s7, s8, 80
     PROLOG_SAVE_REG_PAIR   s9, s10, 96
+    PROLOG_SAVE_REG        s11, 112
 
     // Save the value of SP before stack allocation to the last slot in the frame (slot #15)
     add \trashReg, sp, 128
-    sd \trashReg, 112(sp)
+    sd \trashReg, 120(sp)
 
     // Record the bitmask of saved registers in the frame (slot #3)
     li \trashReg, DEFAULT_FRAME_SAVE_FLAGS
@@ -278,6 +284,7 @@ C_FUNC(\Name):
     EPILOG_RESTORE_REG_PAIR   s5, s6, 64
     EPILOG_RESTORE_REG_PAIR   s7, s8, 80
     EPILOG_RESTORE_REG_PAIR   s9, s10, 96
+    EPILOG_RESTORE_REG        s11, 112
     EPILOG_RESTORE_REG_PAIR_INDEXED   s0, ra, 128
 .endm
 

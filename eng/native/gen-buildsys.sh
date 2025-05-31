@@ -106,9 +106,15 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
-buildsys_command="$cmake_command --no-warn-unused-cli -G \"$generator\" \"-DCMAKE_BUILD_TYPE=$buildtype\" \"-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir\" $cmake_extra_defines $__UnprocessedCMakeArgs \"${cmake_extra_defines_wasm[@]}\" -S \"$1\" -B \"$2\""
-buildsys_command=$(echo $buildsys_command | sed 's/""//g')
-echo $buildsys_command
-eval $buildsys_command
+$cmake_command \
+  --no-warn-unused-cli \
+  -G "$generator" \
+  "-DCMAKE_BUILD_TYPE=$buildtype" \
+  "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
+  $cmake_extra_defines \
+  $__UnprocessedCMakeArgs \
+  "${cmake_extra_defines_wasm[@]}" \
+  -S "$1" \
+  -B "$2"
 
 # don't add anything after this line so the cmake exit code gets propagated correctly

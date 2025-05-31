@@ -162,18 +162,18 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(TmpPath);
         }
 
-        public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework)
+        public string GetRuntimePackVersion(string tfm)
             => s_runtimePackVersions.TryGetValue(tfm, out string? version)
                     ? version
                     : throw new ArgumentException($"No runtime pack version found for tfm={tfm} .");
 
-        public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+        public string GetRuntimePackDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(WorkloadPacksDir,
                     runtimeType is RuntimeVariant.SingleThreaded
                         ? $"Microsoft.NETCore.App.Runtime.Mono.{DefaultRuntimeIdentifier}"
                         : $"Microsoft.NETCore.App.Runtime.Mono.multithread.{DefaultRuntimeIdentifier}",
                     GetRuntimePackVersion(tfm));
-        public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+        public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
             => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.mjs"));

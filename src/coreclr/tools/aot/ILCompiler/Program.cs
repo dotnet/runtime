@@ -348,10 +348,10 @@ namespace ILCompiler
             // Compile
             //
 
-            var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
-
             string compilationUnitPrefix = multiFile ? Path.GetFileNameWithoutExtension(outputFilePath) : "";
-            builder.UseCompilationUnitPrefix(compilationUnitPrefix);
+            var builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup)
+                .FileLayoutAlgorithms(Get(_command.MethodLayout), Get(_command.FileLayout))
+                .UseCompilationUnitPrefix(compilationUnitPrefix);
 
             string[] mibcFilePaths = Get(_command.MibcFilePaths);
             if (mibcFilePaths.Length > 0)
@@ -412,7 +412,6 @@ namespace ILCompiler
 
                 resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 
-                metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))
                     metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.CompleteTypesOnly;
                 if (Get(_command.ScanReflection))
@@ -784,12 +783,12 @@ namespace ILCompiler
             }
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new ILCompilerRootCommand(args)
+            new CommandLineConfiguration(new ILCompilerRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
+                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp))
             {
                 ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
                 EnableDefaultExceptionHandler = false,

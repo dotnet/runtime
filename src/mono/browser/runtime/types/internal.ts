@@ -78,7 +78,6 @@ export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     logProfilerOptions?: LogProfilerOptions, // dictionary-style Object. If omitted, log profiler will not be initialized.
-    browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
     interopCleanupOnExit?: boolean
@@ -180,6 +179,7 @@ export type LoaderHelpers = {
     // from wasm-feature-detect npm package
     exceptions: () => Promise<boolean>,
     simd: () => Promise<boolean>,
+    relaxedSimd: () => Promise<boolean>,
 }
 export type RuntimeHelpers = {
     emscriptenBuildOptions: EmscriptenBuildOptions,
@@ -196,7 +196,6 @@ export type RuntimeHelpers = {
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
 
-    enablePerfMeasure: boolean;
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
@@ -234,6 +233,7 @@ export type RuntimeHelpers = {
 
     featureWasmEh: boolean,
     featureWasmSimd: boolean,
+    featureWasmRelaxedSimd: boolean,
 
     //core
     stringify_as_error_with_stack?: (error: any) => string,
@@ -243,28 +243,23 @@ export type RuntimeHelpers = {
     forceDisposeProxies: (disposeMethods: boolean, verbose: boolean) => void,
     dumpThreads: () => void,
     mono_wasm_print_thread_dump: () => void,
+    utf8ToString: (ptr: CharPtr) => string,
+    mono_background_exec: () => void,
+    mono_wasm_ds_exec: () => void,
+    mono_wasm_process_current_pid: () => number,
+}
 
-    stringToUTF16: (dstPtr: number, endPtr: number, text: string) => void,
-    stringToUTF16Ptr: (str: string) => VoidPtr,
-    utf16ToString: (startPtr: number, endPtr: number) => string,
-    utf16ToStringLoop: (startPtr: number, endPtr: number) => string,
-    localHeapViewU16: () => Uint16Array,
-    setU16_local: (heap: Uint16Array, ptr: number, value: number) => void,
-    setI32: (offset: MemOffset, value: number) => void,
+export type DiagnosticHelpers = {
+    ds_rt_websocket_create:(urlPtr :CharPtr) => number,
+    ds_rt_websocket_send:(client_socket :number, buffer:VoidPtr, bytes_to_write:number) => number,
+    ds_rt_websocket_poll:(client_socket :number) => number,
+    ds_rt_websocket_recv:(client_socket :number, buffer:VoidPtr, bytes_to_read:number) => number,
+    ds_rt_websocket_close:(client_socket :number) => number,
 }
 
 export type AOTProfilerOptions = {
     writeAt?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
     sendTo?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aotProfileData.)
-}
-
-export type BrowserProfilerOptions = {
-    sampleIntervalMs?: number, // default: 1000
-    /**
-     * See callspec in https://github.com/dotnet/runtime/blob/main/docs/design/mono/diagnostics-tracing.md#trace-monovm-profiler-events-during-startup
-     * When used together with Mono AOT, the callspec needs to match one in <WasmProfilers>browser:callspec=N:Sample;</WasmProfilers> in your project file.
-     */
-    callSpec?: string,
 }
 
 export type LogProfilerOptions = {
@@ -287,7 +282,7 @@ export type EmscriptenBuildOptions = {
     wasmEnableSIMD: boolean,
     wasmEnableEH: boolean,
     enableAotProfiler: boolean,
-    enableBrowserProfiler: boolean,
+    enableDevToolsProfiler: boolean,
     enableLogProfiler: boolean,
     enablePerfTracing: boolean,
     runAOTCompilation: boolean,
@@ -310,6 +305,7 @@ export type GlobalObjects = {
     module: DotnetModuleInternal,
     loaderHelpers: LoaderHelpers,
     runtimeHelpers: RuntimeHelpers,
+    diagnosticHelpers: DiagnosticHelpers,
     api: RuntimeAPI,
 };
 export type EmscriptenReplacements = {
@@ -503,6 +499,10 @@ export type RuntimeModuleExportsInternal = {
     configureEmscriptenStartup: configureEmscriptenStartupType,
     configureWorkerStartup: configureWorkerStartupType,
     passEmscriptenInternals: passEmscriptenInternalsType,
+}
+
+export type DiagnosticModuleExportsInternal = {
+    setRuntimeGlobals: setGlobalObjectsType,
 }
 
 export type NativeModuleExportsInternal = {

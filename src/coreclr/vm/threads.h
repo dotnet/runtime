@@ -111,6 +111,7 @@
 #ifndef __threads_h__
 #define __threads_h__
 
+#include <exception>
 #include "vars.hpp"
 #include "util.hpp"
 #include "eventstore.hpp"
@@ -141,6 +142,7 @@ class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
+struct    InterpThreadContext;
 
 typedef void(*ADCallBackFcnType)(LPVOID);
 
@@ -348,7 +350,7 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-
+void InitThreadManagerPerfMapData();
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -369,9 +371,9 @@ void SetupTLSForThread();
 // When we resume a thread at a new location, to get an exception thrown, we have to
 // pretend the exception originated elsewhere.
 EXTERN_C void ThrowControlForThread(
-#ifdef FEATURE_EH_FUNCLETS
+#if !defined(TARGET_X86)
         FaultingExceptionFrame *pfef
-#endif // FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
         , TADDR ssp
 #endif // TARGET_AMD64 && TARGET_WINDOWS
@@ -381,8 +383,6 @@ EXTERN_C void ThrowControlForThread(
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 #endif
 
-typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
-
 // The Thread class represents a managed thread.  This thread could be internal
 // or external (i.e. it wandered in from outside the runtime).  For internal
 // threads, it could correspond to an exposed System.Thread object or it
@@ -391,15 +391,6 @@ typedef DWORD (*AppropriateWaitFunc) (void *args, DWORD timeout, DWORD option);
 // If there's a physical Win32 thread underneath this object (i.e. it isn't an
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
-
-// FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                         can be returned in multiple registers
-//                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
-//
-//
-// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-//                         specified by SystemV ABI for AMD64
-//
 
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
 EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
@@ -482,6 +473,7 @@ class Thread
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #ifdef FEATURE_THREAD_ACTIVATION
     friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext);
+    friend void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext, bool suspendForDebugger);
     friend BOOL CheckActivationSafePoint(SIZE_T ip);
 #endif // FEATURE_THREAD_ACTIVATION
 
@@ -496,7 +488,6 @@ class Thread
 #endif // DACCESS_COMPILE
     friend class ProfToEEInterfaceImpl;     // HRESULT ProfToEEInterfaceImpl::GetHandleFromThread(ThreadID threadId, HANDLE *phThread);
 
-    friend class ExceptionTracker;
     friend class ThreadExceptionState;
 
     friend class StackFrameIterator;
@@ -550,7 +541,7 @@ public:
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
 #endif // FEATURE_HIJACK
 
-        // unused                 = 0x00000100,
+        TS_SSToExitApcCall        = 0x00000100,    // Enable SS and resume the thread to exit an APC Call and keep the thread in suspend state
         TS_Background             = 0x00000200,    // Thread is a background thread
         TS_Unstarted              = 0x00000400,    // Thread has never been started
         TS_Dead                   = 0x00000800,    // Thread is dead
@@ -567,7 +558,7 @@ public:
         TS_ReportDead             = 0x00010000,    // in WaitForOtherThreads()
         TS_FullyInitialized       = 0x00020000,    // Thread is fully initialized and we are ready to broadcast its existence to external clients
 
-        // unused                 = 0x00040000,
+        TS_SSToExitApcCallDone    = 0x00040000,    // The thread exited an APC Call and it is already resumed and paused on SS
 
         TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
         TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
@@ -656,7 +647,7 @@ public:
                                                       // effort.
                                                       //
                                                       // Once we are completely independent of the OS UEF, we could remove this.
-        // unused                       = 0x02000000,
+        TSNC_UnhandledException2ndPass  = 0x02000000, // The unhandled exception propagation is in the 2nd pass
         TSNC_DebuggerSleepWaitJoin      = 0x04000000, // Indicates to the debugger that this thread is in a sleep wait or join state
                                                       // This almost mirrors the TS_Interruptible state however that flag can change
                                                       // during GC-preemptive mode whereas this one cannot.
@@ -678,7 +669,7 @@ public:
     };
 
 public:
-    HRESULT DetachThread(BOOL fDLLThreadDetach);
+    HRESULT DetachThread(BOOL inTerminationCallback);
 
     void SetThreadState(ThreadState ts)
     {
@@ -1218,7 +1209,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
+            _ASSERTE((m_pGCFrame == (GCFrame*)-1) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
         }
 #endif
 
@@ -2192,16 +2183,12 @@ public:
                                      DWORD millis, WaitMode mode,
                                      PendingSync *syncInfo = 0);
 
-    DWORD          DoAppropriateWait(AppropriateWaitFunc func, void *args, DWORD millis,
-                                     WaitMode mode, PendingSync *syncInfo = 0);
     DWORD          DoSignalAndWait(HANDLE *handles, DWORD millis, BOOL alertable,
                                      PendingSync *syncState = 0);
 private:
     void           DoAppropriateWaitWorkerAlertableHelper(WaitMode mode);
     DWORD          DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL waitAll,
                                            DWORD millis, WaitMode mode, void *associatedObjectForMonitorWait);
-    DWORD          DoAppropriateWaitWorker(AppropriateWaitFunc func, void *args,
-                                           DWORD millis, WaitMode mode);
     DWORD          DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertable);
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
     DWORD          DoSyncContextWait(OBJECTREF *pSyncCtxObj, int countHandles, HANDLE *handles, BOOL waitAll, DWORD millis);
@@ -2575,7 +2562,9 @@ private:
     //-------------------------------------------------------------
     // Waiting & Synchronization
     //-------------------------------------------------------------
-
+friend class DebuggerController;
+protected:
+    void MarkForSuspensionAndWait(ULONG bit);
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
     void    WaitSuspendEvents();
@@ -2672,7 +2661,7 @@ public:
 
 private:
 #ifdef FEATURE_HIJACK
-    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind));
+    void    HijackThread(ExecutionState *esb X86_ARG(ReturnKind returnKind) X86_ARG(bool hasAsyncRet));
 
     VOID        *m_pvHJRetAddr;           // original return address (before hijack)
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
@@ -3700,7 +3689,7 @@ private:
 private:
     // At the end of a catch, we may raise ThreadAbortException.  If catch clause set IP to resume in the
     // corresponding try block, our exception system will execute the same catch clause again and again.
-    // So we save reference to the clause post which TA was reraised, which is used in ExceptionTracker::ProcessManagedCallFrame
+    // So we save reference to the clause post which TA was reraised, which is used in ExInfo::ProcessManagedCallFrame
     // to make ThreadAbort proceed ahead instead of going in a loop.
     // This problem only happens on Win64 due to JIT64.  The common scenario is VB's "On error resume next"
 #ifdef FEATURE_EH_FUNCLETS
@@ -3849,20 +3838,23 @@ private:
     // By the time a frame is scanned by the runtime, m_pHijackReturnKind always
     // identifies the gc-ness of the return register(s)
     ReturnKind m_HijackReturnKind;
+    bool m_HijackHasAsyncRet;
 
 public:
-    ReturnKind GetHijackReturnKind()
+    ReturnKind GetHijackReturnKind(bool* hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
+        *hasAsyncRet = m_HijackHasAsyncRet;
         return m_HijackReturnKind;
     }
 
-    void SetHijackReturnKind(ReturnKind returnKind)
+    void SetHijackReturnKind(ReturnKind returnKind, bool hasAsyncRet)
     {
         LIMITED_METHOD_CONTRACT;
 
         m_HijackReturnKind = returnKind;
+        m_HijackHasAsyncRet = hasAsyncRet;
     }
 #endif
 #endif // FEATURE_HIJACK
@@ -3982,6 +3974,14 @@ private:
     bool m_hasPendingActivation;
 
     friend struct ::cdac_data<Thread>;
+
+#ifdef FEATURE_INTERPRETER
+private:
+    InterpThreadContext *m_pInterpThreadContext;
+
+public:
+    InterpThreadContext* GetInterpThreadContext();
+#endif // FEATURE_INTERPRETER
 };
 
 template<>
@@ -4034,7 +4034,6 @@ typedef SList<Thread, false, PTR_Thread> ThreadList;
 #define CHECK_ONE_STORE()       _ASSERTE(this == ThreadStore::s_pThreadStore);
 
 typedef DPTR(class ThreadStore) PTR_ThreadStore;
-typedef DPTR(class ExceptionTracker) PTR_ExceptionTracker;
 
 class ThreadStore
 {
@@ -4059,8 +4058,6 @@ public:
 
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
-
-    static BOOL CanAcquireLock();
 
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);
@@ -5239,7 +5236,8 @@ public:
     ~CoopTransitionHolder()
     {
         WRAPPER_NO_CONTRACT;
-        if (m_pFrame != NULL)
+        _ASSERTE_MSG(m_pFrame == nullptr || std::uncaught_exception(), "Early return from JIT/EE interface method");
+        if (m_pFrame != nullptr)
             COMPlusCooperativeTransitionHandler(m_pFrame);
     }
 
@@ -5248,7 +5246,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // FRAME_TOP and NULL must be distinct values.
         // static_assert_no_msg(FRAME_TOP_VALUE != NULL);
-        m_pFrame = NULL;
+        m_pFrame = nullptr;
     }
 };
 
@@ -5449,13 +5447,6 @@ class GCForbidLoaderUseHolder
 // coverage.
 #if defined(DACCESS_COMPILE)
 
-// Disable (<non-zero constant> || <expression>) is always a non-zero constant.
-// <expression> is never evaluated and might have side effects, because
-// FORBIDGC_LOADER_USE_ENABLED is used in that pattern and additionally the rule
-// has little value.
-#ifdef _PREFAST_
-#pragma warning(disable:6286)
-#endif
 #define FORBIDGC_LOADER_USE_ENABLED() true
 
 #else // DACCESS_COMPILE
@@ -5491,12 +5482,8 @@ struct ManagedThreadCallState;
 
 struct ManagedThreadBase
 {
-    // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
     static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
-
-    // The Finalizer thread uses this path
-    static void FinalizerBase(ADCallBackFcnType pTarget);
 };
 
 
@@ -5669,11 +5656,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_APPLE
-    return TRUE;
-#else
-    return ExecutableAllocator::IsWXORXEnabled();
-#endif
+    return g_pConfig->IsWriteBarrierCopyEnabled();
 #endif // DACCESS_COMPILE
 }
 

@@ -23,6 +23,6 @@ void SyncClean::CleanUp ()
 {
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     // Update any interface dispatch caches that were unsafe to modify outside of this GC.
-    ReclaimUnusedInterfaceDispatchCaches();
+    InterfaceDispatch_ReclaimUnusedInterfaceDispatchCaches();
 #endif
 }

@@ -116,9 +116,13 @@ CONFIG_INTEGER(JitHashBreak, "JitHashBreak", -1)        // Same as JitBreak, but
 CONFIG_INTEGER(JitHashHalt, "JitHashHalt", -1)          // Same as JitHalt, but for a method hash
 CONFIG_INTEGER(JitInlineAdditionalMultiplier, "JitInlineAdditionalMultiplier", 0)
 CONFIG_INTEGER(JitInlinePrintStats, "JitInlinePrintStats", 0)
-CONFIG_INTEGER(JitInlineSize, "JITInlineSize", DEFAULT_MAX_INLINE_SIZE)
-CONFIG_INTEGER(JitInlineDepth, "JITInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
-CONFIG_INTEGER(JitForceInlineDepth, "JITForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
+CONFIG_INTEGER(JitInlineSize, "JitInlineSize", DEFAULT_MAX_INLINE_SIZE)
+CONFIG_INTEGER(JitInlineDepth, "JitInlineDepth", DEFAULT_MAX_INLINE_DEPTH)
+RELEASE_CONFIG_INTEGER(JitInlineBudget, "JitInlineBudget", DEFAULT_INLINE_BUDGET)
+CONFIG_INTEGER(JitForceInlineDepth, "JitForceInlineDepth", DEFAULT_MAX_FORCE_INLINE_DEPTH)
+RELEASE_CONFIG_INTEGER(JitInlineMethodsWithEH, "JitInlineMethodsWithEH", 1)
+CONFIG_STRING(JitInlineMethodsWithEHRange, "JitInlineMethodsWithEHRange")
+
 CONFIG_INTEGER(JitLongAddress, "JitLongAddress", 0) // Force using the large pseudo instruction form for long address
 CONFIG_INTEGER(JitMaxUncheckedOffset, "JitMaxUncheckedOffset", 8)
 
@@ -381,33 +385,22 @@ CONFIG_INTEGER(JitStressPromotedEvexEncoding, "JitStressPromotedEvexEncoding", 0
 CONFIG_INTEGER(JitStressEvexEncoding, "JitStressEvexEncoding", 0)
 #endif
 
-RELEASE_CONFIG_INTEGER(PreferredVectorBitWidth,     "PreferredVectorBitWidth",   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
-
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
 //
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#if defined(TARGET_LOONGARCH64)
 //TODO: should implement LoongArch64's features.
-//TODO-RISCV64-CQ: should implement RISCV64's features.
 RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",         0) // Allows Base+ hardware intrinsics to be disabled
 #else
 RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",         1) // Allows Base+ hardware intrinsics to be disabled
-#endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BW,              "EnableAVX512BW",            1) // Allows AVX512BW+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BW_VL,           "EnableAVX512BW_VL",         1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512CD,              "EnableAVX512CD",            1) // Allows AVX512CD+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512CD_VL,           "EnableAVX512CD_VL",         1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512DQ,              "EnableAVX512DQ",            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512DQ_VL,           "EnableAVX512DQ_VL",         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512F,               "EnableAVX512F",             1) // Allows AVX512F+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512F_VL,            "EnableAVX512F_VL",          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512VBMI,            "EnableAVX512VBMI",          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512VBMI_VL,         "EnableAVX512VBMI_VL",       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             1) // Allows AVX10v2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
@@ -419,16 +412,12 @@ RELEASE_CONFIG_INTEGER(EnableLZCNT,                 "EnableLZCNT",              
 RELEASE_CONFIG_INTEGER(EnablePCLMULQDQ,             "EnablePCLMULQDQ",           1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableVPCLMULQDQ,            "EnableVPCLMULQDQ",          1) // Allows VPCLMULQDQ+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnablePOPCNT,                "EnablePOPCNT",              1) // Allows POPCNT+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE,                   "EnableSSE",                 1) // Allows SSE+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE2,                  "EnableSSE2",                1) // Allows SSE2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE3,                  "EnableSSE3",                1) // Allows SSE3+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE3_4,                "EnableSSE3_4",              1) // Allows SSE3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE41,                 "EnableSSE41",               1) // Allows SSE4.1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE42,                 "EnableSSE42",               1) // Allows SSE4.2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSSE3,                 "EnableSSSE3",               1) // Allows SSSE3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX+ features to be disabled
 #elif defined(TARGET_ARM64)
-RELEASE_CONFIG_INTEGER(EnableArm64AdvSimd,          "EnableArm64AdvSimd",        1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Atomics,          "EnableArm64Atomics",        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Crc32,            "EnableArm64Crc32",          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
@@ -438,11 +427,16 @@ RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",           
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sve,              "EnableArm64Sve",            1) // Allows Arm64 Sve+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Sve2,             "EnableArm64Sve2",           1) // Allows Arm64 Sve2+ hardware intrinsics to be disabled
+#elif defined(TARGET_RISCV64)
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
 RELEASE_CONFIG_INTEGER(EnableEmbeddedMasking,       "EnableEmbeddedMasking",     1) // Allows embedded masking to be disabled
 RELEASE_CONFIG_INTEGER(EnableApxNDD,                "EnableApxNDD",              0) // Allows APX NDD feature to be disabled
+RELEASE_CONFIG_INTEGER(EnableApxConditionalChaining, "EnableApxConditionalChaining",        0) // Allows APX conditional compare chaining
 
 // clang-format on
 
@@ -589,6 +583,8 @@ OPT_CONFIG_INTEGER(JitDoIfConversion, "JitDoIfConversion", 1)                   
 OPT_CONFIG_INTEGER(JitDoOptimizeMaskConversions, "JitDoOptimizeMaskConversions", 1) // Perform optimization of mask
                                                                                     // conversions
 
+RELEASE_CONFIG_INTEGER(JitOptimizeAwait, "JitOptimizeAwait", 1) // Perform optimization of Await intrinsics
+
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
 RELEASE_CONFIG_INTEGER(JitOptRepeatCount, "JitOptRepeatCount", 2) // Number of times to repeat opts when repeating
@@ -598,7 +594,7 @@ RELEASE_CONFIG_INTEGER(JitVNMapSelBudget, "JitVNMapSelBudget", DEFAULT_MAP_SELEC
 
 RELEASE_CONFIG_INTEGER(TailCallLoopOpt, "TailCallLoopOpt", 1) // Convert recursive tail calls to loops
 RELEASE_CONFIG_METHODSET(AltJit, "AltJit")         // Enables AltJit and selectively limits it to the specified methods.
-RELEASE_CONFIG_METHODSET(AltJitNgen, "AltJitNgen") // Enables AltJit for NGEN and selectively limits it
+RELEASE_CONFIG_METHODSET(AltJitNgen, "AltJitNgen") // Enables AltJit for AOT and selectively limits it
                                                    // to the specified methods.
 
 // Do not use AltJit on this semicolon-delimited list of assemblies.
@@ -650,6 +646,7 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // relies on PGO if it exists and generally is more aggressive.
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicy, "JitExtDefaultPolicy", 1)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxIL, "JitExtDefaultPolicyMaxIL", 0x80)
+RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILRoot, "JitExtDefaultPolicyMaxILRoot", 0x100)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxILProf, "JitExtDefaultPolicyMaxILProf", 0x400)
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicyMaxBB, "JitExtDefaultPolicyMaxBB", 7)
 
@@ -675,6 +672,9 @@ RELEASE_CONFIG_INTEGER(JitObjectStackAllocationConditionalEscape, "JitObjectStac
 CONFIG_STRING(JitObjectStackAllocationConditionalEscapeRange, "JitObjectStackAllocationConditionalEscapeRange")
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationArray, "JitObjectStackAllocationArray", 1)
 RELEASE_CONFIG_INTEGER(JitObjectStackAllocationSize, "JitObjectStackAllocationSize", 528)
+RELEASE_CONFIG_INTEGER(JitObjectStackAllocationTrackFields, "JitObjectStackAllocationTrackFields", 1)
+CONFIG_STRING(JitObjectStackAllocationTrackFieldsRange, "JitObjectStackAllocationTrackFieldsRange")
+CONFIG_INTEGER(JitObjectStackAllocationDumpConnGraph, "JitObjectStackAllocationDumpConnGraph", 0)
 
 RELEASE_CONFIG_INTEGER(JitEECallTimingInfo, "JitEECallTimingInfo", 0)
 
@@ -697,11 +697,11 @@ CONFIG_STRING(JitGuardedDevirtualizationRange, "JitGuardedDevirtualizationRange"
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, "JitRandomGuardedDevirtualization", 0)
 
 // Enable insertion of patchpoints into Tier0 methods, switching to optimized where needed.
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#ifdef FEATURE_ON_STACK_REPLACEMENT
 RELEASE_CONFIG_INTEGER(TC_OnStackReplacement, "TC_OnStackReplacement", 1)
 #else
 RELEASE_CONFIG_INTEGER(TC_OnStackReplacement, "TC_OnStackReplacement", 0)
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#endif // FEATURE_ON_STACK_REPLACEMENT
 
 // Initial patchpoint counter value used by jitted code
 RELEASE_CONFIG_INTEGER(TC_OnStackReplacement_InitialCounter, "TC_OnStackReplacement_InitialCounter", 1000)
@@ -798,8 +798,8 @@ RELEASE_CONFIG_INTEGER(JitEnablePhysicalPromotion, "JitEnablePhysicalPromotion",
 // Enable cross-block local assertion prop
 RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, "JitEnableCrossBlockLocalAssertionProp", 1)
 
-// Do greedy RPO-based layout in Compiler::fgReorderBlocks.
-RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, "JitDoReversePostOrderLayout", 1);
+// Enable postorder local assertion prop
+RELEASE_CONFIG_INTEGER(JitEnablePostorderLocalAssertionProp, "JitEnablePostorderLocalAssertionProp", 1)
 
 // Enable strength reduction
 RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, "JitEnableStrengthReduction", 1)

@@ -6,12 +6,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
     public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsMultiThreaded, bool IsPublish)
     {
+#pragma warning disable SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+        internal static readonly Regex mergeWithPlaceholderRegex = new Regex(@"/\*!\s*dotnetBootConfig\s*\*/\s*{}");
+#pragma warning restore SYSLIB1045 // Convert to 'GeneratedRegexAttribute'.
+
         private static readonly string[] coreAssemblyNames = [
             "System.Private.CoreLib",
             "System.Runtime.InteropServices.JavaScript",
@@ -25,6 +33,13 @@ namespace Microsoft.NET.Sdk.WebAssembly
             "System.Collections.Concurrent",
         ];
 
+        public static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            WriteIndented = true
+        };
+
         public bool IsCoreAssembly(string fileName)
         {
             var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
@@ -35,6 +50,27 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 return true;
 
             return false;
+        }
+
+        public void WriteConfigToFile(BootJsonData config, string outputPath, string? outputFileExtension = null, string? mergeWith = null)
+        {
+            var output = JsonSerializer.Serialize(config, JsonOptions);
+
+            outputFileExtension ??= Path.GetExtension(outputPath);
+            Log.LogMessage($"Write config in format '{outputFileExtension}'");
+            if (mergeWith != null)
+            {
+                string existingContent = File.ReadAllText(mergeWith);
+                output = mergeWithPlaceholderRegex.Replace(existingContent, e => $"/*json-start*/{output}/*json-end*/");
+                if (existingContent.Equals(output))
+                    Log.LogError($"Merging boot config into '{mergeWith}' failed to find the placeholder.");
+            }
+            else if (outputFileExtension == ".js")
+            {
+                output = $"export const config = /*json-start*/{output}/*json-end*/;";
+            }
+
+            File.WriteAllText(outputPath, output);
         }
 
         public void ComputeResourcesHash(BootJsonData bootConfig)
@@ -54,7 +90,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             AddDictionary(sb, bootConfig.resources.coreAssembly);
 
             AddDictionary(sb, bootConfig.resources.jsModuleWorker);
-            AddDictionary(sb, bootConfig.resources.jsModuleGlobalization);
+            AddDictionary(sb, bootConfig.resources.jsModuleDiagnostics);
             AddDictionary(sb, bootConfig.resources.jsModuleNative);
             AddDictionary(sb, bootConfig.resources.jsModuleRuntime);
             AddDictionary(sb, bootConfig.resources.wasmNative);
@@ -89,8 +125,8 @@ namespace Microsoft.NET.Sdk.WebAssembly
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleWorker ??= new();
-            if (resourceName.StartsWith("dotnet.globalization", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
-                return bootConfig.resources.jsModuleGlobalization ??= new();
+            else if (resourceName.StartsWith("dotnet.diagnostics", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+                return bootConfig.resources.jsModuleDiagnostics ??= new();
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))

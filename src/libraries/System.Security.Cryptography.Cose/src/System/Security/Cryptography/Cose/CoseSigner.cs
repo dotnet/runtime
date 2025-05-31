@@ -64,8 +64,7 @@ namespace System.Security.Cryptography.Cose
         /// </remarks>
         public CoseSigner(AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
         {
-            if (key is null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             if (key is RSA)
                 throw new ArgumentException(SR.CoseSignerRSAKeyNeedsPadding, nameof(key));
@@ -103,11 +102,8 @@ namespace System.Security.Cryptography.Cose
         /// </remarks>
         public CoseSigner(RSA key, RSASignaturePadding signaturePadding, HashAlgorithmName hashAlgorithm, CoseHeaderMap? protectedHeaders = null, CoseHeaderMap? unprotectedHeaders = null)
         {
-            if (key is null)
-                throw new ArgumentNullException(nameof(key));
-
-            if (signaturePadding is null)
-                throw new ArgumentNullException(nameof(signaturePadding));
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(signaturePadding);
 
             Key = key;
             HashAlgorithm = hashAlgorithm;

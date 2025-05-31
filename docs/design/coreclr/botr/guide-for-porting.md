@@ -386,12 +386,10 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         application
 
     11. `CallEHFunclet` – Used to call catch, finally and fault funclets. Behavior
-        is specific to exactly how funclets are implemented. Only used if
-        USE_FUNCLET_CALL_HELPER is set
+        is specific to exactly how funclets are implemented.
 
     12. `CallEHFilterFunclet` – Used to call filter funclets. Behavior is specific
-        to exactly how funclets are implemented. Only used if
-        USE_FUNCLET_CALL_HELPER is set
+        to exactly how funclets are implemented.
 
     13. `ResolveWorkerChainLookupAsmStub`/ `ResolveWorkerAsmStub` Used for virtual
         stub dispatch (virtual call support for interface, and some virtual

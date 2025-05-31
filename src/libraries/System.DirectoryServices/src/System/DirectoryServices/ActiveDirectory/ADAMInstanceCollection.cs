@@ -21,10 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(AdamInstance adamInstance)
         {
-            if (adamInstance == null)
-            {
-                throw new ArgumentNullException(nameof(adamInstance));
-            }
+            ArgumentNullException.ThrowIfNull(adamInstance);
 
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -39,10 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(AdamInstance adamInstance)
         {
-            if (adamInstance == null)
-            {
-                throw new ArgumentNullException(nameof(adamInstance));
-            }
+            ArgumentNullException.ThrowIfNull(adamInstance);
 
             for (int i = 0; i < InnerList.Count; i++)
             {

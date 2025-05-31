@@ -94,6 +94,17 @@ namespace Internal.Reflection.Execution
             return ExecutionDomain.GetMethod(declaringTypeHandle, qMethodDefinition, genericMethodTypeArgumentHandles: null);
         }
 
+        public static MethodBase GetMethodBaseFromOriginalLdftnResult(IntPtr methodStartAddress, RuntimeTypeHandle declaringTypeHandle)
+        {
+            if (!ExecutionEnvironment.TryGetMethodForOriginalLdFtnResult(methodStartAddress,
+                ref declaringTypeHandle, out QMethodDefinition qMethodDefinition, out RuntimeTypeHandle[] genericMethodTypeArgumentHandles))
+            {
+                return null;
+            }
+
+            return ExecutionDomain.GetMethod(declaringTypeHandle, qMethodDefinition, genericMethodTypeArgumentHandles);
+        }
+
         internal static ExecutionEnvironmentImplementation ExecutionEnvironment { get; private set; }
     }
 }

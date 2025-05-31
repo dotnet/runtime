@@ -357,37 +357,60 @@ private:
             // constant bools will have CASTS. This folding may uncover more
             // GT_RET_EXPRs, so we loop around until we've got something distinct.
             //
-            inlineCandidate   = m_compiler->gtFoldExpr(inlineCandidate);
-            var_types retType = tree->TypeGet();
+            inlineCandidate = m_compiler->gtFoldExpr(inlineCandidate);
 
-#ifdef DEBUG
-            if (m_compiler->verbose)
+            // If this use is an unused ret expr, is the first child of a comma, the return value is ignored.
+            // Extract any side effects.
+            //
+            if ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->gtGetOp1() == *use))
             {
-                printf("\nReplacing the return expression placeholder ");
-                Compiler::printTreeID(tree);
-                printf(" with ");
-                Compiler::printTreeID(inlineCandidate);
-                printf("\n");
-                // Dump out the old return expression placeholder it will be overwritten by the ReplaceWith below
-                m_compiler->gtDispTree(tree);
-            }
-#endif // DEBUG
+                JITDUMP("\nReturn expression placeholder [%06u] value [%06u] unused\n", m_compiler->dspTreeID(tree),
+                        m_compiler->dspTreeID(inlineCandidate));
 
-            var_types newType = inlineCandidate->TypeGet();
+                GenTree* sideEffects = nullptr;
+                m_compiler->gtExtractSideEffList(inlineCandidate, &sideEffects);
 
-            // If we end up swapping type we may need to retype the tree:
-            if (retType != newType)
-            {
-                if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+                if (sideEffects == nullptr)
                 {
-                    // - in an RVA static if we've reinterpreted it as a byref;
-                    assert(newType == TYP_I_IMPL);
-                    JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
-                    inlineCandidate->gtType = TYP_BYREF;
+                    JITDUMP("\nInline return expression had no side effects\n");
+                    (*use)->gtBashToNOP();
+                }
+                else
+                {
+                    JITDUMP("\nInserting the inline return expression side effects\n");
+                    JITDUMPEXEC(m_compiler->gtDispTree(sideEffects));
+                    JITDUMP("\n");
+                    *use = sideEffects;
                 }
             }
+            else
+            {
+                JITDUMP("\nReplacing the return expression placeholder [%06u] with [%06u]\n",
+                        m_compiler->dspTreeID(tree), m_compiler->dspTreeID(inlineCandidate));
+                JITDUMPEXEC(m_compiler->gtDispTree(tree));
 
-            *use          = inlineCandidate;
+                var_types retType = tree->TypeGet();
+                var_types newType = inlineCandidate->TypeGet();
+
+                // If we end up swapping type we may need to retype the tree:
+                if (retType != newType)
+                {
+                    if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+                    {
+                        // - in an RVA static if we've reinterpreted it as a byref;
+                        assert(newType == TYP_I_IMPL);
+                        JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
+                        inlineCandidate->gtType = TYP_BYREF;
+                    }
+                }
+
+                JITDUMP("\nInserting the inline return expression\n");
+                JITDUMPEXEC(m_compiler->gtDispTree(inlineCandidate));
+                JITDUMP("\n");
+
+                *use = inlineCandidate;
+            }
+
             m_madeChanges = true;
 
             if (inlineeBB != nullptr)
@@ -396,15 +419,6 @@ private:
                 // Propagate those flags from the containing BB.
                 m_compiler->compCurBB->CopyFlags(inlineeBB, BBF_COPY_PROPAGATE);
             }
-
-#ifdef DEBUG
-            if (m_compiler->verbose)
-            {
-                printf("\nInserting the inline return expression\n");
-                m_compiler->gtDispTree(inlineCandidate);
-                printf("\n");
-            }
-#endif // DEBUG
         }
 
         // If the inline was rejected and returns a retbuffer, then mark that
@@ -781,6 +795,17 @@ PhaseStatus Compiler::fgInline()
         Metrics.ProfileConsistentBeforeInline++;
     }
 
+    if (!fgHaveProfileWeights())
+    {
+        JITDUMP("INLINER: no pgo data\n");
+    }
+    else
+    {
+        JITDUMP("INLINER: pgo source is %s; pgo data is %sconsistent; %strusted; %ssufficient\n",
+                compGetPgoSourceName(), fgPgoConsistent ? "" : "not ", fgHaveTrustedProfileWeights() ? "" : "not ",
+                fgHaveSufficientProfileWeights() ? "" : "not ");
+    }
+
     noway_assert(fgFirstBB != nullptr);
 
     BasicBlock*                                 block = fgFirstBB;
@@ -1035,6 +1060,19 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     // Don't expect any surprises here.
     assert(result->IsCandidate());
 
+#if defined(DEBUG)
+    // Fail if we're inlining and we've reached the acceptance limit.
+    //
+    int      limit   = JitConfig.JitInlineLimit();
+    unsigned current = m_inlineStrategy->GetInlineCount();
+
+    if ((limit >= 0) && (current >= static_cast<unsigned>(limit)))
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_OVER_INLINE_LIMIT);
+        return;
+    }
+#endif // defined(DEBUG)
+
     if (lvaCount >= MAX_LV_NUM_COUNT_FOR_INLINING)
     {
         // For now, attributing this to call site, though it's really
@@ -1056,6 +1094,14 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
         result->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
+        return;
+    }
+
+    if (call->IsAsync() && info.compUsesAsyncContinuation)
+    {
+        // Currently not supported. Could provide a nice perf benefit for
+        // Task -> runtime async thunks if we supported it.
+        result->NoteFatal(InlineObservation::CALLER_ASYNC_USED_CONTINUATION);
         return;
     }
 
@@ -1165,7 +1211,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
         return;
     }
 
-    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", false);
+    InlineResult      inlineResult(this, call, nullptr, "fgNoteNonInlineCandidate", true);
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
     // Try and recover the reason left behind when the jit decided
@@ -1495,7 +1541,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     {
         // When fgBBCount is 1 we will always have a non-NULL fgFirstBB
         //
-        PREFAST_ASSUME(InlineeCompiler->fgFirstBB != nullptr);
+        assert(InlineeCompiler->fgFirstBB != nullptr);
 
         // DDB 91389: Don't throw away the (only) inlinee block
         // when its return type is not BBJ_RETURN.
@@ -1568,13 +1614,179 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         //
         bottomBlock->RemoveFlags(BBF_DONT_REMOVE);
 
+        // If the inlinee has EH, merge the EH tables, and figure out how much of
+        // a shift we need to make in the inlinee blocks EH indicies.
+        //
+        unsigned const inlineeRegionCount = InlineeCompiler->compHndBBtabCount;
+        const bool     inlineeHasEH       = inlineeRegionCount > 0;
+        unsigned       inlineeIndexShift  = 0;
+
+        if (inlineeHasEH)
+        {
+            // If the call site also has EH, we need to insert the inlinee clauses
+            // so they are a child of the call site's innermost enclosing region.
+            // Figure out what this is.
+            //
+            bool           inTryRegion     = false;
+            unsigned const enclosingRegion = ehGetMostNestedRegionIndex(iciBlock, &inTryRegion);
+
+            // We will insert the inlinee clauses in bulk before this index.
+            //
+            unsigned insertBeforeIndex = 0;
+
+            if (enclosingRegion == 0)
+            {
+                // The call site is not in an EH region, so we can put the inlinee EH clauses
+                // at the end of root method's the EH table.
+                //
+                // For example, if the root method already has EH#0, and the inlinee has 2 regions
+                //
+                //   enclosingRegion   will be 0
+                //   inlineeIndexShift will be 1
+                //   insertBeforeIndex will be 1
+                //
+                //   inlinee eh0 -> eh1
+                //   inlinee eh1 -> eh2
+                //
+                //   root eh0 -> eh0
+                //
+                inlineeIndexShift = compHndBBtabCount;
+                insertBeforeIndex = compHndBBtabCount;
+            }
+            else
+            {
+                // The call site is in an EH region, so we can put the inlinee EH clauses
+                // just before the enclosing region
+                //
+                // Note enclosingRegion is region index + 1. So EH#0 will be represented by 1 here.
+                //
+                // For example, if the enclosing EH regions are try#2 and hnd#3, and the inlinee has 2 eh clauses
+                //
+                //   enclosingRegion   will be 3  (try2 + 1)
+                //   inlineeIndexShift will be 2
+                //   insertBeforeIndex will be 2
+                //
+                //   inlinee eh0 -> eh2
+                //   inlinee eh1 -> eh3
+                //
+                //   root eh0 -> eh0
+                //   root eh1 -> eh1
+                //
+                //   root eh2 -> eh4
+                //   root eh3 -> eh5
+                //
+                inlineeIndexShift = enclosingRegion - 1;
+                insertBeforeIndex = enclosingRegion - 1;
+            }
+
+            JITDUMP(
+                "Inlinee has EH. In root method, inlinee's %u EH region indices will shift by %u and become EH#%02u ... EH#%02u (%p)\n",
+                inlineeRegionCount, inlineeIndexShift, insertBeforeIndex, insertBeforeIndex + inlineeRegionCount - 1,
+                &inlineeIndexShift);
+
+            if (enclosingRegion != 0)
+            {
+                JITDUMP("Inlinee is nested within current %s EH#%02u (which will become EH#%02u)\n",
+                        inTryRegion ? "try" : "hnd", enclosingRegion - 1, enclosingRegion - 1 + inlineeRegionCount);
+            }
+            else
+            {
+                JITDUMP("Inlinee is not nested inside any EH region\n");
+            }
+
+            // Grow the EH table.
+            //
+            // TODO: verify earlier that this won't fail...
+            //
+            EHblkDsc* const outermostEbd =
+                fgTryAddEHTableEntries(insertBeforeIndex, inlineeRegionCount, /* deferAdding */ false);
+            assert(outermostEbd != nullptr);
+
+            // fgTryAddEHTableEntries has adjusted the indices of all root method blocks and EH clauses
+            // to accommodate the new entries. No other changes to those are needed.
+            //
+            // We just need to add in and fix up the new entries from the inlinee.
+            //
+            // Fetch the new enclosing try/handler table indicies.
+            //
+            const unsigned enclosingTryIndex =
+                iciBlock->hasTryIndex() ? iciBlock->getTryIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+            const unsigned enclosingHndIndex =
+                iciBlock->hasHndIndex() ? iciBlock->getHndIndex() : EHblkDsc::NO_ENCLOSING_INDEX;
+
+            // Copy over the EH table entries from inlinee->root and adjust their enclosing indicies.
+            //
+            for (unsigned XTnum = 0; XTnum < inlineeRegionCount; XTnum++)
+            {
+                unsigned newXTnum      = XTnum + inlineeIndexShift;
+                compHndBBtab[newXTnum] = InlineeCompiler->compHndBBtab[XTnum];
+                EHblkDsc* const ebd    = &compHndBBtab[newXTnum];
+
+                if (ebd->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    ebd->ebdEnclosingTryIndex += (unsigned short)inlineeIndexShift;
+                }
+                else
+                {
+                    ebd->ebdEnclosingTryIndex = (unsigned short)enclosingTryIndex;
+                }
+
+                if (ebd->ebdEnclosingHndIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+                {
+                    ebd->ebdEnclosingHndIndex += (unsigned short)inlineeIndexShift;
+                }
+                else
+                {
+                    ebd->ebdEnclosingHndIndex = (unsigned short)enclosingHndIndex;
+                }
+            }
+        }
+
+        // Fetch the new enclosing try/handler indicies for blocks.
+        // Note these are represented differently than the EH table indices.
+        //
+        const unsigned blockEnclosingTryIndex = iciBlock->hasTryIndex() ? iciBlock->getTryIndex() + 1 : 0;
+        const unsigned blockEnclosingHndIndex = iciBlock->hasHndIndex() ? iciBlock->getHndIndex() + 1 : 0;
+
         // Set the try and handler index and fix the jump types of inlinee's blocks.
         //
         for (BasicBlock* const block : InlineeCompiler->Blocks())
         {
-            noway_assert(!block->hasTryIndex());
-            noway_assert(!block->hasHndIndex());
-            block->copyEHRegion(iciBlock);
+            if (block->hasTryIndex())
+            {
+                JITDUMP("Inlinee " FMT_BB " has old try index %u, shift %u, new try index %u\n", block->bbNum,
+                        (unsigned)block->bbTryIndex, inlineeIndexShift,
+                        (unsigned)(block->bbTryIndex + inlineeIndexShift));
+                block->bbTryIndex += (unsigned short)inlineeIndexShift;
+            }
+            else
+            {
+                block->bbTryIndex = (unsigned short)blockEnclosingTryIndex;
+            }
+
+            if (block->hasHndIndex())
+            {
+                block->bbHndIndex += (unsigned short)inlineeIndexShift;
+            }
+            else
+            {
+                block->bbHndIndex = (unsigned short)blockEnclosingHndIndex;
+            }
+
+            // Sanity checks
+            //
+            if (iciBlock->hasTryIndex())
+            {
+                assert(block->hasTryIndex());
+                assert(block->getTryIndex() <= iciBlock->getTryIndex());
+            }
+
+            if (iciBlock->hasHndIndex())
+            {
+                assert(block->hasHndIndex());
+                assert(block->getHndIndex() <= iciBlock->getHndIndex());
+            }
+
             block->CopyFlags(iciBlock, BBF_BACKWARD_JUMP | BBF_PROF_WEIGHT);
 
             // Update block nums appropriately
@@ -1650,13 +1862,18 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
 #endif
 
-    // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
-    // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
-    if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
+    if (InlineeCompiler->fgHasSwitch)
     {
-        opts.compProcedureSplitting = false;
-        JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
-                "implementation limitation.\n");
+        fgHasSwitch = true;
+
+        // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
+        // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
+        if (opts.compProcedureSplitting)
+        {
+            opts.compProcedureSplitting = false;
+            JITDUMP("Turning off procedure splitting for this method, as inlinee compiler encountered switch tables; "
+                    "implementation limitation.\n");
+        }
     }
 
 #ifdef FEATURE_SIMD
@@ -1757,9 +1974,6 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     // If the call site is not in a try and the callee has a throw,
     // we may introduce inconsistency.
-    //
-    // Technically we should check if the callee has a throw not in a try, but since
-    // we can't inline methods with EH yet we don't see those.
     //
     if (InlineeCompiler->fgThrowCount > 0)
     {
@@ -2048,6 +2262,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         switch (arg.GetWellKnownArg())
         {
             case WellKnownArg::RetBuffer:
+            case WellKnownArg::AsyncContinuation:
                 continue;
             case WellKnownArg::InstParam:
                 argInfo = inlineInfo->inlInstParamArgInfo;
