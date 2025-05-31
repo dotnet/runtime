@@ -236,7 +236,7 @@ void PalSleep(uint32_t milliseconds);
 UInt32_BOOL PalSwitchToThread();
 UInt32_BOOL PalAreShadowStacksEnabled();
 HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-extern "C" HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
 uint32_t PalGetOsPageSize();

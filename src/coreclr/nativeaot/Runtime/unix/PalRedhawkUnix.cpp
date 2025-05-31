@@ -728,7 +728,7 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-extern "C" HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
 
