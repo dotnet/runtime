@@ -166,6 +166,8 @@ switch (testCase) {
     case "EnvVariablesTest":
         dotnet.withEnvironmentVariable("foo", "bar");
         break;
+    case "GetFunctionPointerForDelegate":
+        break;
     case "HttpNoStreamingTest":
         break;
     case "BrowserProfilerTest":
@@ -280,6 +282,18 @@ try {
             console.debug(`ret: ${retHttp}`);
 
             exit(retHttp == 42 ? 0 : 1);
+            break;
+        case "GetFunctionPointerForDelegate":
+            console.log("not ready yet")
+            const miscExports = await getAssemblyExports(config.mainAssemblyName);
+            const testGetFunctionPointerForDelegate = miscExports.MiscTests.TestGetFunctionPointerForDelegate;
+            console.log("ready");
+
+            const retMics = testGetFunctionPointerForDelegate();
+            document.getElementById("out").innerHTML = retMics;
+            console.debug(`ret: ${retMics}`);
+
+            exit(retMics == 42 ? 0 : 1);
             break;
         case "EnvVariablesTest":
             console.log("not ready yet")

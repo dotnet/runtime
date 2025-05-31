@@ -197,6 +197,8 @@ init_icall_table (void)
 static void*
 get_native_to_interp (MonoMethod *method, void *extra_arg)
 {
+	assert (method);
+
 	void *addr = NULL;
 	MONO_ENTER_GC_UNSAFE;
 	MonoClass *klass = mono_method_get_class (method);
