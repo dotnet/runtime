@@ -68,7 +68,7 @@ namespace System.Net.Http
             X509Chain,
             SslPolicyErrors,
             bool>? _serverCertificateValidationCallback;
-        private bool _checkCertificateRevocationList;
+        private bool _checkCertificateRevocationList = true;
         private ClientCertificateOption _clientCertificateOption = ClientCertificateOption.Manual;
         private X509Certificate2Collection? _clientCertificates; // Only create collection when required.
         private ICredentials? _serverCredentials;
