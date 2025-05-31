@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
 #ifdef TARGET_WINDOWS
 extern "C" const char* __cdecl __asan_default_options()
-else
+#else
 extern "C" const char* __stdcall __asan_default_options()
 #endif
 {
