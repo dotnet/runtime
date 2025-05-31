@@ -1399,7 +1399,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     GenTree* opr1 = cond->AsOp()->gtOp1;
     GenTree* opr2 = cond->AsOp()->gtOp2;
 
-    if (opr2->gtOper != GT_CNS_INT)
+    if (!opr2->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }

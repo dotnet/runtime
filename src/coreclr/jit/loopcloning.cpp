@@ -2317,7 +2317,7 @@ bool Compiler::optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lcl
 //
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal)
 {
-    if (tree->gtOper != GT_COMMA)
+    if (!tree->OperIs(GT_COMMA))
     {
         return false;
     }

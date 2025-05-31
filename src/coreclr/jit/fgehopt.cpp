@@ -112,7 +112,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
-            if (stmtExpr->gtOper != GT_RETFILT)
+            if (!stmtExpr->OperIs(GT_RETFILT))
             {
                 isEmpty = false;
                 break;

@@ -8216,7 +8216,7 @@ void Compiler::compCallArgStats()
         {
             for (GenTree* const call : stmt->TreeList())
             {
-                if (call->gtOper != GT_CALL)
+                if (!call->OperIs(GT_CALL))
                     continue;
 
                 argNum = regArgNum = regArgDeferred = regArgTemp = regArgConst = regArgLclVar = argDWordNum =

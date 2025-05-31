@@ -262,7 +262,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 
         // Increment should be by a const int.
         // TODO-CQ: CLONE: allow variable increments.
-        if ((incrVal->gtOper != GT_CNS_INT) || !incrVal->TypeIs(TYP_INT))
+        if ((!incrVal->OperIs(GT_CNS_INT)) || !incrVal->TypeIs(TYP_INT))
         {
             return BAD_VAR_NUM;
         }
@@ -297,7 +297,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 {
     GenTree* test = testStmt->GetRootNode();
 
-    if (test->gtOper != GT_JTRUE)
+    if (!test->OperIs(GT_JTRUE))
     {
         return false;
     }
@@ -5536,7 +5536,7 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
         index = index->AsOp()->gtOp1;
     }
 
-    assert(!bRngChk || index->gtOper != GT_COMMA);
+    assert(!bRngChk || !index->OperIs(GT_COMMA));
 
     if (pIndex)
     {

@@ -4157,7 +4157,7 @@ GenTree* Compiler::gtWalkOpEffectiveVal(GenTree* op)
     {
         op = op->gtEffectiveVal();
 
-        if ((op->gtOper != GT_ADD) || op->gtOverflow() || !op->AsOp()->gtOp2->IsCnsIntOrI())
+        if ((!op->OperIs(GT_ADD)) || op->gtOverflow() || !op->AsOp()->gtOp2->IsCnsIntOrI())
         {
             break;
         }
@@ -11488,7 +11488,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
     if (tree)
     {
         /* print the type of the node */
-        if (tree->gtOper != GT_CAST)
+        if (!tree->OperIs(GT_CAST))
         {
             printf(" %-6s", varTypeName(tree->TypeGet()));
 

@@ -2062,7 +2062,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
-    if ((op1->gtOper != GT_LCL_VAR) && (op2->OperIs(GT_LCL_VAR)))
+    if ((!op1->OperIs(GT_LCL_VAR)) && (op2->OperIs(GT_LCL_VAR)))
     {
         std::swap(op1, op2);
     }
@@ -2101,7 +2101,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
-    if (((op1->gtOper != GT_IND) || (op1->AsOp()->gtOp1->gtOper != GT_LCL_VAR)) &&
+    if (((!op1->OperIs(GT_IND)) || (!op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))) &&
         ((op2->OperIs(GT_IND)) && (op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR))))
     {
         std::swap(op1, op2);
@@ -2113,7 +2113,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
-    if ((op2->gtOper != GT_CNS_INT) && (op1->OperIs(GT_CNS_INT)))
+    if ((!op2->OperIs(GT_CNS_INT)) && (op1->OperIs(GT_CNS_INT)))
     {
         std::swap(op1, op2);
     }
@@ -4650,13 +4650,13 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     GenTree* op2 = tree->AsOp()->gtOp2;
 
     // For Local AssertionProp we only can fold when op1 is a GT_LCL_VAR
-    if (op1->gtOper != GT_LCL_VAR)
+    if (!op1->OperIs(GT_LCL_VAR))
     {
         return nullptr;
     }
 
     // For Local AssertionProp we only can fold when op2 is a GT_CNS_INT
-    if (op2->gtOper != GT_CNS_INT)
+    if (!op2->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }

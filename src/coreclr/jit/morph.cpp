@@ -4493,7 +4493,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         noway_assert(call->TypeIs(TYP_VOID));
         noway_assert(call->gtArgs.HasRetBuffer());
         GenTree* retValBuf = call->gtArgs.GetRetBufferArg()->GetNode();
-        if (retValBuf->gtOper != GT_LCL_VAR || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
+        if (!retValBuf->OperIs(GT_LCL_VAR) || retValBuf->AsLclVarCommon()->GetLclNum() != info.compRetBuffArg)
         {
             failTailCall("Need to copy return buffer");
             return nullptr;

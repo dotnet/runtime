@@ -1767,7 +1767,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 #endif // DEBUG
 
                 /* Replace the conditional statement with the list of side effects */
-                noway_assert(sideEffList->gtOper != GT_SWITCH);
+                noway_assert(!sideEffList->OperIs(GT_SWITCH));
 
                 switchStmt->SetRootNode(sideEffList);
 
@@ -2010,7 +2010,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     //
     GenTree* const lastTree = lastStmt->GetRootNode();
 
-    if (lastTree->gtOper != GT_JTRUE)
+    if (!lastTree->OperIs(GT_JTRUE))
     {
         return false;
     }
@@ -2465,7 +2465,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 #endif // DEBUG
 
                 /* Replace the conditional statement with the list of side effects */
-                noway_assert(sideEffList->gtOper != GT_JTRUE);
+                noway_assert(!sideEffList->OperIs(GT_JTRUE));
 
                 condStmt->SetRootNode(sideEffList);
 

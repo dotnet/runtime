@@ -3185,7 +3185,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     assert(srcCount <= BYTE_REG_COUNT);
 #endif
 
-    if (indirTree->gtOper != GT_STOREIND)
+    if (!indirTree->OperIs(GT_STOREIND))
     {
         BuildDef(indirTree);
     }

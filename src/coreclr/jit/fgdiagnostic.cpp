@@ -2546,7 +2546,7 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     GenTree*  tree  = *pTree;
     Compiler* pComp = data->compiler;
 
-    if (tree->gtOper != GT_MUL || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
+    if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
     {
         return WALK_CONTINUE;
     }

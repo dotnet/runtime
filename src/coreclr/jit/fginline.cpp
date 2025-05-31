@@ -1250,7 +1250,7 @@ Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, f
     }
     else
     {
-        assert(tree->gtOper != GT_RET_EXPR);
+        assert(!tree->OperIs(GT_RET_EXPR));
     }
 
     return WALK_CONTINUE;
@@ -2058,7 +2058,7 @@ void Compiler::fgInsertInlineeArgument(
         {
             // Change the temp in-place to the actual argument.
             // We currently do not support this for struct arguments, so it must not be a GT_BLK.
-            assert(argNode->gtOper != GT_BLK);
+            assert(!argNode->OperIs(GT_BLK));
             argSingleUseNode->ReplaceWith(argNode, this);
             return;
         }
@@ -2082,8 +2082,7 @@ void Compiler::fgInsertInlineeArgument(
     {
         // The argument is either not used or a const or lcl var
         noway_assert(!argInfo.argIsUsed || argInfo.argIsInvariant || argInfo.argIsLclVar);
-        noway_assert((argInfo.argIsLclVar == 0) ==
-                     (argNode->gtOper != GT_LCL_VAR || (argNode->gtFlags & GTF_GLOB_REF)));
+        noway_assert((argInfo.argIsLclVar == 0) == (!argNode->OperIs(GT_LCL_VAR) || (argNode->gtFlags & GTF_GLOB_REF)));
 
         // If the argument has side effects, append it
         if (argInfo.argHasSideEff)

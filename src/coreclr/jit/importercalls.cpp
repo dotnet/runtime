@@ -2589,7 +2589,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     // Check for constant
-    if (fieldTokenNode->gtOper != GT_CNS_INT)
+    if (!fieldTokenNode->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }
@@ -2844,7 +2844,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
         //
         // This optimization is only valid for a constant array size.
         //
-        if (arrayLengthNode->gtOper != GT_CNS_INT)
+        if (!arrayLengthNode->OperIs(GT_CNS_INT))
         {
             return nullptr;
         }
@@ -2952,7 +2952,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     // Check for constant
-    if (fieldTokenNode->gtOper != GT_CNS_INT)
+    if (!fieldTokenNode->OperIs(GT_CNS_INT))
     {
         return nullptr;
     }

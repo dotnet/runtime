@@ -7022,7 +7022,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // followed by a ldfld to load the field.
 
                     op1 = impInlineFetchArg(impInlineInfo->inlArgInfo[lclNum], impInlineInfo->lclVarInfo[lclNum]);
-                    if (op1->gtOper != GT_LCL_VAR)
+                    if (!op1->OperIs(GT_LCL_VAR))
                     {
                         compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDARGA_NOT_LOCAL_VAR);
                         return;
@@ -8441,7 +8441,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = op1->AsOp()->gtOp1;
                     }
 
-                    if (op1->gtOper != GT_CALL)
+                    if (!op1->OperIs(GT_CALL))
                     {
                         if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
