@@ -282,25 +282,47 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 Debug.Assert(parameterName is UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName or UpgradeToGeneratedRegexAnalyzer.PatternArgumentName);
-                if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
+
+                // Check if it's a constant field reference (class-level) - these should be preserved
+                if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
+                    fieldReferenceOperation.Member is IFieldSymbol fieldSymbol && fieldSymbol.IsConst)
                 {
-                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
-                    return SyntaxFactory.ParseExpression(optionsLiteral);
+                    return argument.Value.Syntax;
                 }
-                else if (argument.Value is ILiteralOperation literalOperation)
+
+                // Local constants should be expanded because they won't be in scope for the generated method
+                if (argument.Value is ILocalReferenceOperation localReferenceOperation &&
+                    localReferenceOperation.Local is ILocalSymbol localSymbol && localSymbol.IsConst)
+                {
+                    // For local constants, expand to the value instead of preserving the name
+                    if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
+                    {
+                        string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
+                        return SyntaxFactory.ParseExpression(optionsLiteral);
+                    }
+                    // For patterns, let the normal logic below handle the formatting
+                }
+
+                // Handle literal operations for pattern
+                if (parameterName == UpgradeToGeneratedRegexAnalyzer.PatternArgumentName && argument.Value is ILiteralOperation literalOperation)
                 {
                     return literalOperation.Syntax;
                 }
-                else if (argument.Value is IFieldReferenceOperation fieldReferenceOperation &&
-                    fieldReferenceOperation.Member is IFieldSymbol fieldSymbol && fieldSymbol.IsConst)
+
+                // Handle options
+                if (parameterName == UpgradeToGeneratedRegexAnalyzer.OptionsArgumentName)
                 {
-                    return generator.Argument(fieldReferenceOperation.Syntax);
+                    // For RegexOptions that are not constant field references, expand the value
+                    string optionsLiteral = Literal(((RegexOptions)(int)argument.Value.ConstantValue.Value!).ToString());
+                    return SyntaxFactory.ParseExpression(optionsLiteral);
                 }
+                // Special handling for string patterns with escaped characters
                 else if (argument.Value.ConstantValue.Value is string str && str.Contains('\\'))
                 {
                     string escapedVerbatimText = str.Replace("\"", "\"\"");
                     return SyntaxFactory.ParseExpression($"@\"{escapedVerbatimText}\"");
                 }
+                // Default handling for other constants
                 else
                 {
                     return generator.LiteralExpression(argument.Value.ConstantValue.Value);
