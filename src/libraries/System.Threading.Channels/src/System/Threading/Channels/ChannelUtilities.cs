@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace System.Threading.Channels
 {
     /// <summary>Provides internal helper methods for implementing channels.</summary>
-    internal static class ChannelUtilities
+    internal static partial class ChannelUtilities
     {
         /// <summary>Sentinel object used to indicate being done writing.</summary>
         internal static readonly Exception s_doneWritingSentinel = new Exception(nameof(s_doneWritingSentinel));
@@ -33,7 +33,7 @@ namespace System.Threading.Channels
             {
                 tcs.TrySetCanceled(oce.CancellationToken);
             }
-            else if (error != null && error != s_doneWritingSentinel)
+            else if (error is not null && error != s_doneWritingSentinel)
             {
                 if (tcs.TrySetException(error))
                 {
@@ -56,7 +56,7 @@ namespace System.Threading.Channels
         /// <returns>The failed task.</returns>
         internal static ValueTask<T> GetInvalidCompletionValueTask<T>(Exception error)
         {
-            Debug.Assert(error != null);
+            Debug.Assert(error is not null);
 
             Task<T> t =
                 error == s_doneWritingSentinel ? Task.FromException<T>(CreateInvalidCompletionException()) :
@@ -66,60 +66,203 @@ namespace System.Threading.Channels
             return new ValueTask<T>(t);
         }
 
-        internal static void QueueWaiter(ref AsyncOperation<bool>? tail, AsyncOperation<bool> waiter)
+        /// <summary>Dequeues an operation from the circular doubly-linked list referenced by <paramref name="head"/>.</summary>
+        /// <param name="head">The head of the list.</param>
+        /// <param name="op">The dequeued operation.</param>
+        /// <returns>true if an operation could be dequeued; otherwise, false.</returns>
+        internal static bool TryDequeue<TAsyncOp>(ref TAsyncOp? head, [NotNullWhen(true)] out TAsyncOp? op)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
         {
-            AsyncOperation<bool>? c = tail;
-            if (c == null)
+            op = head;
+
+            if (head is null)
             {
-                waiter.Next = waiter;
+                return false;
+            }
+
+            Debug.Assert(head.Previous is not null);
+            Debug.Assert(head.Next is not null);
+
+            if (head.Next == head)
+            {
+                head = null;
             }
             else
             {
-                waiter.Next = c.Next;
-                c.Next = waiter;
+                TAsyncOp last = head.Previous;
+
+                head = head.Next;
+                head.Previous = last;
+                last.Next = head;
             }
-            tail = waiter;
+
+            Debug.Assert(op is not null);
+            op.Next = op.Previous = null;
+            return true;
         }
 
-        internal static void WakeUpWaiters(ref AsyncOperation<bool>? listTail, bool result, Exception? error = null)
+        /// <summary>Enqueues an operation onto the circular doubly-linked list referenced by <paramref name="head"/>.</summary>
+        /// <param name="head">The head of the list.</param>
+        /// <param name="op">The operation to enqueue.</param>
+        internal static void Enqueue<TAsyncOp>(ref TAsyncOp? head, TAsyncOp op)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
         {
-            AsyncOperation<bool>? tail = listTail;
-            if (tail != null)
-            {
-                listTail = null;
+            Debug.Assert(op.Next is null && op.Previous is null);
 
-                AsyncOperation<bool> head = tail.Next!;
-                AsyncOperation<bool> c = head;
+            if (head is null)
+            {
+                head = op.Next = op.Previous = op;
+            }
+            else
+            {
+                TAsyncOp last = head.Previous!;
+                Debug.Assert(last is not null);
+
+                op.Next = head;
+                op.Previous = last;
+                last.Next = op;
+                head.Previous = op;
+            }
+        }
+
+        /// <summary>Removes the specified operation from the circular doubly-linked list referenced by <paramref name="head"/>.</summary>
+        /// <param name="head">The head of the list.</param>
+        /// <param name="op">The operation to remove.</param>
+        internal static void Remove<TAsyncOp>(ref TAsyncOp? head, TAsyncOp op)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
+        {
+            Debug.Assert(op is not null);
+
+            if (op.Next is null)
+            {
+                Debug.Assert(op.Previous is null);
+                return;
+            }
+
+            Debug.Assert(op.Previous is not null);
+
+            if (op.Next == op)
+            {
+                Debug.Assert(op.Previous == op);
+                Debug.Assert(head == op);
+                head = null;
+            }
+            else
+            {
+                op.Previous.Next = op.Next;
+                op.Next.Previous = op.Previous;
+
+                if (head == op)
+                {
+                    head = op.Next;
+                }
+            }
+
+            op.Next = op.Previous = null;
+        }
+
+        /// <summary>Iterates through the linked list, failing each operation.</summary>
+        /// <param name="head">The head of the queue of operations to complete.</param>
+        /// <param name="result">The result with which to complete each operations.</param>
+        /// <param name="error">The error with which to complete each operations.</param>
+        internal static void SetOrFailOperations<TAsyncOp, T>(ref TAsyncOp? head, T result, Exception? error = null)
+            where TAsyncOp : AsyncOperation<TAsyncOp, T>
+        {
+            if (error is not null)
+            {
+                FailOperations(ref head, error);
+            }
+            else
+            {
+                SetOperations(ref head, result);
+            }
+        }
+
+        /// <summary>Iterates through the linked list, setting the result of each operation.</summary>
+        /// <param name="head">The head of the queue of operations to complete.</param>
+        /// <param name="result">The result with which to complete each operations.</param>
+        internal static void SetOperations<TAsyncOp, TResult>(ref TAsyncOp? head, TResult result)
+            where TAsyncOp : AsyncOperation<TAsyncOp, TResult>
+        {
+            TAsyncOp? current = head;
+            if (current is not null)
+            {
                 do
                 {
-                    AsyncOperation<bool> next = c.Next!;
-                    c.Next = null;
+                    Debug.Assert(current is not null);
 
-                    bool completed = error != null ? c.TrySetException(error) : c.TrySetResult(result);
-                    Debug.Assert(completed || c.CancellationToken.CanBeCanceled);
+                    TAsyncOp? next = current.Next;
+                    Debug.Assert(next is not null);
 
-                    c = next;
+                    current.Next = current.Previous = null;
+
+                    current!.TrySetResult(result);
+
+                    current = next;
                 }
-                while (c != head);
+                while (current != head);
             }
+
+            head = null;
         }
 
-        /// <summary>Removes all operations from the queue, failing each.</summary>
-        /// <param name="operations">The queue of operations to complete.</param>
+        /// <summary>Iterates through the linked list, failing each operation.</summary>
+        /// <param name="head">The head of the queue of operations to complete.</param>
         /// <param name="error">The error with which to complete each operations.</param>
-        internal static void FailOperations<T, TInner>(Deque<T> operations, Exception error) where T : AsyncOperation<TInner>
+        internal static void FailOperations<TAsyncOp>(ref TAsyncOp? head, Exception error)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
         {
-            Debug.Assert(error != null);
-            while (!operations.IsEmpty)
+            Debug.Assert(error is not null);
+
+            TAsyncOp? current = head;
+            if (current is not null)
             {
-                operations.DequeueHead().TrySetException(error);
+                do
+                {
+                    Debug.Assert(current is not null);
+
+                    TAsyncOp? next = current.Next;
+                    Debug.Assert(next is not null);
+
+                    current.Next = current.Previous = null;
+
+                    current!.TrySetException(error);
+
+                    current = next;
+                }
+                while (current != head);
             }
+
+            head = null;
+        }
+
+        /// <summary>Counts the number of operations in the list.</summary>
+        /// <param name="head">The head of the queue of operations to count.</param>
+        internal static long CountOperations<TAsyncOp>(TAsyncOp? head)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
+        {
+            TAsyncOp? current = head;
+            long count = 0;
+
+            if (current is not null)
+            {
+                do
+                {
+                    count++;
+
+                    Debug.Assert(current is not null);
+                    current = current.Next;
+                }
+                while (current != head);
+            }
+
+            return count;
         }
 
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>
         internal static Exception CreateInvalidCompletionException(Exception? inner = null) =>
             inner is OperationCanceledException ? inner :
-            inner != null && inner != s_doneWritingSentinel ? new ChannelClosedException(inner) :
+            inner is not null && inner != s_doneWritingSentinel ? new ChannelClosedException(inner) :
             new ChannelClosedException();
     }
 }
