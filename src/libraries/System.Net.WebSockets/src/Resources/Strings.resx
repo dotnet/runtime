@@ -171,4 +171,10 @@
   <data name="PlatformNotSupported_WebSockets" xml:space="preserve">
     <value>WebSockets is not supported on this platform.</value>
   </data>
+  <data name="ZLibErrorVersionMismatch" xml:space="preserve">
+    <value>The version of the underlying compression routine does not match expected version.</value>
+  </data>
+  <data name="ZLibErrorIncorrectInitParameters" xml:space="preserve">
+    <value>The underlying compression routine received incorrect initialization parameters.</value>
+  </data>
 </root>

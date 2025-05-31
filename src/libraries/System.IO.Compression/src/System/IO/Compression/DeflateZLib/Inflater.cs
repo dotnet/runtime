@@ -33,9 +33,6 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
 
-            ZLibNative.ZLibStreamHandle? zlibStream = null;
-            ZLibNative.ErrorCode error;
-
             _finished = false;
             _nonEmptyInput = false;
             _isDisposed = false;
@@ -44,33 +41,22 @@ namespace System.IO.Compression
 
             try
             {
-                error = ZLibNative.CreateZLibStreamForInflate(out zlibStream, windowBits);
-
-                _zlibStream = zlibStream;
+                _zlibStream = ZLibNative.CreateZLibStreamForInflate(windowBits);
             }
-            catch (Exception exception) // could not load the ZLib dll
+            catch (ZLibNative.ZLibNativeException ex)
             {
-                zlibStream?.Dispose();
                 GC.SuppressFinalize(this);
-                throw new ZLibException(SR.ZLibErrorDLLLoadError, exception);
-            }
 
-            switch (error)
-            {
-                case ZLibNative.ErrorCode.Ok:           // Successful initialization
-                    return;
-
-                case ZLibNative.ErrorCode.MemError:     // Not enough memory
-                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                case ZLibNative.ErrorCode.VersionError: //zlib library is incompatible with the version assumed
-                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                case ZLibNative.ErrorCode.StreamError:  // Parameters are invalid
-                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
+                if (ex.InnerException is not null)
+                {
+                    // ZLib library could not be loaded correctly. The inner exception contains the details
+                    throw new ZLibException(ex.Message, ex.InnerException);
+                }
+                else
+                {
+                    // The ZLib library was loaded correctly and returned an unacceptable error code
+                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
+                }
             }
         }
 

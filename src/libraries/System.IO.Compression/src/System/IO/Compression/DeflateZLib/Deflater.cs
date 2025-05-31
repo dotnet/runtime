@@ -31,37 +31,22 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
 
-            ZLibNative.ZLibStreamHandle? zlibStream = null;
-            ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out zlibStream, compressionLevel, windowBits, memLevel, strategy);
-
-                _zlibStream = zlibStream;
+                _zlibStream = ZLibNative.CreateZLibStreamForDeflate(compressionLevel, windowBits, memLevel, strategy);
             }
-            catch (Exception cause)
+            catch (ZLibNative.ZLibNativeException ex)
             {
-                zlibStream?.Dispose();
                 GC.SuppressFinalize(this);
-                throw new ZLibException(SR.ZLibErrorDLLLoadError, cause);
-            }
 
-            switch (errC)
-            {
-                case ZErrorCode.Ok:
-                    return;
-
-                case ZErrorCode.MemError:
-                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                case ZErrorCode.VersionError:
-                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                case ZErrorCode.StreamError:
-                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
-
-                default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "deflateInit2_", (int)errC, _zlibStream.GetErrorMessage());
+                if (ex.InnerException is not null)
+                {
+                    throw new ZLibException(ex.Message, ex.InnerException);
+                }
+                else
+                {
+                    throw new ZLibException(ex.Message, ex.Context, (int)ex.NativeErrorCode, ex.NativeMessage);
+                }
             }
         }
 
