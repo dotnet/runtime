@@ -34,8 +34,6 @@
 #include <versionhelpers.h>
 #endif
 
-#define NATIVEAOT_PALAPI __stdcall
-
 #ifndef XSTATE_MASK_APX
 #define XSTATE_MASK_APX (0x80000)
 #endif // XSTATE_MASK_APX
@@ -57,7 +55,7 @@ void __stdcall FiberDetachCallback(void* lpFlsData)
     RuntimeThreadShutdown(lpFlsData);
 }
 
-bool NATIVEAOT_PALAPI PalInitComAndFlsSlot()
+bool PalInitComAndFlsSlot()
 {
     ASSERT(g_flsIndex == FLS_OUT_OF_INDEXES);
 
@@ -77,7 +75,7 @@ bool NATIVEAOT_PALAPI PalInitComAndFlsSlot()
 // It fails fast if a different thread was already registered with the current fiber.
 // Parameters:
 //  thread        - thread to attach
-void NATIVEAOT_PALAPI PalAttachThread(void* thread)
+void PalAttachThread(void* thread)
 {
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
 
@@ -188,7 +186,7 @@ void InitializeCurrentProcessCpuCount()
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-bool NATIVEAOT_PALAPI PalInit()
+bool PalInit()
 {
     GCConfig::Initialize();
 
@@ -208,7 +206,7 @@ extern "C" uint64_t PalGetCurrentOSThreadId()
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
-UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
+UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
     return E_NOTIMPL;
@@ -239,7 +237,7 @@ cleanup:
 #endif
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
+UInt32_BOOL PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
 {
 #ifdef XBOX_ONE
     return TRUE;
@@ -249,7 +247,7 @@ UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, 
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
-UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
@@ -261,7 +259,7 @@ UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
     return TRUE;
 }
 
-uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     if (!allowReentrantWait)
     {
@@ -293,22 +291,22 @@ HANDLE PalCreateLowMemoryResourceNotification()
     return CreateMemoryResourceNotification(LowMemoryResourceNotification);
 }
 
-void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds)
+void PalSleep(uint32_t milliseconds)
 {
     return Sleep(milliseconds);
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalSwitchToThread()
+UInt32_BOOL PalSwitchToThread()
 {
     return SwitchToThread();
 }
 
-HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
+HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
 {
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled()
+UInt32_BOOL PalAreShadowStacksEnabled()
 {
 #if defined(TARGET_AMD64)
     // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
@@ -585,7 +583,7 @@ NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer)
     return (NATIVE_CONTEXT*)pOSContext;
 }
 
-_Success_(return) bool NATIVEAOT_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
+_Success_(return) bool PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
 {
     CONTEXT* pOSContext = &pCtx->ctx;
 
@@ -621,12 +619,12 @@ _Success_(return) bool NATIVEAOT_PALAPI PalGetCompleteThreadContext(HANDLE hThre
     return GetThreadContext(hThread, pOSContext);
 }
 
-_Success_(return) bool NATIVEAOT_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
+_Success_(return) bool PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
 {
     return SetThreadContext(hThread, &pCtx->ctx);
 }
 
-void NATIVEAOT_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx)
+void PalRestoreContext(NATIVE_CONTEXT * pCtx)
 {
     CONTEXT* pOSContext = &pCtx->ctx;
 
@@ -640,7 +638,7 @@ void NATIVEAOT_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx)
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-void NATIVEAOT_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
+void PopulateControlSegmentRegisters(CONTEXT* pContext)
 {
     CONTEXT ctx;
 
@@ -735,12 +733,12 @@ void InitHijackingAPIs()
     }
 }
 
-HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 {
     return g_returnAddressHijackTarget ? (HijackFunc*)g_returnAddressHijackTarget : defaultHijackTarget;
 }
 
-void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack)
+void PalHijack(Thread* pThreadToHijack)
 {
     HANDLE hThread = pThreadToHijack->GetOSThreadHandle();
 
@@ -856,7 +854,7 @@ void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack)
 typedef HRESULT(WINAPI *pfnSetThreadDescription)(HANDLE hThread, PCWSTR lpThreadDescription);
 static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTION_UNINITIALIZED;
 
-bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
+bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
     HANDLE hThread = CreateThread(
         NULL,
@@ -879,7 +877,7 @@ bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _
     return true;
 }
 
-bool NATIVEAOT_PALAPI PalSetCurrentThreadNameW(const WCHAR* name)
+bool PalSetCurrentThreadNameW(const WCHAR* name)
 {
     if (g_pfnSetThreadDescription == SET_THREAD_DESCRIPTION_UNINITIALIZED)
     {
@@ -895,7 +893,7 @@ bool NATIVEAOT_PALAPI PalSetCurrentThreadNameW(const WCHAR* name)
     return true;
 }
 
-bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
+bool PalSetCurrentThreadName(const char* name)
 {
     size_t len = strlen(name);
     wchar_t* threadNameWide = new (nothrow) wchar_t[len + 1];
@@ -913,22 +911,22 @@ bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
     return ret;
 }
 
-bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, TRUE);
 }
 
-bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
     // the module from ever unloading.
@@ -992,17 +990,17 @@ void* PalGetProcAddress(HANDLE module, const char* functionName)
     return GetProcAddress((HMODULE)module, functionName);
 }
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(uintptr_t size, uint32_t protect)
 {
     return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, protect);
 }
 
-void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size)
+void PalVirtualFree(_In_ void* pAddress, uintptr_t size)
 {
     VirtualFree(pAddress, 0, MEM_RELEASE);
 }
 
-UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
+UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
 {
     DWORD oldProtect;
     return VirtualProtect(pAddress, size, protect, &oldProtect);
