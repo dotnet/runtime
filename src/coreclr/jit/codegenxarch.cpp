@@ -839,9 +839,6 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
         assert(regOp->isUsedFromReg());
         assert(regOp->GetRegNum() == REG_RDX);
 
-        // Setup targetReg when neither of the source operands was a matching register
-        inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
-
         if (treeNode->OperGet() == GT_MULHI)
         {
             // emit MULX instruction, use targetReg twice to only store high result
@@ -870,9 +867,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             rmOp  = op1;
         }
         assert(regOp->isUsedFromReg());
-
-        // Setup targetReg when neither of the source operands was a matching register
-        inst_Mov(targetType, REG_RAX, regOp->GetRegNum(), /* canSkip */ true);
+        assert(regOp->GetRegNum() == REG_RAX);
 
         instruction ins;
         if (!treeNode->IsUnsigned())

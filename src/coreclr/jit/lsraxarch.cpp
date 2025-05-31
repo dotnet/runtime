@@ -3221,7 +3221,7 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
+    bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
     bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
                    compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
@@ -3234,7 +3234,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     if (useMulx)
     {
-        if (!op1->isContained())
+        if (!op1->isContained() && op2->GetRegNum() != SRBM_RDX)
         {
             srcCandidates1 = SRBM_RDX;
         }
@@ -3248,7 +3248,7 @@ int LinearScan::BuildMul(GenTree* tree)
     }
     else
     {
-        if (!op1->isContained())
+        if (!op1->isContained() && op2->GetRegNum() != SRBM_RAX)
         {
             srcCandidates1 = SRBM_RAX;
         }
