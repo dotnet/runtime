@@ -813,7 +813,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     GenTree* addr;
     noway_assert(arr->gtNext == node);
 
-    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    if ((arr->OperIs(GT_CNS_INT)) && (arr->AsIntCon()->gtIconVal == 0))
     {
         // If the array is NULL, then we should get a NULL reference
         // exception when computing its length.  We need to maintain
@@ -903,7 +903,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
 
 GenTree* Lowering::LowerSwitch(GenTree* node)
 {
-    assert(node->gtOper == GT_SWITCH);
+    assert(node->OperIs(GT_SWITCH));
 
     // The first step is to build the default case conditional construct that is
     // shared between both kinds of expansion of the switch node.
@@ -970,9 +970,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     //   1. a statement containing temp = indexExpression
     //   2. and a statement with GT_SWITCH(temp)
 
-    assert(node->gtOper == GT_SWITCH);
+    assert(node->OperIs(GT_SWITCH));
     GenTree* temp = node->AsOp()->gtOp1;
-    assert(temp->gtOper == GT_LCL_VAR);
+    assert(temp->OperIs(GT_LCL_VAR));
     unsigned  tempLclNum  = temp->AsLclVarCommon()->GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
@@ -3370,7 +3370,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 2);
     assert(argEntry != nullptr);
     GenTree* arg1 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg1->gtOper == GT_CNS_INT);
+    assert(arg1->OperIs(GT_CNS_INT));
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
@@ -3380,7 +3380,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
     assert(argEntry != nullptr);
     GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg2->gtOper == GT_CNS_INT);
+    assert(arg2->OperIs(GT_CNS_INT));
 
     arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
 
@@ -3389,7 +3389,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 4);
     assert(argEntry != nullptr);
     GenTree* arg3 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg3->gtOper == GT_CNS_INT);
+    assert(arg3->OperIs(GT_CNS_INT));
 #endif // DEBUG
 
     // Transform this call node into a call to Jit tail call helper.
@@ -5987,7 +5987,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     }
 
     assert(thisArgNode != nullptr);
-    assert(thisArgNode->gtOper == GT_PUTARG_REG);
+    assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.

@@ -282,8 +282,8 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
 
         if (actualValClone->gtType != tree->gtType)
         {
-            assert(actualValClone->gtType == TYP_LONG);
-            assert(tree->gtType == TYP_INT);
+            assert(actualValClone->TypeIs(TYP_LONG));
+            assert(tree->TypeIs(TYP_INT));
             assert((actualConstVal >= 0) && (actualConstVal <= INT32_MAX));
             actualValClone->gtType = tree->gtType;
         }

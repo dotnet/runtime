@@ -1670,7 +1670,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 {
     int srcCount = 0;
-    if (putArgStk->gtOp1->gtOper == GT_FIELD_LIST)
+    if (putArgStk->gtOp1->OperIs(GT_FIELD_LIST))
     {
         assert(putArgStk->gtOp1->isContained());
 
@@ -3093,7 +3093,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // TARGET_AMD64
     int srcCount = BuildIndirUses(indirTree, useCandidates);
-    if (indirTree->gtOper == GT_STOREIND)
+    if (indirTree->OperIs(GT_STOREIND))
     {
         GenTree* source = indirTree->gtGetOp2();
 

@@ -727,7 +727,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     GenTree* call = block->lastNode();
 
-                    if ((call != nullptr) && (call->gtOper == GT_CALL))
+                    if ((call != nullptr) && (call->OperIs(GT_CALL)))
                     {
                         if (call->AsCall()->IsNoReturn())
                         {
@@ -769,7 +769,7 @@ void CodeGen::genCodeForBBlist()
             {
 #ifdef DEBUG
                 GenTree* call = block->lastNode();
-                if ((call != nullptr) && (call->gtOper == GT_CALL))
+                if ((call != nullptr) && (call->OperIs(GT_CALL)))
                 {
                     // At this point, BBJ_ALWAYS should never end with a call that doesn't return.
                     assert(!call->AsCall()->IsNoReturn());
@@ -1023,7 +1023,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 {
     // This should only be called for multireg lclVars.
     assert(compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || (tree->gtOper == GT_COPY));
+    assert(tree->IsMultiRegLclVar() || (tree->OperIs(GT_COPY)));
     varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
 }
 
@@ -1038,7 +1038,7 @@ void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int reg
 void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree)
 {
     // This should not be called for multireg lclVars.
-    assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || (tree->gtOper == GT_COPY));
+    assert((tree->OperIsScalarLocal() && !tree->IsMultiRegLclVar()) || (tree->OperIs(GT_COPY)));
     varDsc->SetRegNum(tree->GetRegNum());
 }
 
@@ -1140,7 +1140,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
     GenTree* unspillTree = tree;
     assert(unspillTree->IsMultiRegNode());
 
-    if (tree->gtOper == GT_RELOAD)
+    if (tree->OperIs(GT_RELOAD))
     {
         unspillTree = tree->AsOp()->gtOp1;
     }
@@ -1207,7 +1207,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree, unsigned multiRegIndex)
 void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 {
     GenTree* unspillTree = tree;
-    if (tree->gtOper == GT_RELOAD)
+    if (tree->OperIs(GT_RELOAD))
     {
         unspillTree = tree->AsOp()->gtOp1;
     }

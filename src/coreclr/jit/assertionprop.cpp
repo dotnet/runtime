@@ -1137,7 +1137,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
-        while ((op1->gtOper == GT_ADD) && (op1->gtType == TYP_BYREF))
+        while ((op1->OperIs(GT_ADD)) && (op1->TypeIs(TYP_BYREF)))
         {
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
@@ -1184,7 +1184,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
 
         {
             /* Skip over a GT_COMMA node(s), if necessary */
-            while (op2->gtOper == GT_COMMA)
+            while (op2->OperIs(GT_COMMA))
             {
                 op2 = op2->AsOp()->gtOp2;
             }
@@ -1229,7 +1229,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     assertion.op2.kind = op2Kind;
                     assertion.op2.vn   = optConservativeNormalVN(op2);
 
-                    if (op2->gtOper == GT_CNS_INT)
+                    if (op2->OperIs(GT_CNS_INT))
                     {
                         ssize_t iconVal = op2->AsIntCon()->IconValue();
                         if (varTypeIsSmall(lclVar) && op1->OperIs(GT_STORE_LCL_VAR))
@@ -1245,7 +1245,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
                     }
                     else
                     {
-                        noway_assert(op2->gtOper == GT_CNS_DBL);
+                        noway_assert(op2->OperIs(GT_CNS_DBL));
                         /* If we have an NaN value then don't record it */
                         if (FloatingPointUtils::isNaN(op2->AsDblCon()->DconValue()))
                         {
@@ -2062,13 +2062,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
-    if ((op1->gtOper != GT_LCL_VAR) && (op2->gtOper == GT_LCL_VAR))
+    if ((op1->gtOper != GT_LCL_VAR) && (op2->OperIs(GT_LCL_VAR)))
     {
         std::swap(op1, op2);
     }
 
     // If op1 is lcl and op2 is const or lcl, create assertion.
-    if ((op1->gtOper == GT_LCL_VAR) && (op2->OperIsConst() || (op2->gtOper == GT_LCL_VAR))) // Fix for Dev10 851483
+    if ((op1->OperIs(GT_LCL_VAR)) && (op2->OperIsConst() || (op2->OperIs(GT_LCL_VAR)))) // Fix for Dev10 851483
     {
         // Watch out for cases where long local(s) are implicitly truncated.
         //
@@ -2102,18 +2102,18 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
     if (((op1->gtOper != GT_IND) || (op1->AsOp()->gtOp1->gtOper != GT_LCL_VAR)) &&
-        ((op2->gtOper == GT_IND) && (op2->AsOp()->gtOp1->gtOper == GT_LCL_VAR)))
+        ((op2->OperIs(GT_IND)) && (op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR))))
     {
         std::swap(op1, op2);
     }
     // If op1 is ind, then extract op1's oper.
-    if ((op1->gtOper == GT_IND) && (op1->AsOp()->gtOp1->gtOper == GT_LCL_VAR))
+    if ((op1->OperIs(GT_IND)) && (op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR)))
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
-    if ((op2->gtOper != GT_CNS_INT) && (op1->gtOper == GT_CNS_INT))
+    if ((op2->gtOper != GT_CNS_INT) && (op1->OperIs(GT_CNS_INT)))
     {
         std::swap(op1, op2);
     }
@@ -4564,7 +4564,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
 
         // set foldResult to either 0 or 1
         bool foldResult = assertionKindIsEqual;
-        if (tree->gtOper == GT_NE)
+        if (tree->OperIs(GT_NE))
         {
             foldResult = !foldResult;
         }
@@ -4716,7 +4716,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
 
     // Return either CNS_INT 0 or CNS_INT 1.
     bool foldResult = (constantIsEqual == assertionKindIsEqual);
-    if (tree->gtOper == GT_NE)
+    if (tree->OperIs(GT_NE))
     {
         foldResult = !foldResult;
     }
@@ -6101,7 +6101,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
         {
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (tree->gtOper == GT_JTRUE)
+                if (tree->OperIs(GT_JTRUE))
                 {
                     // A GT_TRUE is always the last node in a tree, so we can break here
                     assert((tree->gtNext == nullptr) && (stmt->GetNextStmt() == nullptr));

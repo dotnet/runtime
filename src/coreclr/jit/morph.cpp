@@ -128,7 +128,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
 
         // assert that oper is unchanged and that it is still a GT_CAST node
         noway_assert(tree->AsCast()->CastOp() == oper);
-        noway_assert(tree->gtOper == GT_CAST);
+        noway_assert(tree->OperIs(GT_CAST));
     }
     result = fgMorphIntoHelperCall(tree, helper, true /* morphArgs */, oper);
     assert(result == tree);
@@ -645,7 +645,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
                 }
 
                 // Clear the GT_MUL_64RSLT if it is set.
-                if (oper->gtOper == GT_MUL && (oper->gtFlags & GTF_MUL_64RSLT))
+                if (oper->OperIs(GT_MUL) && (oper->gtFlags & GTF_MUL_64RSLT))
                 {
                     oper->gtFlags &= ~GTF_MUL_64RSLT;
                 }
@@ -1143,7 +1143,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             assert(argx != nullptr);
             // put constants at the end of the table
             //
-            if (argx->gtOper == GT_CNS_INT)
+            if (argx->OperIs(GT_CNS_INT))
             {
                 noway_assert(curInx <= endTab);
 
@@ -2878,7 +2878,7 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
         else if (varTypeIsGC(ad2->TypeGet()))
         {
             // Neither ad1 nor op1 are GC. So new_op1 isnt either
-            noway_assert(op1->gtType == TYP_I_IMPL && ad1->gtType == TYP_I_IMPL);
+            noway_assert(op1->TypeIs(TYP_I_IMPL) && ad1->TypeIs(TYP_I_IMPL));
             new_op1->gtType = TYP_I_IMPL;
         }
 
@@ -4881,7 +4881,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         }
 
         // Peel off casts
-        while (treeWithCall->gtOper == GT_CAST)
+        while (treeWithCall->OperIs(GT_CAST))
         {
             assert(!treeWithCall->gtOverflow());
             treeWithCall = treeWithCall->gtGetOp1();
@@ -5522,7 +5522,7 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     NewCallArg retValCallArg  = NewCallArg::Primitive(retValArg);
     callDispatcherNode->gtArgs.PushFront(this, retAddrSlotArg, callTargetArg, retValCallArg);
 
-    if (origCall->gtType == TYP_VOID)
+    if (origCall->TypeIs(TYP_VOID))
     {
         return callDispatcherNode;
     }
@@ -6382,7 +6382,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         return fgMorphTree(nullCheck);
     }
 
-    noway_assert(call->gtOper == GT_CALL);
+    noway_assert(call->OperIs(GT_CALL));
 
     //
     // Only count calls once (only in the global morph phase)
@@ -6462,7 +6462,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Process the "normal" argument list
     call = fgMorphArgs(call);
-    noway_assert(call->gtOper == GT_CALL);
+    noway_assert(call->OperIs(GT_CALL));
 
     // Try to replace CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE with a constant gc handle
     // pointing to a frozen segment
@@ -7087,7 +7087,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             else
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                noway_assert((effOp1->gtOper == GT_CNS_INT) &&
+                noway_assert((effOp1->OperIs(GT_CNS_INT)) &&
                              (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
@@ -7447,7 +7447,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             }
 
             // Did we fold it into a comma node with throw?
-            if (tree->gtOper == GT_COMMA)
+            if (tree->OperIs(GT_COMMA))
             {
                 noway_assert(fgIsCommaThrow(tree));
                 return fgMorphTree(tree);
@@ -7716,7 +7716,7 @@ DONE_MORPHING_CHILDREN:
         // children have been unmarked, unmark the tree too.
 
         // Remember that GT_COMMA inherits it's type only from op2
-        if (tree->gtOper == GT_COMMA)
+        if (tree->OperIs(GT_COMMA))
         {
             tree->gtType = genActualType(op2->TypeGet());
         }
@@ -8217,7 +8217,7 @@ DONE_MORPHING_CHILDREN:
                                                                          // least.
                 commaNode->SetMorphed(this);
 
-                while (commaNode->AsOp()->gtOp2->gtOper == GT_COMMA)
+                while (commaNode->AsOp()->gtOp2->OperIs(GT_COMMA))
                 {
                     commaNode         = commaNode->AsOp()->gtOp2;
                     commaNode->gtType = typ;
@@ -10725,7 +10725,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
     /* Change "((x+icon)+y)" to "((x+y)+icon)"
        Don't reorder floating-point operations */
 
-    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && (op1->gtOper == GT_ADD) && !op1->gtOverflow() &&
+    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && (op1->OperIs(GT_ADD)) && !op1->gtOverflow() &&
         varTypeIsIntegralOrI(typ))
     {
         GenTree* ad1 = op1->AsOp()->gtOp1;
@@ -10816,7 +10816,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                     break;
                 }
 
-                if (op2->gtOper == GT_CAST && !op2->gtOverflow())
+                if (op2->OperIs(GT_CAST) && !op2->gtOverflow())
                 {
                     var_types srct;
                     var_types cast;
@@ -10840,7 +10840,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             /* Check for the case "(val + icon) * icon" */
 
-            if (op2->gtOper == GT_CNS_INT && op1->gtOper == GT_ADD)
+            if (op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_ADD))
             {
                 GenTree* add = op1->AsOp()->gtOp2;
 
@@ -10889,7 +10889,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 
             /* Check for the case "(val + icon) << icon" */
 
-            if (op2->IsCnsIntOrI() && op1->gtOper == GT_ADD && !op1->gtOverflow())
+            if (op2->IsCnsIntOrI() && op1->OperIs(GT_ADD) && !op1->gtOverflow())
             {
                 GenTree* cns = op1->AsOp()->gtOp2;
 
@@ -12221,7 +12221,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-        if (lastStmt->GetRootNode()->gtOper == GT_CALL)
+        if (lastStmt->GetRootNode()->OperIs(GT_CALL))
         {
             noway_assert(fgRemoveRestOfBlock);
 
@@ -12235,7 +12235,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             return result;
         }
 
-        noway_assert(lastStmt->GetRootNode()->gtOper == GT_JTRUE);
+        noway_assert(lastStmt->GetRootNode()->OperIs(GT_JTRUE));
 
         /* Did we fold the conditional */
 
@@ -12250,7 +12250,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             /* Yupee - we folded the conditional!
              * Remove the conditional statement */
 
-            noway_assert(cond->gtOper == GT_CNS_INT);
+            noway_assert(cond->OperIs(GT_CNS_INT));
             noway_assert((block->GetFalseTarget()->countOfInEdges() > 0) &&
                          (block->GetTrueTarget()->countOfInEdges() > 0));
 
@@ -12304,7 +12304,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
 
         noway_assert(lastStmt->GetNextStmt() == nullptr);
 
-        if (lastStmt->GetRootNode()->gtOper == GT_CALL)
+        if (lastStmt->GetRootNode()->OperIs(GT_CALL))
         {
             noway_assert(fgRemoveRestOfBlock);
 
@@ -12318,7 +12318,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             return result;
         }
 
-        noway_assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
+        noway_assert(lastStmt->GetRootNode()->OperIs(GT_SWITCH));
 
         // Did we fold the conditional
 
@@ -12331,7 +12331,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
             // Yupee - we folded the conditional!
             // Remove the conditional statement
 
-            noway_assert(cond->gtOper == GT_CNS_INT);
+            noway_assert(cond->OperIs(GT_CNS_INT));
 
             if (condTree != cond)
             {
@@ -12459,7 +12459,7 @@ bool Compiler::fgMorphBlockStmt(BasicBlock*     block,
 #endif
         // Use the call as the new stmt
         morph = morph->AsOp()->gtOp1;
-        noway_assert(morph->gtOper == GT_CALL);
+        noway_assert(morph->OperIs(GT_CALL));
     }
 
     // we can get a throw as a statement root
@@ -12657,7 +12657,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             }
 
             noway_assert(compTailCallUsed);
-            noway_assert(morphedTree->gtOper == GT_CALL);
+            noway_assert(morphedTree->OperIs(GT_CALL));
             GenTreeCall* call = morphedTree->AsCall();
             // Could be
             //   - a fast call made as jmp in which case block will be ending with
@@ -12711,7 +12711,7 @@ void Compiler::fgMorphStmts(BasicBlock* block)
         {
             /* Use the call as the new stmt */
             morphedTree = morphedTree->AsOp()->gtOp1;
-            noway_assert(morphedTree->gtOper == GT_CALL);
+            noway_assert(morphedTree->OperIs(GT_CALL));
             noway_assert((morphedTree->gtFlags & GTF_COLON_COND) == 0);
 
             fgRemoveRestOfBlock = true;
@@ -12765,8 +12765,8 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             noway_assert(lastStmt && lastStmt->GetNextStmt() == nullptr);
             GenTree* last = lastStmt->GetRootNode();
 
-            if ((block->KindIs(BBJ_COND) && (last->gtOper == GT_JTRUE)) ||
-                (block->KindIs(BBJ_SWITCH) && (last->gtOper == GT_SWITCH)))
+            if ((block->KindIs(BBJ_COND) && (last->OperIs(GT_JTRUE))) ||
+                (block->KindIs(BBJ_SWITCH) && (last->OperIs(GT_SWITCH))))
             {
                 GenTree* op1 = last->AsOp()->gtOp1;
 
@@ -13785,7 +13785,7 @@ GenTreeQmark* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = N
 
     GenTreeQmark* topQmark = nullptr;
 
-    if (expr->gtOper == GT_QMARK)
+    if (expr->OperIs(GT_QMARK))
     {
         topQmark = expr->AsQmark();
     }

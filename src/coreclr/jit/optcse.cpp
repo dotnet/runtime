@@ -1876,7 +1876,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
                 "GT_IND(GT_ARR_ELEM) = GT_IND(GT_ARR_ELEM) + xyz", whereas doing
                 the second would not allow it */
 
-            if (tree->AsOp()->gtOp1->gtOper == GT_ARR_ELEM)
+            if (tree->AsOp()->gtOp1->OperIs(GT_ARR_ELEM))
             {
                 return false;
             }

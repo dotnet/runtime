@@ -1181,7 +1181,7 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, 
 Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
-    if (tree->gtOper == GT_CALL)
+    if (tree->OperIs(GT_CALL))
     {
         Compiler*    compiler = data->compiler;
         Statement*   stmt     = (Statement*)data->pCallbackData;
@@ -1244,7 +1244,7 @@ void Compiler::fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call)
 Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
-    if (tree->gtOper == GT_CALL)
+    if (tree->OperIs(GT_CALL))
     {
         assert((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
     }
@@ -1260,7 +1260,7 @@ Compiler::fgWalkResult Compiler::fgDebugCheckInlineCandidates(GenTree** pTree, f
 
 void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineResult, InlineContext** createdContext)
 {
-    noway_assert(call->gtOper == GT_CALL);
+    noway_assert(call->OperIs(GT_CALL));
     noway_assert(call->IsInlineCandidate());
     noway_assert(opts.OptEnabled(CLFLG_INLINING));
 
@@ -1504,7 +1504,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     noway_assert(iciBlock->bbStmtList != nullptr);
     noway_assert(iciStmt->GetRootNode() != nullptr);
     assert(iciStmt->GetRootNode() == iciCall);
-    noway_assert(iciCall->gtOper == GT_CALL);
+    noway_assert(iciCall->OperIs(GT_CALL));
 
 #ifdef DEBUG
 
@@ -2092,7 +2092,7 @@ void Compiler::fgInsertInlineeArgument(
             *newStmt    = nullptr;
             bool append = true;
 
-            if (argNode->gtOper == GT_BLK)
+            if (argNode->OperIs(GT_BLK))
             {
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.
@@ -2121,7 +2121,7 @@ void Compiler::fgInsertInlineeArgument(
                 // Look for the following tree shapes
                 // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
                 // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
-                if (argNode->gtOper == GT_COMMA)
+                if (argNode->OperIs(GT_COMMA))
                 {
                     // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
                     GenTree* op1 = argNode->AsOp()->gtOp1;
@@ -2136,12 +2136,12 @@ void Compiler::fgInsertInlineeArgument(
                         append = false;
                     }
                 }
-                else if (argNode->gtOper == GT_IND)
+                else if (argNode->OperIs(GT_IND))
                 {
                     // Look for (IND (ADD (CONST, CALL(special dce helper...))))
                     GenTree* addr = argNode->AsOp()->gtOp1;
 
-                    if (addr->gtOper == GT_ADD)
+                    if (addr->OperIs(GT_ADD))
                     {
                         GenTree* op1 = addr->AsOp()->gtOp1;
                         GenTree* op2 = addr->AsOp()->gtOp2;
@@ -2217,7 +2217,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     Statement*       newStmt   = nullptr;
     GenTreeCall*     call      = inlineInfo->iciCall->AsCall();
 
-    noway_assert(call->gtOper == GT_CALL);
+    noway_assert(call->OperIs(GT_CALL));
 
     // Prepend statements for any initialization / side effects
 

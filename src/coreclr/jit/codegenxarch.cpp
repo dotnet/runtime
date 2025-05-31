@@ -706,7 +706,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 
     if (varTypeIsFloating(targetType))
     {
-        assert(tree->gtOper == GT_NEG);
+        assert(tree->OperIs(GT_NEG));
         genSSE2BitwiseOp(tree);
     }
     else
@@ -4301,7 +4301,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     // This is because these registers are incremented as we go through the struct.
     if (!source->IsLocal())
     {
-        assert(source->gtOper == GT_IND);
+        assert(source->OperIs(GT_IND));
         GenTree* srcAddr = source->gtGetOp1();
         srcAddrType      = srcAddr->TypeGet();
 
@@ -6321,11 +6321,11 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         {
             assert(!varTypeIsStruct(call));
 
-            if (call->gtType == TYP_REF)
+            if (call->TypeIs(TYP_REF))
             {
                 params.retSize = EA_GCREF;
             }
-            else if (call->gtType == TYP_BYREF)
+            else if (call->TypeIs(TYP_BYREF))
             {
                 params.retSize = EA_BYREF;
             }
@@ -10752,7 +10752,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         GenTree* jmpNode = block->lastNode();
 #if !FEATURE_FASTTAILCALL
         // x86
-        noway_assert(jmpNode->gtOper == GT_JMP);
+        noway_assert(jmpNode->OperIs(GT_JMP));
 #else
         // amd64
         // If jmpNode is GT_JMP then gtNext must be null.
@@ -10760,11 +10760,11 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
 
         // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
-        noway_assert((jmpNode->gtOper == GT_JMP) ||
-                     ((jmpNode->gtOper == GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
+        noway_assert((jmpNode->OperIs(GT_JMP)) ||
+                     ((jmpNode->OperIs(GT_CALL)) && jmpNode->AsCall()->IsFastTailCall()));
 
         // The next block is associated with this "if" stmt
-        if (jmpNode->gtOper == GT_JMP)
+        if (jmpNode->OperIs(GT_JMP))
 #endif
         {
             // Simply emit a jump to the methodHnd. This is similar to a call so we can use

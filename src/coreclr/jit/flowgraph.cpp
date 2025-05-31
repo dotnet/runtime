@@ -667,7 +667,7 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     }
 
     /* Check for cast of a GT_COMMA with a throw overflow */
-    if ((tree->gtOper == GT_COMMA) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
+    if ((tree->OperIs(GT_COMMA)) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
     {
         return (fgIsThrow(tree->AsOp()->gtOp1));
     }
@@ -882,7 +882,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsHelperCall() || !s_helperCallProperties.NonNullReturn(addr->AsCall()->GetHelperNum());
 
         case GT_ADD:
-            if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
+            if (addr->AsOp()->gtOp1->OperIs(GT_CNS_INT))
             {
                 GenTree* cns1Tree = addr->AsOp()->gtOp1;
                 if (!cns1Tree->IsIconHandle())
@@ -896,7 +896,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
                 else // Op1 was a handle represented as a constant
                 {
                     // Is Op2 also a constant?
-                    if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                    if (addr->AsOp()->gtOp2->OperIs(GT_CNS_INT))
                     {
                         GenTree* cns2Tree = addr->AsOp()->gtOp2;
                         // Is this an addition of a handle and constant
@@ -914,7 +914,7 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             else
             {
                 // Op1 is not a constant. What about Op2?
-                if (addr->AsOp()->gtOp2->gtOper == GT_CNS_INT)
+                if (addr->AsOp()->gtOp2->OperIs(GT_CNS_INT))
                 {
                     GenTree* cns2Tree = addr->AsOp()->gtOp2;
                     // Is this an addition of a small constant

@@ -5506,12 +5506,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 if ((dst->gtFlags & GTF_UNSIGNED) && (attr == EA_8BYTE))
                 {
-                    if (src1->gtType == TYP_INT)
+                    if (src1->TypeIs(TYP_INT))
                     {
                         emitIns_R_R_I(INS_slli, EA_8BYTE, regOp1, regOp1, 32);
                         emitIns_R_R_I(INS_srli, EA_8BYTE, regOp1, regOp1, 32);
                     }
-                    if (src2->gtType == TYP_INT)
+                    if (src2->TypeIs(TYP_INT))
                     {
                         emitIns_R_R_I(INS_slli, EA_8BYTE, regOp2, regOp2, 32);
                         emitIns_R_R_I(INS_srli, EA_8BYTE, regOp2, regOp2, 32);

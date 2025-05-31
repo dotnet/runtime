@@ -2420,7 +2420,7 @@ GenTree* LinearScan::getConsecutiveRegistersOperand(const HWIntrinsic intrin, bo
 
         case NI_AdvSimd_StoreSelectedScalar:
         case NI_AdvSimd_Arm64_StoreSelectedScalar:
-            if (intrin.op2->gtType == TYP_STRUCT)
+            if (intrin.op2->TypeIs(TYP_STRUCT))
             {
                 consecutiveOp = intrin.op2;
                 assert(consecutiveOp != nullptr);

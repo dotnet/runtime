@@ -799,7 +799,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     regNumber srcReg        = REG_NA;
 
     assert(source->isContained());
-    if (source->gtOper == GT_IND)
+    if (source->OperIs(GT_IND))
     {
         GenTree* srcAddr = source->gtGetOp1();
         assert(!srcAddr->isContained());

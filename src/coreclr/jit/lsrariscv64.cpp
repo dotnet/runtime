@@ -1071,7 +1071,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 //
 int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 {
-    assert(argNode->gtOper == GT_PUTARG_STK);
+    assert(argNode->OperIs(GT_PUTARG_STK));
 
     GenTree* src = argNode->gtGetOp1();
 
@@ -1135,7 +1135,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 {
     int srcCount = 0;
-    assert(argNode->gtOper == GT_PUTARG_SPLIT);
+    assert(argNode->OperIs(GT_PUTARG_SPLIT));
 
     GenTree* src = argNode->gtGetOp1();
 

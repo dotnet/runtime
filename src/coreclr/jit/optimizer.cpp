@@ -1669,7 +1669,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         assert(prevTestBlock->KindIs(BBJ_COND));
         Statement* testCopyStmt = prevTestBlock->lastStmt();
         GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
-        assert(testCopyExpr->gtOper == GT_JTRUE);
+        assert(testCopyExpr->OperIs(GT_JTRUE));
         GenTree* sideEffList = nullptr;
         gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         if (sideEffList == nullptr)
@@ -1935,7 +1935,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* const condTree = condStmt->GetRootNode();
-    noway_assert(condTree->gtOper == GT_JTRUE);
+    noway_assert(condTree->OperIs(GT_JTRUE));
     if (!condTree->AsOp()->gtOp1->OperIsCompare())
     {
         return false;
@@ -3158,7 +3158,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 // If 'dstt' is unsigned and one of the operands can be narrowed into 'dsst',
                 // the result of the GT_AND will also fit into 'dstt' and can be narrowed.
                 // The same is true if one of the operands is an int const and can be narrowed into 'dsst'.
-                if ((op2->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt))
+                if ((op2->OperIs(GT_CNS_INT)) || varTypeIsUnsigned(dstt))
                 {
                     if (optNarrowTree(op2, srct, dstt, NoVNPair, false))
                     {
@@ -3171,7 +3171,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     }
                 }
 
-                if ((opToNarrow == nullptr) && ((op1->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
+                if ((opToNarrow == nullptr) && ((op1->OperIs(GT_CNS_INT)) || varTypeIsUnsigned(dstt)))
                 {
                     if (optNarrowTree(op1, srct, dstt, NoVNPair, false))
                     {
@@ -3197,7 +3197,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         // We may also need to cast away the upper bits of *otherOpPtr
                         if (srcSize == 8)
                         {
-                            assert(tree->gtType == TYP_INT);
+                            assert(tree->TypeIs(TYP_INT));
                             GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                             castOp->SetMorphed(this);
                             *otherOpPtr = castOp;
@@ -3239,7 +3239,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    if (tree->gtOper == GT_MUL && (tree->gtFlags & GTF_MUL_64RSLT))
+                    if (tree->OperIs(GT_MUL) && (tree->gtFlags & GTF_MUL_64RSLT))
                     {
                         tree->gtFlags &= ~GTF_MUL_64RSLT;
                     }
@@ -5514,19 +5514,19 @@ void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt)
 ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk))
 {
     assert(mul);
-    assert(mul->gtOper == GT_MUL || mul->gtOper == GT_LSH);
+    assert(mul->OperIs(GT_MUL) || mul->OperIs(GT_LSH));
     assert(mul->AsOp()->gtOp2->IsCnsIntOrI());
 
     ssize_t scale = mul->AsOp()->gtOp2->AsIntConCommon()->IconValue();
 
-    if (mul->gtOper == GT_LSH)
+    if (mul->OperIs(GT_LSH))
     {
         scale = ((ssize_t)1) << scale;
     }
 
     GenTree* index = mul->AsOp()->gtOp1;
 
-    if (index->gtOper == GT_MUL && index->AsOp()->gtOp2->IsCnsIntOrI())
+    if (index->OperIs(GT_MUL) && index->AsOp()->gtOp2->IsCnsIntOrI())
     {
         // case of two cascading multiplications for constant int (e.g.  * 20 morphed to * 5 * 4):
         // When index->gtOper is GT_MUL and index->AsOp()->gtOp2->gtOper is GT_CNS_INT (i.e. * 5),
