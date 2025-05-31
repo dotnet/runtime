@@ -251,11 +251,11 @@ extern "C"
 
 typedef enum _TimeConversionConstants
 {
-    tccSecondsToMillieSeconds       = 1000,         // 10^3
+    tccSecondsToMilliSeconds        = 1000,         // 10^3
     tccSecondsToMicroSeconds        = 1000000,      // 10^6
     tccSecondsToNanoSeconds         = 1000000000,   // 10^9
-    tccMillieSecondsToMicroSeconds  = 1000,         // 10^3
-    tccMillieSecondsToNanoSeconds   = 1000000,      // 10^6
+    tccMilliSecondsToMicroSeconds   = 1000,         // 10^3
+    tccMilliSecondsToNanoSeconds    = 1000000,      // 10^6
     tccMicroSecondsToNanoSeconds    = 1000,         // 10^3
     tccSecondsTo100NanoSeconds      = 10000000,     // 10^7
     tccMicroSecondsTo100NanoSeconds = 10            // 10^1
