@@ -1804,7 +1804,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return (OperIs(GT_NOP) && TypeIs(TYP_VOID));
+    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
 }
 
 /*****************************************************************************

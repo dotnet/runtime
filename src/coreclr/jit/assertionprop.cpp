@@ -2101,13 +2101,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
-    if ((!op1->OperIs(GT_IND) || (!op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))) &&
-        (op2->OperIs(GT_IND) && (op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR))))
+    if ((!op1->OperIs(GT_IND) || !op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR)) &&
+        (op2->OperIs(GT_IND) && op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR)))
     {
         std::swap(op1, op2);
     }
     // If op1 is ind, then extract op1's oper.
-    if (op1->OperIs(GT_IND) && (op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR)))
+    if (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }

@@ -6000,8 +6000,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             if (call->gtCallType == CT_INDIRECT)
             {
                 // pinvoke-calli cookie is a constant, or constant indirection
-                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT) ||
-                       call->gtCallCookie->OperIs(GT_IND));
+                assert(call->gtCallCookie == nullptr || call->gtCallCookie->OperIs(GT_CNS_INT, GT_IND));
 
                 GenTree* indirect = call->gtCallAddr;
 
@@ -6979,7 +6978,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp) const
             // could mark the trees just before argument processing, but it would require a full
             // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
             // mark non-argument trees (that will still get converted to calls, anyway).
-            return this->TypeIs(TYP_LONG) && (gtGetOp2()->OperGet() != GT_CNS_INT);
+            return this->TypeIs(TYP_LONG) && !gtGetOp2()->OperIs(GT_CNS_INT);
 #endif // FEATURE_FIXED_OUT_ARGS && !TARGET_64BIT
 
         default:
