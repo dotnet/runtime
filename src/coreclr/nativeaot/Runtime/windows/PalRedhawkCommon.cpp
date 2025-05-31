@@ -22,13 +22,10 @@
 #include "CommonMacros.h"
 #include "rhassert.h"
 
-
-#define PALEXPORT extern "C"
 #define NATIVEAOT_PALAPI __stdcall
 
-
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-PALEXPORT void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
+void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
 {
     BYTE *pbModule = (BYTE*)hOsHandle;
     DWORD cbModule;
@@ -45,7 +42,7 @@ PALEXPORT void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8
 
 uint32_t g_RhNumberOfProcessors;
 
-PALEXPORT int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount()
+int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
@@ -54,7 +51,7 @@ PALEXPORT int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount()
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-PALEXPORT bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
     // VirtualQuery on the address of a local variable to get the allocation
     // base of the stack.  Then use the StackBase field in the TEB to give
@@ -78,7 +75,7 @@ PALEXPORT bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLow
 //NOTE:  This implementation exists because calling GetModuleFileName is not wack compliant.  if we later decide
 //       that the framework package containing mrt100_app no longer needs to be wack compliant, this should be
 //       removed and the windows implementation of GetModuleFileName should be substitued on windows.
-PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
+int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
     TEB* pTEB = NtCurrentTeb();
     LIST_ENTRY* pStartLink = &(pTEB->ProcessEnvironmentBlock->Ldr->InMemoryOrderModuleList);
