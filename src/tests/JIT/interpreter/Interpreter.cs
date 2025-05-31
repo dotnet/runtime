@@ -413,6 +413,9 @@ public class InterpreterTest
         if (!TestBoxing())
             Environment.FailFast(null);
 
+        if (!TestStringCtor())
+            Environment.FailFast(null);
+
         if (!TestArray())
             Environment.FailFast(null);
 
@@ -424,10 +427,9 @@ public class InterpreterTest
 
         if (!TestLdtoken())
             Environment.FailFast(null);
-        /*
+
         if (!TestMdArray())
             Environment.FailFast(null);
-        */
 
         System.GC.Collect();
     }
@@ -706,6 +708,18 @@ public class InterpreterTest
         // `(s is int result)` generates isinst so we have to do this in steps
         int result = (int)s;
         return result == 3;
+    }
+
+    public static bool TestStringCtor()
+    {
+        string s = new string('a', 4);
+        if (s.Length != 4)
+            return false;
+        if (s[0] != 'a')
+            return false;
+        if (s != "aaaa")
+            return false;
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
@@ -1014,12 +1028,38 @@ public class InterpreterTest
 
     public static bool TestMdArray()
     {
-        // FIXME: This generates roughly:
-        // newobj int[,].ctor
-        // ldtoken int[,]
-        // call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
-        // The newobj currently fails because int[,].ctor isn't a real method, the interp needs to use getCallInfo to determine how to invoke it
+        /* FIXME: This generates roughly:
+           newobj int[,].ctor
+           ldtoken int[,]
+           call System.Runtime.CompilerServices.RuntimeHelpers.InitializeArray
+           While the newobj now works, the InitializeArray call fails:
+            Assert failure(PID 61692 [0x0000f0fc], Thread: 40872 [0x9fa8]): Consistency check failed:
+            FAILED: (!implSlot.IsNull() || pMT->IsInterface()) && "Valid method implementation was not found."
+
+            CORECLR! CHECK::Trigger + 0x20F (0x00007ffa`807af47f)
+            CORECLR! VirtualCallStubManager::Resolver + 0xFAA (0x00007ffa`80e387fa)
+            CORECLR! VirtualCallStubManager::ResolveWorker + 0xB3C (0x00007ffa`80e36d2c)
+            CORECLR! ExternalMethodFixupWorker + 0xDCC (0x00007ffa`80d5d49c)
+            CORECLR! DelayLoad_MethodCall + 0x71 (0x00007ffa`813a0601)
+            SYSTEM.PRIVATE.CORELIB! <no symbol> + 0x0 (0x00007ffa`77af0098)
+            CORECLR! CallJittedMethodRetVoid + 0x14 (0x00007ffa`8139e7e4)
+        */
+        /*
         int[,] a = {{1, 2}, {3, 4}};
         return a[0, 1] == 2;
+        */
+
+        int[,] a = new int[2,2];
+        if (a[0, 1] != 0)
+            return false;
+
+        a[0, 0] = 1;
+        a[0, 1] = 2;
+        a[1, 0] = 3;
+        a[1, 1] = 4;
+        if (a[0, 1] != 2)
+            return false;
+
+        return true;
     }
 }
