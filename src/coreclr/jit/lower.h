@@ -277,7 +277,7 @@ private:
     GenTreeLclVar* ReplaceWithLclVar(LIR::Use& use, unsigned tempNum = BAD_VAR_NUM)
     {
         GenTree* oldUseNode = use.Def();
-        if ((!oldUseNode->OperIs(GT_LCL_VAR)) || (tempNum != BAD_VAR_NUM))
+        if (!oldUseNode->OperIs(GT_LCL_VAR) || (tempNum != BAD_VAR_NUM))
         {
             GenTree* store;
             use.ReplaceWithLclVar(comp, tempNum, &store);

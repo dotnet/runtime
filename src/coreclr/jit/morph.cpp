@@ -7087,8 +7087,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
             else
             {
                 GenTree* effOp1 = op1->gtEffectiveVal();
-                noway_assert((effOp1->OperIs(GT_CNS_INT)) &&
-                             (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
+                noway_assert(effOp1->OperIs(GT_CNS_INT) && (effOp1->IsIntegralConst(0) || effOp1->IsIntegralConst(1)));
             }
             break;
 
@@ -8820,7 +8819,7 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
 
             // Here we reverse the RELOP if necessary.
 
-            bool reverse = ((op2Value == 0) == (cmp->OperIs(GT_EQ)));
+            bool reverse = ((op2Value == 0) == cmp->OperIs(GT_EQ));
 
             if (reverse)
             {
@@ -10725,7 +10724,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
     /* Change "((x+icon)+y)" to "((x+y)+icon)"
        Don't reorder floating-point operations */
 
-    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && (op1->OperIs(GT_ADD)) && !op1->gtOverflow() &&
+    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && op1->OperIs(GT_ADD) && !op1->gtOverflow() &&
         varTypeIsIntegralOrI(typ))
     {
         GenTree* ad1 = op1->AsOp()->gtOp1;
@@ -12765,8 +12764,8 @@ void Compiler::fgMorphStmts(BasicBlock* block)
             noway_assert(lastStmt && lastStmt->GetNextStmt() == nullptr);
             GenTree* last = lastStmt->GetRootNode();
 
-            if ((block->KindIs(BBJ_COND) && (last->OperIs(GT_JTRUE))) ||
-                (block->KindIs(BBJ_SWITCH) && (last->OperIs(GT_SWITCH))))
+            if ((block->KindIs(BBJ_COND) && last->OperIs(GT_JTRUE)) ||
+                (block->KindIs(BBJ_SWITCH) && last->OperIs(GT_SWITCH)))
             {
                 GenTree* op1 = last->AsOp()->gtOp1;
 

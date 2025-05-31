@@ -667,7 +667,7 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     }
 
     /* Check for cast of a GT_COMMA with a throw overflow */
-    if ((tree->OperIs(GT_COMMA)) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
+    if (tree->OperIs(GT_COMMA) && (tree->gtFlags & GTF_CALL) && (tree->gtFlags & GTF_EXCEPT))
     {
         return (fgIsThrow(tree->AsOp()->gtOp1));
     }

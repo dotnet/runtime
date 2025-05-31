@@ -1137,7 +1137,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree* op1, GenTree* op2, optAsser
         op1 = op1->gtEffectiveVal();
 
         ssize_t offset = 0;
-        while ((op1->OperIs(GT_ADD)) && (op1->TypeIs(TYP_BYREF)))
+        while (op1->OperIs(GT_ADD) && op1->TypeIs(TYP_BYREF))
         {
             if (op1->gtGetOp2()->IsCnsIntOrI())
             {
@@ -2062,13 +2062,13 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check for op1 or op2 to be lcl var and if so, keep it in op1.
-    if ((!op1->OperIs(GT_LCL_VAR)) && (op2->OperIs(GT_LCL_VAR)))
+    if (!op1->OperIs(GT_LCL_VAR) && op2->OperIs(GT_LCL_VAR))
     {
         std::swap(op1, op2);
     }
 
     // If op1 is lcl and op2 is const or lcl, create assertion.
-    if ((op1->OperIs(GT_LCL_VAR)) && (op2->OperIsConst() || (op2->OperIs(GT_LCL_VAR)))) // Fix for Dev10 851483
+    if (op1->OperIs(GT_LCL_VAR) && (op2->OperIsConst() || op2->OperIs(GT_LCL_VAR))) // Fix for Dev10 851483
     {
         // Watch out for cases where long local(s) are implicitly truncated.
         //
@@ -2101,19 +2101,19 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
     }
 
     // Check op1 and op2 for an indirection of a GT_LCL_VAR and keep it in op1.
-    if (((!op1->OperIs(GT_IND)) || (!op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))) &&
-        ((op2->OperIs(GT_IND)) && (op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR))))
+    if ((!op1->OperIs(GT_IND) || (!op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR))) &&
+        (op2->OperIs(GT_IND) && (op2->AsOp()->gtOp1->OperIs(GT_LCL_VAR))))
     {
         std::swap(op1, op2);
     }
     // If op1 is ind, then extract op1's oper.
-    if ((op1->OperIs(GT_IND)) && (op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR)))
+    if (op1->OperIs(GT_IND) && (op1->AsOp()->gtOp1->OperIs(GT_LCL_VAR)))
     {
         return optCreateJtrueAssertions(op1, op2, assertionKind);
     }
 
     // Look for a call to an IsInstanceOf helper compared to a nullptr
-    if ((!op2->OperIs(GT_CNS_INT)) && (op1->OperIs(GT_CNS_INT)))
+    if (!op2->OperIs(GT_CNS_INT) && op1->OperIs(GT_CNS_INT))
     {
         std::swap(op1, op2);
     }

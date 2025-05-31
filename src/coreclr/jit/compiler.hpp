@@ -3291,7 +3291,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     //
     GenTree* const call = block->lastNode();
 
-    if ((call == nullptr) || (!call->OperIs(GT_CALL)))
+    if ((call == nullptr) || !call->OperIs(GT_CALL))
     {
         return false;
     }
@@ -4118,7 +4118,7 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
     else
     {
-        return ((obj != nullptr) && (obj->OperIs(GT_LCL_VAR)) &&
+        return ((obj != nullptr) && obj->OperIs(GT_LCL_VAR) &&
                 lvaIsOriginalThisArg(obj->AsLclVarCommon()->GetLclNum()));
     }
 }

@@ -1976,7 +1976,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 #ifdef DEBUG
         const unsigned ivLclNum = iterInfo->IterVar;
         GenTree* const op1      = iterInfo->Iterator();
-        assert((op1->OperIs(GT_LCL_VAR)) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
+        assert(op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
 #endif
     }
 

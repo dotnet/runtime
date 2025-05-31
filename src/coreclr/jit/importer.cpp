@@ -41,7 +41,7 @@ void Compiler::impPushOnStack(GenTree* tree, typeInfo ti)
     {
         compLongUsed = true;
     }
-    else if ((tree->TypeIs(TYP_FLOAT)) || (tree->TypeIs(TYP_DOUBLE)))
+    else if (tree->TypeIs(TYP_FLOAT) || tree->TypeIs(TYP_DOUBLE))
     {
         compFloatingPointUsed = true;
     }
@@ -8057,7 +8057,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
                 // Fold Switch for GT_CNS_INT
-                if (opts.OptimizationEnabled() && (op1->OperIs(GT_CNS_INT)))
+                if (opts.OptimizationEnabled() && op1->OperIs(GT_CNS_INT))
                 {
                     // Find the jump target
                     size_t     switchVal = (size_t)op1->AsIntCon()->gtIconVal;
@@ -8436,7 +8436,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // implicit tail calls when the operand of pop is GT_CAST(GT_CALL(..)).
                     // The cast gets added as part of importing GT_CALL, which gets in the way
                     // of fgMorphCall() on the forms of tail call nodes that we assert.
-                    if ((op1->OperIs(GT_CAST)) && !op1->gtOverflow())
+                    if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
                     {
                         op1 = op1->AsOp()->gtOp1;
                     }
@@ -12396,7 +12396,7 @@ void Compiler::impRetypeEntryStateTemps(BasicBlock* blk)
         for (unsigned level = 0; level < es->esStackDepth; level++)
         {
             GenTree* tree = es->esStack[level].val;
-            if ((tree->OperIs(GT_LCL_VAR)) || (tree->OperIs(GT_LCL_FLD)))
+            if (tree->OperIs(GT_LCL_VAR) || tree->OperIs(GT_LCL_FLD))
             {
                 es->esStack[level].val->gtType = lvaGetDesc(tree->AsLclVarCommon())->TypeGet();
             }
@@ -13284,7 +13284,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     if (impIsInvariant(curArgVal))
     {
         argInfo->argIsInvariant = true;
-        if (argInfo->argIsThis && (curArgVal->OperIs(GT_CNS_INT)) && (curArgVal->AsIntCon()->gtIconVal == 0))
+        if (argInfo->argIsThis && curArgVal->OperIs(GT_CNS_INT) && (curArgVal->AsIntCon()->gtIconVal == 0))
         {
             // Abort inlining at this call site
             inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_HAS_NULL_THIS);

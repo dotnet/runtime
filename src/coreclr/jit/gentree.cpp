@@ -4157,7 +4157,7 @@ GenTree* Compiler::gtWalkOpEffectiveVal(GenTree* op)
     {
         op = op->gtEffectiveVal();
 
-        if ((!op->OperIs(GT_ADD)) || op->gtOverflow() || !op->AsOp()->gtOp2->IsCnsIntOrI())
+        if (!op->OperIs(GT_ADD) || op->gtOverflow() || !op->AsOp()->gtOp2->IsCnsIntOrI())
         {
             break;
         }
@@ -4613,7 +4613,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             addrModeCostEx += base->GetCostEx();
             addrModeCostSz += base->GetCostSz();
-            if ((base->OperIs(GT_LCL_VAR)) && ((idx == NULL) || (cns == 0)))
+            if (base->OperIs(GT_LCL_VAR) && ((idx == NULL) || (cns == 0)))
             {
                 addrModeCostSz -= 1;
             }
@@ -5680,7 +5680,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
 
 #ifdef TARGET_X86
-                    if ((tree->TypeIs(TYP_LONG)) || tree->gtOverflow())
+                    if (tree->TypeIs(TYP_LONG) || tree->gtOverflow())
                     {
                         /* We use imulEAX for TYP_LONG and overflow multiplications */
                         // Encourage the first operand to be evaluated (into EAX/EDX) first */
@@ -14251,7 +14251,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree* tree)
         {
             GenTree* handleTreeInternal = tree->AsOp()->gtOp1;
 
-            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeIs(TYP_I_IMPL)))
+            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && handleTreeInternal->TypeIs(TYP_I_IMPL))
             {
                 // These handle constants should be class handles.
                 assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
@@ -17634,11 +17634,11 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
             }
         }
     }
-    else if ((tree->OperIs(GT_INTRINSIC)) && (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
+    else if (tree->OperIs(GT_INTRINSIC) && (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
     {
         return TPK_GetType;
     }
-    else if ((tree->OperIs(GT_CNS_INT)) && (tree->AsIntCon()->gtIconVal == 0))
+    else if (tree->OperIs(GT_CNS_INT) && (tree->AsIntCon()->gtIconVal == 0))
     {
         return TPK_Null;
     }
