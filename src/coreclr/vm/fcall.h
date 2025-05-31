@@ -3,7 +3,7 @@
 
 //
 // FCall is a high-performance call into unmanaged runtime code from managed code.
-// The managed code calls directly to the FCall entry point.
+// The managed code calls the FCall entry point directly.
 
 // Causing GC or EH in an FCALL is illegal. QCalls should be used instead.
 
