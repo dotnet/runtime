@@ -167,6 +167,35 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        public static void SetKey_Sanity()
+        {
+            using (Aes one = AesFactory.Create())
+            using (Aes two = AesFactory.Create())
+            {
+                byte[] key = new byte[16];
+                RandomNumberGenerator.Fill(key);
+                one.SetKey(key);
+                two.Key = key;
+                two.IV = one.IV;
+
+                using (ICryptoTransform e1 = one.CreateEncryptor())
+                using (ICryptoTransform e2 = two.CreateEncryptor())
+                using (ICryptoTransform d1 = one.CreateDecryptor())
+                using (ICryptoTransform d2 = two.CreateDecryptor())
+                {
+                    byte[] c1 = e1.TransformFinalBlock(key, 0, key.Length);
+                    byte[] c2 = e2.TransformFinalBlock(key, 0, key.Length);
+                    Assert.Equal(c1, c2);
+
+                    byte[] p1 = d1.TransformFinalBlock(c1, 0, c1.Length);
+                    byte[] p2 = d2.TransformFinalBlock(c2, 0, c2.Length);
+                    Assert.Equal(p1, p2);
+                    Assert.Equal(key, p1);
+                }
+            }
+        }
+
+        [Fact]
         public static void VerifyInPlaceEncryption()
         {
             byte[] expectedCipherText = new byte[]

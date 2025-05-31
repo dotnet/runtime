@@ -10,7 +10,24 @@ namespace System.Runtime.InteropServices
         private static string? s_osDescription;
         private static volatile int s_osArchPlusOne;
 
-        public static string OSDescription => s_osDescription ??= (GetPrettyOSDescription() ?? Interop.Sys.GetUnixVersion());
+        public static string OSDescription => s_osDescription ??=
+#if TARGET_ANDROID
+            $"Android (API level {Environment.OSVersion.Version.Major})";
+#elif TARGET_OSX
+            $"macOS {Environment.OSVersion.Version}";
+#elif TARGET_MACCATALYST
+            $"Mac Catalyst {Environment.OSVersion.Version}";
+#elif TARGET_IOS
+            $"iOS {Environment.OSVersion.Version}";
+#elif TARGET_TVOS
+            $"tvOS {Environment.OSVersion.Version}";
+#elif TARGET_WATCHOS
+            $"watchOS {Environment.OSVersion.Version}";
+#elif TARGET_LINUX
+            Interop.OSReleaseFile.GetPrettyName() ?? Interop.Sys.GetUnixVersion();
+#else
+            Interop.Sys.GetUnixVersion();
+#endif
 
         public static Architecture OSArchitecture
         {
@@ -29,16 +46,6 @@ namespace System.Runtime.InteropServices
                 Debug.Assert(osArch >= 0);
                 return (Architecture)osArch;
             }
-        }
-
-        private static string? GetPrettyOSDescription()
-        {
-            if (OperatingSystem.IsLinux())
-            {
-                return Interop.OSReleaseFile.GetPrettyName();
-            }
-
-            return null;
         }
     }
 }

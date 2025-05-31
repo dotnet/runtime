@@ -5,6 +5,9 @@
 # CI mode - set to true on CI server for PR validation build or official build.
 ci=${ci:-false}
 
+# Build mode
+source_build=${source_build:-false}
+
 # Set to true to use the pipelines logger which will enable Azure logging output.
 # https://github.com/Microsoft/azure-pipelines-tasks/blob/master/docs/authoring/commands.md
 # This flag is meant as a temporary opt-opt for the feature while validate it across
@@ -58,7 +61,8 @@ use_installed_dotnet_cli=${use_installed_dotnet_cli:-true}
 dotnetInstallScriptVersion=${dotnetInstallScriptVersion:-'v1'}
 
 # True to use global NuGet cache instead of restoring packages to repository-local directory.
-if [[ "$ci" == true ]]; then
+# Keep in sync with NuGetPackageroot in Arcade SDK's RepositoryLayout.props.
+if [[ "$ci" == true || "$source_build" == true ]]; then
   use_global_nuget_cache=${use_global_nuget_cache:-false}
 else
   use_global_nuget_cache=${use_global_nuget_cache:-true}
@@ -295,7 +299,7 @@ function with_retries {
 function GetDotNetInstallScript {
   local root=$1
   local install_script="$root/dotnet-install.sh"
-  local install_script_url="https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh"
+  local install_script_url="https://builds.dotnet.microsoft.com/dotnet/scripts/$dotnetInstallScriptVersion/dotnet-install.sh"
 
   if [[ ! -a "$install_script" ]]; then
     mkdir -p "$root"

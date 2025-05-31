@@ -57,11 +57,8 @@ void    Assembler::ClearImplList(void)
 {
     while(m_nImplList) m_crImplList[--m_nImplList] = mdTypeRefNil;
 }
+
 /**************************************************************************/
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22008) // "Suppress PREfast warnings about integer overflow"
-#endif
 void    Assembler::AddToImplList(mdToken tk)
 {
     if(m_nImplList+1 >= m_nImplListSize)
@@ -82,9 +79,6 @@ void    Assembler::AddToImplList(mdToken tk)
     m_crImplList[m_nImplList++] = tk;
     m_crImplList[m_nImplList] = mdTypeRefNil;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void    Assembler::ClearBoundList(void)
 {
@@ -1129,7 +1123,7 @@ void Assembler::AddException(DWORD pcStart, DWORD pcEnd, DWORD pcHandler, DWORD 
     clause->SetHandlerLength(pcHandlerTo - pcHandler);
     clause->SetClassToken(crException);
 
-    int flags = COR_ILEXCEPTION_CLAUSE_OFFSETLEN;
+    int flags = 0;
     if (isFilter) {
         flags |= COR_ILEXCEPTION_CLAUSE_FILTER;
     }
@@ -1428,7 +1422,7 @@ void Assembler::EmitOpcode(Instr* instr)
                 {
                     m_pCurMethod->m_HasMultipleDocuments = TRUE;
                 }
-                
+
                 if (0xfeefee == instr->linenum &&
                     0xfeefee == instr->linenum_end &&
                     0 == instr->column &&

@@ -13,11 +13,6 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.Metadata\ref\System.Reflection.Metadata.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\ExperimentalAttribute.cs"
-         Link="Common\ExperimentalAttribute.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />

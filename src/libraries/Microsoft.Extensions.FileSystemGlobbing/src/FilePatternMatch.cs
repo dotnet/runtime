@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <param name="stem">The subpath to the file matched, relative to the first wildcard in the matching search pattern.</param>
         public FilePatternMatch(string path, string? stem)
         {
-            ThrowHelper.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(path);
 
             Path = path;
             Stem = stem;

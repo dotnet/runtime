@@ -140,7 +140,7 @@ namespace Internal.ReadyToRunConstants
         VirtualEntry = 0x16,                // For invoking a virtual method
         VirtualEntry_DefToken = 0x17,       // Smaller version of VirtualEntry - method is def token
         VirtualEntry_RefToken = 0x18,       // Smaller version of VirtualEntry - method is ref token
-        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot
+        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot - OBSOLETE, not currently used, and hasn't ever been used in R2R codegen since crossgen2 was introduced, and may not have ever been used.
 
         Helper = 0x1A,                      // Helper
         StringHandle = 0x1B,                // String handle
@@ -312,6 +312,8 @@ namespace Internal.ReadyToRunConstants
         Dbl2UIntOvf                 = 0xD5,
         Dbl2ULng                    = 0xD6,
         Dbl2ULngOvf                 = 0xD7,
+        Lng2Flt                     = 0xD8,
+        ULng2Flt                    = 0xD9,
 
         // Floating point ops
         DblRem                      = 0xE0,

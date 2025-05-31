@@ -28,10 +28,7 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlyMemory<byte> privateKey,
             bool skipCopies = false)
         {
-            if (algorithmId is null)
-            {
-                throw new ArgumentNullException(nameof(algorithmId));
-            }
+            ArgumentNullException.ThrowIfNull(algorithmId);
 
             if (algorithmParameters?.Length > 0)
             {
@@ -61,10 +58,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public static Pkcs8PrivateKeyInfo Create(AsymmetricAlgorithm privateKey)
         {
-            if (privateKey is null)
-            {
-                throw new ArgumentNullException(nameof(privateKey));
-            }
+            ArgumentNullException.ThrowIfNull(privateKey);
 
             byte[] pkcs8 = privateKey.ExportPkcs8PrivateKey();
             return Decode(pkcs8, out _, skipCopy: true);
@@ -106,10 +100,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public byte[] Encrypt(ReadOnlySpan<char> password, PbeParameters pbeParameters)
         {
-            if (pbeParameters is null)
-            {
-                throw new ArgumentNullException(nameof(pbeParameters));
-            }
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -125,10 +116,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public byte[] Encrypt(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
-            if (pbeParameters is null)
-            {
-                throw new ArgumentNullException(nameof(pbeParameters));
-            }
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -152,10 +140,7 @@ namespace System.Security.Cryptography.Pkcs
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters is null)
-            {
-                throw new ArgumentNullException(nameof(pbeParameters));
-            }
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -173,10 +158,7 @@ namespace System.Security.Cryptography.Pkcs
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters is null)
-            {
-                throw new ArgumentNullException(nameof(pbeParameters));
-            }
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,

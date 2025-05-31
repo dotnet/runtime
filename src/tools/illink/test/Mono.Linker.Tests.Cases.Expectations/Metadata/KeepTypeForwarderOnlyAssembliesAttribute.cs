@@ -10,7 +10,9 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public KeepTypeForwarderOnlyAssembliesAttribute (string value)
 		{
+#if NET // Avoid compile errors when targeting older TFMs
 			ArgumentException.ThrowIfNullOrEmpty (value);
+#endif
 		}
 	}
 }

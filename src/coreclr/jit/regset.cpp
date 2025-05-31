@@ -946,27 +946,6 @@ regNumber genRegArgNext(regNumber argReg)
 
 /*****************************************************************************
  *
- *  The following table determines the order in which callee registers
- *  are encoded in GC information at call sites.
- */
-
-const regMaskTP raRbmCalleeSaveOrder[] = {RBM_CALL_GC_REGS_ORDER};
-
-regMaskTP genRegMaskFromCalleeSavedMask(unsigned short calleeSaveMask)
-{
-    regMaskTP res = 0;
-    for (int i = 0; i < CNT_CALL_GC_REGS; i++)
-    {
-        if ((calleeSaveMask & (1 << i)) != 0)
-        {
-            res |= raRbmCalleeSaveOrder[i];
-        }
-    }
-    return res;
-}
-
-/*****************************************************************************
- *
  *  Initializes the spill code. Should be called once per function compiled.
  */
 

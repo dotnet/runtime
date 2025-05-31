@@ -7,7 +7,6 @@
 #include "gcinterface.dac.h"
 #include "rhassert.h"
 #include "TargetPtrs.h"
-#include "varint.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "holder.h"

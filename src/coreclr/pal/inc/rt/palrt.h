@@ -1003,6 +1003,14 @@ typedef struct _DISPATCHER_CONTEXT {
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
+#elif defined(HOST_WASM)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // WASM does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
 #else
 
 #error Unknown architecture for defining DISPATCHER_CONTEXT.

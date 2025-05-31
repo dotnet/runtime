@@ -80,6 +80,21 @@ namespace Internal.TypeSystem
         StaticRegionSizesAndFields
     }
 
+    public struct FieldAndOffset
+    {
+        public static readonly LayoutInt InvalidOffset = new LayoutInt(int.MaxValue);
+
+        public readonly FieldDesc Field;
+
+        public readonly LayoutInt Offset;
+
+        public FieldAndOffset(FieldDesc field, LayoutInt offset)
+        {
+            Field = field;
+            Offset = offset;
+        }
+    }
+
     public struct ComputedInstanceFieldLayout
     {
         public LayoutInt FieldSize;

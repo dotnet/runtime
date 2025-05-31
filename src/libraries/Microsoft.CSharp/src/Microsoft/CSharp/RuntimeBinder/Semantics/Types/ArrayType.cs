@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // ----------------------------------------------------------------------------
     // ArrayType - a symbol representing an array.
     // ----------------------------------------------------------------------------
-
+    [RequiresDynamicCode(Binder.DynamicCodeWarning)]
     internal sealed class ArrayType : CType
     {
         public ArrayType(CType elementType, int rank, bool isSZArray)

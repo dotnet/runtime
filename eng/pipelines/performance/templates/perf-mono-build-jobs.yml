@@ -6,7 +6,7 @@ parameters:
     monoAndroid: false
     monoAndroidPacks: false
 
-jobs:              
+jobs:
   - ${{ if eq(parameters.monoAot_x64, true) }}:
     # build mono for AOT
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -30,7 +30,7 @@ jobs:
                 archiveExtension: '.tar.gz'
                 archiveType: tar
                 tarCompression: gz
-                
+
   - ${{ if eq(parameters.mono_x64, true) }}:
     # build mono
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -78,7 +78,7 @@ jobs:
               tarCompression: $(tarCompression)
               artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_mono
               displayName: Build Assets
-              
+
   - ${{ if eq(parameters.monoAot_arm64, true) }}:
     # build monoAot_arm64
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -103,7 +103,7 @@ jobs:
                 archiveExtension: '.tar.gz'
                 archiveType: tar
                 tarCompression: gz
-                
+
   - ${{ if eq(parameters.monoAndroid, true) }}:
     # build mono Android scenarios
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -120,14 +120,8 @@ jobs:
           postBuildSteps:
             - template: /eng/pipelines/performance/templates/build-perf-sample-apps.yml
               parameters:
-                rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-                includeRootFolder: true
-                displayName: Android Mono Artifacts
-                artifactName: AndroidMonoarm64
-                archiveExtension: '.tar.gz'
-                archiveType: tar
-                tarCompression: gz
-              
+                runtimeType: mono
+
   - ${{ if eq(parameters.monoAndroidPacks, true) }}:
     # build mono runtime packs
     - template: /eng/pipelines/common/platform-matrix.yml
