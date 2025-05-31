@@ -1180,7 +1180,7 @@ public:
 
     static bool OperIsLocalField(genTreeOps gtOper)
     {
-        return (OperIs(GT_LCL_FLD) || OperIs(GT_LCL_ADDR) || OperIs(GT_STORE_LCL_FLD));
+        return StaticOperIs(gtOper, GT_LCL_FLD, GT_LCL_ADDR, GT_STORE_LCL_FLD);
     }
 
     bool OperIsLocalField() const
@@ -1190,7 +1190,7 @@ public:
 
     static bool OperIsScalarLocal(genTreeOps gtOper)
     {
-        return (OperIs(GT_LCL_VAR) || OperIs(GT_STORE_LCL_VAR));
+        return StaticOperIs(gtOper, GT_LCL_VAR, GT_STORE_LCL_VAR);
     }
 
     static bool OperIsNonPhiLocal(genTreeOps gtOper)
@@ -1205,17 +1205,17 @@ public:
 
     static bool OperIsLocalStore(genTreeOps gtOper)
     {
-        return (OperIs(GT_STORE_LCL_VAR) || OperIs(GT_STORE_LCL_FLD));
+        return StaticOperIs(gtOper, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD);
     }
 
     static bool OperIsAddrMode(genTreeOps gtOper)
     {
-        return (OperIs(GT_LEA));
+        return gtOper == GT_LEA;
     }
 
     static bool OperIsInitVal(genTreeOps gtOper)
     {
-        return (OperIs(GT_INIT_VAL));
+        return gtOper == GT_INIT_VAL;
     }
 
     bool OperIsInitVal() const
@@ -1239,7 +1239,7 @@ public:
 
     static bool OperIsBlk(genTreeOps gtOper)
     {
-        return (OperIs(GT_BLK)) || OperIsStoreBlk(gtOper);
+        return (gtOper == GT_BLK) || OperIsStoreBlk(gtOper);
     }
 
     bool OperIsBlk() const
@@ -1381,7 +1381,7 @@ public:
 
     static bool OperIsCC(genTreeOps gtOper)
     {
-        return (OperIs(GT_JCC)) || (OperIs(GT_SETCC));
+        return StaticOperIs(gtOper, GT_JCC, GT_SETCC);
     }
 
     bool OperIsCC() const
@@ -1391,7 +1391,7 @@ public:
 
     static bool OperIsShift(genTreeOps gtOper)
     {
-        return (OperIs(GT_LSH)) || (OperIs(GT_RSH)) || (OperIs(GT_RSZ));
+        return StaticOperIs(gtOper, GT_LSH, GT_RSH, GT_RSZ);
     }
 
     bool OperIsShift() const
@@ -1415,7 +1415,7 @@ public:
 
     static bool OperIsRotate(genTreeOps gtOper)
     {
-        return (OperIs(GT_ROL)) || (OperIs(GT_ROR));
+        return StaticOperIs(gtOper, GT_ROL, GT_ROR);
     }
 
     bool OperIsRotate() const
@@ -1435,9 +1435,9 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
-        return (OperIs(GT_MUL)) || (OperIs(GT_MULHI))
+        return StaticOperIs(gtOper, GT_MUL, GT_MULHI)
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
-               || (OperIs(GT_MUL_LONG))
+               || (gtOper == GT_MUL_LONG)
 #endif
             ;
     }
@@ -1451,8 +1451,8 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        return (OperIs(GT_ADD) || OperIs(GT_SUB) || OperIs(GT_AND) || OperIs(GT_OR) || OperIs(GT_XOR) ||
-                OperIs(GT_NOT) || OperIs(GT_NEG) || OperIsShiftOrRotate(gtOper));
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG) ||
+               OperIsShiftOrRotate(gtOper);
     }
     bool OperIsRMWMemOp() const
     {
@@ -1551,11 +1551,11 @@ public:
 
     static bool OperMayOverflow(genTreeOps gtOper)
     {
-        return ((OperIs(GT_ADD)) || (OperIs(GT_SUB)) || (OperIs(GT_MUL)) || (OperIs(GT_CAST))
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST)
 #if !defined(TARGET_64BIT)
-                || (OperIs(GT_ADD_HI)) || (OperIs(GT_SUB_HI))
+               || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI)
 #endif
-        );
+            ;
     }
 
     bool OperMayOverflow() const
@@ -1575,18 +1575,18 @@ public:
 
     static bool OperIsArrLength(genTreeOps gtOper)
     {
-        return (OperIs(GT_ARR_LENGTH)) || (OperIs(GT_MDARR_LENGTH));
+        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH);
     }
 
     static bool OperIsMDArr(genTreeOps gtOper)
     {
-        return (OperIs(GT_MDARR_LENGTH)) || (OperIs(GT_MDARR_LOWER_BOUND));
+        return StaticOperIs(gtOper, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
     }
 
     // Is this an access of an SZ array length, MD array length, or MD array lower bounds?
     static bool OperIsArrMetaData(genTreeOps gtOper)
     {
-        return (OperIs(GT_ARR_LENGTH)) || (OperIs(GT_MDARR_LENGTH)) || (OperIs(GT_MDARR_LOWER_BOUND));
+        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
     }
 
     static bool OperIsIndirOrArrMetaData(genTreeOps gtOper)
@@ -1647,7 +1647,7 @@ public:
 
     static bool OperIsLoad(genTreeOps gtOper)
     {
-        return (OperIs(GT_IND)) || (OperIs(GT_BLK));
+        return StaticOperIs(gtOper, GT_IND, GT_BLK);
     }
 
     bool OperIsLoad() const
@@ -1683,7 +1683,7 @@ public:
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
     {
 #ifdef FEATURE_HW_INTRINSICS
-        return OperIs(GT_HWINTRINSIC);
+        return gtOper == GT_HWINTRINSIC;
 #else
         return false;
 #endif // FEATURE_HW_INTRINSICS

@@ -3127,7 +3127,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             maskNode = node;
         }
 
-        if (maskNode->gtType != TYP_MASK)
+        if (!maskNode->TypeIs(TYP_MASK))
         {
             assert(node == maskNode);
 

@@ -5599,8 +5599,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         if (attr == EA_4BYTE)
                         {
-                            assert(src1->gtType != TYP_LONG);
-                            assert(src2->gtType != TYP_LONG);
+                            assert(!src1->TypeIs(TYP_LONG));
+                            assert(!src2->TypeIs(TYP_LONG));
 
                             emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
 

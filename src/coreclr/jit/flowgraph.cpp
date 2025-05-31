@@ -5729,7 +5729,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         return false;
     }
 
-    if (iterOp->gtType != TYP_INT)
+    if (!iterOp->TypeIs(TYP_INT))
     {
         return false;
     }

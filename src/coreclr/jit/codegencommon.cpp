@@ -1204,7 +1204,7 @@ AGAIN:
     /* Check for an addition of a constant */
 
     if (op2->IsIntCnsFitsInI32() && op2->AsIntConCommon()->ImmedValCanBeFolded(compiler, addr->OperGet()) &&
-        (op2->gtType != TYP_REF) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
+        (!op2->TypeIs(TYP_REF)) && FitsIn<INT32>(cns + op2->AsIntConCommon()->IconValue()))
     {
         /* We're adding a constant */
 

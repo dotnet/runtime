@@ -11932,8 +11932,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
         val = impPopStack().val;
         assert((genActualType(elemType) == genActualType(val->gtType)) ||
-               (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) ||
-               (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||
+               (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) || (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||
                (elemType == TYP_DOUBLE && val->TypeIs(TYP_FLOAT)));
     }
 

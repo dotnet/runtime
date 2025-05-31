@@ -5467,12 +5467,12 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
         retValArg = retBufArg;
 
-        if (origCall->gtType != TYP_VOID)
+        if (!origCall->TypeIs(TYP_VOID))
         {
             retVal = gtClone(retBufArg);
         }
     }
-    else if (origCall->gtType != TYP_VOID)
+    else if (!origCall->TypeIs(TYP_VOID))
     {
         JITDUMP("Creating a new temp for the return value\n");
         newRetLcl = lvaGrabTemp(false DEBUGARG("Return value for tail call dispatcher"));

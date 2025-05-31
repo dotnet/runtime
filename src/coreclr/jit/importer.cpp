@@ -6886,13 +6886,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impImplicitR4orR8Cast(op1, lclTyp);
 
                 // We had better assign it a value of the correct type
-                assertImp(
-                    genActualType(lclTyp) == genActualType(op1->gtType) ||
-                    (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIs(GT_LCL_ADDR)) ||
-                    (genActualType(lclTyp) == TYP_I_IMPL && (op1->TypeIs(TYP_BYREF) || op1->TypeIs(TYP_REF))) ||
-                    (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
-                    (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
-                    ((genActualType(lclTyp) == TYP_BYREF) && genActualType(op1->TypeGet()) == TYP_REF));
+                assertImp(genActualType(lclTyp) == genActualType(op1->gtType) ||
+                          (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIs(GT_LCL_ADDR)) ||
+                          (genActualType(lclTyp) == TYP_I_IMPL && (op1->TypeIs(TYP_BYREF) || op1->TypeIs(TYP_REF))) ||
+                          (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
+                          (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
+                          ((genActualType(lclTyp) == TYP_BYREF) && genActualType(op1->TypeGet()) == TYP_REF));
 
                 // If op1 is "&var" then its type is the transient "*" and it can
                 // be used either as BYREF or TYP_I_IMPL.

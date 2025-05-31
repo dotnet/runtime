@@ -3478,7 +3478,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
         else
         {
-            assert(call->gtType != TYP_STRUCT);
+            assert(!call->TypeIs(TYP_STRUCT));
 
             if (call->TypeIs(TYP_REF))
             {
@@ -5287,8 +5287,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
 
         // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
-        noway_assert((jmpNode->OperIs(GT_JMP)) ||
-                     ((jmpNode->OperIs(GT_CALL)) && jmpNode->AsCall()->IsFastTailCall()));
+        noway_assert((jmpNode->OperIs(GT_JMP)) || ((jmpNode->OperIs(GT_CALL)) && jmpNode->AsCall()->IsFastTailCall()));
 
         // The next block is associated with this "if" stmt
         if (jmpNode->OperIs(GT_JMP))
