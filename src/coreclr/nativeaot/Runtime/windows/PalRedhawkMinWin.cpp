@@ -200,7 +200,7 @@ bool PalInit()
     return true;
 }
 
-extern "C" uint64_t PalGetCurrentOSThreadId()
+uint64_t PalGetCurrentOSThreadId()
 {
     return GetCurrentThreadId();
 }
