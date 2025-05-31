@@ -2142,7 +2142,7 @@ void ObjectAllocator::UpdateAncestorTypes(
                     assert(parentType == TYP_BYREF);
                     parent->ChangeType(newType);
 
-                    // Propgate that upwards.
+                    // Propagate that upwards.
                     //
                     ++parentIndex;
                     keepChecking = true;
@@ -2195,20 +2195,40 @@ void ObjectAllocator::UpdateAncestorTypes(
                 else
                 {
                     assert(tree == parent->AsIndir()->Data());
-                    GenTree* const addr = parent->AsIndir()->Addr();
 
                     // If we are storing to a GC struct field, we may need to retype the store
                     //
-                    if (parent->OperIs(GT_STOREIND) && varTypeIsGC(parent->TypeGet()))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
                         parent->ChangeType(newType);
                     }
-
-                    // If we are storing a struct, we may need to change the layout
-                    //
-                    if (retypeFields && parent->OperIs(GT_STORE_BLK))
+                    else if (retypeFields && parent->OperIs(GT_STORE_BLK))
                     {
-                        parent->AsBlk()->SetLayout(newLayout);
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be storing just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+                        }
                     }
                 }
                 break;
@@ -2219,19 +2239,54 @@ void ObjectAllocator::UpdateAncestorTypes(
             {
                 // If we are loading from a GC struct field, we may need to retype the load
                 //
-                if (retypeFields && (varTypeIsGC(parent->TypeGet())))
+                if (retypeFields)
                 {
-                    parent->ChangeType(newType);
+                    bool didRetype = false;
 
-                    if (parent->OperIs(GT_BLK))
+                    if (varTypeIsGC(parent->TypeGet()))
                     {
-                        parent->AsBlk()->SetLayout(newLayout);
+                        parent->ChangeType(newType);
+                        didRetype = true;
+                    }
+                    else if (parent->OperIs(GT_BLK))
+                    {
+                        GenTreeBlk* const  block     = parent->AsBlk();
+                        ClassLayout* const oldLayout = block->GetLayout();
+
+                        if (oldLayout->HasGCPtr())
+                        {
+                            if (newLayout->GetSize() == oldLayout->GetSize())
+                            {
+                                block->SetLayout(newLayout);
+                            }
+                            else
+                            {
+                                // We must be loading just a portion of the original local
+                                //
+                                assert(newLayout->GetSize() > oldLayout->GetSize());
+
+                                if (newLayout->HasGCPtr())
+                                {
+                                    block->SetLayout(GetByrefLayout(oldLayout));
+                                }
+                                else
+                                {
+                                    block->SetLayout(GetNonGCLayout(oldLayout));
+                                }
+                            }
+
+                            didRetype = true;
+                        }
                     }
 
-                    ++parentIndex;
-                    keepChecking = true;
-                    retypeFields = false;
+                    if (didRetype)
+                    {
+                        ++parentIndex;
+                        keepChecking = true;
+                        retypeFields = false;
+                    }
                 }
+
                 break;
             }
 
@@ -2401,25 +2456,28 @@ void ObjectAllocator::RewriteUses()
                     CallArg* const thisArg      = call->gtArgs.GetThisArg();
                     GenTree* const delegateThis = thisArg->GetNode();
 
-                    if (delegateThis->OperIs(GT_LCL_VAR))
+                    if (delegateThis->OperIs(GT_LCL_VAR, GT_LCL_ADDR))
                     {
                         GenTreeLclVarCommon* const lcl = delegateThis->AsLclVarCommon();
+                        bool const                 isStackAllocatedDelegate =
+                            delegateThis->OperIs(GT_LCL_ADDR) || m_allocator->DoesLclVarPointToStack(lcl->GetLclNum());
 
-                        if (m_allocator->DoesLclVarPointToStack(lcl->GetLclNum()))
+                        if (isStackAllocatedDelegate)
                         {
                             JITDUMP("Expanding delegate invoke [%06u]\n", m_compiler->dspTreeID(call));
+
                             // Expand the delgate invoke early, so that physical promotion has
                             // a chance to promote the delegate fields.
                             //
                             // Note the instance field may also be stack allocatable (someday)
                             //
-                            GenTree* const cloneThis      = m_compiler->gtClone(lcl);
+                            GenTree* const cloneThis      = m_compiler->gtClone(lcl, /* complexOk */ true);
                             unsigned const instanceOffset = m_compiler->eeGetEEInfo()->offsetOfDelegateInstance;
                             GenTree* const newThisAddr =
                                 m_compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, cloneThis,
                                                           m_compiler->gtNewIconNode(instanceOffset, TYP_I_IMPL));
 
-                            // For now assume the instance is heap...
+                            // For now assume the instance field is on the heap...
                             //
                             GenTree* const newThis = m_compiler->gtNewIndir(TYP_REF, newThisAddr);
                             thisArg->SetEarlyNode(newThis);

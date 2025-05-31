@@ -5110,6 +5110,10 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             {
                 assert(ValidateUse(tree) && "Expected use of local to be tailcall value");
             }
+            else if (IsCommaNop(tree))
+            {
+                // COMMA(NOP,NOP)
+            }
             else
             {
                 DISPTREE(tree);
@@ -5117,6 +5121,16 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             }
 
             return WALK_CONTINUE;
+        }
+
+        bool IsCommaNop(GenTree* node)
+        {
+            if (!node->OperIs(GT_COMMA))
+            {
+                return false;
+            }
+
+            return node->AsOp()->gtGetOp1()->OperIs(GT_NOP) && node->AsOp()->gtGetOp2()->OperIs(GT_NOP);
         }
 
         bool ValidateUse(GenTree* node)
@@ -9655,25 +9669,25 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         {
             case GT_AND:
             {
-                maskIntrinsicId = NI_EVEX_AndMask;
+                maskIntrinsicId = NI_AVX512_AndMask;
                 break;
             }
 
             case GT_NOT:
             {
-                maskIntrinsicId = NI_EVEX_NotMask;
+                maskIntrinsicId = NI_AVX512_NotMask;
                 break;
             }
 
             case GT_OR:
             {
-                maskIntrinsicId = NI_EVEX_OrMask;
+                maskIntrinsicId = NI_AVX512_OrMask;
                 break;
             }
 
             case GT_XOR:
             {
-                maskIntrinsicId = NI_EVEX_XorMask;
+                maskIntrinsicId = NI_AVX512_XorMask;
                 break;
             }
 

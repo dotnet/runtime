@@ -17,7 +17,6 @@
 const char* szTextFile = "text.txt";
 
 HANDLE hToken[NUM_TOKENS];
-CRITICAL_SECTION CriticalSection;
 
 WCHAR* convert(const char * aString)
 {
@@ -185,8 +184,8 @@ mkAbsoluteFilenameA (
     sizeFN = strlen( fileName );
     sizeAPN = (sizeDN + 1 + sizeFN + 1);
 
-    /* ensure ((dirName + DELIM + fileName + \0) =< MAX_PATH ) */
-    if ( sizeAPN > MAX_PATH )
+    /* ensure ((dirName + DELIM + fileName + \0) =< _MAX_PATH ) */
+    if ( sizeAPN > _MAX_PATH )
     {
         return ( 0 );
     }

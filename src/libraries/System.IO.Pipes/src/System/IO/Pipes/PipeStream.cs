@@ -110,15 +110,15 @@ namespace System.IO.Pipes
 
         // Reads a byte from the pipe stream.  Returns the byte cast to an int
         // or -1 if the connection has been broken.
-        public override unsafe int ReadByte()
+        public override int ReadByte()
         {
-            byte b;
-            return Read(new Span<byte>(&b, 1)) > 0 ? b : -1;
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) > 0 ? b : -1;
         }
 
-        public override unsafe void WriteByte(byte value)
+        public override void WriteByte(byte value)
         {
-            Write(new ReadOnlySpan<byte>(&value, 1));
+            Write([value]);
         }
 
         public override void Flush()
