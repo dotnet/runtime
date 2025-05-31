@@ -395,7 +395,7 @@ void InitializeOsPageSize()
 #endif
 }
 
-PALEXPORT uint32_t NATIVEAOT_PALAPI PalGetOsPageSize()
+uint32_t NATIVEAOT_PALAPI PalGetOsPageSize()
 {
     return g_RhPageSize;
 }
@@ -410,7 +410,7 @@ bool InitializeSignalHandling();
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-PALEXPORT bool NATIVEAOT_PALAPI PalInit()
+bool NATIVEAOT_PALAPI PalInit()
 {
 #ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
@@ -517,7 +517,7 @@ extern "C" void PalAttachThread(void* thread)
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
 
-PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
+UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
 #ifdef TARGET_APPLE
     vm_address_t addr, taddr;
@@ -561,7 +561,7 @@ PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(HANDLE hTem
 #endif
 }
 
-PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
+UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress, size_t templateSize)
 {
 #ifdef TARGET_APPLE
     kern_return_t ret;
@@ -578,7 +578,7 @@ PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(void *pBaseAddr
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
-PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
@@ -592,7 +592,7 @@ PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
     return ret == 0 ? UInt32_TRUE : UInt32_FALSE;
 }
 
-PALEXPORT void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds)
+void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds)
 {
 #if HAVE_CLOCK_NANOSLEEP
     timespec endTime;
@@ -614,7 +614,7 @@ PALEXPORT void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds)
 #endif // HAVE_CLOCK_NANOSLEEP
 }
 
-PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI __stdcall PalSwitchToThread()
+UInt32_BOOL NATIVEAOT_PALAPI __stdcall PalSwitchToThread()
 {
     // sched_yield yields to another thread in the current process.
     sched_yield();
@@ -625,7 +625,7 @@ PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI __stdcall PalSwitchToThread()
     return false;
 }
 
-PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled()
+UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled()
 {
     return false;
 }
@@ -644,7 +644,7 @@ UInt32_BOOL PalCloseHandle(HANDLE handle)
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
-PALEXPORT HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
+HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
 {
     UnixEvent* event = new (nothrow) UnixEvent(manualReset, initialState);
     if (event == NULL)
@@ -661,7 +661,7 @@ PALEXPORT HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES
 
 typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
-PALEXPORT bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
+bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
 #ifdef HOST_WASM
     // No threads, so we can't start one
@@ -700,7 +700,7 @@ PALEXPORT bool NATIVEAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback c
     return st == 0;
 }
 
-PALIMPORT bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
+bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
 {
     // Ignore requests to set the main thread name because
     // it causes the value returned by Process.ProcessName to change.
@@ -713,22 +713,22 @@ PALIMPORT bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name)
     return true;
 }
 
-PALEXPORT bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-PALEXPORT bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_TRUE);
 }
 
-PALEXPORT bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-PALEXPORT HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
 
@@ -746,7 +746,7 @@ PALEXPORT HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* point
     return moduleHandle;
 }
 
-PALEXPORT void PalPrintFatalError(const char* message)
+void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
@@ -755,19 +755,19 @@ PALEXPORT void PalPrintFatalError(const char* message)
     (void)!write(STDERR_FILENO, message, strlen(message));
 }
 
-PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
+char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
     strcpy(copy, toCopy);
     return copy.Extract();
 }
 
-PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
+HANDLE PalLoadLibrary(const char* moduleName)
 {
     return dlopen(moduleName, RTLD_LAZY);
 }
 
-PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+void* PalGetProcAddress(HANDLE module, const char* functionName)
 {
     return dlsym(module, functionName);
 }
@@ -800,7 +800,7 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     return prot;
 }
 
-PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(size_t size, uint32_t protect)
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(size_t size, uint32_t protect)
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
@@ -818,12 +818,12 @@ PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI
     return pMappedMemory;
 }
 
-PALEXPORT void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)
+void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size)
 {
     munmap(pAddress, size);
 }
 
-PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
+UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
@@ -838,7 +838,7 @@ PALEXPORT UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, si
 extern "C" void sys_icache_invalidate(const void* start, size_t len);
 #endif
 
-PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 {
 #if defined(__linux__) && defined(HOST_ARM)
     // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
@@ -979,12 +979,12 @@ bool InitializeSignalHandling()
     return AddSignalHandler(INJECT_ACTIVATION_SIGNAL, ActivationHandler, &g_previousActivationHandler);
 }
 
-PALIMPORT HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 {
     return defaultHijackTarget;
 }
 
-PALEXPORT void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack)
+void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack)
 {
     pThreadToHijack->SetActivationPending(true);
 
@@ -1025,7 +1025,7 @@ uint32_t PalWaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, UInt32_B
     return unixEvent->Wait(milliseconds);
 }
 
-PALEXPORT uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     // Only a single handle wait for event is supported
     ASSERT(handleCount == 1);
@@ -1033,7 +1033,7 @@ PALEXPORT uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, 
     return PalWaitForSingleObjectEx(pHandles[0], timeout, alertable);
 }
 
-PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
+HANDLE PalCreateLowMemoryResourceNotification()
 {
     return NULL;
 }
@@ -1055,7 +1055,7 @@ extern "C" int32_t _stricmp(const char *string1, const char *string2)
 
 uint32_t g_RhNumberOfProcessors;
 
-PALEXPORT int32_t PalGetProcessCpuCount()
+int32_t PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
@@ -1067,7 +1067,7 @@ __thread void* pStackLowOut = NULL;
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
     if (pStackHighOut == NULL)
     {
@@ -1115,7 +1115,7 @@ PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void**
 //
 // Return value:  number of characters in name string
 //
-PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
+int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
 #if defined(HOST_WASM)
     // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
