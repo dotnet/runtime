@@ -154,43 +154,37 @@ typedef char TCHAR;
 
 extern uint32_t g_RhNumberOfProcessors;
 
-#ifdef TARGET_UNIX
-#define NATIVEAOT_PALAPI
-#else
-#define NATIVEAOT_PALAPI __stdcall
-#endif // TARGET_UNIX
-
 #ifndef DACCESS_COMPILE
 #include "PalRedhawkFunctions.h"
 #endif // !DACCESS_COMPILE
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-bool NATIVEAOT_PALAPI PalInit();
+bool PalInit();
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
+void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
 struct NATIVE_CONTEXT;
 
 #if _WIN32
 NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
-bool NATIVEAOT_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
-bool NATIVEAOT_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
-void NATIVEAOT_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx);
+bool PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+bool PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+void PalRestoreContext(NATIVE_CONTEXT * pCtx);
 
 // For platforms that have segment registers in the CONTEXT_CONTROL set that
 // are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
 // thread and saves them in `pContext`.
-void NATIVEAOT_PALAPI PopulateControlSegmentRegisters(CONTEXT * pContext);
+void PopulateControlSegmentRegisters(CONTEXT * pContext);
 #endif
 
-int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount();
+int32_t PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
+bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
 
 // Return value:  number of characters in name string
 int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
@@ -234,52 +228,52 @@ inline uint8_t * PalNtCurrentTeb()
 
 #endif // _WIN32
 
-_Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
-void NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
-UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(uintptr_t size, uint32_t protect);
+void PalVirtualFree(_In_ void* pAddress, uintptr_t size);
+UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
 void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
-void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds);
-UInt32_BOOL NATIVEAOT_PALAPI PalSwitchToThread();
-UInt32_BOOL NATIVEAOT_PALAPI PalAreShadowStacksEnabled();
-HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
+void PalSleep(uint32_t milliseconds);
+UInt32_BOOL PalSwitchToThread();
+UInt32_BOOL PalAreShadowStacksEnabled();
+HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
-uint32_t NATIVEAOT_PALAPI PalGetOsPageSize();
-void NATIVEAOT_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
+uint32_t PalGetOsPageSize();
+void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
 typedef uint32_t (*BackgroundCallback)(_In_opt_ void* pCallbackContext);
-bool NATIVEAOT_PALAPI PalSetCurrentThreadName(const char* name);
+bool PalSetCurrentThreadName(const char* name);
 #ifdef HOST_WINDOWS
-bool NATIVEAOT_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);
-bool NATIVEAOT_PALAPI PalInitComAndFlsSlot();
+bool PalSetCurrentThreadNameW(const WCHAR* name);
+bool PalInitComAndFlsSlot();
 #endif
-bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-bool NATIVEAOT_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 #ifdef FEATURE_HIJACK
 class Thread;
-void NATIVEAOT_PALAPI PalHijack(Thread* pThreadToHijack);
-HijackFunc* NATIVEAOT_PALAPI PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
+void PalHijack(Thread* pThreadToHijack);
+HijackFunc* PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
 #endif
 
-UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
-UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
+UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
+UInt32_BOOL PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
 
-UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
     int thunkBlockSize,
     int thunkBlocksPerMapping);
 
-uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
+uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
 HANDLE PalCreateLowMemoryResourceNotification();
 
-void NATIVEAOT_PALAPI PalAttachThread(void* thread);
+void PalAttachThread(void* thread);
 
 uint64_t PalGetCurrentOSThreadId();
 
