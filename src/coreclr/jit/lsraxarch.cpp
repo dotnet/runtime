@@ -3223,15 +3223,16 @@ int LinearScan::BuildMul(GenTree* tree)
 
     bool isUnsignedMultiply    = tree->IsUnsigned();
     bool requiresOverflowCheck = tree->gtOverflowEx();
-    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply
-        && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
+                   compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
 
     // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
-    int              srcCount       = 0;
-    int              dstCount       = 1;
-    SingleTypeRegSet dstCandidates  = RBM_NONE;
-    SingleTypeRegSet srcCandidates1 = RBM_NONE;
-    SingleTypeRegSet srcCandidates2 = srcCandidates1;
+    int              srcCount      = 0;
+    int              dstCount      = 1;
+    SingleTypeRegSet dstCandidates = RBM_NONE;
+
+    // Lowering has ensured that op1 is never the memory operand
+    assert(!op1->isUsedFromMemory());
 
     // Start with building the uses, ensuring that one of the operands is in the implicit register (RAX or RDX)
     // Place first operand in implicit register, unless:
@@ -3239,30 +3240,20 @@ int LinearScan::BuildMul(GenTree* tree)
     // *  or the second operand is already in the register
     if (useMulx)
     {
-        if (!op1->isContained() && op2->GetRegNum() != SRBM_RDX)
-        {
-            srcCandidates1 = SRBM_RDX;
-        }
-        else
-        {
-            srcCandidates2 = SRBM_RDX;
-        }
-
-        srcCount = BuildOperandUses(op1, srcCandidates1);
-        srcCount += BuildOperandUses(op2, srcCandidates2);
+        // In lowering, we place any memory operand in op2 so we default to placing op1 in RDX
+        // By selecting RDX here we don't have to kill it
+        srcCount = BuildOperandUses(op1, SRBM_RDX);
+        srcCount += BuildOperandUses(op2, RBM_NONE);
     }
     else
     {
-        if (!op1->isContained() && op2->GetRegNum() != SRBM_RAX)
+        SingleTypeRegSet srcCandidates1 = RBM_NONE;
+        // If op2 is memory then tell allocator to pass op1 in RAX
+        if (op2->isUsedFromMemory())
         {
             srcCandidates1 = SRBM_RAX;
         }
-        else
-        {
-            srcCandidates2 = SRBM_RAX;
-        }
-
-        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, srcCandidates2);
+        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, RBM_NONE);
     }
 
     // There are three forms of x86 multiply in base instruction set

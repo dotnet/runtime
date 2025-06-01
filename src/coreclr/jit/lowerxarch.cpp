@@ -7977,8 +7977,8 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 #if defined(TARGET_X86)
     else if (node->OperGet() == GT_MUL_LONG)
     {
-       // GT_MUL_LONG produce ULONG or LONG but work on UINT or INT
         hasImpliedFirstOperand = true;
+        // GT_MUL_LONG produce ULONG or LONG but work on UINT or INT
         if (nodeType == TYP_LONG)
         {
             nodeType = TYP_INT;
@@ -8069,6 +8069,11 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
         if (memOp != nullptr)
         {
             MakeSrcContained(node, memOp);
+            // Swap the operands so that the contained memory operand is always op2.
+            if (memOp == op1)
+            {
+                std::swap(node->gtOp1, node->gtOp2);
+            }
         }
         else
         {

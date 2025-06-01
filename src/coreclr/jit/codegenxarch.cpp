@@ -828,16 +828,20 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     GenTree* regOp = op1;
     GenTree* rmOp  = op2;
 
+    // Lowering has ensured that op1 is never the memory operand to simplify checks here
+    assert(!op1->isUsedFromMemory());
+
     if (treeNode->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
-       // Set rmOp to the memory operand (if any)
-        if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RDX)))
+        if (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RDX))
         {
             regOp = op2;
             rmOp  = op1;
         }
         assert(regOp->isUsedFromReg());
-        assert(regOp->GetRegNum() == REG_RDX);
+
+        // Setup targetReg when neither of the source operands was a matching register
+        inst_Mov(targetType, REG_RDX, regOp->GetRegNum(), /* canSkip */ true);
 
         if (treeNode->OperGet() == GT_MULHI)
         {
@@ -853,15 +857,15 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
             // emit MULX instruction
             regNumber hiReg  = targetReg;
-            regNumber lowReg  = treeNode->AsMultiRegOp()->GetRegByIndex(1);
+            regNumber lowReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
             inst_RV_RV_TT(INS_mulx, size, hiReg, lowReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
 #endif
         }
     }
     else // Generate MUL or IMUL instruction
     {
-        // Set rmOp to the memory operand (if any)
-        if (op1->isUsedFromMemory() || (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX)))
+        // If op2 is already present in RAX use that as implicit operand
+        if (op2->isUsedFromReg() && (op2->GetRegNum() == REG_RAX))
         {
             regOp = op2;
             rmOp  = op1;
