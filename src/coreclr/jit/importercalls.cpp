@@ -965,7 +965,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // See if we can devirt if we aren't probing.
     if (!probing && opts.OptimizationEnabled())
     {
-        if (call->AsCall()->IsVirtual())
+        if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
             // only true object pointers can be virtual
             assert(call->AsCall()->gtArgs.HasThisPointer() &&
@@ -981,7 +981,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                 // inlinees.
                                 rawILOffset);
 
-            const bool wasDevirtualized = !call->AsCall()->IsVirtual();
+            const bool wasDevirtualized = !call->AsCall()->IsDevirtualizationCandidate(this);
 
             if (wasDevirtualized)
             {
@@ -1258,7 +1258,7 @@ DONE:
         // If the call is virtual, record the inliner's context for possible use during late devirt inlining.
         // Also record the generics context if there is any.
         //
-        if (call->AsCall()->IsVirtual() && (call->AsCall()->gtCallType != CT_INDIRECT))
+        if (call->AsCall()->IsDevirtualizationCandidate(this))
         {
             JITDUMP("\nSaving generic context %p and inline context %p for call [%06u]\n", dspPtr(exactContextHnd),
                     dspPtr(compInlineContext), dspTreeID(call->AsCall()));
@@ -8161,9 +8161,9 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     assert(methodFlags != nullptr);
     assert(pContextHandle != nullptr);
 
-    // This should be a virtual vtable or virtual stub call.
+    // This should be a devirtualization candidate.
     //
-    assert(call->IsVirtual());
+    assert(call->IsDevirtualizationCandidate(this));
     assert(opts.OptimizationEnabled());
 
 #if defined(DEBUG)

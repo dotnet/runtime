@@ -2809,7 +2809,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     {
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
-        call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
+        call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
+                                                        runtimeMethodHandle);
     }
 
 #ifdef FEATURE_READYTORUN
@@ -2850,7 +2851,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
         // Call helper function.  This gets the target address of the final destination callsite.
         //
-        call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+        call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr,
+                                                        exactMethodDesc, exactTypeDesc);
     }
 
     assert(call != nullptr);
