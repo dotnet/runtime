@@ -549,12 +549,10 @@ private:
         assert(call->IsDevirtualizationCandidate(m_compiler));
         if (call->IsVirtual())
         {
-            assert(call->gtCallType == CT_USER_FUNC);
             return call->gtCallMethHnd;
         }
         else
         {
-            assert(call->gtCallType == CT_INDIRECT);
             GenTree* runtimeMethHndNode =
                 call->gtCallAddr->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle)->GetNode();
             assert(runtimeMethHndNode != nullptr);
@@ -614,8 +612,9 @@ private:
 
         if (tree->OperGet() == GT_CALL)
         {
-            GenTreeCall* call          = tree->AsCall();
-            bool         tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler);
+            GenTreeCall* call  = tree->AsCall();
+            // TODO-CQ: Drop `call->gtCallType == CT_USER_FUNC` once we have GVM devirtualization
+            bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler) && (call->gtCallType == CT_USER_FUNC);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
