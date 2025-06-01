@@ -957,7 +957,10 @@ protected:
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
 
-    void genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* embRndOp, instruction ins, insOpts instOptions);
+    void           genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node,
+                                                                  GenTree*            embRndOp,
+                                                                  instruction         ins,
+                                                                  insOpts             instOptions);
     static insOpts AddEmbBroadcastMode(insOpts instOptions);
 #endif // defined(TARGET_XARCH)
 

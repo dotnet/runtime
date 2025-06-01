@@ -90,63 +90,63 @@ instruction HWIntrinsicInfo::lookupIns(const GenTreeHWIntrinsic* intrinsicNode)
         type = intrinsicNode->GetSimdBaseType();
     }
 #elif defined(TARGET_ARM64)
-    type = HWIntrinsic::GetBaseType(intrinsicNode);
+    if (intrinsic == NI_Sve_StoreNarrowing)
+    {
+        type = intrinsicNode->GetAuxiliaryType();
+    }
+    else
+    {
+        type = HWIntrinsic::GetBaseType(intrinsicNode);
+    }
 #endif
 
     if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
-    {
-        assert(!"Unexpected type");
-        return INS_invalid;
-    }
-
-    uint16_t    result = lookup(intrinsic).ins[type - TYP_BYTE];
-    instruction ins    = static_cast<instruction>(result);
-
-    if (ins == INS_invalid)
     {
         switch (intrinsic)
         {
 #if defined(TARGET_XARCH)
             case NI_X86Base_LoadFence:
             {
-                ins = INS_lfence;
-                break;
+                return INS_lfence;
             }
 
             case NI_X86Base_MemoryFence:
             {
-                ins = INS_mfence;
-                break;
+                return INS_mfence;
             }
 
             case NI_X86Base_Pause:
             {
-                ins = INS_pause;
-                break;
+                return INS_pause;
             }
 
             case NI_X86Base_StoreFence:
             {
-                ins = INS_sfence;
-                break;
+                return INS_sfence;
             }
 
             case NI_X86Serialize_Serialize:
             {
-                ins = INS_serialize;
-                break;
+                return INS_serialize;
             }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_ARM64)
+            case NI_ArmBase_Yield:
+            {
+                return INS_yield;
+            }
+#endif // TARGET_ARM64
+
             default:
             {
-                assert(!HWIntrinsicInfo::RequiresCodegen(intrinsic) ||
-                       HWIntrinsicInfo::lookupCategory(intrinsic) == HW_Category_Helper);
-                break;
+                return INS_invalid;
             }
         }
     }
-    return ins;
+
+    uint16_t result = lookup(intrinsic).ins[type - TYP_BYTE];
+    return static_cast<instruction>(result);
 }
 
 #if defined(TARGET_XARCH)
@@ -2156,8 +2156,14 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case 0:
             {
-                assert(!isScalar);
-                retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseJitType, simdSize);
+                if (isScalar)
+                {
+                    retNode = gtNewScalarHWIntrinsicNode(nodeRetType, intrinsic);
+                }
+                else
+                {
+                    retNode = gtNewSimdHWIntrinsicNode(nodeRetType, intrinsic, simdBaseJitType, simdSize);
+                }
                 break;
             }
 

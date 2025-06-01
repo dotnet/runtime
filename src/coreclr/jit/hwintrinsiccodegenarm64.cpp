@@ -459,8 +459,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // Get the registers and intrinsics that needs embedded mask
             const HWIntrinsic intrinEmbMask(op2->AsHWIntrinsic());
-            instruction insEmbMask = HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
-            const bool  instrIsRMW = op2->isRMWHWIntrinsic(compiler);
+            instruction       insEmbMask = HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
+            const bool        instrIsRMW = op2->isRMWHWIntrinsic(compiler);
 
             regNumber maskReg       = op1Reg;
             regNumber embMaskOp1Reg = REG_NA;

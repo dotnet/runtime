@@ -4218,17 +4218,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_X86Base_Pause:
-        case NI_X86Serialize_Serialize:
-        {
-            assert(sig->numArgs == 0);
-            assert(JITtype2varType(sig->retType) == TYP_VOID);
-            assert(simdSize == 0);
-
-            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
-            break;
-        }
-
         case NI_X86Base_DivRem:
         case NI_X86Base_X64_DivRem:
         {
@@ -4333,23 +4322,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(JITtype2varType(sig->retType) == TYP_VOID);
             op1     = impPopStack().val;
             retNode = gtNewSimdHWIntrinsicNode(TYP_VOID, op1, intrinsic, CORINFO_TYPE_UBYTE, 0);
-            break;
-        }
-
-        case NI_X86Base_StoreFence:
-            assert(sig->numArgs == 0);
-            assert(JITtype2varType(sig->retType) == TYP_VOID);
-            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
-            break;
-
-        case NI_X86Base_LoadFence:
-        case NI_X86Base_MemoryFence:
-        {
-            assert(sig->numArgs == 0);
-            assert(JITtype2varType(sig->retType) == TYP_VOID);
-            assert(simdSize == 0);
-
-            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
             break;
         }
 

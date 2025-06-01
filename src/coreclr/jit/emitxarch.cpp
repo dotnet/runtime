@@ -1858,7 +1858,43 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
         return id->idHasMemAndCns();
     }
 
-    return false;
+    // In the case we have a displacement, we should check if it can be
+    // compressed into 8-bits. However, we don't want to use EVEX if the
+    // natural sign-extension based displacement supported by the VEX
+    // encoding is already possible. So handle these scenarios to ensure
+    // we get the smallest encoding possible.
+
+    ssize_t dsp = 0;
+
+    if (id->idHasMemAdr())
+    {
+        if (id->idIsDspReloc())
+        {
+            return false;
+        }
+        dsp = emitGetInsAmdAny(id);
+    }
+    else if (id->idHasMemStk())
+    {
+        int varNum = id->idAddr()->iiaLclVar.lvaVarNum();
+
+        bool EBPbased;
+        dsp = emitComp->lvaFrameAddress(varNum, &EBPbased);
+        dsp = dsp + id->idAddr()->iiaLclVar.lvaOffset();
+    }
+    else
+    {
+        return false;
+    }
+
+    if ((signed char)dsp == (ssize_t)dsp)
+    {
+        return false;
+    }
+
+    bool dspInByte = false;
+    TryEvexCompressDisp8Byte(id, dsp, &dspInByte);
+    return dspInByte;
 }
 
 //------------------------------------------------------------------------
@@ -9303,7 +9339,8 @@ void emitter::emitIns_C_R_I(
 //    ival        - The immediate value
 //    instOptions - The options used to when generating the instruction.
 //
-void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival, insOpts instOptions)
+void emitter::emitIns_S_R_I(
+    instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival, insOpts instOptions)
 {
     assert(IsSimdInstruction(ins));
     assert(reg != REG_NA);
@@ -18001,7 +18038,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 // Return Value:
 //    size in bytes.
 //
-ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
+ssize_t emitter::GetInputSizeInBytes(const instrDesc* id) const
 {
     assert((unsigned)id->idIns() < ArrLen(CodeGenInterface::instInfo));
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
@@ -18035,7 +18072,7 @@ ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
 //    compressed displacement value if dspInByte ===  TRUE.
 //    Original dsp otherwise.
 //
-ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte)
+ssize_t emitter::TryEvexCompressDisp8Byte(const instrDesc* id, ssize_t dsp, bool* dspInByte) const
 {
     assert(TakesEvexPrefix(id) || TakesApxExtendedEvexPrefix(id));
 

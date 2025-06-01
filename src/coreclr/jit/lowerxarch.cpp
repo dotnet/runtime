@@ -10374,8 +10374,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                         NamedIntrinsic op2IntrinsicId  = op2->AsHWIntrinsic()->GetHWIntrinsicId();
                                         var_types      op2SimdBaseType = op2->AsHWIntrinsic()->GetSimdBaseType();
 
-                                        instruction ins =
-                                            HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
+                                        instruction ins = HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
 
                                         unsigned expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
 
@@ -10417,12 +10416,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                                 case NI_AVX512_Or:
                                                 case NI_AVX512_Xor:
                                                 {
-                                                    // These intrinsics support embedded broadcast and have masking support for 4 or 8
+                                                    // These intrinsics support embedded broadcast and have masking
+                                                    // support for 4 or 8
                                                     assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
 
-                                                    if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, op2->AsHWIntrinsic()->Op(2)))
+                                                    if (!comp->codeGen
+                                                             ->IsEmbeddedBroadcastEnabled(ins,
+                                                                                          op2->AsHWIntrinsic()->Op(2)))
                                                     {
-                                                        // We cannot change the base type if we've already contained a broadcast
+                                                        // We cannot change the base type if we've already contained a
+                                                        // broadcast
                                                         supportsMaskBaseSize4Or8 = true;
                                                     }
                                                     break;
@@ -10430,12 +10433,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                                 case NI_AVX512_TernaryLogic:
                                                 {
-                                                    // These intrinsics support embedded broadcast and have masking support for 4 or 8
+                                                    // These intrinsics support embedded broadcast and have masking
+                                                    // support for 4 or 8
                                                     assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
 
-                                                    if (!comp->codeGen->IsEmbeddedBroadcastEnabled(ins, op2->AsHWIntrinsic()->Op(3)))
+                                                    if (!comp->codeGen
+                                                             ->IsEmbeddedBroadcastEnabled(ins,
+                                                                                          op2->AsHWIntrinsic()->Op(3)))
                                                     {
-                                                        // We cannot change the base type if we've already contained a broadcast
+                                                        // We cannot change the base type if we've already contained a
+                                                        // broadcast
                                                         supportsMaskBaseSize4Or8 = true;
                                                     }
                                                     break;
@@ -10454,7 +10461,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                                 case NI_AVX512_InsertVector128:
                                                 case NI_AVX512_InsertVector256:
                                                 {
-                                                    // These intrinsics don't support embedded broadcast and have masking support for 4 or 8
+                                                    // These intrinsics don't support embedded broadcast and have
+                                                    // masking support for 4 or 8
                                                     assert((expectedMaskBaseSize == 4) || (expectedMaskBaseSize == 8));
                                                     supportsMaskBaseSize4Or8 = true;
                                                     break;
@@ -10529,7 +10537,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                                         if (op2AdjustedSimdBaseJitType != CORINFO_TYPE_UNDEF)
                                         {
-                                            ins = HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
+                                            ins                  = HWIntrinsicInfo::lookupIns(op2->AsHWIntrinsic());
                                             expectedMaskBaseSize = CodeGenInterface::instKMaskBaseSize(ins);
                                         }
 

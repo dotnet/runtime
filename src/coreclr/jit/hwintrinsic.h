@@ -1308,11 +1308,7 @@ struct HWIntrinsic final
         NamedIntrinsic id       = node->GetHWIntrinsicId();
         var_types      baseType = node->GetSimdBaseType();
 
-        if (id == NI_Sve_StoreNarrowing)
-        {
-            baseType = node->GetAuxiliaryType();
-        }
-        else if (baseType == TYP_UNKNOWN)
+        if (baseType == TYP_UNKNOWN)
         {
             HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(id);
             assert((category == HW_Category_Scalar) || (category == HW_Category_Special));

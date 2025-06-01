@@ -75,9 +75,8 @@ static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 {
     // TODO - make more categories to the table-driven framework
     // HW_Category_Helper and HW_Flag_SpecialCodeGen usually need manual codegen
-    const bool tableDrivenCategory =
-        (category != HW_Category_Special) && (category != HW_Category_Helper);
-    const bool tableDrivenFlag = !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
+    const bool tableDrivenCategory = (category != HW_Category_Special) && (category != HW_Category_Helper);
+    const bool tableDrivenFlag     = !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
     return tableDrivenCategory && tableDrivenFlag;
 }
 
@@ -652,7 +651,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case INS_vpandq:
         {
-            if (!compiler->canUseEvexEncoding() || ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
+            if (!compiler->canUseEvexEncoding() ||
+                ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
             {
                 ins = INS_pandd;
             }
@@ -661,7 +661,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case INS_vpandnq:
         {
-            if (!compiler->canUseEvexEncoding() || ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
+            if (!compiler->canUseEvexEncoding() ||
+                ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
             {
                 ins = INS_pandnd;
             }
@@ -670,7 +671,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case INS_vporq:
         {
-            if (!compiler->canUseEvexEncoding() || ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
+            if (!compiler->canUseEvexEncoding() ||
+                ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
             {
                 ins = INS_pord;
             }
@@ -679,7 +681,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         case INS_vpxorq:
         {
-            if (!compiler->canUseEvexEncoding() || ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
+            if (!compiler->canUseEvexEncoding() ||
+                ((embMaskOp == nullptr) && !IsEmbeddedBroadcastEnabled(ins, node->Op(2))))
             {
                 ins = INS_pxord;
             }
@@ -721,7 +724,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         else
         {
             assert(category == HW_Category_Scalar);
-            attr = emitTypeSize(node->TypeGet());
+            var_types nodeType = node->TypeGet();
+
+            if (nodeType != TYP_VOID)
+            {
+                attr = emitTypeSize(nodeType);
+            }
         }
 
         int ival = HWIntrinsicInfo::lookupIval(compiler, intrinsicId, baseType);
@@ -761,8 +769,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         };
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg,
-                                                        offsReg, emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg,
+                                                        emitSwCase);
                     }
                     else if (ival != -1)
                     {
@@ -770,8 +778,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                         {
                             assert(!op1->isContained());
-                            emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, op1Reg, op1Reg,
-                                                       static_cast<int8_t>(ival), instOptions);
+                            emit->emitIns_SIMD_R_R_R_I(ins, attr, targetReg, op1Reg, op1Reg, static_cast<int8_t>(ival),
+                                                       instOptions);
                         }
                         else
                         {
@@ -835,8 +843,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     };
                     regNumber baseReg = internalRegisters.Extract(node);
                     regNumber offsReg = internalRegisters.GetSingle(node);
-                    genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg,
-                                                    offsReg, emitSwCase);
+                    genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg,
+                                                    emitSwCase);
                 }
                 else if (ival != -1)
                 {
@@ -895,8 +903,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // constant value.
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, op2Reg, baseReg, offsReg,
-                                                        emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, op2Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
                 else if (node->TypeGet() == TYP_VOID)
@@ -942,8 +949,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, op3Reg, baseReg, offsReg,
-                                                        emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, op3Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
                 else if (category == HW_Category_MemoryStore)
@@ -1035,8 +1041,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // can also occur if the consumer calls it directly and just doesn't pass a constant value.
                         regNumber baseReg = internalRegisters.Extract(node);
                         regNumber offsReg = internalRegisters.GetSingle(node);
-                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, op4Reg, baseReg, offsReg,
-                                                        emitSwCase);
+                        genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, op4Reg, baseReg, offsReg, emitSwCase);
                     }
                 }
                 else
@@ -1798,7 +1803,10 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
 //    ins         - The instruction to generate
 //    instOptions - The options used to when generating the instruction.
 //
-void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node, GenTree* embRndOp, instruction ins, insOpts instOptions)
+void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic* node,
+                                                             GenTree*            embRndOp,
+                                                             instruction         ins,
+                                                             insOpts             instOptions)
 {
     NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
     HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
@@ -1807,11 +1815,11 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
     assert(!embRndOp->isContained());
     assert(!genIsTableDrivenHWIntrinsic(intrinsicId, category));
 
-    var_types   baseType   = node->GetSimdBaseType();
-    var_types   simdType   = Compiler::getSIMDTypeForSize(node->GetSimdSize());
-    emitAttr    attr       = emitActualTypeSize(simdType);
-    var_types   targetType = node->TypeGet();
-    regNumber   targetReg  = node->GetRegNum();
+    var_types baseType   = node->GetSimdBaseType();
+    var_types simdType   = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+    emitAttr  attr       = emitActualTypeSize(simdType);
+    var_types targetType = node->TypeGet();
+    regNumber targetReg  = node->GetRegNum();
 
     switch (intrinsicId)
     {
@@ -1827,7 +1835,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
             break;
         }
 
@@ -1848,7 +1857,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
             break;
         }
 
@@ -1862,7 +1872,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
             break;
         }
 
@@ -1894,7 +1905,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
             };
             regNumber baseReg = internalRegisters.Extract(node);
             regNumber offsReg = internalRegisters.GetSingle(node);
-            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg, emitSwCase);
+            genHWIntrinsicJumpTableFallback(intrinsicId, ins, attr, embRndOp->GetRegNum(), baseReg, offsReg,
+                                            emitSwCase);
             break;
         }
 
@@ -1930,9 +1942,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, instruction ins, insOpt
 
     regNumber op1Reg = (op1 == nullptr) ? REG_NA : op1->GetRegNum();
 
-    emitter*    emit     = GetEmitter();
-    var_types   simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
-    emitAttr    attr     = emitActualTypeSize(simdType);
+    emitter*  emit     = GetEmitter();
+    var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+    emitAttr  attr     = emitActualTypeSize(simdType);
 
     switch (intrinsicId)
     {
@@ -2620,8 +2632,8 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node, instruction ins, insOp
         {
             assert(!varTypeIsFloating(baseType));
 
-            GenTree*    op2  = node->Op(2);
-            emitAttr    attr = emitActualTypeSize(node->TypeGet());
+            GenTree* op2  = node->Op(2);
+            emitAttr attr = emitActualTypeSize(node->TypeGet());
 
             auto emitSwCase = [&](int8_t i) {
                 inst_RV_TT_IV(ins, attr, targetReg, op1, i, instOptions);
@@ -2764,15 +2776,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, instruction ins, i
         return;
     }
 
-    var_types   baseType   = node->GetSimdBaseType();
-    var_types   simdType   = Compiler::getSIMDTypeForSize(node->GetSimdSize());
-    emitAttr    attr       = emitActualTypeSize(simdType);
-    var_types   targetType = node->TypeGet();
-    size_t      numArgs    = node->GetOperandCount();
-    GenTree*    op1        = node->Op(1);
-    regNumber   op1Reg     = REG_NA;
-    regNumber   targetReg  = node->GetRegNum();
-    emitter*    emit       = GetEmitter();
+    var_types baseType   = node->GetSimdBaseType();
+    var_types simdType   = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+    emitAttr  attr       = emitActualTypeSize(simdType);
+    var_types targetType = node->TypeGet();
+    size_t    numArgs    = node->GetOperandCount();
+    GenTree*  op1        = node->Op(1);
+    regNumber op1Reg     = REG_NA;
+    regNumber targetReg  = node->GetRegNum();
+    emitter*  emit       = GetEmitter();
 
     switch (intrinsicId)
     {
