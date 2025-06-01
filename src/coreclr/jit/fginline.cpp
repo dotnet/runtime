@@ -612,7 +612,7 @@ private:
 
         if (tree->OperGet() == GT_CALL)
         {
-            GenTreeCall* call  = tree->AsCall();
+            GenTreeCall* call = tree->AsCall();
             // TODO-CQ: Drop `call->gtCallType == CT_USER_FUNC` once we have GVM devirtualization
             bool tryLateDevirt = call->IsDevirtualizationCandidate(m_compiler) && (call->gtCallType == CT_USER_FUNC);
 
