@@ -426,6 +426,8 @@ namespace Microsoft.Extensions.Caching.Memory
             }
 
             public Stats Stats { get; private set; }
+
+            ~StatsHandle() => Stats.RemoveFromStats();
         }
 
 
@@ -443,7 +445,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 _memoryCache.AddToStats(this);
             }
 
-            ~Stats() => _memoryCache.RemoveFromStats(this);
+            internal void RemoveFromStats() => _memoryCache.RemoveFromStats(this);
         }
 
         private void RemoveFromStats(Stats current)
