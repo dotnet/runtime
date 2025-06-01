@@ -8,7 +8,7 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
-void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
+void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE pCode)
 {
     CONTRACTL
     {
@@ -41,7 +41,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
         }
     }
 
-    pHeader->SetTarget(pMD->GetNativeCode()); // The method to call
+    pHeader->SetTarget(pCode); // The method to call
 
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize);
 }
@@ -49,6 +49,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
+typedef Object* (*HELPER_FTN_NEW_MDARR)(CORINFO_CLASS_HANDLE, int, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -1118,22 +1119,35 @@ CALL_INTERP_SLOT:
                         // First execution of this call. Ensure target method is compiled and
                         // patch the data item slot with the actual method code.
                         MethodDesc *pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
-                        PCODE code = pMD->GetNativeCode();
-                        if (!code) {
-                            // This is an optimization to ensure that the stack walk will not have to search
-                            // for the topmost frame in the current InterpExecMethod. It is not required
-                            // for correctness, as the stack walk will find the topmost frame anyway. But it
-                            // would need to seek through the frames to find it.
-                            // An alternative approach would be to update the topmost frame during stack walk
-                            // to make the probability that the next stack walk will need to search only a
-                            // small subset of frames high.
-                            pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
-                            GCX_PREEMP();
-                            pMD->PrepareInitialCode(CallerGCMode::Coop);
-                            code = pMD->GetNativeCode();
+                        if (pMD->IsArray() || pMD->IsFCall())
+                        {
+                            // For FCalls and array special methods we can't go through the regular caching path
+                            //  because it will try to do pMD->GetNativeCode() and then crash.
+                            PCODE code = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+                            assert(code);
+                            InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, code);
+                            // FIXME: Caching in dataItems somehow
+                            break;
                         }
-                        pMethod->pDataItems[methodSlot] = (void*)code;
-                        targetIp = (const int32_t*)code;
+                        else
+                        {
+                            PCODE code = pMD->GetNativeCode();
+                            if (!code) {
+                                // This is an optimization to ensure that the stack walk will not have to search
+                                // for the topmost frame in the current InterpExecMethod. It is not required
+                                // for correctness, as the stack walk will find the topmost frame anyway. But it
+                                // would need to seek through the frames to find it.
+                                // An alternative approach would be to update the topmost frame during stack walk
+                                // to make the probability that the next stack walk will need to search only a
+                                // small subset of frames high.
+                                pInterpreterFrame->SetTopInterpMethodContextFrame(pFrame);
+                                GCX_PREEMP();
+                                pMD->PrepareInitialCode(CallerGCMode::Coop);
+                                code = pMD->GetNativeCode();
+                            }
+                            pMethod->pDataItems[methodSlot] = (void*)code;
+                            targetIp = (const int32_t*)code;
+                        }
                     }
                     else
                     {
@@ -1151,7 +1165,7 @@ CALL_TARGET_IP:
                     else if (codeInfo.GetCodeManager() != ExecutionManager::GetInterpreterCodeManager())
                     {
                         MethodDesc *pMD = codeInfo.GetMethodDesc();
-                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset);
+                        InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, pMD->GetNativeCode());
                         break;
                     }
 
@@ -1186,15 +1200,71 @@ CALL_TARGET_IP:
                     callArgsOffset = ip[2];
                     methodSlot = ip[3];
 
-                    OBJECTREF objRef = AllocateObject((MethodTable*)pMethod->pDataItems[ip[4]]);
+                    MethodTable *pClass = (MethodTable*)pMethod->pDataItems[ip[4]];
+                    // FIXME: Duplicated code from CALL_INTERP_SLOT
+                    size_t targetMethod = (size_t)pMethod->pDataItems[methodSlot];
+                    MethodDesc *pMD = nullptr;
+                    if (targetMethod & INTERP_METHOD_HANDLE_TAG)
+                    {
+                        pMD = (MethodDesc*)(targetMethod & ~INTERP_METHOD_HANDLE_TAG);
+                    }
 
-                    // This is return value
-                    LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
-                    // Set `this` arg for ctor call
-                    LOCAL_VAR (callArgsOffset, OBJECTREF) = objRef;
-                    ip += 5;
+                    // If we are constructing a type with a component size (i.e. a string) its constructor is a special
+                    //  fcall that is basically a static method that returns the new instance.
+                    if (pMD && pClass->HasComponentSize())
+                    {
+                        // The compiler didn't know about this so it reserved space for a this-reference. We need to skip
+                        //  past that reserved space, since the callee doesn't expect it.
+                        LOCAL_VAR(callArgsOffset, void*) = nullptr; // and zero it too! it might get scanned by the GC.
+                        callArgsOffset += sizeof(StackVal);
 
-                    goto CALL_INTERP_SLOT;
+                        if (pClass->IsArray())
+                        {
+                            // mdarray ctors are implemented via a helper ftn we grabbed at compile time
+                            size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[5]];
+                            HELPER_FTN_NEW_MDARR helper = nullptr;
+                            if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                                helper = *(HELPER_FTN_NEW_MDARR *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                            else
+                                helper = (HELPER_FTN_NEW_MDARR)helperDirectOrIndirect;
+                            assert(helper);
+
+                            // mdarray ctor wants an array of ints, we can't pass the callArgsOffset directly since
+                            //  it's technically a stream of intptrs even if each value is an int
+                            int rank = pClass->GetRank();
+                            int dims[8] = { 0 };
+                            assert(rank < 8);
+                            for (int i = 0; i < rank; i++)
+                                dims[i] = LOCAL_VAR(callArgsOffset + (i * sizeof(StackVal)), int);
+
+                            LOCAL_VAR(returnOffset, Object*) = helper((CORINFO_CLASS_HANDLE)pClass, rank, dims);
+                        }
+                        else
+                        {
+                            // Get the address of the fcall that implements the ctor
+                            PCODE code = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+                            assert(code);
+
+                            // callArgsOffset now only points to the ctor arguments, which are what the fcall expects.
+                            // returnOffset still points to where the new instance goes, and the fcall will write it there.
+                            InvokeCompiledMethod(pMD, stack + callArgsOffset, stack + returnOffset, code);
+                        }
+
+                        ip += 6;
+                        break;
+                    }
+                    else
+                    {
+                        OBJECTREF objRef = AllocateObject(pClass);
+
+                        // This is return value
+                        LOCAL_VAR(returnOffset, OBJECTREF) = objRef;
+                        // Set `this` arg for ctor call
+                        LOCAL_VAR(callArgsOffset, OBJECTREF) = objRef;
+                        ip += 6;
+
+                        goto CALL_INTERP_SLOT;
+                    }
                 }
                 case INTOP_NEWOBJ_VT:
                 {
