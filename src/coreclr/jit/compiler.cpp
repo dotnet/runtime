@@ -1980,14 +1980,14 @@ void Compiler::compSetProcessor()
     opts.compSupportsISAReported.Reset();
     opts.compSupportsISAExactly.Reset();
 
-// The VM will set the ISA flags depending on actual hardware support and any
-// config values specified by the user. Config may have caused the VM to exclude
-// baseline ISAs from the supported set. We force their inclusion here so that
-// JIT code can use them unconditionally, but we will honor the config when
-// resolving managed HWIntrinsic methods.
-//
-// We also take care of adding the virtual vector ISAs (i.e. Vector64/128/256/512)
-// here, based on a combination of hardware ISA support and config values.
+    // The VM will set the ISA flags depending on actual hardware support and any
+    // config values specified by the user. Config may have caused the VM to exclude
+    // baseline ISAs from the supported set. We force their inclusion here so that
+    // JIT code can use them unconditionally, but we will honor the config when
+    // resolving managed HWIntrinsic methods.
+    //
+    // We also take care of adding the virtual vector ISAs (i.e. Vector64/128/256/512)
+    // here, based on a combination of hardware ISA support and config values.
 
 #if defined(TARGET_XARCH)
     // If the VM passed in a virtual vector ISA, it was done to communicate PreferredVectorBitWidth.
