@@ -105,7 +105,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add.d  $a2, $a2, $t3
         ld.d  $t3, $a3, OFFSETOF__ee_alloc_context__combined_limit
-        bltu  $t3, $a2, C_FUNC(RhpNewArray)
+        bltu  $t3, $a2, C_FUNC(RhpNewVariableSizeObject)
 
         // Reload new object address into r12.
         ld.d  $t3, $a3, OFFSETOF__ee_alloc_context__alloc_ptr
@@ -193,7 +193,7 @@ LOCAL_LABEL(ArraySizeOverflow):
         // Delegate overflow handling to the generic helper conservatively
 
         li.w  $a2, (0x40000000 / 8) // sizeof(void*)
-        bgeu  $a1, $a2, C_FUNC(RhpNewArray)
+        bgeu  $a1, $a2, C_FUNC(RhpNewVariableSizeObject)
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -213,7 +213,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 //  a0 == MethodTable
 //  a1 == element count
-    NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
+    NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME $a3
 
@@ -227,14 +227,14 @@ LOCAL_LABEL(ArraySizeOverflow):
         bl  C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer and length on success.
-        beqz  $a0, LOCAL_LABEL(ArrayOutOfMemory)
+        beqz  $a0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
         .cfi_restore_state
-LOCAL_LABEL(ArrayOutOfMemory):
+LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -244,4 +244,4 @@ LOCAL_LABEL(ArrayOutOfMemory):
         POP_COOP_PINVOKE_FRAME
         b  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    NESTED_END RhpNewArray, _TEXT
+    NESTED_END RhpNewVariableSizeObject, _TEXT

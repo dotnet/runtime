@@ -124,7 +124,7 @@ AllocContextOverflow:
         ; Restore the MethodTable and put it in ecx
         pop         ecx
 
-        jmp         @RhpNewArray@8
+        jmp         @RhpNewVariableSizeObject@8
 ENDM
 
 ; Allocate a new string.
@@ -212,7 +212,7 @@ FASTCALL_FUNC   RhpNewObjectArrayFast, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)
-        jae         @RhpNewArray@8
+        jae         @RhpNewVariableSizeObject@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -226,12 +226,12 @@ FASTCALL_ENDFUNC
 ENDIF
 
 ;
-; Object* RhpNewArray(MethodTable *pMT, INT_PTR size)
+; Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)
 ;
 ; ecx == MethodTable
 ; edx == element count
 ;
-FASTCALL_FUNC RhpNewArray, 8
+FASTCALL_FUNC RhpNewVariableSizeObject, 8
         PUSH_COOP_PINVOKE_FRAME eax
 
         ; Preserve MethodTable in ESI.
@@ -247,13 +247,13 @@ FASTCALL_FUNC RhpNewArray, 8
         call        RhpGcAlloc
 
         test        eax, eax
-        jz          ArrayOutOfMemory
+        jz          RhpNewVariableSizeObject_OutOfMemory
 
         POP_COOP_PINVOKE_FRAME
 
         ret
 
-ArrayOutOfMemory:
+RhpNewVariableSizeObject_OutOfMemory:
         ; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ; an out of memory exception that the caller of this allocator understands.
 

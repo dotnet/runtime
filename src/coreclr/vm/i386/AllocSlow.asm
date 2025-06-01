@@ -12,7 +12,7 @@ include asmmacros.inc
 EXTERN _RhpGcAllocMaybeFrozen@12 : PROC
 EXTERN _RhExceptionHandling_FailedAllocation_Helper@12 : PROC
 EXTERN @RhpNewObject@8 : PROC
-EXTERN @RhpNewArray@8 : PROC
+EXTERN @RhpNewVariableSizeObject@8 : PROC
 
 g_global_alloc_lock EQU _g_global_alloc_lock
 g_global_alloc_context EQU _g_global_alloc_context
@@ -118,7 +118,7 @@ FASTCALL_ENDFUNC
 ;
 NEW_ARRAY_FAST_PROLOG_UP MACRO
         inc         [g_global_alloc_lock]
-        jnz         @RhpNewArray@8
+        jnz         @RhpNewVariableSizeObject@8
 
         push        ecx
         push        edx
@@ -164,7 +164,7 @@ AllocContextOverflow:
         pop         ecx
 
         mov         [g_global_alloc_lock], -1
-        jmp         @RhpNewArray@8
+        jmp         @RhpNewVariableSizeObject@8
 ENDM
 
 ;
@@ -258,7 +258,7 @@ FASTCALL_FUNC   RhpNewObjectArrayFast_UP, 8
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (40000000h / 4) ; sizeof(void*)
-        jae         @RhpNewArray@8
+        jae         @RhpNewVariableSizeObject@8
 
         ; In this case we know the element size is sizeof(void *), or 4 for x86
         ; This helps us in two ways - we can shift instead of multiplying, and

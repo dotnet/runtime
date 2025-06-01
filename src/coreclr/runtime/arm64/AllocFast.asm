@@ -107,7 +107,7 @@ NewOutOfMemory
         add         x2, x2, x12
         ldr         x12, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
         cmp         x2, x12
-        bhi         RhpNewArray
+        bhi         RhpNewVariableSizeObject
 
         ;; Reload new object address into r12.
         ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
@@ -194,7 +194,7 @@ ArraySizeOverflow
 
         mov         x2, #(0x40000000 / 8) ; sizeof(void*)
         cmp         x1, x2
-        bhs         RhpNewArray
+        bhs         RhpNewVariableSizeObject
 
         ; In this case we know the element size is sizeof(void *), or 8 for arm64
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -214,7 +214,7 @@ ArraySizeOverflow
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 ;;  x0 == MethodTable
 ;;  x1 == element count
-    NESTED_ENTRY RhpNewArray
+    NESTED_ENTRY RhpNewVariableSizeObject
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -227,12 +227,12 @@ ArraySizeOverflow
         ;; void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl          RhpGcAlloc
 
-        cbz         x0, ArrayOutOfMemory
+        cbz         x0, RhpNewVariableSizeObject_OutOfMemory
 
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
-ArrayOutOfMemory
+RhpNewVariableSizeObject_OutOfMemory
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
 
@@ -242,6 +242,6 @@ ArrayOutOfMemory
         POP_COOP_PINVOKE_FRAME
         EPILOG_NOP b RhExceptionHandling_FailedAllocation
 
-    NESTED_END RhpNewArray
+    NESTED_END RhpNewVariableSizeObject
 
     END

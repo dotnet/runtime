@@ -114,7 +114,7 @@ LOCAL_LABEL(NewOutOfMemory):
 #if defined(__APPLE__)
         bhi         1f
 #else
-        bhi         C_FUNC(RhpNewArray)
+        bhi         C_FUNC(RhpNewVariableSizeObject)
 #endif
 
         // Reload new object address into r12.
@@ -134,7 +134,7 @@ LOCAL_LABEL(NewOutOfMemory):
 
 #if defined(__APPLE__)
 1:
-        b           C_FUNC(RhpNewArray)
+        b           C_FUNC(RhpNewVariableSizeObject)
 #endif
 
     .endm
@@ -216,7 +216,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 #if defined(__APPLE__)
         bhs         1f
 #else
-        bhs         C_FUNC(RhpNewArray)
+        bhs         C_FUNC(RhpNewVariableSizeObject)
 #endif
 
         // In this case we know the element size is sizeof(void *), or 8 for arm64
@@ -233,7 +233,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 
 #if defined(__APPLE__)
 1:
-        b           C_FUNC(RhpNewArray)
+        b           C_FUNC(RhpNewVariableSizeObject)
 #endif
 
     LEAF_END    RhpNewObjectArrayFast, _TEXT
@@ -243,7 +243,7 @@ LOCAL_LABEL(ArraySizeOverflow):
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 //  x0 == MethodTable
 //  x1 == element count
-    NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
+    NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME x3
 
@@ -257,14 +257,14 @@ LOCAL_LABEL(ArraySizeOverflow):
         bl          C_FUNC(RhpGcAlloc)
 
         // Set the new objects MethodTable pointer and length on success.
-        cbz         x0, LOCAL_LABEL(ArrayOutOfMemory)
+        cbz         x0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
         .cfi_restore_state
-LOCAL_LABEL(ArrayOutOfMemory):
+LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -274,4 +274,4 @@ LOCAL_LABEL(ArrayOutOfMemory):
         POP_COOP_PINVOKE_FRAME
         b C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    NESTED_END RhpNewArray, _TEXT
+    NESTED_END RhpNewVariableSizeObject, _TEXT

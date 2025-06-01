@@ -82,12 +82,12 @@ namespace System.Runtime
             MethodTable* pEEElementType = pEEType->RelatedParameterType;
             if (pEEElementType->IsValueType && pEEElementType->RequiresAlign8)
             {
-                return InternalCalls.RhpNewArray(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN8);
+                return InternalCalls.RhpNewVariableSizeObject(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_ALIGN8);
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
             {
-                return InternalCalls.RhpNewArray(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
+                return InternalCalls.RhpNewVariableSizeObject(pEEType, length, (uint)GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
             }
         }
 

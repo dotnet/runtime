@@ -230,7 +230,7 @@ NESTED_END RhpNewObject, _TEXT
         // r0 == MethodTable
         // r1 == element count
         NEW_ARRAY_FAST_TAIL_EPILOG
-        b           C_FUNC(RhpNewArray)
+        b           C_FUNC(RhpNewVariableSizeObject)
 .endm
 
 
@@ -345,7 +345,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
 LOCAL_LABEL(RhpNewObjectArrayFast_RarePath):
         NEW_ARRAY_FAST_TAIL_EPILOG
-        b           C_FUNC(RhpNewArray)
+        b           C_FUNC(RhpNewVariableSizeObject)
 LEAF_END RhpNewObjectArrayFast, _TEXT
 #endif
 
@@ -353,7 +353,7 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 //  r0 == MethodTable
 //  r1 == element count
-NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
+NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME r3
 
         // Preserve the MethodTable in r5.
@@ -366,12 +366,12 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         blx         C_FUNC(RhpGcAlloc)
 
         // Test for failure (NULL return).
-        cbz         r0, LOCAL_LABEL(ArrayOutOfMemory)
+        cbz         r0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         POP_COOP_PINVOKE_FRAME
         bx          lr
 
-LOCAL_LABEL(ArrayOutOfMemory):
+LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
 
         mov         r0, r5       // MethodTable
         mov         r1, #0       // Indicate that we should throw OOM.
@@ -380,7 +380,7 @@ LOCAL_LABEL(ArrayOutOfMemory):
 
         b           C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewArray, _TEXT
+NESTED_END RhpNewVariableSizeObject, _TEXT
 
 
 // Allocate an array on an 8 byte boundary.

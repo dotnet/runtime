@@ -159,7 +159,7 @@ NESTED_END RhpNewObject, _TEXT
         pop_nonvol_reg r13
         pop_nonvol_reg r12
         pop_nonvol_reg rbx
-        jmp C_FUNC(RhpNewArray)
+        jmp C_FUNC(RhpNewVariableSizeObject)
 
 .endm // NEW_ARRAY_FAST
 
@@ -229,7 +229,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         rsi, (0x40000000 / 8) // sizeof(void*)
-        jae         C_FUNC(RhpNewArray)
+        jae         C_FUNC(RhpNewVariableSizeObject)
 
         // In this case we know the element size is sizeof(void *), or 8 for x64
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -246,7 +246,7 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
 #endif
 
 
-NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
+NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
 
         // rdi == MethodTable
         // rsi == element count
@@ -270,7 +270,7 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         call        C_FUNC(RhpGcAlloc)
 
         test        rax, rax
-        jz          LOCAL_LABEL(ArrayOutOfMemory)
+        jz          LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
@@ -278,7 +278,7 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
 
         .cfi_restore_state
         .cfi_def_cfa_offset 96          // workaround cfi_restore_state bug
-LOCAL_LABEL(ArrayOutOfMemory):
+LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -289,4 +289,4 @@ LOCAL_LABEL(ArrayOutOfMemory):
 
         jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewArray, _TEXT
+NESTED_END RhpNewVariableSizeObject, _TEXT

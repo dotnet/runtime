@@ -130,7 +130,7 @@ LEAF_END RhpNewObject, _TEXT
         ESP_EPILOG_POP ecx
         ESP_EPILOG_END
 
-        jmp         RhpNewArray
+        jmp         RhpNewVariableSizeObject
 .endm
 
 // Allocate a new string.
@@ -220,7 +220,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (0x40000000 / 4) // sizeof(void*)
-        jae         RhpNewArray
+        jae         RhpNewVariableSizeObject
 
         // In this case we know the element size is sizeof(void *), or 4 for x86
         // This helps us in two ways - we can shift instead of multiplying, and
@@ -234,12 +234,12 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
 #endif
 
 //
-// Object* RhpNewArray(MethodTable *pMT, INT_PTR size)
+// Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)
 //
 // ecx == MethodTable
 // edx == element count
 //
-NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
+NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME eax
 
         // Preserve MethodTable in ESI.
@@ -257,13 +257,13 @@ NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         add         esp, 16
 
         test        eax, eax
-        jz          LOCAL_LABEL(RhpNewArray_AllocFailed)
+        jz          LOCAL_LABEL(RhpNewVariableSizeObject_AllocFailed)
 
         POP_COOP_PINVOKE_FRAME
 
         ret
 
-LOCAL_LABEL(RhpNewArray_AllocFailed):
+LOCAL_LABEL(RhpNewVariableSizeObject_AllocFailed):
         // This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -273,4 +273,4 @@ LOCAL_LABEL(RhpNewArray_AllocFailed):
         POP_COOP_PINVOKE_FRAME
 
         jmp         RhExceptionHandling_FailedAllocation
-NESTED_END RhpNewArray, _TEXT
+NESTED_END RhpNewVariableSizeObject, _TEXT

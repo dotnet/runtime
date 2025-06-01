@@ -101,7 +101,7 @@ NEW_ARRAY_FAST MACRO
 
         mov         r8, rax
         add         rax, [r10 + OFFSETOF__ee_alloc_context__alloc_ptr]
-        jc          RhpNewArray
+        jc          RhpNewVariableSizeObject
 
         ; rax == new alloc ptr
         ; rcx == MethodTable
@@ -109,7 +109,7 @@ NEW_ARRAY_FAST MACRO
         ; r8 == array size
         ; r10 == ee_alloc_context pointer
         cmp         rax, [r10 + OFFSETOF__ee_alloc_context__combined_limit]
-        ja          RhpNewArray
+        ja          RhpNewVariableSizeObject
 
         mov         [r10 + OFFSETOF__ee_alloc_context__alloc_ptr], rax
 
@@ -188,7 +188,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         rdx, (40000000h / 8) ; sizeof(void*)
-        jae         RhpNewArray
+        jae         RhpNewVariableSizeObject
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -205,7 +205,7 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
 ENDIF ; FEATURE_NATIVEAOT
 
 
-NESTED_ENTRY RhpNewArray, _TEXT
+NESTED_ENTRY RhpNewVariableSizeObject, _TEXT
 
         ; rcx == MethodTable
         ; rdx == element count
@@ -227,12 +227,12 @@ NESTED_ENTRY RhpNewArray, _TEXT
         call        RhpGcAlloc
 
         test        rax, rax
-        jz          ArrayOutOfMemory
+        jz          RhpNewVariableSizeObject_OutOfMemory
 
         POP_COOP_PINVOKE_FRAME
         ret
 
-ArrayOutOfMemory:
+RhpNewVariableSizeObject_OutOfMemory:
         ;; This is the OOM failure path. We're going to tail-call to a managed helper that will throw
         ;; an out of memory exception that the caller of this allocator understands.
 
@@ -243,6 +243,6 @@ ArrayOutOfMemory:
 
         jmp         RhExceptionHandling_FailedAllocation
 
-NESTED_END RhpNewArray, _TEXT
+NESTED_END RhpNewVariableSizeObject, _TEXT
 
         END

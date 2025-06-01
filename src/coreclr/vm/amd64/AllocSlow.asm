@@ -5,7 +5,7 @@ include AsmMacros.inc
 include asmconstants.inc
 
 EXTERN RhpNewObject : PROC
-EXTERN RhpNewArray : PROC
+EXTERN RhpNewVariableSizeObject : PROC
 EXTERN RhpGcAllocMaybeFrozen : PROC
 EXTERN RhExceptionHandling_FailedAllocation_Helper : PROC
 
@@ -123,7 +123,7 @@ LEAF_END RhpNewFast_UP, _TEXT
 NEW_ARRAY_FAST_UP MACRO
 
         inc         [g_global_alloc_lock]
-        jnz         RhpNewArray
+        jnz         RhpNewVariableSizeObject
 
         mov         r8, rax
         add         rax, [g_global_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
@@ -148,7 +148,7 @@ NEW_ARRAY_FAST_UP MACRO
 
 NewArrayFast_RarePath:
         mov         [g_global_alloc_lock], -1
-        jmp         RhpNewArray
+        jmp         RhpNewVariableSizeObject
 
 ENDM
 
@@ -227,7 +227,7 @@ LEAF_ENTRY RhpNewObjectArrayFast_UP, _TEXT
         ; Delegate overflow handling to the generic helper conservatively
 
         cmp         rdx, (40000000h / 8) ; sizeof(void*)
-        jae         ArraySizeOverflow
+        jae         RhpNewVariableSizeObject
 
         ; In this case we know the element size is sizeof(void *), or 8 for x64
         ; This helps us in two ways - we can shift instead of multiplying, and
@@ -239,15 +239,6 @@ LEAF_ENTRY RhpNewObjectArrayFast_UP, _TEXT
         ; to be a multiple of 8.
 
         NEW_ARRAY_FAST_UP
-
-ArraySizeOverflow:
-        ; We get here if the size of the final array object can't be represented as an unsigned
-        ; 32-bit value. We're going to tail-call to a managed helper that will throw
-        ; an overflow exception that the caller of this allocator understands.
-
-        ; rcx holds MethodTable pointer already
-        mov         edx, 1              ; Indicate that we should throw OverflowException
-        jmp         RhExceptionHandling_FailedAllocation
 
 LEAF_END RhpNewObjectArrayFast_UP, _TEXT
 

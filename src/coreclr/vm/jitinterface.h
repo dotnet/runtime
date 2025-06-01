@@ -164,7 +164,7 @@ EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD s
 #endif
 
 EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL2(Object*, RhpNewArray, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
 
