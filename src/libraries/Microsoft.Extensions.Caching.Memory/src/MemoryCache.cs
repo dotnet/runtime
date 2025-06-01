@@ -27,10 +27,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private readonly MemoryCacheOptions _options;
 
-        private readonly List<WeakReference<Stats>>? _allStats;
+        private readonly List<Stats>? _allStats;
         private long _accumulatedHits;
         private long _accumulatedMisses;
-        private readonly ThreadLocal<Stats>? _stats;
+        private readonly ThreadLocal<StatsHandle>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
         private DateTime _lastExpirationScan;
@@ -59,8 +59,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
             if (_options.TrackStatistics)
             {
-                _allStats = new List<WeakReference<Stats>>();
-                _stats = new ThreadLocal<Stats>(() => new Stats(this));
+                _allStats = new List<Stats>();
+                _stats = new ThreadLocal<StatsHandle>(() => new StatsHandle(this));
             }
 
             _lastExpirationScan = UtcNow;
@@ -406,29 +406,39 @@ namespace Microsoft.Extensions.Caching.Memory
                 long hits = _accumulatedHits;
                 long misses = _accumulatedMisses;
 
-                foreach (WeakReference<Stats> wr in _allStats)
+                foreach (Stats stats in _allStats)
                 {
-                    if (wr.TryGetTarget(out Stats? stats))
-                    {
-                        hits += Volatile.Read(ref stats.Hits);
-                        misses += Volatile.Read(ref stats.Misses);
-                    }
+                    hits += Volatile.Read(ref stats.Hits);
+                    misses += Volatile.Read(ref stats.Misses);
                 }
 
                 return (hits, misses);
             }
         }
 
-        private Stats GetStats() => _stats!.Value!;
+        private Stats GetStats() => _stats!.Value!.Stats;
+
+        internal class StatsHandle
+        {
+            public StatsHandle(MemoryCache memoryCache)
+            {
+                Stats = new Stats(memoryCache, this);
+            }
+
+            public Stats Stats { get; private set; }
+        }
+
 
         internal sealed class Stats
         {
             private readonly MemoryCache _memoryCache;
             public long Hits;
             public long Misses;
+            public WeakReference<StatsHandle> Handle { get; private set; }
 
-            public Stats(MemoryCache memoryCache)
+            public Stats(MemoryCache memoryCache, StatsHandle statsHandle)
             {
+                Handle = new WeakReference<StatsHandle>(statsHandle);
                 _memoryCache = memoryCache;
                 _memoryCache.AddToStats(this);
             }
@@ -443,13 +453,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 _accumulatedHits += Volatile.Read(ref current.Hits);
                 _accumulatedMisses += Volatile.Read(ref current.Misses);
 
-                List<WeakReference<Stats>> all = _allStats;
-                for (int i = all.Count - 1; i >= 0; i--)
-                {
-                    if (!all[i].TryGetTarget(out _))
-                        all.RemoveAt(i);
-                }
-                all.TrimExcess();
+                _allStats.RemoveAll(static s => !s.Handle.TryGetTarget(out _));
+                _allStats.TrimExcess();
             }
         }
 
@@ -457,7 +462,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             lock (_allStats!)
             {
-                _allStats.Add(new WeakReference<Stats>(current));
+                _allStats.Add(current);
             }
         }
 
