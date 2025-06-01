@@ -87,9 +87,7 @@ INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
     mov     trashReg, fs:[__tls_array]
     mov     trashReg, [trashReg + destReg * 4]
     add     trashReg, SECTIONREL t_runtime_thread_locals
-    if OFFSETOF__RuntimeThreadLocals__ee_alloc_context gt 0
     lea     destReg, [trashReg + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
-    endif
 endm
 
 PUSH_COOP_PINVOKE_FRAME macro target
