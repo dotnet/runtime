@@ -24,11 +24,11 @@ namespace System
             // _pComWeakRef is effectively readonly.
             // the only place where we change it after construction is in finalizer.
             private IntPtr _pComWeakRef;
-            private readonly long _wrapperId;
+            private readonly object? _context;
 
             internal object? ResolveTarget()
             {
-                return ComWeakRefToObject(_pComWeakRef, _wrapperId);
+                return ComWeakRefToObject(_pComWeakRef, _context);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -43,13 +43,13 @@ namespace System
             [MethodImpl(MethodImplOptions.NoInlining)]
             private static ComInfo? FromObjectSlow(object target)
             {
-                IntPtr pComWeakRef = ObjectToComWeakRef(target, out long wrapperId);
+                IntPtr pComWeakRef = ObjectToComWeakRef(target, out object? context);
                 if (pComWeakRef == 0)
                     return null;
 
                 try
                 {
-                    return new ComInfo(pComWeakRef, wrapperId);
+                    return new ComInfo(pComWeakRef, context);
                 }
                 catch (OutOfMemoryException)
                 {
@@ -59,11 +59,11 @@ namespace System
                 }
             }
 
-            private ComInfo(IntPtr pComWeakRef, long wrapperId)
+            private ComInfo(IntPtr pComWeakRef, object? context)
             {
                 Debug.Assert(pComWeakRef != IntPtr.Zero);
                 _pComWeakRef = pComWeakRef;
-                _wrapperId = wrapperId;
+                _context = context;
             }
 
             ~ComInfo()

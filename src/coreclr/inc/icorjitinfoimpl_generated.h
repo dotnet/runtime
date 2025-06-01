@@ -495,6 +495,9 @@ bool runWithSPMIErrorTrap(
 void getEEInfo(
           CORINFO_EE_INFO* pEEInfoOut) override;
 
+void getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
@@ -553,20 +556,12 @@ void* getMethodSync(
 CorInfoHelpFunc getLazyStringLiteralHelper(
           CORINFO_MODULE_HANDLE handle) override;
 
-CORINFO_MODULE_HANDLE embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection) override;
-
 CORINFO_CLASS_HANDLE embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection) override;
 
 CORINFO_METHOD_HANDLE embedMethodHandle(
           CORINFO_METHOD_HANDLE handle,
-          void** ppIndirection) override;
-
-CORINFO_FIELD_HANDLE embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
           void** ppIndirection) override;
 
 void embedGenericHandle(
@@ -656,6 +651,8 @@ bool getTailCallHelpers(
           CORINFO_SIG_INFO* sig,
           CORINFO_GET_TAILCALL_HELPERS_FLAGS flags,
           CORINFO_TAILCALL_HELPERS* pResult) override;
+
+CORINFO_METHOD_HANDLE getAsyncResumptionStub() override;
 
 bool convertPInvokeCalliToCall(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,

@@ -127,10 +127,10 @@ namespace ILCompiler
             new("--opt-async-methods") { Description = SR.AsyncModuleOptimization };
         public Option<string> NonLocalGenericsModule { get; } =
             new("--non-local-generics-module") { DefaultValueFactory = _ => string.Empty, Description = SR.NonLocalGenericsModule };
-        public Option<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
-            new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
-        public Option<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
-            new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
+        public Option<MethodLayoutAlgorithm> MethodLayout { get; } =
+            new("--method-layout") { CustomParser = MakeMethodLayoutAlgorithm, DefaultValueFactory = MakeMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
+        public Option<FileLayoutAlgorithm> FileLayout { get; } =
+            new("--file-layout") { CustomParser = MakeFileLayoutAlgorithm, DefaultValueFactory = MakeFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
         public Option<bool> VerifyTypeAndFieldLayout { get; } =
             new("--verify-type-and-field-layout") { Description = SR.VerifyTypeAndFieldLayoutOption };
         public Option<string> CallChainProfileFile { get; } =
@@ -285,69 +285,62 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
+        public static void PrintExtendedHelp(ParseResult _)
         {
-            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
-                yield return sectionDelegate;
+            Console.WriteLine(SR.OptionPassingHelp);
+            Console.WriteLine();
+            Console.WriteLine(SR.DashDashHelp);
+            Console.WriteLine();
 
-            yield return _ =>
+            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
+            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
+            Console.WriteLine();
+
+            Console.WriteLine(SR.CrossModuleInliningExtraHelp);
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<MethodLayoutAlgorithm>())));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<FileLayoutAlgorithm>())));
+            Console.WriteLine();
+
+            Console.WriteLine(SR.InstructionSetHelp);
+            foreach (string arch in ValidArchitectures)
             {
-                Console.WriteLine(SR.OptionPassingHelp);
-                Console.WriteLine();
-                Console.WriteLine(SR.DashDashHelp);
-                Console.WriteLine();
-
-                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-                string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
-
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
-                Console.WriteLine();
-
-                Console.WriteLine(SR.CrossModuleInliningExtraHelp);
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<ReadyToRunMethodLayoutAlgorithm>())));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<ReadyToRunFileLayoutAlgorithm>())));
-                Console.WriteLine();
-
-                Console.WriteLine(SR.InstructionSetHelp);
-                foreach (string arch in ValidArchitectures)
+                TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
+                bool first = true;
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
                 {
-                    TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
-                    bool first = true;
-                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    // Only instruction sets with are specifiable should be printed to the help text
+                    if (instructionSet.Specifiable)
                     {
-                        // Only instruction sets with are specifiable should be printed to the help text
-                        if (instructionSet.Specifiable)
+                        if (first)
                         {
-                            if (first)
-                            {
-                                Console.Write(arch);
-                                Console.Write(": ");
-                                first = false;
-                            }
-                            else
-                            {
-                                Console.Write(", ");
-                            }
-                            Console.Write(instructionSet.Name);
+                            Console.Write(arch);
+                            Console.Write(": ");
+                            first = false;
                         }
+                        else
+                        {
+                            Console.Write(", ");
+                        }
+                        Console.Write(instructionSet.Name);
                     }
-
-                    if (first) continue; // no instruction-set found for this architecture
-
-                    Console.WriteLine();
                 }
 
+                if (first) continue; // no instruction-set found for this architecture
+
                 Console.WriteLine();
-                Console.WriteLine(SR.CpuFamilies);
-                Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-                return true;
-            };
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(SR.CpuFamilies);
+            Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
         }
 
         private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)
@@ -378,33 +371,34 @@ namespace ILCompiler
             return parallelism;
         }
 
-        private static ReadyToRunMethodLayoutAlgorithm MakeReadyToRunMethodLayoutAlgorithm(ArgumentResult result)
+        private static MethodLayoutAlgorithm MakeMethodLayoutAlgorithm(ArgumentResult result)
         {
             if (result.Tokens.Count == 0 )
-                return ReadyToRunMethodLayoutAlgorithm.DefaultSort;
+                return MethodLayoutAlgorithm.DefaultSort;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "defaultsort" => ReadyToRunMethodLayoutAlgorithm.DefaultSort,
-                "exclusiveweight" => ReadyToRunMethodLayoutAlgorithm.ExclusiveWeight,
-                "hotcold" => ReadyToRunMethodLayoutAlgorithm.HotCold,
-                "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
-                "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
-                "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
-                "random" => ReadyToRunMethodLayoutAlgorithm.Random,
+                "defaultsort" => MethodLayoutAlgorithm.DefaultSort,
+                "exclusiveweight" => MethodLayoutAlgorithm.ExclusiveWeight,
+                "hotcold" => MethodLayoutAlgorithm.HotCold,
+                "instrumentedhotcold" => MethodLayoutAlgorithm.InstrumentedHotCold,
+                "hotwarmcold" => MethodLayoutAlgorithm.HotWarmCold,
+                "callfrequency" => MethodLayoutAlgorithm.CallFrequency,
+                "pettishansen" => MethodLayoutAlgorithm.PettisHansen,
+                "random" => MethodLayoutAlgorithm.Random,
                 _ => throw new CommandLineException(SR.InvalidMethodLayout)
             };
         }
 
-        private static ReadyToRunFileLayoutAlgorithm MakeReadyToRunFileLayoutAlgorithm(ArgumentResult result)
+        private static FileLayoutAlgorithm MakeFileLayoutAlgorithm(ArgumentResult result)
         {
             if (result.Tokens.Count == 0 )
-                return ReadyToRunFileLayoutAlgorithm.DefaultSort;
+                return FileLayoutAlgorithm.DefaultSort;
 
             return result.Tokens[0].Value.ToLowerInvariant() switch
             {
-                "defaultsort" => ReadyToRunFileLayoutAlgorithm.DefaultSort,
-                "methodorder" => ReadyToRunFileLayoutAlgorithm.MethodOrder,
+                "defaultsort" => FileLayoutAlgorithm.DefaultSort,
+                "methodorder" => FileLayoutAlgorithm.MethodOrder,
                 _ => throw new CommandLineException(SR.InvalidFileLayout)
             };
         }

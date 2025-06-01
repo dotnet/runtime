@@ -224,6 +224,7 @@
       Microsoft.Extensions.Primitives;
       System.Diagnostics.EventLog;
       System.Security.Cryptography.Xml;
+      System.Threading.AccessControl;
       System.Threading.RateLimiting;
     </AspNetCoreAppLibrary>
     <WindowsDesktopCoreAppLibrary>

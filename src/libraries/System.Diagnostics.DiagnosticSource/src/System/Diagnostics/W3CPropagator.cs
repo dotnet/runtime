@@ -117,6 +117,9 @@ namespace System.Diagnostics
                 baggageSpan = entrySeparator >= 0 ? baggageSpan.Slice(entrySeparator + 1) : ReadOnlySpan<char>.Empty;
             } while (baggageSpan.Length > 0);
 
+            // reverse order for asp.net compatibility.
+            baggageList?.Reverse();
+
             baggage = baggageList;
             return baggageList != null;
         }

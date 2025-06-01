@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
     /// <summary>
     ///   Represents a specific algorithm within the ML-DSA family.
     /// </summary>
-    [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+    [Experimental(Experimentals.PostQuantumCryptographyDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class MLDsaAlgorithm
     {
         /// <summary>

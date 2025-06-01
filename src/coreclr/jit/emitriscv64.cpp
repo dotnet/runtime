@@ -1682,7 +1682,7 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         assert(params.callType == EC_INDIR_R);
 
         id = emitNewInstrCallInd(argCnt, params.disp, params.ptrVars, gcrefRegs, byrefRegs, params.retSize,
-                                 params.secondRetSize);
+                                 params.secondRetSize, params.hasAsyncRet);
     }
     else
     {
@@ -1691,7 +1691,8 @@ void emitter::emitIns_Call(const EmitCallParams& params)
 
         assert(params.callType == EC_FUNC_TOKEN);
 
-        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.secondRetSize);
+        id = emitNewInstrCallDir(argCnt, params.ptrVars, gcrefRegs, byrefRegs, params.retSize, params.secondRetSize,
+                                 params.hasAsyncRet);
     }
 
     /* Update the emitter's live GC ref sets */
@@ -2011,6 +2012,10 @@ unsigned emitter::emitOutputCall(const insGroup* ig, BYTE* dst, instrDesc* id, c
         else if (idCall->idSecondGCref() == GCT_BYREF)
         {
             byrefRegs |= RBM_INTRET_1;
+        }
+        if (idCall->hasAsyncContinuationRet())
+        {
+            gcrefRegs |= RBM_ASYNC_CONTINUATION_RET;
         }
     }
 
@@ -5487,7 +5492,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 // TODO-RISCV64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
                 if (EA_SIZE(attr) == EA_4BYTE)
-                    emitIns_R_R_I(INS_slliw, attr, dstReg, dstReg, 0);
+                    emitIns_R_R(INS_sext_w, attr, dstReg, dstReg);
             }
             break;
 

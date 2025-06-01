@@ -873,6 +873,40 @@ namespace System.Net.Http.Functional.Tests
             VerifyRequestDuration(m, uri, acceptedErrorTypes: ["connection_error"]);
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public Task TimeInQueue_RecordedForNewConnectionsOnly()
+        {
+            const int RequestCount = 3;
+
+            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+
+                for (int i = 0; i < RequestCount; i++)
+                {
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                    using HttpResponseMessage response = await SendAsync(client, request);
+                }
+
+                // Only the first request is supposed to record time_in_queue.
+                // For follow up requests, the connection should be immediately available.
+                Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+
+            }, async server =>
+            {
+                await server.AcceptConnectionAsync(async conn =>
+                {
+                    for (int i = 0; i < RequestCount; i++)
+                    {
+                        await conn.ReadRequestDataAsync();
+                        await conn.SendResponseAsync(isFinal: true);
+                        conn.CompleteRequestProcessing();
+                    }
+                });
+            });
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -1306,6 +1340,26 @@ namespace System.Net.Http.Functional.Tests
         public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
         {
         }
+
+        [Fact]
+        public async Task H3ConnectionFailure_TimeInQueueRecorded()
+        {
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options()
+            {
+                Alpn = "shall-not-work" // anything other than "h3"
+            });
+
+            using HttpMessageInvoker client = CreateHttpMessageInvoker();
+            using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, server.Address)
+            {
+                Version = HttpVersion30,
+                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+            };
+            await Assert.ThrowsAsync<HttpRequestException>(() => SendAsync(client, request));
+
+            Assert.Equal(1, recorder.GetMeasurements().Count);
+        }
     }
 
     public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
@@ -1351,9 +1405,9 @@ namespace System.Net.Http.Functional.Tests
         public static bool RemoteExecutorAndSocketsHttpHandlerSupported => RemoteExecutor.IsSupported && SocketsHttpHandler.IsSupported;
 
         [ConditionalFact(nameof(RemoteExecutorAndSocketsHttpHandlerSupported))]
-        public void AllSocketsHttpHandlerCounters_Success_Recorded()
+        public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
-            RemoteExecutor.Invoke(static async Task () =>
+            await RemoteExecutor.Invoke(static async Task () =>
             {
                 TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -1399,7 +1453,7 @@ namespace System.Net.Http.Functional.Tests
                         await connection.WaitForCloseAsync(CancellationToken.None);
                     });
                 });
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]

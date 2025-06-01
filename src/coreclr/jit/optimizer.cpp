@@ -41,14 +41,14 @@ PhaseStatus Compiler::optSetBlockWeights()
 {
     noway_assert(opts.OptimizationEnabled());
     assert(m_dfsTree != nullptr);
-    const bool usingProfileWeights = fgIsUsingProfileWeights();
+
+    // Leave breadcrumb for loop alignment
+    fgHasLoops = m_dfsTree->HasCycle();
 
     // Rely on profile synthesis to propagate weights when we have PGO data.
     // TODO: Replace optSetBlockWeights with profile synthesis entirely.
-    if (usingProfileWeights)
+    if (fgIsUsingProfileWeights())
     {
-        // Leave breadcrumb for loop alignment
-        fgHasLoops = m_dfsTree->HasCycle();
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -63,11 +63,10 @@ PhaseStatus Compiler::optSetBlockWeights()
         m_reachabilitySets = BlockReachabilitySets::Build(m_dfsTree);
     }
 
-    if (m_dfsTree->HasCycle())
+    for (FlowGraphNaturalLoop* const loop : m_loops->InReversePostOrder())
     {
-        madeChanges = fgRenumberBlocks();
-        optMarkLoopHeads();
-        optFindAndScaleGeneralLoopBlocks();
+        optScaleLoopBlocks(loop);
+        madeChanges = true;
     }
 
     bool firstBBDominatesAllReturns = true;
@@ -108,7 +107,7 @@ PhaseStatus Compiler::optSetBlockWeights()
             block->bbSetRunRarely();
         }
 
-        if (!usingProfileWeights && firstBBDominatesAllReturns)
+        if (firstBBDominatesAllReturns)
         {
             // If the weight is already zero (and thus rarely run), there's no point scaling it.
             if (block->bbWeight != BB_ZERO_WEIGHT)
@@ -163,11 +162,10 @@ PhaseStatus Compiler::optSetBlockWeights()
 }
 
 //------------------------------------------------------------------------
-// optScaleLoopBlocks: Scale the weight of loop blocks from 'begBlk' to 'endBlk'.
+// optScaleLoopBlocks: Scale the weight of the blocks in 'loop'.
 //
 // Arguments:
-//      begBlk - first block of range. Must be marked as a loop head (BBF_LOOP_HEAD).
-//      endBlk - last block of range (inclusive). Must be reachable from `begBlk`.
+//      loop - the loop to scale the weight of.
 //
 // Operation:
 //      Calculate the 'loop weight'. This is the amount to scale the weight of each block in the loop.
@@ -179,124 +177,58 @@ PhaseStatus Compiler::optSetBlockWeights()
 //         64 -- double loop nesting
 //        512 -- triple loop nesting
 //
-void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
+void Compiler::optScaleLoopBlocks(FlowGraphNaturalLoop* loop)
 {
-    noway_assert(begBlk->bbNum <= endBlk->bbNum);
-    noway_assert(begBlk->isLoopHead());
-    noway_assert(m_reachabilitySets->CanReach(begBlk, endBlk));
-    noway_assert(!opts.MinOpts());
+    loop->VisitLoopBlocks([&](BasicBlock* curBlk) -> BasicBlockVisit {
+        auto reportBlockWeight = [&](const char* message) {
+            DBEXEC(verbose,
+                   printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", curBlk->bbNum, curBlk->getBBWeight(this), message));
+        };
 
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nMarking a loop from " FMT_BB " to " FMT_BB, begBlk->bbNum, endBlk->bbNum);
-    }
-#endif
-
-    // Build list of back edges for block begBlk.
-    FlowEdge* backedgeList = nullptr;
-
-    for (BasicBlock* const predBlock : begBlk->PredBlocks())
-    {
-        // Is this a back edge?
-        if (predBlock->bbNum >= begBlk->bbNum)
-        {
-            backedgeList = new (this, CMK_FlowEdge) FlowEdge(predBlock, begBlk, backedgeList);
-
-#if MEASURE_BLOCK_SIZE
-            genFlowNodeCnt += 1;
-            genFlowNodeSize += sizeof(FlowEdge);
-#endif // MEASURE_BLOCK_SIZE
-        }
-    }
-
-    // At least one backedge must have been found (the one from endBlk).
-    noway_assert(backedgeList);
-
-    auto reportBlockWeight = [&](BasicBlock* blk, const char* message) {
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("\n    " FMT_BB "(wt=" FMT_WT ")%s", blk->bbNum, blk->getBBWeight(this), message);
-        }
-#endif // DEBUG
-    };
-
-    for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
-    {
         // Don't change the block weight if it came from profile data.
         if (curBlk->hasProfileWeight() && fgHaveProfileWeights())
         {
-            reportBlockWeight(curBlk, "; unchanged: has profile weight");
-            continue;
+            reportBlockWeight("; unchanged: has profile weight");
+            return BasicBlockVisit::Continue;
         }
 
         // Don't change the block weight if it's known to be rarely run.
         if (curBlk->isRunRarely())
         {
-            reportBlockWeight(curBlk, "; unchanged: run rarely");
-            continue;
+            reportBlockWeight("; unchanged: run rarely");
+            return BasicBlockVisit::Continue;
         }
 
-        // Don't change the block weight if it's unreachable.
-        if (!m_reachabilitySets->GetDfsTree()->Contains(curBlk))
+        // If `curBlk` dominates any of the back edge blocks we set `dominates`.
+        bool dominates = false;
+
+        for (FlowEdge* const backEdge : loop->BackEdges())
         {
-            reportBlockWeight(curBlk, "; unchanged: unreachable");
-            continue;
-        }
+            BasicBlock* const backEdgeSource = backEdge->getSourceBlock();
+            dominates |= m_domTree->Dominates(curBlk, backEdgeSource);
 
-        // For curBlk to be part of a loop that starts at begBlk, curBlk must be reachable from begBlk and
-        // (since this is a loop) begBlk must likewise be reachable from curBlk.
-
-        if (m_reachabilitySets->CanReach(curBlk, begBlk) && m_reachabilitySets->CanReach(begBlk, curBlk))
-        {
-            // If `curBlk` reaches any of the back edge blocks we set `reachable`.
-            // If `curBlk` dominates any of the back edge blocks we set `dominates`.
-            bool reachable = false;
-            bool dominates = false;
-
-            for (FlowEdge* tmp = backedgeList; tmp != nullptr; tmp = tmp->getNextPredEdge())
+            if (dominates)
             {
-                BasicBlock* backedge = tmp->getSourceBlock();
-
-                reachable |= m_reachabilitySets->CanReach(curBlk, backedge);
-                dominates |= m_domTree->Dominates(curBlk, backedge);
-
-                if (dominates && reachable)
-                {
-                    // No need to keep looking; we've already found all the info we need.
-                    break;
-                }
-            }
-
-            if (reachable)
-            {
-                // If the block has BB_ZERO_WEIGHT, then it should be marked as rarely run, and skipped, above.
-                noway_assert(curBlk->bbWeight > BB_ZERO_WEIGHT);
-
-                weight_t scale = BB_LOOP_WEIGHT_SCALE;
-
-                if (!dominates)
-                {
-                    // If `curBlk` reaches but doesn't dominate any back edge to `endBlk` then there must be at least
-                    // some other path to `endBlk`, so don't give `curBlk` all the execution weight.
-                    scale = scale / 2;
-                }
-
-                curBlk->scaleBBWeight(scale);
-
-                reportBlockWeight(curBlk, "");
-            }
-            else
-            {
-                reportBlockWeight(curBlk, "; unchanged: back edge unreachable");
+                // No need to keep looking; we've already found all the info we need.
+                break;
             }
         }
-        else
+
+        weight_t scale = BB_LOOP_WEIGHT_SCALE;
+
+        if (!dominates)
         {
-            reportBlockWeight(curBlk, "; unchanged: block not in loop");
+            // If `curBlk` reaches but doesn't dominate any back edge to `endBlk` then there must be at least
+            // some other path to `endBlk`, so don't give `curBlk` all the execution weight.
+            scale = scale / 2;
         }
-    }
+
+        curBlk->scaleBBWeight(scale);
+
+        reportBlockWeight("");
+
+        return BasicBlockVisit::Continue;
+    });
 }
 
 //----------------------------------------------------------------------------------
@@ -1390,6 +1322,12 @@ bool Compiler::optTryUnrollLoop(FlowGraphNaturalLoop* loop, bool* changedIR)
     assert(UNROLL_LIMIT_SZ[SMALL_CODE] == 0);
     assert(UNROLL_LIMIT_SZ[COUNT_OPT_CODE] == 0);
 
+    if (loop->GetHeader()->isRunRarely())
+    {
+        JITDUMP("Failed to unroll loop " FMT_LP ": Loop is cold.\n", loop->GetIndex());
+        return false;
+    }
+
     NaturalLoopIterInfo iterInfo;
     if (!loop->AnalyzeIteration(&iterInfo))
     {
@@ -2352,8 +2290,6 @@ PhaseStatus Compiler::optInvertLoops()
             //
             if (block->bbWeight == BB_ZERO_WEIGHT)
             {
-                // Zero weighted block can't have a LOOP_HEAD flag
-                noway_assert(block->isLoopHead() == false);
                 continue;
             }
 
@@ -2383,20 +2319,6 @@ PhaseStatus Compiler::optOptimizeFlow()
     if (!fgIsUsingProfileWeights())
     {
         modified |= fgExpandRarelyRunBlocks();
-    }
-
-    // Run branch optimizations for non-handler blocks.
-    assert(!fgFuncletsCreated);
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->Next())
-    {
-        if (block->hasHndIndex())
-        {
-            assert(bbIsHandlerBeg(block));
-            block = ehGetDsc(block->getHndIndex())->ebdHndLast;
-            continue;
-        }
-
-        modified |= fgOptimizeBranch(block);
     }
 
     return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -2485,62 +2407,6 @@ PhaseStatus Compiler::optOptimizePostLayout()
     return status;
 }
 
-//------------------------------------------------------------------------
-// optMarkLoopHeads: Mark all potential loop heads as BBF_LOOP_HEAD. A potential loop head is a block
-// targeted by a lexical back edge, where the source of the back edge is reachable from the block.
-// Note that if there are no lexical back edges, there can't be any loops.
-//
-// If there are any potential loop heads, set `fgHasLoops` to `true`.
-//
-// Assumptions:
-//    The reachability sets must be computed and valid.
-//
-void Compiler::optMarkLoopHeads()
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optMarkLoopHeads()\n");
-    }
-    fgDebugCheckBBNumIncreasing();
-
-    int loopHeadsMarked = 0;
-#endif
-
-    assert((m_dfsTree != nullptr) && (m_reachabilitySets != nullptr));
-
-    bool hasLoops = false;
-
-    for (BasicBlock* const block : Blocks())
-    {
-        // Set BBF_LOOP_HEAD if we have backwards branches to this block.
-
-        for (BasicBlock* const predBlock : block->PredBlocks())
-        {
-            if (block->bbNum <= predBlock->bbNum)
-            {
-                if (predBlock->KindIs(BBJ_CALLFINALLY))
-                {
-                    // Loops never have BBJ_CALLFINALLY as the source of their "back edge".
-                    continue;
-                }
-
-                // If block can reach predBlock then we have a loop head
-                if (m_reachabilitySets->CanReach(block, predBlock))
-                {
-                    hasLoops = true;
-                    block->SetFlags(BBF_LOOP_HEAD);
-                    INDEBUG(++loopHeadsMarked);
-                    break; // No need to look at more `block` predecessors
-                }
-            }
-        }
-    }
-
-    JITDUMP("%d loop heads marked\n", loopHeadsMarked);
-    fgHasLoops = hasLoops;
-}
-
 //-----------------------------------------------------------------------------
 // optResetLoopInfo: reset all loop info in preparation for refinding the loops
 // and scaling blocks based on it.
@@ -2562,101 +2428,7 @@ void Compiler::optResetLoopInfo()
             block->bbWeight = BB_UNITY_WEIGHT;
             block->RemoveFlags(BBF_RUN_RARELY);
         }
-
-        block->RemoveFlags(BBF_LOOP_HEAD);
     }
-}
-
-//-----------------------------------------------------------------------------
-// optFindAndScaleGeneralLoopBlocks: scale block weights based on loop nesting depth.
-// Note that this uses a very general notion of "loop": any block targeted by a reachable
-// back-edge is considered a loop.
-//
-void Compiler::optFindAndScaleGeneralLoopBlocks()
-{
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optFindAndScaleGeneralLoopBlocks()\n");
-    }
-#endif
-
-    // This code depends on block number ordering.
-    INDEBUG(fgDebugCheckBBNumIncreasing());
-
-    assert((m_dfsTree != nullptr) && (m_domTree != nullptr) && (m_reachabilitySets != nullptr));
-
-    unsigned generalLoopCount = 0;
-
-    // We will use the following terminology:
-    // top        - the first basic block in the loop (i.e. the head of the backward edge)
-    // bottom     - the last block in the loop (i.e. the block from which we jump to the top)
-    // lastBottom - used when we have multiple back edges to the same top
-
-    for (BasicBlock* const top : Blocks())
-    {
-        // Only consider `top` blocks already determined to be potential loop heads.
-        if (!top->isLoopHead())
-        {
-            continue;
-        }
-
-        BasicBlock* foundBottom = nullptr;
-
-        for (BasicBlock* const bottom : top->PredBlocks())
-        {
-            // Is this a loop candidate? - We look for "back edges"
-
-            // Is this a backward edge? (from BOTTOM to TOP)
-            if (top->bbNum > bottom->bbNum)
-            {
-                continue;
-            }
-
-            // We only consider back-edges of these kinds for loops.
-            if (!bottom->KindIs(BBJ_COND, BBJ_ALWAYS, BBJ_CALLFINALLYRET))
-            {
-                continue;
-            }
-
-            /* the top block must be able to reach the bottom block */
-            if (!m_reachabilitySets->CanReach(top, bottom))
-            {
-                continue;
-            }
-
-            /* Found a new loop, record the longest backedge in foundBottom */
-
-            if ((foundBottom == nullptr) || (bottom->bbNum > foundBottom->bbNum))
-            {
-                foundBottom = bottom;
-            }
-        }
-
-        if (foundBottom)
-        {
-            generalLoopCount++;
-
-            /* Mark all blocks between 'top' and 'bottom' */
-
-            optScaleLoopBlocks(top, foundBottom);
-        }
-
-        // We track at most 255 loops
-        if (generalLoopCount == 255)
-        {
-#if COUNT_LOOPS
-            totalUnnatLoopOverflows++;
-#endif
-            break;
-        }
-    }
-
-    JITDUMP("\nFound a total of %d general loops.\n", generalLoopCount);
-
-#if COUNT_LOOPS
-    totalUnnatLoopCount += generalLoopCount;
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -3682,30 +3454,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
 
     preheader->CopyFlags(exprBb, BBF_COPY_PROPAGATE);
 
-    Statement* hoistStmt = gtNewStmt(hoist);
-
-    // Simply append the statement at the end of the preHead's list.
-    Statement* firstStmt = preheader->firstStmt();
-    if (firstStmt != nullptr)
-    {
-        /* append after last statement */
-
-        Statement* lastStmt = preheader->lastStmt();
-        assert(lastStmt->GetNextStmt() == nullptr);
-
-        lastStmt->SetNextStmt(hoistStmt);
-        hoistStmt->SetPrevStmt(lastStmt);
-        firstStmt->SetPrevStmt(hoistStmt);
-    }
-    else
-    {
-        /* Empty pre-header - store the single statement in the block */
-
-        preheader->bbStmtList = hoistStmt;
-        hoistStmt->SetPrevStmt(hoistStmt);
-    }
-
-    hoistStmt->SetNextStmt(nullptr);
+    fgInsertStmtAtEnd(preheader, fgNewStmtFromTree(hoist));
 
 #ifdef DEBUG
     if (verbose)
@@ -3715,12 +3464,6 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
         printf("\n");
     }
 #endif
-
-    if (fgNodeThreading == NodeThreading::AllTrees)
-    {
-        gtSetStmtInfo(hoistStmt);
-        fgSetStmtSeq(hoistStmt);
-    }
 
 #ifdef DEBUG
     if (m_nodeTestData != nullptr)
@@ -4312,15 +4055,20 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
 }
 
 //------------------------------------------------------------------------
-// optCopyLoopMemoryDependence: record that tree's loop memory dependence
+// optCopyLoopMemoryDependence: Recursively record that tree's loop memory dependence
 //   is the same as some other tree.
 //
 // Arguments:
 //   fromTree -- tree to copy dependence from
 //   toTree -- tree in question
 //
+// Remarks:
+//   This requires 'toTree' to be in its own statement
+//
 void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
 {
+    assert(fromTree->OperGet() == toTree->OperGet());
+
     NodeToLoopMemoryBlockMap* const map      = GetNodeToLoopMemoryBlockMap();
     BasicBlock*                     mapBlock = nullptr;
 
@@ -4328,6 +4076,20 @@ void Compiler::optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree)
     {
         map->Set(toTree, mapBlock);
     }
+
+    GenTreeOperandIterator fromIterCur = fromTree->OperandsBegin();
+    GenTreeOperandIterator fromIterEnd = fromTree->OperandsEnd();
+    GenTreeOperandIterator toIterCur   = toTree->OperandsBegin();
+    GenTreeOperandIterator toIterEnd   = toTree->OperandsEnd();
+
+    while (fromIterCur != fromIterEnd)
+    {
+        optCopyLoopMemoryDependence(*fromIterCur, *toIterCur);
+        ++fromIterCur;
+        ++toIterCur;
+    }
+
+    assert(toIterCur == toIterEnd);
 }
 
 //------------------------------------------------------------------------
@@ -5907,8 +5669,10 @@ void Compiler::optRemoveRedundantZeroInits()
                                 defsInBlock.Set(lclNum, 1);
                             }
                         }
-                        else if (varTypeIsStruct(lclDsc) && ((tree->gtFlags & GTF_VAR_USEASG) == 0) &&
-                                 lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE)
+                        // Here we treat both "full" and "partial" tracked field defs as defs
+                        // (that is, we ignore the state of GTF_VAR_USEASG).
+                        //
+                        else if (varTypeIsStruct(lclDsc) && lvaGetPromotionType(lclDsc) != PROMOTION_TYPE_NONE)
                         {
                             for (unsigned i = lclDsc->lvFieldLclStart; i < lclDsc->lvFieldLclStart + lclDsc->lvFieldCnt;
                                  ++i)

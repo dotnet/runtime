@@ -394,6 +394,33 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 }
 
 //------------------------------------------------------------------------
+// IsProfitableToSetZeroFlag: Checks if it's profitable to optimize an shift
+// and rotate operations to set the zero flag.
+//
+// Arguments:
+//    op - The operation node to check.
+//
+// Return value:
+//    true if it's profitable to set the zero flag; otherwise false.
+//
+bool Lowering::IsProfitableToSetZeroFlag(GenTree* op) const
+{
+#ifdef TARGET_XARCH
+    if (op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROR, GT_ROL))
+    {
+        // BMI2 instructions (SHLX, SARX, SHRX, RORX) do not set zero flag.
+        if (!op->AsOp()->gtGetOp2()->OperIsConst())
+        {
+            return false;
+        }
+    }
+
+#endif // TARGET_XARCH
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // LowerNode: this is the main entry point for Lowering.
 //
 // Arguments:
@@ -550,13 +577,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return nextNode;
             }
 
-            nextNode = LowerCast(node);
-            if (nextNode != nullptr)
-            {
-                return nextNode;
-            }
+            LowerCast(node);
+            break;
         }
-        break;
 
         case GT_BITCAST:
         {
@@ -730,6 +753,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_MDARR_LENGTH:
         case GT_MDARR_LOWER_BOUND:
             return LowerArrLength(node->AsArrCommon());
+
+        case GT_ASYNC_CONTINUATION:
+            return LowerAsyncContinuation(node);
+
+        case GT_RETURN_SUSPEND:
+            LowerReturnSuspend(node);
+            break;
 
         default:
             break;
@@ -1695,20 +1725,22 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     {
         if (abiInfo.HasAnyRegisterSegment())
         {
-#if FEATURE_MULTIREG_ARGS
-            if ((abiInfo.NumSegments > 1) && arg->OperIs(GT_FIELD_LIST))
+            if (arg->OperIs(GT_FIELD_LIST) || (abiInfo.NumSegments > 1))
             {
-                unsigned int regIndex = 0;
-                for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
+                if (!arg->OperIs(GT_FIELD_LIST))
                 {
-                    const ABIPassingSegment& segment = abiInfo.Segment(regIndex);
-                    InsertPutArgReg(&use.NodeRef(), segment);
-
-                    regIndex++;
+                    // Primitive arg, but the ABI requires it to be split into
+                    // registers. Insert the field list here.
+                    GenTreeFieldList* fieldList = comp->gtNewFieldList();
+                    fieldList->AddFieldLIR(comp, arg, 0, genActualType(arg->TypeGet()));
+                    BlockRange().InsertAfter(arg, fieldList);
+                    arg = *ppArg = fieldList;
                 }
+
+                LowerArgFieldList(callArg, arg->AsFieldList());
+                arg = *ppArg;
             }
             else
-#endif // FEATURE_MULTIREG_ARGS
             {
                 assert(abiInfo.HasExactlyOneRegisterSegment());
                 InsertPutArgReg(ppArg, abiInfo.Segment(0));
@@ -2366,7 +2398,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-            if (comp->IsBaselineVector512IsaSupportedOpportunistically())
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 MaxUnrollSize = 128;
             }
@@ -4122,6 +4154,20 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             }
 #endif
         }
+        else if (andOp2->IsIntegralConst() && GenTree::Compare(andOp2, op2))
+        {
+            //
+            // Transform EQ|NE(AND(x, y), y) into EQ|NE(AND(NOT(x), y), 0) when y is a constant.
+            //
+
+            GenTree* notNode               = comp->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
+            cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
+            BlockRange().InsertAfter(andOp1, notNode);
+            op2->BashToZeroConst(op2->TypeGet());
+
+            andOp1   = notNode;
+            op2Value = 0;
+        }
     }
 
 #ifdef TARGET_XARCH
@@ -4187,7 +4233,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
     // Optimize EQ/NE(op_that_sets_zf, 0) into op_that_sets_zf with GTF_SET_FLAGS + SETCC.
     LIR::Use use;
     if (cmp->OperIs(GT_EQ, GT_NE) && op2->IsIntegralConst(0) && op1->SupportsSettingZeroFlag() &&
-        BlockRange().TryGetUse(cmp, &use))
+        BlockRange().TryGetUse(cmp, &use) && IsProfitableToSetZeroFlag(op1))
     {
         op1->gtFlags |= GTF_SET_FLAGS;
         op1->SetUnusedValue();
@@ -4765,6 +4811,18 @@ void Lowering::LowerRet(GenTreeOp* ret)
     ContainCheckRet(ret);
 }
 
+struct LowerFieldListRegisterInfo
+{
+    unsigned  Offset;
+    var_types RegType;
+
+    LowerFieldListRegisterInfo(unsigned offset, var_types regType)
+        : Offset(offset)
+        , RegType(regType)
+    {
+    }
+};
+
 //----------------------------------------------------------------------------------------------
 // LowerRetFieldList:
 //   Lower a returned FIELD_LIST node.
@@ -4778,21 +4836,18 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
     const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
     unsigned              numRegs = retDesc.GetReturnRegCount();
 
-    bool isCompatible = IsFieldListCompatibleWithReturn(fieldList);
+    auto getRegInfo = [=, &retDesc](unsigned regIndex) {
+        unsigned  offset  = retDesc.GetReturnFieldOffset(regIndex);
+        var_types regType = genActualType(retDesc.GetReturnRegType(regIndex));
+        return LowerFieldListRegisterInfo(offset, regType);
+    };
+
+    bool isCompatible = IsFieldListCompatibleWithRegisters(fieldList, numRegs, getRegInfo);
     if (!isCompatible)
     {
-        JITDUMP("Spilling field list [%06u] to stack\n", Compiler::dspTreeID(fieldList));
-        unsigned   lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for return value"));
+        unsigned lclNum =
+            StoreFieldListToNewLocal(comp->typGetObjLayout(comp->info.compMethodInfo->args.retTypeClass), fieldList);
         LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
-        comp->lvaSetStruct(lclNum, comp->info.compMethodInfo->args.retTypeClass, false);
-        comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
-
-        for (GenTreeFieldList::Use& use : fieldList->Uses())
-        {
-            GenTree* store = comp->gtNewStoreLclFldNode(lclNum, use.GetType(), use.GetOffset(), use.GetNode());
-            BlockRange().InsertAfter(use.GetNode(), store);
-            LowerNode(store);
-        }
 
         GenTree* retValue = comp->gtNewLclvNode(lclNum, varDsc->TypeGet());
         ret->SetReturnValue(retValue);
@@ -4815,7 +4870,89 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
         return;
     }
 
-    LowerFieldListToFieldListOfRegisters(fieldList);
+    LowerFieldListToFieldListOfRegisters(fieldList, numRegs, getRegInfo);
+}
+
+//----------------------------------------------------------------------------------------------
+// StoreFieldListToNewLocal:
+//   Create a new local with the specified layout and store the specified
+//   fields of the specified FIELD_LIST into it.
+//
+// Arguments:
+//   layout    - Layout of the new local
+//   fieldList - Fields to store to it
+//
+// Returns:
+//   Var number of new local.
+//
+unsigned Lowering::StoreFieldListToNewLocal(ClassLayout* layout, GenTreeFieldList* fieldList)
+{
+    JITDUMP("Spilling field list [%06u] to stack\n", Compiler::dspTreeID(fieldList));
+    unsigned   lclNum = comp->lvaGrabTemp(true DEBUGARG("Spilled local for field list"));
+    LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
+    comp->lvaSetStruct(lclNum, layout, false);
+    comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+
+    for (GenTreeFieldList::Use& use : fieldList->Uses())
+    {
+        GenTree* store = comp->gtNewStoreLclFldNode(lclNum, use.GetType(), use.GetOffset(), use.GetNode());
+        BlockRange().InsertAfter(use.GetNode(), store);
+        LowerNode(store);
+    }
+
+    return lclNum;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerArgFieldList:
+//   Lower an argument FIELD_LIST node.
+//
+// Arguments:
+//   arg       - The argument
+//   fieldList - The FIELD_LIST node
+//
+void Lowering::LowerArgFieldList(CallArg* arg, GenTreeFieldList* fieldList)
+{
+    assert(!arg->AbiInfo.HasAnyStackSegment());
+
+    auto getRegInfo = [=](unsigned regIndex) {
+        const ABIPassingSegment& seg = arg->AbiInfo.Segment(regIndex);
+        return LowerFieldListRegisterInfo(seg.Offset, seg.GetRegisterType());
+    };
+
+    bool isCompatible = IsFieldListCompatibleWithRegisters(fieldList, arg->AbiInfo.NumSegments, getRegInfo);
+    if (!isCompatible)
+    {
+        ClassLayout* layout = comp->typGetObjLayout(arg->GetSignatureClassHandle());
+        unsigned     lclNum = StoreFieldListToNewLocal(layout, fieldList);
+        fieldList->Uses().Clear();
+        for (const ABIPassingSegment& seg : arg->AbiInfo.Segments())
+        {
+            GenTreeLclFld* fld = comp->gtNewLclFldNode(lclNum, seg.GetRegisterType(layout), seg.Offset);
+            fieldList->AddFieldLIR(comp, fld, seg.Offset, fld->TypeGet());
+            BlockRange().InsertBefore(fieldList, fld);
+        }
+    }
+    else
+    {
+        LowerFieldListToFieldListOfRegisters(fieldList, arg->AbiInfo.NumSegments, getRegInfo);
+    }
+
+    GenTreeFieldList::Use* field = fieldList->Uses().GetHead();
+    for (const ABIPassingSegment& seg : arg->AbiInfo.Segments())
+    {
+        assert((field != nullptr) && "Ran out of fields while inserting PUTARG_REG");
+        InsertPutArgReg(&field->NodeRef(), seg);
+        field = field->GetNext();
+    }
+
+    assert((field == nullptr) && "Missed fields while inserting PUTARG_REG");
+
+    arg->NodeRef() = fieldList->SoleFieldOrThis();
+    if (arg->GetNode() != fieldList)
+    {
+        BlockRange().Remove(fieldList);
+    }
 }
 
 //----------------------------------------------------------------------------------------------
@@ -4830,21 +4967,29 @@ void Lowering::LowerRetFieldList(GenTreeOp* ret, GenTreeFieldList* fieldList)
 //   True if the fields of the FIELD_LIST are all direct insertions into the
 //   return registers.
 //
-bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
+template <typename GetRegisterInfoFunc>
+bool Lowering::IsFieldListCompatibleWithRegisters(GenTreeFieldList*   fieldList,
+                                                  unsigned            numRegs,
+                                                  GetRegisterInfoFunc getRegInfo)
 {
-    JITDUMP("Checking if field list [%06u] is compatible with return ABI: ", Compiler::dspTreeID(fieldList));
-    const ReturnTypeDesc& retDesc    = comp->compRetTypeDesc;
-    unsigned              numRetRegs = retDesc.GetReturnRegCount();
+    JITDUMP("Checking if field list [%06u] is compatible with registers: ", Compiler::dspTreeID(fieldList));
 
     GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
-    for (unsigned i = 0; i < numRetRegs; i++)
+    for (unsigned i = 0; i < numRegs; i++)
     {
-        unsigned  regStart = retDesc.GetReturnFieldOffset(i);
-        var_types regType  = retDesc.GetReturnRegType(i);
-        unsigned  regEnd   = regStart + genTypeSize(regType);
+        LowerFieldListRegisterInfo regInfo  = getRegInfo(i);
+        unsigned                   regStart = regInfo.Offset;
+        var_types                  regType  = regInfo.RegType;
+        unsigned                   regEnd   = regStart + genTypeSize(regType);
+
+        if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
+        {
+            // Allow tail end to pass undefined bits into the register
+            regEnd = regStart + REGSIZE_BYTES;
+        }
 
         // TODO-CQ: Could just create a 0 for this.
-        if (use == nullptr)
+        if ((use == nullptr) || (use->GetOffset() >= regEnd))
         {
             JITDUMP("it is not; register %u has no corresponding field\n", i);
             return false;
@@ -4905,19 +5050,26 @@ bool Lowering::IsFieldListCompatibleWithReturn(GenTreeFieldList* fieldList)
 // Arguments:
 //     fieldList - The field list
 //
-void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
+template <typename GetRegisterInfoFunc>
+void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldList,
+                                                    unsigned            numRegs,
+                                                    GetRegisterInfoFunc getRegInfo)
 {
-    const ReturnTypeDesc& retDesc = comp->compRetTypeDesc;
-    unsigned              numRegs = retDesc.GetReturnRegCount();
-
     GenTreeFieldList::Use* use = fieldList->Uses().GetHead();
     assert(fieldList->Uses().IsSorted());
 
     for (unsigned i = 0; i < numRegs; i++)
     {
-        unsigned  regStart = retDesc.GetReturnFieldOffset(i);
-        var_types regType  = genActualType(retDesc.GetReturnRegType(i));
-        unsigned  regEnd   = regStart + genTypeSize(regType);
+        LowerFieldListRegisterInfo regInfo  = getRegInfo(i);
+        unsigned                   regStart = regInfo.Offset;
+        var_types                  regType  = regInfo.RegType;
+        unsigned                   regEnd   = regStart + genTypeSize(regType);
+
+        if ((i == numRegs - 1) && !varTypeUsesFloatReg(regType))
+        {
+            // Allow tail end to pass undefined bits into the register
+            regEnd = regStart + REGSIZE_BYTES;
+        }
 
         GenTreeFieldList::Use* regEntry = use;
 
@@ -4957,7 +5109,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList)
             }
 
             // If this is a float -> int insertion, then we need the bitcast now.
-            if (varTypeUsesFloatReg(value) && varTypeUsesIntReg(regType))
+            if (varTypeUsesFloatReg(value) && varTypeUsesIntReg(regInfo.RegType))
             {
                 assert((genTypeSize(value) == 4) || (genTypeSize(value) == 8));
                 var_types castType = genTypeSize(value) == 4 ? TYP_INT : TYP_LONG;
@@ -5415,6 +5567,83 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
             BlockRange().InsertBefore(ret, bitcast);
             ContainCheckBitCast(bitcast);
         }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerAsyncContinuation: Lower a GT_ASYNC_CONTINUATION node
+//
+// Arguments:
+//   asyncCont - Async continuation node
+//
+// Returns:
+//   Next node to lower.
+//
+GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
+{
+    assert(asyncCont->OperIs(GT_ASYNC_CONTINUATION));
+
+    GenTree* next = asyncCont->gtNext;
+
+    //
+    // ASYNC_CONTINUATION is created from two sources:
+    //
+    // 1. The async resumption stubs are IL stubs created by the VM. These call
+    // runtime async functions via "calli", passing the continuation manually.
+    // They use the AsyncHelpers.AsyncCallContinuation intrinsic after the
+    // calli, which turns into the ASYNC_CONTINUATION node during import.
+    //
+    // 2. In the async transformation, ASYNC_CONTINUATION nodes are inserted
+    // after calls to async calls.
+    //
+    // In the former case nothing has marked the previous call as an "async"
+    // method. We need to do that here to ensure that the backend knows that
+    // the call has a non-standard calling convention that returns an
+    // additional GC ref. This requires additional GC tracking that we would
+    // otherwise not get.
+    //
+    GenTree* node = asyncCont;
+    while (true)
+    {
+        node = node->gtPrev;
+        noway_assert((node != nullptr) && "Ran out of nodes while looking for call before async continuation");
+
+        if (node->IsCall())
+        {
+            if (!node->AsCall()->IsAsync())
+            {
+                JITDUMP("Marking the call [%06u] before async continuation [%06u] as an async call\n",
+                        Compiler::dspTreeID(node), Compiler::dspTreeID(asyncCont));
+                node->AsCall()->SetIsAsync();
+            }
+
+            BlockRange().Remove(asyncCont);
+            BlockRange().InsertAfter(node, asyncCont);
+            break;
+        }
+    }
+
+    return next;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerReturnSuspend:
+//   Lower a GT_RETURN_SUSPEND by making it a terminator node.
+//
+// Arguments:
+//   node - The node
+//
+void Lowering::LowerReturnSuspend(GenTree* node)
+{
+    assert(node->OperIs(GT_RETURN_SUSPEND));
+    while (BlockRange().LastNode() != node)
+    {
+        BlockRange().Remove(BlockRange().LastNode(), true);
+    }
+
+    if (comp->compMethodRequiresPInvokeFrame())
+    {
+        InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(node));
     }
 }
 
@@ -9596,7 +9825,7 @@ bool Lowering::GetLoadStoreCoalescingData(GenTreeIndir* ind, LoadStoreCoalescing
 //
 void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 {
-// LA, RISC-V and ARM32 more likely to recieve a terrible performance hit from
+// LA, RISC-V and ARM32 more likely to receive a terrible performance hit from
 // unaligned accesses making this optimization questionable.
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
     if (!comp->opts.OptimizationEnabled())
@@ -10064,7 +10293,7 @@ GenTree* Lowering::LowerIndir(GenTreeIndir* ind)
 #endif
 
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
-        // address containment in some cases so we end up creating trivial (reg + offfset)
+        // address containment in some cases so we end up creating trivial (reg + offset)
         // or (reg + reg) LEAs that are not necessary.
 
 #if defined(TARGET_ARM64)

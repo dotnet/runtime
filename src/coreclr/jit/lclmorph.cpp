@@ -1969,7 +1969,7 @@ private:
                 else if (((indir->TypeIs(TYP_SIMD16) &&
                            m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)) ||
                           (indir->TypeIs(TYP_SIMD32) &&
-                           m_compiler->IsBaselineVector512IsaSupportedOpportunistically())) &&
+                           m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))) &&
                          (genTypeSize(indir) * 2 == genTypeSize(varDsc)) && ((offset % genTypeSize(indir)) == 0))
                 {
                     return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;

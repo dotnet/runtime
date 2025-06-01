@@ -98,7 +98,8 @@ instrDesc* emitNewInstrCallDir(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 instrDesc* emitNewInstrCallInd(int              argCnt,
                                ssize_t          disp,
@@ -106,7 +107,8 @@ instrDesc* emitNewInstrCallInd(int              argCnt,
                                regMaskTP        gcrefRegs,
                                regMaskTP        byrefRegs,
                                emitAttr         retSize,
-                               emitAttr         secondRetSize);
+                               emitAttr         secondRetSize,
+                               bool             hasAsyncRet);
 
 /************************************************************************/
 /*   enum to allow instruction optimisation to specify register order   */

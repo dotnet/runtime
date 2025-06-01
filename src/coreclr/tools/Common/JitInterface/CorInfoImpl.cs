@@ -3356,6 +3356,11 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
+        private void getAsyncInfo(ref CORINFO_ASYNC_INFO pAsyncInfoOut)
+        {
+            throw new NotImplementedException();
+        }
+
         private mdToken getMethodDefFromMethod(CORINFO_METHOD_STRUCT_* hMethod)
         {
             MethodDesc method = HandleToObject(hMethod);
@@ -3587,12 +3592,6 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
         }
 
-        private CORINFO_MODULE_STRUCT_* embedModuleHandle(CORINFO_MODULE_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedModuleHandle"); }
-
-        private CORINFO_FIELD_STRUCT_* embedFieldHandle(CORINFO_FIELD_STRUCT_* handle, ref void* ppIndirection)
-        { throw new NotImplementedException("embedFieldHandle"); }
-
         private static CORINFO_RUNTIME_LOOKUP_KIND GetGenericRuntimeLookupKind(MethodDesc method)
         {
             if (method.RequiresInstMethodDescArg())
@@ -3681,6 +3680,13 @@ namespace Internal.JitInterface
 #else
             return false;
 #endif
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_METHOD_STRUCT_* getAsyncResumptionStub()
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return null;
         }
 
         private byte[] _code;
@@ -4210,8 +4216,8 @@ namespace Internal.JitInterface
             {
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
-                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
+                    Debug.Assert(InstructionSet.X86_X86Base == InstructionSet.X64_X86Base);
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_X86Base));
                     break;
 
                 case TargetArchitecture.ARM64:

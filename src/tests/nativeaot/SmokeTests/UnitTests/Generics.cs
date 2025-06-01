@@ -60,6 +60,7 @@ class Generics
         Test104913Regression.Run();
         Test105397Regression.Run();
         Test105880Regression.Run();
+        Test115442Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -3682,6 +3683,19 @@ class Generics
         public static void Run()
         {
             Console.WriteLine(new Baz());
+        }
+    }
+
+    class Test115442Regression
+    {
+        public readonly struct TypeBuilder<T1, T2>
+        {
+            public TypeBuilder<(T1, T2), T3> Add<T3>() => default;
+        }
+
+        public static void Run()
+        {
+            typeof(TypeBuilder<int, int>).GetMethod("Add").MakeGenericMethod(typeof(int)).Invoke(default(TypeBuilder<int, int>), []);
         }
     }
 

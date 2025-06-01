@@ -137,7 +137,12 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
         }
     }
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
+    if (!tree->TypeIs(TYP_LONG) &&
+        !(tree->OperIs(GT_CAST) && varTypeIsLong(tree->AsCast()->CastOp()) && varTypeIsFloating(tree)))
+#else
     if (!tree->TypeIs(TYP_LONG))
+#endif // FEATURE_HW_INTRINSICS && TARGET_X86
     {
         return tree->gtNext;
     }
@@ -157,15 +162,18 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 
         GenTree* user = use.User();
 
-        if (user->OperIsHWIntrinsic())
+        if (tree->TypeIs(TYP_LONG) && (user->OperIsHWIntrinsic() || (user->OperIs(GT_CAST) && varTypeIsFloating(user))))
         {
             if (tree->OperIs(GT_CNS_LNG) ||
                 (tree->OperIs(GT_IND, GT_LCL_FLD) && m_lowering->IsSafeToContainMem(user, tree)))
             {
-                NamedIntrinsic intrinsicId = user->AsHWIntrinsic()->GetHWIntrinsicId();
-                assert(HWIntrinsicInfo::IsVectorCreate(intrinsicId) ||
-                       HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) ||
-                       HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsicId));
+                if (user->OperIsHWIntrinsic())
+                {
+                    NamedIntrinsic intrinsicId = user->AsHWIntrinsic()->GetHWIntrinsicId();
+                    assert(HWIntrinsicInfo::IsVectorCreate(intrinsicId) ||
+                           HWIntrinsicInfo::IsVectorCreateScalar(intrinsicId) ||
+                           HWIntrinsicInfo::IsVectorCreateScalarUnsafe(intrinsicId));
+                }
 
                 return tree->gtNext;
             }
@@ -562,28 +570,69 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
 GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
 {
     assert(use.IsInitialized());
-    assert(use.Def()->OperGet() == GT_CAST);
+    assert(use.Def()->OperIs(GT_CAST));
 
-    GenTree* cast     = use.Def()->AsCast();
-    GenTree* loResult = nullptr;
-    GenTree* hiResult = nullptr;
+    GenTreeCast* cast    = use.Def()->AsCast();
+    var_types    srcType = cast->CastFromType();
+    var_types    dstType = cast->CastToType();
 
-    var_types srcType = cast->CastFromType();
-    var_types dstType = cast->CastToType();
-
-    if ((cast->gtFlags & GTF_UNSIGNED) != 0)
+    if (cast->IsUnsigned())
     {
         srcType = varTypeToUnsigned(srcType);
     }
 
-    bool skipDecomposition = false;
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_X86)
+    if (varTypeIsFloating(dstType))
+    {
+        // We will reach this path only if morph did not convert the cast to a helper call,
+        // meaning we can perform the cast using SIMD instructions.
+        // The sequence this creates is simply:
+        //    AVX512DQ.VL.ConvertToVector128Single(Vector128.CreateScalarUnsafe(LONG)).ToScalar()
+
+        NamedIntrinsic intrinsicId      = NI_Illegal;
+        GenTree*       srcOp            = cast->CastOp();
+        var_types      dstType          = cast->CastToType();
+        CorInfoType    baseFloatingType = (dstType == TYP_FLOAT) ? CORINFO_TYPE_FLOAT : CORINFO_TYPE_DOUBLE;
+        CorInfoType    baseIntegralType = cast->IsUnsigned() ? CORINFO_TYPE_ULONG : CORINFO_TYPE_LONG;
+
+        assert(!cast->gtOverflow());
+        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512));
+
+        intrinsicId = (dstType == TYP_FLOAT) ? NI_AVX512_ConvertToVector128Single : NI_AVX512_ConvertToVector128Double;
+
+        GenTree* createScalar = m_compiler->gtNewSimdCreateScalarUnsafeNode(TYP_SIMD16, srcOp, baseIntegralType, 16);
+        GenTree* convert =
+            m_compiler->gtNewSimdHWIntrinsicNode(TYP_SIMD16, createScalar, intrinsicId, baseIntegralType, 16);
+        GenTree* toScalar = m_compiler->gtNewSimdToScalarNode(dstType, convert, baseFloatingType, 16);
+
+        Range().InsertAfter(cast, createScalar, convert, toScalar);
+        Range().Remove(cast);
+
+        if (createScalar->IsCnsVec())
+        {
+            Range().Remove(srcOp);
+        }
+
+        if (use.IsDummyUse())
+        {
+            toScalar->SetUnusedValue();
+        }
+        use.ReplaceWith(toScalar);
+
+        return toScalar->gtNext;
+    }
+#endif // FEATURE_HW_INTRINSICS && TARGET_X86
+
+    bool     skipDecomposition = false;
+    GenTree* loResult          = nullptr;
+    GenTree* hiResult          = nullptr;
 
     if (varTypeIsLong(srcType))
     {
         if (cast->gtOverflow() && (varTypeIsUnsigned(srcType) != varTypeIsUnsigned(dstType)))
         {
-            GenTree* srcOp = cast->gtGetOp1();
-            noway_assert(srcOp->OperGet() == GT_LONG);
+            GenTree* srcOp = cast->CastOp();
+            noway_assert(srcOp->OperIs(GT_LONG));
             GenTree* loSrcOp = srcOp->gtGetOp1();
             GenTree* hiSrcOp = srcOp->gtGetOp2();
 
@@ -595,13 +644,13 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             // check provided by codegen.
             //
 
-            const bool signExtend = (cast->gtFlags & GTF_UNSIGNED) == 0;
+            const bool signExtend = !cast->IsUnsigned();
             loResult              = EnsureIntSized(loSrcOp, signExtend);
 
             hiResult                       = cast;
             hiResult->gtType               = TYP_INT;
             hiResult->AsCast()->gtCastType = TYP_UINT;
-            hiResult->gtFlags &= ~GTF_UNSIGNED;
+            hiResult->ClearUnsigned();
             hiResult->AsOp()->gtOp1 = hiSrcOp;
 
             Range().Remove(srcOp);
@@ -631,7 +680,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
         }
         else
         {
-            if (!use.IsDummyUse() && (use.User()->OperGet() == GT_MUL))
+            if (!use.IsDummyUse() && use.User()->OperIs(GT_MUL))
             {
                 //
                 // This int->long cast is used by a GT_MUL that will be transformed by DecomposeMul into a
@@ -646,7 +695,7 @@ GenTree* DecomposeLongs::DecomposeCast(LIR::Use& use)
             }
             else if (varTypeIsUnsigned(srcType))
             {
-                const bool signExtend = (cast->gtFlags & GTF_UNSIGNED) == 0;
+                const bool signExtend = !cast->IsUnsigned();
                 loResult              = EnsureIntSized(cast->gtGetOp1(), signExtend);
 
                 hiResult = m_compiler->gtNewZeroConNode(TYP_INT);
@@ -1741,7 +1790,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
             return DecomposeHWIntrinsicToScalar(use, hwintrinsicTree);
         }
 
-        case NI_EVEX_MoveMask:
+        case NI_AVX512_MoveMask:
         {
             return DecomposeHWIntrinsicMoveMask(use, hwintrinsicTree);
         }
@@ -1921,7 +1970,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
     }
     else
     {
-        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_SSE2));
+        assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_X86Base));
 
         GenTree* thirtyTwo = m_compiler->gtNewIconNode(32);
         GenTree* shift     = m_compiler->gtNewSimdBinOpNode(GT_RSZ, op1->TypeGet(), simdTmpVar, thirtyTwo,
@@ -1937,7 +1986,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicToScalar(LIR::Use& use, GenTreeHWIn
 }
 
 //------------------------------------------------------------------------
-// DecomposeHWIntrinsicMoveMask: Decompose GT_HWINTRINSIC -- NI_EVEX_MoveMask
+// DecomposeHWIntrinsicMoveMask: Decompose GT_HWINTRINSIC -- NI_AVX512_MoveMask
 //
 // Decompose a MoveMask(x) node on Vector512<*>. For:
 //
@@ -1966,7 +2015,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
 {
     assert(node == use.Def());
     assert(varTypeIsLong(node));
-    assert(node->GetHWIntrinsicId() == NI_EVEX_MoveMask);
+    assert(node->GetHWIntrinsicId() == NI_AVX512_MoveMask);
 
     GenTree*    op1             = node->Op(1);
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
@@ -1996,7 +2045,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         // Create:
         //      loResult  = GT_HWINTRINSIC{MoveMask}(simdTmpVar)
 
-        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseJitType, 32);
         Range().InsertBefore(node, loResult);
 
         simdTmpVar = m_compiler->gtNewLclLNode(simdTmpVarNum, simdTmpVar->TypeGet());
@@ -2009,11 +2058,11 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         GenTree* shiftIcon = m_compiler->gtNewIconNode(32, TYP_INT);
         Range().InsertBefore(node, shiftIcon);
 
-        simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_EVEX_ShiftRightMask,
+        simdTmpVar = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, simdTmpVar, shiftIcon, NI_AVX512_ShiftRightMask,
                                                           simdBaseJitType, 64);
         Range().InsertBefore(node, simdTmpVar);
 
-        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_EVEX_MoveMask, simdBaseJitType, 32);
+        hiResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, simdTmpVar, NI_AVX512_MoveMask, simdBaseJitType, 32);
         Range().InsertBefore(node, hiResult);
     }
     else
@@ -2021,7 +2070,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicMoveMask(LIR::Use& use, GenTreeHWIn
         // Create:
         //      loResult  = GT_HWINTRINSIC{MoveMask}(op1)
 
-        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_EVEX_MoveMask, simdBaseJitType, simdSize);
+        loResult = m_compiler->gtNewSimdHWIntrinsicNode(TYP_INT, op1, NI_AVX512_MoveMask, simdBaseJitType, simdSize);
         Range().InsertBefore(node, loResult);
 
         // Create:
