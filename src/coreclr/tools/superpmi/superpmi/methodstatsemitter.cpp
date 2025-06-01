@@ -14,28 +14,26 @@ MethodStatsEmitter::MethodStatsEmitter(char* nameOfInput)
     char filename[MAX_PATH + 1];
     sprintf_s(filename, MAX_PATH + 1, "%s.stats", nameOfInput);
 
-    hStatsFile =
-        CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hStatsFile == INVALID_HANDLE_VALUE)
+    if (fopen_s(&fpStatsFile, filename, "wb") != 0)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", filename, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", filename, errno);
     }
 }
 
 MethodStatsEmitter::~MethodStatsEmitter()
 {
-    if (hStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != NULL)
     {
-        if (CloseHandle(hStatsFile) == 0)
+        if (fclose(fpStatsFile) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
         }
     }
 }
 
 void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG firstTime, ULONGLONG secondTime)
 {
-    if (hStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != NULL)
     {
         // Print the CSV header row
         char  rowData[2048];
@@ -86,10 +84,11 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
 
         // get rid of the final ',' and replace it with a '\n'
         rowData[charCount - 1] = '\n';
+        rowData[charCount] = '\0';
 
-        if (!WriteFile(hStatsFile, rowData, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
+        if (fprintf_s(fpStatsFile, rowData) != charCount)
         {
-            LogError("Failed to write row header '%s'. GetLastError()=%u", rowData, GetLastError());
+            LogError("Failed to write row header '%s'. errno=%d", rowData, errno);
         }
     }
 }
@@ -98,7 +97,7 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
 {
     statsTypes = types;
 
-    if (hStatsFile != INVALID_HANDLE_VALUE)
+    if (fpStatsFile != NULL)
     {
         // Print the CSV header row
         char  rowHeader[1024];
@@ -118,10 +117,11 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
 
         // get rid of the final ',' and replace it with a '\n'
         rowHeader[charCount - 1] = '\n';
+        rowHeader[charCount] = '\0';
 
-        if (!WriteFile(hStatsFile, rowHeader, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
+        if (fprintf_s(fpStatsFile, rowHeader) != charCount)
         {
-            LogError("Failed to write row header '%s'. GetLastError()=%u", rowHeader, GetLastError());
+            LogError("Failed to write row header '%s'. errno=%d", rowHeader, errno);
         }
     }
 }

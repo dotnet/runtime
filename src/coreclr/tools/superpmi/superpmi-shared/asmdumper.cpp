@@ -4,25 +4,16 @@
 #include "standardpch.h"
 #include "asmdumper.h"
 
-void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
+void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
 {
     CORINFO_METHOD_INFO info;
     unsigned            flags = 0;
     CORINFO_OS          os    = CORINFO_WINNT;
     mc->repCompileMethod(&info, &flags, &os);
 
-#define bufflen 4096
-    DWORD bytesWritten;
-    char  buff[bufflen];
+    fprintf_s(fp, ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
 
-    int buff_offset = 0;
-    ZeroMemory(buff, bufflen * sizeof(char));
-    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset,
-                             ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
-
-    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n Method Name \"%s\"",
-                             getMethodName(mc, info.ftn).c_str());
-    WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+    fprintf_s(fp, "\r\n Method Name \"%s\"", getMethodName(mc, info.ftn).c_str());
 
     ULONG              hotCodeSize;
     ULONG              coldCodeSize;
@@ -66,9 +57,6 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
     size_t offset = 0;
     while (offset < hotCodeSize)
     {
-        buff_offset = 0;
-        ZeroMemory(buff, bufflen * sizeof(char));
-
         DIS::INSTRUCTION instr;
         DIS::OPERAND     ops[3];
 
@@ -83,13 +71,10 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
         WCHAR instrMnemonic[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonic, 64);
         std::string instrMnemonicUtf8 = ConvertToUtf8(instrMnemonic);
-        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "\r\n%p %s",
-                                 (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonicUtf8.c_str());
-        buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, "   ; ");
+        fprintf_s(fp, "\r\n%p %s", (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonicUtf8.c_str());
+        fprintf_s(fp, "   ; ");
         for (unsigned int i = 0; i < instrSize; i++)
-            buff_offset +=
-                sprintf_s(&buff[buff_offset], bufflen - buff_offset, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
-        WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+            fprintf_s(fp, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
         offset += instrSize;
     }
 
@@ -97,12 +82,9 @@ void ASMDumper::DumpToFile(HANDLE hFile, MethodContext* mc, CompileResult* cr)
 
 #else // !USE_MSVCDIS
 
-    buff_offset = 0;
-    ZeroMemory(buff, bufflen * sizeof(char));
-    buff_offset += sprintf_s(&buff[buff_offset], bufflen - buff_offset, ";; No disassembler available");
-    WriteFile(hFile, buff, buff_offset * sizeof(char), &bytesWritten, nullptr);
+    fprintf_s(fp, ";; No disassembler available");
 
 #endif // !USE_MSVCDIS
 
-    FlushFileBuffers(hFile);
+    fflush(fp);
 }

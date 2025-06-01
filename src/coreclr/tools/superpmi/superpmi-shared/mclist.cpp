@@ -175,37 +175,30 @@ bool MCList::getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /*
 
 void MCList::InitializeMCL(char* filename)
 {
-    hMCLFile = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hMCLFile == INVALID_HANDLE_VALUE)
+    if (fopen_s(&fpMCLFile, filename, "w") != 0)
     {
-        LogError("Failed to open output file '%s'. GetLastError()=%u", filename, GetLastError());
+        LogError("Failed to open output file '%s'. errno=%d", filename, errno);
     }
 }
 
 void MCList::AddMethodToMCL(int methodIndex)
 {
-    if (hMCLFile != INVALID_HANDLE_VALUE)
+    if (fpMCLFile != NULL)
     {
-        char  strMethodIndex[12];
-        DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
-
-        charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", methodIndex);
-
-        if (!WriteFile(hMCLFile, strMethodIndex, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
+        if (fprintf_s(fpMCLFile, "%d\r\n", methodIndex) <= 0)
         {
-            LogError("Failed to write method index '%d'. GetLastError()=%u", strMethodIndex, GetLastError());
+            LogError("Failed to write method index '%d'. errno=%d", methodIndex, errno);
         }
     }
 }
 
 void MCList::CloseMCL()
 {
-    if (hMCLFile != INVALID_HANDLE_VALUE)
+    if (fpMCLFile != NULL)
     {
-        if (CloseHandle(hMCLFile) == 0)
+        if (fclose(fpMCLFile) != 0)
         {
-            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+            LogError("fclose failed. errno=%d", errno);
         }
     }
 }

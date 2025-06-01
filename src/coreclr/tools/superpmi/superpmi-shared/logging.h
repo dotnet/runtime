@@ -8,6 +8,7 @@
 #define _Logging
 
 #include <minipal/mutex.h>
+#include <stdio.h>
 
 //
 // General purpose logging macros
@@ -65,7 +66,7 @@ class Logger
 private:
     static bool             s_initialized;
     static UINT32           s_logLevel;
-    static HANDLE           s_logFile;
+    static FILE*            s_logFile;
     static char*            s_logFilePath;
     static minipal_mutex s_critSec;
 

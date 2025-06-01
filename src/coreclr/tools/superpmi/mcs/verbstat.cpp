@@ -18,49 +18,41 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
 
     int savedCount = 0;
 
-    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
-                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-    if (hFileOut == INVALID_HANDLE_VALUE)
+    FILE* fp;
+    if (!fopen_s(&fp, nameOfOutput, "w"))
     {
-        LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
+        LogError("Failed to open output '%s'. errno=%d", nameOfOutput, errno);
         return -1;
     }
 
-#define bufflen 50000
-    DWORD bytesWritten;
-    char  buff[bufflen];
-    int   offset = 0;
-    ZeroMemory(&buff[0], bufflen);
-    offset += sprintf_s(buff, bufflen, "Title,MC#,");
-    offset += MethodContext::dumpStatTitleToBuffer(&buff[offset], bufflen - offset);
-    buff[offset++] = 0x0d;
-    buff[offset++] = 0x0a;
-    WriteFile(hFileOut, &buff[0], offset, &bytesWritten, nullptr);
+    char buff[50000];
+    memset(buff, 0, sizeof(buff));
+
+    fprintf_s(fp, "Title,MC#,");
+    MethodContext::dumpStatTitleToBuffer(buff, sizeof(buff));
+    fprintf_s(fp, "%s", buff);
+    fprintf_s(fp, "\n");
 
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.Current();
 
-        offset = 0;
-        ZeroMemory(&buff[0], bufflen);
+        memset(buff, 0, sizeof(buff));
         if ((mc->cr->ProcessName != nullptr) && (mc->cr->ProcessName->GetCount() > 0))
         {
-            const char* procname = mc->cr->repProcessName();
-            strcpy_s(&buff[offset], bufflen, procname);
-            offset += (int)strlen(procname);
+            fprintf_s(fp, "%s", mc->cr->repProcessName());
         }
-        buff[offset++] = ',';
-        offset += sprintf_s(&buff[offset], bufflen - offset, "%d,", mci.MethodContextNumber());
-        offset += mc->dumpStatToBuffer(&buff[offset], bufflen - offset);
-        buff[offset++] = 0x0d;
-        buff[offset++] = 0x0a;
-        WriteFile(hFileOut, &buff[0], offset, &bytesWritten, nullptr);
+        fprintf_s(fp, ",");
+        fprintf_s(fp, "%d,", mci.MethodContextNumber());
+        mc->dumpStatToBuffer(buff, sizeof(buff));
+        fprintf_s(fp, "%s", buff);
+        fprintf_s(fp, "\n");
         savedCount++;
     }
 
-    if (!CloseHandle(hFileOut))
+    if (fclose(fp) != 0)
     {
-        LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
+        LogError("fclose failed. errno=%d", errno);
         return -1;
     }
 
