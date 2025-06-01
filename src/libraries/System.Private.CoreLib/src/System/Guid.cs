@@ -479,23 +479,17 @@ namespace System
                 result.SetFailure(ParseFailure.Format_GuidUnrecognized);
                 return false;
             }
-            if (guidString[0] == TChar.CastFrom('('))
+
+            return TChar.CastToUInt32(guidString[0]) switch
             {
-                return TryParseExactP(guidString, ref result);
-            }
-            if (guidString[0] == TChar.CastFrom('{'))
-            {
-                if (guidString[9] == TChar.CastFrom('-'))
-                {
-                    return TryParseExactB(guidString, ref result);
-                }
-                return TryParseExactX(guidString, ref result);
-            }
-            if (guidString[8] == TChar.CastFrom('-'))
-            {
-                return TryParseExactD(guidString, ref result);
-            }
-            return TryParseExactN(guidString, ref result);
+                '(' => TryParseExactP(guidString, ref result),
+                '{' => guidString[9] == TChar.CastFrom('-') ?
+                        TryParseExactB(guidString, ref result) :
+                        TryParseExactX(guidString, ref result),
+                _ => guidString[8] == TChar.CastFrom('-') ?
+                        TryParseExactD(guidString, ref result) :
+                        TryParseExactN(guidString, ref result),
+            };
         }
 
         private static bool TryParseExactB<TChar>(ReadOnlySpan<TChar> guidString, ref GuidResult result) where TChar : unmanaged, IUtfChar<TChar>
@@ -928,19 +922,25 @@ namespace System
                 Debug.Assert(typeof(TChar) == typeof(byte));
 
                 ReadOnlySpan<byte> srcUtf8Span = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(str);
+
                 // Find the first whitespace character.  If there is none, just return the input.
                 int i = 0;
                 while (i < srcUtf8Span.Length)
                 {
-                    // in the unlikely event that there is invalid utf8, the parse will fail later anyways
-                    _ = Rune.DecodeFromUtf8(srcUtf8Span.Slice(i), out Rune current, out int bytesConsumed);
+                    if (Rune.DecodeFromUtf8(srcUtf8Span.Slice(i), out Rune current, out int bytesConsumed) != Buffers.OperationStatus.Done)
+                    {
+                        result.SetFailure(ParseFailure.Format_GuidInvalidChar);
+                        return ReadOnlySpan<TChar>.Empty;
+                    }
 
                     if (!Rune.IsWhiteSpace(current))
                     {
                         break;
                     }
+
                     i += bytesConsumed;
                 }
+
                 if (i == srcUtf8Span.Length)
                 {
                     return str;
@@ -958,7 +958,6 @@ namespace System
                 // Loop through the remaining chars, copying over non-whitespace.
                 while (i < srcUtf8Span.Length)
                 {
-                    // Unlike the previous loop, invalid utf8 can't be ignored here
                     if (Rune.DecodeFromUtf8(srcUtf8Span.Slice(i), out Rune current, out int bytesConsumed) != Buffers.OperationStatus.Done)
                     {
                         result.SetFailure(ParseFailure.Format_GuidInvalidChar);
@@ -970,6 +969,7 @@ namespace System
                         srcUtf8Span.Slice(i, bytesConsumed).CopyTo(destUtf8Span.Slice(newLength));
                         newLength += bytesConsumed;
                     }
+
                     i += bytesConsumed;
                 }
 
