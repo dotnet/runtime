@@ -239,7 +239,7 @@ LEAF_END RhpNewObjectArrayFast, _TEXT
 // ecx == MethodTable
 // edx == element count
 //
-LEAF_ENTRY RhpNewArray, _TEXT
+NESTED_ENTRY RhpNewArray, _TEXT, NoHandler
         PUSH_COOP_PINVOKE_FRAME eax
 
         // Preserve MethodTable in ESI.
@@ -273,4 +273,4 @@ LOCAL_LABEL(RhpNewArray_AllocFailed):
         POP_COOP_PINVOKE_FRAME
 
         jmp         RhExceptionHandling_FailedAllocation
-LEAF_END RhpNewArray, _TEXT
+NESTED_END RhpNewArray, _TEXT

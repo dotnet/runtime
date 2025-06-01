@@ -7,7 +7,7 @@
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  RDI == MethodTable
-NESTED_ENTRY RhpNewFast, _TEXT, NoHandler
+LEAF_ENTRY RhpNewFast, _TEXT
 
         push_nonvol_reg rbx
         mov         rbx, rdi
@@ -51,7 +51,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         pop_nonvol_reg rbx
         jmp         C_FUNC(RhpNewObject)
 
-NESTED_END RhpNewFast, _TEXT
+LEAF_END RhpNewFast, _TEXT
 
 
 // Allocate non-array object with finalizer
@@ -167,7 +167,7 @@ NESTED_END RhpNewObject, _TEXT
 // Allocate a string.
 //  RDI == MethodTable
 //  ESI == character/element count
-NESTED_ENTRY RhNewString, _TEXT, NoHandler
+LEAF_ENTRY RhNewString, _TEXT
 
         // we want to limit the element count to the non-negative 32-bit int range
         cmp         rsi, MAX_STRING_LENGTH
@@ -188,13 +188,13 @@ LOCAL_LABEL(StringSizeOverflow):
         xor         esi, esi            // Indicate that we should throw OOM.
         jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhNewString, _TEXT
+LEAF_END RhNewString, _TEXT
 
 
 // Allocate one dimensional, zero based array (SZARRAY).
 //  RDI == MethodTable
 //  ESI == element count
-NESTED_ENTRY RhpNewArrayFast, _TEXT, NoHandler
+LEAF_ENTRY RhpNewArrayFast, _TEXT
 
         // we want to limit the element count to the non-negative 32-bit int range
         cmp         rsi, 0x07fffffff
@@ -217,14 +217,14 @@ LOCAL_LABEL(ArraySizeOverflow):
         mov         esi, 1              // Indicate that we should throw OverflowException
         jmp         EXTERNAL_C_FUNC(RhExceptionHandling_FailedAllocation)
 
-NESTED_END RhpNewArrayFast, _TEXT
+LEAF_END RhpNewArrayFast, _TEXT
 
 
 #ifndef FEATURE_NATIVEAOT
 // Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
 //  RDI == MethodTable
 //  ESI == element count
-NESTED_ENTRY RhpNewObjectArrayFast, _TEXT, NoHandler
+LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
         // Delegate overflow handling to the generic helper conservatively
 
@@ -242,7 +242,7 @@ NESTED_ENTRY RhpNewObjectArrayFast, _TEXT, NoHandler
 
         NEW_ARRAY_FAST
 
-NESTED_END RhpNewObjectArrayFast, _TEXT
+LEAF_END RhpNewObjectArrayFast, _TEXT
 #endif
 
 
