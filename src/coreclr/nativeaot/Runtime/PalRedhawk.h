@@ -154,49 +154,40 @@ typedef char TCHAR;
 
 extern uint32_t g_RhNumberOfProcessors;
 
-#ifdef TARGET_UNIX
-#define REDHAWK_PALIMPORT extern "C"
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
-#else
-#define REDHAWK_PALIMPORT EXTERN_C
-#define REDHAWK_PALAPI __stdcall
-#endif // TARGET_UNIX
-
 #ifndef DACCESS_COMPILE
 #include "PalRedhawkFunctions.h"
 #endif // !DACCESS_COMPILE
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
+bool PalInit();
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
+void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
 struct NATIVE_CONTEXT;
 
 #if _WIN32
-REDHAWK_PALIMPORT NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(NATIVE_CONTEXT * pCtx);
+NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer);
+bool PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+bool PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx);
+void PalRestoreContext(NATIVE_CONTEXT * pCtx);
 
 // For platforms that have segment registers in the CONTEXT_CONTROL set that
 // are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
 // thread and saves them in `pContext`.
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT * pContext);
+void PopulateControlSegmentRegisters(CONTEXT * pContext);
 #endif
 
-REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
+int32_t PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
+bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
 
 // Return value:  number of characters in name string
-REDHAWK_PALIMPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
+int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 #if _WIN32
 
@@ -237,65 +228,65 @@ inline uint8_t * PalNtCurrentTeb()
 
 #endif // _WIN32
 
-REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
-REDHAWK_PALIMPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled();
-REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(uintptr_t size, uint32_t protect);
+void PalVirtualFree(_In_ void* pAddress, uintptr_t size);
+UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
+void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
+void PalSleep(uint32_t milliseconds);
+UInt32_BOOL PalSwitchToThread();
+UInt32_BOOL PalAreShadowStacksEnabled();
+HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
+uint32_t PalGetOsPageSize();
+void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
 typedef uint32_t (*BackgroundCallback)(_In_opt_ void* pCallbackContext);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadName(const char* name);
+bool PalSetCurrentThreadName(const char* name);
 #ifdef HOST_WINDOWS
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetCurrentThreadNameW(const WCHAR* name);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInitComAndFlsSlot();
+bool PalSetCurrentThreadNameW(const WCHAR* name);
+bool PalInitComAndFlsSlot();
 #endif
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 #ifdef FEATURE_HIJACK
 class Thread;
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(Thread* pThreadToHijack);
-REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
+void PalHijack(Thread* pThreadToHijack);
+HijackFunc* PalGetHijackTarget(_In_ HijackFunc* defaultHijackTarget);
 #endif
 
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
+UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
+UInt32_BOOL PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize);
 
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
     int thunkBlockSize,
     int thunkBlocksPerMapping);
 
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
+uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
-REDHAWK_PALIMPORT HANDLE PalCreateLowMemoryResourceNotification();
+HANDLE PalCreateLowMemoryResourceNotification();
 
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
+void PalAttachThread(void* thread);
 
-REDHAWK_PALIMPORT uint64_t PalGetCurrentOSThreadId();
+uint64_t PalGetCurrentOSThreadId();
 
-REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
+void PalPrintFatalError(const char* message);
 
-REDHAWK_PALIMPORT char* PalCopyTCharAsChar(const TCHAR* toCopy);
+char* PalCopyTCharAsChar(const TCHAR* toCopy);
 
-REDHAWK_PALIMPORT HANDLE PalLoadLibrary(const char* moduleName);
+HANDLE PalLoadLibrary(const char* moduleName);
 
-REDHAWK_PALIMPORT void* PalGetProcAddress(HANDLE module, const char* functionName);
+void* PalGetProcAddress(HANDLE module, const char* functionName);
 
 #ifdef TARGET_UNIX
-REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
+int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
 #include "PalRedhawkInline.h"
