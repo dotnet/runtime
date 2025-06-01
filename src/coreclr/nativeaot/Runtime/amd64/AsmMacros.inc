@@ -325,8 +325,25 @@ POP_COOP_PINVOKE_FRAME macro
 endm
 
 INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
-    INLINE_GET_TLS_VAR destReg, trashReg, tls_CurrentThread
-    lea         destReg, [destReg + OFFSETOF__Thread__m_eeAllocContext]
+    EXTERN _tls_index : DWORD
+    EXTERN tls_CurrentThread : DWORD
+
+;;
+;; construct 'eax' from 'rax' so that the register size and data size match
+;;
+;; BEWARE: currently only r10 is allowed as destReg from the r8-r15 set.
+;;
+ifidni <destReg>, <r10>
+destRegDWORD EQU r10d
+else
+destRegDWORD TEXTEQU @CatStr( e, @SubStr( destReg, 2, 2 ) )
+endif
+
+    mov         destRegDWORD, [_tls_index]
+    mov         trashReg, gs:[_tls_array]
+    mov         trashReg, [trashReg + destReg * 8]
+    mov         destRegDWORD, SECTIONREL tls_CurrentThread
+    lea         destReg, [trashReg + destReg + OFFSETOF__Thread__m_eeAllocContext]
 endm
 
 ;  - TAILCALL_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction

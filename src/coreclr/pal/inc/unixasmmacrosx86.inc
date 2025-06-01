@@ -145,8 +145,7 @@ C_FUNC(\Name\()_End):
 .macro INLINE_GET_ALLOC_CONTEXT
     push  ecx
     push  eax
-    call  C_FUNC(_ZTW23t_runtime_thread_locals)
-    lea   edx, [eax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+    call  C_FUNC(GetThreadEEAllocContext)
     pop   eax
     pop   ecx
 .endm

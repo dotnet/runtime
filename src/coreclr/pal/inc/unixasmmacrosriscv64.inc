@@ -330,9 +330,6 @@ C_FUNC(\Name):
 // Inlined version of GetThreadEEAllocContext
 .macro INLINE_GET_ALLOC_CONTEXT
     call    C_FUNC(GetThreadEEAllocContext)
-    .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
-        addi    \target, a0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
-    .endif
 .endm
 
 // Pushes a TransitionBlock on the stack without saving the argument registers.
