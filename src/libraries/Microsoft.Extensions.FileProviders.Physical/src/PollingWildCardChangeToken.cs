@@ -132,13 +132,29 @@ namespace Microsoft.Extensions.FileProviders.Physical
                     ComputeHash(sha256, file.Path, lastWriteTimeUtc);
                 }
 
-                byte[] currentHash = sha256.GetHashAndReset();
-                if (!ArrayEquals(_previousHash, currentHash))
+#if NET
+                Span<byte> currentHash = stackalloc byte[256 / 8];
+                sha256.GetHashAndReset(currentHash);
+                if (_previousHash is null)
+                {
+                    _previousHash = currentHash.ToArray(); // First run
+                }
+                else if (!_previousHash.AsSpan().SequenceEqual(currentHash))
                 {
                     return true;
                 }
+#else
+                byte[] currentHash = sha256.GetHashAndReset();
+                if (_previousHash is null)
+                {
+                    _previousHash = currentHash; // First run
+                }
+                else if (!_previousHash.AsSpan().SequenceEqual(currentHash.AsSpan()))
+                {
+                    return true;
+                }
+#endif
 
-                _previousHash ??= currentHash;
                 _lastScanTimeUtc = Clock.UtcNow;
             }
 
@@ -154,18 +170,6 @@ namespace Microsoft.Extensions.FileProviders.Physical
         {
             string filePath = Path.Combine(_directoryInfo.FullName, path);
             return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
-        }
-
-        private static bool ArrayEquals(byte[]? previousHash, byte[] currentHash)
-        {
-            if (previousHash == null)
-            {
-                // First run
-                return true;
-            }
-
-            Debug.Assert(previousHash.Length == currentHash.Length);
-            return previousHash.AsSpan().SequenceEqual(currentHash.AsSpan());
         }
 
         private
