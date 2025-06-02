@@ -27,6 +27,13 @@ namespace System.Net.Http.HPack
             DynamicTableSizeUpdate
         }
 
+        private struct HeaderData
+        {
+            public int HeaderStaticIndex;
+            public (int start, int length)? HeaderNameRange;
+            public (int start, int length)? HeaderValueRange;
+        }
+
         // https://datatracker.ietf.org/doc/html/rfc9113#name-defined-settings
         // Initial value for SETTINGS_HEADER_TABLE_SIZE is 4,096 octets.
         public const int DefaultHeaderTableSize = 4096;
@@ -92,12 +99,10 @@ namespace System.Net.Http.HPack
         private byte[] _stringOctets;
         private byte[] _headerNameOctets;
         private byte[] _headerValueOctets;
-        private (int start, int length)? _headerNameRange;
-        private (int start, int length)? _headerValueRange;
+        private HeaderData _headerData;
 
         private State _state = State.Ready;
         private byte[]? _headerName;
-        private int _headerStaticIndex;
         private int _stringIndex;
         private int _stringLength;
         private int _headerNameLength;
@@ -190,14 +195,14 @@ namespace System.Net.Http.HPack
             // If a header range was set, but the value was not in the data, then copy the range
             // to the name buffer. Must copy because the data will be replaced and the range
             // will no longer be valid.
-            if (_headerNameRange != null)
+            if (_headerData.HeaderNameRange != null)
             {
                 EnsureStringCapacity(ref _headerNameOctets, _headerNameLength);
                 _headerName = _headerNameOctets;
 
                 ReadOnlySpan<byte> headerBytes = data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
                 headerBytes.CopyTo(_headerName);
-                _headerNameRange = null;
+                _headerData.HeaderNameRange = null;
             }
         }
 
@@ -430,7 +435,7 @@ namespace System.Net.Http.HPack
             if (count == _stringLength && !_huffman)
             {
                 // Fast path. Store the range rather than copying.
-                _headerNameRange = (start: currentIndex, count);
+                _headerData.HeaderNameRange = (start: currentIndex, count);
                 _headerNameLength = _stringLength;
                 currentIndex += count;
 
@@ -467,7 +472,7 @@ namespace System.Net.Http.HPack
             if (count == _stringLength && !_huffman)
             {
                 // Fast path. Store the range rather than copying.
-                _headerValueRange = (start: currentIndex, count);
+                _headerData.HeaderValueRange = (start: currentIndex, count);
                 currentIndex += count;
 
                 _state = State.Ready;
@@ -503,22 +508,22 @@ namespace System.Net.Http.HPack
 
         private void ProcessHeaderValue(ReadOnlySpan<byte> data, IHttpStreamHeadersHandler handler)
         {
-            ReadOnlySpan<byte> headerValueSpan = _headerValueRange == null
+            ReadOnlySpan<byte> headerValueSpan = _headerData.HeaderValueRange == null
                 ? _headerValueOctets.AsSpan(0, _headerValueLength)
                 : data.Slice(_headerValueRange.GetValueOrDefault().start, _headerValueRange.GetValueOrDefault().length);
 
-            if (_headerStaticIndex > 0)
+            if (_headerData.HeaderStaticIndex > 0)
             {
                 handler.OnStaticIndexedHeader(_headerStaticIndex, headerValueSpan);
 
                 if (_index)
                 {
-                    _dynamicTable.Insert(_headerStaticIndex, H2StaticTable.Get(_headerStaticIndex - 1).Name, headerValueSpan);
+                    _dynamicTable.Insert(_headerStaticIndex, H2StaticTable.Get(_headerData.HeaderStaticIndex - 1).Name, headerValueSpan);
                 }
             }
             else
             {
-                ReadOnlySpan<byte> headerNameSpan = _headerNameRange == null
+                ReadOnlySpan<byte> headerNameSpan = _headerData.HeaderNameRange == null
                     ? _headerName.AsSpan(0, _headerNameLength)
                     : data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
 
@@ -530,9 +535,7 @@ namespace System.Net.Http.HPack
                 }
             }
 
-            _headerStaticIndex = 0;
-            _headerNameRange = null;
-            _headerValueRange = null;
+            _headerData = default;
         }
 
         public void CompleteDecode()
@@ -563,7 +566,7 @@ namespace System.Net.Http.HPack
         {
             if (index <= H2StaticTable.Count)
             {
-                _headerStaticIndex = index;
+                _headerData.HeaderStaticIndex = index;
             }
             else
             {
