@@ -497,7 +497,6 @@ void BasicBlock::dspFlags() const
         {BBF_DONT_REMOVE, "keep"},
         {BBF_INTERNAL, "internal"},
         {BBF_HAS_SUPPRESSGC_CALL, "sup-gc"},
-        {BBF_LOOP_HEAD, "loophead"},
         {BBF_HAS_LABEL, "label"},
         {BBF_HAS_JMP, "jmp"},
         {BBF_HAS_CALL, "hascall"},

@@ -5619,37 +5619,34 @@ bool Compiler::fgHeadMerge(BasicBlock* block, bool early)
 //
 bool Compiler::gtTreeContainsTailCall(GenTree* tree)
 {
-    struct HasTailCallCandidateVisitor : GenTreeVisitor<HasTailCallCandidateVisitor>
-    {
-        enum
-        {
-            DoPreOrder = true
-        };
-
-        HasTailCallCandidateVisitor(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-            if ((node->gtFlags & GTF_CALL) == 0)
-            {
-                return WALK_SKIP_SUBTREES;
-            }
-
-            if (node->IsCall() && (node->AsCall()->CanTailCall() || node->AsCall()->IsTailCall()))
-            {
-                return WALK_ABORT;
-            }
-
-            return WALK_CONTINUE;
-        }
+    auto isTailCall = [](GenTree* tree) {
+        return tree->IsCall() && (tree->AsCall()->CanTailCall() || tree->AsCall()->IsTailCall());
     };
 
-    HasTailCallCandidateVisitor visitor(this);
-    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+    return gtFindNodeInTree<GTF_CALL>(tree, isTailCall) != nullptr;
+}
+
+//------------------------------------------------------------------------
+// gtTreeContainsAsyncCall: Check if a tree contains any async call.
+//
+// Parameters:
+//   tree - The tree to check
+//
+// Returns:
+//   True if any node in the tree is an async call, false otherwise.
+//
+bool Compiler::gtTreeContainsAsyncCall(GenTree* tree)
+{
+    if (!compIsAsync())
+    {
+        return false;
+    }
+
+    auto isAsyncCall = [](GenTree* tree) {
+        return tree->IsCall() && tree->AsCall()->IsAsync();
+    };
+
+    return gtFindNodeInTree<GTF_CALL>(tree, isAsyncCall) != nullptr;
 }
 
 //------------------------------------------------------------------------

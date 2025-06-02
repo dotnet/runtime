@@ -738,6 +738,51 @@ bool IsInNoGCRegion(hdrInfo   * infoPtr,
 }
 
 /*****************************************************************************/
+unsigned FindFirstInterruptiblePoint(hdrInfo   * infoPtr,
+                                     PTR_CBYTE   table,
+                                     unsigned    offs,
+                                     unsigned    endOffs)
+{
+    if (!infoPtr->interruptible)
+        return -1;
+
+    _ASSERTE(offs < endOffs);
+
+    // NOTE: We do not check for prologs and epilogs of the main function body. Only
+    // explicit no-GC regions are considered.
+
+    if (infoPtr->noGCRegionCnt == 0)
+        return offs;
+
+#if VERIFY_GC_TABLES
+    _ASSERTE(*castto(table, unsigned short *)++ == 0xBEEF);
+#endif
+
+    unsigned count = infoPtr->noGCRegionCnt;
+    while (count-- > 0) {
+        unsigned regionOffset = fastDecodeUnsigned(table);
+        if (offs < regionOffset)
+        {
+            // Offset is lower than the region start. Since the regions come in
+            // order we can assume that the offset is in GC safe region.
+            return offs;
+        }
+
+        unsigned regionSize = fastDecodeUnsigned(table);
+        if (offs - regionOffset < regionSize)
+        {
+            // Offset is inside the no-GC region, so move it past the region and
+            // check if we still can match something in next iteration.
+            offs = regionOffset + regionSize;
+            if (offs >= endOffs)
+                return -1;
+        }
+    }
+
+    return offs;
+}
+
+/*****************************************************************************/
 static
 PTR_CBYTE skipToArgReg(const hdrInfo& info, PTR_CBYTE table)
 {
@@ -3676,7 +3721,15 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
     // Filters are the only funclet that run during the 1st pass, and must have
     // both the leaf and the parent frame reported.  In order to avoid double
     // reporting of the untracked variables, do not report them for the filter.
-    if (!isFilterFunclet)
+    if (isFilterFunclet)
+    {
+        count = info.untrackedCnt;
+        while (count-- > 0)
+        {
+            fastSkipSigned(table);
+        }
+    }
+    else
 #endif // FEATURE_EH_FUNCLETS
     {
         count = info.untrackedCnt;
@@ -3734,7 +3787,6 @@ bool EnumGcRefsX86(PREGDISPLAY     pContext,
                                               info.ebpFrame ? EBP - ptrAddr : ptrAddr - ESP,
                                               true)));
         }
-
     }
 
 #if VERIFY_GC_TABLES

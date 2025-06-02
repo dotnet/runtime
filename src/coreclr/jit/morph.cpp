@@ -711,6 +711,8 @@ const char* getWellKnownArgName(WellKnownArg arg)
             return "X86TailCallSpecialArg";
         case WellKnownArg::StackArrayLocal:
             return "StackArrayLocal";
+        case WellKnownArg::RuntimeMethodHandle:
+            return "RuntimeMethodHandle";
     }
 
     return "N/A";
@@ -2219,11 +2221,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 //   False if the argument cannot be put into a shape supported by the backend.
 //
 // Remarks:
-//   The backend requires register-passed arguments to be of FIELD_LIST shape
-//   with one primitive node for each register. If the argument is passed in
-//   only one register, then the FIELD_LIST should be directly replaced by its
-//   operand. For stack-passed arguments the backend supports struct-typed
-//   arguments directly.
+//   The backend requires register-passed arguments to be of FIELD_LIST shape.
+//   For split arguments it is additionally required that registers and stack
+//   slots have clean mappings to fields.
+//   For stack-passed arguments the backend supports struct-typed arguments
+//   directly.
 //
 bool Compiler::fgTryMorphStructArg(CallArg* arg)
 {
@@ -2299,49 +2301,20 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
         JITDUMP("Struct argument V%02u: ", lclNum);
         JITDUMPEXEC(arg->Dump(this));
 
-        // Try to see if we can use the promoted fields to pass this argument.
+        // Try to see if we can and should use promoted fields to pass this
+        // argument.
         //
-        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister &&
-            (varDsc->lvFieldCnt == arg->AbiInfo.CountRegsAndStackSlots()))
+        if (varDsc->lvPromoted && !varDsc->lvDoNotEnregister && (!isSplit || FieldsMatchAbi(varDsc, arg->AbiInfo)))
         {
-            bool fieldsMatch = true;
-
-            for (const ABIPassingSegment& seg : arg->AbiInfo.Segments())
-            {
-                if (seg.IsPassedInRegister())
-                {
-                    unsigned fieldLclNum = lvaGetFieldLocal(varDsc, seg.Offset);
-                    if (fieldLclNum == BAD_VAR_NUM)
-                    {
-                        fieldsMatch = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    for (unsigned offset = 0; offset < seg.Size; offset += TARGET_POINTER_SIZE)
-                    {
-                        if (lvaGetFieldLocal(varDsc, seg.Offset + offset) == BAD_VAR_NUM)
-                        {
-                            fieldsMatch = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (fieldsMatch)
-            {
-                newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
-                newArg = fgMorphTree(newArg);
-            }
+            newArg = fgMorphLclToFieldList(lclNode)->SoleFieldOrThis();
+            newArg = fgMorphTree(newArg);
         }
     }
     else if (argNode->OperIsFieldList())
     {
         // We can already see a field list here if physical promotion created it.
         // Physical promotion will also create single-field field lists which
-        // the backend does not expect, so fix that here.
+        // not everything treats the same as a single node, so fix that here.
         newArg = argNode->AsFieldList()->SoleFieldOrThis();
         if (newArg == argNode)
         {
@@ -2353,20 +2326,7 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     //
     if (newArg == nullptr)
     {
-        bool isUseOfIndependentlyPromotedStruct =
-            argNode->OperIs(GT_LCL_VAR) &&
-            (lvaGetPromotionType(argNode->AsLclVarCommon()->GetLclNum()) == PROMOTION_TYPE_INDEPENDENT);
-        if (isUseOfIndependentlyPromotedStruct)
-        {
-            if (arg->AbiInfo.HasExactlyOneRegisterSegment())
-            {
-                // We already tried to use the fields above, but that failed.
-                // Here we prefer to create a copy to avoid DNER'ing the local.
-                // That turns out to be profitable mostly for single-register arguments.
-                return false;
-            }
-        }
-        else if (!argNode->TypeIs(TYP_STRUCT) && arg->AbiInfo.HasExactlyOneRegisterSegment())
+        if (!argNode->TypeIs(TYP_STRUCT) && arg->AbiInfo.HasExactlyOneRegisterSegment())
         {
             // This can be treated primitively. Leave it alone.
             return true;
@@ -2541,6 +2501,51 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     *use = newArg;
     // Potentially update commas
     arg->GetNode()->ChangeType((*use)->TypeGet());
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+// FieldsMatchAbi:
+//   Check if the fields of a local map cleanly (in terms of offsets) to the
+//   specified ABI info.
+//
+// Arguments:
+//   varDsc  - promoted local
+//   abiInfo - ABI information
+//
+// Returns:
+//   True if it does. In that case FIELD_LIST usage is allowed for split args
+//   by the backend.
+//
+bool Compiler::FieldsMatchAbi(LclVarDsc* varDsc, const ABIPassingInformation& abiInfo)
+{
+    if (varDsc->lvFieldCnt != abiInfo.CountRegsAndStackSlots())
+    {
+        return false;
+    }
+
+    for (const ABIPassingSegment& seg : abiInfo.Segments())
+    {
+        if (seg.IsPassedInRegister())
+        {
+            unsigned fieldLclNum = lvaGetFieldLocal(varDsc, seg.Offset);
+            if (fieldLclNum == BAD_VAR_NUM)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            for (unsigned offset = 0; offset < seg.Size; offset += TARGET_POINTER_SIZE)
+            {
+                if (lvaGetFieldLocal(varDsc, seg.Offset + offset) == BAD_VAR_NUM)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -5107,6 +5112,10 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             {
                 assert(ValidateUse(tree) && "Expected use of local to be tailcall value");
             }
+            else if (IsCommaNop(tree))
+            {
+                // COMMA(NOP,NOP)
+            }
             else
             {
                 DISPTREE(tree);
@@ -5114,6 +5123,16 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
             }
 
             return WALK_CONTINUE;
+        }
+
+        bool IsCommaNop(GenTree* node)
+        {
+            if (!node->OperIs(GT_COMMA))
+            {
+                return false;
+            }
+
+            return node->AsOp()->gtGetOp1()->OperIs(GT_NOP) && node->AsOp()->gtGetOp2()->OperIs(GT_NOP);
         }
 
         bool ValidateUse(GenTree* node)
@@ -6458,8 +6477,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             CORINFO_OBJECT_HANDLE ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != NULL)
             {
-                GenTree* retNode = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                return fgMorphTree(retNode);
+                return fgMorphTree(gtNewIconEmbObjHndNode(ptr));
             }
         }
     }
@@ -9653,25 +9671,25 @@ GenTreeHWIntrinsic* Compiler::fgOptimizeForMaskedIntrinsic(GenTreeHWIntrinsic* n
         {
             case GT_AND:
             {
-                maskIntrinsicId = NI_EVEX_AndMask;
+                maskIntrinsicId = NI_AVX512_AndMask;
                 break;
             }
 
             case GT_NOT:
             {
-                maskIntrinsicId = NI_EVEX_NotMask;
+                maskIntrinsicId = NI_AVX512_NotMask;
                 break;
             }
 
             case GT_OR:
             {
-                maskIntrinsicId = NI_EVEX_OrMask;
+                maskIntrinsicId = NI_AVX512_OrMask;
                 break;
             }
 
             case GT_XOR:
             {
-                maskIntrinsicId = NI_EVEX_XorMask;
+                maskIntrinsicId = NI_AVX512_XorMask;
                 break;
             }
 
