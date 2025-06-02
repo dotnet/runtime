@@ -498,20 +498,11 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     GenTree* fwdSubNode = defNode->AsLclVarCommon()->Data();
 
-    // Can't substitute GT_CATCH_ARG.
-    // Can't substitute GT_LCLHEAP.
+    // Can't substitute GT_CATCH_ARG, GT_LCLHEAP or GT_ASYNC_CONTINUATION.
     //
     if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP, GT_ASYNC_CONTINUATION))
     {
-        JITDUMP(" tree to sub is catch arg, or lcl heap\n");
-        return false;
-    }
-
-    // Don't substitute a no return call (trips up morph in some cases).
-    //
-    if (fwdSubNode->IsCall() && fwdSubNode->AsCall()->IsNoReturn())
-    {
-        JITDUMP(" tree to sub is a 'no return' call\n");
+        JITDUMP(" tree to sub is %s\n", GenTree::OpName(fwdSubNode->OperGet()));
         return false;
     }
 

@@ -23,9 +23,6 @@
 #error Cannot handle hardware exceptions on this platform
 #endif
 
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
-
 #define EXCEPTION_ACCESS_VIOLATION          0xC0000005u
 #define EXCEPTION_DATATYPE_MISALIGNMENT     0x80000002u
 #define EXCEPTION_BREAKPOINT                0x80000003u
@@ -626,7 +623,7 @@ bool InitializeHardwareExceptionHandling()
 }
 
 // Set hardware exception handler
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
+void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler)
 {
     ASSERT_MSG(g_hardwareExceptionHandler == NULL, "Hardware exception handler already set")
     g_hardwareExceptionHandler = handler;
