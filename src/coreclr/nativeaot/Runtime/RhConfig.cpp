@@ -139,6 +139,27 @@ bool RhConfig::ReadConfigValue(_In_z_ const char *name, uint64_t* pValue, bool d
     return false;
 }
 
+bool RhConfig::ReadConfigValue(_In_z_ const char* envName, _In_z_ const char* configName, uint64_t* pValue, bool decimal)
+{
+    uint64_t uiValue;
+    if (g_pRhConfig->ReadConfigValue(envName, &uiValue, decimal))
+    {
+        *pValue = uiValue;
+        return true;
+    }
+
+    if (configName)
+    {
+        if (g_pRhConfig->ReadKnobUInt64Value(configName, &uiValue))
+        {
+            *pValue = uiValue;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool RhConfig::ReadKnobUInt64Value(_In_z_ const char *name, uint64_t* pValue)
 {
     const char *embeddedValue = nullptr;
@@ -193,6 +214,24 @@ bool RhConfig::GetEmbeddedVariable(Config* config, _In_z_ const char* configName
 
     // Config key was not found
     return false;
+}
+
+size_t GetDefaultStackSizeSetting()
+{
+    // Keep the same arbitrary minimum and maximum from the CoreCLR VM layer.
+    const size_t minStack = 0x10000;     // 64K
+    const size_t maxStack = 0x80000000;  //  2G
+
+    uint64_t uiStacksize;
+    if (g_pRhConfig->ReadConfigValue("Threading_DefaultStackSize", "System.Threading.DefaultStackSize", &uiStacksize))
+    {
+        if (uiStacksize < maxStack || uiStacksize >= minStack)
+        {
+            return (size_t)uiStacksize;
+        }
+    }
+
+    return 0;
 }
 
 #endif

@@ -768,19 +768,10 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
     }
 
     uint64_t uiValue;
-    if (g_pRhConfig->ReadConfigValue(privateKey, &uiValue))
+    if (g_pRhConfig->ReadConfigValue(privateKey, publicKey, &uiValue))
     {
         *value = uiValue;
         return true;
-    }
-
-    if (publicKey)
-    {
-        if (g_pRhConfig->ReadKnobUInt64Value(publicKey, &uiValue))
-        {
-            *value = uiValue;
-            return true;
-        }
     }
 
     return false;

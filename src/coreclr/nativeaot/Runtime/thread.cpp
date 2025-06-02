@@ -1308,6 +1308,12 @@ FCIMPL0(uint64_t, RhCurrentOSThreadId)
 }
 FCIMPLEND
 
+FCIMPL0(size_t, RhGetDefaultStackSize)
+{
+    return GetDefaultStackSizeSetting();
+}
+FCIMPLEND
+
 // Standard calling convention variant and actual implementation for RhpReversePInvokeAttachOrTrapThread
 EXTERN_C NOINLINE void FASTCALL RhpReversePInvokeAttachOrTrapThread2(ReversePInvokeFrame* pFrame)
 {
