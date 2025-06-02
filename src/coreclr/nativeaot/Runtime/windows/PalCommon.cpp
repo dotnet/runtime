@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Implementation of the portions of the Redhawk Platform Abstraction Layer (PAL) library that are common among
+// Implementation of the portions of the Platform Abstraction Layer (PAL) library that are common among
 // multiple PAL variants.
 //
-// Note that in general we don't want to assume that Windows and Redhawk global definitions can co-exist.
+// Note that in general we don't want to assume that Windows and NativeAOT global definitions can co-exist.
 // Since this code must include Windows headers to do its job we can't therefore safely include general
-// Redhawk header files.
+// NativeAOT header files.
 //
 
 #include <windows.h>
@@ -16,8 +16,8 @@
 #include <evntprov.h>
 #include "CommonTypes.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalCommon.h"
+#include "Pal.h"
 #include <winternl.h>
 #include "CommonMacros.h"
 #include "rhassert.h"

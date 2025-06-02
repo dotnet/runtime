@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform.
+// Implementation of the NativeAOT Platform Abstraction Layer (PAL) library when Unix is the platform.
 //
 
 #include <stdio.h>
@@ -408,7 +408,7 @@ static pthread_key_t key;
 bool InitializeSignalHandling();
 #endif
 
-// The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
+// The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 bool PalInit()
 {
@@ -1040,7 +1040,7 @@ HANDLE PalCreateLowMemoryResourceNotification()
 
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
-// Defined for implementing PalYieldProcessor in PalRedhawk.h
+// Defined for implementing PalYieldProcessor in Pal.h
 {
 #if defined(HOST_AMD64) || defined(HOST_X86)
   __asm__ volatile ("pause");

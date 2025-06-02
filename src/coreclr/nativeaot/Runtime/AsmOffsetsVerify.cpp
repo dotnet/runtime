@@ -4,7 +4,7 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "rhassert.h"
-#include "RedhawkWarnings.h"
+#include "Warnings.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"

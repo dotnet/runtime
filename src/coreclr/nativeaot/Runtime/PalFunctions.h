@@ -16,6 +16,6 @@ UInt32_BOOL PalResetEvent(HANDLE arg1);
 UInt32_BOOL PalSetEvent(HANDLE arg1);
 uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
 
-#ifdef PAL_REDHAWK_INCLUDED
+#ifdef PAL_INCLUDED
 void PalGetSystemTimeAsFileTime(FILETIME * arg1);
 #endif

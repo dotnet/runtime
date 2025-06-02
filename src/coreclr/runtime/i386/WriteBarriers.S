@@ -207,7 +207,7 @@ LEAF_END RhpCheckedAssignRef\REFREG, _TEXT
 DEFINE_CHECKED_WRITE_BARRIER ECX, EDX, EAX
 DEFINE_WRITE_BARRIER ECX, EDX, EAX
 
-// Need some more write barriers to run CLR compiled MDIL on Redhawk - commented out for now
+// Need some more write barriers to run CLR compiled MDIL on NativeAOT - commented out for now
 DEFINE_WRITE_BARRIER EDX, EAX, ECX
 DEFINE_WRITE_BARRIER EDX, ECX, EAX
 DEFINE_WRITE_BARRIER EDX, EBX, EAX

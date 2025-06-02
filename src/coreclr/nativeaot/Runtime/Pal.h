@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Provides declarations for external resources consumed by Redhawk. This comprises functionality
+// Provides declarations for external resources consumed by NativeAOT. This comprises functionality
 // normally exported from Win32 libraries such as KERNEL32 and MSVCRT. When hosted on Win32 calls to these
 // functions become simple pass throughs to the native implementation via export forwarding entries in a PAL
 // (Platform Abstraction Layer) library. On other platforms the PAL library has actual code to emulate the
 // functionality of these same APIs.
 //
-// In order to make it both obvious and intentional where Redhawk consumes an external API, such functions are
+// In order to make it both obvious and intentional where NativeAOT consumes an external API, such functions are
 // decorated with an 'Pal' prefix. Ideally the associated supporting types, constants etc. would be
 // similarly isolated from their concrete Win32 definitions, making the extent of platform dependence within
 // the core explicit. For now that is too big a work item and we'll settle for manually restricting the use of
@@ -26,10 +26,10 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "gcenv.structs.h" // EEThreadId
-#include "PalRedhawkCommon.h"
+#include "PalCommon.h"
 
-#ifndef PAL_REDHAWK_INCLUDED
-#define PAL_REDHAWK_INCLUDED
+#ifndef PAL_INCLUDED
+#define PAL_INCLUDED
 
 /* Adapted from intrin.h - For compatibility with <winnt.h>, some intrinsics are __cdecl except on x64 */
 #if defined (_M_X64)
@@ -64,7 +64,7 @@
 #endif // TARGET_UNIX
 
 #ifdef TARGET_UNIX
-// There are some fairly primitive type definitions below but don't pull them into the rest of Redhawk unless
+// There are some fairly primitive type definitions below but don't pull them into the rest of NativeAOT unless
 // we have to (in which case these definitions will move to CommonTypes.h).
 typedef int32_t             HRESULT;
 
@@ -102,8 +102,8 @@ typedef struct _EXCEPTION_RECORD EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 
 #endif // TARGET_UNIX
 
-#define STATUS_REDHAWK_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
-#define STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
+#define STATUS_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
+#define STATUS_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
 #ifdef TARGET_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
@@ -155,10 +155,10 @@ typedef char TCHAR;
 extern uint32_t g_RhNumberOfProcessors;
 
 #ifndef DACCESS_COMPILE
-#include "PalRedhawkFunctions.h"
+#include "PalFunctions.h"
 #endif // !DACCESS_COMPILE
 
-// The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
+// The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
 bool PalInit();
 
@@ -289,6 +289,6 @@ void* PalGetProcAddress(HANDLE module, const char* functionName);
 int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
-#include "PalRedhawkInline.h"
+#include "PalInline.h"
 
-#endif // !PAL_REDHAWK_INCLUDED
+#endif // !PAL_INCLUDED
