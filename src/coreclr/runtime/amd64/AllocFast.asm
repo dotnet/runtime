@@ -107,6 +107,7 @@ NEW_ARRAY_FAST MACRO
         mov         r8, rax
         mov         rax, [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         mov         r9, [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
+        sub         r9, rax
 
         ; rax == new object ptr
         ; rcx == MethodTable
