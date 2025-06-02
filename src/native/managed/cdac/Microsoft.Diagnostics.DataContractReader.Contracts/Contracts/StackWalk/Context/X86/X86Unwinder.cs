@@ -313,8 +313,8 @@ public class X86Unwinder(Target target)
                 if (!gcInfo.SavedRegsMask.HasFlag(regMask))
                     continue;
 
-                // TODO(cdacx86): UpdateAllRegs set location??
-                // SetLocation(pContext, i - 1, PTR_DWORD((TADDR)ESP));
+                TargetPointer regValueFromStack = _target.ReadPointer(esp);
+                SetRegValue(ref context, regMask, regValueFromStack);
 
                 // Pop the callee-saved registers
                 esp += (uint)_target.PointerSize;
