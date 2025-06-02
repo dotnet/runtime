@@ -12777,12 +12777,12 @@ void CEECodeGenInfo::setEHinfoWorker(
     LOG((LF_EH, LL_INFO1000000, "    ClassToken    : 0x%08lx  ->  0x%08lx\n",            clause->ClassToken,    pEHClause->ClassToken));
     LOG((LF_EH, LL_INFO1000000, "    FilterOffset  : 0x%08lx  ->  0x%08lx\n",            clause->FilterOffset,  pEHClause->FilterOffset));
 
-    if (m_pMethodBeingCompiled->IsDynamicMethod() &&
+    if (IsDynamicScope(m_MethodInfo.scope) &&
         ((pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_FILTER) == 0) &&
         (clause->ClassToken != mdTokenNil))
     {
         ResolvedToken resolved{};
-        m_pMethodBeingCompiled->AsDynamicMethodDesc()->GetResolver()->ResolveToken(clause->ClassToken, &resolved);
+        GetDynamicResolver(m_MethodInfo.scope)->ResolveToken(clause->ClassToken, &resolved);
         pEHClause->TypeHandle = (void*)resolved.TypeHandle.AsPtr();
         SetHasCachedTypeHandle(pEHClause);
         LOG((LF_EH, LL_INFO1000000, "  CachedTypeHandle: 0x%08x  ->  %p\n",        clause->ClassToken,    pEHClause->TypeHandle));
