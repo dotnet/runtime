@@ -37,7 +37,7 @@
         bltu  t2, t0, LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
-        sd    t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr(a0)
+        sd    t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
         // Set the new objects MethodTable pointer
         sd    s1, OFFSETOF__Object__m_pEEType(t1)
