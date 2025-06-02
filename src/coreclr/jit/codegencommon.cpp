@@ -1826,91 +1826,40 @@ void CodeGen::genGenerateMachineCode()
 
         printf(" for ");
 
-#if defined(TARGET_X86)
+#if defined(TARGET_XARCH)
+#if defined(TARGET_64BIT)
+        printf("generic X64");
+#else
+        printf("generic X86");
+#endif
+
         // Check ISA directly here instead of using
         // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
         // us miss in SPMI
-        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
-            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
-                {
-                    printf("X86 with AVX10.2/512");
-                }
-                else
-                {
-                    printf("X86 with AVX10.2/256");
-                }
-            }
-            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
-                {
-                    printf("X86 with AVX10.1/512");
-                }
-                else
-                {
-                    printf("X86 with AVX10.1/256");
-                }
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X86 with AVX512");
-            }
+            printf(" + VEX");
         }
-        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX512))
         {
-            printf("X86 with AVX");
+            printf(" + EVEX");
         }
-        else
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_APX))
         {
-            printf("generic X86");
-        }
-#elif defined(TARGET_AMD64)
-        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
-        {
-            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
-                {
-                    printf("X64 with AVX10.2/512");
-                }
-                else
-                {
-                    printf("X64 with AVX10.2/256");
-                }
-            }
-            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
-                {
-                    printf("X64 with AVX10.1/512");
-                }
-                else
-                {
-                    printf("X64 with AVX10.1/256");
-                }
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X64 with AVX512");
-            }
-        }
-        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
-        {
-            printf("X64 with AVX");
-        }
-        else
-        {
-            printf("generic X64");
+            printf(" + APX");
         }
 #elif defined(TARGET_ARM)
         printf("generic ARM");
 #elif defined(TARGET_ARM64)
         printf("generic ARM64");
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
+        {
+            printf(" + SVE");
+        }
 #elif defined(TARGET_LOONGARCH64)
         printf("generic LOONGARCH64");
 #elif defined(TARGET_RISCV64)
@@ -1921,15 +1870,15 @@ void CodeGen::genGenerateMachineCode()
 
         if (TargetOS::IsWindows)
         {
-            printf(" - Windows");
+            printf(" on Windows");
         }
         else if (TargetOS::IsApplePlatform)
         {
-            printf(" - Apple");
+            printf(" on Apple");
         }
         else if (TargetOS::IsUnix)
         {
-            printf(" - Unix");
+            printf(" on Unix");
         }
 
         printf("\n");

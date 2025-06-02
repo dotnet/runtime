@@ -4216,8 +4216,8 @@ namespace Internal.JitInterface
             {
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
-                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
-                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_SSE2));
+                    Debug.Assert(InstructionSet.X86_X86Base == InstructionSet.X64_X86Base);
+                    Debug.Assert(_compilation.InstructionSetSupport.IsInstructionSetSupported(InstructionSet.X86_X86Base));
                     break;
 
                 case TargetArchitecture.ARM64:
