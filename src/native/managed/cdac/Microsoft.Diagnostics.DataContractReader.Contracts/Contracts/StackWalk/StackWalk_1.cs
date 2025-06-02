@@ -95,7 +95,7 @@ internal readonly struct StackWalk_1 : IStackWalk
                 break;
             case StackWalkState.SW_FRAME:
                 handle.FrameIter.UpdateContextFromFrame(handle.Context);
-                if (_arch == RuntimeInfoArchitecture.X86 || !handle.FrameIter.IsInlineCallFrameWithActiveCall())
+                if (!handle.FrameIter.IsInlineCallFrameWithActiveCall())
                 {
                     handle.FrameIter.Next();
                 }
@@ -127,20 +127,20 @@ internal readonly struct StackWalk_1 : IStackWalk
         // x86 Specific Checks
         if (_arch == RuntimeInfoArchitecture.X86)
         {
-            if (IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? cbh))
+            if (IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? prevCbh))
             {
                 IExecutionManager eman = _target.Contracts.ExecutionManager;
 
-                if (!eman.IsFunclet(cbh.Value))
+                if (!eman.IsFunclet(prevCbh.Value))
                 {
-                    eman.GetGCInfo(cbh.Value, out TargetPointer gcInfoAddress, out uint _);
-                    uint relOffset = (uint)eman.GetRelativeOffset(cbh.Value).Value;
+                    eman.GetGCInfo(prevCbh.Value, out TargetPointer gcInfoAddress, out uint _);
+                    uint relOffset = (uint)eman.GetRelativeOffset(prevCbh.Value).Value;
                     GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
                     if (gcInfo.HasReversePInvoke)
                     {
                         // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
                         // frame, that means that the method was called from managed code without any native frames in between.
-                        // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
+                        // On x86, the InlinedCallFrame of the PInvoke would get skipped as we've just unwound to the PInvoke IL stub and
                         // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
                         // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
                         Debug.Assert(handle.FrameIter.IsInlineCallFrameWithActiveCall());
@@ -193,10 +193,34 @@ internal readonly struct StackWalk_1 : IStackWalk
         IPlatformAgnosticContext parentContext = handle.Context.Clone();
         parentContext.Unwind(_target);
 
+        if (_arch == RuntimeInfoArchitecture.X86)
+        {
+            return CheckForSkippedFramesX86(handle, parentContext);
+        }
+
+        return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
+    }
+
+    private bool CheckForSkippedFramesX86(StackWalkData handle, IPlatformAgnosticContext parentContext)
+    {
+        IExecutionManager eman = _target.Contracts.ExecutionManager;
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+
         while (handle.FrameIter.IsValid() &&
                handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value)
         {
-            if (_arch == RuntimeInfoArchitecture.X86 && handle.FrameIter.IsInlineCallFrameWithActiveCall())
+            bool reportInteropMD = false;
+            if (eman.GetCodeBlockHandle(handle.Context.InstructionPointer.Value) is CodeBlockHandle cbh)
+            {
+                MethodDescHandle mdHandle = rts.GetMethodDescHandle(eman.GetMethodDesc(cbh));
+                reportInteropMD =
+                    handle.FrameIter.IsValid() &&
+                    handle.FrameIter.GetCurrentFrameType() == FrameIterator.FrameType.InlinedCallFrame &&
+                    rts.IsILStub(mdHandle) &&
+                    rts.HasMDContextArg(mdHandle);
+            }
+
+            if (handle.FrameIter.IsInlineCallFrameWithActiveCall() && !reportInteropMD)
             {
                 // On x86 we have already reported the InlinedCallFrame, don't report it again.
                 handle.FrameIter.Next();

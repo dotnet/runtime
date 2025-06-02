@@ -76,8 +76,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     [Flags]
     internal enum DynamicMethodDescExtendedFlags : uint
     {
+        Static = 0x00001000,
         IsLCGMethod = 0x00004000,
         IsILStub = 0x00008000,
+        IsDelegate = 0x00010000,
+        IsCALLI = 0x00020000,
+        FlagMask = 0x0003f800,
+        StackArgSizeMask = 0xfffc0000,
+        ILStubTypeMask = ~(FlagMask | StackArgSizeMask),
     }
 
     // on MethodDescChunk.FlagsAndTokenRange
@@ -229,9 +235,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public string MethodName { get; }
         public DynamicMethodDescExtendedFlags ExtendedFlags => (DynamicMethodDescExtendedFlags)_storedSigDesc.ExtendedFlags;
+        public uint ILStubType => (uint)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
 
+        public bool IsStatic => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.Static);
         public bool IsDynamicMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
         public bool IsILStub => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsILStub);
+        public bool IsDelegate => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDelegate);
+        public bool IsCALLI => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsCALLI);
+
+        public bool IsPInvokeStub => IsStatic && !IsCALLI && ILStubType == 0x1;
+        public bool IsCLRToCOMStub => !IsStatic && ILStubType == 0x2;
+
+        public bool HasMDContextArg => IsCLRToCOMStub || (IsPInvokeStub && !IsDelegate);
     }
 
     private sealed class StoredSigMethodDesc : IData<StoredSigMethodDesc>
@@ -785,6 +800,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
 
         return AsDynamicMethodDesc(methodDesc).IsILStub;
+    }
+
+    public bool HasMDContextArg(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+
+        if (methodDesc.Classification != MethodClassification.Dynamic)
+        {
+            return false;
+        }
+
+        return AsDynamicMethodDesc(methodDesc).HasMDContextArg;
     }
 
     private MethodTable GetOrCreateMethodTable(MethodDesc methodDesc)

@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 
 internal sealed class FrameIterator
 {
-    private enum FrameType
+    internal enum FrameType
     {
         Unknown,
 
@@ -156,6 +156,8 @@ internal sealed class FrameIterator
         }
         return frameType.ToString();
     }
+
+    public FrameType GetCurrentFrameType() => GetFrameType(target, CurrentFrame.Identifier);
 
     private static FrameType GetFrameType(Target target, TargetPointer frameIdentifier)
     {
