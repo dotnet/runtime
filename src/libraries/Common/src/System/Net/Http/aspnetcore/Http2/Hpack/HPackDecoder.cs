@@ -200,7 +200,7 @@ namespace System.Net.Http.HPack
                 EnsureStringCapacity(ref _headerNameOctets, _headerNameLength);
                 _headerName = _headerNameOctets;
 
-                ReadOnlySpan<byte> headerBytes = data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
+                ReadOnlySpan<byte> headerBytes = data.Slice(_headerData.HeaderNameRange.GetValueOrDefault().start, _headerData.HeaderNameRange.GetValueOrDefault().length);
                 headerBytes.CopyTo(_headerName);
                 _headerData.HeaderNameRange = null;
             }
@@ -510,22 +510,22 @@ namespace System.Net.Http.HPack
         {
             ReadOnlySpan<byte> headerValueSpan = _headerData.HeaderValueRange == null
                 ? _headerValueOctets.AsSpan(0, _headerValueLength)
-                : data.Slice(_headerValueRange.GetValueOrDefault().start, _headerValueRange.GetValueOrDefault().length);
+                : data.Slice(_headerData.HeaderValueRange.GetValueOrDefault().start, _headerData.HeaderValueRange.GetValueOrDefault().length);
 
             if (_headerData.HeaderStaticIndex > 0)
             {
-                handler.OnStaticIndexedHeader(_headerStaticIndex, headerValueSpan);
+                handler.OnStaticIndexedHeader(_headerData.HeaderStaticIndex, headerValueSpan);
 
                 if (_index)
                 {
-                    _dynamicTable.Insert(_headerStaticIndex, H2StaticTable.Get(_headerData.HeaderStaticIndex - 1).Name, headerValueSpan);
+                    _dynamicTable.Insert(_headerData.HeaderStaticIndex, H2StaticTable.Get(_headerData.HeaderStaticIndex - 1).Name, headerValueSpan);
                 }
             }
             else
             {
                 ReadOnlySpan<byte> headerNameSpan = _headerData.HeaderNameRange == null
                     ? _headerName.AsSpan(0, _headerNameLength)
-                    : data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
+                    : data.Slice(_headerData.HeaderNameRange.GetValueOrDefault().start, _headerData.HeaderNameRange.GetValueOrDefault().length);
 
                 handler.OnHeader(headerNameSpan, headerValueSpan);
 
