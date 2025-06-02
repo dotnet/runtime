@@ -79,6 +79,7 @@ STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 ;; Rename fields of nested structs
 ;;
 OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocContext
 
 ;;
 ;; IMPORTS
@@ -235,10 +236,9 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
     MEND
 
     MACRO
-        INLINE_GET_ALLOC_CONTEXT $destReg, $trashReg
+        INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
-        add         $destReg, $destReg, OFFSETOF__Thread__m_eeAllocContext
     MEND
 
 ;; ---------------------------------------------------------------------------- -

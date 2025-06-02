@@ -9,14 +9,14 @@
 //  ECX == MethodTable
 LEAF_ENTRY RhpNewFast, _TEXT
         // edx = ee_alloc_context pointer, TRASHES eax
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        add         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         jc          LOCAL_LABEL(RhpNewFast_AllocFailed)
-        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         ja          LOCAL_LABEL(RhpNewFast_AllocFailed)
-        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
 
         // calc the new object pointer and initialize it
         sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
@@ -88,16 +88,16 @@ LEAF_END RhpNewObject, _TEXT
 
 .macro NEW_ARRAY_FAST
         // edx = ee_alloc_context pointer, TRASHES ecx
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         // ECX == scratch
         // EAX == allocation size
         // EDX == ee_alloc_context pointer
 
         mov         ecx, eax
-        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        add         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         jc          1f
-        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         ja          1f
 
         // ECX == allocation size
@@ -105,7 +105,7 @@ LEAF_END RhpNewObject, _TEXT
         // EDX == ee_alloc_context pointer
 
         // set the new alloc pointer
-        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
 
         // calc the new object pointer
         sub         eax, ecx

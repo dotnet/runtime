@@ -169,15 +169,14 @@ $FuncName
     SETALIAS t_runtime_thread_locals, ?t_runtime_thread_locals@@3URuntimeThreadLocals@@A
 
     MACRO
-    INLINE_GET_ALLOC_CONTEXT $destReg, $trashReg
+    INLINE_GET_ALLOC_CONTEXT_BASE $destReg, $trashReg
 
         EXTERN $t_runtime_thread_locals
 
         INLINE_GET_TLS_VAR $destReg, $trashReg, $t_runtime_thread_locals
-        IF OFFSETOF__RuntimeThreadLocals__ee_alloc_context != 0
-            add     $destReg, $destReg, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
-        ENDIF
     MEND
+
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
 
     MACRO
     PUSH_COOP_PINVOKE_FRAME $Target

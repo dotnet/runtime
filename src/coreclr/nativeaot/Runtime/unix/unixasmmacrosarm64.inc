@@ -181,7 +181,7 @@ C_FUNC(\Name):
 
 // Loads the address of a thread-local variable into the target register,
 // which cannot be x0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var, ofs = 0
+.macro INLINE_GET_TLS_VAR target, var
     .ifc \target, x0
         .error "target cannot be x0"
     .endif
@@ -202,7 +202,7 @@ C_FUNC(\Name):
     blr     \target
     // End of the sequence
 
-    add     \target, x0, \ofs
+    mov     \target, x0
 #else
     adrp    x0, :tlsdesc:\var
     ldr     \target, [x0, #:tlsdesc_lo12:\var]
@@ -213,9 +213,6 @@ C_FUNC(\Name):
 
     mrs     \target, tpidr_el0
     add     \target, \target, x0
-    .ifnc \ofs, 0
-            add     \target, \target, \ofs
-    .endif
 #endif
 
 #if defined(__APPLE__)
@@ -230,7 +227,7 @@ C_FUNC(\Name):
 .endm
 
 // Target cannot be x0.
-.macro INLINE_GET_ALLOC_CONTEXT target
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
     .ifc \target, x0
         .error "target cannot be x0"
     .endif
@@ -240,7 +237,7 @@ C_FUNC(\Name):
     PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
 
     bl C_FUNC(RhpGetThread)
-    add         \target, x0, OFFSETOF__Thread__m_eeAllocContext
+    mov         \target, x0
 
     .ifc \target, x1
     EPILOG_RESTORE_REG_PAIR           x0, xzr, 0x10
@@ -249,7 +246,7 @@ C_FUNC(\Name):
     .endif
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
 #else
-    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread), OFFSETOF__Thread__m_eeAllocContext
+    INLINE_GET_TLS_VAR \target, C_FUNC(tls_CurrentThread)
 #endif
 .endm
 

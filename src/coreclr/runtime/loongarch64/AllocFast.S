@@ -9,12 +9,12 @@
     LEAF_ENTRY RhpNewFast, _TEXT
 
         // a1 = ee_alloc_context pointer
-        INLINE_GET_ALLOC_CONTEXT  $a1
+        INLINE_GET_ALLOC_CONTEXT_BASE  $a1
 
         //
         // a0 contains MethodTable pointer
         //
-        ld.w  $a2, $a0, OFFSETOF__MethodTable__m_uBaseSize
+        ld.w  $a2, $a0, OFFSETOF__ee_alloc_context + OFFSETOF__MethodTable__m_uBaseSize
 
         //
         // a0: MethodTable pointer
@@ -23,7 +23,7 @@
         //
 
         // Load potential new object address into t3.
-        ld.d  $t3, $a1, OFFSETOF__ee_alloc_context__alloc_ptr
+        ld.d  $t3, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
@@ -32,7 +32,7 @@
         bltu  $t4, $a2, LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a1, OFFSETOF__ee_alloc_context__alloc_ptr
+        st.d  $a2, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Set the new objects MethodTable pointer
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
@@ -96,10 +96,10 @@ LOCAL_LABEL(NewOutOfMemory):
 //  a2 == string/array size
     .macro NEW_ARRAY_FAST
 
-        INLINE_GET_ALLOC_CONTEXT $a3
+        INLINE_GET_ALLOC_CONTEXT_BASE $a3
 
         // Load potential new object address into t3.
-        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context__alloc_ptr
+        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
@@ -108,10 +108,10 @@ LOCAL_LABEL(NewOutOfMemory):
         bltu  $t3, $a2, C_FUNC(RhpNewVariableSizeObject)
 
         // Reload new object address into r12.
-        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context__alloc_ptr
+        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a3, OFFSETOF__ee_alloc_context__alloc_ptr
+        st.d  $a2, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Set the new objects MethodTable pointer and element count.
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType

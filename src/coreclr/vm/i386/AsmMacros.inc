@@ -77,7 +77,7 @@ endm
 t_runtime_thread_locals  TEXTEQU <?t_runtime_thread_locals@@3URuntimeThreadLocals@@A>
 
 ; Inlined version of GetThreadEEAllocContext. Trashes trashReg
-INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
+INLINE_GET_ALLOC_CONTEXT_BASE macro destReg, trashReg
     ASSUME fs : NOTHING
 
     EXTERN __tls_index : DWORD
@@ -85,10 +85,11 @@ INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
 
     mov     destReg, [__tls_index]
     mov     trashReg, fs:[__tls_array]
-    mov     trashReg, [trashReg + destReg * 4]
-    add     trashReg, SECTIONREL t_runtime_thread_locals
-    lea     destReg, [trashReg + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+    mov     destReg, [trashReg + destReg * 4]
+    add     destReg, SECTIONREL t_runtime_thread_locals
 endm
+
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
 
 PUSH_COOP_PINVOKE_FRAME macro target
     ; push ebp-frame

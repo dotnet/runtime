@@ -145,7 +145,7 @@ C_FUNC(\Name):
 
 // Loads the address of a thread-local variable into the target register,
 // which cannot be a0. Preserves all other registers.
-.macro INLINE_GET_TLS_VAR target, var, ofs = 0
+.macro INLINE_GET_TLS_VAR target, var
     .ifc  \target, $a0
         .error "target cannot be a0"
     .endif
@@ -158,7 +158,7 @@ C_FUNC(\Name):
     // by the linker (GD->IE/LE relaxation).
     la.tls.desc  $a0, \var
 
-    addi.d  \target, $tp, \ofs
+    ori  \target, $tp, 0
     add.d  \target, \target, $a0
 
     ld.d  $a0, $sp, 0
@@ -172,8 +172,8 @@ C_FUNC(\Name):
 .endm
 
 // Target cannot be x0.
-.macro INLINE_GET_ALLOC_CONTEXT target
-    INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread), OFFSETOF__Thread__m_eeAllocContext
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+    INLINE_GET_TLS_VAR  \target, C_FUNC(tls_CurrentThread)
 .endm
 
 .macro  InterlockedOperationBarrier

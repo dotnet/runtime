@@ -36,6 +36,7 @@
 
 // Rename offsets of nested structures
 #define OFFSETOF__ee_alloc_context__alloc_ptr (OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
+#define OFFSETOF__ee_alloc_context            OFFSETOF__Thread__m_eeAllocContext
 
 // GC type flags
 #define GC_ALLOC_FINALIZE           1

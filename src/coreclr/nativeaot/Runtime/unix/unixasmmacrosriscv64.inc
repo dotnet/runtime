@@ -230,11 +230,10 @@ C_FUNC(\Name):
 .endm
 
 // Caller must have an established frame, trashes volatile registers
-.macro INLINE_GET_ALLOC_CONTEXT
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
     // global dynamic TLS, see https://github.com/riscv-non-isa/riscv-elf-psabi-doc/blob/eb2b2962/riscv-elf.adoc#global-dynamic
     la.tls.gd a0, C_FUNC(tls_CurrentThread)
     call C_FUNC(__tls_get_addr)
-    add a0, a0, OFFSETOF__Thread__m_eeAllocContext
 .endm
 
 .macro InterlockedOperationBarrier

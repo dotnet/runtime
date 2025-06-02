@@ -9,7 +9,7 @@
     LEAF_ENTRY RhpNewFast, _TEXT
 
         // x3 = ee_alloc_context pointer
-        INLINE_GET_ALLOC_CONTEXT x3
+        INLINE_GET_ALLOC_CONTEXT_BASE x3
 
         //
         // x0 contains MethodTable pointer
@@ -23,10 +23,10 @@
         //
 
         // Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Load and calculate the maximum size of object we can fit.
-        ldr         x13, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
+        ldr         x13, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         sub         x13, x13, x12
 
         // Determine whether the end of the object is too big for the current allocation context. If so,
@@ -41,7 +41,7 @@
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
 
         // Update the alloc pointer to the newly calculated one.
-        str         x2, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        str         x2, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         mov         x0, x12
         ret
@@ -106,13 +106,13 @@ LOCAL_LABEL(NewOutOfMemory):
 //  x2 == string/array size
     .macro NEW_ARRAY_FAST
 
-        INLINE_GET_ALLOC_CONTEXT x3
+        INLINE_GET_ALLOC_CONTEXT_BASE x3
 
         // Load potential new object address into x12.
-        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Load and calculate the maximum size of object we can fit
-        ldr         x13, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
+        ldr         x13, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         sub         x13, x13, x12
 
         // Determine whether the end of the object is too big for the current allocation context. If so,
@@ -132,7 +132,7 @@ LOCAL_LABEL(NewOutOfMemory):
         str         x1, [x12, #OFFSETOF__Array__m_Length]
 
         // Update the alloc pointer to the newly calculated one.
-        str         x2, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        str         x2, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Return the object allocated in x0.
         mov         x0, x12

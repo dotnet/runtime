@@ -271,7 +271,7 @@ C_FUNC(\Name):
         vpop_nonvol_reg "\RegList"
 .endm
 
-.macro INLINE_GET_ALLOC_CONTEXT
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
         bl      C_FUNC(GetThreadEEAllocContext)
 .endm
 

@@ -10,7 +10,7 @@ include AsmMacros_Shared.inc
 LEAF_ENTRY RhpNewFast, _TEXT
 
         ;; rdx = ee_alloc_context pointer, TRASHES rax
-        INLINE_GET_ALLOC_CONTEXT rdx, rax
+        INLINE_GET_ALLOC_CONTEXT_BASE rdx, rax
 
         ;;
         ;; rcx contains MethodTable pointer
@@ -23,8 +23,8 @@ LEAF_ENTRY RhpNewFast, _TEXT
         ;; rdx: ee_alloc_context pointer
         ;;
 
-        mov         rax, [rdx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        mov         r9, [rdx + OFFSETOF__ee_alloc_context__combined_limit]
+        mov         rax, [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         r9, [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         sub         r9, rax
         cmp         r8, r9
         ja          RhpNewFast_RarePath
@@ -36,7 +36,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         mov         [rax + OFFSETOF__Object__m_pEEType], rcx
 
         ;; Set the new alloc pointer
-        mov         [rdx + OFFSETOF__ee_alloc_context__alloc_ptr], r8
+        mov         [rdx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
 
         ret
 
@@ -102,11 +102,11 @@ NESTED_END RhpNewObject, _TEXT
 NEW_ARRAY_FAST MACRO
 
         ; r10 = ee_alloc_context pointer, TRASHES r8
-        INLINE_GET_ALLOC_CONTEXT r10, r8
+        INLINE_GET_ALLOC_CONTEXT_BASE r10, r8
 
         mov         r8, rax
-        mov         rax, [r10 + OFFSETOF__ee_alloc_context__alloc_ptr]
-        mov         r9, [r10 + OFFSETOF__ee_alloc_context__combined_limit]
+        mov         rax, [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         r9, [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
 
         ; rax == new object ptr
         ; rcx == MethodTable
@@ -119,7 +119,7 @@ NEW_ARRAY_FAST MACRO
         add         r8, rax
         mov         [rax + OFFSETOF__Object__m_pEEType], rcx
         mov         [rax + OFFSETOF__Array__m_Length], edx
-        mov         [r10 + OFFSETOF__ee_alloc_context__alloc_ptr], r8
+        mov         [r10 + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r8
         ret
 
 ENDM ; NEW_ARRAY_FAST

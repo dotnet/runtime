@@ -13,7 +13,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         mov         rbx, rdi
 
         // rax = ee_alloc_context pointer; trashes volatile registers
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         //
         // rbx contains MethodTable pointer
@@ -27,10 +27,10 @@ LEAF_ENTRY RhpNewFast, _TEXT
         //
 
         // Load potential new object address into rsi.
-        mov         rsi, [rax + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         rsi, [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
 
         // Load and calculate the maximum size of object we can fit.ß
-        mov         rdi, [rax + OFFSETOF__ee_alloc_context__combined_limit]
+        mov         rdi, [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         sub         rdi, rsi
 
         // Determine whether the end of the object is too big for the current allocation context. If so,
@@ -45,7 +45,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         mov         [rsi + OFFSETOF__Object__m_pEEType], rbx
 
         // Update the alloc pointer to the newly calculated one.
-        mov         [rax + OFFSETOF__ee_alloc_context__alloc_ptr], rdx
+        mov         [rax + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], rdx
 
         mov         rax, rsi
 
@@ -129,7 +129,7 @@ NESTED_END RhpNewObject, _TEXT
         mov         r13, rax    // save size
 
         // rax = ee_alloc_context pointer; trashes volatile registers
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         mov         rcx, rax
 
@@ -138,8 +138,8 @@ NESTED_END RhpNewObject, _TEXT
         // r12 == element count
         // r13 == string/array size
 
-        mov         rax, [rcx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        mov         rdi, [rcx + OFFSETOF__ee_alloc_context__combined_limit]
+        mov         rax, [rcx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         rdi, [rcx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         sub         rdi, rax
 
         // Determine whether the end of the object is too big for the current allocation context. If so,
@@ -150,7 +150,7 @@ NESTED_END RhpNewObject, _TEXT
         add         r13, rax
         mov         [rax + OFFSETOF__Object__m_pEEType], rbx
         mov         [rax + OFFSETOF__Array__m_Length], r12d
-        mov         [rcx + OFFSETOF__ee_alloc_context__alloc_ptr], r13
+        mov         [rcx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], r13
 
         .cfi_remember_state
         pop_nonvol_reg r13

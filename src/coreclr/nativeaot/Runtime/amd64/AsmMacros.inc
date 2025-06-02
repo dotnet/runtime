@@ -324,26 +324,8 @@ POP_COOP_PINVOKE_FRAME macro
     pop         r10     ; discard caller RSP
 endm
 
-INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
-    EXTERN _tls_index : DWORD
-    EXTERN tls_CurrentThread : DWORD
-
-;;
-;; construct 'eax' from 'rax' so that the register size and data size match
-;;
-;; BEWARE: currently only r10 is allowed as destReg from the r8-r15 set.
-;;
-ifidni <destReg>, <r10>
-destRegDWORD EQU r10d
-else
-destRegDWORD TEXTEQU @CatStr( e, @SubStr( destReg, 2, 2 ) )
-endif
-
-    mov         destRegDWORD, [_tls_index]
-    mov         trashReg, gs:[_tls_array]
-    mov         trashReg, [trashReg + destReg * 8]
-    mov         destRegDWORD, SECTIONREL tls_CurrentThread
-    lea         destReg, [trashReg + destReg + OFFSETOF__Thread__m_eeAllocContext]
+INLINE_GET_ALLOC_CONTEXT_BASE macro destReg, trashReg
+    INLINE_GET_TLS_VAR destReg, trashReg, tls_CurrentThread
 endm
 
 ;  - TAILCALL_RAX: ("jmp rax") should be used for tailcalls, this emits an instruction
@@ -360,6 +342,7 @@ TSF_DoNotTriggerGc              equ 10h
 ;; Rename fields of nested structs
 ;;
 OFFSETOF__ee_alloc_context__alloc_ptr               equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__ee_alloc_context                          equ OFFSETOF__Thread__m_eeAllocContext
 
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1

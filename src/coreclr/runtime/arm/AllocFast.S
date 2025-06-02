@@ -13,7 +13,7 @@
         mov	        r4, r0 // save MethodTable
 
         // r0 = ee_alloc_context pointer; trashes volatile registers, expects saved lr
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         // When doing aligned or misaligned allocation we first check
         // the alignment and skip to the regular path if it's already
@@ -22,7 +22,7 @@
         // then prepend a dummy free object at the beginning of the
         // allocation.
 .ifnc \Variation,
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         r3, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
         tst         r3, #0x7
 .ifc \Variation,Align8
         beq         1f // AlreadyAligned
@@ -32,15 +32,15 @@
 
         ldr         r2, [r4, #OFFSETOF__MethodTable__m_uBaseSize]
         add         r2, ASM_MIN_OBJECT_SIZE
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         r3, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
         add         r2, r3
         bcs         2f // AllocFailed
-        ldr         r1, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
+        ldr         r1, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         cmp         r2, r1
         bhi         2f // AllocFailed
 
         // set the new alloc pointer
-        str         r2, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        str         r2, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // initialize the padding object preceeding the new object
         PREPARE_EXTERNAL_VAR_INDIRECT G_FREE_OBJECT_METHOD_TABLE, r2
@@ -66,15 +66,15 @@
         // r4: MethodTable pointer
         // r2: base size
 
-        ldr         r3, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         r3, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
         add         r2, r3
         bcs         2f // AllocFailed
-        ldr         r1, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
+        ldr         r1, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         cmp         r2, r1
         bhi         2f // AllocFailed
 
         // set the new alloc pointer
-        str         r2, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        str         r2, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Set the new object's MethodTable pointer
         str         r4, [r3, #OFFSETOF__Object__m_pEEType]
@@ -191,7 +191,7 @@ NESTED_END RhpNewObject, _TEXT
         mov         r6, r2 // Save string/array size
 
         // r0 = ee_alloc_context pointer; trashes volatile registers, expects saved lr
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         // r4 == MethodTable
         // r5 == element count
@@ -199,22 +199,22 @@ NESTED_END RhpNewObject, _TEXT
         // r0 == ee_alloc_context*
 
         // Load potential new object address into r12.
-        ldr         r12, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         r12, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         adds        r6, r12
         bcs         1f // if we get a carry here, the string/array is too large to fit below 4 GB
 
-        ldr         r12, [r0, #OFFSETOF__ee_alloc_context__combined_limit]
+        ldr         r12, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         cmp         r6, r12
         bhi         1f
 
         // Reload new object address into r12.
-        ldr         r12, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         r12, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Update the alloc pointer to account for the allocation.
-        str         r6, [r0, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        str         r6, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Set the new object's MethodTable pointer and element count.
         str         r4, [r12, #OFFSETOF__Object__m_pEEType]

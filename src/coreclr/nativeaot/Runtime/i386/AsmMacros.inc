@@ -108,9 +108,8 @@ POP_COOP_PINVOKE_FRAME macro
     pop         ebp
 endm
 
-INLINE_GET_ALLOC_CONTEXT macro destReg, trashReg
+INLINE_GET_ALLOC_CONTEXT_BASE macro destReg, trashReg
     INLINE_GETTHREAD destReg, trashReg
-    lea         destReg, [destReg + OFFSETOF__Thread__m_eeAllocContext]
 endm
 
 ;;
@@ -146,6 +145,7 @@ STATUS_REDHAWK_THREAD_ABORT      equ 43h
 ;; Rename fields of nested structs
 ;;
 OFFSETOF__ee_alloc_context__alloc_ptr        equ OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr
+OFFSETOF__ee_alloc_context                   equ OFFSETOF__Thread__m_eeAllocContext
 
 ;;
 ;; CONSTANTS -- SYMBOLS

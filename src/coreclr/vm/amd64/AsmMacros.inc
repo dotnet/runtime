@@ -449,7 +449,7 @@ EPILOG_WITH_TRANSITION_BLOCK_TAILCALL macro
 t_runtime_thread_locals  TEXTEQU <?t_runtime_thread_locals@@3URuntimeThreadLocals@@A>
 
 ; Inlined version of GetThreadEEAllocContext. Trashes RegTrash, r11
-INLINE_GET_ALLOC_CONTEXT macro Reg, RegTrash
+INLINE_GET_ALLOC_CONTEXT_BASE macro Reg, RegTrash
 
         EXTERN _tls_index : DWORD
         EXTERN t_runtime_thread_locals : DWORD
@@ -458,9 +458,11 @@ INLINE_GET_ALLOC_CONTEXT macro Reg, RegTrash
         mov     RegTrash, gs:[OFFSET__TEB__ThreadLocalStoragePointer]
         mov     RegTrash, [RegTrash + r11 * 8]
         mov     r11d, SECTIONREL t_runtime_thread_locals
-        lea     Reg, [RegTrash + r11 + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+        lea     Reg, [RegTrash + r11]
 
         endm
+
+OFFSETOF__ee_alloc_context  EQU OFFSETOF__RuntimeThreadLocals__ee_alloc_context
 
 ; Pushes a TransitionBlock on the stack without saving the argument registers. See
 ; the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.

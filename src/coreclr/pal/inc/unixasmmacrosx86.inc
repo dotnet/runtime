@@ -142,7 +142,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 // Inlined version of GetThreadEEAllocContext.
-.macro INLINE_GET_ALLOC_CONTEXT
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
     push  ecx
     push  eax
     call  C_FUNC(GetThreadEEAllocContext)

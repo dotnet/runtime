@@ -14,7 +14,7 @@
         mv    s1, a0
 
         // a0 = ee_alloc_context pointer; trashes volatile registers
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         //
         // s1 contains MethodTable pointer
@@ -28,16 +28,16 @@
         //
 
         // Load potential new object address into t1.
-        ld    t1, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
+        ld    t1, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add   t0, t0, t1
-        ld    t2, OFFSETOF__ee_alloc_context__combined_limit(a0)
+        ld    t2, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)(a0)
         bltu  t2, t0, LOCAL_LABEL(RhpNewFast_RarePath)
 
         // Update the alloc pointer to account for the allocation.
-        sd    t0, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
+        sd    t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr(a0)
 
         // Set the new objects MethodTable pointer
         sd    s1, OFFSETOF__Object__m_pEEType(t1)
@@ -119,23 +119,23 @@ LOCAL_LABEL(NewOutOfMemory):
         mv    s2, a1
 
         // a0 = ee_alloc_context pointer; trashes volatile registers
-        INLINE_GET_ALLOC_CONTEXT
+        INLINE_GET_ALLOC_CONTEXT_BASE
 
         // s1 == MethodTable
         // s2 == element count
         // t0 == string size
 
         // Load potential new object address into t3.
-        ld   t1, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
+        ld   t1, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
         // Determine whether the end of the object would lie outside of the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         add  t0, t0, t1
-        ld   t2, OFFSETOF__ee_alloc_context__combined_limit(a0)
+        ld   t2, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)(a0)
         bltu t2, t0, 1f
 
         // Update the alloc pointer to account for the allocation.
-        sd   t0, OFFSETOF__ee_alloc_context__alloc_ptr(a0)
+        sd   t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
         // Set the new object's MethodTable pointer and element count.
         sd   s1, OFFSETOF__Object__m_pEEType(t1)

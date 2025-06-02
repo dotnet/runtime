@@ -13,14 +13,14 @@ include AsmMacros_Shared.inc
 ;  ECX == MethodTable
 FASTCALL_FUNC   RhpNewFast, 4
         ; edx = ee_alloc_context pointer, TRASHES eax
-        INLINE_GET_ALLOC_CONTEXT edx, eax
+        INLINE_GET_ALLOC_CONTEXT_BASE edx, eax
 
         mov         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
-        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        add         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         jc          AllocFailed
-        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         ja          AllocFailed
-        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
 
         ; calc the new object pointer and initialize it
         sub         eax, [ecx + OFFSETOF__MethodTable__m_uBaseSize]
@@ -90,12 +90,12 @@ NEW_ARRAY_FAST MACRO
         LOCAL AllocContextOverflow
 
         ; EDX = ee_alloc_context pointer, trashes ECX 
-        INLINE_GET_ALLOC_CONTEXT    edx, ecx
+        INLINE_GET_ALLOC_CONTEXT_BASE    edx, ecx
 
         mov         ecx, eax
-        add         eax, [edx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        add         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr]
         jc          AllocContextOverflow
-        cmp         eax, [edx + OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         eax, [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit]
         ja          AllocContextOverflow
 
         ; ECX == allocation size
@@ -103,7 +103,7 @@ NEW_ARRAY_FAST MACRO
         ; EDX == ee_alloc_context pointer
 
         ; set the new alloc pointer
-        mov         [edx + OFFSETOF__ee_alloc_context__alloc_ptr], eax
+        mov         [edx + OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr], eax
 
         ; calc the new object pointer
         sub         eax, ecx

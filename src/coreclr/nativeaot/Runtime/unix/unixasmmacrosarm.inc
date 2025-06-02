@@ -276,9 +276,8 @@ C_FUNC(\Name):
 #endif
 .endm
 
-.macro INLINE_GET_ALLOC_CONTEXT
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
         INLINE_GETTHREAD
-        add         r0, r0, OFFSETOF__Thread__m_eeAllocContext
 .endm
 
 .macro INLINE_THREAD_UNHIJACK threadReg, trashReg1, trashReg2

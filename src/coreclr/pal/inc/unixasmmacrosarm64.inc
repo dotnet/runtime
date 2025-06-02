@@ -326,7 +326,7 @@ C_FUNC(\Name\()_End):
 .endm
 
 // Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
-.macro INLINE_GET_ALLOC_CONTEXT target
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
         .ifc  \target, x0
                 .error "target cannot be x0"
         .endif

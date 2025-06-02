@@ -328,7 +328,7 @@ C_FUNC(\Name):
 .endm
 
 // Inlined version of GetThreadEEAllocContext
-.macro INLINE_GET_ALLOC_CONTEXT
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
     call    C_FUNC(GetThreadEEAllocContext)
 .endm
 
