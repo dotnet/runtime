@@ -317,6 +317,29 @@ namespace System.Threading.Channels
             }
         }
 
+        /// <summary>Counts the number of operations in the list.</summary>
+        /// <param name="head">The head of the queue of operations to count.</param>
+        internal static long CountOperations<TAsyncOp>(TAsyncOp? head)
+            where TAsyncOp : AsyncOperation<TAsyncOp>
+        {
+            TAsyncOp? current = head;
+            long count = 0;
+
+            if (current is not null)
+            {
+                do
+                {
+                    count++;
+
+                    Debug.Assert(current is not null);
+                    current = current.Next;
+                }
+                while (current != head);
+            }
+
+            return count;
+        }
+
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>
         internal static Exception CreateInvalidCompletionException(Exception? inner = null) =>
             inner is OperationCanceledException ? inner :
