@@ -176,19 +176,13 @@ public record GCInfo
 
     private uint CalculateDepth()
     {
-        using StreamWriter outputFile = new StreamWriter("C:\\Users\\maxcharlamb\\OneDrive - Microsoft\\Desktop\\out.txt", true);
-
         int depth = 0;
-        outputFile.WriteLine($"depth: {depth}");
         foreach (int offset in Transitions.Keys.OrderBy(i => i))
         {
             if (offset > RelativeOffset)
                 break; // calculate only to current offset
-            outputFile.WriteLine($"CodeOffset: {offset:x8}");
             foreach (BaseGcTransition gcTransition in Transitions[offset])
             {
-                outputFile.WriteLine(gcTransition);
-
                 switch (gcTransition)
                 {
                     case GcTransitionRegister gcTransitionRegister:
@@ -223,7 +217,6 @@ public record GCInfo
                         throw new InvalidOperationException("Unsupported gc transition type");
                 }
             }
-            outputFile.WriteLine($"depth: {depth}");
         }
 
         return (uint)(depth * _target.PointerSize);

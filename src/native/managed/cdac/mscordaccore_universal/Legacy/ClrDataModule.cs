@@ -149,7 +149,7 @@ internal sealed unsafe partial class ClrDataModule : ICustomQueryInterface, IXCL
             if (string.IsNullOrEmpty(result))
                 return HResults.E_FAIL;
 
-            OutputBufferHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
+            OutputHelpers.CopyStringToBuffer(name, bufLen, nameLen, result);
         }
         catch (System.Exception ex)
         {
