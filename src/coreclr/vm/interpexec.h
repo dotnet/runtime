@@ -5,8 +5,10 @@
 #define _INTERPEXEC_H_
 
 #include "../interpreter/interpretershared.h"
+#include "interpframeallocator.h"
 
 #define INTERP_STACK_SIZE 1024*1024
+#define INTERP_STACK_FRAGMENT_SIZE 4096
 
 struct StackVal
 {
@@ -23,11 +25,23 @@ struct StackVal
 
 struct InterpMethodContextFrame
 {
-    InterpMethodContextFrame *pParent;
-    int32_t *startIp; // from start_ip we can obtain InterpMethod and MethodDesc
+    PTR_InterpMethodContextFrame pParent;
+    const int32_t *startIp; // from startIp we can obtain InterpMethod and MethodDesc
     int8_t *pStack;
     int8_t *pRetVal;
-    int32_t *ip;
+    const int32_t *ip; // This ip is updated only when execution can leave the frame
+    PTR_InterpMethodContextFrame pNext;
+
+#ifndef DACCESS_COMPILE
+    void ReInit(InterpMethodContextFrame *pParent, const int32_t *startIp, int8_t *pRetVal, int8_t *pStack)
+    {
+        this->pParent = pParent;
+        this->startIp = startIp;
+        this->pRetVal = pRetVal;
+        this->pStack = pStack;
+        this->ip = NULL;
+    }
+#endif // DACCESS_COMPILE
 };
 
 struct InterpThreadContext
@@ -40,9 +54,13 @@ struct InterpThreadContext
     // stack pointer. It is needed when re-entering interp, to know from which address we can start using
     // stack, and also needed for the GC to be able to scan the stack.
     int8_t *pStackPointer;
+
+    FrameDataAllocator frameDataAllocator;
+
+    InterpThreadContext();
+    ~InterpThreadContext();
 };
 
-InterpThreadContext* InterpGetThreadContext();
-void InterpExecMethod(InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext);
 
 #endif

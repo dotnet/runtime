@@ -667,8 +667,11 @@ namespace System.Globalization
 
         internal static CultureData? GetCultureData(string? cultureName, bool useUserOverride)
         {
+            // The undetermined culture name "und" is not a real culture, but it resolves to the invariant culture because ICU typically normalizes it to an empty string.
+            const string UndeterminedCultureName = "und";
+
             // First do a shortcut for Invariant
-            if (string.IsNullOrEmpty(cultureName))
+            if (string.IsNullOrEmpty(cultureName) || cultureName.Equals(UndeterminedCultureName, StringComparison.OrdinalIgnoreCase))
             {
                 return Invariant;
             }

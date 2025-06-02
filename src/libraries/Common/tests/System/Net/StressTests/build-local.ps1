@@ -49,7 +49,7 @@ if (-not (Test-Path -Path $TestHostRoot)) {
 if (-not (Test-Path -Path $DailyDotnetRoot)) {
     Write-Host "Downloading daily SDK to: $DailyDotnetRoot"
     New-Item -ItemType Directory -Path $DailyDotnetRoot
-    Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile "$DailyDotnetRoot\dotnet-install.ps1"
+    Invoke-WebRequest -Uri https://builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.ps1 -OutFile "$DailyDotnetRoot\dotnet-install.ps1"
     & "$DailyDotnetRoot\dotnet-install.ps1" -NoPath -Channel $Version -Quality daily -InstallDir $DailyDotnetRoot
 } else {
     Write-Host "Daily SDK found in $DailyDotnetRoot"

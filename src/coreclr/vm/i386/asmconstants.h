@@ -46,6 +46,8 @@ ASMCONSTANTS_C_ASSERT(FRAMETYPE_TailCallFrame == (int)FrameIdentifier::TailCallF
 #define DynamicHelperFrameFlags_ObjectArg   1
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
+#define ThisPtrRetBufPrecodeData__Target      0x00
+ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBufPrecodeData, Target));
 
 // CONTEXT from pal.h
 #define CONTEXT_Edi 0x9c
@@ -201,6 +203,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_InterfaceInfo_t == sizeof(InterfaceInfo_t))
 
 #ifdef FEATURE_COMINTEROP
 
+#ifndef FEATURE_EH_FUNCLETS
 #define SIZEOF_FrameHandlerExRecord 0x0c
 #define OFFSETOF__FrameHandlerExRecord__m_ExReg__Next 0
 #define OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler 4
@@ -209,6 +212,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_FrameHandlerExRecord == sizeof(FrameHandlerExRecord
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Next == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Next))
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_ExReg__Handler == offsetof(FrameHandlerExRecord, m_ExReg) + offsetof(EXCEPTION_REGISTRATION_RECORD, Handler))
 ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(FrameHandlerExRecord, m_pEntryFrame))
+#endif
 
 #ifdef _DEBUG
 #ifndef STACK_OVERWRITE_BARRIER_SIZE
@@ -223,8 +227,8 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__FrameHandlerExRecord__m_pEntryFrame == offsetof(
 #define CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo DBG_FRE(0x20, 0xC)
 ASMCONSTANTS_C_ASSERT(CLRToCOMCallMethodDesc__m_pCLRToCOMCallInfo == offsetof(CLRToCOMCallMethodDesc, m_pCLRToCOMCallInfo))
 
-#define CLRToCOMCallInfo__m_pRetThunk 0x10
-ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_pRetThunk == offsetof(CLRToCOMCallInfo, m_pRetThunk))
+#define CLRToCOMCallInfo__m_cbStackPop 0x0e
+ASMCONSTANTS_C_ASSERT(CLRToCOMCallInfo__m_cbStackPop == offsetof(CLRToCOMCallInfo, m_cbStackPop))
 
 #define COMMETHOD_PREPAD_ASM  8
 ASMCONSTANTS_C_ASSERT(COMMETHOD_PREPAD_ASM == COMMETHOD_PREPAD)
@@ -260,12 +264,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__fpReturnSize         == offsetof(CallDescrD
 ASMCONSTANTS_C_ASSERT(CallDescrData__pTarget              == offsetof(CallDescrData, pTarget))
 ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrData, returnValue))
 
-#define               UMEntryThunk__m_pUMThunkMarshInfo     0x0C
-ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk, m_pUMThunkMarshInfo))
-
-#define               UMThunkMarshInfo__m_pILStub           0x00
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
-
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               Frame__m_Next 0x04
 ASMCONSTANTS_C_ASSERT(Frame__m_Next == offsetof(Frame, m_Next));
@@ -293,6 +291,9 @@ ASMCONSTANTS_C_ASSERT(ResolveCacheElem__token   == offsetof(ResolveCacheElem, to
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__target  == offsetof(ResolveCacheElem, target));
 ASMCONSTANTS_C_ASSERT(ResolveCacheElem__pNext   == offsetof(ResolveCacheElem, pNext));
 
+#define ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT (0x100)
+ASMCONSTANTS_C_ASSERT(ASM__CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT == CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT)
+
 #define FixupPrecodeData__Target 0x00
 ASMCONSTANTS_C_ASSERT(FixupPrecodeData__Target            == offsetof(FixupPrecodeData, Target))
 #define FixupPrecodeData__MethodDesc 0x04
@@ -302,8 +303,8 @@ ASMCONSTANTS_C_ASSERT(FixupPrecodeData__PrecodeFixupThunk == offsetof(FixupPreco
 
 #define StubPrecodeData__Target 0x04
 ASMCONSTANTS_C_ASSERT(StubPrecodeData__Target            == offsetof(StubPrecodeData, Target))
-#define StubPrecodeData__MethodDesc 0x00
-ASMCONSTANTS_C_ASSERT(StubPrecodeData__MethodDesc        == offsetof(StubPrecodeData, MethodDesc))
+#define StubPrecodeData__SecretParam 0x00
+ASMCONSTANTS_C_ASSERT(StubPrecodeData__SecretParam        == offsetof(StubPrecodeData, SecretParam))
 
 #define CallCountingStubData__RemainingCallCountCell 0x00
 ASMCONSTANTS_C_ASSERT(CallCountingStubData__RemainingCallCountCell == offsetof(CallCountingStubData, RemainingCallCountCell))

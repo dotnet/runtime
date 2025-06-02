@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit;
 
 namespace System.Linq.Tests
@@ -189,8 +190,9 @@ namespace System.Linq.Tests
                 Assert.True(transform(source.Concat(source)).Distinct().Contains(2));
                 Assert.False(transform(source.Concat(source)).Distinct().Contains(4));
                 Assert.True(transform(source.Concat(source)).Distinct().Contains(1));
-                Assert.True(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true)).Contains(2));
-                Assert.False(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true)).Contains(0));
+                Assert.True(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(1));
+                Assert.False(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(2));
+                Assert.False(transform(source.Concat(source)).Distinct(EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(0));
 
                 // OrderBy
                 Assert.True(transformedSource.OrderBy(x => x).Contains(2));
@@ -246,12 +248,20 @@ namespace System.Linq.Tests
 
                 // Union
                 Assert.True(transformedSource.Union(transform([4])).Contains(4));
+                Assert.True(transformedSource.Union(transform([4]), EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(1));
+                Assert.False(transformedSource.Union(transform([4]), EqualityComparer<int>.Create((x, y) => true, x => 0)).Contains(4));
                 Assert.False(transformedSource.Union(transform([3])).Contains(4));
             }
 
             // DefaultIfEmpty
             Assert.True(Enumerable.Empty<int>().DefaultIfEmpty(1).Contains(1));
             Assert.False(Enumerable.Empty<int>().DefaultIfEmpty(1).Contains(0));
+
+            // Distinct
+            Assert.True(new string[] { "a", "A" }.Distinct().Contains("a"));
+            Assert.True(new string[] { "a", "A" }.Distinct().Contains("A"));
+            Assert.True(new string[] { "a", "A" }.Distinct(StringComparer.OrdinalIgnoreCase).Contains("a"));
+            Assert.False(new string[] { "a", "A" }.Distinct(StringComparer.OrdinalIgnoreCase).Contains("A"));
 
             // Repeat
             Assert.True(Enumerable.Repeat(1, 5).Contains(1));
@@ -268,6 +278,12 @@ namespace System.Linq.Tests
             Assert.False(new object[] { 1, "2", 3 }.OfType<int>().Contains(2));
             Assert.True(new object[] { 1, "2", 3 }.OfType<string>().Contains("2"));
             Assert.False(new object[] { 1, "2", 3 }.OfType<string>().Contains("4"));
+
+            // Union
+            Assert.True(new string[] { "a" }.Union(new string[] { "A" }).Contains("a"));
+            Assert.True(new string[] { "a" }.Union(new string[] { "A" }).Contains("A"));
+            Assert.True(new string[] { "a" }.Union(new string[] { "A" }, StringComparer.OrdinalIgnoreCase).Contains("a"));
+            Assert.False(new string[] { "a" }.Union(new string[] { "A" }, StringComparer.OrdinalIgnoreCase).Contains("A"));
         }
     }
 }

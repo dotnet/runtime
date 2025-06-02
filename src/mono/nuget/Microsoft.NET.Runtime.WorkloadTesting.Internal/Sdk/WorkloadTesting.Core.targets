@@ -79,7 +79,7 @@
     <RemoveDir Directories="$(_SdkWithNoWorkloadPath)" />
     <MakeDir Directories="$(_SdkWithNoWorkloadPath)" />
 
-    <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
+    <DownloadFile SourceUrl="https://builds.dotnet.microsoft.com/dotnet/scripts/v1/$(_DotNetInstallScriptName)"
                   DestinationFolder="$(ArtifactsObjDir)"
                   Retries="3"
                   Condition="!Exists($(_DotNetInstallScriptPath))"/>
@@ -136,7 +136,7 @@
     <PropertyGroup>
       <!-- Used for workload testing -->
       <PackageVersionForWorkloadManifests>$(PackageVersion)</PackageVersionForWorkloadManifests>
-      <PackageVersionForWorkloadManifests Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersionForWorkloadManifests>
+      <PackageVersionForWorkloadManifests Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</PackageVersionForWorkloadManifests>
     </PropertyGroup>
 
     <Error Condition="'$(PackageVersionForWorkloadManifests)' == ''"

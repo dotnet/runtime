@@ -53,32 +53,23 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     addi  t0, a0, 0
     addi  t1, a1, 0
 
-    lla  a0, g_card_table
-    ld  a0, 0(a0)
+    ld   a0, g_card_table
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    lla  a1, g_card_bundle_table
-    ld  a1, 0(a1)
+    ld   a1, g_card_bundle_table
 #endif
 
 #ifdef WRITE_BARRIER_CHECK
-    lla  a2, g_GCShadow
-    ld  a2, 0(a2)
-
-    lla a3, g_GCShadowEnd
-    ld  a3, 0(a3)
+    ld  a2, g_GCShadow
+    ld  a3, g_GCShadowEnd
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    lla  a4, g_sw_ww_table
-    ld  a4, 0(a4)
+    ld   a4, g_write_watch_table
 #endif
 
-    lla  a5, g_ephemeral_low
-    ld  a5, 0(a5)
-
-    lla  a6, g_ephemeral_high
-    ld  a6, 0(a6)
+    ld   a5, g_ephemeral_low
+    ld   a6, g_ephemeral_high
 
     beq  t0, zero, LOCAL_LABEL(EphemeralCheckEnabled)
 
@@ -86,15 +77,11 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     li  a6, -1
 LOCAL_LABEL(EphemeralCheckEnabled):
 
-    lla  a7, g_lowest_address
-    ld  a7, 0(a7)
-
-    lla  t3, g_highest_address
-    ld  t3, 0(t3)
+    ld   a7, g_lowest_address
+    ld   t3, g_highest_address
 
     // Update wbs state
-    lla  t2, JIT_WriteBarrier_Table_Loc
-    ld  t2, 0(t2)
+    ld   t2, JIT_WriteBarrier_Table_Loc
     add  t2, t2, t1
 
     sd  a0, 0(t2)
@@ -119,8 +106,7 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     addi  t4, a1, 0                 // t4 = val
 
     // Branch to the write barrier
-    lla  t1, JIT_WriteBarrier_Loc
-    ld  t1, 0(t1)
+    ld  t1, JIT_WriteBarrier_Loc
     jr  t1
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
@@ -166,12 +152,10 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //
 
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
-    lla  t6, wbs_lowest_address
-    ld  t6, 0(t6)
+    ld   t6, wbs_lowest_address
     slt  t6, t3, t6
 
-    lla  t1, wbs_highest_address
-    ld  t1, 0(t1)
+    ld   t1, wbs_highest_address
     slt  t0, t1, t3
     or  t6, t0, t6
     beq  t6, zero, C_FUNC(JIT_WriteBarrier)
@@ -203,23 +187,18 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
     // Update GC Shadow Heap
 
     // Do not perform the work if g_GCShadow is 0
-    lla  t1, wbs_GCShadow
-    ld  t1, 0(t1)
+    ld   t1, wbs_GCShadow
 
     beq  t1, zero, LOCAL_LABEL(ShadowUpdateDisabled)
 
     // Compute address of shadow heap location:
     //   pShadow = g_GCShadow + ($t3 - g_lowest_address)
-    lla  t6, wbs_lowest_address
-    ld  t6, 0(t6)
-
+    ld   t6, wbs_lowest_address
     sub  t6, t3, t6
     add  t0, t6, t1
 
     // if (pShadow >= g_GCShadowEnd) goto end
-    lla t6, wbs_GCShadowEnd
-    ld  t6, 0(t6)
-
+    ld   t6, wbs_GCShadowEnd
     slt  t6, t0, t6
     beq  t6, zero, LOCAL_LABEL(ShadowUpdateEnd)
 
@@ -244,8 +223,7 @@ LOCAL_LABEL(ShadowUpdateDisabled):
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     // Update the write watch table if necessary
 
-    lla  t6, wbs_sw_ww_table
-    ld  t6, 0(t6)
+    ld   t6, wbs_sw_ww_table
     beq  t6, zero, LOCAL_LABEL(CheckCardTable)
 
     srli  t0, t3, 0xc
@@ -259,22 +237,19 @@ LOCAL_LABEL(ShadowUpdateDisabled):
 LOCAL_LABEL(CheckCardTable):
 #endif
     // Branch to Exit if the reference is not in the Gen0 heap
-    lla  t6, wbs_ephemeral_low
-    ld  t6, 0(t6)
+    ld   t6, wbs_ephemeral_low
     beq  t6, zero, LOCAL_LABEL(SkipEphemeralCheck)
 
     slt  t0, t4, t6
-    lla  t6, wbs_ephemeral_high
-    ld  t6, 0(t6)
+    ld   t6, wbs_ephemeral_high
     slt  t1, t6, t4
     or  t0, t1, t0
     bne  t0, zero, LOCAL_LABEL(Exit)
 
 LOCAL_LABEL(SkipEphemeralCheck):
     // Check if we need to update the card table
-    lla  t6, wbs_card_table
-    ld  t6, 0(t6)
-    srli  t0, t3, 11
+    ld   t6, wbs_card_table
+    srli t0, t3, 11
     add  t4, t6, t0
     lbu  t1, 0(t4)
     li   t0, 0xFF
@@ -284,9 +259,8 @@ LOCAL_LABEL(SkipEphemeralCheck):
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
     // Check if we need to update the card bundle table
-    lla  t6, wbs_card_bundle_table
-    ld  t6, 0(t6)
-    srli  t0, t3, 21
+    ld   t6, wbs_card_bundle_table
+    srli t0, t3, 21
     add  t4, t6, t0
 
     lbu  t6, 0(t4)
@@ -717,7 +691,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR   s3, s4, 32
     PROLOG_SAVE_REG_PAIR   s5, s6, 48
     PROLOG_SAVE_REG_PAIR   s7, s8, 64
-    PROLOG_SAVE_REG_PAIR   s9, s10, 80 
+    PROLOG_SAVE_REG_PAIR   s9, s10, 80
     PROLOG_SAVE_REG_PAIR   s11, gp, 96
     PROLOG_SAVE_REG tp, 112
 
@@ -757,17 +731,19 @@ NESTED_END CallEHFunclet, _TEXT
 // This helper enables us to call into a filter funclet by passing it the CallerSP to lookup the
 // frame pointer for accessing the locals in the parent method.
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
-    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16
+    PROLOG_SAVE_REG_PAIR_INDEXED   fp, ra, 16, 0
 
     // On entry:
     //
     // a0 = throwable
-    // a1 = SP of the caller of the method/funclet containing the filter
+    // a1 = FP of main function
     // a2 = PC to invoke
     // a3 = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
     // Save the SP of this function
-    sd  fp, 0(a3)
+    sd  sp, 0(a3)
+    // Restore frame pointer
+    mv  fp, a1
     // Invoke the filter funclet
     jalr a2
 
@@ -968,11 +944,11 @@ NESTED_ENTRY JIT_Patchpoint, _TEXT, NoHandler
 NESTED_END JIT_Patchpoint, _TEXT
 
 // first arg register holds iloffset, which needs to be moved to the second register, and the first register filled with NULL
-LEAF_ENTRY JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_ENTRY JIT_PatchpointForced, _TEXT
     mv    a1, a0
     li    a0, 0
     j C_FUNC(JIT_Patchpoint)
-LEAF_END JIT_PartialCompilationPatchpoint, _TEXT
+LEAF_END JIT_PatchpointForced, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
 
@@ -995,3 +971,13 @@ LOCAL_LABEL(JIT_PollGCRarePath):
         ld      t0, 0(t0)
         jr      t0
 LEAF_END JIT_PollGC, _TEXT
+
+//a0 -This pointer
+//a1 -ReturnBuffer
+LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
+    ld  t2, ThisPtrRetBufPrecodeData__Target(METHODDESC_REGISTER)
+    mv  t6, a0     // Move first arg pointer to temp register
+    mv  a0, a1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
+    mv  a1, t6     // Move temp register to first arg register for static method with return buffer
+    EPILOG_BRANCH_REG t2
+LEAF_END ThisPtrRetBufPrecodeWorker, _TEXT

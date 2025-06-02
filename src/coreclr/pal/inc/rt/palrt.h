@@ -2,27 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-//
-// ===========================================================================
-// File: palrt.h
-//
-// ===========================================================================
-
 /*++
-
-
 Abstract:
 
     PAL runtime functions.  These are functions which are ordinarily
     implemented as part of the Win32 API set, but when compiling CoreCLR for
     Unix-like systems, are implemented as a runtime library on top of the PAL.
-
-Author:
-
-
-
-Revision History:
-
 --*/
 
 #ifndef __PALRT_H__
@@ -213,19 +198,7 @@ EXTERN_C const GUID GUID_NULL;
 typedef GUID *LPGUID;
 typedef const GUID FAR *LPCGUID;
 
-#ifdef __cplusplus
-extern "C++" {
-#if !defined _SYS_GUID_OPERATOR_EQ_ && !defined _NO_SYS_GUID_OPERATOR_EQ_
-#define _SYS_GUID_OPERATOR_EQ_
-inline int IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
-    { return !memcmp(&rguid1, &rguid2, sizeof(GUID)); }
-inline int operator==(REFGUID guidOne, REFGUID guidOther)
-    { return IsEqualGUID(guidOne,guidOther); }
-inline int operator!=(REFGUID guidOne, REFGUID guidOther)
-    { return !IsEqualGUID(guidOne,guidOther); }
-#endif
-};
-#endif // __cplusplus
+#define IsEqualGUID(guid1, guid2) guid1 == guid2
 
 #define DEFINE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) \
     EXTERN_C const GUID FAR name
@@ -1026,6 +999,14 @@ typedef struct _DISPATCHER_CONTEXT {
 
 typedef struct _DISPATCHER_CONTEXT {
     // PPC64LE does not build the VM or JIT at this point,
+    // so we only provide a dummy definition.
+    DWORD Reserved;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(HOST_WASM)
+
+typedef struct _DISPATCHER_CONTEXT {
+    // WASM does not build the VM or JIT at this point,
     // so we only provide a dummy definition.
     DWORD Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;

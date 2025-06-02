@@ -50,12 +50,6 @@ else(CLR_CMAKE_HOST_WIN32)
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
     endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
-    if(CLR_CMAKE_TARGET_OSX)
-        # These options are used to force every object to be included even if it's unused.
-        set(START_WHOLE_ARCHIVE -force_load)
-        set(END_WHOLE_ARCHIVE )
-    endif(CLR_CMAKE_TARGET_OSX)
-
     set_exports_linker_option(${EXPORTS_FILE})
 
 endif (CLR_CMAKE_HOST_WIN32)
@@ -98,7 +92,6 @@ set(CORECLR_LIBRARIES
     ceefgen
     comfloat_wks
     corguids
-    gcinfo
     utilcode
     v3binder
     System.Globalization.Native-Static
@@ -132,9 +125,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     )
 else()
     list(APPEND CORECLR_LIBRARIES
-        ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
-        ${END_WHOLE_ARCHIVE}
         mscorrc
     )
 endif(CLR_CMAKE_TARGET_WIN32)
@@ -177,23 +168,31 @@ if(FEATURE_PERFTRACING)
     endif(CLR_CMAKE_TARGET_LINUX)
 endif(FEATURE_PERFTRACING)
 
-if(FEATURE_MERGE_JIT_AND_ENGINE)
+if(FEATURE_STATICALLY_LINKED)
     set(CLRJIT_STATIC clrjit_static)
-endif(FEATURE_MERGE_JIT_AND_ENGINE)
+endif(FEATURE_STATICALLY_LINKED)
 
 if (CLR_CMAKE_TARGET_OSX)
     find_library(FOUNDATION Foundation REQUIRED)
 endif()
 
-target_sources(coreclr PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
-target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks ${FOUNDATION})
-target_sources(coreclr_static PUBLIC $<TARGET_OBJECTS:cee_wks_core>)
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} clrjit_static cee_wks_mergeable ${FOUNDATION})
+target_link_libraries(coreclr PUBLIC ${CORECLR_LIBRARIES} ${CLRJIT_STATIC} cee_wks_core cee_wks ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} cee_wks_core clrjit_static cee_wks_mergeable ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if (CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclr PUBLIC log)
-    target_link_libraries(coreclr_static PUBLIC log)
+    target_link_libraries(coreclr_static
+        PUBLIC
+        coreclrminipal_objects
+        coreclrpal_objects
+        eventprovider_objects
+        gcinfo
+        libunwind
+        log
+        minipal_objects
+        nativeresourcestring_objects
+    )
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -229,9 +228,9 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr DESTINATIONS . sharedFramework COMPONENT runtime)
-if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS)
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
     install_clr(TARGETS coreclr_static DESTINATIONS . sharedFramework COMPONENT runtime)
-endif()
+endif(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
 
 # Enable profile guided optimization
 add_pgo(coreclr)

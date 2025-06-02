@@ -1876,27 +1876,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2));
         }
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2, uint compareFlags)
         {
-            if (s1 == null)
-            {
-                throw new ArgumentNullException(nameof(s1));
-            }
-            if (s2 == null)
-            {
-                throw new ArgumentNullException(nameof(s2));
-            }
+            ArgumentNullException.ThrowIfNull(s1);
+            ArgumentNullException.ThrowIfNull(s2);
             return Compare(s1.Substring(offset1, length1), s2.Substring(offset2, length2), compareFlags);
         }
 

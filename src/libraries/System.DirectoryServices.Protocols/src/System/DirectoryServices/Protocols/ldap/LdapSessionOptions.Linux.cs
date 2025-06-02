@@ -24,7 +24,7 @@ namespace System.DirectoryServices.Protocols
         /// which can be done by using <code>openssl rehash .</code> or <code>c_rehash .</code> in the directory
         /// containing the certificate files.
         /// </remarks>
-        /// <exception cref="DirectoryNotFoundException">The directory not exist.</exception>
+        /// <exception cref="DirectoryNotFoundException">The directory does not exist.</exception>
         [UnsupportedOSPlatform("windows")]
         public string TrustedCertificatesDirectory
         {
@@ -85,6 +85,9 @@ namespace System.DirectoryServices.Protocols
         {
             SetIntValueHelper(LdapOption.LDAP_OPT_X_TLS_NEWCTX, 0);
         }
+
+        // In practice, this apparently rarely if ever contains useful text
+        internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_ERROR_STRING, true);
 
         private bool GetBoolValueHelper(LdapOption option)
         {

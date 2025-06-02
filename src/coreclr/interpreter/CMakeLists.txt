@@ -1,11 +1,20 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# So simdhash will build correctly without a dn-config.h
+add_compile_definitions(NO_CONFIG_H)
+
 set(INTERPRETER_SOURCES
   compiler.cpp
   compileropt.cpp
   intops.cpp
-  eeinterp.cpp)
+  interpconfig.cpp
+  eeinterp.cpp
+  stackmap.cpp
+  ../../native/containers/dn-simdhash.c
+  ../../native/containers/dn-simdhash-ptr-ptr.c)
 
 set(INTERPRETER_LINK_LIBRARIES
+  gcinfo
 )
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -28,7 +37,13 @@ else()
     add_custom_target(interpreter_exports DEPENDS ${EXPORTS_FILE})
 endif()
 
-add_library_clr(clrinterpreter SHARED ${INTERPRETER_SOURCES})
+if(CLR_CMAKE_TARGET_BROWSER)
+  set(LIBRARY_TYPE STATIC)
+else()
+  set(LIBRARY_TYPE SHARED)
+endif()
+
+add_library_clr(clrinterpreter ${LIBRARY_TYPE} ${INTERPRETER_SOURCES})
 
 add_dependencies(clrinterpreter interpreter_exports)
 

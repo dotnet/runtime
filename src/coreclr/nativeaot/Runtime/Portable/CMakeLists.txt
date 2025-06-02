@@ -10,12 +10,12 @@ target_link_libraries(PortableRuntime PRIVATE aotminipal)
 
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
-set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
+set(ASM_OFFSETS_CSPP ${NATIVEAOT_RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP -nologo)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/windows/AsmOffsets.cpp)
 
     set_target_properties(aotminipal PROPERTIES
         COMPILE_PDB_NAME "aotminipal"
@@ -23,14 +23,14 @@ if(WIN32)
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/unix/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/unix/AsmOffsets.cpp)
 endif()
 
 add_custom_command(
    # The AsmOffsetsPortable.cs is consumed later by the managed build
    TARGET PortableRuntime
    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsetsPortable.cs"
-   DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+   DEPENDS "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.cpp" "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.h"
 )
 
 install_static_library(PortableRuntime aotsdk nativeaot)

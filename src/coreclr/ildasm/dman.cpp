@@ -120,7 +120,7 @@ void DumpScope(void* GUICookie)
     mdModule mdm;
     GUID mvid;
     WCHAR scopeName[1024];
-    CHAR guidString[GUID_STR_BUFFER_LEN];
+    CHAR guidString[MINIPAL_GUID_BUFFER_LEN];
     memset(scopeName,0,1024*sizeof(WCHAR));
     if(SUCCEEDED(g_pPubImport->GetScopeProps( scopeName, 1024, NULL, &mvid))&& scopeName[0])
     {
@@ -133,7 +133,7 @@ void DumpScope(void* GUICookie)
             VDELETE(sz);
         }
         printLine(GUICookie,szString);
-        GuidToLPSTR(mvid, guidString);
+        minipal_guid_as_string(mvid, guidString, MINIPAL_GUID_BUFFER_LEN);
         sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,guidString);
 
         printLine(GUICookie,szString);

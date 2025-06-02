@@ -193,17 +193,23 @@ namespace System.Reflection.Emit
             // If there is a non-void return type, push one.
             if (returnType != typeof(void))
                 stackchange++;
+
             // Pop off arguments if any.
             if (parameterTypes != null)
                 stackchange -= parameterTypes.Length;
+
             // Pop off vararg arguments.
             if (optionalParameterTypes != null)
                 stackchange -= optionalParameterTypes.Length;
-            // Pop the this parameter if the method has a this parameter.
-            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis)
+
+            // Pop the this parameter if the method has an implicit this parameter.
+            if ((callingConvention & CallingConventions.HasThis) == CallingConventions.HasThis &&
+                (callingConvention & CallingConventions.ExplicitThis) == 0)
                 stackchange--;
+
             // Pop the native function pointer.
             stackchange--;
+
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             int token = GetTokenForSig(sig.GetSignature(true));

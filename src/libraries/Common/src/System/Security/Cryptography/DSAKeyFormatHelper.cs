@@ -273,12 +273,7 @@ namespace System.Security.Cryptography
             {
                 AsnWriter inner = new AsnWriter(AsnEncodingRules.DER);
                 inner.WriteKeyParameterInteger(component);
-
-                inner.Encode(writer, static (writer, encoded) =>
-                {
-                    writer.WriteBitString(encoded);
-                    return (object?)null;
-                });
+                inner.Encode(writer, static (writer, encoded) => writer.WriteBitString(encoded));
             }
             else
             {

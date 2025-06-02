@@ -164,21 +164,8 @@ bool Compiler::optCopyProp(
     bool                madeChanges = false;
     LclVarDsc* const    varDsc      = lvaGetDesc(lclNum);
     LclSsaVarDsc* const varSsaDsc   = varDsc->GetPerSsaData(tree->GetSsaNum());
-    GenTree* const      varDefTree  = varSsaDsc->GetDefNode();
-    BasicBlock* const   varDefBlock = varSsaDsc->GetBlock();
     ValueNum const      lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
-
-    // See if this local is a candidate for phi dev equivalence checks
-    //
-    bool const varDefTreeIsPhiDef             = (varDefTree != nullptr) && varDefTree->IsPhiDefn();
-    bool       varDefTreeIsPhiDefAtCycleEntry = false;
-
-    if (varDefTreeIsPhiDef)
-    {
-        FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(varDefBlock);
-        varDefTreeIsPhiDefAtCycleEntry   = (loop != nullptr) && (loop->GetHeader() == varDefBlock);
-    }
 
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
@@ -202,17 +189,13 @@ bool Compiler::optCopyProp(
         ValueNum newLclDefVN = newLclSsaDef->m_vnPair.GetConservative();
         assert(newLclDefVN != ValueNumStore::NoVN);
 
+        // If VNs don't match, they still can be the same entity, but we currently
+        // don't have tools to prove it. So we skip this case.
         if (newLclDefVN != lclDefVN)
         {
-            bool arePhiDefsEquivalent =
-                varDefTreeIsPhiDefAtCycleEntry && vnStore->AreVNsEquivalent(lclDefVN, newLclDefVN);
-            if (!arePhiDefsEquivalent)
-            {
-                continue;
-            }
-
             JITDUMP("orig [%06u] copy [%06u] VNs proved equivalent\n", dspTreeID(tree),
                     dspTreeID(newLclDef.GetDefNode()));
+            continue;
         }
 
         // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an

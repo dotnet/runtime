@@ -13,7 +13,6 @@
 
 #include "slist.h"
 #include "shash.h"
-#include "varint.h"
 #include "holder.h"
 #include "rhbinder.h"
 #include "Crst.h"
@@ -323,12 +322,6 @@ FCIMPL0(void, RhpInterfaceDispatch64)
 }
 FCIMPLEND
 
-FCIMPL0(void, RhpVTableOffsetDispatch)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
 // @TODO Implement UniversalTransition
 EXTERN_C void * ReturnFromUniversalTransition;
 void * ReturnFromUniversalTransition;
@@ -372,9 +365,9 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL0(void*, RhAllocateThunksMapping)
+FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 {
-    return NULL;
+    return E_FAIL;
 }
 FCIMPLEND
 

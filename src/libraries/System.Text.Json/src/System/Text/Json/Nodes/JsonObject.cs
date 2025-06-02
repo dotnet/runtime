@@ -140,10 +140,7 @@ namespace System.Text.Json.Nodes
         /// </returns>
         public bool TryGetPropertyValue(string propertyName, out JsonNode? jsonNode, out int index)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
 #if NET10_0_OR_GREATER
             return Dictionary.TryGetValue(propertyName, out jsonNode, out index);
@@ -156,10 +153,7 @@ namespace System.Text.Json.Nodes
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             GetUnderlyingRepresentation(out OrderedDictionary<string, JsonNode?>? dictionary, out JsonElement? jsonElement);
 
@@ -227,10 +221,7 @@ namespace System.Text.Json.Nodes
 
         internal JsonNode? GetItem(string propertyName)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             if (TryGetPropertyValue(propertyName, out JsonNode? value))
             {
@@ -264,10 +255,7 @@ namespace System.Text.Json.Nodes
 
         internal void SetItem(string propertyName, JsonNode? value)
         {
-            if (propertyName is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
-            }
+            ArgumentNullException.ThrowIfNull(propertyName);
 
             OrderedDictionary<string, JsonNode?> dict = Dictionary;
 

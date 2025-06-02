@@ -289,8 +289,6 @@ void CodeGen::genCodeForBBlist()
 
         /* Start a new code output block */
 
-        genUpdateCurrentFunclet(block);
-
         genLogLabel(block);
 
         // Tell everyone which basic block we're working on
@@ -372,9 +370,9 @@ void CodeGen::genCodeForBBlist()
 
         bool firstMapping = true;
 
-        if (block->HasFlag(BBF_FUNCLET_BEG))
+        if (compiler->bbIsFuncletBeg(block))
         {
-            assert(compiler->UsesFunclets());
+            genUpdateCurrentFunclet(block);
             genReserveFuncletProlog(block);
         }
 
@@ -505,8 +503,13 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
+        if (compiler->compIsAsync())
+        {
+            nonVarPtrRegs &= ~RBM_ASYNC_CONTINUATION_RET;
+        }
+
         // For a tailcall arbitrary argument registers may be live into the
-        // prolog. Skip validating those.
+        // epilog. Skip validating those.
         if (block->HasFlag(BBF_HAS_JMP))
         {
             nonVarPtrRegs &= ~fullIntArgRegMask(CorInfoCallConvExtension::Managed);
@@ -711,10 +714,9 @@ void CodeGen::genCodeForBBlist()
                 // 2. If this is this is the last block of the hot section.
                 // 3. If the subsequent block is a special throw block.
                 // 4. On AMD64, if the next block is in a different EH region.
-                if (block->IsLast() || block->Next()->HasFlag(BBF_FUNCLET_BEG) ||
-                    !BasicBlock::sameEHRegion(block, block->Next()) ||
+                if (block->IsLast() || !BasicBlock::sameEHRegion(block, block->Next()) ||
                     (!isFramePointerUsed() && compiler->fgIsThrowHlpBlk(block->Next())) ||
-                    block->IsLastHotBlock(compiler))
+                    compiler->bbIsFuncletBeg(block->Next()) || block->IsLastHotBlock(compiler))
                 {
                     instGen(INS_BREAKPOINT); // This should never get executed
                 }
@@ -1893,7 +1895,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // We can't write beyond the arg area unless this is a tail call, in which case we use
 // the first stack arg as the base of the incoming arg area.
 #ifdef DEBUG
-        unsigned areaSize = compiler->lvaLclSize(outArgVarNum);
+        unsigned areaSize = compiler->lvaLclStackHomeSize(outArgVarNum);
 #if FEATURE_FASTTAILCALL
         if (putArgStk->gtCall->IsFastTailCall())
         {
@@ -2257,93 +2259,6 @@ void CodeGen::genTransferRegGCState(regNumber dst, regNumber src)
     }
 }
 
-// generates an ip-relative call or indirect call via reg ('call reg')
-//     pass in 'addr' for a relative call or 'base' for a indirect register call
-//     methHnd - optional, only used for pretty printing
-//     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
-//     noSafePoint - force not making this call a safe point in partially interruptible code
-//
-// clang-format off
-void CodeGen::genEmitCall(int                   callType,
-                          CORINFO_METHOD_HANDLE methHnd,
-                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                          void*                 addr
-                          X86_ARG(int argSize),
-                          emitAttr              retSize
-                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                          const DebugInfo& di,
-                          regNumber             base,
-                          bool                  isJump,
-                          bool                  noSafePoint)
-{
-#if !defined(TARGET_X86)
-    int argSize = 0;
-#endif // !defined(TARGET_X86)
-
-    // This should have been put in volatile registers to ensure it does not
-    // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (base == REG_NA) || ((RBM_INT_CALLEE_TRASH & genRegMask(base)) != 0));
-
-    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
-                               methHnd,
-                               INDEBUG_LDISASM_COMMA(sigInfo)
-                               addr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               di, base, REG_NA, 0, 0, isJump, noSafePoint);
-}
-// clang-format on
-
-// generates an indirect call via addressing mode (call []) given an indir node
-//     methHnd - optional, only used for pretty printing
-//     retSize - emitter type of return for GC purposes, should be EA_BYREF, EA_GCREF, or EA_PTRSIZE(not GC)
-//
-// clang-format off
-void CodeGen::genEmitCallIndir(int                   callType,
-                               CORINFO_METHOD_HANDLE methHnd,
-                               INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                               GenTreeIndir*         indir
-                               X86_ARG(int argSize),
-                               emitAttr              retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                               const DebugInfo&      di,
-                               bool                  isJump)
-{
-#if !defined(TARGET_X86)
-    int argSize = 0;
-#endif // !defined(TARGET_X86)
-
-    regNumber iReg = indir->HasBase()  ? indir->Base()->GetRegNum() : REG_NA;
-    regNumber xReg = indir->HasIndex() ? indir->Index()->GetRegNum() : REG_NA;
-
-    // These should have been put in volatile registers to ensure they do not
-    // get overridden by epilog sequence during tailcall.
-    noway_assert(!isJump || (iReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(iReg)) != 0));
-    noway_assert(!isJump || (xReg == REG_NA) || ((RBM_CALLEE_TRASH & genRegMask(xReg)) != 0));
-
-    GetEmitter()->emitIns_Call(emitter::EmitCallType(callType),
-                               methHnd,
-                               INDEBUG_LDISASM_COMMA(sigInfo)
-                               nullptr,
-                               argSize,
-                               retSize
-                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur,
-                               gcInfo.gcRegByrefSetCur,
-                               di,
-                               iReg,
-                               xReg,
-                               indir->Scale(),
-                               indir->Offset(),
-                               isJump);
-}
-// clang-format on
-
 //------------------------------------------------------------------------
 // genCodeForCast: Generates the code for GT_CAST.
 //
@@ -2484,8 +2399,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
         }
 
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
-        // the upper 32bits be sign-extended to 64 bits.
+        // TODO-LOONGARCH64:
+        // TODO-RISCV64:
+        // LoongArch64 and RiscV64 ABIs require 32-bit values to be sign-extended to 64-bits.
+        // We apply the sign-extension unconditionally here to avoid corner case bugs, even
+        // though it may not be strictly necessary in all cases.
         m_extendKind = SIGN_EXTEND_INT;
 #else
         m_extendKind = COPY;
