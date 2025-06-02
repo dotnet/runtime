@@ -111,7 +111,7 @@ test_add_session_providers (void)
 
 	test_location = 3;
 
-	test_session_provider = ep_session_provider_alloc (TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
+	test_session_provider = ep_session_provider_alloc (TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "", NULL, NULL);
 	ep_raise_error_if_nok (test_session_provider != NULL);
 
 	test_location = 4;

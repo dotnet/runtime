@@ -64,10 +64,21 @@ ep_is_guid_empty(const uint8_t *guid);
 static
 uint16_t
 ep_tracepoint_construct_extension_buffer(
-    uint8_t *extension,
-    const uint8_t *activity_id,
-    const uint8_t *related_activity_id);
+	uint8_t *extension,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id);
 
+static
+bool
+ep_tracepoint_write (
+	EventPipeSession *session,
+	ep_rt_thread_handle_t thread,
+	EventPipeEvent *ep_event,
+	EventPipeEventPayload *ep_event_payload,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id,
+	ep_rt_thread_handle_t event_thread,
+	EventPipeStackContents *stack);
 
 /*
  * EventPipeSession.
@@ -516,7 +527,9 @@ ep_session_enable_rundown (EventPipeSession *session)
 		ep_provider_config_get_provider_name (&rundown_provider),
 		ep_provider_config_get_keywords (&rundown_provider),
 		ep_provider_config_get_logging_level (&rundown_provider),
-		ep_provider_config_get_filter_data (&rundown_provider));
+		ep_provider_config_get_filter_data (&rundown_provider),
+		NULL,
+		NULL);
 
 	ep_raise_error_if_nok (ep_session_add_session_provider (session, session_provider));
 
@@ -749,15 +762,15 @@ static
 bool
 ep_is_guid_empty(const uint8_t *guid)
 {
-    if (guid == NULL)
+	if (guid == NULL)
 		return true;
 
 	for (size_t i = 0; i < EP_ACTIVITY_ID_SIZE; ++i) {
-        if (guid[i] != 0)
+		if (guid[i] != 0)
 			return false;
-    }
+	}
 
-    return true;
+	return true;
 }
 
 /*
@@ -770,30 +783,31 @@ ep_is_guid_empty(const uint8_t *guid)
 static
 uint16_t
 ep_tracepoint_construct_extension_buffer(
-    uint8_t *extension,
-    const uint8_t *activity_id,
-    const uint8_t *related_activity_id)
+	uint8_t *extension,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id)
 {
-    uint16_t offset = 0;
+	uint16_t offset = 0;
 
 	bool activity_id_is_empty = ep_is_guid_empty (activity_id);
 	bool related_activity_id_is_empty = ep_is_guid_empty (related_activity_id);
 
 	if (!activity_id_is_empty) {
-        extension[offset] = !related_activity_id_is_empty ? 0x81 : 0x01;
-        memcpy(extension + offset + 1, activity_id, EP_ACTIVITY_ID_SIZE);
-        offset += 1 + EP_ACTIVITY_ID_SIZE;
-    }
+		extension[offset] = !related_activity_id_is_empty ? 0x81 : 0x01;
+		memcpy(extension + offset + 1, activity_id, EP_ACTIVITY_ID_SIZE);
+		offset += 1 + EP_ACTIVITY_ID_SIZE;
+	}
 
-    if (!related_activity_id_is_empty) {
-        extension[offset] = 0x02;
-        memcpy(extension + offset + 1, related_activity_id, EP_ACTIVITY_ID_SIZE);
-        offset += 1 + EP_ACTIVITY_ID_SIZE;
-    }
+	if (!related_activity_id_is_empty) {
+		extension[offset] = 0x02;
+		memcpy(extension + offset + 1, related_activity_id, EP_ACTIVITY_ID_SIZE);
+		offset += 1 + EP_ACTIVITY_ID_SIZE;
+	}
 
 	return offset;
 }
 
+static
 bool
 ep_tracepoint_write (
 	EventPipeSession *session,

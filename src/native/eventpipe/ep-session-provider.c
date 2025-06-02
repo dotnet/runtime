@@ -23,6 +23,12 @@ session_provider_compare_name_func (
 	const void *a,
 	const void *b);
 
+static
+bool
+ep_event_filter_allows_event_id (
+	const EventPipeProviderEventFilter *event_filter,
+	uint32_t event_id);
+
 /*
  * EventPipeSessionProvider.
  */
@@ -43,22 +49,6 @@ session_provider_compare_name_func (
 	const void *b)
 {
 	return (a) ? !ep_rt_utf8_string_compare (ep_session_provider_get_provider_name ((EventPipeSessionProvider *)a), (const ep_char8_t *)b) : false;
-}
-
-EventPipeSessionProvider *
-ep_session_provider_alloc (
-	const ep_char8_t *provider_name,
-	uint64_t keywords,
-	EventPipeEventLevel logging_level,
-	const ep_char8_t *filter_data)
-{
-	return ep_session_provider_alloc (
-		provider_name,
-		keywords,
-		logging_level,
-		filter_data,
-		NULL,
-		NULL);
 }
 
 EventPipeSessionProvider *
@@ -109,6 +99,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 	ep_rt_object_free (session_provider);
 }
 
+static
 bool
 ep_event_filter_allows_event_id (
 	const EventPipeProviderEventFilter *event_filter,
@@ -174,7 +165,7 @@ ep_session_provider_list_alloc (
 		if ((ep_rt_utf8_string_compare(ep_provider_get_wildcard_name_utf8 (), ep_provider_config_get_provider_name (config)) == 0) &&
 			(ep_provider_config_get_keywords (config) == 0xFFFFFFFFFFFFFFFF) &&
 			((ep_provider_config_get_logging_level (config) == EP_EVENT_LEVEL_VERBOSE) && (instance->catch_all_provider == NULL))) {
-			instance->catch_all_provider = ep_session_provider_alloc (NULL, 0xFFFFFFFFFFFFFFFF, EP_EVENT_LEVEL_VERBOSE, NULL );
+			instance->catch_all_provider = ep_session_provider_alloc (NULL, 0xFFFFFFFFFFFFFFFF, EP_EVENT_LEVEL_VERBOSE, NULL, NULL, NULL);
 			ep_raise_error_if_nok (instance->catch_all_provider != NULL);
 		}
 		else {

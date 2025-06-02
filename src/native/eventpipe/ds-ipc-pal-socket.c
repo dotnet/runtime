@@ -1561,7 +1561,7 @@ ds_ipc_stream_read_fd (
 	DiagnosticsIpcStream *ipc_stream,
 	uint32_t *data_fd)
 {
-#if HAVE_SYS_SOCKET_H
+#if HAVE_SYS_SOCKET_H && defined(SOL_SOCKET) && defined(SCM_RIGHTS) && defined(CMSG_SPACE) && defined(CMSG_FIRSTHDR) && defined(CMSG_DATA)
 	EP_ASSERT (ipc_stream != NULL);
 	EP_ASSERT (data_fd != NULL);
 

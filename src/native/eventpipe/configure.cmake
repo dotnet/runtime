@@ -1,5 +1,6 @@
 include(CheckSymbolExists)
 include(CheckIncludeFile)
+include(CheckIncludeFiles)
 
 check_include_file(
     sys/socket.h

@@ -230,6 +230,14 @@ event_id_hashset_key_dispose_func (void *data)
 	ep_rt_object_free ((uint32_t *)data);
 }
 
+static
+void
+DN_CALLBACK_CALLTYPE
+ep_provider_config_free_func (void *provider_config)
+{
+	ep_rt_object_free ((EventPipeProviderConfiguration *)provider_config);
+}
+
 /*
  *  eventpipe_collect_tracing_command_try_parse_event_filter
  *
@@ -549,7 +557,6 @@ eventpipe_collect_tracing_command_try_parse_config (
 	ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, &count_configs));
 	ep_raise_error_if_nok (count_configs <= max_count_configs);
 	params.capacity = count_configs;
-	// Free func for the EventPipeProviderConfiguration?
 	*result = dn_vector_custom_alloc_t (&params, EventPipeProviderConfiguration);
 	ep_raise_error_if_nok (*result);
 
@@ -589,11 +596,10 @@ ep_on_error:
 			ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
 			ep_event_filter_free (ep_provider_config_get_event_filter (&config));
 			ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (&config));
-			ep_rt_object_free (&config);
 		} DN_VECTOR_FOREACH_END;
 	}
 
-	dn_vector_free (*result);
+	dn_vector_custom_free (*result, ep_provider_config_free_func);
 	*result = NULL;
 	ep_exit_error_handler ();
 }
@@ -1020,8 +1026,8 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 					ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
 					ep_event_filter_free (ep_provider_config_get_event_filter (&config));
 					ep_tracepoint_config_free (ep_provider_config_get_tracepoint_config (&config));
-					ep_rt_object_free (&config);
 				} DN_VECTOR_FOREACH_END;
+				dn_vector_custom_free (payload->provider_configs, ep_provider_config_free_func);
 			}
 		}
 		break;
