@@ -20,7 +20,7 @@ namespace System.Text
             charEnd = null;
         }
 
-        internal unsafe void InternalReset()
+        internal void InternalReset()
         {
             Debug.Assert(_fallbackBuffer != null);
             byteStart = null;
