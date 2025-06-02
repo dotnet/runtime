@@ -63,7 +63,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-    la.local  $a2, g_sw_ww_table
+    la.local  $a2, g_write_watch_table
     ld.d  $a2, $a2, 0
 #endif
 
@@ -1149,7 +1149,7 @@ LEAF_END JIT_PollGC, _TEXT
 //a0 -This pointer
 //a1 -ReturnBuffer
 LEAF_ENTRY ThisPtrRetBufPrecodeWorker, _TEXT
-    ld.w  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
+    ld.d  $METHODDESC_REGISTER, $METHODDESC_REGISTER, ThisPtrRetBufPrecodeData__Target
     move  $t0, $a0     // Move first arg pointer to temp register
     move  $a0, $a1     // Move ret buf arg pointer from location in ABI for return buffer for instance method to location in ABI for return buffer for static method
     move  $a1, $t0     // Move temp register to first arg register for static method with return buffer

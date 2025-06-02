@@ -392,15 +392,6 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
 
-// FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                         can be returned in multiple registers
-//                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
-//
-//
-// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-//                         specified by SystemV ABI for AMD64
-//
-
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
 EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
 #endif // FEATURE_HIJACK
@@ -4068,8 +4059,6 @@ public:
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
 
-    static BOOL CanAcquireLock();
-
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);
 
@@ -5458,13 +5447,6 @@ class GCForbidLoaderUseHolder
 // coverage.
 #if defined(DACCESS_COMPILE)
 
-// Disable (<non-zero constant> || <expression>) is always a non-zero constant.
-// <expression> is never evaluated and might have side effects, because
-// FORBIDGC_LOADER_USE_ENABLED is used in that pattern and additionally the rule
-// has little value.
-#ifdef _PREFAST_
-#pragma warning(disable:6286)
-#endif
 #define FORBIDGC_LOADER_USE_ENABLED() true
 
 #else // DACCESS_COMPILE
@@ -5674,11 +5656,7 @@ inline BOOL IsWriteBarrierCopyEnabled()
 #ifdef DACCESS_COMPILE
     return FALSE;
 #else // DACCESS_COMPILE
-#ifdef HOST_APPLE
-    return TRUE;
-#else
-    return ExecutableAllocator::IsWXORXEnabled();
-#endif
+    return g_pConfig->IsWriteBarrierCopyEnabled();
 #endif // DACCESS_COMPILE
 }
 

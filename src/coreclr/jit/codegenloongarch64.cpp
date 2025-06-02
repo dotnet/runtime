@@ -2804,6 +2804,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         GetEmitter()->emitInsLoadStoreOp(ins, emitActualTypeSize(type), dataReg, tree);
+
+        // If store was to a variable, update variable liveness after instruction was emitted.
+        genUpdateLife(tree);
     }
 }
 
@@ -3317,7 +3320,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                 {
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
-                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
+                else if (IsUnsigned && emitter::isValidUimm11(imm + 1) && (imm != (~0)))
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                 }
@@ -3334,7 +3337,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                     emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
-                else if (IsUnsigned && emitter::isValidUimm11(imm + 1))
+                else if (IsUnsigned && emitter::isValidUimm11(imm + 1) && (imm != (~0)))
                 {
                     emit->emitIns_R_R_I(INS_sltui, EA_PTRSIZE, targetReg, regOp1, imm + 1);
                     emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
@@ -5843,6 +5846,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             params.retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
             params.secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+
+            if (pRetTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()) == REG_INTRET)
+            {
+                // If the second return register is REG_INTRET, then the first return is expected to be in a floating
+                // register. The emitter has hardcoded belief that params.retSize corresponds to REG_INTRET and
+                // secondRetSize to REG_INTRET_1, so fix up the situation here.
+                assert(!EA_IS_GCREF_OR_BYREF(params.retSize));
+                params.retSize       = params.secondRetSize;
+                params.secondRetSize = EA_UNKNOWN;
+            }
         }
         else
         {
@@ -6029,11 +6042,20 @@ void CodeGen::genJmpPlaceVarArgs()
 //
 void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg)
 {
+    assert(REG_R21 != reg);
+
     switch (desc.CheckKind())
     {
         case GenIntCastDesc::CHECK_POSITIVE:
         {
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, REG_R0);
+            if (desc.CheckSrcSize() == 4) // (u)int
+            {
+                // If uint is UINT32_MAX then it will be treated as a signed
+                // number so overflow will also be triggered
+                GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg, 0);
+                reg = REG_R21;
+            }
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg);
         }
         break;
 
@@ -6041,11 +6063,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         {
             // We need to check if the value is not greater than 0xFFFFFFFF
             // if the upper 32 bits are zero.
-            ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_8BYTE, REG_R21, REG_R0, imm);
-
-            GetEmitter()->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, REG_R21, 32);
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, REG_R21, reg, REG_R21);
+            GetEmitter()->emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, 32);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
         }
         break;
@@ -6054,62 +6072,42 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
         {
             // We need to check if the value is not greater than 0x7FFFFFFF
             // if the upper 33 bits are zero.
-            // instGen_Set_Reg_To_Imm(EA_8BYTE, REG_R21, 0xFFFFFFFF80000000LL);
-            ssize_t imm = -1;
-            GetEmitter()->emitIns_R_R_I(INS_addi_d, EA_8BYTE, REG_R21, REG_R0, imm);
-
-            GetEmitter()->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, REG_R21, 31);
-
-            GetEmitter()->emitIns_R_R_R(INS_and, EA_8BYTE, REG_R21, reg, REG_R21);
+            GetEmitter()->emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, 31);
             genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
         }
         break;
 
         case GenIntCastDesc::CHECK_INT_RANGE:
         {
-            const regNumber tempReg = REG_R21;
-            assert(tempReg != reg);
-            GetEmitter()->emitIns_I_la(EA_8BYTE, tempReg, INT32_MAX);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, tempReg, nullptr, reg);
-
-            GetEmitter()->emitIns_I_la(EA_8BYTE, tempReg, INT32_MIN);
-            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_blt, reg, nullptr, tempReg);
+            // Emit "if ((long)(int)x != x) goto OVERFLOW"
+            GetEmitter()->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_R21, reg, 0);
+            genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, reg, nullptr, REG_R21);
         }
         break;
 
         default:
         {
             assert(desc.CheckKind() == GenIntCastDesc::CHECK_SMALL_INT_RANGE);
-            const int   castMaxValue = desc.CheckSmallIntMax();
-            const int   castMinValue = desc.CheckSmallIntMin();
-            instruction ins;
+            const unsigned castSize           = genTypeSize(cast->gtCastType);
+            const bool     isSrcOrDstUnsigned = desc.CheckSmallIntMin() == 0;
 
-            if (castMaxValue > 2047)
+            if (isSrcOrDstUnsigned)
             {
-                assert((castMaxValue == 32767) || (castMaxValue == 65535));
-                GetEmitter()->emitIns_I_la(EA_ATTR(desc.CheckSrcSize()), REG_R21, castMaxValue + 1);
-                ins = castMinValue == 0 ? INS_bgeu : INS_bge;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, reg, nullptr, REG_R21);
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_R_I(INS_addi_w, EA_ATTR(desc.CheckSrcSize()), REG_R21, REG_R0, castMaxValue);
-                ins = castMinValue == 0 ? INS_bltu : INS_blt;
-                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, ins, REG_R21, nullptr, reg);
-            }
-
-            if (castMinValue != 0)
-            {
-                if (emitter::isValidSimm12(castMinValue))
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_slti, EA_ATTR(desc.CheckSrcSize()), REG_R21, reg, castMinValue);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_I_la(EA_8BYTE, REG_R21, castMinValue);
-                    GetEmitter()->emitIns_R_R_R(INS_slt, EA_ATTR(desc.CheckSrcSize()), REG_R21, reg, REG_R21);
-                }
+                // Check if bits leading the actual small int are all zeros
+                // If destination type is signed then also check if MSB of it is zero
+                const bool     isDstSigned = !varTypeIsUnsigned(cast->gtCastType);
+                const unsigned excludeMsb  = isDstSigned ? 1 : 0;
+                const unsigned typeSize    = 8 * castSize - excludeMsb;
+                GetEmitter()->emitIns_R_R_I(INS_srli_d, EA_8BYTE, REG_R21, reg, typeSize);
                 genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21);
+            }
+            else // Signed to signed cast
+            {
+                // Extend sign of a small int on all of the bits above it and check whether the original type was same
+                const auto extensionSize = (8 - castSize) * 8;
+                GetEmitter()->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_R21, reg, extensionSize);
+                GetEmitter()->emitIns_R_R_I(INS_srai_d, EA_8BYTE, REG_R21, REG_R21, extensionSize);
+                genJumpToThrowHlpBlk_la(SCK_OVERFLOW, INS_bne, REG_R21, nullptr, reg);
             }
         }
         break;
@@ -6679,7 +6677,7 @@ inline void CodeGen::genJumpToThrowHlpBlk_la(
         {
             // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-            PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS

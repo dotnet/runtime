@@ -293,7 +293,7 @@ namespace System.Runtime
         }
 
 #pragma warning disable SYSLIB1054 // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
-        [DllImport(Redhawk.BaseName)]
+        [DllImport("*")]
         private static extern unsafe int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 #pragma warning restore SYSLIB1054
 

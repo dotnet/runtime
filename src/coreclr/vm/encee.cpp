@@ -344,13 +344,6 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     }
     CONTRACTL_END;
 
-    if (pMethod->HasAsyncMethodData())
-    {
-        // TODO: (async) revisit and examine if this can be supported
-        LOG((LF_ENC, LL_INFO100, "**Error** EnC for Async methods is NYI"));
-        return E_FAIL;
-    }
-
     // Notify the debugger of the update
     if (CORDebuggerAttached())
     {
@@ -1092,7 +1085,7 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
     // Look for an existing entry for the specified class
     while (ppData < ppLast)
     {
-        PREFIX_ASSUME(ppLast != NULL);
+        _ASSERTE(ppLast != NULL);
         if ((*ppData)->GetMethodTable() == pMT)
             return *ppData;
         ++ppData;

@@ -193,90 +193,60 @@
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(RunDisabledAndroidTests)' != 'true'">
-    <!-- Tests time out intermittently -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
-
-    <!-- Tests crash -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem.Watcher\tests\System.IO.FileSystem.Watcher.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Quic\tests\FunctionalTests\System.Net.Quic.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Formatters\tests\System.Runtime.Serialization.Formatters.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Algorithms\tests\System.Security.Cryptography.Algorithms.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.Csp\tests\System.Security.Cryptography.Csp.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
-
-    <!-- Actual test failures -->
-    <!-- https://github.com/dotnet/runtime/issues/50871 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/50874 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.EventSource\tests\Microsoft.Extensions.Logging.EventSource.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/50923 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Data.Common\tests\System.Data.Common.Tests.csproj" />
-
-    <!-- Execution may be compromised -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Caching.Memory\tests\Microsoft.Extensions.Caching.Memory.Tests.csproj" />
-
-    <!-- PSNE -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console/tests/System.Console.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives/tests/FunctionalTests/System.Net.Primitives.Functional.Tests.csproj" />
-
-    <!-- Crashes on CI (possibly flakey) -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Dynamic.Runtime.Tests\System.Dynamic.Runtime.Tests.csproj"/>
-
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
     <!-- gRPC tests should be run only manually -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm64' and '$(RunDisabledAndroidTests)' != 'true'">
-    <!-- Crashes on CI (possibly flakey) https://github.com/dotnet/runtime/issues/52615 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder/tests/Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration/tests/FunctionalTests/Microsoft.Extensions.Configuration.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Physical/tests/Microsoft.Extensions.FileProviders.Physical.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Win32.Primitives/tests/Microsoft.Win32.Primitives.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Concurrent/tests/System.Collections.Concurrent.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Specialized/tests/System.Collections.Specialized.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations/tests/System.ComponentModel.Annotations.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Composition.Hosting/tests/System.Composition.Hosting.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Memory/tests/System.Memory.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail/tests/Functional/System.Net.Mail.Functional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution/tests/PalTests/System.Net.NameResolution.Pal.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient/tests/System.Net.WebClient.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors/tests/System.Numerics.Tensors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/ExtendedFunctionalTests/System.Private.Uri.ExtendedFunctional.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime/tests/System.IO.FileSystem.Primitives.Tests/System.IO.FileSystem.Primitives.Tests.csproj" />
+  <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Extensions.Tests\System.Runtime.Extensions.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/111699 -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
-    <!-- Test flakiness on x64 https://github.com/dotnet/runtime/issues/49937 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading\tests\System.Threading.Tests.csproj" />
-
-    <!-- Out of memory https://github.com/dotnet/runtime/issues/62547 -->
+    <!-- https://github.com/dotnet/runtime/issues/62547 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'x86' and '$(RunDisabledAndroidTests)' != 'true'">
-    <!-- Crashes only on x86 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Primitives\tests\Microsoft.Extensions.Primitives.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Extensions.Tests\System.Runtime.Extensions.Tests.csproj" />
-
-    <!-- Out of memory https://github.com/dotnet/runtime/issues/62547 -->
+    <!-- https://github.com/dotnet/runtime/issues/62547 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/50493 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\AOT\Android.Device_Emulator.Aot.Test.csproj" />
-
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Collections.Immutable\tests\System.Collections.Immutable.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Extensions.Tests\System.Runtime.Extensions.Tests.csproj" />
     <!-- https://github.com/dotnet/runtime/issues/111699 -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/111699 -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\LibraryMode_AOT_LLVM\Android.Device_Emulator.LibraryMode_Aot_Llvm.Test.csproj" />
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisablediOSTests)' != 'true'">
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj" />
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/114951 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Globalization.Tests\Invariant\Invariant.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.DiagnosticSource\tests\TestWithConfigSwitches\System.Diagnostics.DiagnosticSource.Switches.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.MetadataLoadContext\tests\System.Reflection.MetadataLoadContext.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Resources.ResourceManager.Tests\System.Resources.ResourceManager.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\InvariantTimezone\System.Runtime.InvariantTimezone.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Loader\tests\System.Runtime.Loader.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Text.Encoding.Tests\System.Text.Encoding.Tests.csproj" />
+    <!-- https://github.com/dotnet/runtime/issues/62547 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography\tests\System.Security.Cryptography.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisablediOSTests)' != 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/114951 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.Tests\System.IO.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Bcl.Cryptography\tests\Microsoft.Bcl.Cryptography.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
@@ -779,6 +749,8 @@
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj"
+      BuildInParallel="false" />
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj"
       BuildInParallel="false" />
   </ItemGroup>
 

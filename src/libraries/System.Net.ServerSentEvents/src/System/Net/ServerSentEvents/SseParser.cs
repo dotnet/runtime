@@ -50,16 +50,19 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Encoding.UTF8.GetString(bytes)</summary>
-        internal static unsafe string Utf8GetString(ReadOnlySpan<byte> bytes)
+        internal static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
 #if NET
             return Encoding.UTF8.GetString(bytes);
 #else
-            fixed (byte* ptr = bytes)
+            unsafe
             {
-                return ptr is null ?
-                    string.Empty :
-                    Encoding.UTF8.GetString(ptr, bytes.Length);
+                fixed (byte* ptr = bytes)
+                {
+                    return ptr is null ?
+                        string.Empty :
+                        Encoding.UTF8.GetString(ptr, bytes.Length);
+                }
             }
 #endif
         }

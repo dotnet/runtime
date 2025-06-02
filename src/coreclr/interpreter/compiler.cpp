@@ -8,6 +8,7 @@
 #endif // debug_instrumented_return
 
 #include "interpreter.h"
+#include "stackmap.h"
 
 #include <inttypes.h>
 
@@ -652,39 +653,12 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
 {
     ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
 
-    if (ins->ilOffset != -1)
-    {
-        assert(ins->ilOffset >= 0);
-        assert(ins->nativeOffset >= 0);
-        uint32_t ilOffset = ins->ilOffset;
-        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
-        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
-        {
-            //
-            // This code assumes IL offsets in the actual opcode stream with valid IL offsets is monotonically
-            // increasing, so the generated map contains strictly increasing IL offsets.
-            //
-            // Native offsets are obviously strictly increasing by construction here.
-            //
-            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset < ilOffset));
-            assert((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].nativeOffset < nativeOffset));
-
-            //
-            // Since we can have at most one entry per IL offset,
-            // this map cannot possibly use more entries than the size of the IL code
-            //
-            assert(m_ILToNativeMapSize < m_ILCodeSize);
-
-            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
-            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
-            m_ILToNativeMapSize++;
-        }
-    }
-
     int32_t opcode = ins->opcode;
     int32_t *startIp = ip;
-
     *ip++ = opcode;
+
+    // Set to true if the instruction was completely reverted.
+    bool isReverted = false;
 
     if (opcode == INTOP_SWITCH)
     {
@@ -700,7 +674,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
             *ip++ = (int32_t)0xdeadbeef;
         }
     }
-    else if (InterpOpIsUncondBranch(opcode) || InterpOpIsCondBranch(opcode))
+    else if (InterpOpIsUncondBranch(opcode) || InterpOpIsCondBranch(opcode) || (opcode == INTOP_LEAVE_CATCH) || (opcode == INTOP_CALL_FINALLY))
     {
         int32_t brBaseOffset = (int32_t)(startIp - m_pMethodCode);
         for (int i = 0; i < g_interpOpSVars[opcode]; i++)
@@ -713,6 +687,7 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
         else if (opcode == INTOP_BR && ins->info.pTargetBB == m_pCBB->pNextBB)
         {
             // Ignore branch to the next basic block. Revert the added INTOP_BR.
+            isReverted = true;
             ip--;
         }
         else
@@ -785,6 +760,33 @@ int32_t* InterpCompiler::EmitCodeIns(int32_t *ip, InterpInst *ins, TArray<Reloc*
             *ip++ = ins->data[i];
     }
 
+    if ((ins->ilOffset != -1) && !isReverted)
+    {
+        assert(ins->ilOffset >= 0);
+        assert(ins->nativeOffset >= 0);
+        uint32_t ilOffset = ins->ilOffset;
+        uint32_t nativeOffset = ConvertOffset(ins->nativeOffset);
+        if ((m_ILToNativeMapSize == 0) || (m_pILToNativeMap[m_ILToNativeMapSize - 1].ilOffset != ilOffset))
+        {
+            // This code assumes that instructions for the same IL offset are emitted in a single run without
+            // any other IL offsets in between and that they don't repeat again after the run ends.
+#ifdef _DEBUG
+            for (int i = 0; i < m_ILToNativeMapSize; i++)
+            {
+                assert(m_pILToNativeMap[i].ilOffset != ilOffset);
+            }
+#endif // _DEBUG
+
+            // Since we can have at most one entry per IL offset,
+            // this map cannot possibly use more entries than the size of the IL code
+            assert(m_ILToNativeMapSize < m_ILCodeSize);
+
+            m_pILToNativeMap[m_ILToNativeMapSize].ilOffset = ilOffset;
+            m_pILToNativeMap[m_ILToNativeMapSize].nativeOffset = nativeOffset;
+            m_ILToNativeMapSize++;
+        }
+    }
+
     return ip;
 }
 
@@ -810,6 +812,27 @@ void InterpCompiler::PatchRelocations(TArray<Reloc*> *relocs)
     }
 }
 
+int32_t *InterpCompiler::EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs)
+{
+    m_pCBB = bb;
+    m_pCBB->nativeOffset = (int32_t)(ip - m_pMethodCode);
+
+    for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
+    {
+        if (InterpOpIsEmitNop(ins->opcode))
+        {
+            ins->nativeOffset = (int32_t)(ip - m_pMethodCode);
+            continue;
+        }
+
+        ip = EmitCodeIns(ip, ins, relocs);
+    }
+
+    m_pCBB->nativeEndOffset = (int32_t)(ip - m_pMethodCode);
+
+    return ip;
+}
+
 void InterpCompiler::EmitCode()
 {
     TArray<Reloc*> relocs;
@@ -824,19 +847,47 @@ void InterpCompiler::EmitCode()
         eeVars = new ICorDebugInfo::NativeVarInfo[m_numILVars];
     }
 
-    int32_t *ip = m_pMethodCode;
-    for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+    // For each BB, compute the number of EH clauses that overlap with it.
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
     {
-        bb->nativeOffset = (int32_t)(ip - m_pMethodCode);
-        m_pCBB = bb;
-        for (InterpInst *ins = bb->pFirstIns; ins != NULL; ins = ins->pNext)
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+        for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
         {
-            if (InterpOpIsEmitNop(ins->opcode))
-                continue;
+            if (clause.HandlerOffset <= (uint32_t)bb->ilOffset && (clause.HandlerOffset + clause.HandlerLength) > (uint32_t)bb->ilOffset)
+            {
+                bb->overlappingEHClauseCount++;
+            }
 
-            ip = EmitCodeIns(ip, ins, &relocs);
+            if (clause.Flags == CORINFO_EH_CLAUSE_FILTER && clause.FilterOffset <= (uint32_t)bb->ilOffset && clause.HandlerOffset > (uint32_t)bb->ilOffset)
+            {
+                bb->overlappingEHClauseCount++;
+            }
         }
     }
+
+    // Emit all the code in waves. First emit all blocks that are not inside any EH clauses.
+    // Then emit blocks that are inside of a single EH clause, then ones that are inside of
+    // two EH clauses, etc.
+    // The goal is to move all clauses to the end of the method code recursively so that 
+    // no handler is inside of a try block.
+    int32_t *ip = m_pMethodCode;
+    bool emittedBlock;
+    int clauseDepth = 0;
+    do
+    {
+        emittedBlock = false;
+        for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+        {
+            if (bb->overlappingEHClauseCount == clauseDepth)
+            {
+                ip = EmitBBCode(ip, bb, &relocs);
+                emittedBlock = true;
+            }
+        }
+        clauseDepth++;
+    }
+    while (emittedBlock);
 
     m_methodCodeSize = (int32_t)(ip - m_pMethodCode);
 
@@ -862,27 +913,251 @@ void InterpCompiler::EmitCode()
     m_compHnd->setBoundaries(m_methodInfo->ftn, m_ILToNativeMapSize, m_pILToNativeMap);
 }
 
+#ifdef FEATURE_INTERPRETER
+class InterpGcSlotAllocator
+{
+    InterpCompiler *m_compiler;
+    InterpreterGcInfoEncoder *m_encoder;
+    // [pObjects, pByrefs]
+    GcSlotId *m_slotTables[2];
+    unsigned m_slotTableSize;
+
+#ifdef DEBUG
+    bool m_verbose;
+#endif
+
+    GcSlotId* LocateGcSlotTableEntry(uint32_t offsetBytes, GcSlotFlags flags)
+    {
+        GcSlotId *slotTable = m_slotTables[(flags & GC_SLOT_INTERIOR) == GC_SLOT_INTERIOR];
+        uint32_t slotIndex = offsetBytes / sizeof(void *);
+        assert(slotIndex < m_slotTableSize);
+        return &slotTable[slotIndex];
+    }
+
+public:
+    InterpGcSlotAllocator(InterpCompiler *compiler, InterpreterGcInfoEncoder *encoder)
+        : m_compiler(compiler)
+        , m_encoder(encoder)
+        , m_slotTableSize(compiler->m_totalVarsStackSize / sizeof(void *))
+#ifdef DEBUG
+        , m_verbose(compiler->m_verbose)
+#endif
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            m_slotTables[i] = new (compiler) GcSlotId[m_slotTableSize];
+            // 0 is a valid slot id so default-initialize all the slots to 0xFFFFFFFF
+            memset(m_slotTables[i], 0xFF, sizeof(GcSlotId) * m_slotTableSize);
+        }
+    }
+
+    void AllocateOrReuseGcSlot(uint32_t offsetBytes, GcSlotFlags flags)
+    {
+        GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
+        bool allocateNewSlot = *pSlot == ((GcSlotId)-1);
+
+        if (allocateNewSlot)
+        {
+            // Important to pass GC_FRAMEREG_REL, the default is broken due to GET_CALLER_SP being unimplemented
+            *pSlot = m_encoder->GetStackSlotId(offsetBytes, flags, GC_FRAMEREG_REL);
+        }
+        else
+        {
+            assert((flags & GC_SLOT_UNTRACKED) == 0);
+        }
+
+        INTERP_DUMP(
+            "%s %s%sgcslot %u at %u\n",
+            allocateNewSlot ? "Allocated" : "Reused",
+            (flags & GC_SLOT_UNTRACKED) ? "global " : "",
+            (flags & GC_SLOT_INTERIOR) ? "interior " : "",
+            *pSlot,
+            offsetBytes
+        );
+    }
+
+    void ReportLiveRange(uint32_t offsetBytes, GcSlotFlags flags, int varIndex)
+    {
+        GcSlotId *pSlot = LocateGcSlotTableEntry(offsetBytes, flags);
+        assert(varIndex < m_compiler->m_varsSize);
+
+        InterpVar *pVar = &m_compiler->m_pVars[varIndex];
+        if (pVar->global)
+            return;
+
+        GcSlotId slot = *pSlot;
+        assert(slot != ((GcSlotId)-1));
+        assert(pVar->liveStart);
+        assert(pVar->liveEnd);
+        uint32_t startOffset = m_compiler->ConvertOffset(m_compiler->GetLiveStartOffset(varIndex)),
+            endOffset = m_compiler->ConvertOffset(m_compiler->GetLiveEndOffset(varIndex));
+        INTERP_DUMP(
+            "Slot %u (%s var #%d offset %u) live [IR_%04x - IR_%04x] [%u - %u]\n",
+            slot, pVar->global ? "global" : "local",
+            varIndex, pVar->offset,
+            m_compiler->GetLiveStartOffset(varIndex), m_compiler->GetLiveEndOffset(varIndex),
+            startOffset, endOffset
+        );
+        m_encoder->SetSlotState(startOffset, slot, GC_SLOT_LIVE);
+        m_encoder->SetSlotState(endOffset, slot, GC_SLOT_DEAD);
+    }
+};
+#endif
+
 void InterpCompiler::BuildGCInfo(InterpMethod *pInterpMethod)
 {
 #ifdef FEATURE_INTERPRETER
     InterpIAllocator* pAllocator = new (this) InterpIAllocator(this);
     InterpreterGcInfoEncoder* gcInfoEncoder = new (this) InterpreterGcInfoEncoder(m_compHnd, m_methodInfo, pAllocator, Interp_NOMEM);
-    assert(gcInfoEncoder);
+    InterpGcSlotAllocator slotAllocator (this, gcInfoEncoder);
 
-    gcInfoEncoder->SetCodeLength(m_methodCodeSize);
+    gcInfoEncoder->SetCodeLength(ConvertOffset(m_methodCodeSize));
 
-    // TODO: Request slot IDs for all our locals before finalizing
+    INTERP_DUMP("Allocating gcinfo slots for %u vars\n", m_varsSize);
 
-    gcInfoEncoder->FinalizeSlotIds();
+    for (int pass = 0; pass < 2; pass++)
+    {
+        for (int i = 0; i < m_varsSize; i++)
+        {
+            InterpVar *pVar = &m_pVars[i];
+            GcSlotFlags flags = pVar->global
+                ? (GcSlotFlags)GC_SLOT_UNTRACKED
+                : (GcSlotFlags)0;
 
-    // TODO: Use finalized slot IDs to declare live ranges
+            switch (pVar->interpType) {
+                case InterpTypeO:
+                    break;
+                case InterpTypeByRef:
+                    flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
+                    break;
+                case InterpTypeVT:
+                {
+                    InterpreterStackMap *stackMap = GetInterpreterStackMap(m_compHnd, pVar->clsHnd);
+                    for (unsigned j = 0; j < stackMap->m_slotCount; j++)
+                    {
+                        InterpreterStackMapSlot slotInfo = stackMap->m_slots[j];
+                        unsigned fieldOffset = pVar->offset + slotInfo.m_offsetBytes;
+                        GcSlotFlags fieldFlags = (GcSlotFlags)(flags | slotInfo.m_gcSlotFlags);
+                        if (pass == 0)
+                            slotAllocator.AllocateOrReuseGcSlot(fieldOffset, fieldFlags);
+                        else
+                            slotAllocator.ReportLiveRange(fieldOffset, fieldFlags, i);
+                    }
 
-    gcInfoEncoder->Build();
+                    // Don't perform the regular allocateGcSlot call
+                    continue;
+                }
+                default:
+                    // Neither an object, interior pointer, or vt, so no slot needed
+                    continue;
+            }
+
+            if (pass == 0)
+                slotAllocator.AllocateOrReuseGcSlot(pVar->offset, flags);
+            else
+                slotAllocator.ReportLiveRange(pVar->offset, flags, i);
+        }
+
+        if (pass == 0)
+            gcInfoEncoder->FinalizeSlotIds();
+        else
+            gcInfoEncoder->Build();
+    }
 
     // GC Encoder automatically puts the GC info in the right spot using ICorJitInfo::allocGCInfo(size_t)
-    // let's save the values anyway for debugging purposes
     gcInfoEncoder->Emit();
 #endif
+}
+
+void InterpCompiler::GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset)
+{
+    InterpBasicBlock* pStartBB = m_ppOffsetToBB[startILOffset];
+    assert(pStartBB != NULL);
+
+    InterpBasicBlock* pEndBB = pStartBB;
+    for (InterpBasicBlock* pBB = pStartBB->pNextBB; (pBB != NULL) && ((uint32_t)pBB->ilOffset < endILOffset); pBB = pBB->pNextBB)
+    {
+        if ((pBB->clauseType == pStartBB->clauseType) && (pBB->overlappingEHClauseCount == pStartBB->overlappingEHClauseCount))
+        {
+            pEndBB = pBB;
+        }
+    }
+
+    *nativeStartOffset = pStartBB->nativeOffset;
+    *nativeEndOffset = pEndBB->nativeEndOffset;
+}
+
+void InterpCompiler::BuildEHInfo()
+{
+    uint32_t lastTryILOffset = 0;
+    uint32_t lastTryILLength = 0;
+
+    INTERP_DUMP("EH info:\n");
+
+    if (m_methodInfo->EHcount == 0)
+    {
+        INTERP_DUMP("  None\n");
+        return;
+    }
+
+    m_compHnd->setEHcount(m_methodInfo->EHcount);
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        CORINFO_EH_CLAUSE nativeClause;
+
+        m_compHnd->getEHinfo(m_methodInfo->ftn, i, &clause);
+
+        int32_t tryStartNativeOffset;
+        int32_t tryEndNativeOffset;
+        GetNativeRangeForClause(clause.TryOffset, clause.TryOffset + clause.TryLength, &tryStartNativeOffset, &tryEndNativeOffset);
+
+        int32_t handlerStartNativeOffset;
+        int32_t handlerEndNativeOffset;
+        GetNativeRangeForClause(clause.HandlerOffset, clause.HandlerOffset + clause.HandlerLength, &handlerStartNativeOffset, &handlerEndNativeOffset);
+
+        nativeClause.TryOffset = ConvertOffset(tryStartNativeOffset);
+        nativeClause.TryLength = ConvertOffset(tryEndNativeOffset);
+
+        nativeClause.HandlerOffset = ConvertOffset(handlerStartNativeOffset);
+        nativeClause.HandlerLength = ConvertOffset(handlerEndNativeOffset);
+        InterpBasicBlock* pFilterStartBB = NULL;
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            pFilterStartBB = m_ppOffsetToBB[clause.FilterOffset];
+            nativeClause.FilterOffset = ConvertOffset(pFilterStartBB->nativeOffset);
+        }
+        else
+        {
+            nativeClause.ClassToken = clause.ClassToken;
+        }
+
+        nativeClause.Flags = clause.Flags;
+
+        // A try region can have multiple catch / filter handlers. All except of the first one need to be marked by
+        // the COR_ILEXCEPTION_CLAUSE_SAMETRY flag so that runtime can distinguish this case from a case when
+        // the native try region is the same for multiple clauses, but the IL try region is different.
+        if ((lastTryILOffset == clause.TryOffset) && (lastTryILLength == clause.TryLength))
+        {
+            nativeClause.Flags = (CORINFO_EH_CLAUSE_FLAGS)((int)nativeClause.Flags | COR_ILEXCEPTION_CLAUSE_SAMETRY);
+        }
+
+        m_compHnd->setEHinfo(i, &nativeClause);
+
+        INTERP_DUMP("  try [IR_%04x(%x), IR_%04x(%x)) ", tryStartNativeOffset, clause.TryOffset, tryEndNativeOffset, clause.TryOffset + clause.TryLength);
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            INTERP_DUMP("filter IR_%04x(%x), handler [IR_%04x(%x), IR_%04x(%x))%s\n", pFilterStartBB->nativeOffset, clause.FilterOffset, handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength, ((int)nativeClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) ? " (same try)" : "");
+        }
+        else if (nativeClause.Flags == CORINFO_EH_CLAUSE_FINALLY)
+        {
+            INTERP_DUMP("finally handler [IR_%04x(%x), IR_%04x(%x))\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength);
+        }
+        else
+        {
+            INTERP_DUMP("catch handler [IR_%04x(%x), IR_%04x(%x))%s\n", handlerStartNativeOffset, clause.HandlerOffset, handlerEndNativeOffset, clause.HandlerOffset + clause.HandlerLength, ((int)nativeClause.Flags & COR_ILEXCEPTION_CLAUSE_SAMETRY) ? " (same try)" : "");
+        }
+    }
 }
 
 InterpMethod* InterpCompiler::CreateInterpMethod()
@@ -908,6 +1183,8 @@ int32_t* InterpCompiler::GetCode(int32_t *pCodeSize)
 
 InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
                                 CORINFO_METHOD_INFO* methodInfo)
+    : m_pInitLocalsIns(nullptr)
+    , m_globalVarsWithRefsStackTop(0)
 {
     // Fill in the thread-local used for assertions
     t_InterpJitInfoTls = compHnd;
@@ -948,6 +1225,7 @@ InterpMethod* InterpCompiler::CompileMethod()
 #endif
 
     AllocOffsets();
+    PatchInitLocals(m_methodInfo);
 
     EmitCode();
 
@@ -963,6 +1241,33 @@ InterpMethod* InterpCompiler::CompileMethod()
 #endif
 
     return CreateInterpMethod();
+}
+
+void InterpCompiler::PatchInitLocals(CORINFO_METHOD_INFO* methodInfo)
+{
+    // We may have global vars containing managed pointers or interior pointers, so we need
+    //  to zero the region of the stack containing global vars, not just IL locals. Now that
+    //  offset allocation has occurred we know where the global vars end, so we can expand
+    //  the initlocals opcode that was originally generated to also zero them.
+    int32_t startOffset = m_pInitLocalsIns->data[0];
+    int32_t totalSize = m_globalVarsWithRefsStackTop - startOffset;
+    if (totalSize > m_pInitLocalsIns->data[1])
+    {
+        INTERP_DUMP(
+            "Expanding initlocals from [%d-%d] to [%d-%d]\n",
+            startOffset, startOffset + m_pInitLocalsIns->data[1],
+            startOffset, startOffset + totalSize
+        );
+        m_pInitLocalsIns->data[1] = totalSize;
+    }
+    else
+    {
+        INTERP_DUMP(
+            "Not expanding initlocals from [%d-%d] for global vars stack top of %d\n",
+            startOffset, startOffset + m_pInitLocalsIns->data[1],
+            m_globalVarsWithRefsStackTop
+        );
+    }
 }
 
 // Adds a conversion instruction for the value pointed to by sp, also updating the stack information
@@ -1021,7 +1326,7 @@ static InterpType GetInterpType(CorInfoType corInfoType)
         case CORINFO_TYPE_VOID:
             return InterpTypeVoid;
         default:
-            assert(0);
+            assert(!"Unimplemented CorInfoType");
             break;
     }
     return InterpTypeVoid;
@@ -1060,7 +1365,7 @@ void InterpCompiler::CreateILVars()
     m_numILVars = numArgs + numILLocals;
 
     // add some starting extra space for new vars
-    m_varsCapacity = m_numILVars + 64;
+    m_varsCapacity = m_numILVars + m_methodInfo->EHcount + 64;
     m_pVars = (InterpVar*)AllocTemporary0(m_varsCapacity * sizeof (InterpVar));
     m_varsSize = m_numILVars;
 
@@ -1104,8 +1409,9 @@ void InterpCompiler::CreateILVars()
 
     sigArg = m_methodInfo->locals.args;
     m_ILLocalsOffset = offset;
+    int index = numArgs;
+
     for (int i = 0; i < numILLocals; i++) {
-        int index = numArgs + i;
         InterpType interpType;
         CORINFO_CLASS_HANDLE argClass;
 
@@ -1122,11 +1428,99 @@ void InterpCompiler::CreateILVars()
         INTERP_DUMP("alloc local var %d to offset %d\n", index, offset);
         offset += size;
         sigArg = m_compHnd->getArgNext(sigArg);
+        index++;
     }
-    offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
 
+    offset = ALIGN_UP_TO(offset, INTERP_STACK_ALIGNMENT);
     m_ILLocalsSize = offset - m_ILLocalsOffset;
+
+    INTERP_DUMP("\nCreate clause Vars:\n");
+
+    m_clauseVarsIndex = index;
+
+    for (unsigned int i = 0; i < m_methodInfo->EHcount; i++)
+    {
+        new (&m_pVars[index]) InterpVar(InterpTypeO, NULL, INTERP_STACK_SLOT_SIZE);
+        m_pVars[index].global = true;
+        m_pVars[index].ILGlobal = true;
+        m_pVars[index].offset = offset;
+        INTERP_DUMP("alloc clause var %d to offset %d\n", index, offset);
+        offset += INTERP_STACK_SLOT_SIZE;
+        index++;
+    }
+
     m_totalVarsStackSize = offset;
+}
+
+// Create finally call island basic blocks for all try regions with finally clauses that the leave exits.
+// That means when the leaveOffset is inside the try region and the target is outside of it.
+// These finally call island blocks are used for non-exceptional finally execution.
+// The linked list of finally call island blocks is stored in the pFinallyCallIslandBB field of the finally basic block.
+// The pFinallyCallIslandBB in the actual finally call island block points to the outer try region's finally call island block.
+void InterpCompiler::CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB)
+{
+    bool firstFinallyCallIsland = true;
+    InterpBasicBlock* pInnerFinallyCallIslandBB = NULL;
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+        {
+            continue;
+        }
+
+        // Only try regions in which the leave instruction is located are considered.
+        if ((uint32_t)leaveOffset < clause.TryOffset || (uint32_t)leaveOffset > (clause.TryOffset + clause.TryLength))
+        {
+            continue;
+        }
+
+        // If the leave target is inside the try region, we don't need to create a finally call island block.
+        if ((uint32_t)pLeaveTargetBB->ilOffset >= clause.TryOffset && (uint32_t)pLeaveTargetBB->ilOffset <= (clause.TryOffset + clause.TryLength))
+        {
+            continue;
+        }
+
+        InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
+        InterpBasicBlock* pFinallyCallIslandBB = NULL;
+
+        InterpBasicBlock** ppLastBBNext = &pHandlerBB->pFinallyCallIslandBB;
+        while (*ppLastBBNext != NULL)
+        {
+            if ((*ppLastBBNext)->pLeaveTargetBB == pLeaveTargetBB)
+            {
+                // We already have finally call island block for the leave target
+                pFinallyCallIslandBB = (*ppLastBBNext);
+                break;
+            }
+            ppLastBBNext = &((*ppLastBBNext)->pFinallyCallIslandBB);
+        }
+
+        if (pFinallyCallIslandBB == NULL)
+        {
+            pFinallyCallIslandBB = AllocBB(clause.HandlerOffset + clause.HandlerLength);
+            pFinallyCallIslandBB->pLeaveTargetBB = pLeaveTargetBB;
+            *ppLastBBNext = pFinallyCallIslandBB;
+        }
+
+        if (pInnerFinallyCallIslandBB != NULL)
+        {
+            pInnerFinallyCallIslandBB->pFinallyCallIslandBB = pFinallyCallIslandBB;
+        }
+        pInnerFinallyCallIslandBB = pFinallyCallIslandBB;
+
+        if (firstFinallyCallIsland)
+        {
+            // The leaves table entry points to the first finally call island block
+            firstFinallyCallIsland = false;
+
+            LeavesTableEntry leavesEntry;
+            leavesEntry.ilOffset = leaveOffset;
+            leavesEntry.pFinallyCallIslandBB = pFinallyCallIslandBB;
+            m_leavesTable.Add(leavesEntry);
+        }
+    }
 }
 
 bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
@@ -1139,39 +1533,13 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     m_ppOffsetToBB = (InterpBasicBlock**)AllocMemPool0(sizeof(InterpBasicBlock*) * (methodInfo->ILCodeSize + 1));
     GetBB(0);
 
-    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
-    {
-        CORINFO_EH_CLAUSE clause;
-        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
-
-        if ((codeStart + clause.TryOffset) > codeEnd ||
-                (codeStart + clause.TryOffset + clause.TryLength) > codeEnd)
-        {
-            return false;
-        }
-        GetBB(clause.TryOffset);
-
-        if ((codeStart + clause.HandlerOffset) > codeEnd ||
-                (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
-        {
-            return false;
-        }
-        GetBB(clause.HandlerOffset);
-
-        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
-        {
-            if ((codeStart + clause.FilterOffset) > codeEnd)
-                return false;
-            GetBB(clause.FilterOffset);
-        }
-    }
-
     while (ip < codeEnd)
     {
         int32_t insOffset = (int32_t)(ip - codeStart);
         OPCODE opcode = CEEDecodeOpcode(&ip);
         OPCODE_FORMAT opArgs = g_CEEOpArgs[opcode];
         int32_t target;
+        InterpBasicBlock *pTargetBB;
 
         switch (opArgs)
         {
@@ -1199,7 +1567,11 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             target = insOffset + 2 + (int8_t)ip [1];
             if (target >= codeSize)
                 return false;
-            GetBB(target);
+            pTargetBB = GetBB(target);
+            if (opcode == CEE_LEAVE_S)
+            {
+                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+            }
             ip += 2;
             GetBB((int32_t)(ip - codeStart));
             break;
@@ -1207,7 +1579,11 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
             target = insOffset + 5 + getI4LittleEndian(ip + 1);
             if (target >= codeSize)
                 return false;
-            GetBB(target);
+            pTargetBB = GetBB(target);
+            if (opcode == CEE_LEAVE)
+            {
+                CreateFinallyCallIslandBasicBlocks(methodInfo, insOffset, pTargetBB);
+            }
             ip += 5;
             GetBB((int32_t)(ip - codeStart));
             break;
@@ -1244,6 +1620,150 @@ bool InterpCompiler::CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo)
     return true;
 }
 
+bool InterpCompiler::InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo)
+{
+    int32_t codeSize = methodInfo->ILCodeSize;
+    uint8_t *codeStart = methodInfo->ILCode;
+    uint8_t *codeEnd = codeStart + codeSize;
+
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+
+        if ((codeStart + clause.TryOffset) > codeEnd ||
+                (codeStart + clause.TryOffset + clause.TryLength) > codeEnd)
+        {
+            return false;
+        }
+
+        InterpBasicBlock* pTryBB = GetBB(clause.TryOffset);
+
+        if ((codeStart + clause.HandlerOffset) > codeEnd ||
+                (codeStart + clause.HandlerOffset + clause.HandlerLength) > codeEnd)
+        {
+            return false;
+        }
+
+        // Find and mark all basic blocks that are part of the try region.
+        for (uint32_t j = clause.TryOffset; j < (clause.TryOffset + clause.TryLength); j++)
+        {
+            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
+            if (pBB != NULL && pBB->clauseType == BBClauseNone)
+            {
+                pBB->clauseType = BBClauseTry;
+            }
+        }
+
+        InterpBasicBlock* pHandlerBB = GetBB(clause.HandlerOffset);
+
+        // Find and mark all basic blocks that are part of the handler region.
+        for (uint32_t j = clause.HandlerOffset; j < (clause.HandlerOffset + clause.HandlerLength); j++)
+        {
+            InterpBasicBlock* pBB = m_ppOffsetToBB[j];
+            if (pBB != NULL && pBB->clauseType == BBClauseNone)
+            {
+                if ((clause.Flags == CORINFO_EH_CLAUSE_NONE) || (clause.Flags == CORINFO_EH_CLAUSE_FILTER))
+                {
+                    pBB->clauseType = BBClauseCatch;
+                }
+                else
+                {
+                    assert((clause.Flags == CORINFO_EH_CLAUSE_FINALLY) || (clause.Flags == CORINFO_EH_CLAUSE_FAULT));
+                    pBB->clauseType = BBClauseFinally;
+                }
+            }
+        }
+
+        if (clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            if ((codeStart + clause.FilterOffset) > codeEnd)
+                return false;
+
+            // The filter funclet is always stored right before its handler funclet.
+            // So the filter end offset is equal to the start offset of the handler funclet.
+            InterpBasicBlock* pFilterBB = GetBB(clause.FilterOffset);
+            pFilterBB->isFilterOrCatchFuncletEntry = true;
+            pFilterBB->clauseVarIndex = m_clauseVarsIndex + i;
+
+            // Initialize the filter stack state. It initially contains the exception object.
+            pFilterBB->stackHeight = 1;
+            pFilterBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
+            pFilterBB->pStackState[0].type = StackTypeO;
+            pFilterBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
+            pFilterBB->pStackState[0].clsHnd = NULL;
+            pFilterBB->pStackState[0].var = pFilterBB->clauseVarIndex;
+
+            // Find and mark all basic blocks that are part of the filter region.
+            for (uint32_t j = clause.FilterOffset; j < clause.HandlerOffset; j++)
+            {
+                InterpBasicBlock* pBB = m_ppOffsetToBB[j];
+                if (pBB != NULL && pBB->clauseType == BBClauseNone)
+                {
+                    pBB->clauseType = BBClauseFilter;
+                }
+            }
+        }
+        else if (clause.Flags == CORINFO_EH_CLAUSE_FINALLY|| clause.Flags == CORINFO_EH_CLAUSE_FAULT)
+        {
+            InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
+
+            // Initialize finally handler stack state to empty.
+            pFinallyBB->stackHeight = 0;
+        }
+        
+        if (clause.Flags == CORINFO_EH_CLAUSE_NONE || clause.Flags == CORINFO_EH_CLAUSE_FILTER)
+        {
+            InterpBasicBlock* pCatchBB = GetBB(clause.HandlerOffset);
+            pCatchBB->isFilterOrCatchFuncletEntry = true;
+            pCatchBB->clauseVarIndex = m_clauseVarsIndex + i;
+
+            // Initialize the catch / filtered handler stack state. It initially contains the exception object.
+            pCatchBB->stackHeight = 1;
+            pCatchBB->pStackState = (StackInfo*)AllocMemPool(sizeof (StackInfo));
+            pCatchBB->pStackState[0].type = StackTypeO;
+            pCatchBB->pStackState[0].size = INTERP_STACK_SLOT_SIZE;
+            pCatchBB->pStackState[0].var = pCatchBB->clauseVarIndex;
+            pCatchBB->pStackState[0].clsHnd = NULL;
+        }
+    }
+
+    // Now that we have classified all the basic blocks, we can set the clause type for the finally call island blocks.
+    // We set it to the same type as the basic block after the finally handler.
+    for (unsigned int i = 0; i < methodInfo->EHcount; i++)
+    {
+        CORINFO_EH_CLAUSE clause;
+        m_compHnd->getEHinfo(methodInfo->ftn, i, &clause);
+
+        if (clause.Flags != CORINFO_EH_CLAUSE_FINALLY)
+        {
+            continue;
+        }
+
+        InterpBasicBlock* pFinallyBB = GetBB(clause.HandlerOffset);
+
+        InterpBasicBlock* pFinallyCallIslandBB = pFinallyBB->pFinallyCallIslandBB;
+        while (pFinallyCallIslandBB != NULL)
+        {
+            InterpBasicBlock* pAfterFinallyBB = m_ppOffsetToBB[clause.HandlerOffset + clause.HandlerLength];
+            assert(pAfterFinallyBB != NULL);
+            pFinallyCallIslandBB->clauseType = pAfterFinallyBB->clauseType;
+            pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+        }
+    }
+
+    return true;
+}
+
+void InterpCompiler::EmitBranchToBB(InterpOpcode opcode, InterpBasicBlock *pTargetBB)
+{
+    EmitBBEndVarMoves(pTargetBB);
+    InitBBStackState(pTargetBB);
+
+    AddIns(opcode);
+    m_pLastNewIns->info.pTargetBB = pTargetBB;
+}
+
 // ilOffset represents relative branch offset
 void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
 {
@@ -1251,14 +1771,14 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (target < 0 || target >= m_ILCodeSize)
         assert(0);
 
+    // Backwards branch, emit safepoint
+    if (ilOffset < 0)
+        AddIns(INTOP_SAFEPOINT);
+
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
     assert(pTargetBB != NULL);
 
-    EmitBBEndVarMoves(pTargetBB);
-    InitBBStackState(pTargetBB);
-
-    AddIns(opcode);
-    m_pLastNewIns->info.pTargetBB = pTargetBB;
+    EmitBranchToBB(opcode, pTargetBB);
 }
 
 void InterpCompiler::EmitOneArgBranch(InterpOpcode opcode, int32_t ilOffset, int insSize)
@@ -1326,12 +1846,22 @@ void InterpCompiler::EmitTwoArgBranch(InterpOpcode opcode, int32_t ilOffset, int
     }
 }
 
-
 void InterpCompiler::EmitLoadVar(int32_t var)
 {
     InterpType interpType = m_pVars[var].interpType;
-    int32_t size = m_pVars[var].size;
     CORINFO_CLASS_HANDLE clsHnd = m_pVars[var].clsHnd;
+
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        assert(m_pVars[var].ILGlobal);
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        EmitLdind(interpType, clsHnd, m_pVars[var].offset);
+        return;
+    }
+
+    int32_t size = m_pVars[var].size;
 
     if (interpType == InterpTypeVT)
         PushTypeVT(clsHnd, size);
@@ -1349,6 +1879,15 @@ void InterpCompiler::EmitStoreVar(int32_t var)
 {
     InterpType interpType = m_pVars[var].interpType;
     CHECK_STACK_RET_VOID(1);
+
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        EmitStind(interpType, m_pVars[var].clsHnd, m_pVars[var].offset, true /* reverseSVarOrder */);
+        return;
+    }
 
 #ifdef TARGET_64BIT
     // nint and int32 can be used interchangeably. Add implicit conversions.
@@ -1554,7 +2093,18 @@ int32_t InterpCompiler::GetDataItemIndex(void *data)
 
 int32_t InterpCompiler::GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle)
 {
-    size_t data = (size_t)mHandle | INTERP_METHOD_DESC_TAG;
+    size_t data = (size_t)mHandle | INTERP_METHOD_HANDLE_TAG;
+    return GetDataItemIndex((void*)data);
+}
+
+int32_t InterpCompiler::GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn)
+{
+    void *indirect;
+    void *direct = m_compHnd->getHelperFtn(ftn, &indirect);
+    size_t data = !direct
+        ? (size_t)indirect | INTERP_INDIRECT_HELPER_TAG
+        : (size_t)direct;
+    assert(data);
     return GetDataItemIndex((void*)data);
 }
 
@@ -1708,7 +2258,8 @@ void InterpCompiler::EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readon
 
 static int32_t GetLdindForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_LDIND_I1;
         case InterpTypeU1: return INTOP_LDIND_U1;
         case InterpTypeI2: return INTOP_LDIND_I2;
@@ -1728,7 +2279,8 @@ static int32_t GetLdindForType(InterpType interpType)
 
 static int32_t GetStindForType(InterpType interpType)
 {
-    switch (interpType) {
+    switch (interpType)
+    {
         case InterpTypeI1: return INTOP_STIND_I1;
         case InterpTypeU1: return INTOP_STIND_U1;
         case InterpTypeI2: return INTOP_STIND_I2;
@@ -1740,6 +2292,24 @@ static int32_t GetStindForType(InterpType interpType)
         case InterpTypeO: return INTOP_STIND_O;
         case InterpTypeVT: return INTOP_STIND_VT;
         case InterpTypeByRef: return INTOP_STIND_I;
+        default:
+            assert(0);
+    }
+    return -1;
+}
+
+static int32_t GetStelemForType(InterpType interpType)
+{
+    switch (interpType)
+    {
+        case InterpTypeI1: return INTOP_STELEM_I1;
+        case InterpTypeU1: return INTOP_STELEM_U1;
+        case InterpTypeI2: return INTOP_STELEM_I2;
+        case InterpTypeU2: return INTOP_STELEM_U2;
+        case InterpTypeI4: return INTOP_STELEM_I4;
+        case InterpTypeI8: return INTOP_STELEM_I8;
+        case InterpTypeR4: return INTOP_STELEM_R4;
+        case InterpTypeR8: return INTOP_STELEM_R8;
         default:
             assert(0);
     }
@@ -1799,8 +2369,26 @@ void InterpCompiler::EmitStind(InterpType interpType, CORINFO_CLASS_HANDLE clsHn
 
 }
 
+void InterpCompiler::EmitLdelem(int32_t opcode, InterpType interpType)
+{
+    m_pStackPointer -= 2;
+    AddIns(opcode);
+    m_pLastNewIns->SetSVars2(m_pStackPointer[0].var, m_pStackPointer[1].var);
+    PushInterpType(interpType, NULL);
+    m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+}
+
+void InterpCompiler::EmitStelem(InterpType interpType)
+{
+    m_pStackPointer -= 3;
+    int32_t opcode = GetStelemForType(interpType);
+    AddIns(opcode);
+    m_pLastNewIns->SetSVars3(m_pStackPointer[0].var, m_pStackPointer[1].var, m_pStackPointer[2].var);
+}
+
 void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken)
 {
+    bool isBoxedStatic  = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) != 0;
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_ADDRESS:
@@ -1839,13 +2427,10 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
                     assert(0);
                     break;
             }
-            void *helperFtnSlot;
-            void *helperFtn = m_compHnd->getHelperFtn(pFieldInfo->helper, &helperFtnSlot);
             // Call helper to obtain thread static base address
             AddIns(INTOP_CALL_HELPER_PP);
-            m_pLastNewIns->data[0] = GetDataItemIndex(helperFtn);
-            m_pLastNewIns->data[1] = GetDataItemIndex(helperFtnSlot);
-            m_pLastNewIns->data[2] = GetDataItemIndex(helperArg);
+            m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(pFieldInfo->helper);
+            m_pLastNewIns->data[1] = GetDataItemIndex(helperArg);
             PushInterpType(InterpTypeByRef, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 
@@ -1863,6 +2448,25 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             assert(0);
             break;
     }
+
+    if (isBoxedStatic)
+    {
+        // Obtain boxed instance ref
+        m_pStackPointer--;
+        AddIns(INTOP_LDIND_I);
+        m_pLastNewIns->data[0] = 0;
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeO, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+        // Skip method table word
+        m_pStackPointer--;
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = sizeof(void*);
+        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+    }
 }
 
 void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_FIELD_INFO *pFieldInfo, CORINFO_RESOLVED_TOKEN *pResolvedToken, bool isLoad)
@@ -1876,9 +2480,22 @@ void InterpCompiler::EmitStaticFieldAccess(InterpType interpFieldType, CORINFO_F
 
 void InterpCompiler::EmitLdLocA(int32_t var)
 {
+    if (m_pCBB->clauseType == BBClauseFilter)
+    {
+        AddIns(INTOP_LOAD_FRAMEVAR);
+        PushInterpType(InterpTypeI, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        AddIns(INTOP_ADD_P_IMM);
+        m_pLastNewIns->data[0] = m_pVars[var].offset;
+        m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+        m_pStackPointer--;
+        PushInterpType(InterpTypeByRef, NULL);
+        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+        return;
+    }
+
     AddIns(INTOP_LDLOCA);
     m_pLastNewIns->SetSVar(var);
-    m_pVars[var].indirects++;
     PushInterpType(InterpTypeByRef, NULL);
     m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
 }
@@ -1903,7 +2520,16 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_pEntryBB->stackHeight = 0;
     m_pCBB = m_pEntryBB;
 
+    InterpBasicBlock *pFirstFuncletBB = NULL;
+    InterpBasicBlock *pLastFuncletBB = NULL;
+
     if (!CreateBasicBlocks(methodInfo))
+    {
+        m_hasInvalidCode = true;
+        goto exit_bad_code;
+    }
+
+    if (!InitializeClauseBuildingBlocks(methodInfo))
     {
         m_hasInvalidCode = true;
         goto exit_bad_code;
@@ -1916,17 +2542,23 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         AddIns(INTOP_BREAKPOINT);
 #endif
 
-    if ((methodInfo->options & CORINFO_OPT_INIT_LOCALS) && m_ILLocalsSize > 0)
-    {
-        AddIns(INTOP_INITLOCALS);
-        m_pLastNewIns->data[0] = m_ILLocalsOffset;
-        m_pLastNewIns->data[1] = m_ILLocalsSize;
-    }
+    // We need to always generate this opcode because even if we have no IL locals, we may have
+    //  global vars which contain managed pointers or interior pointers
+    m_pInitLocalsIns = AddIns(INTOP_INITLOCALS);
+    // if (methodInfo->options & CORINFO_OPT_INIT_LOCALS)
+    // FIXME: We can't currently skip zeroing locals because we don't have accurate liveness for global refs and byrefs
+    m_pInitLocalsIns->data[0] = m_ILLocalsOffset;
+    m_pInitLocalsIns->data[1] = m_ILLocalsSize;
 
     codeEnd = m_ip + m_ILCodeSize;
 
+    // Safepoint at each method entry. This could be done as part of a call, rather than
+    // adding an opcode.
+    AddIns(INTOP_SAFEPOINT);
+
     linkBBlocks = true;
     needsRetryEmit = false;
+    
 retry_emit:
     emittedBBlocks = false;
     while (m_ip < codeEnd)
@@ -1972,6 +2604,7 @@ retry_emit:
             {
                 assert (pNewBB->emitState == BBStateNotEmitted);
             }
+
             // We are starting a new basic block. Change cbb and link them together
             if (linkBBlocks)
             {
@@ -2018,9 +2651,23 @@ retry_emit:
                     // We will just skip all instructions instead, since it doesn't seem that problematic.
                 }
             }
-            if (!m_pCBB->pNextBB)
-                m_pCBB->pNextBB = pNewBB;
+
+            InterpBasicBlock *pPrevBB = m_pCBB;
+
+            pPrevBB = GenerateCodeForFinallyCallIslands(pNewBB, pPrevBB);
+
+            if (!pPrevBB->pNextBB)
+            {
+                INTERP_DUMP("Chaining BB%d -> BB%d\n" , pPrevBB->index, pNewBB->index);
+                pPrevBB->pNextBB = pNewBB;
+            }
+
             m_pCBB = pNewBB;
+            if (m_pCBB->isFilterOrCatchFuncletEntry && (m_pCBB->emitState == BBStateEmitting))
+            {
+                AddIns(INTOP_LOAD_EXCEPTION);
+                m_pLastNewIns->SetDVar(m_pCBB->clauseVarIndex);
+            }
         }
 
         int32_t opcodeSize = CEEOpcodeSize(m_ip, codeEnd);
@@ -2182,6 +2829,25 @@ retry_emit:
                 EmitStoreVar(numArgs + *m_ip - CEE_STLOC_0);
                 m_ip++;
                 break;
+
+            case CEE_LDOBJ:
+            case CEE_STOBJ:
+            {
+                CHECK_STACK(*m_ip == CEE_LDOBJ ? 1 : 2);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Class, &resolvedToken);
+                InterpType interpType = GetInterpType(m_compHnd->asCorInfoType(resolvedToken.hClass));
+                if (*m_ip == CEE_LDOBJ)
+                {
+                    EmitLdind(interpType, resolvedToken.hClass, 0);
+                }
+                else
+                {
+                    EmitStind(interpType, resolvedToken.hClass, 0, false);
+                }
+                m_ip += 5;
+                break;
+            }
 
             case CEE_RET:
             {
@@ -3257,18 +3923,341 @@ retry_emit:
                         m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
                         m_ip++;
                         break;
+                    case CEE_SIZEOF:
+                    {
+                        CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                        AddIns(INTOP_LDC_I4);
+                        m_pLastNewIns->data[0] = m_compHnd->getClassSize(clsHnd);
+                        PushStackType(StackTypeI4, NULL);
+                        m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                        m_ip += 5;
+                        break;
+                    }
+                    case CEE_ENDFILTER:
+                        AddIns(INTOP_LEAVE_FILTER);
+                        m_pStackPointer--;
+                        m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                        m_ip++;
+                        linkBBlocks = false;
+                        break;
+                    case CEE_RETHROW:
+                        AddIns(INTOP_RETHROW);
+                        m_ip++;
+                        linkBBlocks = false;
+                        break;
                     default:
                         assert(0);
                         break;
                 }
                 break;
 
+            case CEE_ENDFINALLY:
+            {
+                AddIns(INTOP_RET_VOID);
+                m_ip++;
+                linkBBlocks = false;
+                break;
+            }
+            case CEE_LEAVE:
+            case CEE_LEAVE_S:
+            {
+                int32_t ilOffset = (int32_t)(m_ip - m_pILCode);
+                int32_t target = (opcode == CEE_LEAVE) ? ilOffset + 5 + *(int32_t*)(m_ip + 1) : (ilOffset + 2 + (int8_t)m_ip[1]);
+                InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
+
+                m_pStackPointer = m_pStackBase;
+
+                // The leave will jump:
+                // * directly to its target if it doesn't jump out of any try regions with finally.
+                // * to a finally call island of the first try region with finally that it jumps out of.
+
+                for (int i = 0; i < m_leavesTable.GetSize(); i++)
+                {
+                    if (m_leavesTable.Get(i).ilOffset == ilOffset)
+                    {
+                        // There is a finally call island for this leave, so we will jump to it
+                        // instead of the target. The chain of these islands will end up on
+                        // the target in the end.
+                        // NOTE: we need to use basic block to branch and not an IL offset extracted
+                        // from the building block, because the finally call islands share the same IL
+                        // offset with another block of original code in front of which it is injected.
+                        // The EmitBranch would to that block instead of the finally call island.
+                        pTargetBB = m_leavesTable.Get(i).pFinallyCallIslandBB;
+                        break;
+                    }
+                }
+
+                // The leave doesn't jump out of any try region with finally, so we can just emit a branch
+                // to the target.
+                if (m_pCBB->clauseType == BBClauseCatch)
+                {
+                    // leave out of catch is different from a leave out of finally. It
+                    // exits the catch handler and returns the address of the finally
+                    // call island as the continuation address to the EH code.
+                    EmitBranchToBB(INTOP_LEAVE_CATCH, pTargetBB);
+                }
+                else
+                {
+                    EmitBranchToBB(INTOP_BR, pTargetBB);
+                }
+
+                m_ip += (opcode == CEE_LEAVE) ? 5 : 2;
+                linkBBlocks = false;
+                break;
+            }
+
             case CEE_THROW:
                 AddIns(INTOP_THROW);
                 m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
                 m_ip += 1;
+                linkBBlocks = false;
                 break;
 
+            case CEE_BOX:
+            {
+                CHECK_STACK(1);
+                m_pStackPointer -= 1;
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CORINFO_CLASS_HANDLE boxedClsHnd = m_compHnd->getTypeForBox(clsHnd);
+                CorInfoHelpFunc helpFunc = m_compHnd->getBoxHelper(clsHnd);
+                AddIns(INTOP_BOX);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                PushStackType(StackTypeO, boxedClsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_UNBOX:
+            case CEE_UNBOX_ANY:
+            {
+                CHECK_STACK(1);
+                m_pStackPointer -= 1;
+                CORINFO_CLASS_HANDLE clsHnd = ResolveClassToken(getU4LittleEndian(m_ip + 1));
+                CorInfoHelpFunc helpFunc = m_compHnd->getUnBoxHelper(clsHnd);
+                AddIns(opcode == CEE_UNBOX ? INTOP_UNBOX : INTOP_UNBOX_ANY);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+                if (opcode == CEE_UNBOX)
+                    PushStackType(StackTypeI, NULL);
+                else
+                    PushInterpType(GetInterpType(m_compHnd->asCorInfoType(clsHnd)), clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_pLastNewIns->data[0] = GetDataItemIndex(clsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+                m_ip += 5;
+                break;
+            }
+            case CEE_NEWARR:
+            {
+                CHECK_STACK(1);
+
+                uint32_t token = getU4LittleEndian(m_ip + 1);
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(token, CORINFO_TOKENKIND_Newarr, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE arrayClsHnd = resolvedToken.hClass;
+                CorInfoHelpFunc helpFunc = m_compHnd->getNewArrHelper(arrayClsHnd);
+
+                m_pStackPointer--;
+
+                AddIns(INTOP_NEWARR);
+                m_pLastNewIns->SetSVar(m_pStackPointer[0].var);
+
+                PushInterpType(InterpTypeO, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                m_pLastNewIns->data[0] = GetDataItemIndex(arrayClsHnd);
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helpFunc);
+
+                m_ip += 5;
+                break;
+            }
+            case CEE_LDLEN:
+            {
+                CHECK_STACK(1);
+                EmitLdind(InterpTypeI4, NULL, OFFSETOF__CORINFO_Array__length);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I1:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I1, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U1:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_U1, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I2:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I2, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U2:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_U2, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_U4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I4, InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I8:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I8, InterpTypeI8);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_I:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_I, InterpTypeI);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_R4:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_R4, InterpTypeR4);
+                m_ip++;
+                break;
+            }
+            case CEE_LDELEM_R8:
+            {
+                CHECK_STACK(2);
+                EmitLdelem(INTOP_LDELEM_R8, InterpTypeR8);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I1:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI1);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I2:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI2);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I4:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI4);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_I8:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeI8);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_R4:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeR4);
+                m_ip++;
+                break;
+            }
+            case CEE_STELEM_R8:
+            {
+                CHECK_STACK(3);
+                EmitStelem(InterpTypeR8);
+                m_ip++;
+                break;
+            }
+
+            case CEE_LDTOKEN:
+            {
+                AddIns(INTOP_LDTOKEN);
+
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Ldtoken, &resolvedToken);
+
+                CORINFO_CLASS_HANDLE clsHnd = m_compHnd->getTokenTypeAsHandle(&resolvedToken);
+                PushStackType(StackTypeVT, clsHnd);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+
+                // see jit/importer.cpp CEE_LDTOKEN
+                CorInfoHelpFunc helper;
+                if (resolvedToken.hClass)
+                {
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
+                }
+                else if (resolvedToken.hMethod)
+                {
+                    helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
+                }
+                else if (resolvedToken.hField)
+                {
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
+                }
+                else
+                {
+                    helper = CORINFO_HELP_FAIL_FAST;
+                    assert(!"Token not resolved or resolved to unexpected type");
+                }
+
+                m_pLastNewIns->data[1] = GetDataItemIndexForHelperFtn(helper);
+                m_ip += 5;
+                break;
+            }
+
+            case CEE_ISINST:
+            {
+                CHECK_STACK(1);
+                CORINFO_RESOLVED_TOKEN resolvedToken;
+                ResolveToken(getU4LittleEndian(m_ip + 1), CORINFO_TOKENKIND_Casting, &resolvedToken);
+
+                CorInfoHelpFunc castingHelper = m_compHnd->getCastingHelper(&resolvedToken, false /* throwing */);
+                AddIns(INTOP_CALL_HELPER_PP_2);
+                m_pLastNewIns->data[0] = GetDataItemIndexForHelperFtn(castingHelper);
+                m_pLastNewIns->data[1] = GetDataItemIndex(resolvedToken.hClass);
+                m_pLastNewIns->SetSVar(m_pStackPointer[-1].var);
+                m_pStackPointer--;
+                PushInterpType(InterpTypeI, NULL);
+                m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+                m_ip += 5;
+                break;
+            }
             default:
                 assert(0);
                 break;
@@ -3298,6 +4287,43 @@ exit_bad_code:
     return CORJIT_BADCODE;
 }
 
+InterpBasicBlock *InterpCompiler::GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB)
+{
+    InterpBasicBlock *pFinallyCallIslandBB = pNewBB->pFinallyCallIslandBB;
+
+    while (pFinallyCallIslandBB != NULL)
+    {
+        INTERP_DUMP("Injecting finally call island BB%d\n", pFinallyCallIslandBB->index);
+        if (pFinallyCallIslandBB->emitState != BBStateEmitted)
+        {
+            // Set the finally call island BB as current so that the instructions are emitted into it
+            m_pCBB = pFinallyCallIslandBB;
+            InitBBStackState(m_pCBB);
+            EmitBranchToBB(INTOP_CALL_FINALLY, pNewBB); // The pNewBB is the finally BB
+            m_pLastNewIns->ilOffset = -1;
+            // Try to get the next finally call island block (for an outer try's finally)
+            if (pFinallyCallIslandBB->pFinallyCallIslandBB)
+            {
+                // Branch to the next finally call island (at an outer try block)
+                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pFinallyCallIslandBB);
+            }
+            else
+            {
+                // This is the last finally call island, so we need to emit a branch to the leave target
+                EmitBranchToBB(INTOP_BR, pFinallyCallIslandBB->pLeaveTargetBB);
+            }
+            m_pLastNewIns->ilOffset = -1;
+            m_pCBB->emitState = BBStateEmitted;
+            INTERP_DUMP("Chaining BB%d -> BB%d\n", pPrevBB->index, pFinallyCallIslandBB->index);
+        }
+        assert(pPrevBB->pNextBB == NULL || pPrevBB->pNextBB == pFinallyCallIslandBB);
+        pPrevBB->pNextBB = pFinallyCallIslandBB;
+        pPrevBB = pFinallyCallIslandBB;
+        pFinallyCallIslandBB = pFinallyCallIslandBB->pNextBB;
+    }
+
+    return pPrevBB;
+}
 void InterpCompiler::UnlinkUnreachableBBlocks()
 {
     // Unlink unreachable bblocks, prevBB is always an emitted bblock
@@ -3456,11 +4482,18 @@ void InterpCompiler::PrintInsData(InterpInst *ins, int32_t insOffset, const int3
             printf(")");
             break;
         }
-        case InterpOpMethodToken:
+        case InterpOpMethodHandle:
         {
-            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_DESC_TAG);
+            CORINFO_METHOD_HANDLE mh = (CORINFO_METHOD_HANDLE)((size_t)m_dataItems.Get(*pData) & ~INTERP_METHOD_HANDLE_TAG);
             printf(" ");
             PrintMethodName(mh);
+            break;
+        }
+        case InterpOpClassHandle:
+        {
+            CORINFO_CLASS_HANDLE ch = (CORINFO_CLASS_HANDLE)((size_t)m_dataItems.Get(*pData));
+            printf(" ");
+            PrintClassName(ch);
             break;
         }
         default:

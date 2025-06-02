@@ -534,13 +534,13 @@ struct HeapList
     size_t              reserveForJumpStubs; // Amount of memory reserved for jump stubs in this block
 
     PTR_LoaderAllocator pLoaderAllocator; // LoaderAllocator of HeapList
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
 
     TADDR GetModuleBase()
     {
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
         return (CLRPersonalityRoutine != NULL) ? (TADDR)CLRPersonalityRoutine : (TADDR)mapBase;
 #else
         return (TADDR)mapBase;
@@ -1781,7 +1781,7 @@ public:
     // DAC builds is compatible with the non-DAC one so that DAC virtual dispatch will work correctly.
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD) = 0;
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo) = 0;
@@ -1924,7 +1924,7 @@ protected:
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 protected:
     template<typename TCodeHeader>
-    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    void EnumMemoryRegionsForMethodDebugInfoWorker(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif // !DACCESS_COMPILE
 
 private:
@@ -2085,7 +2085,7 @@ public:
     GCInfoToken         GetGCInfoToken(const METHODTOKEN& MethodToken);
 
 #ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #endif // DACCESS_COMPILE
 
 #if !defined DACCESS_COMPILE
@@ -2281,7 +2281,7 @@ public:
         BOOL Acquired();
     };
 
-#if defined(TARGET_64BIT) && defined(TARGET_WINDOWS)
+#if defined(TARGET_64BIT)
     static ULONG          GetCLRPersonalityRoutineValue()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2671,7 +2671,7 @@ public:
 
 #if defined(DACCESS_COMPILE)
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 #if defined(FEATURE_EH_FUNCLETS)
     // Enumerate the memory necessary to retrieve the unwind info for a specific method
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
@@ -2759,13 +2759,7 @@ public:
     }
 
     virtual TADDR GetFuncletStartAddress(EECodeInfo * pCodeInfo);
-
-    virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
-    {
-        // Not used for the interpreter
-        _ASSERTE(FALSE);
-        return 0;
-    }
+    virtual DWORD GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength);
 
 #if !defined DACCESS_COMPILE
 protected:
@@ -2791,7 +2785,7 @@ public:
 
 #if defined(DACCESS_COMPILE)
 
-    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, MethodDesc * pMD);
+    virtual void EnumMemoryRegionsForMethodDebugInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo);
 
 #if defined(FEATURE_EH_FUNCLETS)
     virtual void EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemoryFlags flags, EECodeInfo * pCodeInfo)
@@ -2941,10 +2935,13 @@ public:
         {
             return DecodeGCHdrInfoHelper(infoPtr);
         }
-    
+
         *infoPtr = &m_hdrInfoBody;
         return m_hdrInfoTable;
     }
+
+    PTR_CBYTE DecodeGCHdrInfo(hdrInfo * infoPtr, DWORD relOffset);
+
 private:
     PTR_CBYTE   DecodeGCHdrInfoHelper(hdrInfo   ** infoPtr);
 #endif // TARGET_X86

@@ -1655,10 +1655,10 @@ void LinearScan::BuildHWIntrinsicImmediate(GenTreeHWIntrinsic* intrinsicTree, co
                 case NI_AdvSimd_ExtractVector128:
                 case NI_AdvSimd_StoreSelectedScalar:
                 case NI_AdvSimd_Arm64_StoreSelectedScalar:
-                case NI_Sve_PrefetchBytes:
-                case NI_Sve_PrefetchInt16:
-                case NI_Sve_PrefetchInt32:
-                case NI_Sve_PrefetchInt64:
+                case NI_Sve_Prefetch16Bit:
+                case NI_Sve_Prefetch32Bit:
+                case NI_Sve_Prefetch64Bit:
+                case NI_Sve_Prefetch8Bit:
                 case NI_Sve_ExtractVector:
                 case NI_Sve_TrigonometricMultiplyAddCoefficient:
                     needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
@@ -2290,6 +2290,9 @@ GenTree* LinearScan::getDelayFreeOperand(GenTreeHWIntrinsic* intrinsicTree, bool
             break;
 
         case NI_Sve_CreateBreakPropagateMask:
+        case NI_Sve2_BitwiseSelect:
+        case NI_Sve2_BitwiseSelectLeftInverted:
+        case NI_Sve2_BitwiseSelectRightInverted:
             // RMW operates on the second op.
             assert(isRMW);
             delayFreeOp = intrinsicTree->Op(2);
@@ -2353,14 +2356,14 @@ GenTree* LinearScan::getVectorAddrOperand(GenTreeHWIntrinsic* intrinsicTree)
     // Operands that are not loads or stores but do require an address
     switch (intrinsicTree->GetHWIntrinsicId())
     {
-        case NI_Sve_PrefetchBytes:
-        case NI_Sve_PrefetchInt16:
-        case NI_Sve_PrefetchInt32:
-        case NI_Sve_PrefetchInt64:
         case NI_Sve_GatherPrefetch8Bit:
         case NI_Sve_GatherPrefetch16Bit:
         case NI_Sve_GatherPrefetch32Bit:
         case NI_Sve_GatherPrefetch64Bit:
+        case NI_Sve_Prefetch16Bit:
+        case NI_Sve_Prefetch32Bit:
+        case NI_Sve_Prefetch64Bit:
+        case NI_Sve_Prefetch8Bit:
             if (!varTypeIsSIMD(intrinsicTree->Op(2)->gtType))
             {
                 return intrinsicTree->Op(2);

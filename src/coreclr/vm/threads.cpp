@@ -31,6 +31,7 @@
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
+#include "minipal/time.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -114,7 +115,7 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size, void* gcDesc)
     return m_argBuffer;
 }
 
-#if defined (_DEBUG_IMPL) || defined(_PREFAST_)
+#if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
@@ -1132,31 +1133,24 @@ void InitThreadManager()
         ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_ByRefWriteBarrier), W("@ByRefWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
+#if defined(TARGET_AMD64)
+        // On AMD64 the Checked/ByRef variants of the helpers jump through an indirection
+        // to the patched barrier, but are not part of the patched set of helpers.
+        SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, (void*)JIT_CheckedWriteBarrier);
+        SetJitHelperFunction(CORINFO_HELP_ASSIGN_BYREF, (void*)JIT_ByRefWriteBarrier);
+#endif // TARGET_AMD64
+
     }
     else
     {
-        // I am using virtual protect to cover the entire range that this code falls in.
-        //
-
-        // We could reset it to non-writeable inbetween GCs and such, but then we'd have to keep on re-writing back and forth,
-        // so instead we'll leave it writable from here forward.
-
-        DWORD oldProt;
-        if (!ClrVirtualProtect((void *)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart,
-                            PAGE_EXECUTE_READWRITE, &oldProt))
-        {
-            _ASSERTE(!"ClrVirtualProtect of code page failed");
-            COMPlusThrowWin32();
-        }
-
 #ifdef TARGET_X86
-        JIT_WriteBarrierEAX_Loc = (void*)JIT_WriteBarrierEAX;
+        JIT_WriteBarrierEAX_Loc = (void*)RhpAssignRefEAX;
 #else
-        JIT_WriteBarrier_Loc = (void*)JIT_WriteBarrier;
+        JIT_WriteBarrier_Loc = (void*)RhpAssignRef;
 #endif
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
-        JIT_WriteBarrier_Table_Loc = (void*)&JIT_WriteBarrier_Table;
+        JIT_WriteBarrier_Table_Loc = NULL;
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 
@@ -2915,7 +2909,7 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
         if (m_State & TS_DebugWillSync)
         {
             ResetThreadState(TS_DebugWillSync);
-            InterlockedDecrement(&m_DebugWillSyncCount);    
+            InterlockedDecrement(&m_DebugWillSyncCount);
         }
 
         SetThreadState(TS_Dead);
@@ -3336,7 +3330,7 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
 retry:
     if (millis != INFINITE)
     {
-        dwStart = CLRGetTickCount64();
+        dwStart = minipal_lowres_ticks();
     }
 
     if (tryNonblockingWaitFirst)
@@ -3362,7 +3356,7 @@ retry:
         // in the thread state bits. Otherwise we just go back to sleep again.
         if (millis != INFINITE)
         {
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (dwEnd - dwStart >= millis)
             {
                 ret = WAIT_TIMEOUT;
@@ -3445,7 +3439,7 @@ retry:
 
             // Compute the new timeout value by assume that the timeout
             // is not large enough for more than one wrap
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (millis != INFINITE)
             {
                 if (dwEnd - dwStart >= millis)
@@ -3573,7 +3567,7 @@ DWORD Thread::DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertabl
 
     if (INFINITE != millis)
     {
-        dwStart = CLRGetTickCount64();
+        dwStart = minipal_lowres_ticks();
     }
 
     ret = SignalObjectAndWait(pHandles[0], pHandles[1], millis, alertable);
@@ -3592,7 +3586,7 @@ retry:
         }
         if (INFINITE != millis)
         {
-            dwEnd = CLRGetTickCount64();
+            dwEnd = minipal_lowres_ticks();
             if (dwStart + millis <= dwEnd)
             {
                 ret = WAIT_TIMEOUT;
@@ -3602,7 +3596,7 @@ retry:
             {
                 millis -= (DWORD)(dwEnd - dwStart);
             }
-            dwStart = CLRGetTickCount64();
+            dwStart = minipal_lowres_ticks();
         }
         //Retry case we don't want to signal again so only do the wait...
         ret = WaitForSingleObjectEx(pHandles[1],millis,TRUE);
@@ -3964,7 +3958,7 @@ void Thread::UserSleep(INT32 time)
     DWORD dwTime = (DWORD)time;
 retry:
 
-    ULONGLONG start = CLRGetTickCount64();
+    ULONGLONG start = minipal_lowres_ticks();
 
     res = ClrSleepEx (dwTime, TRUE);
 
@@ -3984,7 +3978,7 @@ retry:
         }
         else
         {
-            ULONGLONG actDuration = CLRGetTickCount64() - start;
+            ULONGLONG actDuration = minipal_lowres_ticks() - start;
 
             if (dwTime > actDuration)
             {
@@ -4983,15 +4977,6 @@ void ThreadStore::AddThread(Thread *newThread)
 
     _ASSERTE(!newThread->IsBackground());
     _ASSERTE(!newThread->IsDead());
-}
-
-// this function is just desgined to avoid deadlocks during abnormal process termination, and should not be used for any other purpose
-BOOL ThreadStore::CanAcquireLock()
-{
-    WRAPPER_NO_CONTRACT;
-    {
-        return (s_pThreadStore->m_Crst.m_criticalsection.LockCount == -1 || (size_t)s_pThreadStore->m_Crst.m_criticalsection.OwningThread == (size_t)GetCurrentThreadId());
-    }
 }
 
 // Whenever one of the components of OtherThreadsComplete() has changed in the
@@ -6867,14 +6852,6 @@ void Thread::DoExtraWorkForFinalizer()
 
     if (RequireSyncBlockCleanup())
     {
-#ifndef TARGET_UNIX
-        InteropSyncBlockInfo::FlushStandbyList();
-#endif // !TARGET_UNIX
-
-#ifdef FEATURE_COMINTEROP
-        RCW::FlushStandbyList();
-#endif // FEATURE_COMINTEROP
-
         SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocks();
     }
     if (SystemDomain::System()->RequireAppDomainCleanup())

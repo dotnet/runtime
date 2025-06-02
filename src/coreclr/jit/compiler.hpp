@@ -1489,13 +1489,7 @@ inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags f
 
 inline GenTree* Compiler::gtNewIconEmbScpHndNode(CORINFO_MODULE_HANDLE scpHnd)
 {
-    void *embedScpHnd, *pEmbedScpHnd;
-
-    embedScpHnd = (void*)info.compCompHnd->embedModuleHandle(scpHnd, &pEmbedScpHnd);
-
-    assert((!embedScpHnd) != (!pEmbedScpHnd));
-
-    return gtNewIconEmbHndNode(embedScpHnd, pEmbedScpHnd, GTF_ICON_SCOPE_HDL, scpHnd);
+    return gtNewIconEmbHndNode((void*)scpHnd, nullptr, GTF_ICON_SCOPE_HDL, scpHnd);
 }
 
 //-----------------------------------------------------------------------------
@@ -1509,6 +1503,13 @@ inline GenTree* Compiler::gtNewIconEmbClsHndNode(CORINFO_CLASS_HANDLE clsHnd)
     assert((!embedClsHnd) != (!pEmbedClsHnd));
 
     return gtNewIconEmbHndNode(embedClsHnd, pEmbedClsHnd, GTF_ICON_CLASS_HDL, clsHnd);
+}
+
+//-----------------------------------------------------------------------------
+
+inline GenTree* Compiler::gtNewIconEmbObjHndNode(CORINFO_OBJECT_HANDLE objHnd)
+{
+    return gtNewIconEmbHndNode((void*)objHnd, nullptr, GTF_ICON_OBJ_HDL, nullptr);
 }
 
 //-----------------------------------------------------------------------------
@@ -1528,13 +1529,7 @@ inline GenTree* Compiler::gtNewIconEmbMethHndNode(CORINFO_METHOD_HANDLE methHnd)
 
 inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 {
-    void *embedFldHnd, *pEmbedFldHnd;
-
-    embedFldHnd = (void*)info.compCompHnd->embedFieldHandle(fldHnd, &pEmbedFldHnd);
-
-    assert((!embedFldHnd) != (!pEmbedFldHnd));
-
-    return gtNewIconEmbHndNode(embedFldHnd, pEmbedFldHnd, GTF_ICON_FIELD_HDL, fldHnd);
+    return gtNewIconEmbHndNode((void*)fldHnd, nullptr, GTF_ICON_FIELD_HDL, fldHnd);
 }
 
 /*****************************************************************************/
@@ -1594,6 +1589,60 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
         result->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
+
+    return result;
+}
+
+/*****************************************************************************/
+
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper  - Call helper
+//    type    - Type of the node
+//    thisPtr - 'this' argument
+//    methHnd - Runtime method handle argument
+//    clsHnd  - Class handle argument
+//
+// Return Value:
+//    New CT_HELPER node
+//
+inline GenTreeCall* Compiler::gtNewVirtualFunctionLookupHelperCallNode(
+    unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd)
+{
+    GenTreeCall* const result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
+
+    if (!s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper))
+    {
+        result->gtFlags |= GTF_EXCEPT;
+
+        if (s_helperCallProperties.AlwaysThrow((CorInfoHelpFunc)helper))
+        {
+            setCallDoesNotReturn(result);
+        }
+    }
+#if DEBUG
+    // Helper calls are never candidates.
+
+    result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
+#endif
+
+    assert(methHnd != nullptr);
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(methHnd).WellKnown(WellKnownArg::RuntimeMethodHandle));
+    result->gtFlags |= methHnd->gtFlags & GTF_ALL_EFFECT;
+
+    if (clsHnd != nullptr)
+    {
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(clsHnd));
+        result->gtFlags |= clsHnd->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    assert(thisPtr != nullptr);
+
+    result->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr).WellKnown(WellKnownArg::ThisPointer));
+    result->gtFlags |= thisPtr->gtFlags & GTF_ALL_EFFECT;
 
     return result;
 }
@@ -2202,6 +2251,74 @@ inline bool GenTree::gtOverflow() const
 inline bool GenTree::gtOverflowEx() const
 {
     return OperMayOverflow() && gtOverflow();
+}
+
+//------------------------------------------------------------------------
+// gtFindNodeInTree:
+//   Check if a tree contains a node matching the specified predicate. Descend
+//   only into subtrees with the specified flags set on them (can be GTF_EMPTY
+//   to descend into all nodes).
+//
+// Type parameters:
+//   RequiredFlagsToDescendIntoNode - Flags that must be set on the node to
+//                                    descend into it (GTF_EMPTY to descend into all nodes)
+//   Predicate - Type of the predicate (GenTree* -> bool)
+//
+// Parameters:
+//   tree - The tree
+//   pred - Predicate that the call must match
+//
+// Returns:
+//   Node matching the predicate, or nullptr if no such node was found.
+//
+template <GenTreeFlags RequiredFlagsToDescendIntoNode, typename Predicate>
+GenTree* Compiler::gtFindNodeInTree(GenTree* tree, Predicate pred)
+{
+    struct FindNodeVisitor : GenTreeVisitor<FindNodeVisitor>
+    {
+    private:
+        Predicate& m_pred;
+
+    public:
+        GenTree* Result = nullptr;
+
+        enum
+        {
+            DoPreOrder = true
+        };
+
+        FindNodeVisitor(Compiler* comp, Predicate& pred)
+            : GenTreeVisitor<FindNodeVisitor>(comp)
+            , m_pred(pred)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if ((node->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (m_pred(node))
+            {
+                Result = node;
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    if ((tree->gtFlags & RequiredFlagsToDescendIntoNode) != RequiredFlagsToDescendIntoNode)
+    {
+        return nullptr;
+    }
+
+    FindNodeVisitor findNode(this, pred);
+    findNode.WalkTree(&tree, nullptr);
+    return findNode.Result;
 }
 
 /*
@@ -3737,7 +3854,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 inline void Compiler::optAssertionReset(AssertionIndex limit)
 {
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     while (optAssertionCount > limit)
     {
@@ -3793,7 +3910,7 @@ inline void Compiler::optAssertionRemove(AssertionIndex index)
 {
     assert(index > 0);
     assert(index <= optAssertionCount);
-    PREFAST_ASSUME(optAssertionCount <= optMaxAssertionCount);
+    assert(optAssertionCount <= optMaxAssertionCount);
 
     AssertionDsc* curAssertion = optGetAssertion(index);
 

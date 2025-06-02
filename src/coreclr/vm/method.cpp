@@ -253,6 +253,30 @@ HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState stat
     return S_OK;
 }
 
+#ifdef FEATURE_INTERPRETER
+// Set the call stub for the interpreter to JIT/AOT calls
+// Returns true if the current call set the stub, false if it was already set
+bool MethodDesc::SetCallStub(CallStubHeader *pHeader)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT(&m_codeData->CallStub, pHeader, NULL) == NULL;
+}
+
+CallStubHeader *MethodDesc::GetCallStub()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->CallStub);
+}
+#endif // FEATURE_INTERPRETER
+
 #endif //!DACCESS_COMPILE
 
 PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
@@ -428,7 +452,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
         if (pSMD->HasStoredMethodSig() || GetClassification()==mcDynamic)
         {
             *ppSig = pSMD->GetStoredMethodSig(pcSig);
-            PREFIX_ASSUME(*ppSig != NULL);
+            _ASSERTE(*ppSig != NULL);
 
             return;
         }
@@ -444,7 +468,7 @@ void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
     }
 
     GetSigFromMetadata(GetMDImport(), ppSig, pcSig);
-    PREFIX_ASSUME(*ppSig != NULL);
+    _ASSERTE(*ppSig != NULL);
 }
 
 //*******************************************************************************
@@ -492,7 +516,7 @@ Signature MethodDesc::GetSignature()
 
     GetSig(&pSig, &cSig);
 
-    PREFIX_ASSUME(pSig != NULL);
+    _ASSERTE(pSig != NULL);
 
     return Signature(pSig, cSig);
 }
@@ -867,11 +891,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -880,9 +899,6 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_wFlags) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -905,11 +921,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -918,9 +929,6 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_wFlags3AndTokenRemainder) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -943,11 +951,6 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
     // only have four possibilities: the field already lies on a dword boundary or it's 1, 2 or 3 bytes out
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_bFlags4 - (offsetof(MethodDesc, m_bFlags4) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -969,9 +972,6 @@ BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
 #endif // !BIGENDIAN
         dwMask <<= 8;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -994,11 +994,6 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
     LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_flagsAndTokenRange - (offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3));
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
-#endif // _PREFAST_
-
 #if BIGENDIAN
     if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) == 0) {
 #else // !BIGENDIAN
@@ -1007,9 +1002,6 @@ WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
         static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
         dwMask <<= 16;
     }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     if (fSet)
         InterlockedOr(pdwFlags, dwMask);
@@ -1165,7 +1157,7 @@ ULONG MethodDesc::GetRVA()
     if (GetMemberDef() & 0x00FFFFFF)
     {
         Module *pModule = GetModule();
-        PREFIX_ASSUME(pModule != NULL);
+        _ASSERTE(pModule != NULL);
 
         DWORD dwDescrOffset;
         DWORD dwImplFlags;
@@ -1740,7 +1732,7 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
         }
         CONSISTENCY_CHECK(TypeHandle(pMT).CheckFullyLoaded());
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
-        PREFIX_ASSUME(resultMD != NULL);
+        _ASSERTE(resultMD != NULL);
         resultMD->CheckRestore();
         RETURN (resultMD);
     }
@@ -2724,7 +2716,7 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     // Otherwise this must be some kind of precode
     //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
-    PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
+    _ASSERTE(fSpeculative || (pPrecode != NULL));
     if (pPrecode != NULL)
     {
         pMD = pPrecode->GetMethodDesc(fSpeculative);
@@ -3228,6 +3220,17 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!IsVersionableWithPrecode());
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
+    // Updates are expressed via metadata diff and a methoddef of a runtime async method
+    // would be resolved to the thunk.
+    // If we see a thunk here, fetch the other variant that owns the IL and reset that.
+    if (IsAsyncThunkMethod())
+    {
+        MethodDesc *otherVariant = GetAsyncOtherVariantNoCreate();
+        _ASSERTE(otherVariant != NULL);
+        otherVariant->ResetCodeEntryPointForEnC();
+        return;
+    }
+
     LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
         this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
@@ -3705,7 +3708,24 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 
     // Need to save the Debug-Info for this method so that we can see it in a debugger later.
-    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, this);
+#ifdef FEATURE_CODE_VERSIONING
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+
+        CodeVersionManager* pCodeVersionManager = GetCodeVersionManager();
+        NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(dac_cast<PTR_MethodDesc>(this));
+        for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
+        {
+            PCODE addrCode = iter->GetNativeCode();
+            EECodeInfo codeInfo(addrCode);
+            DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
+        }
+    }
+#else
+    PCODE entryPoint = GetNativeCode();
+    EECodeInfo codeInfo(entryPoint);
+    DebugInfoManager::EnumMemoryRegionsForMethodDebugInfo(flags, &codeInfo);
+#endif // FEATURE_CODE_VERSIONING
 
     if (!IsNoMetadata() ||IsILStub())
     {
@@ -3747,10 +3767,14 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(dac_cast<PTR_MethodDesc>(this));
     if (!ilVersion.IsNull())
     {
-        ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
-        ilVersion.GetVersionId();
-        ilVersion.GetRejitState();
-        ilVersion.GetIL();
+        EX_TRY
+        {
+            ilVersion.GetActiveNativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+            ilVersion.GetVersionId();
+            ilVersion.GetRejitState();
+            ilVersion.GetIL();
+        }
+        EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
     }
 #endif
 

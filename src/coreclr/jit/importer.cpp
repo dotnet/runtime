@@ -844,10 +844,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
-            // Make sure we don't pass something other than a local address to the return buffer arg.
-            // It is allowed to pass current's method return buffer as it is a local too.
-            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(srcCall->gtRetClsHnd)) ||
-                (compIsAsync() && !destAddr->OperIs(GT_LCL_ADDR)))
+            if (!impIsLegalRetBuf(destAddr, srcCall))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, srcCall->gtRetClsHnd, false);
@@ -971,10 +968,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
 
-            // Make sure we don't pass something other than a local address to the return buffer arg.
-            // It is allowed to pass current's method return buffer as it is a local too.
-            if ((fgAddrCouldBeHeap(destAddr) && !eeIsByrefLike(call->gtRetClsHnd)) ||
-                (compIsAsync() && !destAddr->OperIs(GT_LCL_ADDR)))
+            if (!impIsLegalRetBuf(destAddr, call))
             {
                 unsigned tmp = lvaGrabTemp(false DEBUGARG("stack copy for value returned via return buffer"));
                 lvaSetStruct(tmp, call->gtRetClsHnd, false);
@@ -1066,6 +1060,46 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     }
 
     return store;
+}
+
+//------------------------------------------------------------------------
+// impIsLegalRetbuf:
+//   Check if a return buffer is of a legal shape.
+//
+// Arguments:
+//   retBuf - The return buffer
+//   call   - The call that is passed the return buffer
+//
+// Return Value:
+//   True if it is legal according to ABI and IR invariants.
+//
+// Notes:
+//   ABI requires all return buffers to point to stack. Also, we have an IR
+//   invariant for async calls that return buffers must be the address of a
+//   local.
+//
+bool Compiler::impIsLegalRetBuf(GenTree* retBuf, GenTreeCall* call)
+{
+    if (call->IsAsync())
+    {
+        // Async calls require LCL_ADDR shape for the retbuf to know where to
+        // save the value on resumption.
+        if (!retBuf->OperIs(GT_LCL_ADDR))
+        {
+            return false;
+        }
+
+        // LCL_ADDR on an implicit byref will turn into LCL_VAR in morph.
+        if (lvaIsImplicitByRefLocal(retBuf->AsLclVarCommon()->GetLclNum()))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    // The ABI requires the retbuffer to point to stack.
+    return !fgAddrCouldBeHeap(retBuf) || eeIsByrefLike(call->gtRetClsHnd);
 }
 
 //------------------------------------------------------------------------
@@ -2775,7 +2809,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     {
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
-        call = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr, runtimeMethodHandle);
+        call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
+                                                        runtimeMethodHandle);
     }
 
 #ifdef FEATURE_READYTORUN
@@ -2816,7 +2851,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
         // Call helper function.  This gets the target address of the final destination callsite.
         //
-        call = gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr, exactTypeDesc, exactMethodDesc);
+        call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, thisPtr,
+                                                        exactMethodDesc, exactTypeDesc);
     }
 
     assert(call != nullptr);
@@ -3863,7 +3899,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
 #ifdef TARGET_XARCH
                     if (simdType == TYP_SIMD64)
                     {
-                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX512F);
+                        hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX512);
                     }
                     else if (simdType == TYP_SIMD32)
                     {
@@ -4349,9 +4385,6 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
             case CORINFO_HELPER_ARG_TYPE_Class:
                 info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(helperArg.classHandle);
                 currentArg = gtNewIconEmbClsHndNode(helperArg.classHandle);
-                break;
-            case CORINFO_HELPER_ARG_TYPE_Module:
-                currentArg = gtNewIconEmbScpHndNode(helperArg.moduleHandle);
                 break;
             case CORINFO_HELPER_ARG_TYPE_Const:
                 currentArg = gtNewIconNode(helperArg.constant);
@@ -6041,7 +6074,7 @@ checkForAwait:
 
         // check if it is an Await intrinsic
         if (eeIsIntrinsic(nextCallTok.hMethod) &&
-            lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_RuntimeHelpers_Await)
+            lookupNamedIntrinsic(nextCallTok.hMethod) == NI_System_Runtime_CompilerServices_AsyncHelpers_Await)
         {
             // yes, this is an Await
             return true;
@@ -6051,10 +6084,6 @@ checkForAwait:
     return false;
 }
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 /*****************************************************************************
  *  Import the instr for the given basic block
  */
@@ -8225,7 +8254,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto CONV;
 
             case CEE_CONV_R_UN:
-                lclTyp = TYP_DOUBLE;
+                // Because there is no IL instruction conv.r4.un, compilers consistently
+                // emit conv.r.un followed immediately by conv.r4 for unsigned->float casts.
+                // We recognize this pattern and create the intended cast.
+                // Otherwise, conv.r.un is treated as a cast to double.
+                lclTyp = ((OPCODE)getU1LittleEndian(codeAddr) == CEE_CONV_R4) ? TYP_FLOAT : TYP_DOUBLE;
                 goto CONV_UN;
 
             CONV_UN:
@@ -9596,8 +9629,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         bool isHoistable =
                             info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT;
-                        unsigned check_spill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
-                        impAppendTree(helperNode, check_spill, impCurStmtDI);
+                        unsigned checkSpill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
+                        impAppendTree(helperNode, checkSpill, impCurStmtDI);
                     }
                 }
 
@@ -9630,6 +9663,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (!isHoistable)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
+                        }
+                        else if (compIsAsync() && op1->TypeIs(TYP_BYREF))
+                        {
+                            // TODO-Async: We really only need to spill if
+                            // there is a possibility of an async call in op2.
+                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("byref address in async method"));
                         }
                         break;
 
@@ -9940,9 +9979,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impPushOnStack(gtNewLclvNode(lclNum, TYP_REF), tiRetVal);
 
 #ifdef DEBUG
-                    // Under SPMI, look up info we might ask for if we stack allocate this array
+                    // Under SPMI, look up info we might ask for if we stack allocate this array,
+                    // but only if we know the precise type
                     //
-                    if (JitConfig.EnableExtraSuperPmiQueries())
+                    if (JitConfig.EnableExtraSuperPmiQueries() && !eeIsSharedInst(resolvedToken.hClass))
                     {
                         void* pEmbedClsHnd;
                         info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
@@ -10980,9 +11020,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     return;
 #undef _impResolveToken
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // impCreateLocal: create a GT_LCL_VAR node to access a local that might need to be normalized on load
@@ -11690,11 +11727,6 @@ void Compiler::impVerifyEHBlock(BasicBlock* block)
 // Import the instructions for the given basic block.  Perform
 // verification, throwing an exception on failure.  Push any successor blocks that are enabled for the first
 // time, or whose verification pre-state is changed.
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 void Compiler::impImportBlock(BasicBlock* block)
 {
     // BBF_INTERNAL blocks only exist during importation due to EH canonicalization. We need to
@@ -12035,9 +12067,6 @@ SPILLSTACK:
         }
     }
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //------------------------------------------------------------------------
 // impImportBlockPending: ensure that block will be imported
@@ -13824,7 +13853,7 @@ GenTree* Compiler::impInlineFetchArg(InlArgInfo& argInfo, const InlLclVarInfo& l
         // further references to the argument working off of the
         // bashed copy.
         op1 = gtCloneExpr(argNode);
-        PREFIX_ASSUME(op1 != nullptr);
+        assert(op1 != nullptr);
         argInfo.argTmpNum = BAD_VAR_NUM;
 
         // We may need to retype to ensure we match the callee's view of the type.

@@ -3123,6 +3123,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     assert(!op2->isUsedFromMemory());
 
     emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
+    assert(cmpSize == EA_4BYTE || cmpSize == EA_8BYTE);
 
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
@@ -3205,133 +3206,82 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         {
             ssize_t imm = op2->AsIntCon()->gtIconVal;
 
-            switch (cmpSize)
+            bool useAddSub = !(!tree->OperIs(GT_EQ, GT_NE) || (imm == -2048));
+            bool useShiftRight =
+                !isUnsigned && ((tree->OperIs(GT_LT) && (imm == 0)) || (tree->OperIs(GT_LE) && (imm == -1)));
+            bool useLoadImm = isUnsigned && ((tree->OperIs(GT_LT, GT_GE) && (imm == 0)) ||
+                                             (tree->OperIs(GT_LE, GT_GT) && (imm == -1)));
+
+            if (cmpSize == EA_4BYTE)
             {
-                case EA_4BYTE:
+                if (!useAddSub && !useShiftRight && !useLoadImm)
                 {
                     regNumber tmpRegOp1 = internalRegisters.GetSingle(tree);
                     assert(regOp1 != tmpRegOp1);
-                    if (isUnsigned)
-                    {
-                        imm = static_cast<uint32_t>(imm);
-                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                    }
-                    else
-                    {
-                        imm = static_cast<int32_t>(imm);
-                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                    }
+                    imm = static_cast<int32_t>(imm);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     regOp1 = tmpRegOp1;
-                    break;
                 }
-                case EA_8BYTE:
-                    break;
-                default:
-                    unreached();
             }
 
-            if (tree->OperIs(GT_LT))
+            if (tree->OperIs(GT_EQ, GT_NE))
             {
-                if (!isUnsigned && emitter::isValidSimm12(imm))
+                if ((imm != 0) || (cmpSize == EA_4BYTE))
                 {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
+                    instruction diff = INS_xori;
+                    if (imm != -2048)
+                    {
+                        assert(useAddSub);
+                        diff = (cmpSize == EA_4BYTE) ? INS_addiw : INS_addi;
+                        imm  = -imm;
+                    }
+                    emit->emitIns_R_R_I(diff, cmpSize, targetReg, regOp1, imm);
+                    regOp1 = targetReg;
                 }
-                else if (isUnsigned && emitter::isValidUimm11(imm))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                }
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                if (!isUnsigned && emitter::isValidSimm12(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm + 1);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                }
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                if (!isUnsigned && emitter::isValidSimm12(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm + 1))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm + 1);
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, REG_RA, regOp1);
-                }
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                if (!isUnsigned && emitter::isValidSimm12(imm))
-                {
-                    emit->emitIns_R_R_I(INS_slti, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else if (isUnsigned && emitter::isValidUimm11(imm))
-                {
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, imm);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                }
-                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-            }
-            else if (tree->OperIs(GT_NE))
-            {
-                if (!imm)
-                {
-                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, regOp1);
-                }
-                else if (emitter::isValidUimm12(imm))
-                {
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
-                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
-                }
-                else
-                {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
-                }
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                if (!imm)
+                assert(emitter::isValidSimm12(imm));
+
+                if (tree->OperIs(GT_EQ))
                 {
                     emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, regOp1, 1);
                 }
-                else if (emitter::isValidUimm12(imm))
+                else
                 {
-                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, regOp1, imm);
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+                    assert(tree->OperIs(GT_NE));
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_ZERO, regOp1);
+                }
+            }
+            else
+            {
+                assert(tree->OperIs(GT_LT, GT_LE, GT_GT, GT_GE));
+                if (useLoadImm)
+                {
+                    // unsigned (a <= ~0), (a >= 0) / (a > ~0), (a < 0) is always true / false
+                    imm = tree->OperIs(GT_GE, GT_LE) ? 1 : 0;
+                    emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, targetReg, REG_ZERO, imm);
+                }
+                else if (useShiftRight)
+                {
+                    // signed (a < 0) or (a <= -1) is just the sign bit
+                    instruction srli = (cmpSize == EA_4BYTE) ? INS_srliw : INS_srli;
+                    emit->emitIns_R_R_I(srli, cmpSize, targetReg, regOp1, cmpSize * 8 - 1);
+                }
+                else if ((tree->OperIs(GT_GT) && (imm == 0)) || (tree->OperIs(GT_GE) && (imm == 1)))
+                {
+                    instruction slt = isUnsigned ? INS_sltu : INS_slt;
+                    emit->emitIns_R_R_R(slt, EA_PTRSIZE, targetReg, REG_ZERO, regOp1);
                 }
                 else
                 {
-                    emit->emitLoadImmediate(EA_PTRSIZE, REG_RA, imm);
-                    emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, REG_RA);
-                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+                    instruction slti = isUnsigned ? INS_sltiu : INS_slti;
+                    if (tree->OperIs(GT_LE, GT_GT))
+                        imm += 1;
+                    assert(emitter::isValidSimm12(imm));
+                    assert(!isUnsigned || (imm != 0)); // should be handled in useLoadImm
+
+                    emit->emitIns_R_R_I(slti, EA_PTRSIZE, targetReg, regOp1, imm);
+
+                    if (tree->OperIs(GT_GT, GT_GE))
+                        emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
             }
         }
@@ -3339,58 +3289,43 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         {
             regNumber regOp2 = op2->GetRegNum();
 
-            if (cmpSize == EA_4BYTE)
+            if (tree->OperIs(GT_EQ, GT_NE))
             {
-                regNumber tmpRegOp1 = REG_RA;
-                regNumber tmpRegOp2 = internalRegisters.GetSingle(tree);
-                assert(regOp1 != tmpRegOp2);
-                assert(regOp2 != tmpRegOp2);
-
-                if (isUnsigned)
+                instruction sub = (cmpSize == EA_4BYTE) ? INS_subw : INS_sub;
+                emit->emitIns_R_R_R(sub, EA_PTRSIZE, targetReg, regOp1, regOp2);
+                if (tree->OperIs(GT_EQ))
                 {
-                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-
-                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
-                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
+                    emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
                 }
                 else
                 {
-                    emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp1, regOp1, 0);
-                    emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp2, regOp2, 0);
+                    assert(tree->OperIs(GT_NE));
+                    emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_ZERO, targetReg);
+                }
+            }
+            else
+            {
+                assert(tree->OperIs(GT_LT, GT_LE, GT_GT, GT_GE));
+                if (cmpSize == EA_4BYTE)
+                {
+                    regNumber tmpRegOp1 = REG_RA;
+                    regNumber tmpRegOp2 = internalRegisters.GetSingle(tree);
+                    assert(regOp1 != tmpRegOp2);
+                    assert(regOp2 != tmpRegOp2);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
+                    regOp1 = tmpRegOp1;
+                    regOp2 = tmpRegOp2;
                 }
 
-                regOp1 = tmpRegOp1;
-                regOp2 = tmpRegOp2;
-            }
+                instruction slt = isUnsigned ? INS_sltu : INS_slt;
+                if (tree->OperIs(GT_LE, GT_GT))
+                    std::swap(regOp1, regOp2);
 
-            if (tree->OperIs(GT_LT))
-            {
-                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
-            }
-            else if (tree->OperIs(GT_LE))
-            {
-                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
-                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-            }
-            else if (tree->OperIs(GT_GT))
-            {
-                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp2, regOp1);
-            }
-            else if (tree->OperIs(GT_GE))
-            {
-                emit->emitIns_R_R_R(isUnsigned ? INS_sltu : INS_slt, EA_8BYTE, targetReg, regOp1, regOp2);
-                emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
-            }
-            else if (tree->OperIs(GT_NE))
-            {
-                emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, regOp2);
-                emit->emitIns_R_R_R(INS_sltu, EA_PTRSIZE, targetReg, REG_R0, targetReg);
-            }
-            else if (tree->OperIs(GT_EQ))
-            {
-                emit->emitIns_R_R_R(INS_xor, EA_PTRSIZE, targetReg, regOp1, regOp2);
-                emit->emitIns_R_R_I(INS_sltiu, EA_PTRSIZE, targetReg, targetReg, 1);
+                emit->emitIns_R_R_R(slt, EA_8BYTE, targetReg, regOp1, regOp2);
+
+                if (tree->OperIs(GT_LE, GT_GE))
+                    emit->emitIns_R_R_I(INS_xori, EA_PTRSIZE, targetReg, targetReg, 1);
             }
         }
     }
@@ -3452,19 +3387,8 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
                 {
                     regNumber tmpRegOp1 = rsGetRsvdReg();
                     assert(regOp1 != tmpRegOp1);
-                    if (cond.IsUnsigned())
-                    {
-                        imm = static_cast<uint32_t>(imm);
-
-                        assert(regOp1 != tmpRegOp1);
-                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                    }
-                    else
-                    {
-                        imm = static_cast<int32_t>(imm);
-                        emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                    }
+                    imm = static_cast<int32_t>(imm);
+                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                     regOp1 = tmpRegOp1;
                     break;
                 }
@@ -3500,15 +3424,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             {
                 regNumber tmpRegOp1 = rsGetRsvdReg();
                 assert(regOp1 != tmpRegOp1);
-                if (cond.IsUnsigned())
-                {
-                    emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                    emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                }
-                else
-                {
-                    emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
-                }
+                emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
                 regOp1 = tmpRegOp1;
             }
         }
@@ -3557,20 +3473,8 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
             regNumber tmpRegOp2 = rsGetRsvdReg();
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
-
-            if (cond.IsUnsigned())
-            {
-                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
-                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
-                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
-                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
-            }
-            else
-            {
-                emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp1, regOp1, 0);
-                emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp2, regOp2, 0);
-            }
-
+            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp1, regOp1);
+            emit->emitIns_R_R(INS_sext_w, EA_8BYTE, tmpRegOp2, regOp2);
             regOp1 = tmpRegOp1;
             regOp2 = tmpRegOp2;
         }
@@ -6035,6 +5939,16 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         {
             params.retSize       = emitTypeSize(pRetTypeDesc->GetReturnRegType(0));
             params.secondRetSize = emitTypeSize(pRetTypeDesc->GetReturnRegType(1));
+
+            if (pRetTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()) == REG_INTRET)
+            {
+                // If the second return register is REG_INTRET, then the first return is expected to be in a floating
+                // register. The emitter has hardcoded belief that params.retSize corresponds to REG_INTRET and
+                // secondRetSize to REG_INTRET_1, so fix up the situation here.
+                assert(!EA_IS_GCREF_OR_BYREF(params.retSize));
+                params.retSize       = params.secondRetSize;
+                params.secondRetSize = EA_UNKNOWN;
+            }
         }
         else
         {
@@ -6808,7 +6722,7 @@ void CodeGen::genJumpToThrowHlpBlk_la(
         {
             // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-            PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS

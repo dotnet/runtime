@@ -30,34 +30,33 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Avx512Vbmi = 0x10000,
     XArchIntrinsicConstants_Serialize = 0x20000,
     XArchIntrinsicConstants_Avx10v1 = 0x40000,
-    XArchIntrinsicConstants_Evex = 0x80000,
-    XArchIntrinsicConstants_Apx = 0x100000,
-    XArchIntrinsicConstants_Vpclmulqdq = 0x200000,
-    XArchIntrinsicConstants_Avx10v2 = 0x400000,
-    XArchIntrinsicConstants_Gfni = 0x800000,
+    XArchIntrinsicConstants_Apx = 0x80000,
+    XArchIntrinsicConstants_Vpclmulqdq = 0x100000,
+    XArchIntrinsicConstants_Avx10v2 = 0x200000,
+    XArchIntrinsicConstants_Gfni = 0x400000,
 };
 #endif // HOST_X86 || HOST_AMD64
 
 #if defined(HOST_ARM64)
 enum ARM64IntrinsicConstants
 {
-    ARM64IntrinsicConstants_AdvSimd = 0x0001,
-    ARM64IntrinsicConstants_Aes = 0x0002,
-    ARM64IntrinsicConstants_Crc32 = 0x0004,
-    ARM64IntrinsicConstants_Dp = 0x0008,
-    ARM64IntrinsicConstants_Rdm = 0x0010,
-    ARM64IntrinsicConstants_Sha1 = 0x0020,
-    ARM64IntrinsicConstants_Sha256 = 0x0040,
-    ARM64IntrinsicConstants_Atomics = 0x0080,
-    ARM64IntrinsicConstants_Rcpc = 0x0100,
-    ARM64IntrinsicConstants_Rcpc2 = 0x0200,
-    ARM64IntrinsicConstants_Sve = 0x0400,
+    ARM64IntrinsicConstants_Aes = 0x0001,
+    ARM64IntrinsicConstants_Crc32 = 0x0002,
+    ARM64IntrinsicConstants_Dp = 0x0004,
+    ARM64IntrinsicConstants_Rdm = 0x0008,
+    ARM64IntrinsicConstants_Sha1 = 0x0010,
+    ARM64IntrinsicConstants_Sha256 = 0x0020,
+    ARM64IntrinsicConstants_Atomics = 0x0040,
+    ARM64IntrinsicConstants_Rcpc = 0x0080,
+    ARM64IntrinsicConstants_Rcpc2 = 0x0100,
+    ARM64IntrinsicConstants_Sve = 0x0200,
+    ARM64IntrinsicConstants_Sve2 = 0x0400,
 };
 
 #include <assert.h>
 
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-#define ARM64_ATOMICS_FEATURE_FLAG_BIT 7
+#define ARM64_ATOMICS_FEATURE_FLAG_BIT 6
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
 #endif // HOST_ARM64

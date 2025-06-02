@@ -8251,16 +8251,16 @@ void emitter::emitSimdConstCompressedLoad(simd_t* constValue, emitAttr attr, reg
 
     if ((dataSize == 64) && (constValue->v256[1] == constValue->v256[0]))
     {
-        assert(emitComp->IsBaselineVector512IsaSupportedDebugOnly());
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX512));
         dataSize = 32;
         ins      = INS_vbroadcastf32x8;
     }
 
     if ((dataSize == 32) && (constValue->v128[1] == constValue->v128[0]))
     {
-        assert(emitComp->IsBaselineVector256IsaSupportedDebugOnly());
+        assert(emitComp->compIsaSupportedDebugOnly(InstructionSet_AVX));
         dataSize = 16;
-        ins      = INS_vbroadcastf128;
+        ins      = INS_vbroadcastf32x4;
     }
 
     if ((dataSize == 16) && (constValue->u64[1] == constValue->u64[0]))
@@ -10597,7 +10597,6 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
     return result;
 }
 
-#if !defined(JIT32_GCENCODER)
 //------------------------------------------------------------------------
 // emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
 //
@@ -10689,4 +10688,3 @@ void emitter::emitEnableGC()
         JITDUMP("Enable GC: still %u no-gc requests\n", emitNoGCRequestCount);
     }
 }
-#endif // !defined(JIT32_GCENCODER)

@@ -19,6 +19,9 @@
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">$(NetFrameworkToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
 
+    <!-- BaseRid is an expected known rid in the graph that OutputRID is compatible with.
+         It's used to add OutputRID in the graph if the parent can't be detected. -->
+    <AdditionalRuntimeIdentifierParent Condition="'$(AdditionalRuntimeIdentifierParent)' == ''">$(BaseRid)</AdditionalRuntimeIdentifierParent>
     <OutputRIDParent Condition="'$(OutputRIDParent)' == ''">$(AdditionalRuntimeIdentifierParent)</OutputRIDParent>
   </PropertyGroup>
 

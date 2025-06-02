@@ -577,7 +577,7 @@ STDMETHODIMP RegMeta::FindTypeDefByName(// S_OK or error.
 
     if (wzTypeDef == NULL)
         IfFailGo(E_INVALIDARG);
-    PREFIX_ASSUME(wzTypeDef != NULL);
+    _ASSERTE(wzTypeDef != NULL);
     LPSTR       szTypeDef;
     UTF8STR(wzTypeDef, szTypeDef);
     LPCSTR      szNamespace;
@@ -798,6 +798,40 @@ ErrExit:
 } // RegMeta::GetTypeDefProps
 
 //*****************************************************************************
+// Implementation of IMetaDataImport::ResolveTypeRef to resolve a typeref across scopes.
+//
+// Arguments:
+//    tr - typeref within this scope to resolve
+//    riid - interface on ppIScope to support
+//    ppIScope - out-parameter to get metadata scope for typedef (*ptd)
+//    ptd - out-parameter to get typedef that the ref resolves to.
+//
+// Notes:
+// TypeDefs define a type within a scope. TypeRefs refer to type-defs in other scopes
+// and allow you to import a type from another scope. This function attempts to determine
+// which type-def a type-ref points to.
+//
+// This resolve (type-ref, this cope) --> (type-def=*ptd, other scope=*ppIScope)
+//
+// However, this resolution required knowing what modules have been loaded, which is not decided
+// until runtime via loader / fusion policy. Thus this interface can't possibly be correct since
+// it doesn't have that knowledge. Furthermore, when inspecting metadata from another process
+// (such as a debugger inspecting the debuggee's metadata), this API can be truly misleading.
+//
+// This API is no longer supported.
+//
+//*****************************************************************************
+STDMETHODIMP
+RegMeta::ResolveTypeRef(
+    mdTypeRef   tr,
+    REFIID      riid,
+    IUnknown ** ppIScope,
+    mdTypeDef * ptd)
+{
+    return E_NOTIMPL;
+} // RegMeta::ResolveTypeRef
+
+//*****************************************************************************
 // Retrieve information about an implemented interface.
 //*****************************************************************************
 STDMETHODIMP RegMeta::GetInterfaceImplProps(        // S_OK or error.
@@ -937,7 +971,7 @@ STDMETHODIMP RegMeta::FindTypeRef(      // S_OK or error.
     LOCKREAD();
 
     // Convert the  name to UTF8.
-    PREFIX_ASSUME(wzTypeName != NULL); // caller might pass NULL, but they'll AV.
+    _ASSERTE(wzTypeName != NULL); // caller might pass NULL, but they'll AV.
     UTF8STR(wzTypeName, szFullName);
     ns::SplitInline(szFullName, szNamespace, szName);
 

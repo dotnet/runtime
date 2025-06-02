@@ -130,8 +130,6 @@ namespace System.Threading.Tasks
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
 
         private Task? ParentForDebugger => m_contingentProperties?.m_parent; // Private property used by a debugger to access this Task's parent
-        private int StateFlagsForDebugger => m_stateFlags; // Private property used by a debugger to access this Task's state flags
-        private TaskStateFlags StateFlags => (TaskStateFlags)(m_stateFlags & ~(int)TaskStateFlags.OptionsMask); // Private property used to help with debugging
 
         [Flags]
         internal enum TaskStateFlags
@@ -1084,7 +1082,8 @@ namespace System.Threading.Tasks
                     // to the guideline that an exception implies that no state change took place),
                     // so it is safe to catch the exception and move the task to a final state.  The
                     // same cannot be said for Wait()/WaitAll()/FastWaitAll().
-                    if (!scheduler.TryRunInline(this, false))
+                    taskQueued = scheduler.TryRunInline(this, false);
+                    if (!taskQueued)
                     {
                         scheduler.InternalQueueTask(this);
                         taskQueued = true; // only mark this after successfully queuing the task.

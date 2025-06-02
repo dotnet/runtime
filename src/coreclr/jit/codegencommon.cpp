@@ -1616,7 +1616,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
         {
             // Find the helper-block which raises the exception.
             Compiler::AddCodeDsc* add = compiler->fgFindExcptnTarget(codeKind, compiler->compCurBB);
-            PREFIX_ASSUME_MSG((add != nullptr), ("ERROR: failed to find exception throw block"));
+            assert((add != nullptr) && ("ERROR: failed to find exception throw block"));
             assert(add->acdUsed);
             excpRaisingBlock = add->acdDstBlk;
 #if !FEATURE_FIXED_OUT_ARGS
@@ -1826,91 +1826,40 @@ void CodeGen::genGenerateMachineCode()
 
         printf(" for ");
 
-#if defined(TARGET_X86)
+#if defined(TARGET_XARCH)
+#if defined(TARGET_64BIT)
+        printf("generic X64");
+#else
+        printf("generic X86");
+#endif
+
         // Check ISA directly here instead of using
         // compOpportunisticallyDependsOn to avoid JIT-EE calls that could make
         // us miss in SPMI
-        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
         {
-            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
-                {
-                    printf("X86 with AVX10.2/512");
-                }
-                else
-                {
-                    printf("X86 with AVX10.2/256");
-                }
-            }
-            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
-                {
-                    printf("X86 with AVX10.1/512");
-                }
-                else
-                {
-                    printf("X86 with AVX10.1/256");
-                }
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X86 with AVX512");
-            }
+            printf(" + VEX");
         }
-        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX512))
         {
-            printf("X86 with AVX");
+            printf(" + EVEX");
         }
-        else
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_APX))
         {
-            printf("generic X86");
-        }
-#elif defined(TARGET_AMD64)
-        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_EVEX))
-        {
-            if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v2_V512))
-                {
-                    printf("X64 with AVX10.2/512");
-                }
-                else
-                {
-                    printf("X64 with AVX10.2/256");
-                }
-            }
-            else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1))
-            {
-                if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX10v1_V512))
-                {
-                    printf("X64 with AVX10.1/512");
-                }
-                else
-                {
-                    printf("X64 with AVX10.1/256");
-                }
-            }
-            else
-            {
-                assert(compiler->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-                printf("X64 with AVX512");
-            }
-        }
-        else if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_AVX))
-        {
-            printf("X64 with AVX");
-        }
-        else
-        {
-            printf("generic X64");
+            printf(" + APX");
         }
 #elif defined(TARGET_ARM)
         printf("generic ARM");
 #elif defined(TARGET_ARM64)
         printf("generic ARM64");
+
+        if (compiler->opts.compSupportsISA.HasInstructionSet(InstructionSet_Sve))
+        {
+            printf(" + SVE");
+        }
 #elif defined(TARGET_LOONGARCH64)
         printf("generic LOONGARCH64");
 #elif defined(TARGET_RISCV64)
@@ -1921,15 +1870,15 @@ void CodeGen::genGenerateMachineCode()
 
         if (TargetOS::IsWindows)
         {
-            printf(" - Windows");
+            printf(" on Windows");
         }
         else if (TargetOS::IsApplePlatform)
         {
-            printf(" - Apple");
+            printf(" on Apple");
         }
         else if (TargetOS::IsUnix)
         {
-            printf(" - Unix");
+            printf(" on Unix");
         }
 
         printf("\n");
@@ -4755,11 +4704,6 @@ void CodeGen::genFinalizeFrame()
  *
  *  ARM stepping code is here: debug\ee\arm\armwalker.cpp, vm\arm\armsinglestepper.cpp.
  */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
 void CodeGen::genFnProlog()
 {
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
@@ -5049,8 +4993,11 @@ void CodeGen::genFnProlog()
     bool      initRegZeroed = false;
     regMaskTP excludeMask   = intRegState.rsCalleeRegArgMaskLiveIn;
 #if defined(TARGET_AMD64)
-    // TODO-Xarch-apx : Revert. Excluding eGPR so that it's not used for non REX2 supported movs.
-    excludeMask = excludeMask | RBM_HIGHINT;
+    // we'd require eEVEX present to enable EGPRs in HWIntrinsics.
+    if (!compiler->canUseEvexEncoding())
+    {
+        excludeMask = excludeMask | RBM_HIGHINT;
+    }
 #endif // !defined(TARGET_AMD64)
 
 #ifdef TARGET_ARM
@@ -5290,8 +5237,10 @@ void CodeGen::genFnProlog()
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_XARCH)
+    genClearAvxStateInProlog();
+
     // Preserve callee saved float regs to stack.
-    genPreserveCalleeSavedFltRegs(compiler->compLclFrameSize);
+    genPreserveCalleeSavedFltRegs();
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_AMD64
@@ -5596,9 +5545,6 @@ void CodeGen::genFnProlog()
 
     GetEmitter()->emitEndProlog();
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //----------------------------------------------------------------------------------
 // genEmitJumpTable: emit jump table and return its base offset

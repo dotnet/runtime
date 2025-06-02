@@ -58,14 +58,14 @@ private:
         // We use movaps when non-VEX because it is a smaller instruction;
         // however the VEX version vmovaps would be used which is the same size as vmovdqa;
         // also vmovdqa has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqa : INS_movaps;
+        return compiler->canUseVexEncoding() ? INS_movdqa32 : INS_movaps;
     }
     instruction simdUnalignedMovIns()
     {
         // We use movups when non-VEX because it is a smaller instruction;
         // however the VEX version vmovups would be used which is the same size as vmovdqu;
         // but vmovdqu has more available CPU ports on older processors so we switch to that
-        return compiler->canUseVexEncoding() ? INS_movdqu : INS_movups;
+        return compiler->canUseVexEncoding() ? INS_movdqu32 : INS_movups;
     }
 #endif // defined(TARGET_XARCH)
 
@@ -515,8 +515,12 @@ protected:
 #if defined(TARGET_XARCH)
 
     // Save/Restore callee saved float regs to stack
-    void genPreserveCalleeSavedFltRegs(unsigned lclFrameSize);
-    void genRestoreCalleeSavedFltRegs(unsigned lclFrameSize);
+    void genPreserveCalleeSavedFltRegs();
+    void genRestoreCalleeSavedFltRegs();
+
+    // Generate vzeroupper instruction to clear AVX state if necessary
+    void genClearAvxStateInProlog();
+    void genClearAvxStateInEpilog();
 
 #endif // TARGET_XARCH
 
@@ -936,8 +940,6 @@ protected:
 
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSEIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
-    void genSSE2Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);

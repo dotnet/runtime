@@ -450,7 +450,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
-    GTF_VAR_CONNECTED     = 0x00100000, // GT_STORE_LCL_VAR -- this store was modelled in the connection graph during escape analysis
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -1500,7 +1499,10 @@ public:
     bool isCommutativeHWIntrinsic() const;
     bool isContainableHWIntrinsic() const;
     bool isRMWHWIntrinsic(Compiler* comp);
+#if defined(TARGET_XARCH)
     bool isEvexCompatibleHWIntrinsic(Compiler* comp) const;
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic() const;
+#endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const;
 #else
     bool isCommutativeHWIntrinsic() const
@@ -1518,10 +1520,17 @@ public:
         return false;
     }
 
-    bool isEvexCompatibleHWIntrinsic() const
+#if defined(TARGET_XARCH)
+    bool isEvexCompatibleHWIntrinsic(Compiler* comp) const
     {
         return false;
     }
+
+    bool isEmbeddedBroadcastCompatibleHWIntrinsic() const
+    {
+        return false;
+    }
+#endif // TARGET_XARCH
 
     bool isEmbeddedMaskingCompatibleHWIntrinsic() const
     {
@@ -2725,16 +2734,10 @@ struct GenTreeFieldList : public GenTree
 
     class UseList
     {
-        Use* m_head;
-        Use* m_tail;
+        Use* m_head = nullptr;
+        Use* m_tail = nullptr;
 
     public:
-        UseList()
-            : m_head(nullptr)
-            , m_tail(nullptr)
-        {
-        }
-
         Use* GetHead() const
         {
             return m_head;
@@ -2790,6 +2793,12 @@ struct GenTreeFieldList : public GenTree
                 use->SetNext(m_head);
                 m_head = use;
             }
+        }
+
+        void Clear()
+        {
+            m_head = nullptr;
+            m_tail = nullptr;
         }
 
         bool IsSorted() const
@@ -4580,6 +4589,7 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
+    RuntimeMethodHandle,
 };
 
 #ifdef DEBUG
@@ -5201,6 +5211,9 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
+
     bool IsInlineCandidate() const
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
@@ -6442,7 +6455,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
-    bool OperIsEmbBroadcastCompatible() const;
     bool OperIsBroadcastScalar() const;
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
@@ -6455,7 +6467,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
 #else
@@ -6466,7 +6478,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertVectorToMask);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
 #else
@@ -6611,20 +6623,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
-
-    void NormalizeJitBaseTypeToInt(NamedIntrinsic id, var_types simdBaseType)
-    {
-        assert(varTypeIsSmall(simdBaseType));
-
-        if (varTypeIsUnsigned(simdBaseType))
-        {
-            SetSimdBaseJitType(CORINFO_TYPE_UINT);
-        }
-        else
-        {
-            SetSimdBaseJitType(CORINFO_TYPE_UINT);
-        }
-    }
 
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
@@ -7867,6 +7865,13 @@ public:
         return m_layout;
     }
 
+    void SetLayout(ClassLayout* newLayout)
+    {
+        assert(newLayout != nullptr);
+        assert(newLayout->GetSize() == m_layout->GetSize());
+        m_layout = newLayout;
+    }
+
     // The data to be stored (null for GT_BLK)
     GenTree*& Data()
     {
@@ -7900,9 +7905,7 @@ public:
         BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
 
-#ifndef JIT32_GCENCODER
     bool gtBlkOpGcUnsafe;
-#endif
 
     bool ContainsReferences()
     {
@@ -7940,11 +7943,9 @@ public:
         assert(layout != nullptr);
         assert(layout->GetSize() != 0);
 
-        m_layout    = layout;
-        gtBlkOpKind = BlkOpKindInvalid;
-#ifndef JIT32_GCENCODER
+        m_layout        = layout;
+        gtBlkOpKind     = BlkOpKindInvalid;
         gtBlkOpGcUnsafe = false;
-#endif
     }
 
 #if DEBUGGABLE_GENTREE
