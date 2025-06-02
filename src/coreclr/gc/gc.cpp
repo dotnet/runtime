@@ -14453,6 +14453,10 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     {
         dynamic_adaptation_mode = 0;
     }
+#if !defined(HOST_64BIT)
+    // TODO: remove this when DATAS is ready for 32 bit
+    dynamic_adaptation_mode = 0;
+#endif
 
     if ((dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes) && (conserve_mem_setting == 0))
         conserve_mem_setting = 5;
