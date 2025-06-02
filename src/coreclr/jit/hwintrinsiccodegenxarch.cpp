@@ -63,25 +63,6 @@ static void assertIsContainableHWIntrinsicOp(Lowering*           lowering,
 }
 
 //------------------------------------------------------------------------
-// genIsTableDrivenHWIntrinsic:
-//
-// Arguments:
-//    category - category of a HW intrinsic
-//
-// Return Value:
-//    returns true if this category can be table-driven in CodeGen
-//
-static bool genIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
-{
-    // TODO - make more categories to the table-driven framework
-    // HW_Category_Helper and HW_Flag_SpecialCodeGen usually need manual codegen
-    const bool tableDrivenCategory =
-        (category != HW_Category_Special) && (category != HW_Category_Scalar) && (category != HW_Category_Helper);
-    const bool tableDrivenFlag = !HWIntrinsicInfo::HasSpecialCodegen(intrinsicId);
-    return tableDrivenCategory && tableDrivenFlag;
-}
-
-//------------------------------------------------------------------------
 // AddEmbRoundingMode: Adds the embedded rounding mode to the insOpts
 //
 // Arguments:
@@ -408,7 +389,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     assert(HWIntrinsicInfo::RequiresCodegen(intrinsicId));
     assert(!HWIntrinsicInfo::NeedsNormalizeSmallTypeToInt(intrinsicId) || !varTypeIsSmall(node->GetSimdBaseType()));
 
-    bool    isTableDriven = genIsTableDrivenHWIntrinsic(intrinsicId, category);
+    bool    isTableDriven = HWIntrinsicInfo::genIsTableDrivenHWIntrinsic(intrinsicId, category);
     insOpts instOptions   = INS_OPTS_NONE;
 
     if (GetEmitter()->UseEvexEncoding())
@@ -659,6 +640,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     // Until we improve the handling of addressing modes in the emitter, we'll create a
                     // temporary GT_IND to generate code with.
+
+                    assert(instOptions == INS_OPTS_NONE);
                     GenTreeIndir load = indirForm(node->TypeGet(), op1);
                     emit->emitInsLoadInd(ins, simdSize, node->GetRegNum(), &load);
                 }
@@ -703,6 +686,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // Until we improve the handling of addressing modes in the emitter, we'll create a
                     // temporary GT_STORE_IND to generate code with.
 
+                    assert(instOptions == INS_OPTS_NONE);
                     GenTreeStoreInd store = storeIndirForm(node->TypeGet(), op1, op2);
                     emit->emitInsStoreInd(ins, simdSize, &store);
                     break;
@@ -834,10 +818,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryStore)
                 {
-                    assert(instOptions == INS_OPTS_NONE);
-
                     // The Mask instructions do not currently support containment of the address.
                     assert(!op2->isContained());
+
                     if (intrinsicId == NI_AVX_MaskStore || intrinsicId == NI_AVX2_MaskStore)
                     {
                         emit->emitIns_AR_R_R(ins, simdSize, op2Reg, op3Reg, op1Reg, 0, instOptions);
@@ -1340,8 +1323,21 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins,
     GenTree*  op3       = node->Op(3);
     emitter*  emit      = GetEmitter();
 
-    regNumber op1Reg = op1->GetRegNum();
+    regNumber op1Reg = REG_NA;
     regNumber op3Reg = op3->GetRegNum();
+
+    if (op1->isContained())
+    {
+        assert(node->GetHWIntrinsicId() == NI_AVX512_BlendVariableMask);
+        assert(op1->IsVectorZero());
+
+        instOptions = AddEmbMaskingMode(instOptions, REG_K0, true);
+        op1Reg      = targetReg;
+    }
+    else
+    {
+        op1Reg = op1->GetRegNum();
+    }
 
     assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
@@ -1693,7 +1689,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
     assert(HWIntrinsicInfo::IsEmbRoundingCompatible(intrinsicId));
     assert(!lastOp->isContained());
-    assert(!genIsTableDrivenHWIntrinsic(intrinsicId, category));
+    assert(!HWIntrinsicInfo::genIsTableDrivenHWIntrinsic(intrinsicId, category));
 
     var_types   baseType   = node->GetSimdBaseType();
     emitAttr    attr       = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
