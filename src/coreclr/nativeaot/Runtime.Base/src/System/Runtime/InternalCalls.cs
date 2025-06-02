@@ -132,7 +132,7 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, int length);
 
-        [RuntimeImport(Redhawk.BaseName, "RhpNewVariableSizeObject")]
+        [RuntimeImport(RuntimeLibrary, "RhpNewVariableSizeObject")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewVariableSizeObject(MethodTable* pEEType, int length, uint flags);
 
