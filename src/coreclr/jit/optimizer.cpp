@@ -1948,10 +1948,22 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     const bool haveProfileWeights = fgIsUsingProfileWeights();
 
     // If we have PGO data, we can estimate the loop iteration count
-    // by computing how many times the loop entry branch is taken per method invoke, on average.
+    // by computing the loop body's weight relative to its entry weight.
     if (haveProfileWeights)
     {
-        loopIterations = bTest->GetTrueEdge()->getLikelyWeight() / BasicBlock::getCalledCount(this);
+        // If the loop never iterates, don't invert it.
+        //
+        if (bTop->isRunRarely())
+        {
+            return false;
+        }
+
+        // If the profile is inaccurate such that bTest->bbWeight < bTop->bbWeight,
+        // try to provide a credible estimate using the entering block's weight.
+        // The value should be at least the weight of 'block'.
+        //
+        const weight_t loopEntries = max(block->bbWeight, bTest->bbWeight - bTop->bbWeight);
+        loopIterations             = (loopEntries == BB_ZERO_WEIGHT) ? BB_ZERO_WEIGHT : bTop->bbWeight / loopEntries;
     }
 
     // Estimate the cost of cloning the entire test block.
