@@ -150,16 +150,5 @@ namespace Mono.Linker
 
 			return embeddedXml.FieldValues.TryGetValue (field, out value);
 		}
-
-		public bool HasSubstitutedInit (FieldDefinition field)
-		{
-			if (PrimarySubstitutionInfo.FieldInit.Contains (field))
-				return true;
-
-			if (!TryGetSubstitutionInfo (field, out var embeddedXml))
-				return false;
-
-			return embeddedXml.FieldInit.Contains (field);
-		}
 	}
 }
