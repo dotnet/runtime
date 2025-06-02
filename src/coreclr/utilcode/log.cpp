@@ -179,9 +179,9 @@ VOID FlushLogging() {
     if (LogFileHandle != NULL)
     {
         // We must take the lock, as an OS deadlock can occur between
-        // FlushFileBuffers and WriteFile.
+        // fflush and fwrite.
         EnterLogLock();
-        FlushFileBuffers( LogFileHandle );
+        fflush( LogFileHandle );
         LeaveLogLock();
     }
 }
