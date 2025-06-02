@@ -748,9 +748,9 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         *pInitRegZeroed = false;
     }
 
-    unsigned uLclBytes = untrLclHi - untrLclLo;
+    ssize_t uLclBytes = untrLclHi - untrLclLo;
     assert((uLclBytes % 4) == 0); // The smallest stack slot is always 4 bytes.
-    unsigned padding = untrLclLo & 0x7;
+    ssize_t padding = untrLclLo & 0x7;
 
     if (padding)
     {
@@ -759,8 +759,8 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
         uLclBytes -= 4;
     }
 
-    unsigned uRegSlots = uLclBytes / REGSIZE_BYTES;
-    unsigned uAddrCurr = 0;
+    ssize_t uRegSlots = uLclBytes / REGSIZE_BYTES;
+    ssize_t uAddrCurr = 0;
 
     if (uRegSlots >= 12)
     {
