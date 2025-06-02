@@ -53,9 +53,6 @@ public record GCInfo
     public uint SavedRegsCountExclFP { get; set; }
     public RegMask SavedRegsMask { get; set; } = RegMask.NONE;
 
-    public NoGcRegionTable NoGCRegions { get; set; } = null!;
-    public GcSlotTable SlotTable { get; set; } = null!;
-
     private Lazy<Dictionary<int, List<BaseGcTransition>>> _transitions = new();
     public Dictionary<int, List<BaseGcTransition>> Transitions => _transitions.Value;
 
@@ -128,13 +125,6 @@ public record GCInfo
             Debug.Assert(Header.EbpSaved);
             SavedRegsCountExclFP--;
         }
-
-        // NoGCRegions = new NoGcRegionTable(target, Header, ref offset);
-
-        // SlotTable = new GcSlotTable(target, Header, ref offset);
-
-        // Verify the argument table offset is consistent
-        // Debug.Assert(!Header.HasArgTabOffset || offset.Value == gcInfoAddress.Value + infoHdrSize + Header.ArgTabOffset);
 
         // Lazily initialize transitions. These are not present in all Heap dumps, only if they are required for stack walking.
         _transitions = new(() =>
