@@ -469,13 +469,16 @@ static bool check_options_valid (const EventPipeSessionOptions *options)
 {
 	if (options->format >= EP_SERIALIZATION_FORMAT_COUNT)
 		return false;
-	if (options->circular_buffer_size_in_mb <= 0 && options->session_type != EP_SESSION_TYPE_SYNCHRONOUS)
+	if (options->circular_buffer_size_in_mb <= 0 && ep_session_type_uses_buffer_manager (options->session_type))
 		return false;
 	if (options->providers == NULL || options->providers_len <= 0)
 		return false;
 	if ((options->session_type == EP_SESSION_TYPE_FILE || options->session_type == EP_SESSION_TYPE_FILESTREAM) && options->output_path == NULL)
 		return false;
 	if (options->session_type == EP_SESSION_TYPE_IPCSTREAM && options->stream == NULL)
+		return false;
+	// More UserEvents specific checks can be added here.
+	if (options->session_type == EP_SESSION_TYPE_USEREVENTS && options->user_events_data_fd == 0)
 		return false;
 
 	return true;
@@ -491,7 +494,7 @@ enable (
 
 	EP_ASSERT (options != NULL);
 	EP_ASSERT (options->format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (options->session_type == EP_SESSION_TYPE_SYNCHRONOUS || options->circular_buffer_size_in_mb > 0);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (options->session_type) || options->circular_buffer_size_in_mb > 0);
 	EP_ASSERT (options->providers_len > 0 && options->providers != NULL);
 
 	EventPipeSession *session = NULL;
@@ -515,7 +518,8 @@ enable (
 		options->providers,
 		options->providers_len,
 		options->sync_callback,
-		options->callback_additional_data);
+		options->callback_additional_data,
+		options->user_events_data_fd);
 
 	ep_raise_error_if_nok (session != NULL && ep_session_is_valid (session));
 
@@ -601,7 +605,7 @@ disable_holding_lock (
 		// Disable session tracing.
 		config_enable_disable (ep_config_get (), session, provider_callback_data_queue, false);
 
-		ep_session_disable (session); // WriteAllBuffersToFile, and remove providers.
+		ep_session_disable (session); // WriteAllBuffersToFile, disable user_events, and remove providers.
 
 		// Do rundown before fully stopping the session unless rundown wasn't requested
 		if ((ep_session_get_rundown_keyword (session) != 0) && _ep_can_start_threads) {
@@ -996,7 +1000,8 @@ ep_enable (
 		true, // stackwalk_requested
 		stream,
 		sync_callback,
-		callback_additional_data);
+		callback_additional_data,
+		0);
 
 	sessionId = ep_enable_3 (&options);
 
@@ -1126,7 +1131,8 @@ ep_session_options_init (
 	bool stackwalk_requested,
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void* callback_additional_data)
+	void* callback_additional_data,
+	uint32_t user_events_data_fd)
 {
 	EP_ASSERT (options != NULL);
 
@@ -1141,6 +1147,7 @@ ep_session_options_init (
 	options->stream = stream;
 	options->sync_callback = sync_callback;
 	options->callback_additional_data = callback_additional_data;
+	options->user_events_data_fd = user_events_data_fd;
 }
 
 void
@@ -1742,6 +1749,36 @@ void
 ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback)
 {
 	_ep_ipc_stream_factory_suspended_ports_callback = suspended_ports_callback;
+}
+
+void
+ep_event_filter_fini (EventPipeProviderEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+}
+
+void
+ep_event_filter_free (EventPipeProviderEventFilter *event_filter)
+{
+	ep_return_void_if_nok (event_filter != NULL);
+
+	ep_event_filter_fini (event_filter);
+	ep_rt_object_free (event_filter);
+}
+
+void
+ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+}
+
+void
+ep_tracepoint_config_free (EventPipeProviderTracepointConfiguration *tracepoint_config)
+{
+	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	ep_tracepoint_config_fini (tracepoint_config);
+	ep_rt_object_free (tracepoint_config);
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */

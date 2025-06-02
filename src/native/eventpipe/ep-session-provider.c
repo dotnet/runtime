@@ -52,6 +52,24 @@ ep_session_provider_alloc (
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data)
 {
+	return ep_session_provider_alloc (
+		provider_name,
+		keywords,
+		logging_level,
+		filter_data,
+		NULL,
+		NULL);
+}
+
+EventPipeSessionProvider *
+ep_session_provider_alloc (
+	const ep_char8_t *provider_name,
+	uint64_t keywords,
+	EventPipeEventLevel logging_level,
+	const ep_char8_t *filter_data,
+	EventPipeProviderEventFilter *event_filter,
+	EventPipeProviderTracepointConfiguration *tracepoint_config)
+{
 	EventPipeSessionProvider *instance = ep_rt_object_alloc (EventPipeSessionProvider);
 	ep_raise_error_if_nok (instance != NULL);
 
@@ -67,6 +85,8 @@ ep_session_provider_alloc (
 
 	instance->keywords = keywords;
 	instance->logging_level = logging_level;
+	instance->event_filter = event_filter;
+	instance->tracepoint_config = tracepoint_config;
 
 ep_on_exit:
 	return instance;
@@ -82,6 +102,8 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 {
 	ep_return_void_if_nok (session_provider != NULL);
 
+	ep_tracepoint_config_free (session_provider->tracepoint_config);
+	ep_event_filter_free (session_provider->event_filter);
 	ep_rt_utf8_string_free (session_provider->filter_data);
 	ep_rt_utf8_string_free (session_provider->provider_name);
 	ep_rt_object_free (session_provider);
@@ -122,7 +144,9 @@ ep_session_provider_list_alloc (
 				ep_provider_config_get_provider_name (config),
 				ep_provider_config_get_keywords (config),
 				ep_provider_config_get_logging_level (config),
-				ep_provider_config_get_filter_data (config));
+				ep_provider_config_get_filter_data (config),
+				ep_provider_config_get_event_filter (config),
+				ep_provider_config_get_tracepoint_config (config));
 			ep_raise_error_if_nok (dn_list_push_back (instance->providers, session_provider));
 		}
 	}

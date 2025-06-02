@@ -214,6 +214,12 @@ struct _EventPipeProviderEventFilter {
 };
 #endif
 
+void
+ep_event_filter_fini (EventPipeProviderEventFilter *event_filter);
+
+void
+ep_event_filter_free (EventPipeProviderEventFilter *event_filter);
+
 /*
  * EventPipeProviderTracepointConfiguration.
  */
@@ -233,6 +239,12 @@ struct _EventPipeProviderTracepointConfiguration {
 	uint8_t _internal [sizeof (struct _EventPipeProviderTracepointConfiguration_Internal)];
 };
 #endif
+
+void
+ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_config);
+
+void
+ep_tracepoint_config_free (EventPipeProviderTracepointConfiguration *tracepoint_config);
 
 /*
  * EventPipeProviderConfiguration.

@@ -24,6 +24,8 @@ struct _EventPipeSessionProvider_Internal {
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
 	ep_char8_t *filter_data;
+	EventPipeProviderEventFilter *event_filter;
+	EventPipeProviderTracepointConfiguration *tracepoint_config;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_SESSION_PROVIDER_GETTER_SETTER)
@@ -36,6 +38,8 @@ EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const ep_char8_t 
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeEventLevel, logging_level)
 EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, const ep_char8_t *, filter_data)
+EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeProviderEventFilter *, event_filter)
+EP_DEFINE_GETTER(EventPipeSessionProvider *, session_provider, EventPipeProviderTracepointConfiguration *, tracepoint_config)
 
 EventPipeSessionProvider *
 ep_session_provider_alloc (
@@ -43,6 +47,15 @@ ep_session_provider_alloc (
 	uint64_t keywords,
 	EventPipeEventLevel logging_level,
 	const ep_char8_t *filter_data);
+
+EventPipeSessionProvider *
+ep_session_provider_alloc (
+	const ep_char8_t *provider_name,
+	uint64_t keywords,
+	EventPipeEventLevel logging_level,
+	const ep_char8_t *filter_data,
+	EventPipeProviderEventFilter *event_filter,
+	EventPipeProviderTracepointConfiguration *tracepoint_config);
 
 void
 ep_session_provider_free (EventPipeSessionProvider * session_provider);

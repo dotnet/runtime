@@ -543,7 +543,8 @@ eventpipe_protocol_helper_collect_tracing (
 		payload->stackwalk_requested,
 		ds_ipc_stream_get_stream_ref (stream),
 		NULL,
-		NULL);
+		NULL,
+		0);
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;

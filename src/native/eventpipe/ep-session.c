@@ -30,6 +30,10 @@ static
 void
 ep_session_remove_dangling_session_states (EventPipeSession *session);
 
+static
+void
+ep_session_disable_user_events (EventPipeSession *session);
+
 /*
  * EventPipeSession.
  */
@@ -169,11 +173,12 @@ ep_session_alloc (
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
 	EventPipeSessionSynchronousCallback sync_callback,
-	void *callback_additional_data)
+	void *callback_additional_data,
+	uint32_t user_events_data_fd)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
+	EP_ASSERT (!ep_session_type_uses_buffer_manager (session_type) || circular_buffer_size_in_mb > 0);
 	EP_ASSERT (providers_len > 0);
 	EP_ASSERT (providers != NULL);
 	EP_ASSERT ((sync_callback != NULL) == (session_type == EP_SESSION_TYPE_SYNCHRONOUS));
@@ -205,7 +210,7 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
-	if (session_type != EP_SESSION_TYPE_SYNCHRONOUS) {
+	if (ep_session_type_uses_buffer_manager (session_type)) {
 		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
 		ep_raise_error_if_nok (instance->buffer_manager != NULL);
 	}
@@ -231,6 +236,14 @@ ep_session_alloc (
 		instance->file = ep_file_alloc (ep_ipc_stream_writer_get_stream_writer_ref (ipc_stream_writer), format);
 		ep_raise_error_if_nok (instance->file != NULL);
 		ipc_stream_writer = NULL;
+		break;
+
+	case EP_SESSION_TYPE_USEREVENTS:
+		ep_raise_error_if_nok (user_events_data_fd != 0);
+		// Transfer ownership of the user_events_data file descriptor to the EventPipe Session.
+		instance->user_events_data_fd = user_events_data_fd;
+		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
+		// ep_session_user_events_tracepoints_init (instance);
 		break;
 
 	default:
@@ -504,6 +517,7 @@ ep_session_disable (EventPipeSession *session)
 
 	bool ignored;
 	ep_session_write_all_buffers_to_file (session, &ignored);
+	ep_session_disable_user_events (session);
 	ep_session_provider_list_clear (session->providers);
 }
 
@@ -521,6 +535,21 @@ ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_wr
 	ep_timestamp_t stop_timestamp = ep_perf_timestamp_get ();
 	ep_buffer_manager_write_all_buffers_to_file (session->buffer_manager, session->file, stop_timestamp, events_written);
 	return !ep_file_has_errors (session->file);
+}
+
+static
+void
+ep_session_disable_user_events (EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	ep_return_void_if_nok (session->session_type == EP_SESSION_TYPE_USEREVENTS);
+
+	ep_requires_lock_held ();
+
+	if (session->user_events_data_fd != 0) {
+		close (session->user_events_data_fd);
+		session->user_events_data_fd = 0;
+	}
 }
 
 bool
@@ -663,6 +692,15 @@ ep_session_has_started (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 	return ep_rt_volatile_load_uint32_t (&session->started) == 1 ? true : false;
+}
+
+bool
+ep_session_type_uses_buffer_manager (EventPipeSessionType session_type)
+{
+	if (session_type == EP_SESSION_TYPE_SYNCHRONOUS || session_type == EP_SESSION_TYPE_USEREVENTS)
+		return false;
+
+	return true;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
