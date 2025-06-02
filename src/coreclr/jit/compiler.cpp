@@ -2015,7 +2015,7 @@ void Compiler::compSetProcessor()
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector256) &&
            !instructionSetFlags.HasInstructionSet(InstructionSet_Vector512));
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_X86Base))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
@@ -2025,32 +2025,9 @@ void Compiler::compSetProcessor()
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
 
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_EVEX))
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512))
     {
-        if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F))
-        {
-            // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
-            // These have been shipped together historically and at the time of this writing
-            // there exists no hardware which doesn't support the entire feature set. To simplify
-            // the overall JIT implementation, we currently require the entire set of ISAs to be
-            // supported and disable AVX512 support otherwise.
-
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL));
-
-            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-        }
-        else
-        {
-            // We shouldn't have EVEX enabled if neither AVX512 nor AVX10v1 are supported
-            assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX10v1));
-        }
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
     }
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
@@ -6037,10 +6014,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableHWIntrinsic() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
-        }
-
-        if (JitConfig.EnableArm64AdvSimd() != 0)
-        {
             instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
         }
 
@@ -6116,17 +6089,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
         }
 
-        if (JitConfig.EnableSSE() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE);
-        }
-
-        if (JitConfig.EnableSSE2() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE2);
-        }
-
-        if ((JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0))
+        if (JitConfig.EnableSSE3() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
         }
@@ -6209,45 +6172,9 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
         }
 
-        if (JitConfig.EnableAVX512F() != 0)
+        if (JitConfig.EnableAVX512() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F);
-            instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
-        }
-
-        if (JitConfig.EnableAVX512F_VL() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F_VL);
-        }
-
-        if (JitConfig.EnableAVX512BW() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW);
-        }
-
-        if (JitConfig.EnableAVX512BW_VL() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW_VL);
-        }
-
-        if (JitConfig.EnableAVX512CD() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD);
-        }
-
-        if (JitConfig.EnableAVX512CD_VL() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD_VL);
-        }
-
-        if (JitConfig.EnableAVX512DQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ);
-        }
-
-        if (JitConfig.EnableAVX512DQ_VL() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ_VL);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
         }
 
         if (JitConfig.EnableAVX512VBMI() != 0)
@@ -6255,16 +6182,14 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
         }
 
-        if (JitConfig.EnableAVX512VBMI_VL() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI_VL);
-        }
-
         if (JitConfig.EnableAVX10v1() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1);
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v1_V512);
-            instructionSetFlags.AddInstructionSet(InstructionSet_EVEX);
+        }
+
+        if (JitConfig.EnableAVX10v2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
         }
 
         if (JitConfig.EnableAPX() != 0)
