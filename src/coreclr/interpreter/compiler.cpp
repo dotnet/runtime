@@ -4215,20 +4215,20 @@ retry_emit:
 
                 // see jit/importer.cpp CEE_LDTOKEN
                 CorInfoHelpFunc helper;
-                if (resolvedToken.hClass)
+                if (resolvedToken.hField)
                 {
-                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
-                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
                 }
                 else if (resolvedToken.hMethod)
                 {
                     helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
                     m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
                 }
-                else if (resolvedToken.hField)
+                else if (resolvedToken.hClass)
                 {
-                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
-                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
                 }
                 else
                 {
