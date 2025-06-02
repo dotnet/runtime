@@ -6185,7 +6185,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             retSize       = secondRetSize;
             secondRetSize = EA_UNKNOWN;
         }
-
     }
     else
     {
