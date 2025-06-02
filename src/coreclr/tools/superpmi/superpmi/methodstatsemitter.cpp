@@ -36,9 +36,8 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
     if (fpStatsFile != NULL)
     {
         // Print the CSV header row
-        char  rowData[2048];
-        DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
+        char rowData[2048];
+        int  charCount = 0;
 
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
         {
@@ -86,7 +85,7 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
         rowData[charCount - 1] = '\n';
         rowData[charCount] = '\0';
 
-        if (fprintf(fpStatsFile, rowData) != charCount)
+        if (fprintf(fpStatsFile, "%s", rowData) != charCount)
         {
             LogError("Failed to write row header '%s'. errno=%d", rowData, errno);
         }
@@ -100,9 +99,8 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
     if (fpStatsFile != NULL)
     {
         // Print the CSV header row
-        char  rowHeader[1024];
-        DWORD charCount    = 0;
-        DWORD bytesWritten = 0;
+        char rowHeader[1024];
+        int  charCount = 0;
 
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
             charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "HASH,");
@@ -119,7 +117,7 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
         rowHeader[charCount - 1] = '\n';
         rowHeader[charCount] = '\0';
 
-        if (fprintf(fpStatsFile, rowHeader) != charCount)
+        if (fprintf(fpStatsFile, "%s", rowHeader) != charCount)
         {
             LogError("Failed to write row header '%s'. errno=%d", rowHeader, errno);
         }

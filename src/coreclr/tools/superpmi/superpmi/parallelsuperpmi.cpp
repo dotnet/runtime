@@ -78,6 +78,9 @@ void ReadMCLToArray(char* mclFilename, int** arr, int* count)
     *count     = 0;
     *arr       = nullptr;
     char* buff = nullptr;
+    size_t  bytesRead;
+    int     sz;
+    int64_t fileSize;
 
     FILE* fp = NULL;
     if (fopen_s(&fp, mclFilename, "rb") != 0)
@@ -86,7 +89,7 @@ void ReadMCLToArray(char* mclFilename, int** arr, int* count)
         goto Cleanup;
     }
 
-    int64_t fileSize = fgetsize(fp);
+    fileSize = fgetsize(fp);
     if (fileSize <= 0)
     {
         LogError("Getting file size failed. errno=%d", errno);
@@ -99,10 +102,10 @@ void ReadMCLToArray(char* mclFilename, int** arr, int* count)
         goto Cleanup;
     }
 
-    int sz = (int)fileSize;
+    sz = (int)fileSize;
     buff   = new char[sz];
 
-    size_t bytesRead = fread(buff, 1, sz, fp);
+    bytesRead = fread(buff, 1, sz, fp);
     if (bytesRead <= 0)
     {
         LogError("fread failed. errno=%d", errno);

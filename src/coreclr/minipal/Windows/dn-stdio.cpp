@@ -28,8 +28,8 @@ int64_t ftell_64(FILE* stream)
 
 int fsetpos_64(FILE* stream, int64_t pos)
 {
-    fpos_t pos = (fpos_t)pos;
-    return fsetpos(stream, &pos);
+    fpos_t fpos = (fpos_t)pos;
+    return fsetpos(stream, &fpos);
 }
 
 HRESULT HRESULT_FROM_LAST_STDIO()
