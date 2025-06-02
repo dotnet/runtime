@@ -5558,7 +5558,7 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
             {
                 // Quirk: if we do it in the local prop, we might confuse CSE (mismatched exception sets)
                 // Until that is fixed, we have this quirk here for better diffs.
-                return optAssertionProp_Ind(assertions, tree, stmt);
+                // return optAssertionProp_Ind(assertions, tree, stmt);
             }
             return nullptr;
 
