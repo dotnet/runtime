@@ -24,15 +24,20 @@ LEAF_ENTRY RhpNewFast, _TEXT
         ;;
 
         mov         rax, [rdx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        add         r8, rax
-        cmp         r8, [rdx + OFFSETOF__ee_alloc_context__combined_limit]
+        mov         r9, [rdx + OFFSETOF__ee_alloc_context__combined_limit]
+        sub         r9, rax
+        cmp         r8, r9
         ja          RhpNewFast_RarePath
 
-        ;; set the new alloc pointer
+        ;; Calculate the new alloc pointer to account for the allocation.
+        add         r8, rax
+
+        ;; Set the new object's MethodTable pointer
+        mov         [rax + OFFSETOF__Object__m_pEEType], rcx
+
+        ;; Set the new alloc pointer
         mov         [rdx + OFFSETOF__ee_alloc_context__alloc_ptr], r8
 
-        ;; set the new object's MethodTable pointer
-        mov         [rax], rcx
         ret
 
 RhpNewFast_RarePath:
@@ -100,24 +105,21 @@ NEW_ARRAY_FAST MACRO
         INLINE_GET_ALLOC_CONTEXT r10, r8
 
         mov         r8, rax
-        add         rax, [r10 + OFFSETOF__ee_alloc_context__alloc_ptr]
-        jc          RhpNewVariableSizeObject
+        mov         rax, [r10 + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         r9, [r10 + OFFSETOF__ee_alloc_context__combined_limit]
 
-        ; rax == new alloc ptr
+        ; rax == new object ptr
         ; rcx == MethodTable
         ; rdx == element count
         ; r8 == array size
         ; r10 == ee_alloc_context pointer
-        cmp         rax, [r10 + OFFSETOF__ee_alloc_context__combined_limit]
+        cmp         r8, r9
         ja          RhpNewVariableSizeObject
 
-        mov         [r10 + OFFSETOF__ee_alloc_context__alloc_ptr], rax
-
-        ; calc the new object pointer
-        sub         rax, r8
-
+        add         r8, rax
         mov         [rax + OFFSETOF__Object__m_pEEType], rcx
         mov         [rax + OFFSETOF__Array__m_Length], edx
+        mov         [r10 + OFFSETOF__ee_alloc_context__alloc_ptr], r8
         ret
 
 ENDM ; NEW_ARRAY_FAST

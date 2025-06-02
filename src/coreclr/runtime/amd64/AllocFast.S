@@ -26,18 +26,28 @@ LEAF_ENTRY RhpNewFast, _TEXT
         // rdx: base size
         //
 
+        // Load potential new object address into rsi.
         mov         rsi, [rax + OFFSETOF__ee_alloc_context__alloc_ptr]
-        add         rdx, rsi
-        cmp         rdx, [rax + OFFSETOF__ee_alloc_context__combined_limit]
+
+        // Load and calculate the maximum size of object we can fit.ß
+        mov         rdi, [rax + OFFSETOF__ee_alloc_context__combined_limit]
+        sub         rdi, rsi
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
+        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        cmp         rdx, rdi
         ja          LOCAL_LABEL(RhpNewFast_RarePath)
 
-        // set the new alloc pointer
+        // Calculate the new alloc pointer to account for the allocation.
+        add         rdx, rsi
+
+        // Set the new objects MethodTable pointer.
+        mov         [rsi + OFFSETOF__Object__m_pEEType], rbx
+
+        // Update the alloc pointer to the newly calculated one.
         mov         [rax + OFFSETOF__ee_alloc_context__alloc_ptr], rdx
 
         mov         rax, rsi
-
-        // set the new object's MethodTable pointer
-        mov         [rsi], rbx
 
         .cfi_remember_state
         pop_nonvol_reg rbx
@@ -128,21 +138,19 @@ NESTED_END RhpNewObject, _TEXT
         // r12 == element count
         // r13 == string/array size
 
-        mov         rax, r13
-        add         rax, [rcx + OFFSETOF__ee_alloc_context__alloc_ptr]
-        jc          1f
+        mov         rax, [rcx + OFFSETOF__ee_alloc_context__alloc_ptr]
+        mov         rdi, [rcx + OFFSETOF__ee_alloc_context__combined_limit]
+        sub         rdi, rax
 
-        // rax == new alloc ptr
-        cmp         rax, [rcx + OFFSETOF__ee_alloc_context__combined_limit]
+        // Determine whether the end of the object is too big for the current allocation context. If so,
+        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        cmp         r13, rdi
         ja          1f
 
-        mov         [rcx + OFFSETOF__ee_alloc_context__alloc_ptr], rax
-
-        // calc the new object pointer
-        sub         rax, r13
-
+        add         r13, rax
         mov         [rax + OFFSETOF__Object__m_pEEType], rbx
         mov         [rax + OFFSETOF__Array__m_Length], r12d
+        mov         [rcx + OFFSETOF__ee_alloc_context__alloc_ptr], r13
 
         .cfi_remember_state
         pop_nonvol_reg r13
