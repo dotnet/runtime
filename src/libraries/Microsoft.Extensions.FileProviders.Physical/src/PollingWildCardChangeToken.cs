@@ -172,16 +172,15 @@ namespace Microsoft.Extensions.FileProviders.Physical
             return FileSystemInfoHelper.GetFileLinkTargetLastWriteTimeUtc(filePath) ?? File.GetLastWriteTimeUtc(filePath);
         }
 
-        private
 #if NET
-        static
-#endif
-        void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
+        private static void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
-#if NET
             sha256.AppendData(MemoryMarshal.AsBytes(path.AsSpan()));
             sha256.AppendData(MemoryMarshal.AsBytes([lastChangedUtc]));
+        }
 #else
+        private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
+        {
             int byteCount = path.Length * 2;
             if (_byteBuffer == null || byteCount > _byteBuffer.Length)
             {
@@ -193,8 +192,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
             BinaryPrimitives.WriteInt64LittleEndian(_byteBuffer, lastChangedUtc.Ticks);
             sha256.AppendData(_byteBuffer, 0, sizeof(long));
-#endif
         }
+#endif
 
         IDisposable IChangeToken.RegisterChangeCallback(Action<object?> callback, object? state)
         {
