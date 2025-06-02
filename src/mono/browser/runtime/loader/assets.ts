@@ -198,12 +198,19 @@ export async function mono_download_assets (): Promise<void> {
                     mono_assert(typeof asset.resolvedUrl === "string", "resolvedUrl must be string");
                     const url = asset.resolvedUrl!;
                     const buffer = await asset.buffer;
+                    mono_log_debug("URL: " + url);
+                    mono_log_debug("Type: " + typeof buffer); // should be 'object'
+                    mono_log_debug(buffer instanceof ArrayBuffer ? "is ArrayBuffer" : "is not ArrayBuffer");
+                    mono_log_debug("Constructor: " + (buffer as any)?.constructor?.name);
+                    mono_log_debug("Creating array:");
                     const data = new Uint8Array(buffer);
+                    mono_log_debug("Created array:");
                     cleanupAsset(asset);
 
                     // wait till after onRuntimeInitialized
 
                     await runtimeHelpers.beforeOnRuntimeInitialized.promise;
+                    mono_log_debug("Instantiating asset:" + url);
                     runtimeHelpers.instantiate_asset(asset, url, data);
                 }
             } else {
