@@ -143,6 +143,16 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void ListRuntimes_UnknownArchitecture()
+        {
+            TestContext.BuiltDotNet.Exec("--list-runtimes", "--arch", "invalid")
+                .CaptureStdOut()
+                .Execute()
+                .Should().Fail()
+                .And.ExitWith(Constants.ErrorCode.InvalidArgFailure);
+        }
+
+        [Fact]
         public void ListSdks()
         {
             // Verify exact match of command output. The output of --list-sdks is intended to be machine-readable
@@ -199,6 +209,16 @@ namespace HostActivation.Tests
                     .Should().Pass()
                     .And.HaveStdOut(string.Empty);
             }
+        }
+
+        [Fact]
+        public void ListSdks_UnknownArchitecture()
+        {
+            TestContext.BuiltDotNet.Exec("--list-sdks", "--arch", "invalid")
+                .CaptureStdOut()
+                .Execute()
+                .Should().Fail()
+                .And.ExitWith(Constants.ErrorCode.InvalidArgFailure);
         }
 
         private static string GetListRuntimesOutput(string installLocation, string[] versions, string prefix = "")
