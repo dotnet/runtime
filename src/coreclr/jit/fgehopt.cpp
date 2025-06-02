@@ -751,8 +751,10 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         assert(firstHandlerBlock->bbRefs >= 2);
         firstHandlerBlock->bbRefs -= 1;
 
-        // (8) The old try entry no longer needs special protection.
+        // (8) The old try/handler entries no longer need special protection.
         firstTryBlock->RemoveFlags(BBF_DONT_REMOVE);
+        assert(!bbIsHandlerBeg(firstHandlerBlock));
+        firstHandlerBlock->RemoveFlags(BBF_DONT_REMOVE);
 
         // Another one bites the dust...
         emptyCount++;
@@ -1476,9 +1478,6 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Mark the block as the start of the cloned finally.
                 newBlock->SetFlags(BBF_CLONED_FINALLY_BEGIN);
-
-                // Cloned finally entry block does not need any special protection.
-                newBlock->RemoveFlags(BBF_DONT_REMOVE);
             }
 
             if (block == lastBlock)
@@ -1487,6 +1486,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 newBlock->SetFlags(BBF_CLONED_FINALLY_END);
             }
 
+            // Cloned finally block does not need any special protection.
             newBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // Make sure clone block state hasn't munged the try region.

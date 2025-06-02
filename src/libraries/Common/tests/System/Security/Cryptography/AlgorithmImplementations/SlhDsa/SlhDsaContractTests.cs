@@ -50,6 +50,12 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             AssertExtensions.Throws<ArgumentNullException>("pbeParameters", () => slhDsa.TryExportEncryptedPkcs8PrivateKey(string.Empty, null, Span<byte>.Empty, out _));
         }
 
+        [Fact]
+        public static void ArgumentValidation_Ctor_NullAlgorithm()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", static () => new SlhDsaMockImplementation(null));
+        }
+
         [Theory]
         [MemberData(nameof(ArgumentValidationData))]
         public static void ArgumentValidation(SlhDsaAlgorithm algorithm, bool shouldDispose)
@@ -95,7 +101,7 @@ namespace System.Security.Cryptography.SLHDsa.Tests
             SlhDsaTestHelpers.AssertEncryptedExportPkcs8PrivateKey(export =>
             {
                 // Unknown algorithm
-                AssertExtensions.Throws<CryptographicException>(() => 
+                AssertExtensions.Throws<CryptographicException>(() =>
                     export(slhDsa, "PLACEHOLDER", new PbeParameters(PbeEncryptionAlgorithm.Unknown, HashAlgorithmName.SHA1, 42)));
 
                 // TripleDes3KeyPkcs12 only works with SHA1

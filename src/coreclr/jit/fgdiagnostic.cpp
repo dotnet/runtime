@@ -820,8 +820,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock     = bbIsTryBeg(block);
                 const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock || isFuncletEntryBlock ||
-                    block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock || block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -836,10 +835,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (block->HasFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
-                    }
-                    if (block->HasFlag(BBF_LOOP_HEAD))
-                    {
-                        fprintf(fgxFile, "L");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -967,10 +962,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (block->HasFlag(BBF_HAS_NEWARR))
             {
                 fprintf(fgxFile, "\n            callsNewArr=\"true\"");
-            }
-            if (block->HasFlag(BBF_LOOP_HEAD))
-            {
-                fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
 
             const char* rootTreeOpName = "n/a";
@@ -2714,7 +2705,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
+    JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
 }
@@ -2746,8 +2737,8 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
-           block->bbNum);
+    JITDUMP("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+            block->bbNum);
     assert(!"Jump into the middle of handler region");
     return false;
 }
@@ -3424,9 +3415,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                 switch (intrinsicId)
                 {
 #if defined(TARGET_XARCH)
-                    case NI_SSE_StoreFence:
-                    case NI_SSE2_LoadFence:
-                    case NI_SSE2_MemoryFence:
+                    case NI_X86Base_LoadFence:
+                    case NI_X86Base_MemoryFence:
+                    case NI_X86Base_StoreFence:
                     case NI_X86Serialize_Serialize:
                     {
                         assert(tree->OperRequiresAsgFlag());
@@ -3435,10 +3426,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     }
 
                     case NI_X86Base_Pause:
-                    case NI_SSE_Prefetch0:
-                    case NI_SSE_Prefetch1:
-                    case NI_SSE_Prefetch2:
-                    case NI_SSE_PrefetchNonTemporal:
+                    case NI_X86Base_Prefetch0:
+                    case NI_X86Base_Prefetch1:
+                    case NI_X86Base_Prefetch2:
+                    case NI_X86Base_PrefetchNonTemporal:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
@@ -3458,10 +3449,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_Sve_GatherPrefetch32Bit:
                     case NI_Sve_GatherPrefetch64Bit:
                     case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_Prefetch16Bit:
+                    case NI_Sve_Prefetch32Bit:
+                    case NI_Sve_Prefetch64Bit:
+                    case NI_Sve_Prefetch8Bit:
                     case NI_Sve_GetFfrByte:
                     case NI_Sve_GetFfrInt16:
                     case NI_Sve_GetFfrInt32:

@@ -522,7 +522,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
         case TYP_SIMD64:
         {
             simd64_t val64 = *(simd64_t*)val;
-            if (val64.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+            if (val64.IsAllBitsSet() && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 emit->emitIns_SIMD_R_R_R_I(INS_vpternlogd, attr, targetReg, targetReg, targetReg,
                                            static_cast<int8_t>(0xFF), INS_OPTS_NONE);
@@ -756,7 +756,30 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     }
     else
     {
-        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+        instruction ins = INS_movbe;
+#ifdef TARGET_AMD64
+        bool needsEvex = false;
+
+        if (GetEmitter()->IsExtendedGPReg(tree->GetRegNum()))
+        {
+            needsEvex = true;
+        }
+        else if (operand->isIndir())
+        {
+            GenTreeIndir* indir = operand->AsIndir();
+            if (indir->HasBase() && GetEmitter()->IsExtendedGPReg(indir->Base()->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+            else if (indir->HasIndex() && GetEmitter()->IsExtendedGPReg(indir->Index()->GetRegNum()))
+            {
+                needsEvex = true;
+            }
+        }
+
+        ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(operand), tree, operand);
     }
 
     if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
@@ -4001,7 +4024,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
         //       this probably needs to be changed.
 
         // Load
-        genCodeForLoadOffset(INS_movdqu, EA_16BYTE, xmmTmpReg, src, offset);
+        genCodeForLoadOffset(INS_movdqu32, EA_16BYTE, xmmTmpReg, src, offset);
         // Store
         genStoreRegToStackArg(TYP_STRUCT, xmmTmpReg, offset);
 
@@ -5679,6 +5702,22 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                 if (data->OperIs(GT_BSWAP, GT_BSWAP16))
                 {
                     ins = INS_movbe;
+#ifdef TARGET_AMD64
+                    bool needsEvex = false;
+                    if (GetEmitter()->IsExtendedGPReg(data->gtGetOp1()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (tree->HasBase() && GetEmitter()->IsExtendedGPReg(tree->Base()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    else if (tree->HasIndex() && GetEmitter()->IsExtendedGPReg(tree->Index()->GetRegNum()))
+                    {
+                        needsEvex = true;
+                    }
+                    ins = needsEvex ? INS_movbe_apx : INS_movbe;
+#endif // TARGET_AMD64
                 }
 #if defined(FEATURE_HW_INTRINSICS)
                 else if (data->OperIsHWIntrinsic())
@@ -5692,15 +5731,15 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_Vector128_ToScalar:
                         case NI_Vector256_ToScalar:
                         case NI_Vector512_ToScalar:
-                        case NI_SSE2_ConvertToInt32:
-                        case NI_SSE2_ConvertToUInt32:
-                        case NI_SSE2_X64_ConvertToInt64:
-                        case NI_SSE2_X64_ConvertToUInt64:
+                        case NI_X86Base_ConvertToInt32:
+                        case NI_X86Base_ConvertToUInt32:
+                        case NI_X86Base_X64_ConvertToInt64:
+                        case NI_X86Base_X64_ConvertToUInt64:
                         case NI_AVX2_ConvertToInt32:
                         case NI_AVX2_ConvertToUInt32:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(baseType);
 #if defined(TARGET_X86)
                             if (varTypeIsLong(baseType))
@@ -5718,23 +5757,19 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             FALLTHROUGH;
                         }
 
-                        case NI_SSE2_Extract:
+                        case NI_X86Base_Extract:
                         case NI_SSE41_Extract:
                         case NI_SSE41_X64_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
-                        case NI_AVX512F_ExtractVector128:
-                        case NI_AVX512F_ExtractVector256:
-                        case NI_AVX512DQ_ExtractVector128:
-                        case NI_AVX512DQ_ExtractVector256:
-                        case NI_AVX10v1_V512_ExtractVector128:
-                        case NI_AVX10v1_V512_ExtractVector256:
+                        case NI_AVX512_ExtractVector128:
+                        case NI_AVX512_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
 
-                            if (intrinsicId == NI_SSE2_Extract)
+                            if (intrinsicId == NI_X86Base_Extract)
                             {
                                 // The encoding that supports containment is SSE4.1 only
                                 ins = INS_pextrw_sse41;
@@ -5753,62 +5788,38 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             break;
                         }
 
-                        case NI_AVX512F_ConvertToVector256Int32:
-                        case NI_AVX512F_ConvertToVector256UInt32:
-                        case NI_AVX512F_VL_ConvertToVector128UInt32:
-                        case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
-                        case NI_AVX10v1_ConvertToVector128UInt32:
-                        case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
+                        case NI_AVX512_ConvertToVector128UInt32:
+                        case NI_AVX512_ConvertToVector128UInt32WithSaturation:
+                        case NI_AVX512_ConvertToVector256Int32:
+                        case NI_AVX512_ConvertToVector256UInt32:
                         {
                             assert(!varTypeIsFloating(baseType));
                             FALLTHROUGH;
                         }
 
-                        case NI_AVX512F_ConvertToVector128Byte:
-                        case NI_AVX512F_ConvertToVector128ByteWithSaturation:
-                        case NI_AVX512F_ConvertToVector128Int16:
-                        case NI_AVX512F_ConvertToVector128Int16WithSaturation:
-                        case NI_AVX512F_ConvertToVector128SByte:
-                        case NI_AVX512F_ConvertToVector128SByteWithSaturation:
-                        case NI_AVX512F_ConvertToVector128UInt16:
-                        case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
-                        case NI_AVX512F_ConvertToVector256Int16:
-                        case NI_AVX512F_ConvertToVector256Int16WithSaturation:
-                        case NI_AVX512F_ConvertToVector256Int32WithSaturation:
-                        case NI_AVX512F_ConvertToVector256UInt16:
-                        case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
-                        case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
-                        case NI_AVX512F_VL_ConvertToVector128Byte:
-                        case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
-                        case NI_AVX512F_VL_ConvertToVector128Int16:
-                        case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
-                        case NI_AVX512F_VL_ConvertToVector128Int32:
-                        case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
-                        case NI_AVX512F_VL_ConvertToVector128SByte:
-                        case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
-                        case NI_AVX512F_VL_ConvertToVector128UInt16:
-                        case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
-                        case NI_AVX512BW_ConvertToVector256Byte:
-                        case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
-                        case NI_AVX512BW_ConvertToVector256SByte:
-                        case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
-                        case NI_AVX512BW_VL_ConvertToVector128Byte:
-                        case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
-                        case NI_AVX512BW_VL_ConvertToVector128SByte:
-                        case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
-                        case NI_AVX10v1_ConvertToVector128Byte:
-                        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
-                        case NI_AVX10v1_ConvertToVector128Int16:
-                        case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
-                        case NI_AVX10v1_ConvertToVector128Int32:
-                        case NI_AVX10v1_ConvertToVector128Int32WithSaturation:
-                        case NI_AVX10v1_ConvertToVector128SByte:
-                        case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
-                        case NI_AVX10v1_ConvertToVector128UInt16:
-                        case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
+                        case NI_AVX512_ConvertToVector128Byte:
+                        case NI_AVX512_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX512_ConvertToVector128Int16:
+                        case NI_AVX512_ConvertToVector128Int16WithSaturation:
+                        case NI_AVX512_ConvertToVector128Int32:
+                        case NI_AVX512_ConvertToVector128Int32WithSaturation:
+                        case NI_AVX512_ConvertToVector128SByte:
+                        case NI_AVX512_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX512_ConvertToVector128UInt16:
+                        case NI_AVX512_ConvertToVector128UInt16WithSaturation:
+                        case NI_AVX512_ConvertToVector256Byte:
+                        case NI_AVX512_ConvertToVector256ByteWithSaturation:
+                        case NI_AVX512_ConvertToVector256Int16:
+                        case NI_AVX512_ConvertToVector256Int16WithSaturation:
+                        case NI_AVX512_ConvertToVector256Int32WithSaturation:
+                        case NI_AVX512_ConvertToVector256SByte:
+                        case NI_AVX512_ConvertToVector256SByteWithSaturation:
+                        case NI_AVX512_ConvertToVector256UInt16:
+                        case NI_AVX512_ConvertToVector256UInt16WithSaturation:
+                        case NI_AVX512_ConvertToVector256UInt32WithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
-                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, compiler);
                             attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
                             break;
                         }
@@ -6293,6 +6304,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         {
             params.retSize       = emitTypeSize(retTypeDesc->GetReturnRegType(0));
             params.secondRetSize = emitTypeSize(retTypeDesc->GetReturnRegType(1));
+
+            if (retTypeDesc->GetABIReturnReg(1, call->GetUnmanagedCallConv()) == REG_INTRET)
+            {
+                // If the second return register is REG_INTRET, then the first
+                // return is expected to be in a SIMD register.
+                // The emitter has hardcoded belief that params.retSize corresponds to
+                // REG_INTRET and secondRetSize to REG_INTRET_1, so fix up the
+                // situation here.
+                assert(!EA_IS_GCREF_OR_BYREF(params.retSize));
+                params.retSize       = params.secondRetSize;
+                params.secondRetSize = EA_UNKNOWN;
+            }
         }
         else
         {
@@ -7319,9 +7342,11 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
         //   addsd    xmm0, xmm0
         //.LABEL
         //
-        regNumber argReg  = treeNode->gtGetOp1()->GetRegNum();
-        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
+        regNumber argReg = treeNode->gtGetOp1()->GetRegNum();
+        // Get the APXIncompatible register first
         regNumber tmpReg2 = internalRegisters.Extract(treeNode);
+        // tmpReg1 can be EGPR
+        regNumber tmpReg1 = internalRegisters.Extract(treeNode);
 
         inst_Mov(TYP_LONG, tmpReg1, argReg, /* canSkip */ false, EA_8BYTE);
         inst_RV_SH(INS_shr, EA_8BYTE, tmpReg1, 1);
@@ -7399,7 +7424,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     noway_assert((dstSize == EA_ATTR(genTypeSize(TYP_INT))) || (dstSize == EA_ATTR(genTypeSize(TYP_LONG))));
 
     // We shouldn't be seeing uint64 here as it should have been converted
-    // into a helper call by either front-end or lowering phase, unless we have AVX512F/AVX10.x
+    // into a helper call by either front-end or lowering phase, unless we have AVX512
     // accelerated conversions.
     assert(!varTypeIsUnsigned(dstType) || (dstSize != EA_ATTR(genTypeSize(TYP_LONG))) ||
            compiler->canUseEvexEncodingDebugOnly());
@@ -8479,7 +8504,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 
     if (type == TYP_STRUCT)
     {
-        ins = INS_movdqu;
+        ins = INS_movdqu32;
         // This should be changed!
         attr = EA_16BYTE;
         size = 16;
@@ -9300,8 +9325,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R(INS_shl_1, EA_2BYTE, REG_R11, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_I(INS_shl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_rcr_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
-    theEmitter->emitIns_R_I(INS_rcl_N, EA_2BYTE, REG_R11, 7, INS_OPTS_EVEX_nf);
 
     theEmitter->emitIns_R_R(INS_imul, EA_4BYTE, REG_R12, REG_R11, INS_OPTS_EVEX_nf);
     theEmitter->emitIns_R_S(INS_imul, EA_4BYTE, REG_R12, 0, 1, INS_OPTS_EVEX_nf);
@@ -9348,7 +9371,7 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     // // Legacy instructions
     theEmitter->emitIns_R_ARX(INS_add, EA_4BYTE, REG_R16, REG_R17, REG_R18, 1, 0);
 
-    theEmitter->emitIns_AR_R(INS_movnti, EA_8BYTE, REG_R17, REG_R16, 10);
+    theEmitter->emitIns_AR_R(INS_movnti64, EA_8BYTE, REG_R17, REG_R16, 10);
     theEmitter->emitIns_R_R_R(INS_andn, EA_8BYTE, REG_R17, REG_R16, REG_R18);
 
     theEmitter->emitIns_Mov(INS_kmovb_gpr, EA_4BYTE, REG_R16, REG_K0, false);
@@ -9376,8 +9399,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R_R_R(INS_pext, EA_4BYTE, REG_R16, REG_R18, REG_R17);
     theEmitter->emitIns_R_R_R(INS_pext, EA_8BYTE, REG_R16, REG_R18, REG_R17);
 
-    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM0, false);
-    theEmitter->emitIns_Mov(INS_movd, EA_4BYTE, REG_R16, REG_XMM16, false);
+    theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM0, false);
+    theEmitter->emitIns_Mov(INS_movd32, EA_4BYTE, REG_R16, REG_XMM16, false);
     theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM0, false);
     theEmitter->emitIns_Mov(INS_movq, EA_8BYTE, REG_R16, REG_XMM16, false);
 }
@@ -11037,6 +11060,13 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 #ifdef UNIX_X86_ABI
     // Add a padding for 16-byte alignment
     inst_RV_IV(INS_sub, REG_SPBASE, 12, EA_PTRSIZE);
+#else
+    if (!compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        // Funclet prologs need to have at least 1 byte or the IL->Native mapping data will not
+        // include the first IL instruction in the funclet.
+        instGen(INS_nop);
+    }
 #endif
 
     genClearAvxStateInProlog();
@@ -11234,29 +11264,45 @@ void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNu
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
             //   ...
             //   movups  xmmword ptr [ebp/esp-OFFS], xmm4
-            //   mov      qword ptr [ebp/esp-OFFS], rax
-            //
+
             // NOTE: it implicitly zeroes YMM4 and ZMM4 as well.
             emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg, zeroSIMDReg, INS_OPTS_NONE);
 
-            int i = 0;
-            if (maxSimdSize > XMM_REGSIZE_BYTES)
+            assert((blkSize % XMM_REGSIZE_BYTES) == 0);
+
+            int regSize      = (int)compiler->roundDownSIMDSize(blkSize);
+            int lenRemaining = blkSize;
+            while (lenRemaining > 0)
             {
-                for (; i <= blkSize - maxSimdSize; i += maxSimdSize)
+                // Overlap with the previously zeroed memory if we can clear the remainder
+                // with just single store. Example: say we have 112 bytes to clear:
+                //
+                // Option 1 (no overlapping):
+                //   movups  zmmword ptr [+0]
+                //   movups  ymmword ptr [+64]
+                //   movups  xmmword ptr [+96]
+                //
+                // Option 2 (overlapping):
+                //   movups  zmmword ptr [+0]
+                //   movups  zmmword ptr [+48]
+                //
+                if ((regSize > lenRemaining) && !isPow2(lenRemaining))
                 {
-                    // We previously aligned data to 16 bytes which might not be aligned to maxSimdSize
-                    emit->emitIns_AR_R(simdUnalignedMovIns(), EA_ATTR(maxSimdSize), zeroSIMDReg, frameReg,
-                                       alignedLclLo + i);
+                    lenRemaining = regSize;
                 }
-                // Remainder will be handled by the xmm loop below
-            }
 
-            for (; i < blkSize; i += XMM_REGSIZE_BYTES)
-            {
-                emit->emitIns_AR_R(simdMov, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, alignedLclLo + i);
-            }
+                // Use the largest SIMD register size that fits in the remaining length
+                regSize = (int)compiler->roundDownSIMDSize(lenRemaining);
+                assert(regSize >= XMM_REGSIZE_BYTES);
 
-            assert(i == blkSize);
+                // frameReg is definitely not known to be 32B/64B aligned -> switch to unaligned movs
+                instruction ins    = regSize > XMM_REGSIZE_BYTES ? simdUnalignedMovIns() : simdMov;
+                const int   offset = blkSize - lenRemaining;
+                emit->emitIns_AR_R(ins, EA_ATTR(regSize), zeroSIMDReg, frameReg, alignedLclLo + offset);
+
+                lenRemaining -= regSize;
+            }
+            assert(lenRemaining == 0);
         }
         else
         {
