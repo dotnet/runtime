@@ -230,7 +230,7 @@ NESTED_END RhpNewObject, _TEXT
         str         r6, [r0, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
         // Return the object allocated in r0.
-        mov         r0, r12
+        mov         r0, r3
         EPILOG_POP  "{r4-r6,pc}"
 
 1:
