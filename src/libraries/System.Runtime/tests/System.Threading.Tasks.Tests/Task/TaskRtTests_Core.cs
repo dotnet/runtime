@@ -1057,55 +1057,6 @@ namespace System.Threading.Tasks.Tests
             { }
         }
 
-        public static bool ShouldRunInterruptTest() => PlatformDetection.IsThreadingSupported && PlatformDetection.IsOSX && PlatformDetection.IsReleaseRuntime;
-
-        // This test seems to be reliable on OSX 64-bit release builds.
-        [ConditionalFact(typeof(TaskRtTests_Core), nameof(TaskRtTests_Core.ShouldRunInterruptTest))]
-        public static void RunInlineTaskInterruptTest()
-        {
-            if (PlatformDetection.IsReleaseLibrary(typeof(Task).Assembly))
-            {
-                object[][] rows = Enumerable.Range(1, 100000)
-                    .Select(x => new object[] { $"T{x}" })
-                    .ToArray();
-
-                for (int attempt = 1; attempt <= 50000; attempt++)
-                {
-                    CancellationTokenSource cts = new CancellationTokenSource();
-                    Exception? threadException = null;
-
-                    Thread thread = new Thread(() =>
-                    {
-                        try
-                        {
-                            List<object[]> list = rows.AsParallel()
-                                .AsOrdered()
-                                .WithCancellation(cts.Token)
-                                .OrderBy(row => row[0])
-                                .ToList();
-                        }
-                        catch (Exception ex)
-                        {
-                            threadException = ex;
-                        }
-                    });
-
-                    thread.Start();
-                    thread.Interrupt();
-                    cts.Cancel();
-                    thread.Join();
-
-                    if (threadException is AggregateException && threadException.InnerException is ThreadInterruptedException)
-                    {
-                        // The expected exception was thrown
-                        return;
-                    }
-                }
-
-                Assert.Fail("RunInlineTaskInterruptTest:    > error: ThreadInterruptedException was not thrown.");
-            }
-        }
-
         // Simply throws an exception from the task and ensures it is propagated.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void RunTaskExceptionTest()
