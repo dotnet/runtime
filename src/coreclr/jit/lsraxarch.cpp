@@ -2366,7 +2366,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_SSE2_MaskMove:
+            case NI_X86Base_MaskMove:
             {
                 assert(numArgs == 3);
                 assert(!isRMW);
@@ -2512,20 +2512,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_FMA_MultiplySubtractNegated:
             case NI_FMA_MultiplySubtractNegatedScalar:
             case NI_FMA_MultiplySubtractScalar:
-            case NI_AVX512F_FusedMultiplyAdd:
-            case NI_AVX512F_FusedMultiplyAddScalar:
-            case NI_AVX512F_FusedMultiplyAddNegated:
-            case NI_AVX512F_FusedMultiplyAddNegatedScalar:
-            case NI_AVX512F_FusedMultiplyAddSubtract:
-            case NI_AVX512F_FusedMultiplySubtract:
-            case NI_AVX512F_FusedMultiplySubtractScalar:
-            case NI_AVX512F_FusedMultiplySubtractAdd:
-            case NI_AVX512F_FusedMultiplySubtractNegated:
-            case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
-            case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
-            case NI_AVX10v1_FusedMultiplyAddScalar:
-            case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
-            case NI_AVX10v1_FusedMultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplyAdd:
+            case NI_AVX512_FusedMultiplyAddScalar:
+            case NI_AVX512_FusedMultiplyAddNegated:
+            case NI_AVX512_FusedMultiplyAddNegatedScalar:
+            case NI_AVX512_FusedMultiplyAddSubtract:
+            case NI_AVX512_FusedMultiplySubtract:
+            case NI_AVX512_FusedMultiplySubtractScalar:
+            case NI_AVX512_FusedMultiplySubtractAdd:
+            case NI_AVX512_FusedMultiplySubtractNegated:
+            case NI_AVX512_FusedMultiplySubtractNegatedScalar:
             {
                 assert((numArgs == 3) || (intrinsicTree->OperIsEmbRoundingEnabled()));
                 assert(isRMW);
@@ -2650,7 +2646,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_EVEX_BlendVariableMask:
+            case NI_AVX512_BlendVariableMask:
             {
                 assert(numArgs == 3);
 
@@ -2694,27 +2690,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_AVX512F_PermuteVar8x64x2:
-            case NI_AVX512F_PermuteVar16x32x2:
-            case NI_AVX512F_VL_PermuteVar2x64x2:
-            case NI_AVX512F_VL_PermuteVar4x32x2:
-            case NI_AVX512F_VL_PermuteVar4x64x2:
-            case NI_AVX512F_VL_PermuteVar8x32x2:
-            case NI_AVX512BW_PermuteVar32x16x2:
-            case NI_AVX512BW_VL_PermuteVar8x16x2:
-            case NI_AVX512BW_VL_PermuteVar16x16x2:
+            case NI_AVX512_PermuteVar2x64x2:
+            case NI_AVX512_PermuteVar4x32x2:
+            case NI_AVX512_PermuteVar4x64x2:
+            case NI_AVX512_PermuteVar8x32x2:
+            case NI_AVX512_PermuteVar8x64x2:
+            case NI_AVX512_PermuteVar8x16x2:
+            case NI_AVX512_PermuteVar16x16x2:
+            case NI_AVX512_PermuteVar16x32x2:
+            case NI_AVX512_PermuteVar32x16x2:
+            case NI_AVX512VBMI_PermuteVar16x8x2:
+            case NI_AVX512VBMI_PermuteVar32x8x2:
             case NI_AVX512VBMI_PermuteVar64x8x2:
-            case NI_AVX512VBMI_VL_PermuteVar16x8x2:
-            case NI_AVX512VBMI_VL_PermuteVar32x8x2:
-            case NI_AVX10v1_PermuteVar16x8x2:
-            case NI_AVX10v1_PermuteVar2x64x2:
-            case NI_AVX10v1_PermuteVar4x32x2:
-            case NI_AVX10v1_PermuteVar8x16x2:
-            case NI_AVX10v1_PermuteVar32x8x2:
-            case NI_AVX10v1_PermuteVar4x64x2:
-            case NI_AVX10v1_PermuteVar8x32x2:
-            case NI_AVX10v1_PermuteVar16x16x2:
-            case NI_AVX10v1_V512_PermuteVar64x8x2:
             {
                 assert(numArgs == 3);
                 assert(isRMW);

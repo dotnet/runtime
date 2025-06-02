@@ -106,7 +106,7 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>10.0.0-preview.6.25279.110</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreAppRefVersion>10.0.0-preview.6.25279.110</MicrosoftNETCoreAppRefVersion>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- ILAsm dependencies -->
     <MicrosoftNETCoreILAsmVersion>10.0.0-preview.6.25279.110</MicrosoftNETCoreILAsmVersion>
