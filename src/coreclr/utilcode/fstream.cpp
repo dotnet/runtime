@@ -21,7 +21,7 @@ HRESULT CFileStream::OpenForRead(LPCWSTR wzFilePath)
 {
     HRESULT         hr = S_OK;
 
-    int err = fopen_u16(&_fp, wzFilePath, W("rb"));
+    int err = fopen_lp(&_fp, wzFilePath, W("rb"));
     if (err != 0)
     {
         hr = HRESULT_FROM_LAST_STDIO();
@@ -34,7 +34,7 @@ HRESULT CFileStream::OpenForWrite(LPCWSTR wzFilePath)
 {
     HRESULT         hr = S_OK;
     
-    int err = fopen_u16(&_fp, wzFilePath, W("wb"));
+    int err = fopen_lp(&_fp, wzFilePath, W("wb"));
     if (err != 0)
     {
         hr = HRESULT_FROM_LAST_STDIO();

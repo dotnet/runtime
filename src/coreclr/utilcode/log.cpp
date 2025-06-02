@@ -89,7 +89,7 @@ VOID InitLogging()
         (LogFileHandle == NULL))
     {
         const WCHAR* mode = (LogFlags & LOG_ENABLE_APPEND_FILE) ? W("ab+") : W("wb+");
-        int err = fopen_u16(&LogFileHandle, szLogFileName.Ptr(), mode);
+        int err = fopen_lp(&LogFileHandle, szLogFileName.Ptr(), mode);
 
             // Some other logging may be going on, try again with another file name
         if ((err != 0) && u16_strlen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
@@ -101,7 +101,7 @@ VOID InitLogging()
 
             for(int i = 0; i < 10; i++)
             {
-                err = fopen_u16(&LogFileHandle, szLogFileName.Ptr(), mode);
+                err = fopen_lp(&LogFileHandle, szLogFileName.Ptr(), mode);
 
                 if (err == 0)
                     break;

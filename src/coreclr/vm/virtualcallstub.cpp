@@ -178,7 +178,7 @@ void VirtualCallStubManager::StartupLogging()
         FAULT_NOT_FATAL(); // We handle filecreation problems locally
         SString str;
         str.Printf("StubLog_%d.log", GetCurrentProcessId());
-        fopen_u16(&g_hStubLogFile, str.GetUnicode(), W("wb"));
+        fopen_lp(&g_hStubLogFile, str.GetUnicode(), W("wb"));
     }
     EX_CATCH
     {

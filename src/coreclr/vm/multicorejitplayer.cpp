@@ -1031,7 +1031,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
     {
         FILE* fp;
-        if (fopen_u16(&fp, pFileName, W("rb")) != 0)
+        if (fopen_lp(&fp, pFileName, W("rb")) != 0)
         {
             return COR_E_FILENOTFOUND;
         }

@@ -1340,7 +1340,7 @@ HRESULT PEWriter::Open(_In_ LPCWSTR fileName)
     _ASSERTE(m_file == NULL);
     HRESULT hr = NOERROR;
 
-    int err = fopen_u16(&m_file, fileName, W("wb"));
+    int err = fopen_lp(&m_file, fileName, W("wb"));
 
     if (err != 0)
         hr = HRESULT_FROM_LAST_STDIO();

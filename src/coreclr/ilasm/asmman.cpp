@@ -406,7 +406,7 @@ void    AsmMan::EndAssembly()
                 {
                     // Read public key or key pair from file.
                     FILE* fp;
-                    int err = fopen_u16(&fp, ((Assembler*)m_pAssembler)->m_wzKeySourceName, W("rb"));
+                    int err = fopen_lp(&fp, ((Assembler*)m_pAssembler)->m_wzKeySourceName, W("rb"));
                     if (err != 0)
                     {
                         MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
