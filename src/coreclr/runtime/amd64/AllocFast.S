@@ -41,7 +41,7 @@ LEAF_ENTRY RhpNewFast, _TEXT
         // Calculate the new alloc pointer to account for the allocation.
         add         rdx, rsi
 
-        // Set the new objects MethodTable pointer.
+        // Set the new object's MethodTable pointer.
         mov         [rsi + OFFSETOF__Object__m_pEEType], rbx
 
         // Update the alloc pointer to the newly calculated one.

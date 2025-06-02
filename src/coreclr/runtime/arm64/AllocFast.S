@@ -37,7 +37,7 @@
         // Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
 
-        // Set the new objects MethodTable pointer.
+        // Set the new object's MethodTable pointer.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
 
         // Update the alloc pointer to the newly calculated one.
@@ -79,7 +79,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl          C_FUNC(RhpGcAlloc)
 
-        // Set the new objects MethodTable pointer on success.
+        // Set the new object's MethodTable pointer on success.
         cbz         x0, LOCAL_LABEL(NewOutOfMemory)
 
         .cfi_remember_state
@@ -111,7 +111,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // Load potential new object address into x12.
         ldr         x12, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
-        // Load and calculate the maximum size of object we can fit
+        // Load and calculate the maximum size of object we can fit.
         ldr         x13, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         sub         x13, x13, x12
 
@@ -124,10 +124,10 @@ LOCAL_LABEL(NewOutOfMemory):
         bhi         C_FUNC(RhpNewVariableSizeObject)
 #endif
 
-        // Calculate the alloc pointer to account for the allocation.
+        // Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
 
-        // Set the new objects MethodTable pointer and element count.
+        // Set the new object's MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
         str         x1, [x12, #OFFSETOF__Array__m_Length]
 
@@ -263,7 +263,7 @@ LOCAL_LABEL(ArraySizeOverflow):
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl          C_FUNC(RhpGcAlloc)
 
-        // Set the new objects MethodTable pointer and length on success.
+        // Set the new object's MethodTable pointer and length on success.
         cbz         x0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state

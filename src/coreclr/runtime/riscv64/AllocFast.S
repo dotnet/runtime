@@ -41,7 +41,7 @@
         // Calculate the new alloc pointer to account for the allocation.
         add   t0, t0, t1
 
-        // Set the new objects MethodTable pointer.
+        // Set the new object's MethodTable pointer.
         sd    s1, OFFSETOF__Object__m_pEEType(t1)
 
         // Update the alloc pointer to the newly calculated one.
@@ -144,7 +144,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // Calculate the new alloc pointer to account for the allocation.
         add   t0, t0, t1
 
-        // Set the new objects MethodTable pointer.
+        // Set the new object's MethodTable pointer.
         sd    s1, OFFSETOF__Object__m_pEEType(t1)
         sd    s2, OFFSETOF__Array__m_Length(t1)
 

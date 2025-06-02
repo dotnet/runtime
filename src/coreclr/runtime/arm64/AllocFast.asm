@@ -27,7 +27,7 @@
         ;; Load potential new object address into x12.
         ldr         x12, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)]
 
-        ;; Load and calculate the maximum size of object we can fit
+        ;; Load and calculate the maximum size of object we can fit.
         ldr         x13, [x3, #(OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)]
         sub         x13, x13, x12
 
@@ -36,10 +36,10 @@
         cmp         x2, x13
         bhi         RhpNewFast_RarePath
 
-        ;; Calculate the alloc pointer to account for the allocation.
+        ;; Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
 
-        ;; Set the new objects MethodTable pointer.
+        ;; Set the new object's MethodTable pointer.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
 
         ;; Update the alloc pointer to the newly calculated one.
@@ -119,7 +119,7 @@ NewOutOfMemory
         ;; Calculate the new alloc pointer to account for the allocation.
         add         x2, x2, x12
 
-        ;; Set the new objects MethodTable pointer and element count.
+        ;; Set the new object's MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
         str         x1, [x12, #OFFSETOF__Array__m_Length]
 

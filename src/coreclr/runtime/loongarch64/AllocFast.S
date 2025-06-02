@@ -36,7 +36,7 @@
         // Calculate the new alloc pointer to account for the allocation.
         add.d  $a2, $a2, $t3
 
-        // Set the new objects MethodTable pointer.
+        // Set the new object's MethodTable pointer.
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
 
         // Update the alloc pointer to the newly calculated one.
@@ -75,7 +75,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl  C_FUNC(RhpGcAlloc)
 
-        // Set the new objects MethodTable pointer on success.
+        // Set the new object's MethodTable pointer on success.
         beqz  $a0, LOCAL_LABEL(NewOutOfMemory)
 
         .cfi_remember_state
@@ -117,7 +117,7 @@ LOCAL_LABEL(NewOutOfMemory):
         // Calculate the new alloc pointer to account for the allocation.
         add.d  $a2, $a2, $t3
 
-        // Set the new objects MethodTable pointer and element count.
+        // Set the new object's MethodTable pointer and element count.
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
         st.d  $a1, $t3, OFFSETOF__Array__m_Length
 
@@ -233,7 +233,7 @@ LOCAL_LABEL(ArraySizeOverflow):
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl  C_FUNC(RhpGcAlloc)
 
-        // Set the new objects MethodTable pointer and length on success.
+        // Set the new object's MethodTable pointer and length on success.
         beqz  $a0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
