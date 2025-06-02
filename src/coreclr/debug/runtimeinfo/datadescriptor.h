@@ -784,7 +784,7 @@ CDAC_TYPE_END(FaultingExceptionFrame)
 // CalleeSavedRegisters struct is different on each platform
 CDAC_TYPE_BEGIN(CalleeSavedRegisters)
 CDAC_TYPE_SIZE(sizeof(CalleeSavedRegisters))
-#if defined(TARGET_AMD64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 
 #define CALLEE_SAVED_REGISTER(regname) \
     CDAC_TYPE_FIELD(CalleeSavedRegisters, /*nuint*/, regname, offsetof(CalleeSavedRegisters, regname))
