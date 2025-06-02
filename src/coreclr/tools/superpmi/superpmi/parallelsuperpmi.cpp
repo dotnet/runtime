@@ -155,7 +155,7 @@ bool WriteArrayToMCL(char* mclFilename, int* arr, int count)
 
     for (int i = 0; i < count; i++)
     {
-        if (fprintf_s(fpMCLFile, "%d\r\n", arr[i]) <= 0)
+        if (fprintf(fpMCLFile, "%d\r\n", arr[i]) <= 0)
         {
             LogError("Failed to write method index '%d'. errno=%d", arr[i], errno);
             result = false;

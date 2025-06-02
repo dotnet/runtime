@@ -28,10 +28,10 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
     char buff[50000];
     memset(buff, 0, sizeof(buff));
 
-    fprintf_s(fp, "Title,MC#,");
+    fprintf(fp, "Title,MC#,");
     MethodContext::dumpStatTitleToBuffer(buff, sizeof(buff));
-    fprintf_s(fp, "%s", buff);
-    fprintf_s(fp, "\n");
+    fprintf(fp, "%s", buff);
+    fprintf(fp, "\n");
 
     while (mci.MoveNext())
     {
@@ -40,13 +40,13 @@ int verbStat::DoWork(const char* nameOfInput, const char* nameOfOutput, int inde
         memset(buff, 0, sizeof(buff));
         if ((mc->cr->ProcessName != nullptr) && (mc->cr->ProcessName->GetCount() > 0))
         {
-            fprintf_s(fp, "%s", mc->cr->repProcessName());
+            fprintf(fp, "%s", mc->cr->repProcessName());
         }
-        fprintf_s(fp, ",");
-        fprintf_s(fp, "%d,", mci.MethodContextNumber());
+        fprintf(fp, ",");
+        fprintf(fp, "%d,", mci.MethodContextNumber());
         mc->dumpStatToBuffer(buff, sizeof(buff));
-        fprintf_s(fp, "%s", buff);
-        fprintf_s(fp, "\n");
+        fprintf(fp, "%s", buff);
+        fprintf(fp, "\n");
         savedCount++;
     }
 

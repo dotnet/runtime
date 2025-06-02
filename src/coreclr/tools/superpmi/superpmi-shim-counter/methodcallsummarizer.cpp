@@ -91,11 +91,11 @@ void MethodCallSummarizer::SaveTextFile()
         return;
     }
 
-    fprintf_s(fp, "FunctionName,Count\n");
+    fprintf(fp, "FunctionName,Count\n");
 
     for (int i = 0; i < numNames; i++)
     {
-        fprintf_s(fp, "%s,%u\n", names[i], counts[i]);
+        fprintf(fp, "%s,%u\n", names[i], counts[i]);
     }
     fclose(fp);
 }

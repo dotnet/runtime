@@ -37,7 +37,7 @@ int verbASMDump::DoWork(const char* nameOfInput, const char* nameOfOutput, int i
 
         if (mc->cr->IsEmpty())
         {
-            fprintf_s(fp, ";;Method context has no compile result");
+            fprintf(fp, ";;Method context has no compile result");
         }
         else
         {

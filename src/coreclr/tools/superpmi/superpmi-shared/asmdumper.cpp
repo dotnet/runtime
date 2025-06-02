@@ -11,9 +11,9 @@ void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
     CORINFO_OS          os    = CORINFO_WINNT;
     mc->repCompileMethod(&info, &flags, &os);
 
-    fprintf_s(fp, ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
+    fprintf(fp, ";;Generated from SuperPMI on original input '%s'", cr->repProcessName());
 
-    fprintf_s(fp, "\r\n Method Name \"%s\"", getMethodName(mc, info.ftn).c_str());
+    fprintf(fp, "\r\n Method Name \"%s\"", getMethodName(mc, info.ftn).c_str());
 
     ULONG              hotCodeSize;
     ULONG              coldCodeSize;
@@ -71,10 +71,10 @@ void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
         WCHAR instrMnemonic[64]; // I never know how much to allocate...
         disasm->CchFormatInstr(instrMnemonic, 64);
         std::string instrMnemonicUtf8 = ConvertToUtf8(instrMnemonic);
-        fprintf_s(fp, "\r\n%p %s", (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonicUtf8.c_str());
-        fprintf_s(fp, "   ; ");
+        fprintf(fp, "\r\n%p %s", (void*)((size_t)orig_hotCodeBlock + offset), instrMnemonicUtf8.c_str());
+        fprintf(fp, "   ; ");
         for (unsigned int i = 0; i < instrSize; i++)
-            fprintf_s(fp, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
+            fprintf(fp, "%02x ", *((BYTE*)(hotCodeBlock + offset + i)));
         offset += instrSize;
     }
 
@@ -82,7 +82,7 @@ void ASMDumper::DumpToFile(FILE* fp, MethodContext* mc, CompileResult* cr)
 
 #else // !USE_MSVCDIS
 
-    fprintf_s(fp, ";; No disassembler available");
+    fprintf(fp, ";; No disassembler available");
 
 #endif // !USE_MSVCDIS
 

@@ -185,7 +185,7 @@ void MCList::AddMethodToMCL(int methodIndex)
 {
     if (fpMCLFile != NULL)
     {
-        if (fprintf_s(fpMCLFile, "%d\r\n", methodIndex) <= 0)
+        if (fprintf(fpMCLFile, "%d\r\n", methodIndex) <= 0)
         {
             LogError("Failed to write method index '%d'. errno=%d", methodIndex, errno);
         }

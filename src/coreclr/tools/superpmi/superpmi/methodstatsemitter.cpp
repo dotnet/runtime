@@ -86,7 +86,7 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
         rowData[charCount - 1] = '\n';
         rowData[charCount] = '\0';
 
-        if (fprintf_s(fpStatsFile, rowData) != charCount)
+        if (fprintf(fpStatsFile, rowData) != charCount)
         {
             LogError("Failed to write row header '%s'. errno=%d", rowData, errno);
         }
@@ -119,7 +119,7 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
         rowHeader[charCount - 1] = '\n';
         rowHeader[charCount] = '\0';
 
-        if (fprintf_s(fpStatsFile, rowHeader) != charCount)
+        if (fprintf(fpStatsFile, rowHeader) != charCount)
         {
             LogError("Failed to write row header '%s'. errno=%d", rowHeader, errno);
         }
