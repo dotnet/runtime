@@ -1817,9 +1817,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Sve_ConditionalSelect:
             return LowerHWIntrinsicCndSel(node);
 
-        case NI_Sve_ConvertVectorToMask:
-            return LowerHWIntrinsicConvertVectorToMask(node);
-
         case NI_Sve_SetFfr:
         {
             StoreFFRValue(node);
@@ -4220,43 +4217,6 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
 
     ContainCheckHWIntrinsic(cndSelNode);
     return cndSelNode->gtNext;
-}
-
-GenTree* Lowering::LowerHWIntrinsicConvertVectorToMask(GenTreeHWIntrinsic* mask)
-{
-    assert(mask->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask));
-
-    GenTree* op1 = mask->Op(1);
-    GenTree* op2 = mask->Op(2);
-
-    if (op2->IsVectorZero())
-    {
-        // Transform ConvertVectorToMask(..., ConstVec(0)) to FalseMask
-
-        assert(op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll));
-        BlockRange().Remove(op1);
-        BlockRange().Remove(op2);
-        mask->ResetHWIntrinsicId(NI_Sve_CreateFalseMaskAll, comp);
-
-        JITDUMP("lowering ConvertVectorToMask(ZeroVector) to FalseMask:\n");
-        DISPTREERANGE(BlockRange(), mask);
-        JITDUMP("\n");
-    }
-    if (op2->IsVectorAllBitsSet())
-    {
-        // Transform ConvertVectorToMask(..., ConstVec(11111...)) to TrueMask
-
-        assert(op1->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll));
-        BlockRange().Remove(op1);
-        BlockRange().Remove(op2);
-        mask->ResetHWIntrinsicId(NI_Sve_CreateTrueMaskAll, comp);
-
-        JITDUMP("lowering ConvertVectorToMask(ZeroVector) to TrueMask:\n");
-        DISPTREERANGE(BlockRange(), mask);
-        JITDUMP("\n");
-    }
-
-    return mask->gtNext;
 }
 
 #if defined(TARGET_ARM64)

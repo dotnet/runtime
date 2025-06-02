@@ -32118,6 +32118,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
+    //Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
     if (tree->OperIsConvertMaskToVector())
     {
         GenTree* op = op1;
@@ -32150,6 +32151,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
+    //Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
     if (tree->OperIsConvertVectorToMask())
     {
         GenTree* op        = op1;
@@ -32248,58 +32250,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             resultNode = gtNewVconNode(retType, &simdVal);
         }
-        else if (tree->OperIsConvertVectorToMask())
-        {
-            GenTreeVecCon* vecCon = cnsNode->AsVecCon();
-            GenTreeMskCon* mskCon = gtNewMskConNode(retType);
-
-            switch (vecCon->TypeGet())
-            {
-                case TYP_SIMD8:
-                {
-                    EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
-                    break;
-                }
-
-                case TYP_SIMD12:
-                {
-                    EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
-                    break;
-                }
-
-                case TYP_SIMD16:
-                {
-                    EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
-                    break;
-                }
-
-#if defined(TARGET_XARCH)
-                case TYP_SIMD32:
-                {
-                    EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
-                    break;
-                }
-
-                case TYP_SIMD64:
-                {
-                    EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
-                    break;
-                }
-#endif // TARGET_XARCH
-
-                default:
-                {
-                    unreached();
-                }
-            }
-
-            resultNode = mskCon;
-        }
 #endif // FEATURE_MASKED_HW_INTRINSICS
         else
         {
             switch (ni)
             {
+#if defined(TARGET_AMD64)
+                case NI_EVEX_ConvertVectorToMask:
+                    resultNode = gtFoldExprConvertVecCnsToMask(tree, vecCon);
+                    break;
+#endif // TARGET_AMD64
+
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
 #else
@@ -33137,6 +33098,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         switch (ni)
         {
 #ifdef TARGET_ARM64
+            case NI_Sve_ConvertVectorToMask:
+                resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
+                break;
+
             case NI_AdvSimd_MultiplyByScalar:
             case NI_AdvSimd_Arm64_MultiplyByScalar:
             {
@@ -33345,6 +33310,60 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     return resultNode;
 }
 #endif // FEATURE_HW_INTRINSICS
+
+
+GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon)
+{
+    assert(tree->OperIsConvertVectorToMask());
+    assert(vecCon == tree->Op(1) || vecCon == tree->Op(2));
+
+    var_types      retType      = tree->TypeGet();
+    var_types      simdBaseType = tree->GetSimdBaseType();
+    GenTreeMskCon* mskCon       = gtNewMskConNode(retType);
+
+    switch (vecCon->TypeGet())
+    {
+        case TYP_SIMD8:
+        {
+            EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
+            break;
+        }
+
+#if defined(TARGET_XARCH)
+        case TYP_SIMD32:
+        {
+            EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
+            break;
+        }
+
+        case TYP_SIMD64:
+        {
+            EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
+            break;
+        }
+#endif // TARGET_XARCH
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    return mskCon;
+}
+
 
 //------------------------------------------------------------------------
 // gtCanSkipCovariantStoreCheck: see if storing a ref type value to an array
