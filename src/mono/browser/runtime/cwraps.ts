@@ -115,7 +115,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_get_simd_intrinsic", "pointer", ["number", "number"]],
     [true, "mono_jiterp_get_simd_opcode", "number", ["number", "number"]],
     [true, "mono_jiterp_get_arg_offset", "number", ["number", "number", "number"]],
-    [true, "mono_jiterp_get_opcode_info", "number", ["number", "number"]],
+    [true, "mono_jiterp_get_opcode_info", "pointer", ["number", "number"]],
     [true, "mono_wasm_is_zero_page_reserved", "number", []],
     [true, "mono_jiterp_is_special_interface", "number", ["number"]],
     [true, "mono_jiterp_initialize_table", "void", ["number", "number", "number"]],
