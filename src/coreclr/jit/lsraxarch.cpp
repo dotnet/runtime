@@ -3231,15 +3231,15 @@ int LinearScan::BuildMul(GenTree* tree)
     int              dstCount      = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
-    // Lowering has ensured that op1 is never the memory operand
-    assert(!op1->isUsedFromMemory());
-
     // Start with building the uses, ensuring that one of the operands is in the implicit register (RAX or RDX)
     // Place first operand in implicit register, unless:
     //  * it is a memory address
     // *  or the second operand is already in the register
     if (useMulx)
     {
+         // Lowering has ensured that op1 is never the memory operand
+        assert(!op1->isUsedFromMemory());
+
         // prefer to have the constant in RDX (op1) this is especially useful for MUL_HI usage
         if(op2->IsCnsIntOrI())
         {
@@ -3253,13 +3253,21 @@ int LinearScan::BuildMul(GenTree* tree)
     }
     else
     {
+        assert(!op1->isUsedFromMemory() || !op2->isUsedFromMemory());
+
         SingleTypeRegSet srcCandidates1 = RBM_NONE;
-        // If op2 is memory then tell allocator to pass op1 in RAX
-        if (op2->isUsedFromMemory())
+        SingleTypeRegSet srcCandidates2 = RBM_NONE;
+        
+        // If one of the operands is a memory address, specify RAX for the other operand
+        if (op1->isUsedFromMemory())
+        {
+            srcCandidates2 = SRBM_RAX;
+        }
+        else if (op2->isUsedFromMemory())
         {
             srcCandidates1 = SRBM_RAX;
         }
-        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, RBM_NONE);
+        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, srcCandidates2);
     }
 
     // There are three forms of x86 multiply in base instruction set
