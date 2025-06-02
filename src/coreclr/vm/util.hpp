@@ -17,6 +17,7 @@
 #include "xclrdata.h"
 #include "posterror.h"
 #include <type_traits>
+#include "minipal/time.h"
 
 #ifndef DACCESS_COMPILE
 #if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
@@ -797,8 +798,8 @@ private:
     static const int64_t NormalizedTicksPerSecond = 10000000 /* 100ns ticks per second (1e7) */;
     static Volatile<double> s_frequency;
 
-    LARGE_INTEGER startTimestamp;
-    LARGE_INTEGER stopTimestamp;
+    int64_t startTimestamp;
+    int64_t stopTimestamp;
 
 #if _DEBUG
     bool isRunning = false;
@@ -811,15 +812,14 @@ public:
         if (s_frequency.Load() == -1)
         {
             double frequency;
-            LARGE_INTEGER qpfValue;
-            QueryPerformanceFrequency(&qpfValue);
-            frequency = static_cast<double>(qpfValue.QuadPart);
+            int64_t qpfValue = minipal_hires_tick_frequency();
+            frequency = static_cast<double>(qpfValue);
             frequency /= NormalizedTicksPerSecond;
             s_frequency.Store(frequency);
         }
 
-        startTimestamp.QuadPart = 0;
-        startTimestamp.QuadPart = 0;
+        startTimestamp = 0;
+        stopTimestamp = 0;
     }
 
     // ======================================================================================
@@ -829,7 +829,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(!isRunning);
-        QueryPerformanceCounter(&startTimestamp);
+        startTimestamp = minipal_hires_ticks();
 
 #if _DEBUG
         isRunning = true;
@@ -843,7 +843,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(isRunning);
-        QueryPerformanceCounter(&stopTimestamp);
+        stopTimestamp = minipal_hires_ticks();
 
 #if _DEBUG
         isRunning = false;
@@ -859,9 +859,9 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(!isRunning);
-        _ASSERTE(startTimestamp.QuadPart > 0);
-        _ASSERTE(stopTimestamp.QuadPart > 0);
-        return static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
+        _ASSERTE(startTimestamp > 0);
+        _ASSERTE(stopTimestamp > 0);
+        return static_cast<int64_t>((stopTimestamp - startTimestamp) / s_frequency);
     }
 };
 

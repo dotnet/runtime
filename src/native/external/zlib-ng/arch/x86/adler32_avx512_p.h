@@ -3,6 +3,17 @@
 
 #include <immintrin.h>
 #include <stdint.h>
+
+/* Written because Visual C++ toolchains before v142 have constant overflow in AVX512 intrinsic macros */
+#if defined(_MSC_VER) && !defined(_MM_K0_REG8)
+#  undef _mm512_extracti64x4_epi64
+#  define _mm512_extracti64x4_epi64(v1, e1) _mm512_maskz_extracti64x4_epi64(UINT8_MAX, v1, e1)
+#  undef _mm512_set1_epi16
+#  define _mm512_set1_epi16(e1) _mm512_maskz_set1_epi16(UINT32_MAX, e1)
+#  undef _mm512_maddubs_epi16
+#  define _mm512_maddubs_epi16(v1, v2) _mm512_maskz_maddubs_epi16(UINT32_MAX, v1, v2)
+#endif
+
 /* Written because *_add_epi32(a) sets off ubsan */
 static inline uint32_t _mm512_reduce_add_epu32(__m512i x) {
     __m256i a = _mm512_extracti64x4_epi64(x, 1);

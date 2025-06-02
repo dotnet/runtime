@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         ///     if <paramref name="parameters" /> is not a valid RSA key or if <paramref name="parameters"
         ///     /> is a full key pair and the default KSP is used.
         /// </exception>
-        public override unsafe void ImportParameters(RSAParameters parameters)
+        public override void ImportParameters(RSAParameters parameters)
         {
             ArraySegment<byte> keyBlob = parameters.ToBCryptBlob();
 

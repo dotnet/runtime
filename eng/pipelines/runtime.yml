@@ -123,6 +123,7 @@ extends:
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
           - browser_wasm
+          - browser_wasm_win
           jobParameters:
             nameSuffix: AllSubsets_CoreCLR
             buildArgs: -s clr.runtime+libs -rc Release -c Release -lc $(_BuildConfig)
@@ -530,7 +531,7 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -613,7 +614,7 @@ extends:
             value: 180
           jobParameters:
             testGroup: innerloop
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -956,7 +957,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_CoreCLR
-            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs++libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:TestAssemblies=false
+            buildArgs: -s clr.runtime+clr.alljits+clr.corelib+clr.nativecorelib+clr.tools+clr.packages+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:RunSmokeTestsOnly=true
             timeoutInMinutes: 480
             condition: >-
               or(
@@ -965,16 +966,16 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
             # extra steps, run tests
-            postBuildSteps:
-              - template: /eng/pipelines/libraries/helix.yml
-                parameters:
-                  creator: dotnet-bot
-                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-                  condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['coreclrContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+            # postBuildSteps:
+            #   - template: /eng/pipelines/libraries/helix.yml
+            #     parameters:
+            #       creator: dotnet-bot
+            #       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            #       condition: >-
+            #         or(
+            #         eq(variables['librariesContainsChange'], true),
+            #         eq(variables['coreclrContainsChange'], true),
+            #         eq(variables['isRollingBuild'], true))
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size

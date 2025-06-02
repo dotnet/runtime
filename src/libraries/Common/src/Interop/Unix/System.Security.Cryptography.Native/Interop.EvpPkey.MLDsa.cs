@@ -24,25 +24,35 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_MLDsaGetPalId(
             SafeEvpPKeyHandle mldsa,
-            out PalMLDsaAlgorithmId mldsaId);
+            out PalMLDsaAlgorithmId mldsaId,
+            out int hasSeed,
+            out int hasSecretKey);
 
-        internal static PalMLDsaAlgorithmId MLDsaGetPalId(SafeEvpPKeyHandle key)
+        internal static PalMLDsaAlgorithmId MLDsaGetPalId(
+            SafeEvpPKeyHandle key,
+            out bool hasSeed,
+            out bool hasSecretKey)
         {
             const int Success = 1;
+            const int Yes = 1;
             const int Fail = 0;
-            int result = CryptoNative_MLDsaGetPalId(key, out PalMLDsaAlgorithmId mldsaId);
+            int result = CryptoNative_MLDsaGetPalId(
+                key,
+                out PalMLDsaAlgorithmId mldsaId,
+                out int pKeyHasSeed,
+                out int pKeyHasSecretKey);
 
-            return result switch
+            switch (result)
             {
-                Success => mldsaId,
-                Fail => throw CreateOpenSslCryptographicException(),
-                int other => throw FailThrow(other),
-            };
-
-            static Exception FailThrow(int result)
-            {
-                Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_MLDsaGetPalId)}.");
-                return new CryptographicException();
+                case Success:
+                    hasSeed = pKeyHasSeed == Yes;
+                    hasSecretKey = pKeyHasSecretKey == Yes;
+                    return mldsaId;
+                case Fail:
+                    throw CreateOpenSslCryptographicException();
+                default:
+                    Debug.Fail($"Unexpected return value {result} from {nameof(CryptoNative_MLDsaGetPalId)}.");
+                    throw new CryptographicException();
             }
         }
 

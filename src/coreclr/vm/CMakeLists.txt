@@ -47,13 +47,16 @@ endif(FEATURE_PERFTRACING)
 add_compile_definitions($<${FEATURE_CORECLR_CACHED_INTERFACE_DISPATCH}:FEATURE_CACHED_INTERFACE_DISPATCH>)
 add_compile_definitions($<${FEATURE_CORECLR_VIRTUAL_STUB_DISPATCH}:FEATURE_VIRTUAL_STUB_DISPATCH>)
 
+if(CLR_CMAKE_TARGET_ARCH_WASM)
+    add_compile_definitions(FEATURE_STATICALLY_LINKED)
+endif()
+
 set(VM_SOURCES_DAC_AND_WKS_COMMON
     appdomain.cpp
     array.cpp
     assembly.cpp
     assemblybinder.cpp
     binder.cpp
-    bundle.cpp
     castcache.cpp
     callcounting.cpp
     cdacplatformmetadata.cpp
@@ -298,12 +301,14 @@ set(VM_SOURCES_WKS
     assemblyprobeextension.cpp
     assemblyspec.cpp
     baseassemblyspec.cpp
+    bundle.cpp
     ${RUNTIME_DIR}/CachedInterfaceDispatch.cpp
     CachedInterfaceDispatch_Coreclr.cpp
     cachelinealloc.cpp
     callconvbuilder.cpp
     callhelpers.cpp
     callsiteinspect.cpp
+    callstubgenerator.cpp
     clrconfignative.cpp
     clrex.cpp
     clrvarargs.cpp
@@ -449,6 +454,7 @@ set(VM_HEADERS_WKS
     interoputil.inl
     interpexec.h
     interpframeallocator.h
+    callstubgenerator.h
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
@@ -785,11 +791,11 @@ if(CLR_CMAKE_TARGET_ARCH_AMD64)
     )
 
     set(VM_SOURCES_WKS_ARCH
-        ${ARCH_SOURCES_DIR}/jitinterfaceamd64.cpp
         ${ARCH_SOURCES_DIR}/profiler.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
         jitinterfacegen.cpp
+        writebarriermanager.cpp
     )
 
     set(VM_HEADERS_WKS_ARCH
@@ -856,6 +862,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
         gcinfodecoder.cpp
+        writebarriermanager.cpp
     )
 
     if(CLR_CMAKE_HOST_UNIX)
