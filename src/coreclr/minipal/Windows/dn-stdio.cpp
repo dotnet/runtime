@@ -19,6 +19,19 @@ int64_t fgetsize(FILE* stream)
     return length;
 }
 
+int64_t ftell_64(FILE* stream)
+{
+    fpos_t pos;
+    fgetpos(stream, &pos);
+    return (int64_t)pos;
+}
+
+int fsetpos_64(FILE* stream, int64_t pos)
+{
+    fpos_t pos = (fpos_t)pos;
+    return fsetpos(stream, &pos);
+}
+
 HRESULT HRESULT_FROM_LAST_STDIO()
 {
     return HRESULT_FROM_WIN32(::GetLastError());

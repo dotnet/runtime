@@ -10,4 +10,6 @@
 
 int fopen_u16(FILE** stream, const WCHAR* path, const WCHAR* mode);
 int64_t fgetsize(FILE* stream);
+int64_t ftell_64(FILE* stream);
+int fsetpos_64(FILE* stream, int64_t pos);
 HRESULT HRESULT_FROM_LAST_STDIO();

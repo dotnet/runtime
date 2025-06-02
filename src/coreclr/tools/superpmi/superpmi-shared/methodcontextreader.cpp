@@ -435,8 +435,7 @@ double MethodContextReader::Progress()
     else
     {
         this->AcquireLock();
-        fpos_t pos;
-        fgetpos(this->fp, &pos);
+        int64_t pos = ftell_64(this->fp);
         this->ReleaseLock();
         return (double)pos;
     }
@@ -498,7 +497,7 @@ int64_t MethodContextReader::GetOffset(unsigned int methodNumber)
 
 MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int methodNumber)
 {
-    fpos_t pos = this->GetOffset(methodNumber);
+    int64_t pos = this->GetOffset(methodNumber);
     if (pos < 0)
     {
         return MethodContextBuffer(-3);
@@ -509,7 +508,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
     {
         return MethodContextBuffer(-2);
     }
-    if (fsetpos(this->fp, &pos) == 0)
+    if (fsetpos_64(this->fp, pos) == 0)
     {
         // ReadMethodContext will release the lock, but we already acquired it
         MethodContextBuffer mcb = this->ReadMethodContext(false);
@@ -591,8 +590,7 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 
 void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
 {
-    fpos_t pos    = 0;
-    int    result = fsetpos(this->fp, &pos);
+    int result = fseek(this->fp, 0, SEEK_SET);
     assert(result == 0);
     
     Indexes     = newIndexes;

@@ -51,6 +51,16 @@ int64_t fgetsize(FILE* stream)
     return length;
 }
 
+int64_t ftell_64(FILE* stream)
+{
+    return ftell(stream);
+}
+
+int fsetpos_64(FILE* stream, int64_t pos)
+{
+    return fseek(stream, pos, SEEK_SET);
+}
+
 #define FACILITY_WIN32                   7
 #define HRESULT_FROM_WIN32(x) ((HRESULT)(x) <= 0 ? ((HRESULT)(x)) : ((HRESULT) (((x) & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000)))
 
