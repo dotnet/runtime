@@ -366,22 +366,35 @@ namespace System.Threading.Channels
         private Action<object?, CancellationToken> CancellationCallbackDelegate =>
             field ??= (state, cancellationToken) =>
             {
-                if (((AsyncOperation)state!).TrySetCanceled(cancellationToken))
+                AsyncOperation op = (AsyncOperation)state!;
+                if (op.TrySetCanceled(cancellationToken))
                 {
-                    switch (state)
+                    ChannelUtilities.UnsafeQueueUserWorkItem(static state => // escape cancellation callback
                     {
-                        case BlockedReadAsyncOperation<T> blockedReader:
-                            Interlocked.CompareExchange(ref _blockedReader, null, blockedReader);
-                            break;
+                        lock (state.Key.SyncObj)
+                        {
+                            switch (state.Value)
+                            {
+                                case BlockedReadAsyncOperation<T> blockedReader:
+                                    if (state.Key._blockedReader == blockedReader)
+                                    {
+                                        state.Key._blockedReader = null;
+                                    }
+                                    break;
 
-                        case WaitingReadAsyncOperation waitingReader:
-                            Interlocked.CompareExchange(ref _waitingReader, null, waitingReader);
-                            break;
+                                case WaitingReadAsyncOperation waitingReader:
+                                    if (state.Key._waitingReader == waitingReader)
+                                    {
+                                        state.Key._waitingReader = null;
+                                    }
+                                    break;
 
-                        default:
-                            Debug.Fail($"Unexpected operation: {state}");
-                            break;
-                    }
+                                default:
+                                    Debug.Fail($"Unexpected operation: {state.Value}");
+                                    break;
+                            }
+                        }
+                    }, new KeyValuePair<SingleConsumerUnboundedChannel<T>, AsyncOperation>(this, op));
                 }
             };
 
