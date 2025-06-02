@@ -82,26 +82,33 @@ namespace System
 
         /// <summary>
         /// Gets the year component of the date represented by this instance.
+        /// The returned value is an integer between 1 and 9999.
         /// </summary>
         public int Year => GetEquivalentDateTime().Year;
 
         /// <summary>
         /// Gets the month component of the date represented by this instance.
+        /// The returned value is an integer between 1 and 12.
         /// </summary>
         public int Month => GetEquivalentDateTime().Month;
 
         /// <summary>
         /// Gets the day component of the date represented by this instance.
+        /// The returned value is an integer between 1 and 31.
         /// </summary>
         public int Day => GetEquivalentDateTime().Day;
 
         /// <summary>
         /// Gets the day of the week represented by this instance.
+        /// The returned value is an integer between 0 and 6, where 0 indicates
+        /// Sunday, 1 indicates Monday, 2 indicates Tuesday, 3 indicates Wednesday,
+        /// 4 indicates Thursday, 5 indicates Friday, and 6 indicates Saturday.
         /// </summary>
         public DayOfWeek DayOfWeek => (DayOfWeek)((_dayNumber + 1) % 7);
 
         /// <summary>
         /// Gets the day of the year represented by this instance.
+        /// The returned value is an integer between 1 and 366.
         /// </summary>
         public int DayOfYear => GetEquivalentDateTime().DayOfYear;
 
