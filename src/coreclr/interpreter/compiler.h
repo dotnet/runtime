@@ -347,6 +347,7 @@ private:
     int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);

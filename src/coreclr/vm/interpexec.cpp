@@ -137,9 +137,6 @@ MAIN_LOOP:
             // keep it for such purposes until we don't need it anymore.
             pFrame->ip = (int32_t*)ip;
 
-
-            int offset = (int)(ip - (pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t)));
-
             switch (*ip)
             {
 #ifdef DEBUG
