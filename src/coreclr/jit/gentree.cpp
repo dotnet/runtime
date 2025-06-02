@@ -13016,6 +13016,20 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
 
+            // Dump profile if any
+            if (call->IsHelperCall() && impIsCastHelperMayHaveProfileData(eeGetHelperNum(call->gtCallMethHnd)))
+            {
+                CORINFO_CLASS_HANDLE likelyClasses[MAX_GDV_TYPE_CHECKS]     = {};
+                unsigned             likelyLikelihoods[MAX_GDV_TYPE_CHECKS] = {};
+                int                  likelyClassCount                       = 0;
+                pickGDV(call, call->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
+                        likelyLikelihoods, false);
+                if (likelyClassCount > 0)
+                {
+                    printf(" (%d%% likely '%s')", likelyLikelihoods[0], eeGetClassName(likelyClasses[0]));
+                }
+            }
+
             gtDispCommonEndLine(tree);
 
             if (!topOnly)
