@@ -5093,11 +5093,9 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             ClassLayout*         toLayout  = nullptr;
             var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            if (fromType == TYP_REF || info.compCompHnd->isNullableType(fromTypeHnd) != TypeCompareState::MustNot ||
-                toType == TYP_REF || info.compCompHnd->isNullableType(toTypeHnd) != TypeCompareState::MustNot)
+            if (fromType == TYP_REF || toType == TYP_REF)
             {
-                // Fallback to the software implementation to throw when the types fail a "default(T) is not null"
-                // check.
+                // Fallback to the software implementation to throw for reference types
                 return nullptr;
             }
 
