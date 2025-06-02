@@ -30,17 +30,22 @@
         // Load potential new object address into t1.
         ld    t1, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
-        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add   t0, t0, t1
+        // Load and calculate the maximum size of object we can fit.
         ld    t2, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)(a0)
+        sub   t2, t2, t1
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
+        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
         bltu  t2, t0, LOCAL_LABEL(RhpNewFast_RarePath)
 
-        // Update the alloc pointer to account for the allocation.
-        sd    t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
+        // Calculate the new alloc pointer to account for the allocation.
+        add   t0, t0, t1
 
-        // Set the new objects MethodTable pointer
+        // Set the new objects MethodTable pointer.
         sd    s1, OFFSETOF__Object__m_pEEType(t1)
+
+        // Update the alloc pointer to the newly calculated one.
+        sd    t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
         mv    a0, t1
 
@@ -123,26 +128,31 @@ LOCAL_LABEL(NewOutOfMemory):
 
         // s1 == MethodTable
         // s2 == element count
-        // t0 == string size
+        // t0 == string/array size
 
         // Load potential new object address into t3.
-        ld   t1, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
+        ld    t1, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
+        // Load and calculate the maximum size of object we can fit.
+        ld    t2, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)(a0)
+        sub   t2, t2, t1
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add  t0, t0, t1
-        ld   t2, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit)(a0)
-        bltu t2, t0, 1f
+        bltu  t2, t0, 1f
 
-        // Update the alloc pointer to account for the allocation.
-        sd   t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
+        // Calculate the new alloc pointer to account for the allocation.
+        add   t0, t0, t1
 
-        // Set the new object's MethodTable pointer and element count.
-        sd   s1, OFFSETOF__Object__m_pEEType(t1)
-        sd   s2, OFFSETOF__Array__m_Length(t1)
+        // Set the new objects MethodTable pointer.
+        sd    s1, OFFSETOF__Object__m_pEEType(t1)
+        sd    s2, OFFSETOF__Array__m_Length(t1)
+
+        // Update the alloc pointer to the newly calculated one.
+        sd    t0, (OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr)(a0)
 
         // Return the object allocated in a0.
-        mv   a0, t1
+        mv    a0, t1
 
         EPILOG_RESTORE_REG_PAIR          s1, s2, 0x10
         EPILOG_RESTORE_REG_PAIR_INDEXED  fp, ra, 0x20

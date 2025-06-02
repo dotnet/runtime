@@ -25,17 +25,22 @@
         // Load potential new object address into t3.
         ld.d  $t3, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
+        // Load and calculate the maximum size of object we can fit.
+        ld.d  $t2, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit
+        sub.d  $t2, $t2, $t3
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        bltu  $t2, $a2, LOCAL_LABEL(RhpNewFast_RarePath)
+
+        // Calculate the new alloc pointer to account for the allocation.
         add.d  $a2, $a2, $t3
-        ld.d   $t4, $a1, OFFSETOF__ee_alloc_context__combined_limit
-        bltu  $t4, $a2, LOCAL_LABEL(RhpNewFast_RarePath)
 
-        // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
-
-        // Set the new objects MethodTable pointer
+        // Set the new objects MethodTable pointer.
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
+
+        // Update the alloc pointer to the newly calculated one.
+        st.d  $a2, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         ori  $a0, $t3, 0
         jirl  $r0, $ra, 0
@@ -101,21 +106,23 @@ LOCAL_LABEL(NewOutOfMemory):
         // Load potential new object address into t3.
         ld.d  $t3, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
+        // Load and calculate the maximum size of object we can fit.
+        ld.d  $t2, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit
+        sub.d  $t2, $t2, $t3
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        bltu  $t2, $a2, C_FUNC(RhpNewVariableSizeObject)
+
+        // Calculate the new alloc pointer to account for the allocation.
         add.d  $a2, $a2, $t3
-        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context__combined_limit
-        bltu  $t3, $a2, C_FUNC(RhpNewVariableSizeObject)
-
-        // Reload new object address into r12.
-        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
-
-        // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Set the new objects MethodTable pointer and element count.
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
         st.d  $a1, $t3, OFFSETOF__Array__m_Length
+
+        // Update the alloc pointer to the newly calculated one.
+        st.d  $a2, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         // Return the object allocated in a0.
         ori  $a0, $t3, 0
