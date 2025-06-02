@@ -3240,6 +3240,12 @@ int LinearScan::BuildMul(GenTree* tree)
     // *  or the second operand is already in the register
     if (useMulx)
     {
+        // prefer to have the constant in RDX (op1) this is especially useful for MUL_HI usage
+        if(op2->IsCnsIntOrI())
+        {
+            std::swap(op1, op2);
+        }
+
         // In lowering, we place any memory operand in op2 so we default to placing op1 in RDX
         // By selecting RDX here we don't have to kill it
         srcCount = BuildOperandUses(op1, SRBM_RDX);
