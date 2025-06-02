@@ -587,16 +587,28 @@ JS_ENGINES = [NODE_JS]
       <_MonoCMakeArgs Include="-DDISABLE_JITERPRETER=1"/>      
       <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread"/>
       <_MonoCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
-	    <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64" />
-	    <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64" />      
+	    <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64=1" />
+      <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-g" />
+      <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-gsource-map" />
+      <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-O0" />
+      <_MonoCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64" />      
       <_MonoCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread"/>
       <_MonoCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-D_GNU_SOURCE=1" />
-	    <_MonoCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64" />
-	    <_MonoCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64" />      
-      <_MonoBuildEnv Condition="'$(WasmEnableMemory64)' == 'true'" Include="TARGET_BUILD_ARCH=wasm64" />
+	    <_MonoCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64=1" />
+	    <_MonoCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64" />
+      <_MonoCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-g" />
+      <_MonoBuildEnv Condition="'$(WasmEnableMemory64)' == 'true'" Include="TARGET_BUILD_ARCH=wasm64" />      
     </ItemGroup>
 
-    
+    <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' AND '$(Configuration)' == 'Release'">
+      <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
+      <WasmNativeStrip>false</WasmNativeStrip>
+      <EnableAggressiveTrimming>false</EnableAggressiveTrimming>
+      <InvariantTimezone>true</InvariantTimezone>
+      <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+      <EmccEnableAssertions>true</EmccEnableAssertions>
+      <PublishTrimmed>false</PublishTrimmed>
+    </PropertyGroup>
     
     <!-- Browser specific options -->
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
@@ -896,11 +908,11 @@ JS_ENGINES = [NODE_JS]
     <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <MonoAOTCMakeArgs Include="-DDISABLE_JITERPRETER=1"/>
       <_MonoAOTCFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1" />
-      <_MonoAOTCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64 -DMEMORY64" />
+      <_MonoAOTCFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="--target=wasm64 -DMEMORY64=1 -g -gsource-map -O0" />
       <_MonoAOTCPPFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
-      <_MonoAOTCPPFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
+      <_MonoAOTCPPFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64=1 --target=wasm64 -g -gsource-map -O0" />
       <_MonoAOTCXXFLAGS Condition="'$(WasmEnableThreads)' == 'true'" Include="-pthread -D_GNU_SOURCE=1"/>
-      <_MonoAOTCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64 --target=wasm64" />
+      <_MonoAOTCXXFLAGS Condition="'$(WasmEnableMemory64)' == 'true'" Include="-DMEMORY64=1 --target=wasm64 -g -gsource-map -O0" />
       <MonoAOTCMakeArgs Condition="'$(WasmEnableMemory64)' == 'true'" Include="TARGET_BUILD_ARCH=wasm64" />
     </ItemGroup>
     
