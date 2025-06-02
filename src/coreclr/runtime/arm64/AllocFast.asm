@@ -10,8 +10,8 @@
 ;;  x0 == MethodTable
     LEAF_ENTRY RhpNewFast
 
-        ;; x1 = ee_alloc_context pointer, TRASHES x2
-        INLINE_GET_ALLOC_CONTEXT x1, x2
+        ;; x3 = ee_alloc_context pointer, TRASHES x2
+        INLINE_GET_ALLOC_CONTEXT x3, x2
 
         ;;
         ;; x0 contains MethodTable pointer
@@ -20,25 +20,30 @@
 
         ;;
         ;; x0: MethodTable pointer
-        ;; x1: ee_alloc_context pointer
         ;; x2: base size
+        ;; x3: ee_alloc_context pointer
         ;;
 
         ;; Load potential new object address into x12.
-        ldr         x12, [x1, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
 
-        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; Load and calculate the maximum size of object we can fit
+        ldr         x13, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
+        sub         x13, x13, x12
+
+        ;; Determine whether the end of the object is too big for the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add         x2, x2, x12
-        ldr         x13, [x1, #OFFSETOF__ee_alloc_context__combined_limit]
         cmp         x2, x13
         bhi         RhpNewFast_RarePath
 
-        ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x1, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ;; Calculate the alloc pointer to account for the allocation.
+        add         x2, x2, x12
 
-        ;; Set the new object's MethodTable pointer
+        ;; Set the new objects MethodTable pointer.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
+
+        ;; Update the alloc pointer to the newly calculated one.
+        str         x2, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
 
         mov         x0, x12
         ret
@@ -102,22 +107,24 @@ NewOutOfMemory
         ;; Load potential new object address into x12.
         ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
 
-        ;; Determine whether the end of the object would lie outside of the current allocation context. If so,
+        ;; Load and calculate the maximum size of object we can fit.
+        ldr         x13, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
+        sub         x13, x13, x12
+
+        ;; Determine whether the end of the object is too big for the current allocation context. If so,
         ;; we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add         x2, x2, x12
-        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__combined_limit]
-        cmp         x2, x12
+        cmp         x2, x13
         bhi         RhpNewVariableSizeObject
 
-        ;; Reload new object address into r12.
-        ldr         x12, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
+        ;; Calculate the new alloc pointer to account for the allocation.
+        add         x2, x2, x12
 
-        ;; Update the alloc pointer to account for the allocation.
-        str         x2, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
-
-        ;; Set the new object's MethodTable pointer and element count.
+        ;; Set the new objects MethodTable pointer and element count.
         str         x0, [x12, #OFFSETOF__Object__m_pEEType]
         str         x1, [x12, #OFFSETOF__Array__m_Length]
+
+        ;; Update the alloc pointer to the newly calculated one.
+        str         x2, [x3, #OFFSETOF__ee_alloc_context__alloc_ptr]
 
         ;; Return the object allocated in x0.
         mov         x0, x12
