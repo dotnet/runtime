@@ -152,6 +152,25 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!_runtimeFunctions.TryGetRuntimeFunctionIndexForAddress(r2rInfo.RuntimeFunctions, r2rInfo.NumRuntimeFunctions, relativeAddr, out index))
                 return;
 
+            bool featureEHFunclets = Target.ReadGlobal<byte>(Constants.Globals.FeatureEHFunclets) != 0;
+            if (featureEHFunclets)
+            {
+                // Look up index in hot/cold map - if the function is in the cold part, get the index of the hot part.
+                index = _hotCold.GetHotFunctionIndex(r2rInfo.NumHotColdMap, r2rInfo.HotColdMap, index);
+                Debug.Assert(index < r2rInfo.NumRuntimeFunctions);
+            }
+
+            TargetPointer methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+            while (featureEHFunclets && methodDesc == TargetPointer.Null)
+            {
+                // Funclets won't have a direct entry in the map of runtime function entry point to method desc.
+                // The funclet's address (and index) will be greater than that of the corresponding function, so
+                // we decrement the index to find the actual function / method desc for the funclet.
+                index--;
+                methodDesc = GetMethodDescForRuntimeFunction(r2rInfo, imageBase, index);
+            }
+            Debug.Assert(methodDesc != TargetPointer.Null);
+
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
