@@ -2342,23 +2342,38 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         case GT_CNS_MSK:
         {
             GenTreeMskCon* mask = tree->AsMskCon();
-
             emitter* emit = GetEmitter();
-            // emitAttr attr = emitTypeSize(targetType);
-            // insOpts opt   = emit::optGetSveInsOpt(emitTypeSize(intrin.baseType));
 
-            if (mask->IsAllBitsSet())
-            {
-                emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, INS_OPTS_SCALABLE_B, SVE_PATTERN_ALL);
-            }
-            else if (mask->IsZero())
+            // Try every type until a match is found
+
+            if (mask->IsZero())
             {
                 emit->emitInsSve_R(INS_sve_pfalse, EA_SCALABLE, targetReg, INS_OPTS_SCALABLE_B);
+                break;
             }
-            else
+
+            insOpts opt = INS_OPTS_SCALABLE_B;
+            SveMaskPattern pat = EvaluateSimdMaskPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
+
+            if (pat == SveMaskPatternNone)
             {
-                unreached();
+                opt = INS_OPTS_SCALABLE_H;
+                pat = EvaluateSimdMaskPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal);
             }
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_S;
+                pat = EvaluateSimdMaskPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal);
+            }
+
+            if (pat == SveMaskPatternNone)
+            {
+                opt = INS_OPTS_SCALABLE_D;
+                pat = EvaluateSimdMaskPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal);
+            }
+
+            emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, (insSvePattern)pat);
             break;
         }
 #endif // FEATURE_SIMD

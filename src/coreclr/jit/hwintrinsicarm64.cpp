@@ -3463,7 +3463,7 @@ GenTree* Compiler::gtNewSimdCnsVecTrueMaskPattern(var_types retType,
 {
     int64_t lanes    = simdSize / genTypeSize(simdBaseType);
     int64_t laneBits = genTypeSize(simdBaseType) * 8;
-    int64_t laneVal  = (laneBits > 32) ? UINT64_MAX : (((int64_t)1 << laneBits) - 1);
+    int64_t laneVal  = 1; //(laneBits > 32) ? UINT64_MAX : (((int64_t)1 << laneBits) - 1);
 
     // Ensure the base type is integral
     if (simdBaseType == TYP_DOUBLE)
