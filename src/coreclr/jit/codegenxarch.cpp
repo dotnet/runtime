@@ -856,9 +856,8 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
             assert(treeNode->OperGet() == GT_MUL_LONG);
 
             // emit MULX instruction
-            regNumber hiReg  = targetReg;
-            regNumber lowReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
-            inst_RV_RV_TT(INS_mulx, size, hiReg, lowReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
+            regNumber hiReg = treeNode->AsMultiRegOp()->GetRegByIndex(1);
+            inst_RV_RV_TT(INS_mulx, size, hiReg, targetReg, rmOp, /* isRMW */ false, INS_OPTS_NONE);
 #endif
         }
     }
