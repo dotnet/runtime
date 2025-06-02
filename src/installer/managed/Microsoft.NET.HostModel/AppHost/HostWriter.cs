@@ -151,12 +151,12 @@ namespace Microsoft.NET.HostModel.AppHost
                             RewriteAppHost(memoryMappedFile, memoryMappedViewAccessor);
                             if (isMachOImage)
                             {
+                                MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
                                 if (enableMacOSCodeSign)
                                 {
-                                    MachObjectFile machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, destinationFileName);
+                                    appHostLength = machObjectFile.AdHocSignFile(memoryMappedViewAccessor, destinationFileName);
                                 }
-                                else if (MachObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
+                                else if (machObjectFile.RemoveCodeSignatureIfPresent(memoryMappedViewAccessor, out long? length))
                                 {
                                     appHostLength = length.Value;
                                 }
@@ -188,81 +188,6 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Set the current AppHost as a single-file bundle.
-        /// </summary>
-        /// <param name="appHostPath">The path of Apphost template, which has the place holder</param>
-        /// <param name="bundleHeaderOffset">The offset to the location of bundle header</param>
-        /// <param name="macosCodesign">Whether to ad-hoc sign the bundle as a Mach-O executable</param>
-        public static void SetAsBundle(
-            string appHostPath,
-            long bundleHeaderOffset,
-            bool macosCodesign = false)
-        {
-            byte[] bundleHeaderPlaceholder = {
-                // 8 bytes represent the bundle header-offset
-                // Zero for non-bundle apphosts (default).
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
-                0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
-                0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
-                0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
-                0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
-            };
-
-            // Re-write the destination apphost with the proper contents.
-            RetryUtil.RetryOnIOError(() =>
-            {
-                string tmpFile = null;
-                try
-                {
-                    // MacOS keeps a cache of file signatures. To avoid using the cached value,
-                    // we need to create a new inode with the contents of the old file, sign it,
-                    // and copy it the original file path.
-                    tmpFile = Path.GetTempFileName();
-                    using (FileStream newBundleStream = new FileStream(tmpFile, FileMode.Create, FileAccess.ReadWrite))
-                    {
-                        using (FileStream oldBundleStream = new FileStream(appHostPath, FileMode.Open, FileAccess.Read))
-                        {
-                            oldBundleStream.CopyTo(newBundleStream);
-                        }
-
-                        long bundleSize = newBundleStream.Length;
-                        long mmapFileSize = macosCodesign
-                            ? bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, Path.GetFileName(appHostPath))
-                            : bundleSize;
-                        using (MemoryMappedFile memoryMappedFile = MemoryMappedFile.CreateFromFile(newBundleStream, null, mmapFileSize, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
-                        using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
-                        {
-                            BinaryUtils.SearchAndReplace(accessor,
-                                                        bundleHeaderPlaceholder,
-                                                        BitConverter.GetBytes(bundleHeaderOffset),
-                                                        pad0s: false);
-
-                            if (MachObjectFile.IsMachOImage(accessor))
-                            {
-                                var machObjectFile = MachObjectFile.Create(accessor);
-                                bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
-                                if (!wasBundled)
-                                    throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
-
-                                if (macosCodesign)
-                                    bundleSize = machObjectFile.CreateAdHocSignature(accessor, Path.GetFileName(appHostPath));
-                            }
-                        }
-                        newBundleStream.SetLength(bundleSize);
-                    }
-                    File.Copy(tmpFile, appHostPath, overwrite: true);
-                    Chmod755(appHostPath);
-                }
-                finally
-                {
-                    if (tmpFile is not null)
-                        File.Delete(tmpFile);
-                }
-            });
         }
 
         /// <summary>
@@ -328,7 +253,7 @@ namespace Microsoft.NET.HostModel.AppHost
             return searchOptionsBytes;
         }
 
-        private static void Chmod755(string pathName)
+        internal static void Chmod755(string pathName)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return;

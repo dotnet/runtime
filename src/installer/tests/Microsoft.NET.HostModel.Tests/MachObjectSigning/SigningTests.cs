@@ -155,8 +155,8 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
             }
         }
 
-        // [Fact]
-        // [PlatformSpecific(TestPlatforms.OSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
         void SignedMachOExecutableRuns()
         {
             using var testArtifact = TestArtifact.Create(nameof(SignedMachOExecutableRuns));
@@ -211,7 +211,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
                 {
                     var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, fileName);
+                    appHostLength = machObjectFile.AdHocSignFile(memoryMappedViewAccessor, fileName);
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }
@@ -234,7 +234,7 @@ namespace Microsoft.NET.HostModel.MachO.CodeSign.Tests
                 using (MemoryMappedViewAccessor memoryMappedViewAccessor = memoryMappedFile.CreateViewAccessor(0, appHostSignedLength, MemoryMappedFileAccess.ReadWrite))
                 {
                     var machObjectFile = MachObjectFile.Create(memoryMappedViewAccessor);
-                    appHostLength = machObjectFile.CreateAdHocSignature(memoryMappedViewAccessor, tmpFile);
+                    appHostLength = machObjectFile.AdHocSignFile(memoryMappedViewAccessor, tmpFile);
                 }
                 appHostDestinationStream.SetLength(appHostLength);
             }

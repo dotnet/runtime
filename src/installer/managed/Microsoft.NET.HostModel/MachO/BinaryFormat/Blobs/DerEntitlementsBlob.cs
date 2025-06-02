@@ -8,8 +8,6 @@ using Microsoft.NET.HostModel.MachO;
 
 internal sealed class DerEntitlementsBlob : SimpleBlob
 {
-    public static uint MaxSize => 256;
-
     public DerEntitlementsBlob(MemoryMappedViewAccessor accessor, long offset)
         : base(accessor, offset)
     {
@@ -17,10 +15,16 @@ internal sealed class DerEntitlementsBlob : SimpleBlob
         {
             throw new InvalidDataException($"Invalid magic for DerEntitlementsBlob: {Magic}");
         }
+        if (Size > MaxSize)
+        {
+            throw new InvalidDataException($"DerEntitlementsBlob size exceeds maximum allowed size: {Size} > {MaxSize}");
+        }
     }
 
     public DerEntitlementsBlob(byte[] data)
         : base(BlobMagic.DerEntitlements, data)
     {
     }
+
+    public static uint MaxSize => 1024;
 }

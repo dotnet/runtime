@@ -19,6 +19,10 @@ internal sealed class EntitlementsBlob : SimpleBlob
         {
             throw new InvalidDataException($"Invalid magic for EntitlementsBlob: {Magic}");
         }
+        if (Size > MaxSize)
+        {
+            throw new InvalidDataException($"EntitlementsBlob size exceeds maximum allowed size: {Size} > {MaxSize}");
+        }
     }
 
     public EntitlementsBlob(byte[] data)
@@ -26,10 +30,5 @@ internal sealed class EntitlementsBlob : SimpleBlob
     {
     }
 
-    public override void Write(MemoryMappedViewAccessor accessor, long offset)
-    {
-        base.Write(accessor, offset);
-    }
-
-    public static uint MaxSize => 256;
+    public static uint MaxSize => 2048;
 }

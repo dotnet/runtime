@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.NET.HostModel.MachO;
+#nullable enable
 
 namespace Microsoft.NET.HostModel.Bundle
 {
@@ -42,9 +43,9 @@ namespace Microsoft.NET.HostModel.Bundle
                        BundleOptions options = BundleOptions.None,
                        OSPlatform? targetOS = null,
                        Architecture? targetArch = null,
-                       Version targetFrameworkVersion = null,
+                       Version? targetFrameworkVersion = null,
                        bool diagnosticOutput = false,
-                       string appAssemblyName = null,
+                       string? appAssemblyName = null,
                        bool macosCodesign = true)
         {
             _tracer = new Trace(diagnosticOutput);
@@ -182,7 +183,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 try
                 {
                     PEReader peReader = new PEReader(file);
-                    CorHeader corHeader = peReader.PEHeaders.CorHeader;
+                    CorHeader? corHeader = peReader.PEHeaders.CorHeader;
 
                     isPE = true; // If peReader.PEHeaders doesn't throw, it is a valid PEImage
                     return corHeader != null;
@@ -273,7 +274,6 @@ namespace Microsoft.NET.HostModel.Bundle
                 _tracer.Log($"Ovewriting existing File {bundlePath}");
             }
 
-            BinaryUtils.CopyFile(hostSource, bundlePath);
 
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
             // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
@@ -281,72 +281,146 @@ namespace Microsoft.NET.HostModel.Bundle
             var relativePathToSpec = new Dictionary<string, FileSpec>(StringComparer.Ordinal);
 
             long headerOffset = 0;
-            using (FileStream bundle = File.Open(bundlePath, FileMode.Open, FileAccess.ReadWrite))
-            using (BinaryWriter writer = new BinaryWriter(bundle, Encoding.Default, leaveOpen: true))
+            string destinationDirectory = new FileInfo(bundlePath).Directory?.FullName ?? "";
+            if (!Directory.Exists(destinationDirectory))
             {
-                if (_target.IsOSX)
+                Directory.CreateDirectory(destinationDirectory);
+            }
+            using (FileStream bundleStream = File.Open(bundlePath, FileMode.Create, FileAccess.ReadWrite))
+            {
+                using (FileStream hostSourceStream = File.OpenRead(hostSource))
                 {
-                    MachObjectFile.RemoveCodeSignatureIfPresent(bundle);
+                    hostSourceStream.CopyTo(bundleStream);
                 }
-                bundle.Position = bundle.Length;
-                foreach (var fileSpec in fileSpecs)
+                EmbeddedSignatureBlob? signatureBlob = null;
+                using (MemoryMappedFile bundleMap = MemoryMappedFile.CreateFromFile(bundleStream, null, bundleStream.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                using (MemoryMappedViewAccessor viewAccessor = bundleMap.CreateViewAccessor())
                 {
-                    string relativePath = fileSpec.BundleRelativePath;
-
-                    if (IsHost(relativePath))
+                    if (_target.IsOSX)
                     {
-                        continue;
-                    }
-
-                    if (ShouldIgnore(relativePath))
-                    {
-                        _tracer.Log($"Ignore: {relativePath}");
-                        continue;
-                    }
-
-                    FileType type = InferType(fileSpec);
-
-                    if (ShouldExclude(type, relativePath))
-                    {
-                        _tracer.Log($"Exclude [{type}]: {relativePath}");
-                        fileSpec.Excluded = true;
-                        continue;
-                    }
-
-                    if (relativePathToSpec.TryGetValue(fileSpec.BundleRelativePath, out var existingFileSpec))
-                    {
-                        if (!string.Equals(fileSpec.SourcePath, existingFileSpec.SourcePath, StringComparison.Ordinal))
+                        MachObjectFile file = MachObjectFile.Create(viewAccessor);
+                        signatureBlob = file.EmbeddedSignatureBlob;
+                        if (file.RemoveCodeSignatureIfPresent(viewAccessor, out long? newLength))
                         {
-                            throw new ArgumentException($"Invalid input specification: Found entries '{fileSpec.SourcePath}' and '{existingFileSpec.SourcePath}' with the same BundleRelativePath '{fileSpec.BundleRelativePath}'");
+                            if (!newLength.HasValue)
+                            {
+                                throw new InvalidOperationException("Unreachable code");
+                            }
+                            bundleStream.SetLength(newLength.Value);
+                        }
+                    }
+                }
+                using (BinaryWriter writer = new BinaryWriter(bundleStream, Encoding.Default, leaveOpen: true))
+                {
+                    bundleStream.Position = bundleStream.Length;
+                    foreach (var fileSpec in fileSpecs)
+                    {
+                        string relativePath = fileSpec.BundleRelativePath;
+
+                        if (IsHost(relativePath))
+                        {
+                            continue;
                         }
 
-                        // Exact duplicate - intentionally skip and don't include a second copy in the bundle
-                        continue;
-                    }
-                    else
-                    {
-                        relativePathToSpec.Add(fileSpec.BundleRelativePath, fileSpec);
+                        if (ShouldIgnore(relativePath))
+                        {
+                            _tracer.Log($"Ignore: {relativePath}");
+                            continue;
+                        }
+
+                        FileType type = InferType(fileSpec);
+
+                        if (ShouldExclude(type, relativePath))
+                        {
+                            _tracer.Log($"Exclude [{type}]: {relativePath}");
+                            fileSpec.Excluded = true;
+                            continue;
+                        }
+
+                        if (relativePathToSpec.TryGetValue(fileSpec.BundleRelativePath, out var existingFileSpec))
+                        {
+                            if (!string.Equals(fileSpec.SourcePath, existingFileSpec.SourcePath, StringComparison.Ordinal))
+                            {
+                                throw new ArgumentException($"Invalid input specification: Found entries '{fileSpec.SourcePath}' and '{existingFileSpec.SourcePath}' with the same BundleRelativePath '{fileSpec.BundleRelativePath}'");
+                            }
+
+                            // Exact duplicate - intentionally skip and don't include a second copy in the bundle
+                            continue;
+                        }
+                        else
+                        {
+                            relativePathToSpec.Add(fileSpec.BundleRelativePath, fileSpec);
+                        }
+
+                        using (FileStream file = File.OpenRead(fileSpec.SourcePath))
+                        {
+                            FileType targetType = _target.TargetSpecificFileType(type);
+                            (long startOffset, long compressedSize) = AddToBundle(bundleStream, file, targetType);
+                            FileEntry entry = BundleManifest.AddEntry(targetType, file, relativePath, startOffset, compressedSize, _target.BundleMajorVersion);
+                            _tracer.Log($"Embed: {entry}");
+                        }
                     }
 
-                    using (FileStream file = File.OpenRead(fileSpec.SourcePath))
-                    {
-                        FileType targetType = _target.TargetSpecificFileType(type);
-                        (long startOffset, long compressedSize) = AddToBundle(bundle, file, targetType);
-                        FileEntry entry = BundleManifest.AddEntry(targetType, file, relativePath, startOffset, compressedSize, _target.BundleMajorVersion);
-                        _tracer.Log($"Embed: {entry}");
-                    }
+                    // Write the bundle manifest
+                    headerOffset = BundleManifest.Write(writer);
+                    _tracer.Log($"Header Offset={headerOffset}");
+                    _tracer.Log($"Meta-data Size={writer.BaseStream.Position - headerOffset}");
+                    _tracer.Log($"Bundle: Path={bundlePath}, Size={bundleStream.Length}");
                 }
 
-                // Write the bundle manifest
-                headerOffset = BundleManifest.Write(writer);
-                _tracer.Log($"Header Offset={headerOffset}");
-                _tracer.Log($"Meta-data Size={writer.BaseStream.Position - headerOffset}");
-                _tracer.Log($"Bundle: Path={bundlePath}, Size={bundle.Length}");
+                var bundleName = Path.GetFileName(bundlePath);
+                SetAsBundle(bundleName, bundleStream, headerOffset, signatureBlob);
+
+                HostWriter.Chmod755(bundlePath);
+
+                return bundlePath;
             }
+        }
 
-            HostWriter.SetAsBundle(bundlePath, headerOffset, _macosCodesign);
+        private void SetAsBundle(string bundleName, FileStream bundleStream, long headerOffset, EmbeddedSignatureBlob? signatureBlob)
+        {
 
-            return bundlePath;
+            byte[] bundleHeaderPlaceholder = {
+                    // 8 bytes represent the bundle header-offset
+                    // Zero for non-bundle apphosts (default).
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    // 32 bytes represent the bundle signature: SHA-256 for ".net core bundle"
+                    0x8b, 0x12, 0x02, 0xb9, 0x6a, 0x61, 0x20, 0x38,
+                    0x72, 0x7b, 0x93, 0x02, 0x14, 0xd7, 0xa0, 0x32,
+                    0x13, 0xf5, 0xb9, 0xe6, 0xef, 0xae, 0x33, 0x18,
+                    0xee, 0x3b, 0x2d, 0xce, 0x24, 0xb3, 0x6a, 0xae
+                };
+            long bundleSize = bundleStream.Length;
+            long signedSize = bundleSize + MachObjectFile.GetSignatureSizeEstimate((uint)bundleSize, bundleName);
+            bundleStream.SetLength(signedSize);
+
+            // Re-write the destination apphost with the proper contents.
+            RetryUtil.RetryOnIOError(() =>
+            {
+                using (MemoryMappedFile bundleMap = MemoryMappedFile.CreateFromFile(bundleStream, null, bundleStream.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                using (MemoryMappedViewAccessor accessor = bundleMap.CreateViewAccessor(0, 0, MemoryMappedFileAccess.ReadWrite))
+                {
+                    BinaryUtils.SearchAndReplace(accessor,
+                                                bundleHeaderPlaceholder,
+                                                BitConverter.GetBytes(headerOffset),
+                                                pad0s: false);
+
+                    if (_target.IsOSX)
+                    {
+                        var machObjectFile = MachObjectFile.Create(accessor);
+                        bool wasBundled = machObjectFile.TryAdjustHeadersForBundle((ulong)bundleSize, accessor);
+                        if (!wasBundled)
+                            throw new InvalidOperationException("The single-file bundle was unable to be created. This is likely because the bundled content is too large.");
+
+                        if (_macosCodesign)
+                        {
+                            signedSize = machObjectFile.AdHocSignFile(accessor, bundleName, signatureBlob);
+                        }
+                    }
+                }
+            });
+
+            bundleStream.SetLength(signedSize);
         }
     }
 }

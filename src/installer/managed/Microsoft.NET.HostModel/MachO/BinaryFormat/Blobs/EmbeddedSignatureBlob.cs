@@ -28,15 +28,6 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
             }
             throw new InvalidOperationException("CodeDirectoryBlob not found.");
         }
-        set
-        {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value), "CodeDirectoryBlob cannot be set to null");
-            }
-            RemoveBlob(CodeDirectorySpecialSlot.CodeDirectory);
-            AddBlob(value, CodeDirectorySpecialSlot.CodeDirectory);
-        }
     }
 
     /// <summary>
@@ -52,15 +43,6 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
                     return (RequirementsBlob)b;
             }
             return null;
-        }
-        set
-        {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value), "RequirementsBlob cannot be set to null");
-            }
-            RemoveBlob(CodeDirectorySpecialSlot.Requirements);
-            AddBlob(value, CodeDirectorySpecialSlot.Requirements);
         }
     }
 
@@ -78,15 +60,6 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
             }
             return null;
         }
-        set
-        {
-            if (value is null)
-            {
-                throw new ArgumentNullException(nameof(value), "CmsWrapperBlob cannot be set to null");
-            }
-            RemoveBlob(CodeDirectorySpecialSlot.CmsWrapper);
-            AddBlob(value, CodeDirectorySpecialSlot.CmsWrapper);
-        }
     }
 
     public EntitlementsBlob? EntitlementsBlob
@@ -99,14 +72,6 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
                     return (EntitlementsBlob)b;
             }
             return null;
-        }
-        set
-        {
-            RemoveBlob(CodeDirectorySpecialSlot.Entitlements);
-            if (value != null)
-            {
-                AddBlob(value, CodeDirectorySpecialSlot.Entitlements);
-            }
         }
     }
 
@@ -121,14 +86,6 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
             }
             return null;
         }
-        set
-        {
-            RemoveBlob(CodeDirectorySpecialSlot.DerEntitlements);
-            if (value != null)
-            {
-                AddBlob(value, CodeDirectorySpecialSlot.DerEntitlements);
-            }
-        }
     }
 
     /// <Inheritdoc/>
@@ -139,7 +96,12 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
     /// <summary>
     /// Creates a new EmbeddedSignatureBlob with the specified blobs.
     /// </summary>
-    public EmbeddedSignatureBlob(CodeDirectoryBlob codeDirectoryBlob, RequirementsBlob requirementsBlob, CmsWrapperBlob cmsWrapperBlob, EntitlementsBlob? entitlementsBlob, DerEntitlementsBlob? derEntitlementsBlob)
+    public EmbeddedSignatureBlob(
+        CodeDirectoryBlob codeDirectoryBlob,
+        RequirementsBlob requirementsBlob,
+        CmsWrapperBlob cmsWrapperBlob,
+        EntitlementsBlob? entitlementsBlob,
+        DerEntitlementsBlob? derEntitlementsBlob)
         : base(BlobMagic.EmbeddedSignature)
     {
         AddBlob(codeDirectoryBlob, CodeDirectorySpecialSlot.CodeDirectory);
@@ -155,11 +117,13 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
         }
     }
 
-    public uint GetSpecialSlotCount()
+    public uint GetSpecialSlotHashCount()
     {
         uint maxSlot = 0;
         foreach (var b in BlobIndices)
         {
+            // Blobs that have special slots hashes have their slot value in the lower 8 bits.
+            // CMSWrapperBlob has a special slot value of 0x1000 and does not have a hash.
             uint slot = 0xFF & (uint)b.Slot;
             if (slot > maxSlot)
             {
@@ -167,5 +131,118 @@ internal sealed class EmbeddedSignatureBlob : SuperBlob
             }
         }
         return maxSlot;
+    }
+
+    /// <summary>
+    /// Gets the largest size estimate for a code signature.
+    /// </summary>
+    public static unsafe long GetLargestSizeEstimate(uint fileSize, string identifier, byte? hashSize = null)
+    {
+        byte usedHashSize = hashSize ?? CodeDirectoryBlob.DefaultHashType.GetHashSize();
+
+        long size = 0;
+        // SuperBlob header
+        size += sizeof(BlobMagic);
+        size += sizeof(uint); // Blob size
+        size += sizeof(uint); // Blob count
+        size += sizeof(BlobIndex) * 5; // 5 sub-blobs: CodeDirectory, Requirements, CmsWrapper, Entitlements, DerEntitlements
+
+        // CodeDirectoryBlob
+        size += sizeof(BlobMagic);
+        size += sizeof(uint); // Blob size
+        size += sizeof(CodeDirectoryBlob.CodeDirectoryHeader); // CodeDirectory header
+        size += CodeDirectoryBlob.GetIdentifierLength(identifier); // Identifier
+        size += (long)CodeDirectoryBlob.GetCodeSlotCount(fileSize) * usedHashSize; // Code hashes
+        size += (long)(uint)CodeDirectorySpecialSlot.DerEntitlements * usedHashSize; // Special code hashes
+
+        size += RequirementsBlob.Empty.Size; // Requirements is always written as an empty blob
+        size += CmsWrapperBlob.Empty.Size; // CMS blob is always written as an empty blob
+        size += EntitlementsBlob.MaxSize;
+        size += DerEntitlementsBlob.MaxSize;
+        return size;
+    }
+
+    /// <summary>
+    /// Returns the size of a signature used to replace an existing one.
+    /// If the existing signature is null, it will assume sizing using the default signature, which includes the Requirements and CMS blobs.
+    /// If the existing signature is not null, it will preserve the Entitlements and DER Entitlements blobs if they exist.
+    /// </summary>
+    internal static unsafe long GetSignatureSize(uint fileSize, string identifier, EmbeddedSignatureBlob? existingSignature, byte? hashSize = null)
+    {
+        byte usedHashSize = hashSize ?? CodeDirectoryBlob.DefaultHashType.GetHashSize();
+        uint specialCodeSlotCount = (uint)CodeDirectorySpecialSlot.Requirements;
+        uint embeddedSignatureSubBlobCount = 3; // CodeDirectory, Requirements, CMS Wrapper are always present
+        uint entitlementsBlobSize = 0;
+        uint derEntitlementsBlobSize = 0;
+
+        if (existingSignature != null)
+        {
+            // We preserve Entitlements and DER Entitlements blobs if they exist in the old signature.
+            // We need to update the relevant sizes and counts to reflect this.
+            specialCodeSlotCount = Math.Max((uint)CodeDirectorySpecialSlot.Requirements, existingSignature.GetSpecialSlotHashCount());
+            entitlementsBlobSize = existingSignature.EntitlementsBlob?.Size ?? 0;
+            derEntitlementsBlobSize = existingSignature.DerEntitlementsBlob?.Size ?? 0;
+            // Requirements and CMSWrapper blobs are always overwritten as emtpy, but present.
+            if (existingSignature.EntitlementsBlob is not null)
+                embeddedSignatureSubBlobCount += 1;
+            if (existingSignature.DerEntitlementsBlob is not null)
+                embeddedSignatureSubBlobCount += 1;
+        }
+
+        // Calculate the size of the new signature
+        long size = 0;
+        // EmbeddedSignature
+        size += sizeof(BlobMagic); // Signature blob Magic number
+        size += sizeof(uint); // Size field
+        size += sizeof(uint); // Blob count
+        size += sizeof(BlobIndex) * embeddedSignatureSubBlobCount; // EmbeddedSignature sub-blobs
+        size += sizeof(BlobMagic); // CD Magic number
+                                   // CodeDirectory
+        size += sizeof(uint); // CD Size field
+        size += sizeof(CodeDirectoryBlob.CodeDirectoryHeader); // CodeDirectory header
+        size += CodeDirectoryBlob.GetIdentifierLength(identifier); // Identifier
+        size += specialCodeSlotCount * usedHashSize; // Special code hashes
+        size += CodeDirectoryBlob.GetCodeSlotCount(fileSize) * usedHashSize; // Code hashes
+                                                 // RequirementsBlob
+        size += RequirementsBlob.Empty.Size;
+        // EntitlementsBlob
+        size += entitlementsBlobSize;
+        // DER EntitlementsBlob
+        size += derEntitlementsBlobSize;
+        // CMSWrapperBlob
+        size += CmsWrapperBlob.Empty.Size; // CMS blob
+
+        return size;
+    }
+
+    public static bool AreEquivalent(EmbeddedSignatureBlob a, EmbeddedSignatureBlob b)
+    {
+        if (a == null && b == null)
+            return true;
+
+        if (a == null || b == null)
+            return false;
+
+        if (a.GetSpecialSlotHashCount() != b.GetSpecialSlotHashCount())
+            return false;
+
+        if (!a.CodeDirectoryBlob.Equals(b.CodeDirectoryBlob))
+            throw new ArgumentException("CodeDirectory blobs are not equivalent");
+
+        if (a.RequirementsBlob == null ^ b.RequirementsBlob == null)
+            return false;
+
+        if (a.EntitlementsBlob == null ^ b.EntitlementsBlob == null)
+            return false;
+
+        if (a.DerEntitlementsBlob == null ^ b.DerEntitlementsBlob == null)
+            return false;
+
+        if (a.CmsWrapperBlob == null ^ b.CmsWrapperBlob == null)
+            return false;
+
+        // TODO: Compare the contents of the blobs
+
+        return true;
     }
 }
