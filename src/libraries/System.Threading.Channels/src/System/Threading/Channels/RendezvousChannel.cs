@@ -90,13 +90,7 @@ namespace System.Threading.Channels
 
                     if (parent._doneWriting is null)
                     {
-                        while (ChannelUtilities.TryDequeue(ref parent._blockedWritersHead, out blockedWriter))
-                        {
-                            if (blockedWriter.TryReserveCompletionIfCancelable())
-                            {
-                                break;
-                            }
-                        }
+                        blockedWriter = ChannelUtilities.TryDequeueAndReserveCompletionIfCancelable(ref parent._blockedWritersHead);
                     }
                 }
 
@@ -156,13 +150,7 @@ namespace System.Threading.Channels
                     }
 
                     // Reserve a blocked writer if one is available.
-                    while (ChannelUtilities.TryDequeue(ref parent._blockedWritersHead, out blockedWriter))
-                    {
-                        if (blockedWriter.TryReserveCompletionIfCancelable())
-                        {
-                            break;
-                        }
-                    }
+                    blockedWriter = ChannelUtilities.TryDequeueAndReserveCompletionIfCancelable(ref parent._blockedWritersHead);
 
                     // If we couldn't get one, create a waiting reader, and reserve any waiting writers to alert.
                     if (blockedWriter is null)
@@ -324,13 +312,7 @@ namespace System.Threading.Channels
 
                     if (parent._doneWriting is null)
                     {
-                        while (ChannelUtilities.TryDequeue(ref parent._blockedReadersHead, out blockedReader))
-                        {
-                            if (blockedReader.TryReserveCompletionIfCancelable())
-                            {
-                                break;
-                            }
-                        }
+                        blockedReader = ChannelUtilities.TryDequeueAndReserveCompletionIfCancelable(ref parent._blockedReadersHead);
                     }
                 }
 
@@ -410,13 +392,7 @@ namespace System.Threading.Channels
                     }
 
                     // Reserve a blocked reader if one is available.
-                    while (ChannelUtilities.TryDequeue(ref parent._blockedReadersHead, out blockedReader))
-                    {
-                        if (blockedReader.TryReserveCompletionIfCancelable())
-                        {
-                            break;
-                        }
-                    }
+                    blockedReader = ChannelUtilities.TryDequeueAndReserveCompletionIfCancelable(ref parent._blockedReadersHead);
 
                     // If we couldn't get one, create a blocked writer, and reserve any waiting readers to alert.
                     if (blockedReader is null && !parent._dropWrites)
