@@ -67,6 +67,14 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 #define EP_MAX_STACK_DEPTH 100
 
 /*
+ * User_Events constants
+ */
+
+#define EP_TRACEPOINT_ENABLE_BIT 31
+
+#define EP_TRACEPOINT_FORMAT_V1 "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload; __rel_loc u8[] meta"
+
+/*
  * EventPipe Enums.
  */
 

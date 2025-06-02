@@ -17,6 +17,11 @@ if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
   set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
 endif()
 
+check_include_files(
+    "linux/user_events.h;sys/ioctl.h;unistd.h"
+    HAVE_LINUX_USER_EVENTS_H
+)
+
 if (NOT DEFINED EP_GENERATED_HEADER_PATH)
     message(FATAL_ERROR "Required configuration EP_GENERATED_HEADER_PATH not set.")
 endif (NOT DEFINED EP_GENERATED_HEADER_PATH)

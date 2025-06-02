@@ -31,6 +31,23 @@ void
 ep_session_remove_dangling_session_states (EventPipeSession *session);
 
 static
+bool
+ep_tracepoint_reg(
+	uint32_t fd,
+	EventPipeTracepoint *tracepoint);
+
+static
+bool
+ep_tracepoint_unreg (
+	uint32_t fd,
+	EventPipeTracepoint *tracepoint);
+
+static
+void
+ep_session_user_events_tracepoints_init (
+	EventPipeSession *session);
+
+static
 void
 ep_session_disable_user_events (EventPipeSession *session);
 
@@ -160,6 +177,107 @@ session_disable_streaming_thread (EventPipeSession *session)
 	ep_rt_wait_event_free (rt_thread_shutdown_event);
 }
 
+static
+bool
+ep_tracepoint_reg (
+	uint32_t fd,
+	EventPipeTracepoint *tracepoint)
+{
+#if HAVE_LINUX_USER_EVENTS_H
+	struct user_reg reg = {0};
+
+	reg.size = sizeof(reg);
+	reg.enable_bit = EP_TRACEPOINT_ENABLE_BIT;
+	reg.enable_size = sizeof(tracepoint->enabled);
+	reg.enable_addr = (uint64_t)&tracepoint->enabled;
+
+	reg.name_args = (uint64_t)tracepoint->tracepoint_format;
+
+	if (ioctl(fd, DIAG_IOCSREG, &reg) == -1)
+		return false;
+
+	tracepoint->write_index = reg.write_index;
+
+	return true;
+#else // HAVE_LINUX_USER_EVENTS_H
+	// Not Supported
+	return false;
+#endif // HAVE_LINUX_USER_EVENTS_H
+}
+
+static
+bool
+ep_tracepoint_unreg (
+	uint32_t fd,
+	EventPipeTracepoint *tracepoint)
+{
+#if HAVE_LINUX_USER_EVENTS_H
+	struct user_unreg unreg = {0};
+
+	unreg.size = sizeof(unreg);
+	unreg.disable_bit = EP_TRACEPOINT_ENABLE_BIT;
+	unreg.disable_addr = (uint64_t)&tracepoint->enabled;
+
+	if (ioctl(fd, DIAG_IOCSUNREG, &unreg) == -1)
+		return false;
+
+	return true;
+#else // HAVE_LINUX_USER_EVENTS_H
+	// Not Supported
+	return false;
+#endif // HAVE_LINUX_USER_EVENTS_H
+}
+
+/*
+ *
+ *
+ *
+ *
+ */
+static
+void
+ep_session_user_events_tracepoints_init (
+	EventPipeSession *session)
+{
+	EP_ASSERT (session != NULL);
+	EP_ASSERT (session->session_type == EP_SESSION_TYPE_USEREVENTS);
+	EP_ASSERT (session->user_events_data_fd != 0);
+
+	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
+	EP_ASSERT (providers != NULL);
+
+	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
+		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
+		EP_ASSERT (session_provider != NULL);
+
+		EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
+		EP_ASSERT (tracepoint_config != NULL);
+		EP_ASSERT (tracepoint_config->default_tracepoint.tracepoint_format != NULL || tracepoint_config->tracepoints != NULL);
+
+		if (tracepoint_config->default_tracepoint.tracepoint_format != NULL) {
+			ep_raise_error_if_nok (ep_tracepoint_reg (session->user_events_data_fd,
+													  &tracepoint_config->default_tracepoint));
+		}
+
+		dn_vector_t *tracepoints = tracepoint_config->tracepoints;
+		if (tracepoints != NULL) {
+			for (uint32_t i = 0; i < tracepoints->size; ++i) {
+				EventPipeTracepoint *tracepoint = *dn_vector_index_t (tracepoints, EventPipeTracepoint *, i);
+				ep_raise_error_if_nok (tracepoint != NULL);
+
+				ep_raise_error_if_nok (ep_tracepoint_reg (session->user_events_data_fd,
+														  tracepoint));
+			}
+		}
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+
 EventPipeSession *
 ep_session_alloc (
 	uint32_t index,
@@ -243,7 +361,7 @@ ep_session_alloc (
 		// Transfer ownership of the user_events_data file descriptor to the EventPipe Session.
 		instance->user_events_data_fd = user_events_data_fd;
 		// With the user_events_data file, register tracepoints for each provider's tracepoint configurations
-		// ep_session_user_events_tracepoints_init (instance);
+		ep_session_user_events_tracepoints_init (instance);
 		break;
 
 	default:
@@ -541,15 +659,40 @@ static
 void
 ep_session_disable_user_events (EventPipeSession *session)
 {
+#if HAVE_LINUX_USER_EVENTS_H
 	EP_ASSERT (session != NULL);
 	ep_return_void_if_nok (session->session_type == EP_SESSION_TYPE_USEREVENTS);
 
 	ep_requires_lock_held ();
 
+	// Remove all tracepoints.
+	EventPipeSessionProviderList *providers = ep_session_get_providers (session);
+	EP_ASSERT (providers != NULL);
+	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
+		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
+		EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
+		if (tracepoint_config->default_tracepoint.tracepoint_format != NULL)
+			ep_tracepoint_unreg (session->user_events_data_fd, &tracepoint_config->default_tracepoint);
+
+		if (tracepoint_config->tracepoints != NULL) {
+			for (uint32_t i = 0; i < tracepoint_config->tracepoints->size; ++i) {
+				EventPipeTracepoint *tracepoint = *dn_vector_index_t (tracepoint_config->tracepoints, EventPipeTracepoint *, i);
+				EP_ASSERT (tracepoint != NULL);
+
+				ep_tracepoint_unreg (session->user_events_data_fd, tracepoint);
+			}
+			dn_vector_clear (tracepoint_config->tracepoints);
+		}
+	}
+
 	if (session->user_events_data_fd != 0) {
 		close (session->user_events_data_fd);
 		session->user_events_data_fd = 0;
 	}
+#else
+	// Not Supported
+	return;
+#endif // HAVE_LINUX_USER_EVENTS_H
 }
 
 bool
