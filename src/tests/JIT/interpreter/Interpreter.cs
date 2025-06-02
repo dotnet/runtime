@@ -428,8 +428,577 @@ public class InterpreterTest
         if (!TestMdArray())
             Environment.FailFast(null);
         */
+        TestExceptionHandling();
 
         System.GC.Collect();
+    }
+
+    public static void TestExceptionHandling()
+    {
+        TestTryFinally();
+        TestCatchCurrent();
+        TestCatchFinally();
+        TestFilterCatchCurrent();
+        TestFilterFailedCatchCurrent();
+        TestFilterCatchFinallyCurrent();
+        TestFilterFailedCatchFinallyCurrent();
+        TestCatchNested();
+        TestCatchFinallyNested();
+        TestFilterCatchNested();
+        TestFilterFailedCatchNested();
+        TestFilterCatchFinallyNested();
+        TestFilterFailedCatchFinallyNested();
+        TestFinallyBeforeCatch();
+        TestModifyAlias();
+
+        TestThrowWithinCatch();
+        TestThrowWithinFinally();
+        TestFinallyWithInnerTryBeforeCatch();
+        TestFuncletAccessToLocals();
+        TestFinallyRefLocal();
+    }
+
+    public static void TestFuncletAccessToLocals()
+    {
+        int a = 7;
+        int b = 3;
+        MyStruct2 str = new MyStruct2(2);
+
+        try
+        {
+            Console.WriteLine(1);
+            try
+            {
+                Console.WriteLine(2);
+                throw null;
+            }
+            catch (Exception e) when (b == 3)
+            {
+                Console.WriteLine(b);
+                Console.WriteLine(e.Message);
+                try
+                {
+                    Console.WriteLine(4);
+                }
+                catch (Exception e1)
+                {
+                    Console.WriteLine(5);
+                    Console.WriteLine(e1.Message);
+                }
+                finally
+                {
+                    Console.WriteLine(6);
+                }
+            }
+            finally
+            {
+                Console.WriteLine(a);
+            }
+        }
+        catch (Exception e2)
+        {
+            Console.WriteLine(8);
+            Console.WriteLine(e2.Message);
+        }
+    }
+
+    public static bool TestFilter(ref TestStruct2 s)
+    {
+        return s.a == 1;
+    }
+
+    public static void TestFinallyRefLocal()
+    {
+        TestStruct2 s;
+        s.a = 1;
+        s.b = 2;
+        try
+        {
+            throw null;
+        }
+        catch (Exception e) when (TestFilter(ref s))
+        {
+        }
+    }
+
+    public static void TestTryFinally()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+        }
+        finally
+        {
+            x *= 10;
+            x += 2;
+        }
+
+        if (x != 12)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestNestedTryFinally()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            try
+            {
+                x *= 10;
+                x += 2;
+            }
+            finally
+            {
+                x *= 10;
+                x += 3;
+            }
+        }
+        finally
+        {
+            x *= 10;
+            x += 4;
+        }
+        if (x != 1234)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFinallyBeforeCatch()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            try
+            {
+                x *= 10;
+                x += 2;
+                throw null;
+            }
+            finally
+            {
+                x *= 10;
+                x += 3;
+            }
+        } catch (Exception) {
+            x *= 10;
+            x += 4;
+        }
+        if (x != 1234)
+        {
+            throw null;
+        }
+    }
+
+    public static unsafe void TestModifyAlias()
+    {
+        int x = 1;
+        int* y = &x;
+        try
+        {
+            throw null;
+        }
+        catch (Exception)
+        {
+            // At this point, we are modifying the slot in the original frame
+            *y = 2;
+            // But then we check the value in the current frame, this will fail
+            if (x != 2)
+            {
+                throw null;
+            }
+        }
+    }
+
+    public static void TestThrowWithinCatch()
+    {
+        try
+        {
+            try
+            {
+                throw null;
+            }
+            catch (Exception)
+            {
+                throw null;
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    public static void TestThrowWithinFinally()
+    {
+        try
+        {
+            try
+            {
+                throw null;
+            }
+            catch (Exception)
+            {
+            }
+            finally
+            {
+                throw null;
+            }
+        }
+        catch (Exception)
+        {
+        }
+    }
+
+    public static void Throw()
+    {
+        throw null; // Simulating the throw operation
+    }
+
+    public static void TestCatchCurrent()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            throw null;
+        }
+        catch (Exception)
+        {
+            x *= 10;
+            x += 2;
+        }
+        if (x != 12)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestCatchFinally()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            throw null;
+        }
+        catch (Exception)
+        {
+            x *= 10;
+            x += 2;
+        }
+        finally
+        {
+            // Copied from PowLoop
+            // This small block of code require retry in GenerateCode
+            // and this test that the retry logic is correct even when the retry happen within a funclet
+
+            int n = 5;
+            int nr = 10;
+            long ret = 1;
+            for (int i = 0; i < n; i++)
+                ret *= nr;
+            bool dummy=  (int)ret == 100;
+
+            x *= 10;
+            x += 3;
+        }
+        if (x != 123)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterCatchCurrent()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            throw null;
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        if (x != 12)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFinallyWithInnerTryBeforeCatch()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            try
+            {
+                x *= 10;
+                x += 2;
+                throw null;
+            }
+            finally
+            {
+                try
+                {
+                    x *= 10;
+                    x += 3;
+                }
+                finally
+                {
+                    x *= 10;
+                    x += 4;
+                }
+                x *= 10;
+                x += 5;
+            }
+        } catch (Exception) {
+            x *= 10;
+            x += 6;
+        }
+        if (x != 123456)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterFailedCatchCurrent()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            throw null;
+        }
+        catch (Exception) when (x != 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 3;
+        }
+        if (x != 13)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterCatchFinallyCurrent()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            throw null;
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        finally
+        {
+            x *= 10;
+            x += 3;
+        }
+        if (x != 123)
+        {
+            throw null;
+        }
+    }
+
+
+    public static void TestFilterFailedCatchFinallyCurrent()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            throw null;
+        }
+        catch (Exception) when (x != 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 3;
+        }
+        finally
+        {
+            x *= 10;
+            x += 4;
+        }
+        if (x != 134)
+        {
+            throw null;
+        }
+    }
+    public static void TestCatchNested()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            Throw();
+        }
+        catch (Exception)
+        {
+            x *= 10;
+            x += 2;
+        }
+        if (x != 12)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestCatchFinallyNested()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            Throw();
+        }
+        catch (Exception)
+        {
+            x *= 10;
+            x += 2;
+        }
+        finally
+        {
+            x *= 10;
+            x += 3;
+        }
+        if (x != 123)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterCatchNested()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            Throw();
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        if (x != 12)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterFailedCatchNested()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            Throw();
+        }
+        catch (Exception) when (x != 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 3;
+        }
+        if (x != 13)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterCatchFinallyNested()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            Throw();
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        finally
+        {
+            x *= 10;
+            x += 3;
+        }
+        if (x != 123)
+        {
+            throw null;
+        }
+    }
+
+    public static void TestFilterFailedCatchFinallyNested()
+    {
+        int x = 0;
+        try
+        {
+            x *= 10;
+            x += 1;
+            Throw();
+        }
+        catch (Exception) when (x != 1)
+        {
+            x *= 10;
+            x += 2;
+        }
+        catch (Exception) when (x == 1)
+        {
+            x *= 10;
+            x += 3;
+        }
+        finally
+        {
+            x *= 10;
+            x += 4;
+        }
+        if (x != 134)
+        {
+            throw null;
+        }
     }
 
     public static int Mul4(int a, int b, int c, int d)
