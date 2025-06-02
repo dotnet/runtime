@@ -29,11 +29,26 @@ namespace System.Net.Http.Functional.Tests
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
     {
-        public static bool IsNotWinHttpHandler = !IsWinHttpHandler;
-
-        public HttpClientHandlerTest(ITestOutputHelper output) : base(output)
+        private readonly Timer _timer = null;
+        public HttpClientHandlerTest(ITestOutputHelper output)
+            : base(output)
         {
+            using (ExecutionContext.SuppressFlow())
+            {
+                _timer = new Timer((_) =>
+                {
+                    Environment.FailFast("Test took too long to complete, likely due to a deadlock or infinite loop.");
+                }, null, TimeSpan.FromMinutes(5), Timeout.InfiniteTimeSpan);
+            }
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            _timer?.Dispose();
+            base.Dispose(disposing);
+        }
+
+        public static bool IsNotWinHttpHandler = !IsWinHttpHandler;
 
         [Fact]
         public void CookieContainer_SetNull_ThrowsArgumentNullException()
