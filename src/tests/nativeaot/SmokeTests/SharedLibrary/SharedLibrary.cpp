@@ -83,11 +83,7 @@ int main(int argc, char* argv[])
     return 100;
 }
 
-#ifdef TARGET_WINDOWS
 extern "C" const char* __cdecl __asan_default_options()
-#else
-extern "C" const char* __stdcall __asan_default_options()
-#endif
 {
     // NativeAOT is not designed to be unloadable, so we'll leak a few allocations from the shared library.
     // Disable leak detection as we don't care about these leaks as of now.
