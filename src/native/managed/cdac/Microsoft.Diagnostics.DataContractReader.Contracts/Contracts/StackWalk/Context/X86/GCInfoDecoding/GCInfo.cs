@@ -129,8 +129,43 @@ public record GCInfo
         // Lazily initialize transitions. These are not present in all Heap dumps, only if they are required for stack walking.
         _transitions = new(() =>
         {
-            // calculate the Argument Table pointer
-            TargetPointer argTabPtr = gcInfoAddress.Value + infoHdrSize + Header.ArgTabOffset;
+            TargetPointer argTabPtr;
+            if (Header.HasArgTabOffset)
+            {
+                // The GCInfo has an explicit argument table offset
+                argTabPtr = gcInfoAddress.Value + infoHdrSize + Header.ArgTabOffset;
+            }
+            else
+            {
+                // The GCInfo does not have an explicit argument table offset, we need to calculate it
+                // from the end of the header. The argument table is located after
+                // the NoGCRegions table, the UntrackedVariable table, and the FrameVariableLifetime table.
+                argTabPtr = gcInfoAddress.Value + infoHdrSize;
+
+                /* Skip over the no GC regions table */
+                for (int i = 0; i < Header.NoGCRegionCount; i++)
+                {
+                    // The NoGCRegion table has a variable size, each entry is 2 unsigned integers.
+                    target.GCDecodeUnsigned(ref argTabPtr);
+                    target.GCDecodeUnsigned(ref argTabPtr);
+                }
+
+                /* Skip over the untracked frame variable table */
+                for (int i = 0; i < Header.UntrackedCount; i++)
+                {
+                    // The UntrackedVariable table has a variable size, each entry is 1 signed integer.
+                    target.GCDecodeSigned(ref argTabPtr);
+                }
+
+                /* Skip over the frame variable lifetime table */
+                for (int i = 0; i < Header.VarPtrTableSize; i++)
+                {
+                    // The FrameVariableLifetime table has a variable size, each entry is 3 unsigned integer.
+                    target.GCDecodeUnsigned(ref argTabPtr);
+                    target.GCDecodeUnsigned(ref argTabPtr);
+                    target.GCDecodeUnsigned(ref argTabPtr);
+                }
+            }
             GCArgTable argTable = new(_target, Header, argTabPtr);
             return argTable.Transitions;
         });
