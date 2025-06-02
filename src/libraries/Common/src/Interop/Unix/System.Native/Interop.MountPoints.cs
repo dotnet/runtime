@@ -37,6 +37,7 @@ internal static partial class Interop
 
         internal static string[] GetAllMountPoints()
         {
+            // Prefer using proc mountinfo as the mount point paths are relative to the process's root.
             if (OperatingSystem.IsLinux())
             {
                 if (File.Exists(Interop.procfs.ProcMountInfoFilePath))
@@ -56,23 +57,19 @@ internal static partial class Interop
 
                     return mountPoints.ToArray();
                 }
-
-                return Array.Empty<string>();
             }
-            else
+
+            AllMountPointsContext context = default;
+            context._results = new List<string>();
+
+            unsafe
             {
-                AllMountPointsContext context = default;
-                context._results = new List<string>();
-
-                unsafe
-                {
-                    GetAllMountPoints(&AddMountPoint, &context);
-                }
-
-                context._exception?.Throw();
-
-                return context._results.ToArray();
+                GetAllMountPoints(&AddMountPoint, &context);
             }
+
+            context._exception?.Throw();
+
+            return context._results.ToArray();
         }
     }
 }

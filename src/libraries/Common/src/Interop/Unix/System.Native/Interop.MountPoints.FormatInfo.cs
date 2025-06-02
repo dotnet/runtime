@@ -45,22 +45,28 @@ internal static partial class Interop
                     return GetLastError();
                 }
 
-                return procfs.GetFileSystemTypeForRealPath(path, out format);
+                Error error = procfs.GetFileSystemTypeForRealPath(path, out format);
+
+                // When there is no procfs mountinfo fall through.
+                if (error != Error.ENOTSUP)
+                {
+                    return error;
+                }
+            }
+
+            long formatType;
+            byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
+            int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes, &formatType);
+            if (result == 0)
+            {
+                format = formatType == -1 ? Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!
+                                          : (Enum.GetName(typeof(UnixFileSystemTypes), formatType) ?? "");
+                return Error.SUCCESS;
             }
             else
             {
-                byte* formatBuffer = stackalloc byte[MountPointFormatBufferSizeInBytes];    // format names should be small
-                int result = GetFileSystemTypeNameForMountPoint(name, formatBuffer, MountPointFormatBufferSizeInBytes);
-                if (result == 0)
-                {
-                    format = Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
-                    return Error.SUCCESS;
-                }
-                else
-                {
-                    format = string.Empty;
-                    return GetLastError();
-                }
+                format = string.Empty;
+                return GetLastError();
             }
         }
 
@@ -75,7 +81,8 @@ internal static partial class Interop
         private static unsafe partial int GetFileSystemTypeNameForMountPoint(
             [MarshalAs(UnmanagedType.LPUTF8Str)] string name,
             byte* formatNameBuffer,
-            int bufferLength);
+            int bufferLength,
+            long* formatType);
 
         /// <summary>Categorizes a file system name into a drive type.</summary>
         /// <param name="fileSystemName">The name to categorize.</param>

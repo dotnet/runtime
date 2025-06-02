@@ -29,11 +29,13 @@ typedef void (*MountPointFound)(void* context, const char* name);
 PALEXPORT int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInformation* mpi);
 
 /**
- * Gets the file system type name for the given mount point.
- * Returns -1 (ENOTSUP) when stat(v)fs does not provide a string representation of the file system type.
+ * Gets the file system type about the given path.
+ * Returns 0 on success, and -1 (with errno set) on failure.
+ * If the platform supports returning a string representation it is stored in formatNameBuffer and formatType is set to -1.
+ * Otherwise the formatType is set the platform specific magic constant for the file system type.
  */
 PALEXPORT int32_t SystemNative_GetFileSystemTypeNameForMountPoint(
-    const char* name, char* formatNameBuffer, int32_t bufferLength);
+    const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType);
 
 /**
  * Enumerate all mount points on the system and call the input

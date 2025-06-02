@@ -132,28 +132,22 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
 }
 
 int32_t
-SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength)
+SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
     assert(formatNameBuffer != NULL);
     assert(bufferLength > 0);
 
-#if HAVE_STATFS_FSTYPENAME
+#if HAVE_NON_LEGACY_STATFS
     struct statfs stats;
     int result = statfs(name, &stats);
-#elif HAVE_STATVFS_FSTYPENAME
+#else
     struct statvfs stats;
     int result = statvfs(name, &stats);
-#else
-    (void)name; // unused
-    (void)formatNameBuffer; // unused
-    (void)bufferLength; // unused
-    int result = -1;
-    errno = ENOTSUP;
 #endif
 
-#if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_FSTYPENAME
     if (result == 0)
     {
+#if HAVE_STATFS_FSTYPENAME || HAVE_STATVFS_FSTYPENAME
 #ifdef HAVE_STATFS_FSTYPENAME
         if (bufferLength < (MFSNAMELEN + 1)) // MFSNAMELEN does not include the null byte
 #elif HAVE_STATVFS_FSTYPENAME
@@ -163,12 +157,18 @@ SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNa
             errno = ERANGE;
             result = -1;
         }
-        else
-        {
-            SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
-        }
-    }
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), stats.f_fstypename);
+        *formatType = -1;
+#else
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
+        *formatType = (int64_t)(stats.f_type);
 #endif
+    }
+    else
+    {
+        SafeStringCopy(formatNameBuffer, Int32ToSizeT(bufferLength), "");
+        *formatType = -1;
+    }
 
     return result;
 }
