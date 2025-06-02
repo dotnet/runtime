@@ -5660,12 +5660,9 @@ struct GenTreeCall final : public GenTree
 
     // IL offset of the call wrt its parent method.
     IL_OFFSET gtRawILOffset;
-
-    // In DEBUG we report even non inline candidates in the inline tree in
-    // fgNoteNonInlineCandidate. We need to keep around the inline context for
-    // this as normally it's part of the candidate info.
-    class InlineContext* gtInlineContext;
 #endif // defined(DEBUG)
+
+    class InlineContext* gtInlineContext;
 
     bool IsHelperCall() const
     {

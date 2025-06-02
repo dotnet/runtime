@@ -8347,8 +8347,10 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
-    node->gtInlineContext     = compInlineContext;
+
 #endif
+
+    node->gtInlineContext = compInlineContext;
 
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
     //
@@ -9952,8 +9954,9 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 #if defined(DEBUG)
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->gtRawILOffset;
-    copy->gtInlineContext     = tree->gtInlineContext;
 #endif
+
+    copy->gtInlineContext = tree->gtInlineContext;
 
     copy->CopyOtherRegFlags(tree);
 
