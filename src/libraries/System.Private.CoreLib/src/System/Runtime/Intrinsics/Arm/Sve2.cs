@@ -230,6 +230,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector<ulong> AbsoluteDifferenceWideningUpper(Vector<uint> left, Vector<uint> right) => AbsoluteDifferenceWideningUpper(left, right);
 
+        // Add with carry long (bottom)
+
+        /// <summary>
+        /// svuint32_t svadclb[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   ADCLB Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static unsafe Vector<uint> AddCarryWideningLower(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningLower(op1, op2, op3);
+
+        /// <summary>
+        /// svuint64_t svadclb[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   ADCLB Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddCarryWideningLower(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningLower(op1, op2, op3);
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
