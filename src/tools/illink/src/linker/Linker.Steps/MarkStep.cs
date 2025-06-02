@@ -3144,7 +3144,7 @@ namespace Mono.Linker.Steps
 			MarkCustomAttributes (method.MethodReturnType, new DependencyInfo (DependencyKind.ReturnTypeAttribute, method), methodOrigin);
 			MarkMarshalSpec (method.MethodReturnType, new DependencyInfo (DependencyKind.ReturnTypeMarshalSpec, method), methodOrigin);
 
-			if (method.IsPInvokeImpl || method.IsInternalCall) {
+			if (method.IsPInvokeImpl) {
 				ProcessInteropMethod (method, methodOrigin);
 			}
 
