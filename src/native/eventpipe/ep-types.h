@@ -176,6 +176,65 @@ ep_provider_callback_data_queue_try_dequeue (
 	EventPipeProviderCallbackData *provider_callback_data);
 
 /*
+ * EventPipeTracepoint.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeTracepoint {
+#else
+struct _EventPipeTracepoint_Internal {
+#endif
+	ep_char8_t tracepoint_format[256];
+	uint32_t write_index;
+	uint32_t enabled;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeTracepoint {
+	uint8_t _internal [sizeof (struct _EventPipeTracepoint_Internal)];
+};
+#endif
+
+/*
+ * EventPipeProviderEventFilter.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderEventFilter {
+#else
+struct _EventPipeProviderEventFilter_Internal {
+#endif
+	bool enable;
+	dn_umap_t *event_ids;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderEventFilter {
+	uint8_t _internal [sizeof (struct _EventPipeProviderEventFilter_Internal)];
+};
+#endif
+
+/*
+ * EventPipeProviderTracepointConfiguration.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderTracepointConfiguration {
+#else
+struct _EventPipeProviderTracepointConfiguration_Internal {
+#endif
+	EventPipeTracepoint default_tracepoint;
+	dn_vector_t *tracepoints;
+	dn_umap_t *event_id_to_tracepoint_map;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeProviderTracepointConfiguration {
+	uint8_t _internal [sizeof (struct _EventPipeProviderTracepointConfiguration_Internal)];
+};
+#endif
+
+/*
  * EventPipeProviderConfiguration.
  */
 
