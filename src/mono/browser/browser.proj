@@ -392,7 +392,7 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sUSE_CLOSURE_COMPILER=1 -g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sUSE_CLOSURE_COMPILER=1 -g -gsource-map -O0 -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(WasmEnableMemory64)' == 'true'">$(CMakeConfigurationLinkFlags) -DMEMORY64 --target=wasm64</CMakeConfigurationEmccFlags>
 
