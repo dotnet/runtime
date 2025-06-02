@@ -8,7 +8,7 @@ namespace System.Globalization.Tests
 {
     /// <summary>
     /// Class to read data obtained from http://www.unicode.org/Public/idna.  For more information read the information
-    /// contained in Data\Unicode_15_1\IdnaTest_15_1.txt
+    /// contained in Data\Unicode_16_0\IdnaTest_16.txt
     ///
     /// The structure of the data set is a semicolon delimited list with the following columns:
     ///
@@ -33,9 +33,9 @@ namespace System.Globalization.Tests
     ///
     /// If the value of toUnicode or toAsciiN is the same as source, the column will be blank.
     /// </summary>
-    public class Unicode_15_1_IdnaTest : Unicode_IdnaTest
+    public class Unicode_16_0_IdnaTest : Unicode_IdnaTest
     {
-        public Unicode_15_1_IdnaTest(string line, int lineNumber)
+        public Unicode_16_0_IdnaTest(string line, int lineNumber)
         {
             var split = line.Split(';');
 
@@ -43,8 +43,8 @@ namespace System.Globalization.Tests
 
             Source = EscapedToLiteralString(split[0], lineNumber);
 
-            UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[1], lineNumber), Source, EscapedToLiteralString(split[2], lineNumber), string.Empty);
-            ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value, EscapedToLiteralString(split[4], lineNumber), UnicodeResult.StatusValue);
+            UnicodeResult = new ConformanceIdnaUnicodeTestResult(EscapedToLiteralString(split[1], lineNumber), Source, EscapedToLiteralString(split[2], lineNumber), string.Empty, Source);
+            ASCIIResult = new ConformanceIdnaTestResult(EscapedToLiteralString(split[3], lineNumber), UnicodeResult.Value, EscapedToLiteralString(split[4], lineNumber), UnicodeResult.StatusValue, Source);
 
             // NLS uses transitional IDN processing.
             if (Type == IdnType.Transitional)

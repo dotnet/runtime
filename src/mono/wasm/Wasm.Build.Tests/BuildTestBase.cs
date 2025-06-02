@@ -16,6 +16,7 @@ using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using Microsoft.Build.Logging.StructuredLogger;
 
 #nullable enable
 
@@ -176,7 +177,46 @@ namespace Wasm.Build.Tests
             else if (res.ExitCode == 0)
                 throw new XunitException($"Build should have failed, but it didn't. Process exited with exitCode : {res.ExitCode}");
 
+            // Ensure we got all output.
+            string[] successMessages = ["Build succeeded"];
+            string[] errorMessages = ["Build failed", "Build FAILED", "Restore failed", "Stopping the build"];
+            if ((res.ExitCode == 0 && successMessages.All(m => !res.Output.Contains(m))) || (res.ExitCode != 0 && errorMessages.All(m => !res.Output.Contains(m))))
+            {
+                _testOutput.WriteLine("Replacing dotnet process output with messages from binlog");
+
+                var outputBuilder = new StringBuilder();
+                var buildRoot = BinaryLog.ReadBuild(logFilePath);
+                buildRoot.VisitAllChildren<TextNode>(m =>
+                {
+                    if (m is Message || m is Error || m is Warning)
+                    {
+                        var context = GetBinlogMessageContext(m);
+                        outputBuilder.AppendLine($"{context}{m.Title}");
+                    }
+                });
+
+                res = new CommandResult(res.StartInfo, res.ExitCode, outputBuilder.ToString());
+            }
+
             return (res, logFilePath);
+        }
+
+        private string GetBinlogMessageContext(TextNode node)
+        {
+            var currentNode = node;
+            while (currentNode != null)
+            {
+                if (currentNode is Error error)
+                {
+                    return $"{error.File}({error.LineNumber},{error.ColumnNumber}): error {error.Code}: ";
+                }
+                else if (currentNode is Warning warning)
+                {
+                    return $"{warning.File}({warning.LineNumber},{warning.ColumnNumber}): warning {warning.Code}: ";
+                }
+                currentNode = currentNode.Parent as TextNode;
+            }
+            return string.Empty;
         }
 
         protected string RunAndTestWasmApp(BuildArgs buildArgs,

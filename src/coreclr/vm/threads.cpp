@@ -2896,6 +2896,12 @@ void Thread::OnThreadTerminate(BOOL holdingLock)
 
         }
 
+        if (m_State & TS_DebugWillSync)
+        {
+            ResetThreadState(TS_DebugWillSync);
+            InterlockedDecrement(&m_DebugWillSyncCount);    
+        }
+
         SetThreadState(TS_Dead);
         ThreadStore::s_pThreadStore->m_DeadThreadCount++;
         ThreadStore::s_pThreadStore->IncrementDeadThreadCountForGCTrigger();
