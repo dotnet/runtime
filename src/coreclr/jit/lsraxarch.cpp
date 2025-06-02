@@ -3237,11 +3237,11 @@ int LinearScan::BuildMul(GenTree* tree)
     // *  or the second operand is already in the register
     if (useMulx)
     {
-         // Lowering has ensured that op1 is never the memory operand
+        // Lowering has ensured that op1 is never the memory operand
         assert(!op1->isUsedFromMemory());
 
         // prefer to have the constant in RDX (op1) this is especially useful for MUL_HI usage
-        if(op2->IsCnsIntOrI())
+        if (op2->IsCnsIntOrI())
         {
             std::swap(op1, op2);
         }
@@ -3257,7 +3257,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
         SingleTypeRegSet srcCandidates1 = RBM_NONE;
         SingleTypeRegSet srcCandidates2 = RBM_NONE;
-        
+
         // If one of the operands is a memory address, specify RAX for the other operand
         if (op1->isUsedFromMemory())
         {
