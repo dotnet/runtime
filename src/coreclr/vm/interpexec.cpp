@@ -1377,13 +1377,13 @@ CALL_TARGET_IP:
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
     if (arrayRef == NULL)                                                      \
-        assert(0);                                                             \
+        COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
     if (idx >= len)                                                            \
-        assert(0);                                                             \
+        COMPlusThrow(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
