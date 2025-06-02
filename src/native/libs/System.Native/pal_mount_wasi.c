@@ -24,7 +24,7 @@ int32_t SystemNative_GetSpaceInfoForMountPoint(const char* name, MountPointInfor
 }
 
 int32_t
-SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength)
+SystemNative_GetFileSystemTypeNameForMountPoint(const char* name, char* formatNameBuffer, int32_t bufferLength, int64_t* formatType)
 {
     assert((formatNameBuffer != NULL) && (formatType != NULL));
     assert(bufferLength > 0);
