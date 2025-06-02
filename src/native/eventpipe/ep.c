@@ -378,6 +378,10 @@ ep_provider_config_init (
 	provider_config->logging_level = logging_level;
 	provider_config->filter_data = filter_data;
 
+	// Currently only supported through IPC Command
+	provider_config->event_filter = NULL;
+	provider_config->tracepoint_config = NULL;
+
 	// Runtime specific rundown provider configuration.
 	ep_rt_provider_config_init (provider_config);
 
@@ -1755,6 +1759,11 @@ void
 ep_event_filter_fini (EventPipeProviderEventFilter *event_filter)
 {
 	ep_return_void_if_nok (event_filter != NULL);
+
+	if (event_filter->event_ids) {
+		dn_umap_free (event_filter->event_ids);
+		event_filter->event_ids = NULL;
+	}
 }
 
 void
@@ -1770,6 +1779,16 @@ void
 ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_config)
 {
 	ep_return_void_if_nok (tracepoint_config != NULL);
+
+	if (tracepoint_config->event_id_to_tracepoint_map) {
+		dn_umap_free (tracepoint_config->event_id_to_tracepoint_map);
+		tracepoint_config->event_id_to_tracepoint_map = NULL;
+	}
+
+	if (tracepoint_config->tracepoints) {
+		dn_vector_free (tracepoint_config->tracepoints);
+		tracepoint_config->tracepoints = NULL;
+	}
 }
 
 void

@@ -167,6 +167,19 @@ typedef enum {
 } EventPipeThreadType;
 
 /*
+ *  CollectTracing5 introduces additional provider configuration fields.
+ *  For backwards compatibility, these fields are optional and
+ *  these flags indicate which of the optional fields should be
+ *  deserialized from the IPC Stream.
+ */
+typedef enum
+{
+    EP_PROVIDER_OPTFIELD_NONE = 0,
+    EP_PROVIDER_OPTFIELD_EVENT_FILTER = 1,
+    EP_PROVIDER_OPTFIELD_TRACEPOINT_CONFIG = 2
+} EventPipeProviderOptionalFieldFlags;
+
+/*
  * EventPipe Basic Types.
  */
 

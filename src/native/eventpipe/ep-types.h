@@ -259,6 +259,8 @@ struct _EventPipeProviderConfiguration_Internal {
 	const ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
+	EventPipeProviderEventFilter *event_filter;
+	EventPipeProviderTracepointConfiguration *tracepoint_config;
 };
 
 
@@ -272,6 +274,8 @@ EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_cha
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_char8_t *, filter_data)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeEventLevel, logging_level)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeProviderEventFilter *, event_filter)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeProviderTracepointConfiguration *, tracepoint_config)
 
 EventPipeProviderConfiguration *
 ep_provider_config_init (
