@@ -25,6 +25,7 @@
 
 #include "CommonTypes.h"
 #include "CommonMacros.h"
+#include "PalLimitedContext.h"
 #include "gcenv.structs.h" // EEThreadId
 
 #ifndef PAL_INCLUDED
@@ -150,10 +151,6 @@ typedef char TCHAR;
 #endif // !DACCESS_COMPILE
 
 extern uint32_t g_RhNumberOfProcessors;
-
-#ifndef DACCESS_COMPILE
-#include "PalFunctions.h"
-#endif // !DACCESS_COMPILE
 
 // The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
