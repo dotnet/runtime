@@ -166,14 +166,21 @@ namespace System.Reflection.Tests
         [InlineData(nameof(PropertyInfoMembers.PublicGetDoubleProperty))]
         [InlineData(nameof(PropertyInfoMembers.PublicGetFloatProperty))]
         [InlineData(nameof(PropertyInfoMembers.PublicGetEnumProperty))]
+        [InlineData("PrivateGetPrivateSetIntProperty", false)]
         [InlineData(nameof(PropertyInfoMembers.PublicGetPrivateSetProperty))]
         [InlineData(nameof(PropertyInfoMembers.PrivateGetPublicSetProperty))]
         [InlineData(nameof(PropertyInfoMembers.PrivateGetPublicInitProperty))]
-        public static void GetPublicProperties(string name)
+        public static void GetPublicProperties(string name, bool isPublic = true)
         {
             PropertyInfo property = typeof(PropertyInfoMembers).GetTypeInfo().GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
-
-            Assert.NotNull(property);
+            if (isPublic)
+            {
+                Assert.NotNull(property);
+            }
+            else
+            {
+                Assert.Null(property);
+            }
         }
 
         [Theory]
