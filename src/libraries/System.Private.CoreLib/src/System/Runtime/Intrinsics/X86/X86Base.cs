@@ -76,7 +76,7 @@ namespace System.Runtime.Intrinsics.X86
             ///   <para>Its functionality is exposed by the public <see cref="Math.BigMul(ulong, ulong, out ulong)" />.</para>
             ///   <para>In the future it might emit mulx on compatible hardware</para>
             /// </remarks>
-            internal static (ulong Lower, ulong Upper) Multiply(ulong left, ulong right) => Multiply(left, right);
+            internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) => BigMul(left, right);
 
             /// <summary>
             ///   <para>  IMUL reg/m64</para>
@@ -84,7 +84,7 @@ namespace System.Runtime.Intrinsics.X86
             /// <remarks>
             ///   <para>Its functionality is exposed by the public <see cref="Math.BigMul(long, long, out long)" />.</para>
             /// </remarks>
-            internal static (long Lower, long Upper) Multiply(long left, long right) => Multiply(left, right);
+            internal static (long Lower, long Upper) BigMul(long left, long right) => BigMul(left, right);
 #endif
         }
 
@@ -147,20 +147,20 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         ///   <para>  MUL reg/m32</para>
         /// </summary>
-        internal static (uint Lower, uint Upper) Multiply(uint left, uint right) => Multiply(left, right);
+        internal static (uint Lower, uint Upper) BigMul(uint left, uint right) => BigMul(left, right);
 
         /// <summary>
         ///   <para>  IMUL reg/m32</para>
         /// </summary>
-        internal static (int Lower, int Upper) Multiply(int left, int right) => Multiply(left, right);
+        internal static (int Lower, int Upper) BigMul(int left, int right) => BigMul(left, right);
 
         /// <summary>  MUL reg/m</summary>
         /// <remarks>Intented for UIntPtr.Bigmul https://github.com/dotnet/runtime/issues/114731 </remarks>
-        internal static (nuint Lower, nuint Upper) Multiply(nuint left, nuint right) => Multiply(left, right);
+        internal static (nuint Lower, nuint Upper) BigMul(nuint left, nuint right) => BigMul(left, right);
 
         /// <summary>  IMUL reg/m</summary>
         /// <remarks>Intented for IntPtr.Bigmul https://github.com/dotnet/runtime/issues/114731 </remarks>
-        internal static (nint Lower, nint Upper) Multiply(nint left, nint right) => Multiply(left, right);
+        internal static (nint Lower, nint Upper) BigMul(nint left, nint right) => BigMul(left, right);
 #endif
 
         /// <summary>

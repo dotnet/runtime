@@ -202,19 +202,21 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
         {
-#if MONO // Multiply is not yet implemented in MONO
+#if !MONO // X64.BigMul is not yet implemented in MONO
+            // X86Base.X64.BigMul is more performant than X86Base.X64.MultiplyNoFlags that has performance issues (#11782)
+            // so we don't need a separate BMI2 path
+            if (X86Base.X64.IsSupported)
+            {
+                (low, ulong hi) = X86Base.X64.BigMul(a, b);
+                return hi;
+            }
+#else
             if (Bmi2.X64.IsSupported)
             {
                 ulong tmp;
                 ulong high = Bmi2.X64.MultiplyNoFlags(a, b, &tmp);
                 low = tmp;
                 return high;
-            }
-#else
-            if (X86Base.X64.IsSupported)
-            {
-                (low, ulong hi) = X86Base.X64.Multiply(a, b);
-                return hi;
             }
 #endif
             else if (ArmBase.Arm64.IsSupported)
@@ -259,7 +261,7 @@ namespace System
 #if !MONO // Multiply is not yet implemented in MONO
             if (X86Base.X64.IsSupported)
             {
-                (low, long hi) = X86Base.X64.Multiply(a, b);
+                (low, long hi) = X86Base.X64.BigMul(a, b);
                 return hi;
             }
 #endif

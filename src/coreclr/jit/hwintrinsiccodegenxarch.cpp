@@ -2428,8 +2428,8 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
-        case NI_X86Base_Multiply:
-        case NI_X86Base_X64_Multiply:
+        case NI_X86Base_BigMul:
+        case NI_X86Base_X64_BigMul:
         {
             assert(node->GetOperandCount() == 2);
             assert(instOptions == INS_OPTS_NONE);

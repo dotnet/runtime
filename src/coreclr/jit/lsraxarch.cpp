@@ -2481,15 +2481,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_X86Base_Multiply:
-            case NI_X86Base_X64_Multiply:
+            case NI_X86Base_BigMul:
+            case NI_X86Base_X64_BigMul:
             {
                 assert(numArgs == 2);
                 assert(dstCount == 2);
                 assert(isRMW);
 
                 // mulEAX always have op1 in EAX
-                srcCount += BuildOperandUses(op1, SRBM_EAX);
+                srcCount = BuildOperandUses(op1, SRBM_EAX);
                 SingleTypeRegSet apxAwareRegCandidates =
                     ForceLowGprForApxIfNeeded(op2, RBM_NONE, canHWIntrinsicUseApxRegs);
                 srcCount += BuildOperandUses(op2, apxAwareRegCandidates);
@@ -3014,7 +3014,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // above
         assert((dstCount == 0) ||
                ((dstCount == 2) && ((intrinsicId == NI_X86Base_DivRem) || (intrinsicId == NI_X86Base_X64_DivRem) ||
-                                    (intrinsicId == NI_X86Base_Multiply) || (intrinsicId == NI_X86Base_X64_Multiply))));
+                                    (intrinsicId == NI_X86Base_BigMul) || (intrinsicId == NI_X86Base_X64_BigMul))));
     }
 
     *pDstCount = dstCount;
