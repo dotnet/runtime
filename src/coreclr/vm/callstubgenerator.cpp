@@ -582,7 +582,15 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
     // Allocate space for the routines. The size of the array is conservatively set to twice the number of arguments
     // plus one slot for the target pointer and reallocated to the real size at the end.
-    PCODE *pRoutines = (PCODE*)alloca(sizeof(CallStubHeader) + (numArgs * 2 + 1) * sizeof(PCODE));
+    PCODE *pRoutines = (PCODE*)alloca(sizeof(CallStubHeader) + ((numArgs + 1) * 2 + 1) * sizeof(PCODE));
+
+    if (argIt.HasParamType())
+    {
+        // In the Interpreter calling convention the argument after the "this" pointer is the parameter type
+        ArgLocDesc paramArgLocDesc;
+        argIt.GetParamTypeLoc(&paramArgLocDesc);
+        ProcessArgument(NULL, paramArgLocDesc, pRoutines);
+    }
 
     int ofs;
     while ((ofs = argIt.GetNextOffset()) != TransitionBlock::InvalidOffset)
@@ -642,13 +650,13 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
                         assert(!"Unhandled systemv classification for argument in GenerateCallStub");
                         break;
                 }
-                ProcessArgument(argIt, argLocDescEightByte, pRoutines);
+                ProcessArgument(&argIt, argLocDescEightByte, pRoutines);
             }
         }
         else
 #endif // UNIX_AMD64_ABI
         {
-            ProcessArgument(argIt, argLocDesc, pRoutines);
+            ProcessArgument(&argIt, argLocDesc, pRoutines);
         }
     }
 
@@ -857,7 +865,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStub(MethodDesc *pMD, AllocMemTra
 
 // Process the argument described by argLocDesc. This function is called for each argument in the method signature.
 // It updates the ranges of registers and emits entries into the routines array at discontinuities.
-void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDesc, PCODE *pRoutines)
+void CallStubGenerator::ProcessArgument(ArgIterator *pArgIt, ArgLocDesc& argLocDesc, PCODE *pRoutines)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -895,7 +903,7 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
             m_r1 = argLocDesc.m_idxGenReg;
             m_r2 = m_r1 + argLocDesc.m_cGenReg - 1;
         }
-        else if (argLocDesc.m_idxGenReg == m_r2 + 1 && !argIt.IsArgPassedByRef())
+        else if (argLocDesc.m_idxGenReg == m_r2 + 1 && (!pArgIt || !pArgIt->IsArgPassedByRef()))
         {
             // Extend an existing range, but only if the argument is not passed by reference.
             // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
@@ -987,11 +995,11 @@ void CallStubGenerator::ProcessArgument(ArgIterator& argIt, ArgLocDesc& argLocDe
     // Arguments passed by reference are handled separately, because the interpreter stores the value types on its stack by value.
     // So the argument loading routine needs to load the address of the argument. To avoid explosion of number of the routines,
     // we always process single argument passed by reference using single routine.
-    if (argIt.IsArgPassedByRef())
+    if (pArgIt != NULL && pArgIt->IsArgPassedByRef())
     {
         _ASSERTE(argLocDesc.m_cGenReg == 1);
         pRoutines[m_routineIndex++] = GetGPRegRefLoadRoutine(argLocDesc.m_idxGenReg);
-        pRoutines[m_routineIndex++] = argIt.GetArgSize();
+        pRoutines[m_routineIndex++] = pArgIt->GetArgSize();
         m_r1 = NoRange;
     }
 #endif // UNIX_AMD64_ABI

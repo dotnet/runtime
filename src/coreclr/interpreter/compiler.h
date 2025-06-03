@@ -343,6 +343,7 @@ private:
     // FIXME during compilation this should be a hashtable for fast lookup of duplicates
     TArray<void*> m_dataItems;
     int32_t GetDataItemIndex(void* data);
+    void* GetDataItemAtIndex(int32_t index);
     int32_t GetMethodDataItemIndex(CORINFO_METHOD_HANDLE mHandle);
     int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
@@ -353,6 +354,9 @@ private:
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
     CORINFO_METHOD_HANDLE   ResolveMethodToken(uint32_t token);
     CORINFO_CLASS_HANDLE    ResolveClassToken(uint32_t token);
+    CORINFO_CLASS_HANDLE    getClassFromContext(CORINFO_CONTEXT_HANDLE context);
+    int                     getParamArgIndex(); // Get the index into the m_pVars array of the Parameter argument. This is either the this pointer, a methoddesc or a class handle
+    int                     FillTempVarWithToken(CORINFO_RESOLVED_TOKEN* resolvedToken, bool embedParent, int existingVar = -1);
 
     void* AllocMethodData(size_t numBytes);
 public:
@@ -411,6 +415,7 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
+    int32_t m_paramArgIndex = 0; // Index of the type parameter argument in the m_pVars array.
     // For each catch or filter clause, we create a variable that holds the exception object.
     // This is the index of the first such variable.
     int32_t m_clauseVarsIndex = 0;
@@ -448,7 +453,7 @@ private:
     void    EmitUnaryArithmeticOp(int32_t opBase);
     void    EmitShiftOp(int32_t opBase);
     void    EmitCompareOp(int32_t opBase);
-    void    EmitCall(CORINFO_CLASS_HANDLE constrainedClass, bool readonly, bool tailcall);
+    void    EmitCall(CORINFO_RESOLVED_TOKEN* constrainedClass, bool readonly, bool tailcall);
     bool    EmitCallIntrinsics(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO sig);
     void    EmitLdind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset);
     void    EmitStind(InterpType type, CORINFO_CLASS_HANDLE clsHnd, int32_t offset, bool reverseSVarOrder);

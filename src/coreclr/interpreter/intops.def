@@ -21,7 +21,7 @@ OPDEF(INTOP_LDC_I8, "ldc.i8", 4, 1, 0, InterpOpLongInt)
 OPDEF(INTOP_LDC_R4, "ldc.r4", 3, 1, 0, InterpOpFloat)
 OPDEF(INTOP_LDC_R8, "ldc.r8", 4, 1, 0, InterpOpDouble)
 
-OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpInt)
+OPDEF(INTOP_LDPTR, "ldptr", 3, 1, 0, InterpOpLdPtr)
 OPDEF(INTOP_NEWARR, "newarr", 5, 1, 1, InterpOpInt)
 
 OPDEF(INTOP_LDELEM_I1, "ldelem.i1", 4, 1, 2, InterpOpNoArgs)
@@ -43,6 +43,7 @@ OPDEF(INTOP_STELEM_R4, "stelem.r4", 4, 0, 3, InterpOpNoArgs)
 OPDEF(INTOP_STELEM_R8, "stelem.r8", 4, 0, 3, InterpOpNoArgs)
 
 OPDEF(INTOP_LDTOKEN, "ldtoken", 4, 1, 0, InterpOpTwoInts) // [token data item] [conversion helper func]
+OPDEF(INTOP_LDTOKEN_VAR, "ldtoken.var", 4, 1, 1, InterpOpInt) // [var index] [conversion helper func]
 
 OPDEF(INTOP_MOV_I4_I1, "mov.i4.i1", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_MOV_I4_U1, "mov.i4.u1", 3, 1, 1, InterpOpNoArgs)
@@ -284,6 +285,10 @@ OPDEF(INTOP_NEWOBJ_VT, "newobj.vt", 5, 1, 1, InterpOpMethodHandle)
 
 OPDEF(INTOP_CALL_HELPER_PP, "call.helper.pp", 4, 1, 0, InterpOpTwoInts)
 OPDEF(INTOP_CALL_HELPER_PP_2, "call.helper.pp.2", 5, 1, 1, InterpOpTwoInts)
+
+OPDEF(INTOP_GENERICLOOKUP_METHOD, "generic.method", 4, 1, 1, InterpOpGenericLookup)
+OPDEF(INTOP_GENERICLOOKUP_CLASS, "generic.class", 4, 1, 1, InterpOpGenericLookup)
+OPDEF(INTOP_GENERICLOOKUP_THIS, "generic.this", 4, 1, 1, InterpOpGenericLookup)
 
 OPDEF(INTOP_CALL_FINALLY, "call.finally", 2, 0, 0, InterpOpBranch)
 

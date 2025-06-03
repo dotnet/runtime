@@ -63,6 +63,20 @@ InterpThreadContext::~InterpThreadContext()
     free(pStackStart);
 }
 
+CORINFO_GENERIC_HANDLE GenericHandleWorkerCore(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule);
+
+CORINFO_GENERIC_HANDLE GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+    GCX_PREEMP();
+    return GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
+}
+
 #ifdef DEBUG
 static void InterpBreakpoint()
 {
@@ -1479,11 +1493,93 @@ do {                                                                           \
                     STELEM(double, double);
                     break;
                 }
+#define DO_GENERIC_LOOKUP(mdParam, mtParam) \
+                    CORINFO_RUNTIME_LOOKUP *pLookup = (CORINFO_RUNTIME_LOOKUP*)pMethod->pDataItems[ip[3]];  \
+                    CORINFO_GENERIC_HANDLE  result = 0;                                                     \
+                                                                                                            \
+                    assert(!pLookup->indirectFirstOffset);                                                  \
+                    assert(!pLookup->indirectSecondOffset);                                                 \
+                    lookup = *(uint8_t**)(lookup + pLookup->offsets[0]);                                    \
+                    if (pLookup->indirections >= 3)                                                         \
+                        lookup = *(uint8_t**)(lookup + pLookup->offsets[1]);                                \
+                    if (pLookup->indirections >= 4)                                                         \
+                        lookup = *(uint8_t**)(lookup + pLookup->offsets[2]);                                \
+                    do {                                                                                    \
+                        size_t lastOffset = pLookup->offsets[pLookup->indirections - 1];                    \
+                        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)                                   \
+                        {                                                                                   \
+                            /* Last indirection is the size*/                                               \
+                            size_t size = *(size_t*)(lookup + pLookup->sizeOffset);                         \
+                            if (size <= lastOffset)                                                         \
+                            {                                                                               \
+                                result = GenericHandleCommon(mdParam, mtParam, pLookup->signature);         \
+                                break;                                                                      \
+                            }                                                                               \
+                        }                                                                                   \
+                        lookup = *(uint8_t**)(lookup + lastOffset);                                         \
+                                                                                                            \
+                        if (lookup == NULL)                                                                 \
+                        {                                                                                   \
+                            result = GenericHandleCommon(mdParam, mtParam, pLookup->signature);             \
+                            break;                                                                          \
+                        }                                                                                   \
+                        result = (CORINFO_GENERIC_HANDLE)lookup;                                            \
+                    } while (0);                                                                            \
+                    LOCAL_VAR(dreg, CORINFO_GENERIC_HANDLE) = result;                                       \
+                    ip += 4;
+
+                case INTOP_GENERICLOOKUP_THIS:
+                {
+                    int dreg = ip[1];
+                    int sreg = ip[2];
+                    OBJECTREF thisPtr = LOCAL_VAR(sreg, OBJECTREF);
+                    if (thisPtr == NULL)
+                        assert(0); // TODO: throw NullReferenceException
+                    MethodTable *pMT = thisPtr->GetMethodTable();
+                    uint8_t *lookup = (uint8_t*)pMT;
+
+                    DO_GENERIC_LOOKUP(NULL, pMT);
+
+                    break;
+                }
+                case INTOP_GENERICLOOKUP_METHOD:
+                {
+                    int dreg = ip[1];
+                    int sreg = ip[2];
+                    MethodDesc *paramReg = LOCAL_VAR(sreg, MethodDesc*);
+                    uint8_t *lookup = (uint8_t*)paramReg;
+                    DO_GENERIC_LOOKUP(paramReg, NULL);
+                    break;
+                }
+                case INTOP_GENERICLOOKUP_CLASS:
+                {
+                    int dreg = ip[1];
+                    int sreg = ip[2];
+                    MethodTable *paramReg = LOCAL_VAR(sreg, MethodTable*);
+                    uint8_t *lookup = (uint8_t*)paramReg;
+                    DO_GENERIC_LOOKUP(NULL, paramReg);
+                    break;
+                }
+                case INTOP_LDTOKEN_VAR:
+                {
+                    int dreg = ip[1];
+                    void *nativeHandle = LOCAL_VAR(ip[2], void*);
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[3]];
+                    HELPER_FTN_PP helper = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helper = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helper = (HELPER_FTN_PP)helperDirectOrIndirect;
+                    void *managedHandle = helper(nativeHandle);
+                    LOCAL_VAR(dreg, void*) = managedHandle;
+                    ip += 4;
+                    break;
+                }
                 case INTOP_LDTOKEN:
                 {
                     int dreg = ip[1];
-                    void *nativeHandle = pMethod->pDataItems[ip[2]];
-                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[3]];
+                    void *nativeHandle = pMethod->pDataItems[ip[3]];
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[2]];
                     HELPER_FTN_PP helper = nullptr;
                     if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
                         helper = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
