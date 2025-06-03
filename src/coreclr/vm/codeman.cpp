@@ -4302,8 +4302,71 @@ BOOL InterpreterJitManager::JitCodeToMethodInfo(
 
 TADDR InterpreterJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
 {
-    // Interpreter-TODO: Verify that this is correct
-    return pCodeInfo->GetCodeAddress() - pCodeInfo->GetRelOffset();
+    EH_CLAUSE_ENUMERATOR enumState;
+    unsigned ehCount;
+
+    IJitManager *pJitMan = pCodeInfo->GetJitManager();
+    ehCount = pJitMan->InitializeEHEnumeration(pCodeInfo->GetMethodToken(), &enumState);
+    DWORD relOffset = pCodeInfo->GetRelOffset();
+    TADDR methodBaseAddress = pCodeInfo->GetCodeAddress() - relOffset;
+
+    for (unsigned i = 0; i < ehCount; i++)
+    {
+        EE_ILEXCEPTION_CLAUSE ehClause;
+        pJitMan->GetNextEHClause(&enumState, &ehClause);
+
+        if ((ehClause.HandlerStartPC <= relOffset) && (relOffset < ehClause.HandlerEndPC))
+        {
+            return methodBaseAddress + ehClause.HandlerStartPC;
+        }
+
+        // For filters, we also need to check the filter funclet range. The filter funclet is always stored right
+        // before its handler funclet (according to ECMA-355). So the filter end offset is equal to the start offset of the handler funclet.
+        if (IsFilterHandler(&ehClause) && (ehClause.FilterOffset <= relOffset) && (relOffset < ehClause.HandlerStartPC))
+        {
+            return methodBaseAddress + ehClause.FilterOffset;
+        }
+    }
+
+    return methodBaseAddress;
+}
+
+DWORD InterpreterJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    EH_CLAUSE_ENUMERATOR enumState;
+    unsigned ehCount;
+
+    ehCount = InitializeEHEnumeration(MethodToken, &enumState);
+
+    DWORD nFunclets = 0;
+    for (unsigned i = 0; i < ehCount; i++)
+    {
+        EE_ILEXCEPTION_CLAUSE ehClause;
+        GetNextEHClause(&enumState, &ehClause);
+        if (nFunclets < dwLength)
+        {
+            pStartFuncletOffsets[nFunclets] = ehClause.HandlerStartPC;
+        }
+        nFunclets++;
+        if (IsFilterHandler(&ehClause))
+        {
+            if (nFunclets < dwLength)
+            {
+                pStartFuncletOffsets[nFunclets] = ehClause.FilterOffset;
+            }
+
+            nFunclets++;
+        }
+    }
+
+    return nFunclets;
 }
 
 void InterpreterJitManager::JitTokenToMethodRegionInfo(const METHODTOKEN& MethodToken, MethodRegionInfo * methodRegionInfo)

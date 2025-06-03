@@ -280,5 +280,107 @@ namespace System.Runtime.Intrinsics.Arm
         ///   SLI Ztied1.D, Zop2.D, #imm3
         /// </summary>
         public static Vector<ulong> ShiftLeftAndInsert(Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte shift) => ShiftLeftAndInsert(left, right, shift);
+
+
+        // Bitwise exclusive OR of three vectors
+
+        /// <summary>
+        /// svuint8_t sveor3[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<byte> Xor(Vector<byte> value1, Vector<byte> value2, Vector<byte> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svint16_t sveor3[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<short> Xor(Vector<short> value1, Vector<short> value2, Vector<short> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svint32_t sveor3[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<int> Xor(Vector<int> value1, Vector<int> value2, Vector<int> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svint64_t sveor3[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<long> Xor(Vector<long> value1, Vector<long> value2, Vector<long> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svint8_t sveor3[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<sbyte> Xor(Vector<sbyte> value1, Vector<sbyte> value2, Vector<sbyte> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svuint16_t sveor3[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<ushort> Xor(Vector<ushort> value1, Vector<ushort> value2, Vector<ushort> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svuint32_t sveor3[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<uint> Xor(Vector<uint> value1, Vector<uint> value2, Vector<uint> value3) => Xor(value1, value2, value3);
+
+        /// <summary>
+        /// svuint64_t sveor3[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   EOR3 Ztied1.D, Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<ulong> Xor(Vector<ulong> value1, Vector<ulong> value2, Vector<ulong> value3) => Xor(value1, value2, value3);
+
+
+        // Bitwise exclusive OR and rotate right
+
+        /// <summary>
+        /// svuint8_t svxar[_n_u8](svuint8_t op1, svuint8_t op2, uint64_t imm3)
+        ///   XAR Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<byte> XorRotateRight(Vector<byte> left, Vector<byte> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svint16_t svxar[_n_s16](svint16_t op1, svint16_t op2, uint64_t imm3)
+        ///   XAR Ztied1.H, Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<short> XorRotateRight(Vector<short> left, Vector<short> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svint32_t svxar[_n_s32](svint32_t op1, svint32_t op2, uint64_t imm3)
+        ///   XAR Ztied1.S, Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<int> XorRotateRight(Vector<int> left, Vector<int> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svint64_t svxar[_n_s64](svint64_t op1, svint64_t op2, uint64_t imm3)
+        ///   XAR Ztied1.D, Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<long> XorRotateRight(Vector<long> left, Vector<long> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svint8_t svxar[_n_s8](svint8_t op1, svint8_t op2, uint64_t imm3)
+        ///   XAR Ztied1.B, Ztied1.B, Zop2.B, #imm3
+        /// </summary>
+        public static Vector<sbyte> XorRotateRight(Vector<sbyte> left, Vector<sbyte> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svuint16_t svxar[_n_u16](svuint16_t op1, svuint16_t op2, uint64_t imm3)
+        ///   XAR Ztied1.H, Ztied1.H, Zop2.H, #imm3
+        /// </summary>
+        public static Vector<ushort> XorRotateRight(Vector<ushort> left, Vector<ushort> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svuint32_t svxar[_n_u32](svuint32_t op1, svuint32_t op2, uint64_t imm3)
+        ///   XAR Ztied1.S, Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static Vector<uint> XorRotateRight(Vector<uint> left, Vector<uint> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
+
+        /// <summary>
+        /// svuint64_t svxar[_n_u64](svuint64_t op1, svuint64_t op2, uint64_t imm3)
+        ///   XAR Ztied1.D, Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static Vector<ulong> XorRotateRight(Vector<ulong> left, Vector<ulong> right, [ConstantExpected] byte count) => XorRotateRight(left, right, count);
     }
 }
