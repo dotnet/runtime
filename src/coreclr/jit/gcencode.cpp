@@ -2265,7 +2265,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
                 assert(~OFFSET_MASK % sizeof(offset) == 0);
 
-                if (varDsc->TypeGet() == TYP_BYREF)
+                if (varDsc->TypeIs(TYP_BYREF))
                 {
                     // Or in byref_OFFSET_FLAG for 'byref' pointer tracking
                     offset |= byref_OFFSET_FLAG;
@@ -2289,7 +2289,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     totalSize += sz;
                 }
             }
-            else if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->lvOnFrame && varDsc->HasGCPtr())
+            else if (varDsc->TypeIs(TYP_STRUCT) && varDsc->lvOnFrame && varDsc->HasGCPtr())
             {
                 ClassLayout* layout = varDsc->GetLayout();
                 unsigned     slots  = layout->GetSlotCount();
@@ -2404,7 +2404,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
             // "this". So report it as a tracked variable with a liveness
             // extending over the entire method.
 
-            assert(compiler->lvaTable[compiler->info.compThisArg].TypeGet() == TYP_REF);
+            assert(compiler->lvaTable[compiler->info.compThisArg].TypeIs(TYP_REF));
 
             unsigned varOffs = compiler->lvaTable[compiler->info.compThisArg].GetStackOffset();
 
@@ -4207,7 +4207,7 @@ void GCInfo::gcMakeRegPtrTable(
 
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
-            if (varDsc->TypeGet() == TYP_BYREF)
+            if (varDsc->TypeIs(TYP_BYREF))
             {
                 // Or in byref_OFFSET_FLAG for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
@@ -4249,7 +4249,7 @@ void GCInfo::gcMakeRegPtrTable(
 
         // If this is a TYP_STRUCT, handle its GC pointers.
         // Note that the enregisterable struct types cannot have GC pointers in them.
-        if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
+        if (varDsc->TypeIs(TYP_STRUCT) && varDsc->GetLayout()->HasGCPtr() && varDsc->lvOnFrame &&
             (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
         {
             ClassLayout* layout = varDsc->GetLayout();
@@ -4359,7 +4359,7 @@ void GCInfo::gcMakeRegPtrTable(
             assert(!compiler->lvaReportParamTypeArg());
             GcSlotFlags flags = GC_SLOT_UNTRACKED;
 
-            if (compiler->lvaTable[compiler->info.compThisArg].TypeGet() == TYP_BYREF)
+            if (compiler->lvaTable[compiler->info.compThisArg].TypeIs(TYP_BYREF))
             {
                 // Or in GC_SLOT_INTERIOR for 'byref' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);

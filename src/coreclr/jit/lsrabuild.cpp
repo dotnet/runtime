@@ -826,11 +826,11 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
 #ifdef TARGET_X86
     if (compiler->compFloatingPointUsed)
     {
-        if (call->TypeGet() == TYP_DOUBLE)
+        if (call->TypeIs(TYP_DOUBLE))
         {
             needDoubleTmpForFPCall = true;
         }
-        else if (call->TypeGet() == TYP_FLOAT)
+        else if (call->TypeIs(TYP_FLOAT))
         {
             needFloatTmpForFPCall = true;
         }
@@ -4038,7 +4038,7 @@ int LinearScan::BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc)
     LclVarDsc*   varDsc   = compiler->lvaGetDesc(storeLoc);
 
     assert(compiler->lvaEnregMultiRegVars);
-    assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+    assert(storeLoc->OperIs(GT_STORE_LCL_VAR));
     bool isMultiRegSrc = op1->IsMultiRegNode();
     // The source must be:
     // - a multi-reg source
@@ -4123,7 +4123,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
 // First, define internal registers.
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && (storeLoc->TypeGet() == TYP_SIMD12))
+    if (varTypeIsSIMD(storeLoc) && !op1->IsVectorZero() && storeLoc->TypeIs(TYP_SIMD12))
     {
 #ifdef TARGET_ARM64
         // Need an additional register to extract upper 4 bytes of Vector3,
@@ -4143,7 +4143,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
-        assert(storeLoc->OperGet() == GT_STORE_LCL_VAR);
+        assert(storeLoc->OperIs(GT_STORE_LCL_VAR));
         srcCount = op1->GetMultiRegCount(compiler);
 
         for (int i = 0; i < srcCount; ++i)
@@ -4272,9 +4272,9 @@ int LinearScan::BuildReturn(GenTree* tree)
     GenTree* op1 = tree->AsOp()->GetReturnValue();
 
 #if !defined(TARGET_64BIT)
-    if (tree->TypeGet() == TYP_LONG)
+    if (tree->TypeIs(TYP_LONG))
     {
-        assert((op1->OperGet() == GT_LONG) && op1->isContained());
+        assert(op1->OperIs(GT_LONG) && op1->isContained());
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         BuildUse(loVal, RBM_LNGRET_LO.GetIntRegSet());
@@ -4283,7 +4283,7 @@ int LinearScan::BuildReturn(GenTree* tree)
     }
     else
 #endif // !defined(TARGET_64BIT)
-        if ((tree->TypeGet() != TYP_VOID) && !op1->isContained())
+        if (!tree->TypeIs(TYP_VOID) && !op1->isContained())
         {
             SingleTypeRegSet useCandidates = RBM_NONE;
 
@@ -4299,7 +4299,7 @@ int LinearScan::BuildReturn(GenTree* tree)
             if (varTypeIsStruct(tree))
             {
                 // op1 has to be either a lclvar or a multi-reg returning call
-                if ((op1->OperGet() == GT_LCL_VAR) && !op1->IsMultiRegLclVar())
+                if (op1->OperIs(GT_LCL_VAR) && !op1->IsMultiRegLclVar())
                 {
                     BuildUse(op1, useCandidates);
                 }
