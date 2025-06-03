@@ -300,6 +300,16 @@ uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
 
 void PalGetSystemTimeAsFileTime(FILETIME * arg1);
 
+void RuntimeThreadShutdown(void* thread);
+
+typedef void (*ThreadExitCallback)();
+
+extern ThreadExitCallback g_threadExitCallback;
+
+#ifdef TARGET_UNIX
+typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
+#endif
+
 #include "PalInline.h"
 
 #endif // !PAL_INCLUDED
