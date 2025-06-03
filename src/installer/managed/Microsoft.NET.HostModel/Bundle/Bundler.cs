@@ -272,9 +272,11 @@ namespace Microsoft.NET.HostModel.Bundle
 
             BinaryUtils.CopyFile(hostSource, bundlePath);
 
+            string entitlementsPath = null;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
             {
-                RemoveCodesignIfNecessary(bundlePath);
+                entitlementsPath = Path.Combine(_outputDir, "entitlements.plist");
+                RemoveCodesignIfNecessary(bundlePath, entitlementsPath);
             }
 
             // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
@@ -348,17 +350,26 @@ namespace Microsoft.NET.HostModel.Bundle
             // Sign the bundle if requested
             if (_macosCodesign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
             {
-                var (exitCode, stdErr) = HostModelUtils.RunCodesign("-s -", bundlePath);
+                string args = "-s -";
+                if (File.Exists(entitlementsPath) && new FileInfo(entitlementsPath).Length != 0)
+                {
+                    args += " --entitlements " + entitlementsPath;
+                }
+                var (exitCode, stdErr) = HostModelUtils.RunCodesign(args, bundlePath);
                 if (exitCode != 0)
                 {
                     throw new InvalidOperationException($"Failed to codesign '{bundlePath}': {stdErr}");
                 }
             }
+            if (entitlementsPath != null && File.Exists(entitlementsPath))
+            {
+                File.Delete(entitlementsPath);
+            }
 
             return bundlePath;
 
             // Remove mac code signature if applied before bundling
-            static void RemoveCodesignIfNecessary(string bundlePath)
+            static void RemoveCodesignIfNecessary(string bundlePath, string entitlementsPath)
             {
                 Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
                 Debug.Assert(HostModelUtils.IsCodesignAvailable());
@@ -366,7 +377,12 @@ namespace Microsoft.NET.HostModel.Bundle
                 // `codesign -v` returns 0 if app is signed
                 if (HostModelUtils.RunCodesign("-v", bundlePath).ExitCode == 0)
                 {
-                    var (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
+                    var (exitCode, stdErr) = HostModelUtils.RunCodesign($"-d --entitlements {entitlementsPath} --xml", bundlePath);
+                    if (exitCode != 0)
+                    {
+                        throw new InvalidOperationException($"Failed to get entitlements from '{bundlePath}': {stdErr}");
+                    }
+                    (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
                     if (exitCode != 0)
                     {
                         throw new InvalidOperationException($"Removing codesign from '{bundlePath}' failed: {stdErr}");

@@ -141,7 +141,7 @@ namespace Microsoft.NET.HostModel.AppHost
                             BinaryUtils.WriteToStream(memoryMappedViewAccessor, fileStream, sourceAppHostLength);
 
                             // Remove the signature from MachO hosts.
-                            if (!appHostIsPEImage)
+                            if (!appHostIsPEImage && !enableMacOSCodeSign)
                             {
                                 MachOUtils.RemoveSignature(fileStream);
                             }
@@ -181,7 +181,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                     if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
                     {
-                        (int exitCode, string stdErr) = HostModelUtils.RunCodesign("-s -", appHostDestinationFilePath);
+                        (int exitCode, string stdErr) = HostModelUtils.RunCodesign("-s - --preserve-metadata=entitlements -f", appHostDestinationFilePath);
                         if (exitCode != 0)
                         {
                             throw new AppHostSigningException(exitCode, stdErr);
