@@ -1692,17 +1692,17 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         blockRange = &LIR::AsRange(block);
         switchTree = blockRange->LastNode();
 
-        assert(switchTree->OperGet() == GT_SWITCH_TABLE);
+        assert(switchTree->OperIs(GT_SWITCH_TABLE));
     }
     else
     {
         switchStmt = block->lastStmt();
         switchTree = switchStmt->GetRootNode();
 
-        assert(switchTree->OperGet() == GT_SWITCH);
+        assert(switchTree->OperIs(GT_SWITCH));
     }
 
-    noway_assert(switchTree->gtType == TYP_VOID);
+    noway_assert(switchTree->TypeIs(TYP_VOID));
 
     // At this point all of the case jump targets have been updated such
     // that none of them go to block that is an empty unconditional block
@@ -1767,7 +1767,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
 #endif // DEBUG
 
                 /* Replace the conditional statement with the list of side effects */
-                noway_assert(sideEffList->gtOper != GT_SWITCH);
+                noway_assert(!sideEffList->OperIs(GT_SWITCH));
 
                 switchStmt->SetRootNode(sideEffList);
 
@@ -1812,7 +1812,7 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (block->IsLIR())
         {
             GenTree* jumpTable = switchTree->AsOp()->gtOp2;
-            assert(jumpTable->OperGet() == GT_JMPTABLE);
+            assert(jumpTable->OperIs(GT_JMPTABLE));
             blockRange->Remove(jumpTable);
         }
 
@@ -2010,7 +2010,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     //
     GenTree* const lastTree = lastStmt->GetRootNode();
 
-    if (lastTree->gtOper != GT_JTRUE)
+    if (!lastTree->OperIs(GT_JTRUE))
     {
         return false;
     }
@@ -2024,7 +2024,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     // op1 must be some combinations of casts of local or constant
     GenTree* op1 = cond->AsOp()->gtOp1;
-    while (op1->gtOper == GT_CAST)
+    while (op1->OperIs(GT_CAST))
     {
         op1 = op1->AsOp()->gtOp1;
     }
@@ -2036,7 +2036,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
 
     // op2 must be some combinations of casts of local or constant
     GenTree* op2 = cond->AsOp()->gtOp2;
-    while (op2->gtOper == GT_CAST)
+    while (op2->OperIs(GT_CAST))
     {
         op2 = op2->AsOp()->gtOp1;
     }
@@ -2112,7 +2112,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
     // op1 must be some combinations of casts of local or constant
     // (or unary)
     op1 = data->AsOp()->gtOp1;
-    while (op1->gtOper == GT_CAST)
+    while (op1->OperIs(GT_CAST))
     {
         op1 = op1->AsOp()->gtOp1;
     }
@@ -2133,7 +2133,7 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
-    while (op2->gtOper == GT_CAST)
+    while (op2->OperIs(GT_CAST))
     {
         op2 = op2->AsOp()->gtOp1;
     }
@@ -2435,7 +2435,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
     {
         Statement* condStmt = block->lastStmt();
         GenTree*   cond     = condStmt->GetRootNode();
-        noway_assert(cond->gtOper == GT_JTRUE);
+        noway_assert(cond->OperIs(GT_JTRUE));
 
         /* check for SIDE_EFFECTS */
         if (cond->gtFlags & GTF_SIDE_EFFECT)
@@ -2465,7 +2465,7 @@ void Compiler::fgRemoveConditionalJump(BasicBlock* block)
 #endif // DEBUG
 
                 /* Replace the conditional statement with the list of side effects */
-                noway_assert(sideEffList->gtOper != GT_JTRUE);
+                noway_assert(!sideEffList->OperIs(GT_JTRUE));
 
                 condStmt->SetRootNode(sideEffList);
 
@@ -2707,7 +2707,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     // Get to the condition node from the statement tree.
     GenTree* condTree = newLastStmt->GetRootNode();
-    noway_assert(condTree->gtOper == GT_JTRUE);
+    noway_assert(condTree->OperIs(GT_JTRUE));
 
     // Set condTree to the operand to the GT_JTRUE.
     condTree = condTree->gtGetOp1();
@@ -4578,7 +4578,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         GenTree* test = block->lastNode();
                         noway_assert(test->OperIsConditionalJump());
 
-                        if (test->OperGet() == GT_JTRUE)
+                        if (test->OperIs(GT_JTRUE))
                         {
                             GenTree* cond = gtReverseCond(test->AsOp()->gtOp1);
                             assert(cond == test->AsOp()->gtOp1); // Ensure `gtReverseCond` did not create a new node.

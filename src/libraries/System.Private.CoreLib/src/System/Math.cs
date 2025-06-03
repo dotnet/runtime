@@ -157,18 +157,8 @@ namespace System
         /// <returns>The number containing the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ulong BigMul(uint a, uint b)
+        public static ulong BigMul(uint a, uint b)
         {
-#if false // TARGET_32BIT
-            // This generates slower code currently than the simple multiplication
-            // https://github.com/dotnet/runtime/issues/11782
-            if (Bmi2.IsSupported)
-            {
-                uint low;
-                uint high = Bmi2.MultiplyNoFlags(a, b, &low);
-                return ((ulong)high << 32) | low;
-            }
-#endif
             return ((ulong)a) * b;
         }
 

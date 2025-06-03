@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        internal static unsafe int IReferenceTrackerHost_DisconnectUnusedReferenceSources(IntPtr pThis, uint flags)
+        internal static int IReferenceTrackerHost_DisconnectUnusedReferenceSources(IntPtr pThis, uint flags)
 #pragma warning restore IDE0060, CS3016
         {
             try
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        internal static unsafe int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
+        internal static int IReferenceTrackerHost_ReleaseDisconnectedReferenceSources(IntPtr pThis)
 #pragma warning restore IDE0060, CS3016
         {
             // We'd like to call GC.WaitForPendingFinalizers() here, but this could lead to deadlock
@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        internal static unsafe int IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread(IntPtr pThis)
+        internal static int IReferenceTrackerHost_NotifyEndOfReferenceTrackingOnThread(IntPtr pThis)
 #pragma warning restore IDE0060, CS3016
         {
             try
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        internal static unsafe int IReferenceTrackerHost_AddMemoryPressure(IntPtr pThis, long bytesAllocated)
+        internal static int IReferenceTrackerHost_AddMemoryPressure(IntPtr pThis, long bytesAllocated)
 #pragma warning restore IDE0060, CS3016
         {
             try
@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices
 
 #pragma warning disable IDE0060, CS3016
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvMemberFunction)])]
-        internal static unsafe int IReferenceTrackerHost_RemoveMemoryPressure(IntPtr pThis, long bytesAllocated)
+        internal static int IReferenceTrackerHost_RemoveMemoryPressure(IntPtr pThis, long bytesAllocated)
 #pragma warning restore IDE0060, CS3016
         {
             try
