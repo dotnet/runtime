@@ -1815,58 +1815,6 @@ void Compiler::optPerformStaticOptimizations(FlowGraphNaturalLoop*     loop,
     }
 }
 
-//------------------------------------------------------------------------
-// optShouldCloneLoop: Decide if a loop that can be cloned should be cloned.
-//
-// Arguments:
-//     loop - the current loop for which the optimizations are performed.
-//
-// Returns:
-//     true if expected performance gain from cloning is worth the potential
-//     size increase.
-//
-// Remarks:
-//     This is a simple-minded heuristic meant to avoid "runaway" cloning
-//     where large loops are cloned.
-//
-//     We estimate the size cost of cloning by summing up the number of
-//     tree nodes in all statements in all blocks in the loop.
-//
-//     This value is compared to a hard-coded threshold, and if bigger,
-//     then the method returns false.
-//
-bool Compiler::optShouldCloneLoop(FlowGraphNaturalLoop* loop)
-{
-    // See if loop size exceeds the limit.
-    //
-    const int      sizeConfig = JitConfig.JitCloneLoopsSizeLimit();
-    unsigned const sizeLimit  = (sizeConfig >= 0) ? (unsigned)sizeConfig : UINT_MAX;
-    unsigned       size       = 0;
-
-    BasicBlockVisit result = loop->VisitLoopBlocks([&](BasicBlock* block) {
-        assert(sizeLimit >= size);
-        unsigned const slack     = sizeLimit - size;
-        unsigned       blockSize = 0;
-        if (block->ComplexityExceeds(this, slack, &blockSize))
-        {
-            return BasicBlockVisit::Abort;
-        }
-
-        size += blockSize;
-        return BasicBlockVisit::Continue;
-    });
-
-    if (result == BasicBlockVisit::Abort)
-    {
-        JITDUMP("Rejecting loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), sizeLimit);
-        return false;
-    }
-
-    JITDUMP("Loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size, sizeLimit);
-
-    return true;
-}
-
 //----------------------------------------------------------------------------
 // optIsLoopClonable: Determine whether this loop can be cloned.
 //
@@ -3129,8 +3077,9 @@ PhaseStatus Compiler::optCloneLoops()
         }
         else
         {
-            bool allTrue  = false;
-            bool anyFalse = false;
+            bool      allTrue   = false;
+            bool      anyFalse  = false;
+            const int sizeLimit = JitConfig.JitCloneLoopsSizeLimit();
             context.EvaluateConditions(loop->GetIndex(), &allTrue, &anyFalse DEBUGARG(verbose));
             if (anyFalse)
             {
@@ -3147,7 +3096,13 @@ PhaseStatus Compiler::optCloneLoops()
                 // No need to clone.
                 context.CancelLoopOptInfo(loop->GetIndex());
             }
-            else if (!optShouldCloneLoop(loop))
+            // This is a simple-minded heuristic meant to avoid "runaway" cloning
+            // where large loops are cloned.
+            // We estimate the size cost of cloning by summing up the number of
+            // tree nodes in all statements in all blocks in the loop.
+            // This value is compared to a hard-coded threshold, and if bigger,
+            // then the method returns false.
+            else if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
             {
                 context.CancelLoopOptInfo(loop->GetIndex());
             }

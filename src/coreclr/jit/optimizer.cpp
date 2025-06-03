@@ -1900,8 +1900,10 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
     JITDUMP("Condition in block " FMT_BB " of loop " FMT_LP " is a candidate for duplication to invert the loop\n",
             condBlock->bbNum, loop->GetIndex());
 
-    // Loops that are too large for cloning probably won't benefit from inversion.
-    if (!optShouldCloneLoop(loop))
+    // Check if loop is small enough to consider for inversion.
+    // Large loops are less likely to benefit from inversion.
+    const int sizeLimit = JitConfig.JitLoopInversionSizeLimit();
+    if ((sizeLimit >= 0) && optLoopComplexityExceeds(loop, (unsigned)sizeLimit))
     {
         return false;
     }
@@ -2836,6 +2838,47 @@ bool Compiler::optCanonicalizeExit(FlowGraphNaturalLoop* loop, BasicBlock* exit)
     JITDUMP("Created new exit " FMT_BB " to replace " FMT_BB " exit for " FMT_LP "\n", newExit->bbNum, exit->bbNum,
             loop->GetIndex());
     return true;
+}
+
+//------------------------------------------------------------------------
+// optLoopComplexityExceeds: Check if the number of nodes in the loop exceeds some limit
+//
+// Arguments:
+//     loop  - the loop to compute the number of nodes in
+//     limit - limit on the number of nodes
+//
+// Returns:
+//     true if the number of nodes exceeds the limit
+//
+bool Compiler::optLoopComplexityExceeds(FlowGraphNaturalLoop* loop, unsigned limit)
+{
+    assert(loop != nullptr);
+
+    // See if loop size exceeds the limit.
+    //
+    unsigned size = 0;
+
+    BasicBlockVisit const result = loop->VisitLoopBlocks([this, limit, &size](BasicBlock* block) {
+        assert(limit >= size);
+        unsigned const slack     = limit - size;
+        unsigned       blockSize = 0;
+        if (block->ComplexityExceeds(this, slack, &blockSize))
+        {
+            return BasicBlockVisit::Abort;
+        }
+
+        size += blockSize;
+        return BasicBlockVisit::Continue;
+    });
+
+    if (result == BasicBlockVisit::Abort)
+    {
+        JITDUMP("Loop " FMT_LP ": exceeds size limit %u\n", loop->GetIndex(), limit);
+        return true;
+    }
+
+    JITDUMP("Loop " FMT_LP ": size %u does not exceed size limit %u\n", loop->GetIndex(), size, limit);
+    return false;
 }
 
 //-----------------------------------------------------------------------------
