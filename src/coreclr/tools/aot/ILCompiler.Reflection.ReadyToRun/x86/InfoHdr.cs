@@ -163,7 +163,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         private const uint HAS_UNTRACKED = 0xFFFFFFFF;
         private const uint HAS_GS_COOKIE_OFFSET = 0xFFFFFFFF;
         private const uint HAS_SYNC_OFFSET = 0xFFFFFFFF;
-        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFF; // is this wrong??
+        private const uint HAS_REV_PINVOKE_FRAME_OFFSET = 0xFFFFFFFF;
         private const uint HAS_NOGCREGIONS = 0xFFFFFFFF;
         private const uint YES = HAS_VARPTR;
 
