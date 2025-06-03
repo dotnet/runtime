@@ -2603,8 +2603,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 assert(emitter::isFloatReg(targetReg));
                 assert(varTypeIsFloating(node->gtType) || varTypeIsSIMD(node->gtType));
-                assert((targetReg == op2Reg) || (targetReg != op1Reg));
-                assert((targetReg == op2Reg) || (targetReg != op2Reg));
 
                 GetEmitter()->emitInsSve_R_R_R(ins, EA_SCALABLE, targetReg, op1Reg, op2Reg, opt,
                                                INS_SCALABLE_OPTS_WITH_SIMD_SCALAR);
