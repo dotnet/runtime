@@ -7950,7 +7950,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     bool isSafeToContainOp1 = true;
     bool isSafeToContainOp2 = true;
 
-    bool     isUnsignedMultiply    = ((node->gtFlags & GTF_UNSIGNED) != 0);
+    bool     isUnsignedMultiply    = node->IsUnsigned();
     bool     requiresOverflowCheck = node->gtOverflowEx();
     bool     useLeaEncoding        = false;
     GenTree* memOp                 = nullptr;
@@ -7958,6 +7958,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     bool                 hasImpliedFirstOperand = false;
     GenTreeIntConCommon* imm                    = nullptr;
     GenTree*             other                  = nullptr;
+    var_types            nodeType               = node->TypeGet();
 
     // Multiply should never be using small types
     assert(!varTypeIsSmall(node->TypeGet()));
@@ -7977,6 +7978,16 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     else if (node->OperGet() == GT_MUL_LONG)
     {
         hasImpliedFirstOperand = true;
+        // GT_MUL_LONG produce ULONG or LONG but work on UINT or INT
+        if (nodeType == TYP_LONG)
+        {
+            nodeType = TYP_INT;
+        }
+        else
+        {
+            assert(nodeType == TYP_ULONG);
+            nodeType = TYP_UINT;
+        }
     }
 #endif
     else if (IsContainableImmed(node, op2) || IsContainableImmed(node, op1))
@@ -8013,7 +8024,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     //
     if (memOp == nullptr)
     {
-        if ((op2->TypeGet() == node->TypeGet()) && IsContainableMemoryOp(op2))
+        if ((op2->TypeGet() == nodeType) && IsContainableMemoryOp(op2))
         {
             isSafeToContainOp2 = IsSafeToContainMem(node, op2);
             if (isSafeToContainOp2)
@@ -8022,7 +8033,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
             }
         }
 
-        if ((memOp == nullptr) && (op1->TypeGet() == node->TypeGet()) && IsContainableMemoryOp(op1))
+        if ((memOp == nullptr) && (op1->TypeGet() == nodeType) && IsContainableMemoryOp(op1))
         {
             isSafeToContainOp1 = IsSafeToContainMem(node, op1);
             if (isSafeToContainOp1)
@@ -8033,7 +8044,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     }
     else
     {
-        if ((memOp->TypeGet() != node->TypeGet()))
+        if ((memOp->TypeGet() != nodeType))
         {
             memOp = nullptr;
         }
@@ -8058,6 +8069,12 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
         if (memOp != nullptr)
         {
             MakeSrcContained(node, memOp);
+
+            // Swap the operands so that the contained memory operand is always op2 for GT_MULHI and GT_MUL_LONG
+            if (memOp == op1 && node->OperGet() != GT_MUL)
+            {
+                std::swap(node->gtOp1, node->gtOp2);
+            }
         }
         else
         {

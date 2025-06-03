@@ -795,6 +795,14 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
             }
             return (!tree->gtGetOp2()->isContainedIntOrIImmed() && !tree->gtGetOp1()->isContainedIntOrIImmed());
         }
+#ifdef TARGET_X86
+        case GT_MUL_LONG:
+#endif
+        case GT_MULHI:
+        {
+            // MUL, IMUL are RMW but mulx is not (which is used for unsigned operands when BMI2 is availible)
+            return !(tree->IsUnsigned() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+        }
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -3213,18 +3221,61 @@ int LinearScan::BuildMul(GenTree* tree)
         return BuildSimple(tree);
     }
 
-    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot  use R16-R31.
-    int              srcCount      = BuildBinaryUses(tree->AsOp());
+    bool isUnsignedMultiply    = tree->IsUnsigned();
+    bool requiresOverflowCheck = tree->gtOverflowEx();
+    bool useMulx               = tree->OperGet() != GT_MUL && isUnsignedMultiply &&
+                   compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2);
+
+    // ToDo-APX : imul currently doesn't have rex2 support. So, cannot use R16-R31.
+    int              srcCount      = 0;
     int              dstCount      = 1;
     SingleTypeRegSet dstCandidates = RBM_NONE;
 
-    bool isUnsignedMultiply    = ((tree->gtFlags & GTF_UNSIGNED) != 0);
-    bool requiresOverflowCheck = tree->gtOverflowEx();
+    // Start with building the uses, ensuring that one of the operands is in the implicit register (RAX or RDX)
+    // Place first operand in implicit register, unless:
+    //  * it is a memory address
+    // *  or the second operand is already in the register
+    if (useMulx)
+    {
+        // Lowering has ensured that op1 is never the memory operand
+        assert(!op1->isUsedFromMemory());
 
-    // There are three forms of x86 multiply:
+        // prefer to have the constant in RDX (op1) this is especially useful for MUL_HI usage
+        if (op2->IsCnsIntOrI())
+        {
+            std::swap(op1, op2);
+        }
+
+        // In lowering, we place any memory operand in op2 so we default to placing op1 in RDX
+        // By selecting RDX here we don't have to kill it
+        srcCount = BuildOperandUses(op1, SRBM_RDX);
+        srcCount += BuildOperandUses(op2, RBM_NONE);
+    }
+    else
+    {
+        assert(!op1->isUsedFromMemory() || !op2->isUsedFromMemory());
+
+        SingleTypeRegSet srcCandidates1 = RBM_NONE;
+        SingleTypeRegSet srcCandidates2 = RBM_NONE;
+
+        // If one of the operands is a memory address, specify RAX for the other operand
+        if (op1->isUsedFromMemory())
+        {
+            srcCandidates2 = SRBM_RAX;
+        }
+        else if (op2->isUsedFromMemory())
+        {
+            srcCandidates1 = SRBM_RAX;
+        }
+        srcCount = BuildRMWUses(tree, op1, op2, srcCandidates1, srcCandidates2);
+    }
+
+    // There are three forms of x86 multiply in base instruction set
     // one-op form:     RDX:RAX = RAX * r/m
     // two-op form:     reg *= r/m
     // three-op form:   reg = r/m * imm
+    // If the BMI2 instruction set is supported there is an additional unsigned multiply
+    // mulx             reg1:reg2 = RDX * reg3/m
 
     // This special widening 32x32->64 MUL is not used on x64
 #if defined(TARGET_X86)
@@ -3248,16 +3299,22 @@ int LinearScan::BuildMul(GenTree* tree)
     }
     else if (tree->OperGet() == GT_MULHI)
     {
-        // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
-        // upper 32 bits of the result set the destination candidate to REG_RDX.
-        dstCandidates = SRBM_RDX;
+        if (!useMulx)
+        {
+            // Have to use the encoding:RDX:RAX = RAX * rm. Since we only care about the
+            // upper 32 bits of the result set the destination candidate to REG_RDX.
+            dstCandidates = SRBM_RDX;
+        }
     }
 #if defined(TARGET_X86)
     else if (tree->OperGet() == GT_MUL_LONG)
     {
-        // have to use the encoding:RDX:RAX = RAX * rm
-        dstCandidates = SRBM_RAX | SRBM_RDX;
-        dstCount      = 2;
+        dstCount = 2;
+        if (!useMulx)
+        {
+            // We have to use the encoding:RDX:RAX = RAX * rm
+            dstCandidates = SRBM_RAX | SRBM_RDX;
+        }
     }
 #endif
     GenTree* containedMemOp = nullptr;
