@@ -2531,6 +2531,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 fgPgoDisabled    = true;
             }
         }
+#endif // DEBUG
 
         // A successful result implies a non-NULL fgPgoSchema
         //
@@ -2564,7 +2565,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             assert(fgPgoSchema == nullptr);
         }
-#endif // DEBUG
     }
 
     bool enableInliningMethodsWithEH = JitConfig.JitInlineMethodsWithEH() > 0;
