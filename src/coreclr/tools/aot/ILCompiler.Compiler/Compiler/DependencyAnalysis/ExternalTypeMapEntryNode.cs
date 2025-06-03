@@ -48,7 +48,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+        {
+            return [
+                new DependencyListEntry(context.MaximallyConstructableType(TargetType), "Target type in external type map")
+            ];
+        }
+
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
         protected override string GetName(NodeFactory context) => $"ExternalTypeMapEntryNode({Key}, {TargetType}) in group {TypeMapGroup}";
     }
