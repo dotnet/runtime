@@ -112,7 +112,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
             // Return the setter if it's more accessible, otherwise return the getter (preserving original behavior when equal)
             return GetAccessibilityRank(setter) > GetAccessibilityRank(getter) ? setter : getter;
-            
+
             // Define accessibility ranking
             static int GetAccessibilityRank(MethodInfo method)
             {
