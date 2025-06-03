@@ -85,6 +85,9 @@ namespace System.Runtime
         internal static extern unsafe string RhNewString(MethodTable* pEEType, int length);
 
         [DllImport(RuntimeLibrary)]
+        internal static extern unsafe void RhAllocateNewArray(MethodTable* pArrayEEType, uint numElements, uint flags, void* pResult);
+
+        [DllImport(RuntimeLibrary)]
         internal static extern unsafe void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
