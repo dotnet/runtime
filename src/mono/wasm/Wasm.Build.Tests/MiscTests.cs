@@ -32,6 +32,6 @@ public class MiscTests : WasmTemplateTestsBase
 
         Assert.Equal(2, result.TestOutput.Count);
         Assert.Contains(result.TestOutput, m => m.Contains("System.PlatformNotSupportedException"));
-        Assert.Contains(result.TestOutput, m => m.Contains("No native to managed transition for method '(wrapper native-to-managed) void MiscTests/<>c:<TestGetFunctionPointerForDelegate>b__0_0 ()', missing [UnmanagedCallersOnly] attribute."));
+        Assert.Contains(result.TestOutput, m => m.Contains("No native to managed transition for method '(wrapper native-to-managed) void MiscTests/<>c:<TestGetFunctionPointerForDelegate>b__0_0 ()'. Dynamic entrypoint allocation is not supported in the current environment."));
     }
 }
