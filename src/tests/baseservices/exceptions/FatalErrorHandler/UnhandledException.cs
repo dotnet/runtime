@@ -25,6 +25,8 @@ unsafe public class UnhandledException
         ExceptionHandling.SetFatalErrorHandler((delegate* unmanaged<int, void*, int>)&Handler);
 
         // throw
-        throw new Exception();
+        Environment.FailFast("hello");
+
+        return 42;
     }
 }

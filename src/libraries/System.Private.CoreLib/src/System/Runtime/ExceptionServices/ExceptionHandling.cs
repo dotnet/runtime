@@ -1,14 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Runtime.ExceptionServices
 {
-    public static class ExceptionHandling
+    public static partial class ExceptionHandling
     {
         private static Func<Exception, bool>? s_handler;
-        private static bool s_crashHandlerSet;
+
+#if CORECLR
+        private static bool s_fatalHandlerSet;
+#endif
 
         internal static bool IsHandledByGlobalHandler(Exception ex)
         {
@@ -40,6 +46,11 @@ namespace System.Runtime.ExceptionServices
             }
         }
 
+#if CORECLR
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionHandling_SetFatalErrorHandler")]
+        private static unsafe partial void _SetFatalErrorHandler(delegate* unmanaged<int, void*, int> fatalErrorHandler);
+#endif
+
         /// <summary>
         /// .NET runtime is going to call `fatalErrorHandler` set by this method before its own
         /// fatal error handling (creating .NET runtime-specific crash dump, etc.).
@@ -49,14 +60,18 @@ namespace System.Runtime.ExceptionServices
         [System.CLSCompliantAttribute(false)]
         public static unsafe void SetFatalErrorHandler(delegate* unmanaged<int, void*, int> fatalErrorHandler)
         {
+#if CORECLR
             ArgumentNullException.ThrowIfNull(fatalErrorHandler);
 
-            if (Interlocked.CompareExchange(ref s_crashHandlerSet, true, false))
+            if (Interlocked.CompareExchange(ref s_fatalHandlerSet, true, false))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRegisterSecondFatalHandler);
             }
 
-            // set the handler here. (QCall)
+            _SetFatalErrorHandler(fatalErrorHandler);
+#else
+            throw new PlatformNotSupportedException();
+#endif
         }
 
         /// <summary>

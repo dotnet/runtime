@@ -99,6 +99,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_Construct)
     DllImportEntry(Delegate_FindMethodHandle)
     DllImportEntry(Delegate_InternalEqualMethodHandles)
+    DllImportEntry(ExceptionHandling_SetFatalErrorHandler)
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)
