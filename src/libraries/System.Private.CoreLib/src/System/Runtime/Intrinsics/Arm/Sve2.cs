@@ -244,6 +244,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddCarryWideningLower(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningLower(op1, op2, op3);
 
+        // Add with carry long (top)
+
+        /// <summary>
+        /// svuint32_t svadclt[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   ADCLT Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static unsafe Vector<uint> AddCarryWideningUpper(Vector<uint> op1, Vector<uint> op2, Vector<uint> op3) => AddCarryWideningUpper(op1, op2, op3);
+
+        /// <summary>
+        /// svuint64_t svadclt[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   ADCLT Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static unsafe Vector<ulong> AddCarryWideningUpper(Vector<ulong> op1, Vector<ulong> op2, Vector<ulong> op3) => AddCarryWideningUpper(op1, op2, op3);
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
