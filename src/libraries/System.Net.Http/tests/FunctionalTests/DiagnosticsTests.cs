@@ -836,9 +836,11 @@ namespace System.Net.Http.Functional.Tests
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync)
             {
+                Activity parentActivity = new Activity("parent").Start();
+
                 using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
                 {
-                    VerifyParent = false
+                    ExpectedParent = parentActivity
                 };
 
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
