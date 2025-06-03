@@ -112,7 +112,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
-            if (stmtExpr->gtOper != GT_RETFILT)
+            if (!stmtExpr->OperIs(GT_RETFILT))
             {
                 isEmpty = false;
                 break;
@@ -719,7 +719,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                 {
                     Statement* finallyRet     = block->lastStmt();
                     GenTree*   finallyRetExpr = finallyRet->GetRootNode();
-                    assert(finallyRetExpr->gtOper == GT_RETFILT);
+                    assert(finallyRetExpr->OperIs(GT_RETFILT));
                     fgRemoveStmt(block, finallyRet);
                     FlowEdge* const newEdge = fgAddRefPred(continuation, block);
                     block->SetKindAndTargetEdge(BBJ_ALWAYS, newEdge);
@@ -1520,7 +1520,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 Statement* finallyRet     = newBlock->lastStmt();
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
-                assert(finallyRetExpr->gtOper == GT_RETFILT);
+                assert(finallyRetExpr->OperIs(GT_RETFILT));
                 fgRemoveStmt(newBlock, finallyRet);
 
                 FlowEdge* const newEdge = fgAddRefPred(normalCallFinallyReturn, newBlock);
@@ -1896,7 +1896,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
         {
             isEmpty       = false;
             GenTree* expr = stmt->GetRootNode();
-            if (expr->gtOper == GT_END_LFIN)
+            if (expr->OperIs(GT_END_LFIN))
             {
                 assert(!foundEndLFin);
                 fgRemoveStmt(continuation, stmt);

@@ -365,9 +365,9 @@ FCIMPL2(Object *, RhpCheckedXchg, Object ** location, Object * value)
 }
 FCIMPLEND
 
-FCIMPL0(void*, RhAllocateThunksMapping)
+FCIMPL1(HRESULT, RhAllocateThunksMapping, void ** ppThunksSection)
 {
-    return NULL;
+    return E_FAIL;
 }
 FCIMPLEND
 

@@ -162,7 +162,7 @@ public sealed class TestEventListener : EventListener
             return ((sum & 0xFFF00000) == (uintPtr[3] & 0xFFF00000));
         }
 
-        public static unsafe string ActivityPathString(Guid guid)
+        public static string ActivityPathString(Guid guid)
             => IsActivityPath(guid) ? CreateActivityPathString(guid) : guid.ToString();
 
         internal static unsafe string CreateActivityPathString(Guid guid)

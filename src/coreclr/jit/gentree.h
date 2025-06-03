@@ -450,7 +450,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_MOREUSES      = 0x00800000, // GT_LCL_VAR -- this node has additional uses, for example due to cloning
     GTF_VAR_CONTEXT       = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
     GTF_VAR_EXPLICIT_INIT = 0x00200000, // GT_LCL_VAR -- this node is an "explicit init" store. Valid until rationalization.
-    GTF_VAR_CONNECTED     = 0x00100000, // GT_STORE_LCL_VAR -- this store was modelled in the connection graph during escape analysis
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -1072,7 +1071,7 @@ public:
             return false;
         }
 
-        if (gtType == TYP_VOID)
+        if (TypeIs(TYP_VOID))
         {
             // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsHWIntrinsic() ||
@@ -1180,7 +1179,7 @@ public:
 
     static bool OperIsLocalField(genTreeOps gtOper)
     {
-        return (gtOper == GT_LCL_FLD || gtOper == GT_LCL_ADDR || gtOper == GT_STORE_LCL_FLD);
+        return StaticOperIs(gtOper, GT_LCL_FLD, GT_LCL_ADDR, GT_STORE_LCL_FLD);
     }
 
     bool OperIsLocalField() const
@@ -1190,7 +1189,7 @@ public:
 
     static bool OperIsScalarLocal(genTreeOps gtOper)
     {
-        return (gtOper == GT_LCL_VAR || gtOper == GT_STORE_LCL_VAR);
+        return StaticOperIs(gtOper, GT_LCL_VAR, GT_STORE_LCL_VAR);
     }
 
     static bool OperIsNonPhiLocal(genTreeOps gtOper)
@@ -1205,17 +1204,17 @@ public:
 
     static bool OperIsLocalStore(genTreeOps gtOper)
     {
-        return (gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD);
+        return StaticOperIs(gtOper, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD);
     }
 
     static bool OperIsAddrMode(genTreeOps gtOper)
     {
-        return (gtOper == GT_LEA);
+        return gtOper == GT_LEA;
     }
 
     static bool OperIsInitVal(genTreeOps gtOper)
     {
-        return (gtOper == GT_INIT_VAL);
+        return gtOper == GT_INIT_VAL;
     }
 
     bool OperIsInitVal() const
@@ -1230,7 +1229,7 @@ public:
 
     bool IsConstInitVal() const
     {
-        return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
+        return (OperIs(GT_CNS_INT)) || (OperIsInitVal() && (gtGetOp1()->OperIs(GT_CNS_INT)));
     }
 
     bool OperIsBlkOp();
@@ -1259,12 +1258,12 @@ public:
 
     bool OperIsPutArgStk() const
     {
-        return gtOper == GT_PUTARG_STK;
+        return OperIs(GT_PUTARG_STK);
     }
 
     bool OperIsPutArgReg() const
     {
-        return gtOper == GT_PUTARG_REG;
+        return OperIs(GT_PUTARG_REG);
     }
 
     bool OperIsPutArg() const
@@ -1366,7 +1365,7 @@ public:
 
     static bool OperIsCC(genTreeOps gtOper)
     {
-        return (gtOper == GT_JCC) || (gtOper == GT_SETCC);
+        return StaticOperIs(gtOper, GT_JCC, GT_SETCC);
     }
 
     bool OperIsCC() const
@@ -1376,7 +1375,7 @@ public:
 
     static bool OperIsShift(genTreeOps gtOper)
     {
-        return (gtOper == GT_LSH) || (gtOper == GT_RSH) || (gtOper == GT_RSZ);
+        return StaticOperIs(gtOper, GT_LSH, GT_RSH, GT_RSZ);
     }
 
     bool OperIsShift() const
@@ -1389,7 +1388,7 @@ public:
 #ifdef TARGET_64BIT
         return false;
 #else
-        return (gtOper == GT_LSH_HI) || (gtOper == GT_RSH_LO);
+        return StaticOperIs(gtOper, GT_LSH_HI, GT_RSH_LO);
 #endif
     }
 
@@ -1400,7 +1399,7 @@ public:
 
     static bool OperIsRotate(genTreeOps gtOper)
     {
-        return (gtOper == GT_ROL) || (gtOper == GT_ROR);
+        return StaticOperIs(gtOper, GT_ROL, GT_ROR);
     }
 
     bool OperIsRotate() const
@@ -1420,7 +1419,7 @@ public:
 
     static bool OperIsMul(genTreeOps gtOper)
     {
-        return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
+        return StaticOperIs(gtOper, GT_MUL, GT_MULHI)
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
                || (gtOper == GT_MUL_LONG)
 #endif
@@ -1436,8 +1435,8 @@ public:
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
-        return (gtOper == GT_ADD || gtOper == GT_SUB || gtOper == GT_AND || gtOper == GT_OR || gtOper == GT_XOR ||
-                gtOper == GT_NOT || gtOper == GT_NEG || OperIsShiftOrRotate(gtOper));
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_AND, GT_OR, GT_XOR, GT_NOT, GT_NEG) ||
+               OperIsShiftOrRotate(gtOper);
     }
     bool OperIsRMWMemOp() const
     {
@@ -1536,11 +1535,11 @@ public:
 
     static bool OperMayOverflow(genTreeOps gtOper)
     {
-        return ((gtOper == GT_ADD) || (gtOper == GT_SUB) || (gtOper == GT_MUL) || (gtOper == GT_CAST)
+        return StaticOperIs(gtOper, GT_ADD, GT_SUB, GT_MUL, GT_CAST)
 #if !defined(TARGET_64BIT)
-                || (gtOper == GT_ADD_HI) || (gtOper == GT_SUB_HI)
+               || StaticOperIs(gtOper, GT_ADD_HI, GT_SUB_HI)
 #endif
-        );
+            ;
     }
 
     bool OperMayOverflow() const
@@ -1560,18 +1559,18 @@ public:
 
     static bool OperIsArrLength(genTreeOps gtOper)
     {
-        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH);
+        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH);
     }
 
     static bool OperIsMDArr(genTreeOps gtOper)
     {
-        return (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+        return StaticOperIs(gtOper, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
     }
 
     // Is this an access of an SZ array length, MD array length, or MD array lower bounds?
     static bool OperIsArrMetaData(genTreeOps gtOper)
     {
-        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH) || (gtOper == GT_MDARR_LOWER_BOUND);
+        return StaticOperIs(gtOper, GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND);
     }
 
     static bool OperIsIndirOrArrMetaData(genTreeOps gtOper)
@@ -1632,7 +1631,7 @@ public:
 
     static bool OperIsLoad(genTreeOps gtOper)
     {
-        return (gtOper == GT_IND) || (gtOper == GT_BLK);
+        return StaticOperIs(gtOper, GT_IND, GT_BLK);
     }
 
     bool OperIsLoad() const
@@ -1746,7 +1745,7 @@ public:
             case GT_FIELD_ADDR:
                 return true;
             case GT_RETURN:
-                return gtType == TYP_VOID;
+                return TypeIs(TYP_VOID);
             default:
                 return false;
         }
@@ -1771,7 +1770,7 @@ public:
                 return true;
 
             case GT_SWIFT_ERROR_RET:
-                return (gtType == TYP_VOID);
+                return (TypeIs(TYP_VOID));
             default:
                 return false;
         }
@@ -1965,7 +1964,7 @@ public:
         var_types oldType = gtType;
         gtType            = newType;
         GenTree* node     = this;
-        while (node->gtOper == GT_COMMA)
+        while (node->OperIs(GT_COMMA))
         {
             node = node->gtGetOp2();
             if (node->gtType != newType)
@@ -2228,7 +2227,7 @@ public:
 
     bool IsIconHandle() const
     {
-        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
+        return (OperIs(GT_CNS_INT)) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
@@ -2236,7 +2235,7 @@ public:
         // check that handleType is one of the valid GTF_ICON_* values
         assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
+        return (OperIs(GT_CNS_INT)) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
     template <typename... T>
@@ -2249,7 +2248,7 @@ public:
     // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
+        return (OperIs(GT_CNS_INT)) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     bool IsTlsIconHandle()
@@ -2265,7 +2264,7 @@ public:
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
     void ClearIconHandleMask()
     {
-        assert(gtOper == GT_CNS_INT);
+        assert(OperIs(GT_CNS_INT));
         gtFlags &= ~GTF_ICON_HDL_MASK;
     }
 
@@ -2841,8 +2840,8 @@ public:
     //
     static bool Equals(GenTreeFieldList* list1, GenTreeFieldList* list2)
     {
-        assert(list1->TypeGet() == TYP_STRUCT);
-        assert(list2->TypeGet() == TYP_STRUCT);
+        assert(list1->TypeIs(TYP_STRUCT));
+        assert(list2->TypeIs(TYP_STRUCT));
 
         UseIterator i1   = list1->Uses().begin();
         UseIterator end1 = list1->Uses().end();
@@ -3334,7 +3333,7 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 inline INT64 GenTreeIntConCommon::LngValue() const
 {
 #ifndef TARGET_64BIT
-    assert(gtOper == GT_CNS_LNG);
+    assert(OperIs(GT_CNS_LNG));
     return AsLngCon()->gtLconVal;
 #else
     return IconValue();
@@ -3344,7 +3343,7 @@ inline INT64 GenTreeIntConCommon::LngValue() const
 inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 {
 #ifndef TARGET_64BIT
-    assert(gtOper == GT_CNS_LNG);
+    assert(OperIs(GT_CNS_LNG));
     AsLngCon()->gtLconVal = val;
 #else
     // Compile time asserts that these two fields overlap and have the same offsets:  gtIconVal and gtLconVal
@@ -3357,13 +3356,13 @@ inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 
 inline ssize_t GenTreeIntConCommon::IconValue() const
 {
-    assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(OperIs(GT_CNS_INT)); //  We should never see a GT_CNS_LNG for a 64-bit target!
     return AsIntCon()->gtIconVal;
 }
 
 inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
 {
-    assert(gtOper == GT_CNS_INT); //  We should never see a GT_CNS_LNG for a 64-bit target!
+    assert(OperIs(GT_CNS_INT)); //  We should never see a GT_CNS_LNG for a 64-bit target!
     AsIntCon()->gtIconVal = val;
 }
 
@@ -3372,7 +3371,7 @@ inline INT64 GenTreeIntConCommon::IntegralValue() const
 #ifdef TARGET_64BIT
     return LngValue();
 #else
-    return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
+    return OperIs(GT_CNS_LNG) ? LngValue() : (INT64)IconValue();
 #endif // TARGET_64BIT
 }
 
@@ -4575,6 +4574,7 @@ enum class WellKnownArg : unsigned
     SwiftSelf,
     X86TailCallSpecialArg,
     StackArrayLocal,
+    RuntimeMethodHandle,
 };
 
 #ifdef DEBUG
@@ -5197,6 +5197,9 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_VTABLE;
     }
+
+    bool IsDevirtualizationCandidate(Compiler* compiler) const;
+
     bool IsInlineCandidate() const
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
@@ -5247,7 +5250,7 @@ struct GenTreeCall final : public GenTree
     {
 #ifdef FEATURE_MULTIREG_RET
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
+        return (TypeIs(TYP_STRUCT)) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
 #else
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -5710,7 +5713,7 @@ struct GenTreeMultiRegOp : public GenTreeOp
 
     unsigned GetRegCount() const
     {
-        return (TypeGet() == TYP_LONG) ? 2 : 1;
+        return TypeIs(TYP_LONG) ? 2 : 1;
     }
 
     //---------------------------------------------------------------------------
@@ -6450,7 +6453,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertMaskToVector() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertMaskToVector);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
 #else
@@ -6461,7 +6464,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsConvertVectorToMask() const
     {
 #if defined(TARGET_XARCH)
-        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+        return OperIsHWIntrinsic(NI_AVX512_ConvertVectorToMask);
 #elif defined(TARGET_ARM64)
         return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
 #else
@@ -9331,12 +9334,12 @@ inline bool GenTree::OperIsCopyBlkOp()
 
 inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 {
-    if ((gtOper == GT_CNS_INT) && (AsIntConCommon()->IconValue() == constVal))
+    if ((OperIs(GT_CNS_INT)) && (AsIntConCommon()->IconValue() == constVal))
     {
         return true;
     }
 
-    if ((gtOper == GT_CNS_LNG) && (AsIntConCommon()->LngValue() == constVal))
+    if ((OperIs(GT_CNS_LNG)) && (AsIntConCommon()->LngValue() == constVal))
     {
         return true;
     }
@@ -9671,7 +9674,7 @@ inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index, var_types s
 inline bool GenTree::IsBoxedValue()
 {
     assert(gtOper != GT_BOX || AsBox()->BoxOp() != nullptr);
-    return (gtOper == GT_BOX) && (gtFlags & GTF_BOX_VALUE);
+    return (OperIs(GT_BOX)) && (gtFlags & GTF_BOX_VALUE);
 }
 
 inline GenTree* GenTree::gtGetOp1() const
@@ -9934,7 +9937,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 #ifdef FEATURE_HW_INTRINSICS
     if (OperIsHWIntrinsic())
     {
-        assert(TypeGet() == TYP_STRUCT);
+        assert(TypeIs(TYP_STRUCT));
 #ifdef TARGET_ARM64
         if (AsHWIntrinsic()->GetSimdSize() == 16)
         {
@@ -9955,11 +9958,11 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
 
     if (OperIsScalarLocal())
     {
-        if (TypeGet() == TYP_LONG)
+        if (TypeIs(TYP_LONG))
         {
             return TYP_INT;
         }
-        assert(TypeGet() == TYP_STRUCT);
+        assert(TypeIs(TYP_STRUCT));
         assert((gtFlags & GTF_VAR_MULTIREG) != 0);
         // The register type for a multireg lclVar requires looking at the LclVarDsc,
         // which requires a Compiler instance. The caller must use the GetFieldTypeByIndex
@@ -10158,7 +10161,7 @@ inline void GenTree::ClearLastUse(int fieldIndex)
 //
 inline bool GenTree::IsCopyOrReload() const
 {
-    return (gtOper == GT_COPY || gtOper == GT_RELOAD);
+    return (OperIs(GT_COPY) || OperIs(GT_RELOAD));
 }
 
 //-----------------------------------------------------------------------------------
@@ -10183,7 +10186,7 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
 
 inline bool GenTree::IsCnsIntOrI() const
 {
-    return (gtOper == GT_CNS_INT);
+    return (OperIs(GT_CNS_INT));
 }
 
 inline bool GenTree::IsIntegralConst() const
@@ -10191,7 +10194,7 @@ inline bool GenTree::IsIntegralConst() const
 #ifdef TARGET_64BIT
     return IsCnsIntOrI();
 #else  // !TARGET_64BIT
-    return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
+    return ((OperIs(GT_CNS_INT)) || (OperIs(GT_CNS_LNG)));
 #endif // !TARGET_64BIT
 }
 

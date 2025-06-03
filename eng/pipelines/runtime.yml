@@ -531,7 +531,7 @@ extends:
           - name: timeoutPerTestCollectionInMinutes
             value: 180
           jobParameters:
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:
@@ -614,7 +614,7 @@ extends:
             value: 180
           jobParameters:
             testGroup: innerloop
-            timeoutInMinutes: 120
+            timeoutInMinutes: 180
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+libs+tools.illink -c $(_BuildConfig) -rc $(_BuildConfig) -lc Release /p:RunAnalyzers=false
             postBuildSteps:

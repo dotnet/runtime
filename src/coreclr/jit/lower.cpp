@@ -841,7 +841,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
     GenTree* addr;
     noway_assert(arr->gtNext == node);
 
-    if ((arr->gtOper == GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
+    if (arr->OperIs(GT_CNS_INT) && (arr->AsIntCon()->gtIconVal == 0))
     {
         // If the array is NULL, then we should get a NULL reference
         // exception when computing its length.  We need to maintain
@@ -931,7 +931,7 @@ GenTree* Lowering::LowerArrLength(GenTreeArrCommon* node)
 
 GenTree* Lowering::LowerSwitch(GenTree* node)
 {
-    assert(node->gtOper == GT_SWITCH);
+    assert(node->OperIs(GT_SWITCH));
 
     // The first step is to build the default case conditional construct that is
     // shared between both kinds of expansion of the switch node.
@@ -998,9 +998,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     //   1. a statement containing temp = indexExpression
     //   2. and a statement with GT_SWITCH(temp)
 
-    assert(node->gtOper == GT_SWITCH);
+    assert(node->OperIs(GT_SWITCH));
     GenTree* temp = node->AsOp()->gtOp1;
-    assert(temp->gtOper == GT_LCL_VAR);
+    assert(temp->OperIs(GT_LCL_VAR));
     unsigned  tempLclNum  = temp->AsLclVarCommon()->GetLclNum();
     var_types tempLclType = temp->TypeGet();
 
@@ -2651,7 +2651,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
 
 #if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-            if (comp->IsBaselineVector512IsaSupportedOpportunistically())
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
                 MaxUnrollSize = 128;
             }
@@ -3623,7 +3623,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 2);
     assert(argEntry != nullptr);
     GenTree* arg1 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg1->gtOper == GT_CNS_INT);
+    assert(arg1->OperIs(GT_CNS_INT));
 
     ssize_t tailCallHelperFlags = 1 |                                  // always restore EDI,ESI,EBX
                                   (call->IsVirtualStub() ? 0x2 : 0x0); // Stub dispatch flag
@@ -3633,7 +3633,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 3);
     assert(argEntry != nullptr);
     GenTree* arg2 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg2->gtOper == GT_CNS_INT);
+    assert(arg2->OperIs(GT_CNS_INT));
 
     arg2->AsIntCon()->gtIconVal = nNewStkArgsWords;
 
@@ -3642,7 +3642,7 @@ GenTree* Lowering::LowerTailCallViaJitHelper(GenTreeCall* call, GenTree* callTar
     argEntry = call->gtArgs.GetArgByIndex(numArgs - 4);
     assert(argEntry != nullptr);
     GenTree* arg3 = argEntry->GetEarlyNode()->AsPutArgStk()->gtGetOp1();
-    assert(arg3->gtOper == GT_CNS_INT);
+    assert(arg3->OperIs(GT_CNS_INT));
 #endif // DEBUG
 
     // Transform this call node into a call to Jit tail call helper.
@@ -4005,7 +4005,7 @@ void Lowering::MoveCFGCallArgs(GenTreeCall* call)
 //
 GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 {
-    assert(cmp->gtGetOp1()->TypeGet() == TYP_LONG);
+    assert(cmp->gtGetOp1()->TypeIs(TYP_LONG));
 
     GenTree* src1 = cmp->gtGetOp1();
     GenTree* src2 = cmp->gtGetOp2();
@@ -4518,7 +4518,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 GenTree* Lowering::LowerCompare(GenTree* cmp)
 {
 #ifndef TARGET_64BIT
-    if (cmp->gtGetOp1()->TypeGet() == TYP_LONG)
+    if (cmp->gtGetOp1()->TypeIs(TYP_LONG))
     {
         return DecomposeLongCompare(cmp);
     }
@@ -4963,7 +4963,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
 // Lower "jmp <method>" tail call to insert PInvoke method epilog if required.
 void Lowering::LowerJmpMethod(GenTree* jmp)
 {
-    assert(jmp->OperGet() == GT_JMP);
+    assert(jmp->OperIs(GT_JMP));
 
     JITDUMP("lowering GT_JMP\n");
     DISPNODE(jmp);
@@ -5471,14 +5471,14 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
     const var_types lclRegType = varDsc->GetRegisterType(lclStore);
 
-    if ((lclStore->TypeGet() == TYP_STRUCT) && !srcIsMultiReg)
+    if (lclStore->TypeIs(TYP_STRUCT) && !srcIsMultiReg)
     {
         bool convertToStoreObj;
         if (lclStore->OperIs(GT_STORE_LCL_FLD))
         {
             convertToStoreObj = true;
         }
-        else if (src->OperGet() == GT_CALL)
+        else if (src->OperIs(GT_CALL))
         {
             GenTreeCall* call = src->AsCall();
 
@@ -6240,7 +6240,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     }
 
     assert(thisArgNode != nullptr);
-    assert(thisArgNode->gtOper == GT_PUTARG_REG);
+    assert(thisArgNode->OperIs(GT_PUTARG_REG));
     GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
 
     // We're going to use the 'this' expression multiple times, so make a local to copy it.
@@ -7736,7 +7736,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     assert(varTypeIsFloating(divMod->TypeGet()));
 #endif // USE_HELPERS_FOR_INT_DIV
 #if defined(TARGET_ARM64)
-    assert(divMod->OperGet() != GT_UMOD);
+    assert(!divMod->OperIs(GT_UMOD));
 #endif // TARGET_ARM64
 
     GenTree* dividend = divMod->gtGetOp1();
@@ -8030,7 +8030,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 //
 bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 {
-    assert((node->OperGet() == GT_DIV) || (node->OperGet() == GT_MOD));
+    assert(node->OperIs(GT_DIV) || node->OperIs(GT_MOD));
     assert(nextNode != nullptr);
 
     GenTree* divMod   = node;
@@ -8050,7 +8050,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         *nextNode = node->gtNext;
         return true;
     }
-    assert(node->OperGet() != GT_MOD);
+    assert(!node->OperIs(GT_MOD));
 #endif // TARGET_ARM64
 
     if (!divisor->IsCnsIntOrI())
@@ -8082,7 +8082,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
         return false;
     }
 
-    bool isDiv = divMod->OperGet() == GT_DIV;
+    bool isDiv = divMod->OperIs(GT_DIV);
 
     if (isDiv)
     {
@@ -8300,7 +8300,7 @@ bool Lowering::TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode)
 //
 GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 {
-    assert((node->OperGet() == GT_DIV) || (node->OperGet() == GT_MOD));
+    assert(node->OperIs(GT_DIV) || node->OperIs(GT_MOD));
 
     if (varTypeIsIntegral(node->TypeGet()))
     {
@@ -8462,7 +8462,7 @@ void Lowering::LowerShift(GenTreeOp* shift)
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 {
 #ifdef FEATURE_SIMD
-    if (node->TypeGet() == TYP_SIMD12)
+    if (node->TypeIs(TYP_SIMD12))
     {
         // Assumption 1:
         // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
@@ -8935,7 +8935,7 @@ unsigned Lowering::TryReuseLocalForParameterAccess(const LIR::Use& use, const Lo
         return BAD_VAR_NUM;
     }
 
-    if (destLclDsc->TypeGet() == TYP_STRUCT)
+    if (destLclDsc->TypeIs(TYP_STRUCT))
     {
         return BAD_VAR_NUM;
     }
@@ -9031,7 +9031,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_HWINTRINSIC:
-            assert(node->TypeGet() != TYP_SIMD12);
+            assert(!node->TypeIs(TYP_SIMD12));
             break;
 #endif // FEATURE_SIMD
 
@@ -9166,8 +9166,8 @@ void Lowering::LowerBlock(BasicBlock* block)
  */
 bool Lowering::IndirsAreEquivalent(GenTree* candidate, GenTree* storeInd)
 {
-    assert(candidate->OperGet() == GT_IND);
-    assert(storeInd->OperGet() == GT_STOREIND);
+    assert(candidate->OperIs(GT_IND));
+    assert(storeInd->OperIs(GT_STOREIND));
 
     // We should check the size of the indirections.  If they are
     // different, say because of a cast, then we can't call them equivalent.  Doing so could cause us
@@ -9329,7 +9329,7 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount)
 
                 for (int i = 0; i < varDsc->lvFieldCnt; i++)
                 {
-                    if (comp->lvaGetDesc(varDsc->lvFieldLclStart + i)->TypeGet() == TYP_SIMD12)
+                    if (comp->lvaGetDesc(varDsc->lvFieldLclStart + i)->TypeIs(TYP_SIMD12))
                     {
                         canEnregisterAsMultiReg = false;
                         break;
@@ -9520,10 +9520,10 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     assert(ret->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET));
 
 #if !defined(TARGET_64BIT)
-    if (ret->TypeGet() == TYP_LONG)
+    if (ret->TypeIs(TYP_LONG))
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
-        noway_assert(op1->OperGet() == GT_LONG);
+        noway_assert(op1->OperIs(GT_LONG));
         MakeSrcContained(ret, op1);
     }
 #endif // !defined(TARGET_64BIT)
@@ -9532,7 +9532,7 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
     {
         GenTree* op1 = ret->AsOp()->GetReturnValue();
         // op1 must be either a lclvar or a multi-reg returning call
-        if (op1->OperGet() == GT_LCL_VAR)
+        if (op1->OperIs(GT_LCL_VAR))
         {
             const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVarCommon());
             // This must be a multi-reg return or an HFA of a single element.
@@ -10456,7 +10456,7 @@ void Lowering::LowerStoreIndirCoalescing(GenTreeIndir* ind)
 //
 GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
-    assert(ind->TypeGet() != TYP_STRUCT);
+    assert(!ind->TypeIs(TYP_STRUCT));
 
     TryRetypingFloatingPointStoreToIntegerStore(ind);
 

@@ -24,7 +24,7 @@ namespace System.CommandLine
             // Ready to run images are built with certain instruction set baselines
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
+                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
             {
@@ -35,7 +35,7 @@ namespace System.CommandLine
                 }
                 else
                 {
-                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
                 }
             }
 
@@ -218,24 +218,13 @@ namespace System.CommandLine
                     }
                 }
 
-                Debug.Assert(InstructionSet.X64_AVX512F == InstructionSet.X86_AVX512F);
-                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F))
+                Debug.Assert(InstructionSet.X64_AVX512 == InstructionSet.X86_AVX512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512))
                 {
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512F_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512BW_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512CD_VL));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ));
-                    Debug.Assert(supportedInstructionSet.HasInstructionSet(InstructionSet.X64_AVX512DQ_VL));
-
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx512vbmi_vl");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v1_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("vpclmul_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2");
-                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avx10v2_v512");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v512");
                 }
             }
@@ -258,8 +247,8 @@ namespace System.CommandLine
 
             if (throttleAvx512)
             {
-                Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
-                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512F))
+                Debug.Assert(InstructionSet.X86_AVX512 == InstructionSet.X64_AVX512);
+                if (supportedInstructionSet.HasInstructionSet(InstructionSet.X86_AVX512))
                 {
                     Debug.Assert(InstructionSet.X86_Vector256 == InstructionSet.X64_Vector256);
                     Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
