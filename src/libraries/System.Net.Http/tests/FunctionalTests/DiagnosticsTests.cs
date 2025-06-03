@@ -830,6 +830,54 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendAsync_OperationCanceledException_RecordsActivitiesWithCorrectErrorInfo()
+        {
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync)
+            {
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    VerifyParent = false
+                };
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+
+                        CancellationTokenSource cts = new CancellationTokenSource();
+                        // Immediately cancel the token so any operation using it will throw a TaskCanceledException.
+                        cts.Cancel();
+                        using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true), cancellationToken: cts.Token));
+
+                        Activity req = requestRecorder.VerifyActivityRecordedOnce();
+                        Assert.Equal(ActivityStatusCode.Error, req.Status);
+                        ActivityAssert.HasTag(req, "error.type", typeof(TaskCanceledException).FullName);
+                        ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            await connection.ReadRequestDataAsync();
+                            await connection.SendResponseAsync(HttpStatusCode.OK);
+                            connection.CompleteRequestProcessing();
+                        });
+                    });
+            }
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendAsync_ExpectedDiagnosticSourceActivityLogging_InvalidBaggage()
         {
