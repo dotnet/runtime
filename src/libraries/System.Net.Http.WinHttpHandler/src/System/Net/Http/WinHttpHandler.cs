@@ -729,7 +729,7 @@ namespace System.Net.Http
         {
             if (!IsAscii(headers))
             {
-                throw new HttpRequestException("Request headers must contain only ASCII characters.");
+                throw new HttpRequestException(SR.net_http_headers_must_be_ascii);
             }
         }
 
