@@ -5,9 +5,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 internal static class TargetPointerExtensions
 {
-    // Helper to convert to ClrDataAddres based on native CLRDATA_ADDRESS.
-    // These types are sign extended when converting 32-bit addresses to 64-bits.
-    // For more information, see TO_CDADDR in dacimpl.h.
+    /// <summary>
+    /// Converts a TargetPointer to a ClrDataAddress using sign extension if required.
+    /// </summary>
     public static ClrDataAddress ToClrDataAddress(this TargetPointer address, Target target)
     {
         if (target.PointerSize == sizeof(ulong))

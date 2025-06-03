@@ -5,6 +5,11 @@ using System;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
+/// <summary>
+/// Represents the native CLRDATA_ADDRESS 64-bit type which uses sign extending
+/// when converting from 32-bit values to 64-bit values.
+/// For more information see TO_CDADDR in dacimpl.h
+/// </summary>
 internal struct ClrDataAddress : IEquatable<ClrDataAddress>
 {
     public ulong Address;
