@@ -117,10 +117,36 @@ internal unsafe partial class MachObjectFile
         // The code signature includes hashes of the entire file up to the code signature.
         // In order to calculate the hashes correctly, everything up to the code signature must be written before the signature is built.
         Write(file);
-        _codeSignatureBlob = CodeSignature.CreateSignature(this, file, identifier, oldSignature);
+        _codeSignatureBlob = CreateSignature(this, file, identifier, oldSignature);
         Validate();
         _codeSignatureBlob.Write(file, _codeSignatureLoadCommand.Command.GetDataOffset(_header));
         return GetFileSize();
+    }
+
+    private static EmbeddedSignatureBlob CreateSignature(MachObjectFile machObject, MemoryMappedViewAccessor file, string identifier, EmbeddedSignatureBlob? oldSignature)
+    {
+        var oldSignatureBlob = oldSignature;
+
+        uint signatureStart = machObject.GetSignatureStart();
+        RequirementsBlob requirementsBlob = RequirementsBlob.Empty;
+        CmsWrapperBlob cmsWrapperBlob = CmsWrapperBlob.Empty;
+        EntitlementsBlob? entitlementsBlob = oldSignatureBlob?.EntitlementsBlob;
+        DerEntitlementsBlob? derEntitlementsBlob = oldSignatureBlob?.DerEntitlementsBlob;
+
+        var codeDirectory = CodeDirectoryBlob.Create(
+            file,
+            signatureStart,
+            identifier,
+            requirementsBlob,
+            entitlementsBlob,
+            derEntitlementsBlob);
+
+        return new EmbeddedSignatureBlob(
+            codeDirectoryBlob: codeDirectory,
+            requirementsBlob: requirementsBlob,
+            cmsWrapperBlob: cmsWrapperBlob,
+            entitlementsBlob: entitlementsBlob,
+            derEntitlementsBlob: derEntitlementsBlob);
     }
 
     /// <summary>
