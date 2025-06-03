@@ -3471,7 +3471,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		MonoMethod *orig_method = info->d.native_to_managed.method;
 		if (!orig_method) {
 			char *s = mono_method_get_full_name (method);
-			char *msg = g_strdup_printf ("No native to managed transition for method '%s'. Dynamic entrypoint allocation is not supported in the current environment.", s);
+			char *msg = g_strdup_printf ("No native to managed transition for method '%s', missing [UnmanagedCallersOnly] attribute.", s);
 			mono_error_set_platform_not_supported (error, msg);
 			g_free (s);
 			g_free (msg);
@@ -3498,7 +3498,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 * right signature, so fail right away.
 		 */
 		char *s = mono_method_get_full_name (orig_method);
-		char *msg = g_strdup_printf ("No native to managed transition for method '%s'. Dynamic entrypoint allocation is not supported in the current environment.", s);
+		char *msg = g_strdup_printf ("No native to managed transition for method '%s', missing [UnmanagedCallersOnly] attribute.", s);
 		mono_error_set_platform_not_supported (error, msg);
 		g_free (s);
 		g_free (msg);
