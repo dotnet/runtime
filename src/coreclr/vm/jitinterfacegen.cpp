@@ -40,9 +40,9 @@ void InitJITAllocationHelpers()
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString), ECall::FastAllocateString);
         }
-#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
         else
         {
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
             // Replace the 1p slow allocation helpers with faster version
             //
             // When we're running Workstation GC on a single proc box we don't have
@@ -52,7 +52,9 @@ void InitJITAllocationHelpers()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, RhpNewObjectArrayFast_UP);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(RhNewString_UP), ECall::FastAllocateString);
+#else
+            _ASSERTE(!"Expected to use ThreadAllocationContexts");
+#endif
         }
-#endif // TARGET_WINDOWS
     }
 }

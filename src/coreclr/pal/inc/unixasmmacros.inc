@@ -49,7 +49,7 @@
 //
 // Since we have a disparity on how thread locals are accessed on various platforms and
 // the current value of OFFSETOF__RuntimeThreadLocals__ee_alloc_context is zero we expect
-// the helpers toadd the OFFSETOF__RuntimeThreadLocals__ee_alloc_context constant to the
+// the helpers to add the OFFSETOF__RuntimeThreadLocals__ee_alloc_context constant to the
 // base and set the additional offset to zero.
 // In other words, we treat INLINE_GET_ALLOC_CONTEXT_BASE as returning the same value as
 // GetThreadEEAllocContext.
