@@ -87,7 +87,6 @@ mandir=${mandir-'${prefix}/share/man'}
 shared_ext='.so'
 shared=1
 gzfileops=1
-unalignedok=1
 compat=0
 cover=0
 build32=0
@@ -106,9 +105,9 @@ floatabi=
 forcesse2=0
 # For CPUs that can benefit from AVX512, it seems GCC generates suboptimal
 # instruction scheduling unless you specify a reasonable -mtune= target
-avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl"
+avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl -mbmi2"
 avx512vnniflag="${avx512flag} -mavx512vnni"
-avx2flag="-mavx2"
+avx2flag="-mavx2 -mbmi2"
 sse2flag="-msse2"
 ssse3flag="-mssse3"
 sse42flag="-msse4.2"
@@ -159,12 +158,11 @@ case "$1" in
       echo 'usage:' | tee -a configure.log
       echo '  configure [--prefix=PREFIX]  [--eprefix=EXPREFIX]' | tee -a configure.log
       echo '    [--static] [--32] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]' | tee -a configure.log
-      echo '    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]' | tee -a configure.log
+      echo '    [--includedir=INCLUDEDIR] [--mandir=MANDIR] [--archs="-arch i386 -arch x86_64"]' | tee -a configure.log
       echo '    [--sprefix=SYMBOL_PREFIX]   Adds a prefix to all exported symbols' | tee -a configure.log
       echo '    [--warn]                    Enables extra compiler warnings' | tee -a configure.log
       echo '    [--debug]                   Enables extra debug prints during operation' | tee -a configure.log
       echo '    [--zlib-compat]             Compiles for zlib-compatible API instead of zlib-ng API' | tee -a configure.log
-      echo '    [--without-unaligned]       Compiles without fast unaligned access' | tee -a configure.log
       echo '    [--without-gzfileops]       Compiles without the gzfile parts of the API enabled' | tee -a configure.log
       echo '    [--without-optimizations]   Compiles without support for optional instruction sets' | tee -a configure.log
       echo '    [--without-new-strategies]  Compiles without using new additional deflate strategies' | tee -a configure.log
@@ -185,6 +183,7 @@ case "$1" in
     -l*=* | --libdir=*) libdir=$(echo $1 | sed 's/.*=//'); shift ;;
     --sharedlibdir=*) sharedlibdir=$(echo $1 | sed 's/.*=//'); shift ;;
     -i*=* | --includedir=*) includedir=$(echo $1 | sed 's/.*=//');shift ;;
+    --mandir=*) mandir=$(echo $1 | sed 's/.*=//');shift ;;
     -u*=* | --uname=*) uname=$(echo $1 | sed 's/.*=//');shift ;;
     -p* | --prefix) prefix="$2"; shift; shift ;;
     -e* | --eprefix) exec_prefix="$2"; shift; shift ;;
@@ -194,7 +193,6 @@ case "$1" in
     -s* | --shared | --enable-shared) shared=1; shift ;;
     -t | --static) shared=0; shift ;;
     --zlib-compat) compat=1; shift ;;
-    --without-unaligned) unalignedok=0; shift ;;
     --without-gzfileops) gzfileops=0; shift ;;
     --cover) cover=1; shift ;;
     -3* | --32) build32=1; shift ;;
@@ -363,7 +361,7 @@ if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
     uname=$( (uname -s || echo unknown) 2>/dev/null)
   fi
   case "$uname" in
-  Linux* | linux* | GNU | GNU/* | solaris*)
+  Linux* | linux* | GNU | GNU/* | solaris* | Haiku)
         LDSHARED=${LDSHARED-"$cc"}
         LDSHAREDFLAGS="-shared -Wl,-soname,${LIBNAME}.so.${VER1}" ;;
   *BSD | *bsd* | DragonFly)
@@ -875,13 +873,6 @@ else
   PIC_TESTOBJG="\$(OBJG)"
 fi
 
-# set architecture alignment requirements
-if test $unalignedok -eq 0; then
-  CFLAGS="${CFLAGS} -DNO_UNALIGNED"
-  SFLAGS="${SFLAGS} -DNO_UNALIGNED"
-  echo "Unaligned reads manually disabled." | tee -a configure.log
-fi
-
 # enable reduced memory configuration
 if test $reducedmem -eq 1; then
   echo "Configuring for reduced memory environment." | tee -a configure.log
@@ -1243,7 +1234,7 @@ EOF
 unsigned int f(unsigned int a, unsigned int b) {
     return __uqsub16(a, b);
 }
-int main(void) { return 0; }
+int main(void) { return f(1, 2); }
 EOF
     if try ${CC} ${CFLAGS} ${armv6flag} $test.c; then
         echo "Checking for ARMv6 intrinsics ... Yes." | tee -a configure.log
@@ -1588,8 +1579,8 @@ case "${ARCH}" in
             if test ${HAVE_AVX512_INTRIN} -eq 1; then
                 CFLAGS="${CFLAGS} -DX86_AVX512"
                 SFLAGS="${SFLAGS} -DX86_AVX512"
-                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o"
-                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o chunkset_avx512.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo chunkset_avx512.lo"
             fi
 
             check_mtune_cascadelake_compiler_flag
@@ -1976,7 +1967,7 @@ replace_in_file() {
 
 # update Makefile with the configure results
 
-INCLUDES="-I$SRCDIR -I$SRCDIR/$ARCHDIR -I$SRCDIR/arch/generic"
+INCLUDES="-I$SRCDIR"
 if [ "$SRCDIR" != "$BUILDDIR" ]; then INCLUDES="-I$BUILDDIR ${INCLUDES}"; fi
 
 sed < $SRCDIR/Makefile.in "

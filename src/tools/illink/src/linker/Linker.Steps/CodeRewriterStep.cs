@@ -37,66 +37,8 @@ namespace Mono.Linker.Steps
 					ProcessMethod (method);
 			}
 
-			if (type.HasFields && Annotations.HasSubstitutedInit (type)) {
-				AddFieldsInitializations (type);
-			}
-
 			foreach (var nested in type.NestedTypes)
 				ProcessType (nested);
-		}
-
-		void AddFieldsInitializations (TypeDefinition type)
-		{
-			Instruction ret;
-			LinkerILProcessor processor;
-
-			var cctor = type.Methods.FirstOrDefault (MethodDefinitionExtensions.IsStaticConstructor);
-			if (cctor == null) {
-				type.Attributes |= TypeAttributes.BeforeFieldInit;
-
-				var method = new MethodDefinition (".cctor",
-					MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.HideBySig,
-					Assembly.MainModule.TypeSystem.Void);
-
-				type.Methods.Add (method);
-
-				processor = method.Body.GetLinkerILProcessor ();
-				ret = Instruction.Create (OpCodes.Ret);
-				processor.Append (ret);
-			} else {
-				var body = cctor.Body;
-#pragma warning disable RS0030 // After MarkStep all methods should be processed and thus accessing Cecil directly is the right approach
-				var instructions = body.Instructions;
-#pragma warning restore RS0030
-				ret = instructions.Last (l => l.OpCode.Code == Code.Ret);
-				processor = body.GetLinkerILProcessor ();
-
-				for (int i = 0; i < instructions.Count; ++i) {
-					var instr = instructions[i];
-					if (instr.OpCode.Code != Code.Stsfld)
-						continue;
-
-					var field = (FieldReference) instr.Operand;
-					if (!Annotations.HasSubstitutedInit (field.Resolve ()))
-						continue;
-
-					processor.Replace (instr, Instruction.Create (OpCodes.Pop));
-				}
-			}
-
-			foreach (var field in type.Fields) {
-				if (!Annotations.HasSubstitutedInit (field))
-					continue;
-
-				Context.Annotations.TryGetFieldUserValue (field, out object? value);
-
-				var valueInstr = CreateConstantResultInstruction (Context, field.FieldType, value);
-				if (valueInstr == null)
-					throw new NotImplementedException (field.FieldType.ToString ());
-
-				processor.InsertBefore (ret, valueInstr);
-				processor.InsertBefore (ret, Instruction.Create (OpCodes.Stsfld, field));
-			}
 		}
 
 		void ProcessMethod (MethodDefinition method)

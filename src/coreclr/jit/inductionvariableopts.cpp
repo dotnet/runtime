@@ -889,7 +889,7 @@ bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext, FlowGraphNatural
 bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop, unsigned lclNum, ScevAddRec* addRec, PerLoopInfo* loopInfo)
 {
     LclVarDsc* lclDsc = lvaGetDesc(lclNum);
-    if (lclDsc->TypeGet() != TYP_INT)
+    if (!lclDsc->TypeIs(TYP_INT))
     {
         JITDUMP("  Type is %s, no widening to be done\n", varTypeName(lclDsc->TypeGet()));
         return false;

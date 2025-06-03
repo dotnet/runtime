@@ -27,6 +27,9 @@
 /switchlevels
 /zlib.pc
 /zlib-ng.pc
+/zconf-ng.h.included
+/zlib_name_mangling-ng.h
+/zlib-ng.h
 
 .DS_Store
 *_fuzzer
@@ -61,6 +64,7 @@ zconf-ng.h.cmakein
 ztest*
 /test/CTestTestfile.cmake
 /test/cmake_install.cmake
+/.cache
 
 configure.log
 a.out
@@ -72,6 +76,10 @@ a.out
 /arch/x86/Makefile
 .kdev4
 *.kdev4
+Makefile.tmp
+/makecrct
+/maketrees
+gzread.c
 
 /Debug
 /example.dir

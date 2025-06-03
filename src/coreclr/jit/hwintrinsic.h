@@ -885,19 +885,12 @@ struct HWIntrinsicInfo
 #ifdef TARGET_XARCH
         switch (id)
         {
-            case NI_AVX2_ShiftRightArithmeticVariable:
-            case NI_AVX512F_ShiftRightArithmeticVariable:
-            case NI_AVX512F_VL_ShiftRightArithmeticVariable:
-            case NI_AVX512BW_ShiftRightArithmeticVariable:
-            case NI_AVX512BW_VL_ShiftRightArithmeticVariable:
-            case NI_AVX10v1_ShiftRightArithmeticVariable:
-            case NI_AVX2_ShiftRightLogicalVariable:
-            case NI_AVX512F_ShiftRightLogicalVariable:
-            case NI_AVX512BW_ShiftRightLogicalVariable:
-            case NI_AVX512BW_VL_ShiftRightLogicalVariable:
-            case NI_AVX10v1_ShiftRightLogicalVariable:
             case NI_AVX2_ShiftLeftLogicalVariable:
-            case NI_AVX512BW_VL_ShiftLeftLogicalVariable:
+            case NI_AVX2_ShiftRightArithmeticVariable:
+            case NI_AVX2_ShiftRightLogicalVariable:
+            case NI_AVX512_ShiftLeftLogicalVariable:
+            case NI_AVX512_ShiftRightArithmeticVariable:
+            case NI_AVX512_ShiftRightLogicalVariable:
                 return true;
             default:
                 return false;
@@ -1214,11 +1207,6 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_PermuteVar2x) != 0;
-    }
-
-    static bool IsTernaryLogic(NamedIntrinsic id)
-    {
-        return (id == NI_AVX512F_TernaryLogic) || (id == NI_AVX512F_VL_TernaryLogic) || (id == NI_AVX10v1_TernaryLogic);
     }
 #endif // TARGET_XARCH
 

@@ -66,7 +66,7 @@ namespace System.Net
             _memoryBlob = (Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO*)Marshal.UnsafeAddrOfPinnedArrayElement(_backingBuffer, 0);
         }
 
-        internal unsafe void IOCompleted(uint errorCode, uint numBytes)
+        internal void IOCompleted(uint errorCode, uint numBytes)
         {
             IOCompleted(this, errorCode, numBytes);
         }

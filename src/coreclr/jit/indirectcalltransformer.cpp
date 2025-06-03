@@ -483,6 +483,7 @@ private:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt)
             , returnTemp(BAD_VAR_NUM)
+            , returnValueUnused(false)
         {
         }
 
@@ -786,9 +787,52 @@ private:
             //
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
-            InlineCandidateInfo* const inlineInfo = origCall->GetGDVCandidateInfo(0);
+            InlineCandidateInfo* const inlineInfo  = origCall->GetGDVCandidateInfo(0);
+            GenTree* const             retExprNode = inlineInfo->retExpr;
 
-            if (!origCall->TypeIs(TYP_VOID))
+            if (retExprNode == nullptr)
+            {
+                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+                return;
+            }
+
+            GenTreeRetExpr* const retExpr       = retExprNode->AsRetExpr();
+            bool const            noReturnValue = origCall->TypeIs(TYP_VOID);
+
+            // If there is a return value, search the next statement to see if we can find
+            // retExprNode's parent. If we find it, see if retExprNode's value is unused.
+            //
+            // If we fail to find it, we will assume the return value is used.
+            //
+            if (!noReturnValue)
+            {
+                Statement* const nextStmt = stmt->GetNextStmt();
+                if (nextStmt != nullptr)
+                {
+                    Compiler::FindLinkData fld    = compiler->gtFindLink(nextStmt, retExprNode);
+                    GenTree* const         parent = fld.parent;
+
+                    if ((parent != nullptr) && parent->OperIs(GT_COMMA) && (parent->AsOp()->gtGetOp1() == retExprNode))
+                    {
+                        returnValueUnused = true;
+                        JITDUMP("GT_RET_EXPR [%06u] value is unused\n", compiler->dspTreeID(retExprNode));
+                    }
+                }
+            }
+
+            if (noReturnValue)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
+            }
+            else if (returnValueUnused)
+            {
+                JITDUMP("Linking GT_RET_EXPR [%06u] for UNUSED return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
+            }
+            else
             {
                 // If there's a spill temp already associated with this inline candidate,
                 // use that instead of allocating a new temp.
@@ -850,23 +894,6 @@ private:
                         returnTemp);
 
                 inlineInfo->retExpr->gtSubstExpr = tempTree;
-            }
-            else if (inlineInfo->retExpr != nullptr)
-            {
-                // We still oddly produce GT_RET_EXPRs for some void
-                // returning calls. Just bash the ret expr to a NOP.
-                //
-                // Todo: consider bagging creation of these RET_EXPRs. The only possible
-                // benefit they provide is stitching back larger trees for failed inlines
-                // of void-returning methods. But then the calls likely sit in commas and
-                // the benefit of a larger tree is unclear.
-                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
-                        compiler->dspTreeID(inlineInfo->retExpr));
-                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
-            }
-            else
-            {
-                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
             }
         }
 
@@ -1055,7 +1082,6 @@ private:
                 if (oldRetExpr != nullptr)
                 {
                     inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
-
                     GenTree* newRetExpr = inlineInfo->retExpr;
 
                     if (returnTemp != BAD_VAR_NUM)
@@ -1065,7 +1091,9 @@ private:
                     else
                     {
                         // We should always have a return temp if we return results by value
-                        assert(origCall->TypeGet() == TYP_VOID);
+                        // and that value is used.
+                        assert(origCall->TypeIs(TYP_VOID) || returnValueUnused);
+                        newRetExpr = compiler->gtUnusedValNode(newRetExpr);
                     }
                     compiler->fgNewStmtAtEnd(block, newRetExpr);
                 }
@@ -1470,6 +1498,7 @@ private:
         unsigned   returnTemp;
         Statement* lastStmt;
         bool       checkFallsThrough;
+        bool       returnValueUnused;
 
         //------------------------------------------------------------------------
         // CreateTreeForLookup: Create a tree representing a lookup of a method address.

@@ -5,7 +5,7 @@
 **
 ** Source: Sleep.c
 **
-** Purpose: Test to establish whether the Sleep function stops the thread from 
+** Purpose: Test to establish whether the Sleep function stops the thread from
 ** executing for the specified times.
 **
 
@@ -16,7 +16,7 @@
 
 PALTEST(threading_Sleep_test2_paltest_sleep_test2, "threading/Sleep/test2/paltest_sleep_test2")
 {
-    /* 
+    /*
     * times in 10^(-3) seconds
     */
 

@@ -259,7 +259,7 @@ public:
 class SharedMemoryManager
 {
 private:
-    static CRITICAL_SECTION s_creationDeletionProcessLock;
+    static minipal_mutex s_creationDeletionProcessLock;
     static int s_creationDeletionLockFileDescriptor;
 
     struct UserScopeUidAndFileDescriptor

@@ -8,7 +8,7 @@
 
 #ifdef X86_SSE2
 uint32_t chunksize_sse2(void);
-uint8_t* chunkmemset_safe_sse2(uint8_t *out, unsigned dist, unsigned len, unsigned left);
+uint8_t* chunkmemset_safe_sse2(uint8_t *out, uint8_t *from, unsigned len, unsigned left);
 
 #  ifdef HAVE_BUILTIN_CTZ
     uint32_t compare256_sse2(const uint8_t *src0, const uint8_t *src1);
@@ -21,7 +21,7 @@ uint8_t* chunkmemset_safe_sse2(uint8_t *out, unsigned dist, unsigned len, unsign
 
 #ifdef X86_SSSE3
 uint32_t adler32_ssse3(uint32_t adler, const uint8_t *buf, size_t len);
-uint8_t* chunkmemset_safe_ssse3(uint8_t *out, unsigned dist, unsigned len, unsigned left);
+uint8_t* chunkmemset_safe_ssse3(uint8_t *out, uint8_t *from, unsigned len, unsigned left);
 void inflate_fast_ssse3(PREFIX3(stream) *strm, uint32_t start);
 #endif
 
@@ -33,7 +33,7 @@ uint32_t adler32_fold_copy_sse42(uint32_t adler, uint8_t *dst, const uint8_t *sr
 uint32_t adler32_avx2(uint32_t adler, const uint8_t *buf, size_t len);
 uint32_t adler32_fold_copy_avx2(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
 uint32_t chunksize_avx2(void);
-uint8_t* chunkmemset_safe_avx2(uint8_t *out, unsigned dist, unsigned len, unsigned left);
+uint8_t* chunkmemset_safe_avx2(uint8_t *out, uint8_t *from, unsigned len, unsigned left);
 
 #  ifdef HAVE_BUILTIN_CTZ
     uint32_t compare256_avx2(const uint8_t *src0, const uint8_t *src1);
@@ -46,6 +46,9 @@ uint8_t* chunkmemset_safe_avx2(uint8_t *out, unsigned dist, unsigned len, unsign
 #ifdef X86_AVX512
 uint32_t adler32_avx512(uint32_t adler, const uint8_t *buf, size_t len);
 uint32_t adler32_fold_copy_avx512(uint32_t adler, uint8_t *dst, const uint8_t *src, size_t len);
+uint32_t chunksize_avx512(void);
+uint8_t* chunkmemset_safe_avx512(uint8_t *out, uint8_t *from, unsigned len, unsigned left);
+void inflate_fast_avx512(PREFIX3(stream)* strm, uint32_t start);
 #endif
 #ifdef X86_AVX512VNNI
 uint32_t adler32_avx512_vnni(uint32_t adler, const uint8_t *buf, size_t len);
@@ -146,6 +149,12 @@ uint32_t crc32_vpclmulqdq(uint32_t crc32, const uint8_t *buf, size_t len);
 #    define native_adler32 adler32_avx512
 #    undef native_adler32_fold_copy
 #    define native_adler32_fold_copy adler32_fold_copy_avx512
+#    undef native_chunkmemset_safe
+#    define native_chunkmemset_safe chunkmemset_safe_avx512
+#    undef native_chunksize
+#    define native_chunksize chunksize_avx512
+#    undef native_inflate_fast
+#    define native_inflate_fast inflate_fast_avx512
 // X86 - AVX512 (VNNI)
 #    if defined(X86_AVX512VNNI) && defined(__AVX512VNNI__)
 #      undef native_adler32

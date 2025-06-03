@@ -31,7 +31,7 @@ void Assert(const char * expr, const char * file, uint32_t line_num, const char 
 
     // If there's no debugger attached, we just FailFast
     if (!minipal_is_native_debugger_present())
-        PalRaiseFailFastException(NULL, NULL, FAIL_FAST_GENERATE_EXCEPTION_ADDRESS);
+        RhFailFast();
 
     // If there is a debugger attached, we break and then allow continuation.
     PalDebugBreak();

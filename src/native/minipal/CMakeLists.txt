@@ -2,6 +2,7 @@ include(configure.cmake)
 
 set(SOURCES
     cpufeatures.c
+    mutex.c
     guid.c
     random.c
     debugger.c

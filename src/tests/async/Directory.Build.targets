@@ -1,5 +1,10 @@
 <Project>
   <PropertyGroup>
+    <!-- disable building for configurations that do not yet support runtime async. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' or '$(TestBuildMode)' == 'nativeaot' or '$(TargetArchitecture)' == 'wasm'">true</DisableProjectBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <!-- runtime async testing in main repo NYI -->
     <DisableProjectBuild>true</DisableProjectBuild>
   </PropertyGroup>

@@ -29,7 +29,9 @@
 #include <limits>
 #include <algorithm>
 
-#ifdef TARGET_UNIX
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
 #include <pthread.h>
 #endif
 

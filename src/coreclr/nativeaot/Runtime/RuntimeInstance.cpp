@@ -215,7 +215,7 @@ void RuntimeInstance::RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID 
     m_cbManagedCodeRange = cbRange;
 }
 
-extern "C" void __stdcall RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
+extern "C" void RegisterCodeManager(ICodeManager * pCodeManager, PTR_VOID pvStartRange, uint32_t cbRange)
 {
     GetRuntimeInstance()->RegisterCodeManager(pCodeManager, pvStartRange, cbRange);
 }
@@ -255,7 +255,7 @@ bool RuntimeInstance::IsUnboxingStub(uint8_t* pCode)
     return false;
 }
 
-extern "C" bool __stdcall RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)
+extern "C" bool RegisterUnboxingStubs(PTR_VOID pvStartRange, uint32_t cbRange)
 {
     return GetRuntimeInstance()->RegisterUnboxingStubs(pvStartRange, cbRange);
 }

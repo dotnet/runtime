@@ -1698,6 +1698,46 @@ VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind)
     DispatchManagedException(throwable);
 }
 
+VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    Thread *pThread = GetThread();
+
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+
+    UNREACHABLE();
+}
+
+VOID DECLSPEC_NORETURN DispatchRethrownManagedException()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    CONTEXT exceptionContext;
+    ClrCaptureContext(&exceptionContext);
+
+    DispatchRethrownManagedException(&exceptionContext);
+}
+
 #ifndef TARGET_UNIX
 void ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord, UINT_PTR ReturnValue, UINT_PTR TargetIP, UINT_PTR TargetFrameSp)
 {
@@ -2140,27 +2180,13 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
         InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
         // We'll let the SO infrastructure handle this exception... at that point, we
         // know that we'll have enough stack to do it.
-        return ExceptionContinueSearch;
     }
-
-    EXCEPTION_DISPOSITION retVal;
-
-    retVal = ExceptionContinueSearch;
-
-    if (retVal == ExceptionContinueSearch)
+    else if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
     {
-
-        if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-        {
-            CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
-        }
-
-        // We're scanning out from CallDescr and potentially through the EE and out to unmanaged.
-        // So switch to preemptive mode.
-        GCX_PREEMP_NO_DTOR();
+        CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
     }
 
-    return retVal;
+    return ExceptionContinueSearch;
 }
 
 #endif // TARGET_UNIX

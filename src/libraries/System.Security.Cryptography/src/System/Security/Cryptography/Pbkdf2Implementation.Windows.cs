@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         // A cached instance of PBKDF2 for Windows 8, where pseudo handles are not supported.
         private static SafeBCryptAlgorithmHandle? s_pbkdf2AlgorithmHandle;
 
-        public static unsafe void Fill(
+        public static void Fill(
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,
             int iterations,

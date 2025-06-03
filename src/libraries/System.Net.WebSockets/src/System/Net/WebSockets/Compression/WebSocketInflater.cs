@@ -161,7 +161,7 @@ namespace System.Net.WebSockets.Compression
         /// Finishes the decoding by flushing any outstanding data to the output.
         /// </summary>
         /// <returns>true if the flush completed, false to indicate that there is more outstanding data.</returns>
-        private unsafe bool Finish(Span<byte> output, ref int written)
+        private bool Finish(Span<byte> output, ref int written)
         {
             Debug.Assert(_stream is not null && _stream.AvailIn == 0);
             Debug.Assert(_available == 0);

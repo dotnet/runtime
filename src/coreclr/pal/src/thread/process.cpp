@@ -25,7 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/palinternal.h"
 #include "pal/process.h"
 #include "pal/init.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/utils.h"
 #include "pal/environ.h"
@@ -158,7 +157,7 @@ IPalObject* CorUnix::g_pobjProcess;
 // Critical section that protects process data (e.g., the
 // list of active threads)/
 //
-CRITICAL_SECTION g_csProcess;
+minipal_mutex g_csProcess;
 
 //
 // List and count of active threads
@@ -2787,14 +2786,14 @@ CorUnix::InitializeProcessData(
     pGThreadList = NULL;
     g_dwThreadCount = 0;
 
-    InternalInitializeCriticalSection(&g_csProcess);
+    minipal_mutex_init(&g_csProcess);
     fLockInitialized = TRUE;
 
     if (NO_ERROR != palError)
     {
         if (fLockInitialized)
         {
-            InternalDeleteCriticalSection(&g_csProcess);
+            minipal_mutex_destroy(&g_csProcess);
         }
     }
 
@@ -2840,7 +2839,7 @@ CorUnix::InitializeProcessCommandLine(
             ERROR("Invalid full path\n");
             palError = ERROR_INTERNAL_ERROR;
             goto exit;
-        }    
+        }
         lpwstr[0] = '\0';
         size_t n = PAL_wcslen(lpwstrFullPath) + 1;
 
@@ -3011,7 +3010,7 @@ PROCCleanupInitialProcess(VOID)
 {
     CPalThread *pThread = InternalGetCurrentThread();
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     /* Free the application directory */
     free(g_lpwstrAppDir);
@@ -3019,7 +3018,7 @@ PROCCleanupInitialProcess(VOID)
     /* Free the stored command line */
     free(g_lpwstrCmdLine);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 
     //
     // Object manager shutdown will handle freeing the underlying
@@ -3047,7 +3046,7 @@ CorUnix::PROCAddThread(
 {
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     pTargetThread->SetNext(pGThreadList);
     pGThreadList = pTargetThread;
@@ -3056,7 +3055,7 @@ CorUnix::PROCAddThread(
     TRACE("Thread 0x%p (id %#x) added to the process thread list\n",
           pTargetThread, pTargetThread->GetThreadId());
 
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3082,7 +3081,7 @@ CorUnix::PROCRemoveThread(
 
     /* protect the access of the thread list with critical section for
        mutithreading access */
-    InternalEnterCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 
     curThread = pGThreadList;
 
@@ -3123,7 +3122,7 @@ CorUnix::PROCRemoveThread(
     WARN("Thread %p not removed (it wasn't found in the list)\n", pTargetThread);
 
 EXIT:
-    InternalLeaveCriticalSection(pCurrentThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 
@@ -3168,7 +3167,7 @@ PROCProcessLock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalEnterCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_enter(&g_csProcess);
 }
 
 
@@ -3192,7 +3191,7 @@ PROCProcessUnlock(
     CPalThread * pThread =
         (PALIsThreadDataInitialized() ? InternalGetCurrentThread() : NULL);
 
-    InternalLeaveCriticalSection(pThread, &g_csProcess);
+    minipal_mutex_leave(&g_csProcess);
 }
 
 #if USE_SYSV_SEMAPHORES

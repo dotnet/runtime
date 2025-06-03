@@ -816,7 +816,7 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 {
     GenTree* const node = *use;
 
-    if (node->OperGet() == GT_INTRINSIC)
+    if (node->OperIs(GT_INTRINSIC))
     {
         if (m_rationalizer.comp->IsIntrinsicImplementedByUserCall(node->AsIntrinsic()->gtIntrinsicName))
         {

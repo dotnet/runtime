@@ -264,9 +264,6 @@ STDAPI GetMDPublicInterfaceFromInternal(
     IfFailGo( pInternalImport->SetCachedPublicInterface((IUnknown *) *ppIUnkPublic) );
     IfFailGo( pMeta->SetReaderWriterLock(pInternalImport->GetReaderWriterLock() ));
 
-    // Add the new RegMeta to the cache.
-    IfFailGo( pMeta->AddToCache() );
-
 ErrExit:
     if (isLockedForWrite)
         pInternalImport->GetReaderWriterLock()->UnlockWrite();

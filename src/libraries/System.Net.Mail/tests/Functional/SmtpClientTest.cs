@@ -314,20 +314,15 @@ namespace System.Net.Mail.Tests
             server.ReceiveMultipleConnections = true;
 
             // The server will introduce some fake latency so that the operation can be canceled before the request completes
-            ManualResetEvent serverMre = new ManualResetEvent(false);
-            server.OnConnected += _ => serverMre.WaitOne();
-
             CancellationTokenSource cts = new CancellationTokenSource();
+            
+            server.OnConnected += _ => cts.Cancel();
 
             var message = new MailMessage("foo@internet.com", "bar@internet.com", "Foo", "Bar");
 
             Task sendTask = Task.Run(() => client.SendMailAsync(message, cts.Token));
 
-            cts.Cancel();
-            await Task.Delay(500);
-            serverMre.Set();
-
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sendTask).WaitAsync(TestHelper.PassingTestTimeout);
 
             // We should still be able to send mail on the SmtpClient instance
             await Task.Run(() => client.SendMailAsync(message)).WaitAsync(TestHelper.PassingTestTimeout);
@@ -369,8 +364,7 @@ namespace System.Net.Mail.Tests
             client.SendAsync(message, null);
             AsyncCompletedEventArgs e = await tcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
             Assert.True(e.Cancelled, "SendAsync should have been canceled");
-            _output.WriteLine(e.Error?.ToString() ?? "No error");
-            Assert.IsType<OperationCanceledException>(e.Error.InnerException);
+            Assert.Null(e.Error);
 
             // We should still be able to send mail on the SmtpClient instance
             await client.SendMailAsync(message).WaitAsync(TestHelper.PassingTestTimeout);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
@@ -10,10 +11,54 @@ namespace System.SpanTests
     public static partial class SpanTests
     {
         [Fact]
-        public static void EnumerateRunesEmpty()
+        public static void EnumerateRunes_DefaultAndEmpty()
         {
-            Assert.False(MemoryExtensions.EnumerateRunes(ReadOnlySpan<char>.Empty).GetEnumerator().MoveNext());
-            Assert.False(MemoryExtensions.EnumerateRunes(Span<char>.Empty).GetEnumerator().MoveNext());
+            SpanRuneEnumerator enumerator = default;
+            TestGI(enumerator);
+            TestI(enumerator);
+            Assert.Equal(default, enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+            Assert.Equal(default, enumerator.Current);
+
+            enumerator = MemoryExtensions.EnumerateRunes(ReadOnlySpan<char>.Empty).GetEnumerator();
+            TestGI(enumerator);
+            TestI(enumerator);
+            Assert.Equal(default, enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+            Assert.Equal(default, enumerator.Current);
+
+            enumerator = MemoryExtensions.EnumerateRunes(Span<char>.Empty).GetEnumerator();
+            TestGI(enumerator);
+            TestI(enumerator);
+            Assert.Equal(default, enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+            Assert.Equal(default, enumerator.Current);
+
+            static void TestGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<Rune>, allows ref struct
+            {
+                Assert.Equal(default, enumerator.Current);
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal(default, enumerator.Current);
+
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+                Assert.Equal(default, enumerator.Current);
+                Assert.False(enumerator.MoveNext());
+            }
+
+            static void TestI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+            {
+                Assert.Equal(default(Rune), enumerator.Current);
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                Assert.Equal(default(Rune), enumerator.Current);
+
+                Assert.False(enumerator.MoveNext());
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                Assert.Equal(default(Rune), enumerator.Current);
+                Assert.False(enumerator.MoveNext());
+            }
         }
 
         [Theory]
@@ -39,6 +84,8 @@ namespace System.SpanTests
                 enumeratedValues.Add(rune.Value);
             }
             Assert.Equal(expected, enumeratedValues.ToArray());
+            Assert.Equal(expected, EnumerateRunes_TestGI(((Span<char>)chars).EnumerateRunes()).ToArray());
+            Assert.Equal(expected, EnumerateRunes_TestI(((Span<char>)chars).EnumerateRunes()).ToArray());
 
             // next, ROS<char>
 
@@ -48,6 +95,8 @@ namespace System.SpanTests
                 enumeratedValues.Add(rune.Value);
             }
             Assert.Equal(expected, enumeratedValues.ToArray());
+            Assert.Equal(expected, EnumerateRunes_TestGI(((ReadOnlySpan<char>)chars).EnumerateRunes()).ToArray());
+            Assert.Equal(expected, EnumerateRunes_TestI(((ReadOnlySpan<char>)chars).EnumerateRunes()).ToArray());
         }
 
         [Fact]
@@ -65,6 +114,61 @@ namespace System.SpanTests
                 enumeratedValues.Add(rune.Value);
             }
             Assert.Equal(new int[] { 'y', '\uFFFD' }, enumeratedValues.ToArray());
+            Assert.Equal(new int[] { 'y', '\uFFFD' }, EnumerateRunes_TestGI(span.EnumerateRunes()).ToArray());
+            Assert.Equal(new int[] { 'y', '\uFFFD' }, EnumerateRunes_TestI(span.EnumerateRunes()).ToArray());
+        }
+
+        private static List<int> EnumerateRunes_TestGI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator<Rune>, allows ref struct
+        {
+            List<int> enumeratedValues = new List<int>();
+
+            Assert.Equal(default, enumerator.Current);
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            enumerator.Dispose();
+            Assert.Equal(default, enumerator.Current);
+
+            while (enumerator.MoveNext())
+            {
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+
+                enumeratedValues.Add(enumerator.Current.Value);
+
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+                enumerator.Dispose();
+            }
+
+            Assert.Equal(default, enumerator.Current);
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            enumerator.Dispose();
+            Assert.Equal(default, enumerator.Current);
+
+            return enumeratedValues;
+        }
+
+        private static List<int> EnumerateRunes_TestI<TEnumerator>(TEnumerator enumerator) where TEnumerator : IEnumerator, allows ref struct
+        {
+            List<int> enumeratedValues = new List<int>();
+
+            Assert.Equal(default(Rune), enumerator.Current);
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            Assert.Equal(default(Rune), enumerator.Current);
+
+            while (enumerator.MoveNext())
+            {
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+
+                enumeratedValues.Add(((Rune)enumerator.Current).Value);
+
+                try { enumerator.Reset(); } catch (NotSupportedException) { }
+            }
+
+            Assert.Equal(default(Rune), enumerator.Current);
+            try { enumerator.Reset(); } catch (NotSupportedException) { }
+            Assert.Equal(default(Rune), enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            return enumeratedValues;
         }
     }
 }

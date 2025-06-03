@@ -3403,9 +3403,11 @@ interp_super_instructions (TransformData *td)
 		current_liveness.bb_dfs_index = bb->dfs_index;
 		current_liveness.ins_index = 0;
 		for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
-			int opcode = ins->opcode;
+			int opcode;
 			if (bb->dfs_index >= td->bblocks_count_no_eh || bb->dfs_index == -1 || (ins->flags & INTERP_INST_FLAG_LIVENESS_MARKER))
 				current_liveness.ins_index++;
+retry_ins:
+			opcode = ins->opcode;
 			if (MINT_IS_NOP (opcode))
 				continue;
 
@@ -3804,9 +3806,7 @@ interp_super_instructions (TransformData *td)
 								g_print ("superins: ");
 								interp_dump_ins (ins, td->data_items);
 							}
-							// The newly added opcode could be part of further superinstructions. Retry
-							ins = ins->prev;
-							continue;
+							goto retry_ins;
 						}
 					}
 				}

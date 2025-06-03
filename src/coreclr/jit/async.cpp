@@ -174,8 +174,8 @@ bool AsyncLiveness::IsLive(unsigned lclNum)
 
     LclVarDsc* dsc = m_comp->lvaGetDesc(lclNum);
 
-    if (((dsc->TypeGet() == TYP_BYREF) && !dsc->IsImplicitByRef()) ||
-        ((dsc->TypeGet() == TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
+    if ((dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef()) ||
+        (dsc->TypeIs(TYP_STRUCT) && dsc->GetLayout()->HasGCByRef()))
     {
         // Even if these are address exposed we expect them to be dead at
         // suspension points. TODO: It would be good to somehow verify these
@@ -617,7 +617,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
     {
         LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
 
-        if ((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef())
+        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
             ClassLayout* layout = dsc->GetLayout();
             assert(!layout->HasGCByRef());
@@ -643,7 +643,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
                 inf.GCDataCount = layout->GetGCPtrCount();
             }
         }
-        else if (dsc->TypeGet() == TYP_REF)
+        else if (dsc->TypeIs(TYP_REF))
         {
             inf.Alignment   = TARGET_POINTER_SIZE;
             inf.DataSize    = 0;
@@ -651,7 +651,7 @@ ContinuationLayout AsyncTransformation::LayOutContinuation(BasicBlock*          
         }
         else
         {
-            assert(dsc->TypeGet() != TYP_BYREF);
+            assert(!dsc->TypeIs(TYP_BYREF));
 
             inf.Alignment   = genTypeAlignments[dsc->TypeGet()];
             inf.DataSize    = genTypeSize(dsc);
@@ -1005,7 +1005,7 @@ void AsyncTransformation::FillInGCPointersOnSuspension(const jitstd::vector<Live
         }
 
         LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-        if (dsc->TypeGet() == TYP_REF)
+        if (dsc->TypeIs(TYP_REF))
         {
             GenTree* value     = m_comp->gtNewLclvNode(inf.LclNum, TYP_REF);
             GenTree* objectArr = m_comp->gtNewLclvNode(objectArrLclNum, TYP_REF);
@@ -1016,7 +1016,7 @@ void AsyncTransformation::FillInGCPointersOnSuspension(const jitstd::vector<Live
         }
         else
         {
-            assert((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef());
+            assert(dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef());
             ClassLayout* layout     = dsc->GetLayout();
             unsigned     numSlots   = layout->GetSlotCount();
             unsigned     gcRefIndex = 0;
@@ -1132,7 +1132,7 @@ void AsyncTransformation::FillInDataOnSuspension(const jitstd::vector<LiveLocalI
         }
 
         GenTree* store;
-        if ((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef())
+        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
             GenTree* cns  = m_comp->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
             GenTree* addr = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, byteArr, cns);
@@ -1311,7 +1311,7 @@ void AsyncTransformation::RestoreFromDataOnResumption(unsigned                  
         GenTree* addr    = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, byteArr, cns);
 
         GenTree* value;
-        if ((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef())
+        if (dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef())
         {
             value = m_comp->gtNewLoadValueNode(dsc->GetLayout(), addr, GTF_IND_NONFAULTING);
         }
@@ -1358,7 +1358,7 @@ void AsyncTransformation::RestoreFromGCPointersOnResumption(unsigned            
         }
 
         LclVarDsc* dsc = m_comp->lvaGetDesc(inf.LclNum);
-        if (dsc->TypeGet() == TYP_REF)
+        if (dsc->TypeIs(TYP_REF))
         {
             GenTree* objectArr = m_comp->gtNewLclvNode(resumeObjectArrLclNum, TYP_REF);
             unsigned offset    = OFFSETOF__CORINFO_Array__data + (inf.GCDataIndex * TARGET_POINTER_SIZE);
@@ -1369,7 +1369,7 @@ void AsyncTransformation::RestoreFromGCPointersOnResumption(unsigned            
         }
         else
         {
-            assert((dsc->TypeGet() == TYP_STRUCT) || dsc->IsImplicitByRef());
+            assert(dsc->TypeIs(TYP_STRUCT) || dsc->IsImplicitByRef());
             ClassLayout* layout     = dsc->GetLayout();
             unsigned     numSlots   = layout->GetSlotCount();
             unsigned     gcRefIndex = 0;

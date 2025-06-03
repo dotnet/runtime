@@ -7,6 +7,8 @@
 //
 // ============================================================================
 #include "common.h"
+#include <minipal/mutex.h>
+
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 #include "CachedInterfaceDispatchPal.h"
 #include "CachedInterfaceDispatch.h"

@@ -49,11 +49,11 @@
 extern "C" {
 #endif
 
-#define ZLIBNG_VERSION "2.2.1"
-#define ZLIBNG_VERNUM 0x020201F0L   /* MMNNRRSM: major minor revision status modified */
+#define ZLIBNG_VERSION "2.2.4"
+#define ZLIBNG_VERNUM 0x020204F0L   /* MMNNRRSM: major minor revision status modified */
 #define ZLIBNG_VER_MAJOR 2
 #define ZLIBNG_VER_MINOR 2
-#define ZLIBNG_VER_REVISION 1
+#define ZLIBNG_VER_REVISION 4
 #define ZLIBNG_VER_STATUS F         /* 0=devel, 1-E=beta, F=Release (DEPRECATED) */
 #define ZLIBNG_VER_STATUSH 0xF      /* Hex values: 0=devel, 1-E=beta, F=Release */
 #define ZLIBNG_VER_MODIFIED 0       /* non-zero if modified externally from zlib-ng */
@@ -890,7 +890,7 @@ Z_EXTERN int Z_EXPORT inflateSetDictionary(z_stream *strm, const unsigned char *
    deflateSetDictionary).  For raw inflate, this function can be called at any
    time to set the dictionary.  If the provided dictionary is smaller than the
    window and there is already data in the window, then the provided dictionary
-   will amend what's there.  The application must insure that the dictionary
+   will amend what's there.  The application must ensure that the dictionary
    that was used for compression is provided.
 
      inflateSetDictionary returns Z_OK if success, Z_STREAM_ERROR if a

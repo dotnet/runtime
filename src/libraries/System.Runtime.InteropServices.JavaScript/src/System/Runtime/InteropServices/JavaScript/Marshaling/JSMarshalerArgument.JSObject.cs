@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out JSObject? value)
+        public void ToManaged(out JSObject? value)
         {
             if (slot.Type == MarshalerType.None)
             {

@@ -1107,7 +1107,7 @@ public:
 };
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 extern "C" IDacDbiInterface::IAllocator * g_pAllocator;
 
 
@@ -1116,7 +1116,7 @@ class DDHolder
 public:
     DDHolder(DacDbiInterfaceImpl* pContainer, bool fAllowReentrant)
     {
-        EnterCriticalSection(&g_dacCritSec);
+        minipal_mutex_enter(&g_dacMutex);
 
         // If we're not re-entrant, then assert.
         if (!fAllowReentrant)
@@ -1139,7 +1139,7 @@ public:
         g_dacImpl    = m_pOldContainer;
         g_pAllocator = m_pOldAllocator;
 
-        LeaveCriticalSection(&g_dacCritSec);
+        minipal_mutex_leave(&g_dacMutex);
     }
 
 protected:

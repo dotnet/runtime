@@ -830,7 +830,7 @@ uint32_t
 ep_rt_processors_get_count (void)
 {
     STATIC_CONTRACT_NOTHROW;
-#ifdef _INC_WINDOWS
+#ifdef HOST_WINDOWS
     SYSTEM_INFO sys_info = {};
     GetSystemInfo (&sys_info);
     return static_cast<uint32_t>(sys_info.dwNumberOfProcessors);
@@ -882,7 +882,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef _INC_WINDOWS
+#ifdef HOST_WINDOWS
     SYSTEMTIME value;
     GetSystemTime (&value);
 
@@ -897,7 +897,7 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
         value.wMinute,
         value.wSecond,
         value.wMilliseconds);
-#elif TARGET_UNIX
+#else
     time_t tt;
     struct tm *ut_ptr;
     struct timeval time_val;

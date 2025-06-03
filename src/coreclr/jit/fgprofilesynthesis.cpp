@@ -148,6 +148,17 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    // A simple check whether the current method has more than one edge.
+    m_comp->fgPgoSingleEdge = true;
+    for (BasicBlock* const block : m_comp->Blocks())
+    {
+        if (block->NumSucc() > 1)
+        {
+            m_comp->fgPgoSingleEdge = false;
+            break;
+        }
+    }
+
     m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
 
     if (m_approximate)

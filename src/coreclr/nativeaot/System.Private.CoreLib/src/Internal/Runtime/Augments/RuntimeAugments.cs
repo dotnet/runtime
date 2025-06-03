@@ -711,18 +711,12 @@ namespace Internal.Runtime.Augments
 
         public static object CreateThunksHeap(IntPtr commonStubAddress)
         {
-            object? newHeap = ThunksHeap.CreateThunksHeap(commonStubAddress);
-            if (newHeap == null)
-                throw new OutOfMemoryException();
-            return newHeap;
+            return ThunksHeap.CreateThunksHeap(commonStubAddress);
         }
 
         public static IntPtr AllocateThunk(object thunksHeap)
         {
-            IntPtr newThunk = ((ThunksHeap)thunksHeap).AllocateThunk();
-            if (newThunk == IntPtr.Zero)
-                throw new OutOfMemoryException();
-            return newThunk;
+            return ((ThunksHeap)thunksHeap).AllocateThunk();
         }
 
         public static void FreeThunk(object thunksHeap, IntPtr thunkAddress)

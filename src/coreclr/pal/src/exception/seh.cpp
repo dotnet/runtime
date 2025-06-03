@@ -21,7 +21,6 @@ Abstract:
 #include "pal/handleapi.hpp"
 #include "pal/seh.hpp"
 #include "pal/dbgmsg.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/process.h"

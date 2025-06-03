@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
             out int bytesRead) =>
             _wrapped.ImportSubjectPublicKeyInfo(source, out bytesRead);
 
-        public override unsafe void ImportECPrivateKey(
+        public override void ImportECPrivateKey(
             ReadOnlySpan<byte> source,
             out int bytesRead) =>
             _wrapped.ImportECPrivateKey(source, out bytesRead);

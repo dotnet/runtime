@@ -12,6 +12,7 @@
 
 #include "zutil.h"
 #include "zendian.h"
+#include "zmemory.h"
 #include "crc32.h"
 
 #ifdef S390_DFLTCC_DEFLATE
@@ -243,6 +244,10 @@ struct ALIGNED_(64) internal_state {
 
     int nice_match; /* Stop searching when current match exceeds this */
 
+#if defined(_M_IX86) || defined(_M_ARM)
+    int padding[2];
+#endif
+
     struct crc32_fold_s ALIGNED_(16) crc_fold;
 
                 /* used by trees.c: */
@@ -323,7 +328,10 @@ struct ALIGNED_(64) internal_state {
     /* Number of valid bits in bi_buf.  All bits above the last valid bit are always zero. */
 
     /* Reserved for future use and alignment purposes */
-    int32_t reserved[11];
+    int32_t reserved[19];
+#if defined(_M_IX86) || defined(_M_ARM)
+    int32_t padding2[4];
+#endif
 };
 
 typedef enum {
@@ -348,7 +356,7 @@ static inline void put_short(deflate_state *s, uint16_t w) {
 #if BYTE_ORDER == BIG_ENDIAN
     w = ZSWAP16(w);
 #endif
-    memcpy(&s->pending_buf[s->pending], &w, sizeof(w));
+    zng_memwrite_2(&s->pending_buf[s->pending], w);
     s->pending += 2;
 }
 
@@ -360,7 +368,7 @@ static inline void put_short_msb(deflate_state *s, uint16_t w) {
 #if BYTE_ORDER == LITTLE_ENDIAN
     w = ZSWAP16(w);
 #endif
-    memcpy(&s->pending_buf[s->pending], &w, sizeof(w));
+    zng_memwrite_2(&s->pending_buf[s->pending], w);
     s->pending += 2;
 }
 
@@ -372,7 +380,7 @@ static inline void put_uint32(deflate_state *s, uint32_t dw) {
 #if BYTE_ORDER == BIG_ENDIAN
     dw = ZSWAP32(dw);
 #endif
-    memcpy(&s->pending_buf[s->pending], &dw, sizeof(dw));
+    zng_memwrite_4(&s->pending_buf[s->pending], dw);
     s->pending += 4;
 }
 
@@ -384,7 +392,7 @@ static inline void put_uint32_msb(deflate_state *s, uint32_t dw) {
 #if BYTE_ORDER == LITTLE_ENDIAN
     dw = ZSWAP32(dw);
 #endif
-    memcpy(&s->pending_buf[s->pending], &dw, sizeof(dw));
+    zng_memwrite_4(&s->pending_buf[s->pending], dw);
     s->pending += 4;
 }
 
@@ -396,7 +404,7 @@ static inline void put_uint64(deflate_state *s, uint64_t lld) {
 #if BYTE_ORDER == BIG_ENDIAN
     lld = ZSWAP64(lld);
 #endif
-    memcpy(&s->pending_buf[s->pending], &lld, sizeof(lld));
+    zng_memwrite_8(&s->pending_buf[s->pending], lld);
     s->pending += 8;
 }
 

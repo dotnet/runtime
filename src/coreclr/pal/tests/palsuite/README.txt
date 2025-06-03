@@ -12,7 +12,6 @@
 
 4.   ADDITIONAL NOTES ON TESTING/SPECIFIC TEST CASE ISSUES
      File_IO: getfilesize/test1, setfilepointer/test(5,6,7)
-     File_IO: setfileattributesa/test(1,4), setfileattributesw/test(1,4)
      Pal_specific:: pal_get_stdin/test1, pal_get_stdout/test1, pal_get_stderr/test1
      Threading: setconsolectrlhandler/test(3,4)
 

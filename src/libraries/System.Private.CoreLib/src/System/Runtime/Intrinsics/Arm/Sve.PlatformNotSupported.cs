@@ -7422,22 +7422,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector<ulong> PopCount(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
 
-        // Prefetch bytes
-
-        /// <summary>
-        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
-        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
-        /// </summary>
-        public static unsafe void PrefetchBytes(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
-
-
         // Prefetch halfwords
 
         /// <summary>
         ///   <para>void svprfh(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFH op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt16(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        public static unsafe void Prefetch16Bit(Vector<ushort> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
         // Prefetch words
@@ -7446,7 +7437,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfw(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFW op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt32(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        public static unsafe void Prefetch32Bit(Vector<uint> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
         // Prefetch doublewords
@@ -7455,7 +7446,16 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>void svprfd(svbool_t pg, const void *base, enum svprfop op)</para>
         ///   <para>  PRFD op, Pg, [Xbase, #0, MUL VL]</para>
         /// </summary>
-        public static unsafe void PrefetchInt64(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+        public static unsafe void Prefetch64Bit(Vector<ulong> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
+
+
+        // Prefetch bytes
+
+        /// <summary>
+        ///   <para>void svprfb(svbool_t pg, const void *base, enum svprfop op)</para>
+        ///   <para>  PRFB op, Pg, [Xbase, #0, MUL VL]</para>
+        /// </summary>
+        public static unsafe void Prefetch8Bit(Vector<byte> mask, void* address, [ConstantExpected] SvePrefetchType prefetchType) { throw new PlatformNotSupportedException(); }
 
 
         // Reciprocal estimate

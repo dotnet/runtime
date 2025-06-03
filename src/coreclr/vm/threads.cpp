@@ -4979,15 +4979,6 @@ void ThreadStore::AddThread(Thread *newThread)
     _ASSERTE(!newThread->IsDead());
 }
 
-// this function is just desgined to avoid deadlocks during abnormal process termination, and should not be used for any other purpose
-BOOL ThreadStore::CanAcquireLock()
-{
-    WRAPPER_NO_CONTRACT;
-    {
-        return (s_pThreadStore->m_Crst.m_criticalsection.LockCount == -1 || (size_t)s_pThreadStore->m_Crst.m_criticalsection.OwningThread == (size_t)GetCurrentThreadId());
-    }
-}
-
 // Whenever one of the components of OtherThreadsComplete() has changed in the
 // correct direction, see whether we can now shutdown the EE because only background
 // threads are running.

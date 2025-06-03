@@ -9,6 +9,7 @@
     <TrimMode>Link</TrimMode>
     <ForceAOT Condition="'$(ForceAOT)' == ''">false</ForceAOT>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">$(ForceAOT)</RunAOTCompilation>
+    <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">true</StripDebugSymbols>
     <AppName>HelloAndroid</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>

@@ -6,27 +6,41 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
+#include <minipal/mutex.h>
+
 #define NUMA_NODE_UNDEFINED UINT16_MAX
 
 bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* end_index);
 
 // Critical section used by the GC
-class CLRCriticalSection
+class CLRCriticalSection final
 {
-    CRITICAL_SECTION m_cs;
+    minipal_mutex m_cs;
 
 public:
     // Initialize the critical section
-    bool Initialize();
+    bool Initialize()
+    {
+        return minipal_mutex_init(&m_cs);
+    }
 
     // Destroy the critical section
-    void Destroy();
+    void Destroy()
+    {
+        minipal_mutex_destroy(&m_cs);
+    }
 
     // Enter the critical section. Blocks until the section can be entered.
-    void Enter();
+    void Enter()
+    {
+        minipal_mutex_enter(&m_cs);
+    }
 
     // Leave the critical section
-    void Leave();
+    void Leave()
+    {
+        minipal_mutex_leave(&m_cs);
+    }
 };
 
 // Flags for the GCToOSInterface::VirtualReserve method

@@ -21,7 +21,6 @@ Abstract:
 
 #include "pal/synchobjects.hpp"
 #include "pal/synchcache.hpp"
-#include "pal/cs.hpp"
 #include "pal/corunix.hpp"
 #include "pal/thread.hpp"
 #include "pal/procobj.hpp"
@@ -523,8 +522,8 @@ namespace CorUnix
         // static members
         static CPalSynchronizationManager * s_pObjSynchMgr;
         static Volatile<LONG>               s_lInitStatus;
-        static CRITICAL_SECTION             s_csSynchProcessLock;
-        static CRITICAL_SECTION             s_csMonitoredProcessesLock;
+        static minipal_mutex             s_csSynchProcessLock;
+        static minipal_mutex             s_csMonitoredProcessesLock;
 
         // members
         DWORD                           m_dwWorkerThreadTid;
@@ -590,7 +589,7 @@ namespace CorUnix
 
             if (1 == ++pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount)
             {
-                InternalEnterCriticalSection(pthrCurrent, &s_csSynchProcessLock);
+                minipal_mutex_enter(&s_csSynchProcessLock);
             }
         }
         static void ReleaseLocalSynchLock(CPalThread * pthrCurrent)
@@ -598,7 +597,7 @@ namespace CorUnix
             _ASSERTE(0 < pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount);
             if (0 == --pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount)
             {
-                InternalLeaveCriticalSection(pthrCurrent, &s_csSynchProcessLock);
+                minipal_mutex_leave(&s_csSynchProcessLock);
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
                 pthrCurrent->synchronizationInfo.RunDeferredThreadConditionSignalings();
@@ -613,7 +612,7 @@ namespace CorUnix
             if (0 < lRet)
             {
                 pthrCurrent->synchronizationInfo.m_lLocalSynchLockCount = 0;
-                InternalLeaveCriticalSection(pthrCurrent, &s_csSynchProcessLock);
+                minipal_mutex_leave(&s_csSynchProcessLock);
 
 #if SYNCHMGR_SUSPENSION_SAFE_CONDITION_SIGNALING
                 pthrCurrent->synchronizationInfo.RunDeferredThreadConditionSignalings();

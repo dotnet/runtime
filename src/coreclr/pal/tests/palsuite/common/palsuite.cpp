@@ -17,7 +17,6 @@
 const char* szTextFile = "text.txt";
 
 HANDLE hToken[NUM_TOKENS];
-CRITICAL_SECTION CriticalSection;
 
 WCHAR* convert(const char * aString)
 {

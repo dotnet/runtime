@@ -399,16 +399,8 @@ RELEASE_CONFIG_INTEGER(EnableHWIntrinsic,           "EnableHWIntrinsic",        
 RELEASE_CONFIG_INTEGER(EnableAES,                   "EnableAES",                 1) // Allows AES+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX,                   "EnableAVX",                 1) // Allows AVX+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX2,                  "EnableAVX2",                1) // Allows AVX2+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BW,              "EnableAVX512BW",            1) // Allows AVX512BW+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512BW_VL,           "EnableAVX512BW_VL",         1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512CD,              "EnableAVX512CD",            1) // Allows AVX512CD+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512CD_VL,           "EnableAVX512CD_VL",         1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512DQ,              "EnableAVX512DQ",            1) // Allows AVX512DQ+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512DQ_VL,           "EnableAVX512DQ_VL",         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512F,               "EnableAVX512F",             1) // Allows AVX512F+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512F_VL,            "EnableAVX512F_VL",          1) // Allows AVX512F+ AVX512VL+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableAVX512,                "EnableAVX512",              1) // Allows AVX512+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX512VBMI,            "EnableAVX512VBMI",          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableAVX512VBMI_VL,         "EnableAVX512VBMI_VL",       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v1,               "EnableAVX10v1",             1) // Allows AVX10v1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVX10v2,               "EnableAVX10v2",             1) // Allows AVX10v2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAVXVNNI,               "EnableAVXVNNI",             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
@@ -420,16 +412,12 @@ RELEASE_CONFIG_INTEGER(EnableLZCNT,                 "EnableLZCNT",              
 RELEASE_CONFIG_INTEGER(EnablePCLMULQDQ,             "EnablePCLMULQDQ",           1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableVPCLMULQDQ,            "EnableVPCLMULQDQ",          1) // Allows VPCLMULQDQ+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnablePOPCNT,                "EnablePOPCNT",              1) // Allows POPCNT+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE,                   "EnableSSE",                 1) // Allows SSE+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE2,                  "EnableSSE2",                1) // Allows SSE2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE3,                  "EnableSSE3",                1) // Allows SSE3+ hardware intrinsics to be disabled
-RELEASE_CONFIG_INTEGER(EnableSSE3_4,                "EnableSSE3_4",              1) // Allows SSE3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE41,                 "EnableSSE41",               1) // Allows SSE4.1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSE42,                 "EnableSSE42",               1) // Allows SSE4.2+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableSSSE3,                 "EnableSSSE3",               1) // Allows SSSE3+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableAPX,                   "EnableAPX",                 0) // Allows APX+ features to be disabled
 #elif defined(TARGET_ARM64)
-RELEASE_CONFIG_INTEGER(EnableArm64AdvSimd,          "EnableArm64AdvSimd",        1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Atomics,          "EnableArm64Atomics",        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Crc32,            "EnableArm64Crc32",          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled

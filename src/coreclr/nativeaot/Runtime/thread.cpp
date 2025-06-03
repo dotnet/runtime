@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
-#ifdef HOST_WINDOWS
-#include <windows.h>
-#endif
 #include "gcenv.h"
 #include "gcheaputilities.h"
 
@@ -906,19 +903,19 @@ void Thread::Unhijack()
 }
 
 // This unhijack routine is called to undo a hijack, that is potentially on a different thread.
-// 
+//
 // Although there are many code sequences (here and in asm) to
 // perform an unhijack operation, they will never execute concurrently:
-// 
+//
 // - A thread may unhijack itself at any time so long as it does that from unmanaged code while in coop mode.
 //   This ensures that coop thread can access its stack synchronously.
 //   Unhijacking from unmanaged code ensures that another thread will not attempt to hijack it,
 //   since we only hijack threads that are executing managed code.
-// 
+//
 // - A GC thread may access a thread asynchronously, including unhijacking it.
 //   Asynchronously accessed thread must be in preemptive mode and should not
 //   access the managed portion of its stack.
-// 
+//
 // - A thread that owns the suspension can access another thread as long as the other thread is
 //   in preemptive mode or suspended in managed code.
 //   Either way the other thread cannot be accessing its hijack.

@@ -80,11 +80,10 @@ namespace ILCompiler
             public const int Avx512Vbmi = 0x10000;
             public const int Serialize = 0x20000;
             public const int Avx10v1 = 0x40000;
-            public const int Evex = 0x80000;
-            public const int Apx = 0x100000;
-            public const int Vpclmulqdq = 0x200000;
-            public const int Avx10v2 = 0x400000;
-            public const int Gfni = 0x800000;
+            public const int Apx = 0x80000;
+            public const int Vpclmulqdq = 0x100000;
+            public const int Avx10v2 = 0x200000;
+            public const int Gfni = 0x400000;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -119,29 +118,13 @@ namespace ILCompiler
                 if ((flags & Movbe) != 0)
                     builder.AddSupportedInstructionSet("movbe");
                 if ((flags & Avx512) != 0)
-                {
-                    builder.AddSupportedInstructionSet("avx512f");
-                    builder.AddSupportedInstructionSet("avx512f_vl");
-                    builder.AddSupportedInstructionSet("avx512bw");
-                    builder.AddSupportedInstructionSet("avx512bw_vl");
-                    builder.AddSupportedInstructionSet("avx512cd");
-                    builder.AddSupportedInstructionSet("avx512cd_vl");
-                    builder.AddSupportedInstructionSet("avx512dq");
-                    builder.AddSupportedInstructionSet("avx512dq_vl");
-                }
+                    builder.AddSupportedInstructionSet("avx512");
                 if ((flags & Avx512Vbmi) != 0)
-                {
                     builder.AddSupportedInstructionSet("avx512vbmi");
-                    builder.AddSupportedInstructionSet("avx512vbmi_vl");
-                }
                 if ((flags & Serialize) != 0)
                     builder.AddSupportedInstructionSet("serialize");
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
-                if (((flags & Avx10v1) != 0) && ((flags & Avx512) != 0))
-                    builder.AddSupportedInstructionSet("avx10v1_v512");
-                if ((flags & Evex) != 0)
-                    builder.AddSupportedInstructionSet("evex");
                 if ((flags & Apx) != 0)
                     builder.AddSupportedInstructionSet("apx");
                 if ((flags & Vpclmulqdq) != 0)
@@ -152,8 +135,6 @@ namespace ILCompiler
                 }
                 if ((flags & Avx10v2) != 0)
                     builder.AddSupportedInstructionSet("avx10v2");
-                if (((flags & Avx10v2) != 0) && ((flags & Avx512) != 0))
-                    builder.AddSupportedInstructionSet("avx10v2_v512");
                 if ((flags & Gfni) != 0)
                 {
                     builder.AddSupportedInstructionSet("gfni");
@@ -202,46 +183,25 @@ namespace ILCompiler
                     InstructionSet.X64_AVXVNNI => AvxVnni,
                     InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
                     InstructionSet.X64_MOVBE => Movbe,
-                    InstructionSet.X64_AVX512F => Avx512,
-                    InstructionSet.X64_AVX512F_X64 => Avx512,
-                    InstructionSet.X64_AVX512F_VL => Avx512,
-                    InstructionSet.X64_AVX512BW => Avx512,
-                    InstructionSet.X64_AVX512BW_X64 => Avx512,
-                    InstructionSet.X64_AVX512BW_VL => Avx512,
-                    InstructionSet.X64_AVX512CD => Avx512,
-                    InstructionSet.X64_AVX512CD_X64 => Avx512,
-                    InstructionSet.X64_AVX512CD_VL => Avx512,
-                    InstructionSet.X64_AVX512DQ => Avx512,
-                    InstructionSet.X64_AVX512DQ_X64 => Avx512,
-                    InstructionSet.X64_AVX512DQ_VL => Avx512,
+                    InstructionSet.X64_AVX512 => Avx512,
+                    InstructionSet.X64_AVX512_X64 => Avx512,
                     InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
                     InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
-                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi,
                     InstructionSet.X64_X86Serialize => Serialize,
                     InstructionSet.X64_X86Serialize_X64 => Serialize,
                     InstructionSet.X64_AVX10v1 => Avx10v1,
                     InstructionSet.X64_AVX10v1_X64 => Avx10v1,
-                    InstructionSet.X64_AVX10v1_V512 => (Avx10v1 | Avx512),
-                    InstructionSet.X64_AVX10v1_V512_X64 => (Avx10v1 | Avx512),
-                    InstructionSet.X64_EVEX => Evex,
                     InstructionSet.X64_APX => Apx,
                     InstructionSet.X64_PCLMULQDQ_V256 => Vpclmulqdq,
                     InstructionSet.X64_PCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
                     InstructionSet.X64_AVX10v2 => Avx10v2,
                     InstructionSet.X64_AVX10v2_X64 => Avx10v2,
-                    InstructionSet.X64_AVX10v2_V512 => (Avx10v2 | Avx512),
-                    InstructionSet.X64_AVX10v2_V512_X64 => (Avx10v2 | Avx512),
                     InstructionSet.X64_GFNI => Gfni,
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
 
                     // Baseline ISAs - they're always available
-                    InstructionSet.X64_SSE => 0,
-                    InstructionSet.X64_SSE_X64 => 0,
-                    InstructionSet.X64_SSE2 => 0,
-                    InstructionSet.X64_SSE2_X64 => 0,
-
                     InstructionSet.X64_X86Base => 0,
                     InstructionSet.X64_X86Base_X64 => 0,
 
@@ -258,22 +218,20 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class Arm64IntrinsicConstants
         {
-            public const int AdvSimd = 0x0001;
-            public const int Aes = 0x0002;
-            public const int Crc32 = 0x0004;
-            public const int Dp = 0x0008;
-            public const int Rdm = 0x0010;
-            public const int Sha1 = 0x0020;
-            public const int Sha256 = 0x0040;
-            public const int Atomics = 0x0080;
-            public const int Rcpc = 0x0100;
-            public const int Rcpc2 = 0x0200;
-            public const int Sve = 0x0400;
+            public const int Aes = 0x0001;
+            public const int Crc32 = 0x0002;
+            public const int Dp = 0x0004;
+            public const int Rdm = 0x0008;
+            public const int Sha1 = 0x0010;
+            public const int Sha256 = 0x0020;
+            public const int Atomics = 0x0040;
+            public const int Rcpc = 0x0080;
+            public const int Rcpc2 = 0x0100;
+            public const int Sve = 0x0200;
+            public const int Sve2 = 0x0400;
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
-                if ((flags & AdvSimd) != 0)
-                    builder.AddSupportedInstructionSet("neon");
                 if ((flags & Aes) != 0)
                     builder.AddSupportedInstructionSet("aes");
                 if ((flags & Crc32) != 0)
@@ -294,6 +252,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("rcpc2");
                 if ((flags & Sve) != 0)
                     builder.AddSupportedInstructionSet("sve");
+                if ((flags & Sve2) != 0)
+                    builder.AddSupportedInstructionSet("sve2");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -304,8 +264,8 @@ namespace ILCompiler
                     // Baseline ISAs - they're always available
                     InstructionSet.ARM64_ArmBase => 0,
                     InstructionSet.ARM64_ArmBase_Arm64 => 0,
-                    InstructionSet.ARM64_AdvSimd => AdvSimd,
-                    InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd,
+                    InstructionSet.ARM64_AdvSimd => 0,
+                    InstructionSet.ARM64_AdvSimd_Arm64 => 0,
 
                     // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.ARM64_Aes => Aes,
@@ -325,9 +285,11 @@ namespace ILCompiler
                     InstructionSet.ARM64_Rcpc2 => Rcpc2,
                     InstructionSet.ARM64_Sve => Sve,
                     InstructionSet.ARM64_Sve_Arm64 => Sve,
+                    InstructionSet.ARM64_Sve2 => Sve2,
+                    InstructionSet.ARM64_Sve2_Arm64 => Sve2,
 
                     // Vector<T> Sizes
-                    InstructionSet.ARM64_VectorT128 => AdvSimd,
+                    InstructionSet.ARM64_VectorT128 => 0,
 
                     _ => throw new NotSupportedException(((InstructionSet_ARM64)instructionSet).ToString())
                 };
