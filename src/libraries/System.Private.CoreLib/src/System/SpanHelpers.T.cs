@@ -53,13 +53,13 @@ namespace System
                         ? (Vector<byte>)new Vector<double>(Unsafe.BitCast<T, double>(value))
                         : (Vector<byte>)new Vector<ulong>(Unsafe.BitCast<T, ulong>(value));
                 }
+                else if (sizeof(T) == Vector<byte>.Count)
+                {
+                    vector = Unsafe.BitCast<T, Vector<byte>>(value);
+                }
                 else if (sizeof(T) == 16)
                 {
-                    if (Vector<byte>.Count == 16)
-                    {
-                        vector = Unsafe.BitCast<T, Vector<byte>>(value);
-                    }
-                    else if (Vector<byte>.Count == 32)
+                    if (Vector<byte>.Count == 32)
                     {
                         vector = Vector256.Create(Unsafe.BitCast<T, Vector128<byte>>(value)).AsVector();
                     }
@@ -75,25 +75,9 @@ namespace System
                 }
                 else if (sizeof(T) == 32)
                 {
-                    if (Vector<byte>.Count == 32)
-                    {
-                        vector = Unsafe.BitCast<T, Vector<byte>>(value);
-                    }
-                    else if (Vector<byte>.Count == 64)
-                    {
-                        vector = Vector512.Create(Unsafe.BitCast<T, Vector256<byte>>(value)).AsVector();
-                    }
-                    else
-                    {
-                        Debug.Fail("Vector<T> is unexpected size.");
-                        goto CannotVectorize;
-                    }
-                }
-                else if (sizeof(T) == 64)
-                {
                     if (Vector<byte>.Count == 64)
                     {
-                        vector = Unsafe.BitCast<T, Vector<byte>>(value);
+                        vector = Vector512.Create(Unsafe.BitCast<T, Vector256<byte>>(value)).AsVector();
                     }
                     else
                     {
