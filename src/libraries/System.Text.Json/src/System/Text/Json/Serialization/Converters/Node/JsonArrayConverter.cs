@@ -26,8 +26,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartArray:
                     return options.AllowDuplicateProperties
-                        ? ReadLazy(ref reader, options.GetNodeOptions())
-                        : ReadEager(ref reader, options.GetNodeOptions());
+                        ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
+                        : ReadAsJsonNode(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -36,13 +36,13 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal static JsonArray ReadLazy(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonArray ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             return new JsonArray(jElement, options);
         }
 
-        internal static JsonArray ReadEager(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonArray ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
 
@@ -55,13 +55,14 @@ namespace System.Text.Json.Serialization.Converters
                     return jArray;
                 }
 
-                JsonNode? item = JsonNodeConverter.ReadEager(ref reader, options);
+                JsonNode? item = JsonNodeConverter.ReadAsJsonNode(ref reader, options);
                 jArray.Add(item);
             }
 
             // JSON is invalid so reader would have already thrown.
             Debug.Fail("End array token not found.");
-            throw new JsonException();
+            ThrowHelper.ThrowJsonException();
+            return null;
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };

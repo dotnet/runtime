@@ -63,8 +63,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartObject:
                     return options.AllowDuplicateProperties
-                        ? ReadLazy(ref reader, options.GetNodeOptions())
-                        : ReadEager(ref reader, options.GetNodeOptions());
+                        ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
+                        : ReadAsJsonNode(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -73,13 +73,13 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal static JsonObject ReadLazy(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonObject ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             return new JsonObject(jElement, options);
         }
 
-        internal static JsonObject ReadEager(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonObject ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
 
@@ -101,7 +101,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 string propertyName = reader.GetString()!;
                 reader.Read(); // Move to the value token.
-                JsonNode? value = JsonNodeConverter.ReadEager(ref reader, options);
+                JsonNode? value = JsonNodeConverter.ReadAsJsonNode(ref reader, options);
 
                 // To have parity with the lazy JsonObject, we throw on duplicates.
                 jObject.Add(propertyName, value);
@@ -109,7 +109,8 @@ namespace System.Text.Json.Serialization.Converters
 
             // JSON is invalid so reader would have already thrown.
             Debug.Fail("End object token not found.");
-            throw new JsonException();
+            ThrowHelper.ThrowJsonException();
+            return null;
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };

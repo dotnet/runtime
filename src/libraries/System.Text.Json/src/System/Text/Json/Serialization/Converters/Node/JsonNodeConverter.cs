@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal sealed class JsonNodeConverter : JsonConverter<JsonNode?>
     {
-        internal static JsonNodeConverter Instance => field ??= new JsonNodeConverter();
+        internal static JsonNodeConverter Instance { get; } = new JsonNodeConverter();
 
         public override void Write(Utf8JsonWriter writer, JsonNode? value, JsonSerializerOptions options)
         {
@@ -30,11 +30,11 @@ namespace System.Text.Json.Serialization.Converters
         public override JsonNode? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return options.AllowDuplicateProperties
-                ? ReadLazy(ref reader, options.GetNodeOptions())
-                : ReadEager(ref reader, options.GetNodeOptions());
+                ? ReadAsJsonElement(ref reader, options.GetNodeOptions())
+                : ReadAsJsonNode(ref reader, options.GetNodeOptions());
         }
 
-        internal static JsonNode? ReadLazy(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonNode? ReadAsJsonElement(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             switch (reader.TokenType)
             {
@@ -44,9 +44,9 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.Number:
                     return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
                 case JsonTokenType.StartObject:
-                    return JsonObjectConverter.ReadLazy(ref reader, options);
+                    return JsonObjectConverter.ReadAsJsonElement(ref reader, options);
                 case JsonTokenType.StartArray:
-                    return JsonArrayConverter.ReadLazy(ref reader, options);
+                    return JsonArrayConverter.ReadAsJsonElement(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        internal static JsonNode? ReadEager(ref Utf8JsonReader reader, JsonNodeOptions options)
+        internal static JsonNode? ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
             switch (reader.TokenType)
             {
@@ -65,9 +65,9 @@ namespace System.Text.Json.Serialization.Converters
                 case JsonTokenType.Number:
                     return JsonValueConverter.ReadNonNullPrimitiveValue(ref reader, options);
                 case JsonTokenType.StartObject:
-                    return JsonObjectConverter.ReadEager(ref reader, options);
+                    return JsonObjectConverter.ReadAsJsonNode(ref reader, options);
                 case JsonTokenType.StartArray:
-                    return JsonArrayConverter.ReadEager(ref reader, options);
+                    return JsonArrayConverter.ReadAsJsonNode(ref reader, options);
                 case JsonTokenType.Null:
                     return null;
                 default:
