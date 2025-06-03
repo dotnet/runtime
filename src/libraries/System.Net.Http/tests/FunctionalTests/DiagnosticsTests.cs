@@ -836,12 +836,31 @@ namespace System.Net.Http.Functional.Tests
             await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString()).DisposeAsync();
             static async Task RunTest(string useVersion, string testAsync)
             {
-                Activity parentActivity = new Activity("parent").Start();
+                TaskCompletionSource activityStopTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                Activity? activity = null;
 
-                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                using ActivityListener listener = new ActivityListener()
                 {
-                    ExpectedParent = parentActivity
+                    ShouldListenTo = s => s.Name is "System.Net.Http",
+                    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+                    ActivityStopped = a =>
+                    {
+                        activity = a;
+                        Assert.Equal(ActivityStatusCode.Error, a.Status);
+                        ActivityAssert.HasTag(a, "error.type", typeof(TaskCanceledException).FullName);
+                        ActivityEvent evt = a.Events.Single(e => e.Name == "exception");
+                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
+                        Assert.Contains("exception.type", tags.Keys);
+                        Assert.Contains("exception.message", tags.Keys);
+                        Assert.Contains("exception.stacktrace", tags.Keys);
+                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
+
+                        activityStopTcs.SetResult();
+                    }
                 };
+                ActivitySource.AddActivityListener(listener);
+
+                var cts = new CancellationTokenSource();
 
                 await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
                     async uri =>
@@ -852,31 +871,19 @@ namespace System.Net.Http.Functional.Tests
                             uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
                         }
 
-                        CancellationTokenSource cts = new CancellationTokenSource();
-                        // Immediately cancel the token so any operation using it will throw a TaskCanceledException.
-                        cts.Cancel();
-                        using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
-                        await Assert.ThrowsAsync<TaskCanceledException>(() => client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true), cancellationToken: cts.Token));
-
-                        Activity req = requestRecorder.VerifyActivityRecordedOnce();
-                        Assert.Equal(ActivityStatusCode.Error, req.Status);
-                        ActivityAssert.HasTag(req, "error.type", typeof(TaskCanceledException).FullName);
-                        ActivityEvent evt = req.Events.Single(e => e.Name == "exception");
-                        Dictionary<string, object?> tags = evt.Tags.ToDictionary(t => t.Key, t => t.Value);
-                        Assert.Contains("exception.type", tags.Keys);
-                        Assert.Contains("exception.message", tags.Keys);
-                        Assert.Contains("exception.stacktrace", tags.Keys);
-                        Assert.Equal(typeof(TaskCanceledException).FullName, tags["exception.type"]);
+                        await Assert.ThrowsAsync<TaskCanceledException>(() => GetAsync(useVersion, testAsync, uri, cts.Token));
                     },
                     async server =>
                     {
                         await server.AcceptConnectionAsync(async connection =>
                         {
-                            await connection.ReadRequestDataAsync();
-                            await connection.SendResponseAsync(HttpStatusCode.OK);
-                            connection.CompleteRequestProcessing();
+                            cts.Cancel();
+
+                            await activityStopTcs.Task;
                         });
                     });
+
+                Assert.NotNull(activity);
             }
         }
 
