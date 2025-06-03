@@ -78,14 +78,16 @@ namespace HostActivation.Tests
             Directory.CreateDirectory(appHostDir);
             Directory.CreateDirectory(appFilesDir);
 
+            var appHostName = Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe);
+
             File.Copy(
-                Path.Combine(sharedTestState.FrameworkDependentApp.Location, sharedTestState.FrameworkDependentApp.AppExe),
-                Path.Combine(appHostDir, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)));
+                sharedTestState.FrameworkDependentApp.AppExe,
+                Path.Combine(appHostDir, appHostName));
 
             foreach (var file in Directory.EnumerateFiles(sharedTestState.FrameworkDependentApp.Location))
             {
                 var fileName = Path.GetFileName(file);
-                if (fileName != sharedTestState.FrameworkDependentApp.AppExe)
+                if (fileName != appHostName)
                 {
                     File.Copy(file, Path.Combine(appFilesDir, fileName));
                 }
@@ -102,13 +104,14 @@ namespace HostActivation.Tests
                     var fileName = Path.GetFileName(file);
                     var symlinkPath = Path.Combine(targetPath, fileName);
                     Directory.CreateDirectory(Path.GetDirectoryName(symlinkPath));
-                    symlinks.Add(new SymLink(file, symlinkPath));
+                    symlinks.Add(new SymLink(symlinkPath, file));
                 }
                 symlinks.Add(new SymLink(
-                    Path.Combine(appHostDir, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)),
-                    Path.Combine(targetPath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe))));
+                    Path.Combine(targetPath, appHostName),
+                    Path.Combine(appHostDir, appHostName)));
 
-                var result = Command.Create(Path.Combine(targetPath, Path.GetFileName(sharedTestState.FrameworkDependentApp.AppExe)))
+                Console.ReadLine();
+                var result = Command.Create(Path.Combine(targetPath, appHostName))
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .DotNetRoot(TestContext.BuiltDotNet.BinPath)
