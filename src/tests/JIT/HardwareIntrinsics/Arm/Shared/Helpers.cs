@@ -2314,6 +2314,28 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
+        public static uint AddCarryWideningOdd(uint[] op1, uint[] op2, uint[] op3, int i)
+        {
+            uint lsb;
+            ulong res;
+
+            if (i % 2 == 0)
+            {
+                lsb = op3[i + 1] & 1u;
+                res = (ulong)op1[i] + op2[i + 1] + lsb;
+                return (uint)res;
+            }
+            else
+            {
+                lsb = op3[i] & 1u;
+                res = (ulong)op1[i - 1] + op2[i] + lsb;
+
+                // Shift result to get the carry bit
+                return (uint)(res >> 32);
+            }
+        }
+
+
         private static short HighNarrowing(int op1, bool round)
         {
             uint roundConst = 0;
@@ -2453,6 +2475,32 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Look for an overflow in the addition to get the carry bit
                 ulong sum1 = op1[i - 1] + op2[i - 1];
+                bool overflow1 = sum1 < op1[i - 1];
+
+                ulong sum2 = sum1 + lsb;
+                bool overflow2 = sum2 < sum1;
+
+                return (overflow1 || overflow2) ? 1UL : 0UL;
+            }
+        }
+
+        public static ulong AddCarryWideningOdd(ulong[] op1, ulong[] op2, ulong[] op3, int i)
+        {
+            ulong lsb;
+            ulong res;
+
+            if (i % 2 == 0)
+            {
+                lsb = op3[i + 1] & 1UL;
+                res = op1[i] + op2[i + 1] + lsb;
+                return res;
+            }
+            else
+            {
+                lsb = op3[i] & 1UL;
+
+                // Look for an overflow in the addition to get the carry bit
+                ulong sum1 = op1[i - 1] + op2[i];
                 bool overflow1 = sum1 < op1[i - 1];
 
                 ulong sum2 = sum1 + lsb;
