@@ -358,7 +358,7 @@ namespace System.Runtime
         internal static extern int RhpGetThunkBlockSize();
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
-        internal static partial IntPtr RhAllocateThunksMapping();
+        internal static unsafe partial int RhAllocateThunksMapping(IntPtr* ppMapping);
 
         //
         // calls to runtime for type equality checks

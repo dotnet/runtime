@@ -153,8 +153,6 @@ FIELD(CLiteWeightStgdbRW, m_pStreamList, sizeof(void*))
 FIELD(CLiteWeightStgdbRW, m_pNextStgdb, sizeof(void*))
 FIELD(CLiteWeightStgdbRW, m_eFileType, 4)
 FIELD(CLiteWeightStgdbRW, m_wszFileName, sizeof(void*))
-FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFT, 4)
-FIELD(CLiteWeightStgdbRW, m_dwDatabaseLFS, 4)
 FIELD(CLiteWeightStgdbRW, m_pStgIO, sizeof(void*))
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
 FIELD(CLiteWeightStgdbRW, m_pPdbHeap, sizeof(void*))

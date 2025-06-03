@@ -462,7 +462,8 @@ DEFINE_FIELD(COMWRAPPERS, NAITVE_OBJECT_WRAPPER_TABLE, s_nativeObjectWrapperTabl
 DEFINE_FIELD(COMWRAPPERS, ALL_MANAGED_OBJECT_WRAPPER_TABLE, s_allManagedObjectWrapperTable)
 
 DEFINE_CLASS_U(Interop, ComWrappers+ManagedObjectWrapperHolder, ManagedObjectWrapperHolderObject)
-DEFINE_FIELD_U(_wrapper, ManagedObjectWrapperHolderObject, ManagedObjectWrapper)
+DEFINE_FIELD_U(_wrappedObject, ManagedObjectWrapperHolderObject, _wrappedObject)
+DEFINE_FIELD_U(_wrapper, ManagedObjectWrapperHolderObject, _wrapper)
 DEFINE_CLASS_U(Interop, ComWrappers+NativeObjectWrapper, NativeObjectWrapperObject)
 DEFINE_FIELD_U(_comWrappers, NativeObjectWrapperObject, _comWrappers)
 DEFINE_FIELD_U(_externalComObject, NativeObjectWrapperObject, _externalComObject)

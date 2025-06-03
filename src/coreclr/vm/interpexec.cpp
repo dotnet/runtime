@@ -143,7 +143,7 @@ MAIN_LOOP:
                     ip += 2;
                     break;
                 case INTOP_LDC_I8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                    LOCAL_VAR(ip[1], int64_t) = (int64_t)(uint32_t)ip[2] + ((int64_t)ip[3] << 32);
                     ip += 4;
                     break;
                 case INTOP_LDC_R4:
@@ -151,7 +151,7 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_LDC_R8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                    LOCAL_VAR(ip[1], int64_t) = (int64_t)(uint32_t)ip[2] + ((int64_t)ip[3] << 32);
                     ip += 4;
                     break;
                 case INTOP_LDPTR:

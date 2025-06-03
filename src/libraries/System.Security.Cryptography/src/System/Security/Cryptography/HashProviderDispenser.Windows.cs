@@ -109,7 +109,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public static unsafe int MacData(
+            public static int MacData(
                 string hashAlgorithmId,
                 ReadOnlySpan<byte> key,
                 ReadOnlySpan<byte> source,
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography
                 HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out _);
             }
 
-            public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            public static int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 int hashSize; // in bytes
 
