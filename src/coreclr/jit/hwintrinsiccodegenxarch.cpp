@@ -2482,6 +2482,10 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             // emit the MUL/IMUL instruction
             emit->emitInsBinary(ins, attr, node, op2);
 
+            // verify target registers are honored
+            assert(node->GetRegNum() == REG_EAX);
+            assert(node->GetRegByIndex(1) == REG_EDX);
+
             break;
         }
 
