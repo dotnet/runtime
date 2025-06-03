@@ -188,6 +188,11 @@ void InitializeCurrentProcessCpuCount()
 // initialization and false on failure.
 bool PalInit()
 {
+    PROCESS_MITIGATION_DYNAMIC_CODE_POLICY pol = { };
+    pol.ProhibitDynamicCode = 1;
+
+    SetProcessMitigationPolicy(ProcessDynamicCodePolicy, &pol, sizeof(pol));
+
     GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
