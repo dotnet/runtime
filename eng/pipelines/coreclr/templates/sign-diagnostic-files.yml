@@ -15,12 +15,12 @@ steps:
   - task: EsrpCodeSigning@5
     displayName: Sign Diagnostic Binaries
     inputs:
-      ConnectedServiceName: 'diagnostics-esrp-kvcertuser'
-      AppRegistrationClientId: '2234cdec-a13f-4bb2-aa63-04c57fd7a1f9'
-      AppRegistrationTenantId: '72f988bf-86f1-41af-91ab-2d7cd011db47'
-      AuthAKVName: 'clrdiag-esrp-id'
-      AuthCertName: 'dotnetesrp-diagnostics-aad-ssl-cert'
-      AuthSignCertName: 'dotnet-diagnostics-esrp-pki-onecert'
+      ConnectedServiceName: 'diagnostics-esrp-kvcertuser-pme'
+      AppRegistrationClientId: '22346933-af99-4e94-97d5-7fa1dcf4bba6'
+      AppRegistrationTenantId: '975f013f-7f24-47e8-a7d3-abc4752bf346'
+      AuthAKVName: 'clrdiag-esrp-pme'
+      AuthCertName: 'dac-dnceng-ssl-cert'
+      AuthSignCertName: 'dac-dnceng-esrpclient-cert'
       FolderPath: ${{ parameters.basePath }}
       Pattern: |
         **/mscordaccore*.dll

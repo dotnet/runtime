@@ -44,12 +44,13 @@ extends:
       # Localization build
       #
 
-      - template: /eng/common/templates-official/job/onelocbuild.yml
-        parameters:
-          MirrorRepo: runtime
-          MirrorBranch: main
-          LclSource: lclFilesfromPackage
-          LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+      - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+        - template: /eng/common/templates-official/job/onelocbuild.yml
+          parameters:
+            MirrorRepo: runtime
+            MirrorBranch: main
+            LclSource: lclFilesfromPackage
+            LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
 
       #
       # Source Index Build

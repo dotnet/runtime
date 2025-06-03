@@ -128,6 +128,12 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-cast-align)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
+
+        check_c_compiler_flag(-Wpre-c11-compat COMPILER_SUPPORTS_W_PRE_C11_COMPAT)
+        if (COMPILER_SUPPORTS_W_PRE_C11_COMPAT)
+            add_compile_options(-Wno-pre-c11-compat)
+        endif()
+
         add_compile_options(-Wno-thread-safety-analysis)
         if (CLR_CMAKE_TARGET_BROWSER)
             add_compile_options(-Wno-unsafe-buffer-usage)

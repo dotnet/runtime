@@ -117,7 +117,7 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 static int (*getifaddrs)(struct ifaddrs**) = NULL;
 static void (*freeifaddrs)(struct ifaddrs*) = NULL;
 
-static void try_loading_getifaddrs()
+static void try_loading_getifaddrs(void)
 {
     if (android_get_device_api_level() >= 24)
     {
@@ -139,7 +139,7 @@ static void try_loading_getifaddrs()
     }
 }
 
-static bool ensure_getifaddrs_is_loaded()
+static bool ensure_getifaddrs_is_loaded(void)
 {
     static pthread_once_t getifaddrs_is_loaded = PTHREAD_ONCE_INIT;
     pthread_once(&getifaddrs_is_loaded, try_loading_getifaddrs);
@@ -169,11 +169,12 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
     for (struct ifaddrs* current = headAddr; current != NULL; current = current->ifa_next)
     {
-        if (current->ifa_addr == NULL)
+        char *ifa_name = current->ifa_name;
+        if (current->ifa_addr == NULL || ifa_name == NULL)
         {
             continue;
         }
-        uint32_t interfaceIndex = if_nametoindex(current->ifa_name);
+        uint32_t interfaceIndex = if_nametoindex(ifa_name);
         // ifa_name may be an aliased interface name.
         // Use if_indextoname to map back to the true device name.
         char actualName[IF_NAMESIZE];
@@ -376,9 +377,17 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
     while (ifaddrsEntry != NULL)
     {
+        char *ifa_name = ifaddrsEntry->ifa_name;
+
+        if (ifa_name == NULL)
+        {
+            ifaddrsEntry = ifaddrsEntry->ifa_next;
+            continue;
+        }
+
         //current = NULL;
         nii = NULL;
-        uint ifindex = if_nametoindex(ifaddrsEntry->ifa_name);
+        uint ifindex = if_nametoindex(ifa_name);
         for (index = 0; index < (int)ifcount; index ++)
         {
             if (((NetworkInterfaceInfo*)memoryBlock)[index].InterfaceIndex == ifindex)
@@ -393,8 +402,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             // We git new interface.
             nii = &((NetworkInterfaceInfo*)memoryBlock)[ifcount++];
 
-            memcpy(nii->Name, ifaddrsEntry->ifa_name, sizeof(nii->Name));
-            nii->InterfaceIndex = if_nametoindex(ifaddrsEntry->ifa_name);
+            memcpy(nii->Name, ifa_name, sizeof(nii->Name));
+            nii->InterfaceIndex = ifindex;
             nii->Speed = -1;
             nii->HardwareType = ((ifaddrsEntry->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) ? NetworkInterfaceType_Loopback : NetworkInterfaceType_Unknown;
 

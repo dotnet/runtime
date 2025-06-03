@@ -20,7 +20,7 @@ typedef struct CipherInfo
 } CipherInfo;
 
 #define DEFINE_CIPHER(cipherId, width, javaName, flags) \
-CipherInfo* AndroidCryptoNative_ ## cipherId() \
+CipherInfo* AndroidCryptoNative_ ## cipherId(void) \
 { \
     static CipherInfo info = { flags, width, javaName }; \
     return &info; \

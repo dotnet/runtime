@@ -40,7 +40,7 @@ case "$os" in
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         # Skip brew update for now, see https://github.com/actions/setup-python/issues/577
         # brew update --preinstall
-        brew bundle --no-upgrade --no-lock --file "$(dirname "$0")/Brewfile"
+        brew bundle --no-upgrade --file "$(dirname "$0")/Brewfile"
         ;;
 
     *)

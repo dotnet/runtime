@@ -526,6 +526,7 @@ static EVP_PKEY* LoadKeyFromEngine(
         *haveEngine = 1;
         EVP_PKEY* ret = NULL;
         ENGINE* engine = NULL;
+        UI_METHOD* ui = NULL;
 
         // Per https://github.com/openssl/openssl/discussions/21427
         // using EVP_PKEY after freeing ENGINE is correct.
@@ -537,10 +538,28 @@ static EVP_PKEY* LoadKeyFromEngine(
             {
                 ret = load_func(engine, keyName, NULL, NULL);
 
+                if (ret == NULL)
+                {
+                    // Some engines do not tolerate having NULL passed to the ui_method parameter.
+                    // We re-try with a non-NULL UI_METHOD.
+                    ERR_clear_error();
+                    ui = UI_create_method(".NET NULL UI");
+
+                    if (ui)
+                    {
+                        ret = load_func(engine, keyName, ui, NULL);
+                    }
+                }
+
                 ENGINE_finish(engine);
             }
 
             ENGINE_free(engine);
+        }
+
+        if (ui)
+        {
+            UI_destroy_method(ui);
         }
 
         return ret;

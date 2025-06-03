@@ -59,6 +59,10 @@ internal static class SignatureMapper
 
         foreach (var parameter in method.GetParameters())
         {
+            if (PInvokeCollector.IsFunctionPointer(parameter.ParameterType))
+            {
+                throw new NotSupportedException("Parsing function pointer types in signatures is not supported.");
+            }
             char? parameterChar = TypeToChar(parameter.ParameterType);
             if (parameterChar == null)
             {

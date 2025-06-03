@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { ENVIRONMENT_IS_NODE, Module, loaderHelpers, mono_assert } from "./globals";
+import { ENVIRONMENT_IS_NODE, loaderHelpers, mono_assert } from "./globals";
+import { mono_log_debug } from "./logging";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
 
@@ -14,6 +15,14 @@ function verifyEnvironment() {
             : "This browser doesn't support fetch API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
         throw new Error(message);
     }
+}
+
+function mute_unhandledrejection (promise:Promise<any>) {
+    promise.catch((err) => {
+        if (err && err !== "AbortError" && err.name !== "AbortError" ) {
+            mono_log_debug("http muted: " + err);
+        }
+    });
 }
 
 export function http_wasm_supports_streaming_response(): boolean {
@@ -32,12 +41,7 @@ export function http_wasm_abort_request(abort_controller: AbortController): void
 export function http_wasm_abort_response(res: ResponseExtension): void {
     res.__abort_controller.abort();
     if (res.__reader) {
-        res.__reader.cancel().catch((err) => {
-            if (err && err.name !== "AbortError") {
-                Module.err("Error in http_wasm_abort_response: " + err);
-            }
-            // otherwise, it's expected
-        });
+        mute_unhandledrejection(res.__reader.cancel());
     }
 }
 
@@ -123,8 +127,12 @@ export function http_wasm_get_streamed_response_bytes(res: ResponseExtension, bu
     // the bufferPtr is pinned by the caller
     const view = new Span(bufferPtr, bufferLength, MemoryViewType.Byte);
     return wrap_as_cancelable_promise(async () => {
+        if (!res.body) {
+            return 0;
+        }
         if (!res.__reader) {
-            res.__reader = res.body!.getReader();
+            res.__reader = res.body.getReader();
+            mute_unhandledrejection(res.__reader.closed);
         }
         if (!res.__chunk) {
             res.__chunk = await res.__reader.read();

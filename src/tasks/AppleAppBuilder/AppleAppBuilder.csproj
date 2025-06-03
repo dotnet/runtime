@@ -11,9 +11,6 @@
     <EmbeddedResource Include="Templates\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="AppleAppBuilder.cs" />
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="TargetOS.cs" />

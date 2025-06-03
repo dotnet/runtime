@@ -31,6 +31,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
         public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
+        public static readonly object[][] Http2NoPushGetUris = Configuration.Http.Http2NoPushGetUris;
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
@@ -1365,7 +1366,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
+        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
             // Sync API supported only up to HTTP/1.1
