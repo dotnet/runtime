@@ -9,21 +9,25 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonNodeConverterFactory : JsonConverterFactory
     {
+        private static JsonArrayConverter ArrayConverter => field ??= new JsonArrayConverter();
+        private static JsonObjectConverter ObjectConverter => field ??= new JsonObjectConverter();
+        private static JsonValueConverter ValueConverter => field ??= new JsonValueConverter();
+
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             if (typeof(JsonValue).IsAssignableFrom(typeToConvert))
             {
-                return JsonNodeConverter.ValueConverter;
+                return ValueConverter;
             }
 
             if (typeof(JsonObject) == typeToConvert)
             {
-                return JsonNodeConverter.ObjectConverter;
+                return ObjectConverter;
             }
 
             if (typeof(JsonArray) == typeToConvert)
             {
-                return JsonNodeConverter.ArrayConverter;
+                return ArrayConverter;
             }
 
             Debug.Assert(typeof(JsonNode) == typeToConvert);

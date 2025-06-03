@@ -25,7 +25,9 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartArray:
-                    return ReadList(ref reader, options);
+                    return options.AllowDuplicateProperties
+                        ? ReadLazy(ref reader, options.GetNodeOptions())
+                        : ReadEager(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -34,29 +36,32 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonArray ReadList(ref Utf8JsonReader reader, JsonSerializerOptions  options)
+        internal static JsonArray ReadLazy(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
-            JsonNodeOptions nodeOptions = options.GetNodeOptions();
+            JsonElement jElement = JsonElement.ParseValue(ref reader);
+            return new JsonArray(jElement, options);
+        }
 
-            if (options.AllowDuplicateProperties)
+        internal static JsonArray ReadEager(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
+
+            JsonArray jArray = new JsonArray(options);
+
+            while (reader.Read())
             {
-                JsonElement jElement = JsonElement.ParseValue(ref reader);
-                return new JsonArray(jElement, nodeOptions);
+                if (reader.TokenType == JsonTokenType.EndArray)
+                {
+                    return jArray;
+                }
+
+                JsonNode? item = JsonNodeConverter.ReadEager(ref reader, options);
+                jArray.Add(item);
             }
-            else if (options.PropertyNameCaseInsensitive)
-            {
-                // Do duplicate detection by expanding the JsonArray eagerly
-                JsonElement jElement = JsonElement.ParseValue(ref reader);
-                JsonArray jArray = new JsonArray(jElement, nodeOptions);
-                jArray.InitializeComplexNodesEagerly();
-                return jArray;
-            }
-            else
-            {
-                // Do duplicate detection with JsonElement.ParseValue
-                JsonElement jElement = JsonElement.ParseValue(ref reader, allowDuplicateProperties: false);
-                return new JsonArray(jElement, nodeOptions);
-            }
+
+            // JSON is invalid so reader would have already thrown.
+            Debug.Fail("End array token not found.");
+            throw new JsonException();
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Array };

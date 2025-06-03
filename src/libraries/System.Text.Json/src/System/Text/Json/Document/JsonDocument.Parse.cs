@@ -730,7 +730,11 @@ namespace System.Text.Json
             {
                 Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
                 document = new JsonDocument(utf8Json, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter, isDisposable: true);
-                ValidateDocument(document, allowDuplicateProperties);
+
+                if (!allowDuplicateProperties)
+                {
+                    ValidateNoDuplicateProperties(document);
+                }
             }
             catch
             {
@@ -784,7 +788,12 @@ namespace System.Text.Json
             }
 
             JsonDocument document = new JsonDocument(utf8Json, database, isDisposable: false);
-            ValidateDocument(document, allowDuplicateProperties);
+
+            if (!allowDuplicateProperties)
+            {
+                ValidateNoDuplicateProperties(document);
+            }
+
             return document;
         }
 

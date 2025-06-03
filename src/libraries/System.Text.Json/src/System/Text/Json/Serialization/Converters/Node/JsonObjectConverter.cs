@@ -62,7 +62,9 @@ namespace System.Text.Json.Serialization.Converters
             switch (reader.TokenType)
             {
                 case JsonTokenType.StartObject:
-                    return ReadObject(ref reader, options);
+                    return options.AllowDuplicateProperties
+                        ? ReadLazy(ref reader, options.GetNodeOptions())
+                        : ReadEager(ref reader, options.GetNodeOptions());
                 case JsonTokenType.Null:
                     return null;
                 default:
@@ -71,30 +73,43 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        internal static JsonObject ReadLazy(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
-            JsonNodeOptions nodeOptions = options.GetNodeOptions();
+            JsonElement jElement = JsonElement.ParseValue(ref reader);
+            return new JsonObject(jElement, options);
+        }
 
-            if (options.AllowDuplicateProperties)
+        internal static JsonObject ReadEager(ref Utf8JsonReader reader, JsonNodeOptions options)
+        {
+            Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
+
+            JsonObject jObject = new JsonObject(options);
+
+            while (reader.Read())
             {
-                JsonElement jElement = JsonElement.ParseValue(ref reader);
-                JsonObject jObject = new JsonObject(jElement, nodeOptions);
-                return jObject;
+                if (reader.TokenType == JsonTokenType.EndObject)
+                {
+                    return jObject;
+                }
+
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    // JSON is invalid so reader would have already thrown.
+                    Debug.Fail("Property name expected.");
+                    ThrowHelper.ThrowJsonException();
+                }
+
+                string propertyName = reader.GetString()!;
+                reader.Read(); // Move to the value token.
+                JsonNode? value = JsonNodeConverter.ReadEager(ref reader, options);
+
+                // To have parity with the lazy JsonObject, we throw on duplicates.
+                jObject.Add(propertyName, value);
             }
-            else if (options.PropertyNameCaseInsensitive)
-            {
-                // Do duplicate detection by expanding the JsonObject eagerly
-                JsonElement jElement = JsonElement.ParseValue(ref reader);
-                JsonObject jObject = new JsonObject(jElement, nodeOptions);
-                jObject.InitializeComplexNodesEagerly();
-                return jObject;
-            }
-            else
-            {
-                // Do duplicate detection with JsonElement.ParseValue
-                JsonElement jElement = JsonElement.ParseValue(ref reader, allowDuplicateProperties: false);
-                return new JsonObject(jElement, nodeOptions);
-            }
+
+            // JSON is invalid so reader would have already thrown.
+            Debug.Fail("End object token not found.");
+            throw new JsonException();
         }
 
         internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };

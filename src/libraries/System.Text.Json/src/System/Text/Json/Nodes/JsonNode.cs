@@ -391,27 +391,5 @@ namespace System.Text.Json.Nodes
             var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
             return JsonValue.CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
-
-        internal void InitializeComplexNodesEagerly()
-        {
-            switch (this)
-            {
-                case JsonObject jObject:
-                    foreach (KeyValuePair<string, JsonNode?> property in jObject)
-                    {
-                        property.Value?.InitializeComplexNodesEagerly();
-                    }
-                    break;
-                case JsonArray jArray:
-                    foreach (JsonNode? element in jArray)
-                    {
-                        element?.InitializeComplexNodesEagerly();
-                    }
-                    break;
-                default:
-                    Debug.Assert(this is JsonValue);
-                    break;
-            }
-        }
     }
 }

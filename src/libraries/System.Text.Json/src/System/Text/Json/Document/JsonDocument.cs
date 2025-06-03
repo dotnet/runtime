@@ -1096,16 +1096,15 @@ namespace System.Text.Json
             database.CompleteAllocations();
         }
 
-        private static void ValidateDocument(JsonDocument document, bool allowDuplicateProperties)
+        private static void ValidateNoDuplicateProperties(JsonDocument document)
         {
-            if (!allowDuplicateProperties &&
-                document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+            if (document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
             {
-                ValidateDuplicateProperties(document);
+                ValidateDuplicatePropertiesCore(document);
             }
         }
 
-        private static void ValidateDuplicateProperties(JsonDocument document)
+        private static void ValidateDuplicatePropertiesCore(JsonDocument document)
         {
             Debug.Assert(document.RootElement.ValueKind is JsonValueKind.Array or JsonValueKind.Object);
 
