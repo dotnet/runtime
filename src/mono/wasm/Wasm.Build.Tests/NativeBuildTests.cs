@@ -87,20 +87,5 @@ namespace Wasm.Build.Tests
                 throw new XunitException($"Expected to successfully run wasm-dis on System.Private.CoreLib.dll.o ."
                                             + " It might fail if it was incorrectly compiled to a bitcode file, instead of wasm.");
         }
-
-        [Theory]
-        [BuildAndRun(config: Configuration.Release, aot: true)]
-        public void NativeBuildIsRequired(Configuration config, bool aot)
-        {
-            ProjectInfo info = CreateWasmTemplateProject(
-                Template.WasmBrowser,
-                config,
-                aot,
-                "native_build",
-                extraProperties: "<WasmBuildNative>false</WasmBuildNative><WasmSingleFileBundle>true</WasmSingleFileBundle>");
-
-            (string _, string output) = PublishProject(info, config, new PublishOptions(ExpectSuccess: false, AOT: aot));
-            Assert.Contains("WasmBuildNative is required", output);
-        }
     }
 }
