@@ -8346,8 +8346,10 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     // These get updated after call node is built.
     node->gtInlineObservation = InlineObservation::CALLEE_UNUSED_INITIAL;
     node->gtRawILOffset       = BAD_IL_OFFSET;
-    node->gtInlineContext     = compInlineContext;
+
 #endif
+
+    node->gtInlineContext = compInlineContext;
 
     // Spec: Managed Retval sequence points needs to be generated while generating debug info for debuggable code.
     //
@@ -9951,8 +9953,9 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree)
 #if defined(DEBUG)
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->gtRawILOffset;
-    copy->gtInlineContext     = tree->gtInlineContext;
 #endif
+
+    copy->gtInlineContext = tree->gtInlineContext;
 
     copy->CopyOtherRegFlags(tree);
 
@@ -13009,6 +13012,20 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 if ((inlineInfo != nullptr) && (inlineInfo->exactContextHandle != nullptr))
                 {
                     printf(" (exactContextHandle=0x%p)", dspPtr(inlineInfo->exactContextHandle));
+                }
+            }
+
+            // Dump profile if any
+            if (call->IsHelperCall() && impIsCastHelperMayHaveProfileData(eeGetHelperNum(call->gtCallMethHnd)))
+            {
+                CORINFO_CLASS_HANDLE likelyClasses[MAX_GDV_TYPE_CHECKS]     = {};
+                unsigned             likelyLikelihoods[MAX_GDV_TYPE_CHECKS] = {};
+                int                  likelyClassCount                       = 0;
+                pickGDV(call, call->gtCastHelperILOffset, false, likelyClasses, nullptr, &likelyClassCount,
+                        likelyLikelihoods, false);
+                if (likelyClassCount > 0)
+                {
+                    printf(" (%d%% likely '%s')", likelyLikelihoods[0], eeGetClassName(likelyClasses[0]));
                 }
             }
 
