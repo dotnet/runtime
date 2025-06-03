@@ -838,7 +838,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void SendAsync_RequestWithNonAsciiHeaderValue_ThrowsHttpRequestException()
+        public void SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException()
         {
             using (var handler = new WinHttpHandler())
             {
@@ -846,7 +846,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 
                 var invoker = new HttpMessageInvoker(handler, false);
                 var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
-                request.Headers.Add("Custom-Header", "HeaderValue\u00A9WithNon-ASCII");
+                request.Headers.Add("Custom-Header", "HeaderValue\0WithNUL");
                 
                 var ex = Assert.Throws<HttpRequestException>(() =>
                 {
@@ -854,7 +854,26 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     task.GetAwaiter().GetResult();
                 });
                 
-                Assert.Contains("ASCII", ex.Message);
+                Assert.Contains("CR, LF, or NUL", ex.Message);
+            }
+        }
+
+        [Fact]
+        public void SendAsync_RequestWithLatin1HeaderValue_Succeeds()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+                
+                var invoker = new HttpMessageInvoker(handler, false);
+                var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+                request.Headers.Add("Custom-Header", "HeaderValue\u00A9WithLatin1");
+                
+                Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                using (HttpResponseMessage response = task.GetAwaiter().GetResult())
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
             }
         }
 
@@ -878,7 +897,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         }
 
         [Fact]
-        public void SendAsync_RequestWithNonAsciiContentHeader_ThrowsHttpRequestException()
+        public void SendAsync_RequestWithDangerousControlContentHeader_ThrowsHttpRequestException()
         {
             using (var handler = new WinHttpHandler())
             {
@@ -887,7 +906,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                 var invoker = new HttpMessageInvoker(handler, false);
                 var request = new HttpRequestMessage(HttpMethod.Post, TestServer.FakeServerEndpoint);
                 request.Content = new StringContent("test content");
-                request.Content.Headers.Add("Custom-Content-Header", "ContentValue\u00A9WithNon-ASCII");
+                request.Content.Headers.Add("Custom-Content-Header", "ContentValue\0WithNUL");
                 
                 var ex = Assert.Throws<HttpRequestException>(() =>
                 {
@@ -895,7 +914,27 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                     task.GetAwaiter().GetResult();
                 });
                 
-                Assert.Contains("ASCII", ex.Message);
+                Assert.Contains("CR, LF, or NUL", ex.Message);
+            }
+        }
+
+        [Fact]
+        public void SendAsync_RequestWithLatin1ContentHeader_Succeeds()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+                
+                var invoker = new HttpMessageInvoker(handler, false);
+                var request = new HttpRequestMessage(HttpMethod.Post, TestServer.FakeServerEndpoint);
+                request.Content = new StringContent("test content");
+                request.Content.Headers.Add("Custom-Content-Header", "ContentValue\u00A9WithLatin1");
+                
+                Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                using (HttpResponseMessage response = task.GetAwaiter().GetResult())
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
             }
         }
 

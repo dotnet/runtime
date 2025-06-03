@@ -709,27 +709,31 @@ namespace System.Net.Http
             return chunkedMode;
         }
 
-        private static bool IsAscii(string value)
+        private static bool IsValidHeaderChar(char c)
         {
-#if NET
-            return Ascii.IsValid(value);
-#else
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (value[i] > 127)
-                {
-                    return false;
-                }
-            }
-            return true;
-#endif
+            // Allow Latin-1 characters (0-255) but reject dangerous control characters
+            return c <= 255 && c != '\0' && c != '\r' && c != '\n';
         }
 
-        private static void ValidateHeadersForAscii(string headers)
+        private static void ValidateHeaderValues(System.Net.Http.Headers.HttpHeaders headers)
         {
-            if (!IsAscii(headers))
+            foreach (var header in headers)
             {
-                throw new HttpRequestException(SR.net_http_headers_must_be_ascii);
+                foreach (var value in header.Value)
+                {
+                    ValidateHeaderValue(value);
+                }
+            }
+        }
+
+        private static void ValidateHeaderValue(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (!IsValidHeaderChar(value[i]))
+                {
+                    throw new HttpRequestException(SR.net_http_headers_invalid_chars);
+                }
             }
         }
 
@@ -758,14 +762,14 @@ namespace System.Net.Http
                 string? cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
                 {
-                    ValidateHeadersForAscii(cookieHeader);
+                    ValidateHeaderValue(cookieHeader);
                     requestHeadersBuffer.AppendLine(cookieHeader);
                 }
             }
 
-            // Serialize general request headers and validate for ASCII.
+            // Validate and serialize general request headers
+            ValidateHeaderValues(requestMessage.Headers);
             string generalHeaders = requestMessage.Headers.ToString();
-            ValidateHeadersForAscii(generalHeaders);
             requestHeadersBuffer.Append(generalHeaders);
 
             // Serialize entity-body (content) headers and validate for ASCII.
@@ -781,8 +785,9 @@ namespace System.Net.Http
                     requestMessage.Content.Headers.ContentLength = contentLength;
                 }
 
+                // Validate and serialize entity-body (content) headers
+                ValidateHeaderValues(requestMessage.Content.Headers);
                 string contentHeaders = requestMessage.Content.Headers.ToString();
-                ValidateHeadersForAscii(contentHeaders);
                 requestHeadersBuffer.Append(contentHeaders);
             }
 
