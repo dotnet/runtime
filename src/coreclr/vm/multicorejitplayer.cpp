@@ -1068,7 +1068,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         if (SUCCEEDED(hr))
         {
-            m_nFileSize = fgetsize(fp);
+            m_nFileSize = (uint64_t)fgetsize(fp);
 
             if (m_nFileSize > sizeof(header))
             {
