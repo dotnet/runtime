@@ -5851,6 +5851,14 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
             continue;
         }
 
+        if (compIsAsync() && ((varDsc->TypeGet() == TYP_BYREF) ||
+                              ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCByRef())))
+        {
+            // A dead store to a byref local may not actually be dead if it
+            // crosses a suspension point.
+            continue;
+        }
+
         for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
         {
             LclSsaVarDsc*        defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
