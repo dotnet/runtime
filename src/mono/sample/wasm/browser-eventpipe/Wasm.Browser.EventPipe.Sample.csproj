@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <WasmPerfTracing>true</WasmPerfTracing>
-    <WasmPerfInstrumentation>all</WasmPerfInstrumentation>
     <MetricsSupport>true</MetricsSupport>
     <EventSourceSupport>true</EventSourceSupport>
     <!--
