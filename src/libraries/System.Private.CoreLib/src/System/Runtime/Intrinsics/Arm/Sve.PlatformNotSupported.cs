@@ -2090,49 +2090,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<byte> CreateBreakAfterMask(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateBreakAfterMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<short> CreateBreakAfterMask(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> CreateBreakAfterMask(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<int> CreateBreakAfterMask(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> CreateBreakAfterMask(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<long> CreateBreakAfterMask(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> CreateBreakAfterMask(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateBreakAfterMask(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateBreakAfterMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ushort> CreateBreakAfterMask(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateBreakAfterMask(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<uint> CreateBreakAfterMask(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateBreakAfterMask(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrka[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKA Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateBreakAfterMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Break after first true condition, propagating from previous partition
@@ -2192,49 +2192,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<byte> CreateBreakBeforeMask(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateBreakBeforeMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<short> CreateBreakBeforeMask(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> CreateBreakBeforeMask(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<int> CreateBreakBeforeMask(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> CreateBreakBeforeMask(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<long> CreateBreakBeforeMask(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> CreateBreakBeforeMask(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateBreakBeforeMask(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateBreakBeforeMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ushort> CreateBreakBeforeMask(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateBreakBeforeMask(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<uint> CreateBreakBeforeMask(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateBreakBeforeMask(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svbrkb[_b]_z(svbool_t pg, svbool_t op)</para>
         ///   <para>  BRKB Presult.B, Pg/Z, Pop.B</para>
         /// </summary>
-        public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateBreakBeforeMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Break before first true condition, propagating from previous partition
@@ -2435,49 +2435,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateMaskForFirstActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<short> CreateMaskForFirstActiveElement(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<short> CreateMaskForFirstActiveElement(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<int> CreateMaskForFirstActiveElement(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<int> CreateMaskForFirstActiveElement(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<long> CreateMaskForFirstActiveElement(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<long> CreateMaskForFirstActiveElement(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<sbyte> CreateMaskForFirstActiveElement(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateMaskForFirstActiveElement(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateMaskForFirstActiveElement(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpfirst[_b](svbool_t pg, svbool_t op)</para>
         ///   <para>  PFIRST Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateMaskForFirstActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Find next active predicate
@@ -2486,25 +2486,25 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>svbool_t svpnext_b8(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.B, Pg, Ptied.B</para>
         /// </summary>
-        public static Vector<byte> CreateMaskForNextActiveElement(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<byte> CreateMaskForNextActiveElement(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpnext_b16(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.H, Pg, Ptied.H</para>
         /// </summary>
-        public static Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ushort> CreateMaskForNextActiveElement(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpnext_b32(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.S, Pg, Ptied.S</para>
         /// </summary>
-        public static Vector<uint> CreateMaskForNextActiveElement(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<uint> CreateMaskForNextActiveElement(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>svbool_t svpnext_b64(svbool_t pg, svbool_t op)</para>
         ///   <para>  PNEXT Ptied.D, Pg, Ptied.D</para>
         /// </summary>
-        public static Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> CreateMaskForNextActiveElement(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
 
 
         // Set predicate elements to true
@@ -9781,49 +9781,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<byte> mask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<short> mask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<int> mask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<long> mask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<sbyte> mask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<ushort> mask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<uint> mask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_any(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestAnyTrue(Vector<ulong> mask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Test whether the first active element is true
@@ -9832,49 +9832,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_first(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestFirstTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestFirstTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Test whether the last active element is true
@@ -9883,49 +9883,49 @@ namespace System.Runtime.Intrinsics.Arm
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<byte> mask, Vector<byte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<byte> leftMask, Vector<byte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<short> mask, Vector<short> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<short> leftMask, Vector<short> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<int> mask, Vector<int> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<int> leftMask, Vector<int> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<long> mask, Vector<long> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<long> leftMask, Vector<long> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<sbyte> mask, Vector<sbyte> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<sbyte> leftMask, Vector<sbyte> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<ushort> mask, Vector<ushort> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<ushort> leftMask, Vector<ushort> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<uint> mask, Vector<uint> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<uint> leftMask, Vector<uint> rightMask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>bool svptest_last(svbool_t pg, svbool_t op)</para>
         ///   <para>  PTEST</para>
         /// </summary>
-        public static bool TestLastTrue(Vector<ulong> mask, Vector<ulong> srcMask) { throw new PlatformNotSupportedException(); }
+        public static bool TestLastTrue(Vector<ulong> leftMask, Vector<ulong> rightMask) { throw new PlatformNotSupportedException(); }
 
 
         // Interleave even elements from two inputs
