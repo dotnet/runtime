@@ -7,7 +7,7 @@ using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using static Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86Context;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 public class X86Unwinder(Target target)
 {

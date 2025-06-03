@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 public class GCArgTable
 {

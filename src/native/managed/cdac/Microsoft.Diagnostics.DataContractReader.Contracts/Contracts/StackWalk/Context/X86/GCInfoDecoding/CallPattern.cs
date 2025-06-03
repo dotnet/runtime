@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 internal static class CallPattern
 {
@@ -26,13 +24,13 @@ internal static class CallPattern
     /// <summary>
     /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> callCommonDelta
     /// </summary>
-    public static uint[] callCommonDelta = { 6, 8, 10, 12 };
+    public static readonly uint[] callCommonDelta = [6, 8, 10, 12];
 
     /// <summary>
     /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> callPatternTable
     /// </summary>
-    private static uint[] callPatternTable =
-    {
+    private static readonly uint[] callPatternTable =
+    [
         0x0a000200, //   30109
         0x0c000200, //   22970
         0x0c000201, //   19005
@@ -113,5 +111,5 @@ internal static class CallPattern
         0x0c000601, //    1737
         0x09000700, //    1737
         0x07000300, //    1684
-    };
+    ];
 }

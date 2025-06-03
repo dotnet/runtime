@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 [Flags]
 public enum RegMask

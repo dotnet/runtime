@@ -3,10 +3,13 @@
 
 using System;
 
-namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 public static class GCInfoTargetExtensions
 {
+    /// <summary>
+    /// Based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUnsigned
+    /// </summary>
     public static uint GCDecodeUnsigned(this Target target, ref TargetPointer src)
     {
         TargetPointer begin = src;
@@ -27,6 +30,9 @@ public static class GCInfoTargetExtensions
         return value;
     }
 
+    /// <summary>
+    /// Based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeSigned
+    /// </summary>
     public static int GCDecodeSigned(this Target target, ref TargetPointer src)
     {
         TargetPointer begin = src;
@@ -54,7 +60,7 @@ public static class GCInfoTargetExtensions
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUDelta
+    /// Based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUDelta
     /// </summary>
     public static uint GCDecodeUDelta(this Target target, ref TargetPointer src, uint lastValue)
     {

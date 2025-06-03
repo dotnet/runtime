@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -121,10 +122,8 @@ internal readonly struct StackWalk_1 : IStackWalk
         bool validFrame = handle.FrameIter.IsValid();
 
         //
-        // Platform specific checks
+        // Platform specific logic
         //
-
-        // x86 Specific Checks
         if (_arch == RuntimeInfoArchitecture.X86)
         {
             if (IsManaged(prevContext.InstructionPointer, out CodeBlockHandle? prevCbh))
@@ -166,18 +165,11 @@ internal readonly struct StackWalk_1 : IStackWalk
         }
     }
 
-    //
-    // If an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call),
-    // we may have skipped an explicit frame.  This function checks for them.
-    //
-    // Return Value:
-    //    Returns true if there are skipped frames.
-    //
-    // Notes:
-    //    x86 wants to stop at the skipped stack frames after the containing managed stack frame, but
-    //    WIN64 wants to stop before.  I don't think x86 actually has any good reason for this, except
-    //    because it doesn't unwind one frame ahead of time like WIN64 does.  This means that we don't
-    //    have the caller SP on x86.
+    /// <summary>
+    /// If an explicit frame is allocated in a managed stack frame (e.g. an inlined pinvoke call),
+    /// we may have skipped an explicit frame.  This function checks for them.
+    /// </summary>
+    /// <returns> true if there are skipped frames. </returns>
     private bool CheckForSkippedFrames(StackWalkData handle)
     {
         // ensure we can find the caller context
@@ -201,6 +193,11 @@ internal readonly struct StackWalk_1 : IStackWalk
         return handle.FrameIter.CurrentFrameAddress.Value < parentContext.StackPointer.Value;
     }
 
+    /// <summary>
+    /// X86 specific check for skipped frames. Different than other platforms due to X86
+    /// only reporting the InlinedCallFrame once unless it is an IL stub with an MD context argument.
+    /// </summary>
+    /// <returns> true if there are skipped frames. </returns>
     private bool CheckForSkippedFramesX86(StackWalkData handle, IPlatformAgnosticContext parentContext)
     {
         IExecutionManager eman = _target.Contracts.ExecutionManager;
