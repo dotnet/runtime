@@ -2433,12 +2433,13 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         {
             assert(node->GetOperandCount() == 2);
             assert(instOptions == INS_OPTS_NONE);
+            assert(!node->Op(1)->isContained());
 
             // SIMD base type is from signature and can distinguish signed and unsigned
             var_types   targetType = node->GetSimdBaseType();
             GenTree*    op1        = node->Op(1);
             GenTree*    op2        = node->Op(2);
-            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
+            instruction ins        = HWIntrinsicInfo::lookupIns(intrinsicId, targetType, compiler);
 
             regNumber op1Reg = op1->GetRegNum();
             regNumber op2Reg = op2->GetRegNum();
@@ -2458,6 +2459,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
             break;
         }
+
         case NI_X86Base_X64_ConvertScalarToVector128Double:
         case NI_X86Base_X64_ConvertScalarToVector128Single:
         {
