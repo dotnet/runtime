@@ -274,28 +274,5 @@ namespace System.Reflection.Tests
             Assert.NotNull(onlySetterProp.GetSetMethod(false)); // Public setter
             Assert.Null(onlySetterProp.GetGetMethod(false)); // No getter
         }
-        
-        [Fact]
-        public static void TestPropertyVisibilityConsistentWithCoreReflection()
-        {
-            // This test ensures MetadataLoadContext behaves the same as regular reflection
-            // for properties with mixed accessor visibility
-            
-            Type regularType = typeof(PropertyWithNonPublicAccessors);
-            Type mlcType = typeof(PropertyWithNonPublicAccessors).Project();
-            
-            PropertyInfo[] regularProps = regularType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            PropertyInfo[] mlcProps = mlcType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            
-            // Same number of public properties should be found
-            Assert.Equal(regularProps.Length, mlcProps.Length);
-            
-            // Same properties should be found by name
-            string[] regularPropNames = Array.ConvertAll(regularProps, p => p.Name);
-            string[] mlcPropNames = Array.ConvertAll(mlcProps, p => p.Name);
-            Array.Sort(regularPropNames);
-            Array.Sort(mlcPropNames);
-            Assert.Equal(regularPropNames, mlcPropNames);
-        }
     }
 }

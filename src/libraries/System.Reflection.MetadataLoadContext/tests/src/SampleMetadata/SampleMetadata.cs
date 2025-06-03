@@ -548,6 +548,9 @@ namespace SampleMetadata
         
         // Property with internal getter but public setter - should be considered public  
         public string? InternalGetterPublicSetter { internal get; set; }
+        
+        // Property with internal getter but public init - should be considered public (just like public setter as they are the same from Reflection's perspective)  
+        public string? InternalGetterPublicInit { internal get; init; }
     }
 
     public class EventHolder1<T>
