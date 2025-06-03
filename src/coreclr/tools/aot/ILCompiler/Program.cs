@@ -192,12 +192,17 @@ namespace ILCompiler
 
             CompilationModuleGroup compilationGroup;
             List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
+            TypeMapManager typeMapManager = new TypeMapManager(null);
             bool multiFile = Get(_command.MultiFile);
             if (singleMethod != null)
             {
                 // Compiling just a single method
                 compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
                 compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
+                if (singleMethod.OwningType is MetadataType { Module: ModuleDesc module })
+                {
+                    compilationRoots.Add(typeMapManager = new TypeMapManager(module));
+                }
             }
             else
             {
@@ -306,6 +311,12 @@ namespace ILCompiler
                     if (!File.Exists(linkTrimFilePath))
                         throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
                     compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
+                }
+
+                if (entrypointModule != null)
+                {
+                    compilationRoots.Add(new TypeMapManager(entrypointModule));
+                    compilationRoots.Add(typeMapManager = new TypeMapManager(entrypointModule));
                 }
             }
 
@@ -491,6 +502,7 @@ namespace ILCompiler
                     .UseMetadataManager(metadataManager)
                     .UseParallelism(parallelism)
                     .UseInteropStubManager(interopStubManager)
+                    .UseTypeMapManager(typeMapManager)
                     .UseLogger(logger);
 
                 string scanDgmlLogFileName = Get(_command.ScanDgmlLogFileName);
@@ -600,7 +612,8 @@ namespace ILCompiler
                 .UseSecurityMitigationOptions(securityMitigationOptions)
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(Get(_command.UseDwarf5))
-                .UseResilience(resilient);
+                .UseResilience(resilient)
+                .UseTypeMapManager(typeMapManager);
 
             ICompilation compilation = builder.ToCompilation();
 

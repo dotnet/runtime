@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             var result = new DependencyList
             {
-                new DependencyListEntry(factory.NecessaryTypeSymbol(_type), "Type map cast target"),
+                new DependencyListEntry(factory.ConstructedTypeSymbol(_type), "Type map cast target"),
             };
 
             return result;

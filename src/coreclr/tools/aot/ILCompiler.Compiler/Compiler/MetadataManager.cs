@@ -82,6 +82,8 @@ namespace ILCompiler
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _exactMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
+        private readonly SortedSet<ExternalTypeMapEntryNode> _externalTypeMapEntries = new SortedSet<ExternalTypeMapEntryNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -346,6 +348,16 @@ namespace ILCompiler
             if (obj is InterfaceUseNode interfaceUse)
             {
                 _usedInterfaces.Add(interfaceUse.Type);
+            }
+
+            if (obj is ExternalTypeMapEntryNode externalTypeMapEntryNode)
+            {
+                _externalTypeMapEntries.Add(externalTypeMapEntryNode);
+            }
+
+            if (obj is InvalidExternalTypeMapNode invalidExternalTypeMapNode)
+            {
+                _invalidExternalTypeMaps.Add(invalidExternalTypeMapNode);
             }
         }
 
@@ -1108,6 +1120,16 @@ namespace ILCompiler
         internal IEnumerable<NativeLayoutTemplateMethodSignatureVertexNode> GetTemplateMethodEntries()
         {
             return _templateMethodEntries;
+        }
+
+        internal IEnumerable<ExternalTypeMapEntryNode> GetExternalTypeMapEntries()
+        {
+            return _externalTypeMapEntries;
+        }
+
+        internal IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps()
+        {
+            return _invalidExternalTypeMaps;
         }
 
         public bool IsReflectionBlocked(TypeDesc type)
