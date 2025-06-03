@@ -1922,7 +1922,7 @@ bool Compiler::optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* c
 #ifdef DEBUG
         const unsigned ivLclNum = iterInfo->IterVar;
         GenTree* const op1      = iterInfo->Iterator();
-        assert((op1->gtOper == GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
+        assert(op1->OperIs(GT_LCL_VAR) && (op1->AsLclVarCommon()->GetLclNum() == ivLclNum));
 #endif
     }
 
@@ -2263,7 +2263,7 @@ bool Compiler::optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lcl
 //
 bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal)
 {
-    if (tree->gtOper != GT_COMMA)
+    if (!tree->OperIs(GT_COMMA))
     {
         return false;
     }
@@ -2372,7 +2372,7 @@ bool Compiler::optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsig
         return true;
     }
     // We have a comma (check if array base expr is computed in "before"), descend further.
-    else if (tree->OperGet() == GT_COMMA)
+    else if (tree->OperIs(GT_COMMA))
     {
         GenTree* before = tree->gtGetOp1();
 
@@ -2555,7 +2555,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
     //
     if (info->cloneForArrayBounds && optReconstructArrIndex(tree, &arrIndex))
     {
-        assert(tree->gtOper == GT_COMMA);
+        assert(tree->OperIs(GT_COMMA));
 
 #ifdef DEBUG
         if (verbose)
