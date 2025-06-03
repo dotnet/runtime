@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -31,6 +32,9 @@ public record GCInfo
 {
     private readonly Target _target;
 
+    private readonly TargetPointer _gcInfoAddress;
+    private readonly uint _infoHdrSize;
+
     public uint RelativeOffset { get; set; }
     public uint MethodSize { get; set; }
     public InfoHdr Header { get; set; }
@@ -53,17 +57,23 @@ public record GCInfo
     public uint SavedRegsCountExclFP { get; set; }
     public RegMask SavedRegsMask { get; set; } = RegMask.NONE;
 
-    private Lazy<Dictionary<int, List<BaseGcTransition>>> _transitions = new();
-    public Dictionary<int, List<BaseGcTransition>> Transitions => _transitions.Value;
+    /// <summary>
+    /// GC Transitions indexed by their relative offset.
+    /// </summary>
+    public ImmutableDictionary<int, List<BaseGcTransition>> Transitions => _transitions.Value;
+    private readonly Lazy<ImmutableDictionary<int, List<BaseGcTransition>>> _transitions = new();
 
-    // Number of bytes of stack space that has been pushed for arguments at the current RelativeOffset.
-    private Lazy<uint> _pushedArgSize;
+    /// <summary>
+    /// Number of bytes of stack space that has been pushed for arguments at the current RelativeOffset.
+    /// </summary>
     public uint PushedArgSize => _pushedArgSize.Value;
+    private readonly Lazy<uint> _pushedArgSize;
 
     public GCInfo(Target target, TargetPointer gcInfoAddress, uint relativeOffset)
     {
         _target = target;
 
+        _gcInfoAddress = gcInfoAddress;
         TargetPointer offset = gcInfoAddress;
         MethodSize = target.GCDecodeUnsigned(ref offset);
         RelativeOffset = relativeOffset;
@@ -72,7 +82,7 @@ public record GCInfo
         Debug.Assert(relativeOffset <= MethodSize);
 
         Header = InfoHdr.DecodeHeader(target, ref offset, MethodSize);
-        uint infoHdrSize = (uint)(offset.Value - gcInfoAddress.Value);
+        _infoHdrSize = (uint)(offset.Value - gcInfoAddress.Value);
 
         // Check if we are in the prolog
         if (relativeOffset < Header.PrologSize)
@@ -89,11 +99,11 @@ public record GCInfo
             }
         }
 
-        // calculate raw stack size
+        // Calculate raw stack size
         uint frameDwordCount = Header.FrameSize;
         RawStackSize = frameDwordCount * (uint)target.PointerSize;
 
-        // calculate callee saved regs
+        // Calculate callee saved regs
         uint savedRegsCount = 0;
         RegMask savedRegs = RegMask.NONE;
 
@@ -126,55 +136,58 @@ public record GCInfo
             SavedRegsCountExclFP--;
         }
 
-        // Lazily initialize transitions. These are not present in all Heap dumps, only if they are required for stack walking.
-        _transitions = new(() =>
-        {
-            TargetPointer argTabPtr;
-            if (Header.HasArgTabOffset)
-            {
-                // The GCInfo has an explicit argument table offset
-                argTabPtr = gcInfoAddress.Value + infoHdrSize + Header.ArgTabOffset;
-            }
-            else
-            {
-                // The GCInfo does not have an explicit argument table offset, we need to calculate it
-                // from the end of the header. The argument table is located after
-                // the NoGCRegions table, the UntrackedVariable table, and the FrameVariableLifetime table.
-                argTabPtr = gcInfoAddress.Value + infoHdrSize;
+        // Lazily decode GC transitions. These values are not present in all Heap dumps. Only when they are required for stack walking.
+        // Therefore, we can only read them when they are used by the stack walker.
+        _transitions = new(DecodeTransitions);
 
-                /* Skip over the no GC regions table */
-                for (int i = 0; i < Header.NoGCRegionCount; i++)
-                {
-                    // The NoGCRegion table has a variable size, each entry is 2 unsigned integers.
-                    target.GCDecodeUnsigned(ref argTabPtr);
-                    target.GCDecodeUnsigned(ref argTabPtr);
-                }
-
-                /* Skip over the untracked frame variable table */
-                for (int i = 0; i < Header.UntrackedCount; i++)
-                {
-                    // The UntrackedVariable table has a variable size, each entry is 1 signed integer.
-                    target.GCDecodeSigned(ref argTabPtr);
-                }
-
-                /* Skip over the frame variable lifetime table */
-                for (int i = 0; i < Header.VarPtrTableSize; i++)
-                {
-                    // The FrameVariableLifetime table has a variable size, each entry is 3 unsigned integer.
-                    target.GCDecodeUnsigned(ref argTabPtr);
-                    target.GCDecodeUnsigned(ref argTabPtr);
-                    target.GCDecodeUnsigned(ref argTabPtr);
-                }
-            }
-            GCArgTable argTable = new(_target, Header, argTabPtr);
-            return argTable.Transitions;
-        });
-
-        // Lazily initialize the pushed argument size. This relies on the transitions being calculated first.
-        _pushedArgSize = new(CalculateDepth);
+        // Lazily calculate the pushed argument size. This forces the transitions to be decoded.
+        _pushedArgSize = new(CalculatePushedArgSize);
     }
 
-    private uint CalculateDepth()
+    private ImmutableDictionary<int, List<BaseGcTransition>> DecodeTransitions()
+    {
+        TargetPointer argTabPtr;
+        if (Header.HasArgTabOffset)
+        {
+            // The GCInfo has an explicit argument table offset
+            argTabPtr = _gcInfoAddress + _infoHdrSize + Header.ArgTabOffset;
+        }
+        else
+        {
+            // The GCInfo does not have an explicit argument table offset, we need to calculate it
+            // from the end of the header. The argument table is located after
+            // the NoGCRegions table, the UntrackedVariable table, and the FrameVariableLifetime table.
+            argTabPtr = _gcInfoAddress + _infoHdrSize;
+
+            /* Skip over the no GC regions table */
+            for (int i = 0; i < Header.NoGCRegionCount; i++)
+            {
+                // The NoGCRegion table has a variable size, each entry is 2 unsigned integers.
+                _target.GCDecodeUnsigned(ref argTabPtr);
+                _target.GCDecodeUnsigned(ref argTabPtr);
+            }
+
+            /* Skip over the untracked frame variable table */
+            for (int i = 0; i < Header.UntrackedCount; i++)
+            {
+                // The UntrackedVariable table has a variable size, each entry is 1 signed integer.
+                _target.GCDecodeSigned(ref argTabPtr);
+            }
+
+            /* Skip over the frame variable lifetime table */
+            for (int i = 0; i < Header.VarPtrTableSize; i++)
+            {
+                // The FrameVariableLifetime table has a variable size, each entry is 3 unsigned integer.
+                _target.GCDecodeUnsigned(ref argTabPtr);
+                _target.GCDecodeUnsigned(ref argTabPtr);
+                _target.GCDecodeUnsigned(ref argTabPtr);
+            }
+        }
+        GCArgTable argTable = new(_target, Header, argTabPtr);
+        return argTable.Transitions.ToImmutableDictionary();
+    }
+
+    private uint CalculatePushedArgSize()
     {
         int depth = 0;
         foreach (int offset in Transitions.Keys.OrderBy(i => i))
@@ -220,90 +233,5 @@ public record GCInfo
         }
 
         return (uint)(depth * _target.PointerSize);
-    }
-}
-
-public class GCInfoDecoder(Target target)
-{
-    private readonly Target _target = target;
-
-    // DecodeGCHDrInfo in src/coreclr/vm/gc_unwind_x86.inl
-    public TargetPointer DecodeGCHeaderInfo(TargetPointer gcInfoAddress, uint relativeOffset)
-    {
-        TargetPointer offset = gcInfoAddress;
-        uint methodSize = _target.GCDecodeUnsigned(ref offset);
-
-        Debug.Assert(relativeOffset >= 0);
-        Debug.Assert(relativeOffset <= methodSize);
-
-        return TargetPointer.Null;
-
-        // InfoHdr infoHdr = InfoHdr.DecodeHeader(_target, ref offset, methodSize);
-        // uint infoHdrSize = (uint)(offset.Value - gcInfoAddress.Value);
-
-        // gcInfo = new GCInfo
-        // {
-        //     RelativeOffset = relativeOffset,
-        //     MethodSize = methodSize,
-        //     Header = infoHdr,
-        // };
-
-        // // Check if we are in the prolog
-        // if (relativeOffset < infoHdr.PrologSize)
-        // {
-        //     gcInfo.PrologOffset = relativeOffset;
-        // }
-
-        // // Check if we are in an epilog
-        // foreach (uint epilogStart in gcInfo.Header.Epilogs)
-        // {
-        //     if (relativeOffset > epilogStart && relativeOffset < epilogStart + gcInfo.Header.EpilogSize)
-        //     {
-        //         gcInfo.EpilogOffset = relativeOffset - epilogStart;
-        //     }
-        // }
-
-        // // calculate raw stack size
-        // uint frameDwordCount = infoHdr.FrameSize;
-        // gcInfo.RawStackSize = frameDwordCount * (uint)_target.PointerSize;
-
-        // // calculate callee saved regs
-        // uint savedRegsCount = 0;
-        // RegMask savedRegs = RegMask.NONE;
-
-        // if (infoHdr.EdiSaved)
-        // {
-        //     savedRegsCount++;
-        //     savedRegs |= RegMask.EDI;
-        // }
-        // if (infoHdr.EsiSaved)
-        // {
-        //     savedRegsCount++;
-        //     savedRegs |= RegMask.ESI;
-        // }
-        // if (infoHdr.EbxSaved)
-        // {
-        //     savedRegsCount++;
-        //     savedRegs |= RegMask.EBX;
-        // }
-        // if (infoHdr.EbpSaved)
-        // {
-        //     savedRegsCount++;
-        //     savedRegs |= RegMask.EBP;
-        // }
-
-        // gcInfo.SavedRegsCountExclFP = savedRegsCount;
-        // gcInfo.SavedRegsMask = savedRegs;
-        // if (infoHdr.EbpFrame || infoHdr.DoubleAlign)
-        // {
-        //     Debug.Assert(infoHdr.EbpSaved);
-        //     gcInfo.SavedRegsCountExclFP--;
-        // }
-
-        // gcInfo.NoGCRegions = new NoGcRegionTable(_target, infoHdr, ref offset);
-
-        // gcInfo.SlotTable = new GcSlotTable(_target, infoHdr, ref offset);
-
-        // return TargetPointer.Null;
     }
 }
