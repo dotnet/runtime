@@ -71,7 +71,7 @@ namespace System.Runtime.Intrinsics.X86
             /// <remarks>
             ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
             /// </remarks>
-            internal static (ulong Lower, ulong Upper) Multiply(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+            internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             ///   <para>  IMUL reg/m64</para>
@@ -79,7 +79,7 @@ namespace System.Runtime.Intrinsics.X86
             /// <remarks>
             ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
             /// </remarks>
-            internal static (long Lower, long Upper) Multiply(long left, long right) { throw new PlatformNotSupportedException(); }
+            internal static (long Lower, long Upper) BigMul(long left, long right) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <remarks>
         ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
         /// </remarks>
-        internal static (uint Lower, uint Upper) Multiply(uint left, uint right) { throw new PlatformNotSupportedException(); }
+        internal static (uint Lower, uint Upper) BigMul(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>  IMUL reg/m32</para>
@@ -140,13 +140,13 @@ namespace System.Runtime.Intrinsics.X86
         /// <remarks>
         ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
         /// </remarks>
-        internal static (int Lower, int Upper) Multiply(int left, int right) { throw new PlatformNotSupportedException(); }
+        internal static (int Lower, int Upper) BigMul(int left, int right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  MUL reg/m</summary>
-        internal static (nuint Lower, nuint Upper) Multiply(nuint left, nuint right) { throw new PlatformNotSupportedException(); }
+        internal static (nuint Lower, nuint Upper) BigMul(nuint left, nuint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>  IMUL reg/m</summary>
-        internal static (nint Lower, nint Upper) Multiply(nint left, nint right) { throw new PlatformNotSupportedException(); }
+        internal static (nint Lower, nint Upper) BigMul(nint left, nint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         ///   <para>void _mm_pause (void);</para>
