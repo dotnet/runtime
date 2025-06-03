@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Hosting.Tests
     public class BackgroundServiceTests
     {
         [Fact]
-        public void StartReturnsCompletedTaskIfLongRunningTaskIsIncomplete()
+        public void StartReturnsCompletedTask()
         {
             var tcs = new TaskCompletionSource<object>();
             var service = new MyBackgroundService(tcs.Task);
@@ -26,28 +26,12 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void StartReturnsCompletedTaskIfCancelled()
+        public async Task StartCancelledThrowsTaskCanceledException()
         {
-            var tcs = new TaskCompletionSource<object>();
-            tcs.TrySetCanceled();
-            var service = new MyBackgroundService(tcs.Task);
+            var ct = new CancellationToken(true);
+            var service = new WaitForCancelledTokenService();
 
-            var task = service.StartAsync(CancellationToken.None);
-
-            Assert.True(task.IsCompleted);
-            Assert.Same(task, service.ExecuteTask);
-        }
-
-        [Fact]
-        public async Task StartReturnsLongRunningTaskIfFailed()
-        {
-            var tcs = new TaskCompletionSource<object>();
-            tcs.TrySetException(new Exception("fail!"));
-            var service = new MyBackgroundService(tcs.Task);
-
-            var exception = await Assert.ThrowsAsync<Exception>(() => service.StartAsync(CancellationToken.None));
-
-            Assert.Equal("fail!", exception.Message);
+            await Assert.ThrowsAsync<TaskCanceledException>(() => service.StartAsync(ct));
         }
 
         [Fact]
@@ -116,6 +100,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var service = new WaitForCancelledTokenService();
 
             await service.StartAsync(tokenSource.Token);
+            await service.WaitForExecuteTask;
 
             tokenSource.Cancel();
 
@@ -130,13 +115,48 @@ namespace Microsoft.Extensions.Hosting.Tests
             service.Dispose();
         }
 
+        [Fact]
+        public async Task StartSynchronousAndStop()
+        {
+            var tokenSource = new CancellationTokenSource();
+            var service = new MySynchronousBackgroundService();
+
+            // should not block the start thread;
+            await service.StartAsync(tokenSource.Token);
+            await service.WaitForExecuteTask;
+            await service.StopAsync(CancellationToken.None);
+
+            Assert.True(service.WaitForEndExecuteTask.IsCompleted);
+        }
+
+        [Fact]
+        public async Task StartSynchronousExecuteShouldBeCancelable()
+        {
+            var tokenSource = new CancellationTokenSource();
+            var service = new MySynchronousBackgroundService();
+
+            await service.StartAsync(tokenSource.Token);
+            await service.WaitForExecuteTask;
+
+            tokenSource.Cancel();
+
+            await service.WaitForEndExecuteTask;
+        }
+
         private class WaitForCancelledTokenService : BackgroundService
         {
+            private TaskCompletionSource<object> _waitForExecuteTask = new TaskCompletionSource<object>();
+
             public Task ExecutingTask { get; private set; }
+
+            public Task WaitForExecuteTask => _waitForExecuteTask.Task;
 
             protected override Task ExecuteAsync(CancellationToken stoppingToken)
             {
                 ExecutingTask = Task.Delay(Timeout.Infinite, stoppingToken);
+
+                _waitForExecuteTask.TrySetResult(null);
+
                 return ExecutingTask;
             }
         }
@@ -190,6 +210,28 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 await task;
             }
+        }
+
+        private class MySynchronousBackgroundService : BackgroundService
+        {
+            private TaskCompletionSource<object> _waitForExecuteTask = new TaskCompletionSource<object>();
+            private TaskCompletionSource<object> _waitForEndExecuteTask = new TaskCompletionSource<object>();
+
+            public Task WaitForExecuteTask => _waitForExecuteTask.Task;
+            public Task WaitForEndExecuteTask => _waitForEndExecuteTask.Task;
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                _waitForExecuteTask.TrySetResult(null);
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    Thread.Sleep(100); // never await, just block the thread
+                }
+                _waitForEndExecuteTask.TrySetResult(null);
+            }
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+
         }
     }
 }
