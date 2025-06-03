@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -11,66 +12,68 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// <summary>
 /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a> InfoHdrSmall
 /// </summary>
-public record struct InfoHdr
+public struct InfoHdr
 {
-    public byte PrologSize { get; set; }
-    public byte EpilogSize { get; set; }
+    /* Fields set by the initial table encoding */
+    public byte PrologSize { get; private set; }
+    public byte EpilogSize { get; private set; }
 
-    public byte EpilogCount { get; set; }     // 0 - 7
-    public bool EpilogAtEnd { get; set; }
-    public bool EdiSaved { get; set; }
-    public bool EsiSaved { get; set; }
-    public bool EbxSaved { get; set; }
-    public bool EbpSaved { get; set; }
+    public byte EpilogCount { get; private set; }
+    public bool EpilogAtEnd { get; private set; }
+    public bool EdiSaved { get; private set; }
+    public bool EsiSaved { get; private set; }
+    public bool EbxSaved { get; private set; }
+    public bool EbpSaved { get; private set; }
 
-    public bool EbpFrame { get; set; }
-    public bool Interruptible { get; set; }
-    public bool DoubleAlign { get; set; }
-    public bool Security { get; set; }
-    public bool Handlers { get; set; }
-    public bool LocalAlloc { get; set; }
-    public bool EditAndContinue { get; set; }
-    public bool VarArgs { get; set; }
+    public bool EbpFrame { get; private set; }
+    public bool Interruptible { get; private set; }
+    public bool DoubleAlign { get; private set; }
+    public bool Security { get; private set; }
+    public bool Handlers { get; private set; }
+    public bool LocalAlloc { get; private set; }
+    public bool EditAndContinue { get; private set; }
+    public bool VarArgs { get; private set; }
 
-    public bool ProfCallbacks { get; set; }
-    public bool GenericsContext { get; set; }
-    public bool GenericsContextIsMethodDesc { get; set; }
-    public ReturnKinds ReturnKind { get; set; }
+    public bool ProfCallbacks { get; private set; }
+    public bool GenericsContext { get; private set; }
+    public bool GenericsContextIsMethodDesc { get; private set; }
+    public ReturnKinds ReturnKind { get; private set; }
 
-    public ushort ArgCount { get; set; }
-    public uint FrameSize { get; set; }
-    public uint UntrackedCount { get; set; }
-    public uint VarPtrTableSize { get; set; }
+    public ushort ArgCount { get; private set; }
+    public uint FrameSize { get; private set; }
+    public uint UntrackedCount { get; private set; }
+    public uint VarPtrTableSize { get; private set; }
 
-    // Fields not set by the initial table encoding
-    public uint GsCookieOffset { get; set; } = 0;
-    public uint SyncStartOffset { get; set; } = 0;
-    public uint SyndEndOffset { get; set; } = 0;
-    public uint RevPInvokeOffset { get; set; } = INVALID_REV_PINVOKE_OFFSET;
-    public uint NoGCRegionCount { get; set; } = 0;
+    /* Fields not set by the initial table encoding */
+    public uint GsCookieOffset { get; private set; } = 0;
+    public uint SyncStartOffset { get; private set; } = 0;
+    public uint SyndEndOffset { get; private set; } = 0;
+    public uint RevPInvokeOffset { get; private set; } = INVALID_REV_PINVOKE_OFFSET;
+    public uint NoGCRegionCount { get; private set; } = 0;
 
-    public bool HasArgTabOffset { get; set; }
-    public uint ArgTabOffset { get; set; }
-    public List<int> Epilogs { get; set; }
+    public bool HasArgTabOffset { get; private set; }
+    public uint ArgTabOffset { get; private set; }
+    public ImmutableArray<int> Epilogs { get; private set; }
 
     #region Adjustments
 
     private const byte SET_FRAMESIZE_MAX = 7;
-    private const byte SET_ARGCOUNT_MAX = 8;  // Change to 6
+    private const byte SET_ARGCOUNT_MAX = 8;
     private const byte SET_PROLOGSIZE_MAX = 16;
-    private const byte SET_EPILOGSIZE_MAX = 10;  // Change to 6
+    private const byte SET_EPILOGSIZE_MAX = 10;
     private const byte SET_EPILOGCNT_MAX = 4;
     private const byte SET_UNTRACKED_MAX = 3;
-    private const byte SET_RET_KIND_MAX = 3;   // 2 bits for ReturnKind
+    private const byte SET_RET_KIND_MAX = 3;        // 2 bits for ReturnKind
     private const byte SET_NOGCREGIONS_MAX = 4;
-    private const byte ADJ_ENCODING_MAX = 0x7f; // Maximum valid encoding in a byte
-                                                // Also used to mask off next bit from each encoding byte.
+    private const byte ADJ_ENCODING_MAX = 0x7f;     // Maximum valid encoding in a byte
+                                                    // Also used to mask off next bit from each encoding byte.
     private const byte MORE_BYTES_TO_FOLLOW = 0x80; // If the High-bit of a header or adjustment byte
                                                     // is set, then there are more adjustments to follow.
 
-    //
+    /// <summary>
     // Enum to define codes that are used to incrementally adjust the InfoHdr structure.
     // First set of opcodes
+    /// </summary>
     private enum InfoHdrAdjust : byte
     {
 
@@ -111,7 +114,10 @@ public record struct InfoHdr
         NEXT_THREE_EPILOGSIZE = 0x78
     };
 
+    /// <summary>
+    // Enum to define codes that are used to incrementally adjust the InfoHdr structure.
     // Second set of opcodes, when first code is 0x4F
+    /// </summary>
     private enum InfoHdrAdjust2 : uint
     {
         SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
@@ -124,7 +130,7 @@ public record struct InfoHdr
         RT_Scalar = 0,
         RT_Object = 1,
         RT_ByRef = 2,
-        RT_Unset = 3,       // Encoding 3 means RT_Float on X86
+        RT_Unset = 3, // Encoding 3 means RT_Float on X86
         RT_Scalar_Obj = RT_Object << 2 | RT_Scalar,
         RT_Scalar_ByRef = RT_ByRef << 2 | RT_Scalar,
 
@@ -144,7 +150,7 @@ public record struct InfoHdr
 
         if (encoding < 0 || encoding >= INFO_HDR_TABLE.Length)
         {
-            throw new InvalidOperationException("Table is invalid.");
+            throw new InvalidOperationException("Table encoding is invalid.");
         }
 
         InfoHdr infoHdr = INFO_HDR_TABLE[encoding];
@@ -343,7 +349,7 @@ public record struct InfoHdr
             infoHdr.HasArgTabOffset = true;
         }
 
-        infoHdr.Epilogs = new List<int>();
+        ImmutableArray<int>.Builder epilogsBuilder = ImmutableArray.CreateBuilder<int>();
         if (infoHdr.EpilogCount > 1 || (infoHdr.EpilogCount != 0 && !infoHdr.EpilogAtEnd))
         {
             uint offs = 0;
@@ -351,14 +357,15 @@ public record struct InfoHdr
             for (int i = 0; i < infoHdr.EpilogCount; i++)
             {
                 offs = target.GCDecodeUDelta(ref offset, offs);
-                infoHdr.Epilogs.Add((int)offs);
+                epilogsBuilder.Add((int)offs);
             }
         }
         else
         {
             if (infoHdr.EpilogCount != 0)
-                infoHdr.Epilogs.Add((int)(codeLength - infoHdr.EpilogSize));
+                epilogsBuilder.Add((int)(codeLength - infoHdr.EpilogSize));
         }
+        infoHdr.Epilogs = epilogsBuilder.ToImmutable();
 
         if (infoHdr.HasArgTabOffset)
         {
