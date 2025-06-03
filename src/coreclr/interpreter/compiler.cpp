@@ -2443,6 +2443,17 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        {
+            void *emptyString;
+            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
+            assert(iat == IAT_VALUE);
+            AddIns(INTOP_LDPTR);
+            PushInterpType(InterpTypeO, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
+            break;
+        }
         default:
             // TODO
             assert(0);
