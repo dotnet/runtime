@@ -249,8 +249,7 @@ public struct InfoHdr
                             infoHdr.SyncStartOffset ^= HAS_SYNC_OFFSET;
                             break;
                         case (byte)InfoHdrAdjust.FLIP_REV_PINVOKE_FRAME:
-                            infoHdr.RevPInvokeOffset = infoHdr.RevPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ?
-                                HAS_REV_PINVOKE_FRAME_OFFSET : INVALID_REV_PINVOKE_OFFSET;
+                            infoHdr.RevPInvokeOffset ^= INVALID_REV_PINVOKE_OFFSET ^ HAS_REV_PINVOKE_FRAME_OFFSET;
                             break;
 
                         case (byte)InfoHdrAdjust.NEXT_OPCODE:
