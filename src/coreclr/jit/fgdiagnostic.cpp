@@ -820,8 +820,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 const bool isTryEntryBlock     = bbIsTryBeg(block);
                 const bool isFuncletEntryBlock = fgFuncletsCreated && bbIsFuncletBeg(block);
 
-                if (isTryEntryBlock || isFuncletEntryBlock ||
-                    block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_HEAD | BBF_LOOP_ALIGN))
+                if (isTryEntryBlock || isFuncletEntryBlock || block->HasAnyFlag(BBF_RUN_RARELY | BBF_LOOP_ALIGN))
                 {
                     // Display a very few, useful, block flags
                     fprintf(fgxFile, " [");
@@ -836,10 +835,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                     if (block->HasFlag(BBF_RUN_RARELY))
                     {
                         fprintf(fgxFile, "R");
-                    }
-                    if (block->HasFlag(BBF_LOOP_HEAD))
-                    {
-                        fprintf(fgxFile, "L");
                     }
                     if (block->HasFlag(BBF_LOOP_ALIGN))
                     {
@@ -902,7 +897,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 if (condStmt != nullptr)
                 {
                     GenTree* const condTree = condStmt->GetRootNode();
-                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    noway_assert(condTree->OperIs(GT_JTRUE));
                     GenTree* const compareTree = condTree->AsOp()->gtOp1;
                     fgDumpTree(fgxFile, compareTree);
                 }
@@ -967,10 +962,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
             if (block->HasFlag(BBF_HAS_NEWARR))
             {
                 fprintf(fgxFile, "\n            callsNewArr=\"true\"");
-            }
-            if (block->HasFlag(BBF_LOOP_HEAD))
-            {
-                fprintf(fgxFile, "\n            loopHead=\"true\"");
             }
 
             const char* rootTreeOpName = "n/a";
@@ -2555,7 +2546,7 @@ Compiler::fgWalkResult Compiler::fgStress64RsltMulCB(GenTree** pTree, fgWalkData
     GenTree*  tree  = *pTree;
     Compiler* pComp = data->compiler;
 
-    if (tree->gtOper != GT_MUL || tree->gtType != TYP_INT || (tree->gtOverflow()))
+    if (!tree->OperIs(GT_MUL) || !tree->TypeIs(TYP_INT) || (tree->gtOverflow()))
     {
         return WALK_CONTINUE;
     }
@@ -2714,7 +2705,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
+    JITDUMP("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
 }
@@ -2746,8 +2737,8 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    printf("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
-           block->bbNum);
+    JITDUMP("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+            block->bbNum);
     assert(!"Jump into the middle of handler region");
     return false;
 }
@@ -3015,7 +3006,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             else if (block->KindIs(BBJ_SWITCH))
             {
                 assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
-                       (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+                       block->lastNode()->OperIs(GT_SWITCH, GT_SWITCH_TABLE));
             }
         }
 
@@ -3424,9 +3415,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                 switch (intrinsicId)
                 {
 #if defined(TARGET_XARCH)
-                    case NI_SSE_StoreFence:
-                    case NI_SSE2_LoadFence:
-                    case NI_SSE2_MemoryFence:
+                    case NI_X86Base_LoadFence:
+                    case NI_X86Base_MemoryFence:
+                    case NI_X86Base_StoreFence:
                     case NI_X86Serialize_Serialize:
                     {
                         assert(tree->OperRequiresAsgFlag());
@@ -3435,10 +3426,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     }
 
                     case NI_X86Base_Pause:
-                    case NI_SSE_Prefetch0:
-                    case NI_SSE_Prefetch1:
-                    case NI_SSE_Prefetch2:
-                    case NI_SSE_PrefetchNonTemporal:
+                    case NI_X86Base_Prefetch0:
+                    case NI_X86Base_Prefetch1:
+                    case NI_X86Base_Prefetch2:
+                    case NI_X86Base_PrefetchNonTemporal:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
@@ -3458,10 +3449,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                     case NI_Sve_GatherPrefetch32Bit:
                     case NI_Sve_GatherPrefetch64Bit:
                     case NI_Sve_GatherPrefetch8Bit:
-                    case NI_Sve_PrefetchBytes:
-                    case NI_Sve_PrefetchInt16:
-                    case NI_Sve_PrefetchInt32:
-                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_Prefetch16Bit:
+                    case NI_Sve_Prefetch32Bit:
+                    case NI_Sve_Prefetch64Bit:
+                    case NI_Sve_Prefetch8Bit:
                     case NI_Sve_GetFfrByte:
                     case NI_Sve_GetFfrInt16:
                     case NI_Sve_GetFfrInt32:
@@ -3516,7 +3507,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 //
 void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
-    if (tree->OperGet() == GT_IND)
+    if (tree->OperIs(GT_IND))
     {
         printf("%c", (dispFlags & GTF_IND_INVARIANT) ? '#' : '-');
         printf("%c", (dispFlags & GTF_IND_NONFAULTING) ? 'n' : '-');
@@ -3629,13 +3620,13 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
 
         if (tree->OperIsLeaf())
         {
-            if (tree->gtOper == GT_CATCH_ARG)
+            if (tree->OperIs(GT_CATCH_ARG))
             {
                 // The GT_CATCH_ARG should always have GTF_ORDER_SIDEEFF set
                 noway_assert(tree->gtFlags & GTF_ORDER_SIDEEFF);
                 // The GT_CATCH_ARG has to be the first thing evaluated
                 noway_assert(stmt == block->FirstNonPhiDef());
-                noway_assert(stmt->GetTreeList()->gtOper == GT_CATCH_ARG);
+                noway_assert(stmt->GetTreeList()->OperIs(GT_CATCH_ARG));
                 // The root of the tree should have GTF_ORDER_SIDEEFF set
                 noway_assert(stmt->GetRootNode()->gtFlags & GTF_ORDER_SIDEEFF);
             }

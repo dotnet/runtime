@@ -8,6 +8,15 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
+FCDECL1(uint64_t, JIT_Dbl2ULng, double);
+FCDECL1(int64_t, JIT_Dbl2Lng, double);
+FCDECL1(uint32_t, JIT_Dbl2UInt, double);
+FCDECL1(int32_t, JIT_Dbl2Int, double);
+FCDECL1(float, JIT_ULng2Flt, uint64_t val);
+FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
+FCDECL1(float, JIT_Lng2Flt, int64_t val);
+FCDECL1(double, JIT_Lng2Dbl, int64_t val);
+
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
@@ -49,6 +58,7 @@ void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 typedef void* (*HELPER_FTN_PP)(void*);
 typedef void* (*HELPER_FTN_BOX_UNBOX)(MethodTable*, void*);
 typedef Object* (*HELPER_FTN_NEWARR)(CORINFO_CLASS_HANDLE, intptr_t);
+typedef void* (*HELPER_FTN_PP_2)(void*, void*);
 
 InterpThreadContext::InterpThreadContext()
 {
@@ -71,10 +81,9 @@ static void InterpBreakpoint()
 
 #define LOCAL_VAR_ADDR(offset,type) ((type*)(stack + (offset)))
 #define LOCAL_VAR(offset,type) (*LOCAL_VAR_ADDR(offset, type))
-// TODO once we have basic EH support
-#define NULL_CHECK(o)
+#define NULL_CHECK(o) do { if ((o) == NULL) { COMPlusThrow(kNullReferenceException); } } while (0)
 
-void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext)
+void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFrame *pFrame, InterpThreadContext *pThreadContext, ExceptionClauseArgs *pExceptionClauseArgs)
 {
     CONTRACTL
     {
@@ -91,9 +100,34 @@ void InterpExecMethod(InterpreterFrame *pInterpreterFrame, InterpMethodContextFr
     int8_t *stack;
 
     InterpMethod *pMethod = *(InterpMethod**)pFrame->startIp;
+    assert(pMethod->CheckIntegrity());
+
     pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
-    ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
     stack = pFrame->pStack;
+
+    if (pExceptionClauseArgs == NULL)
+    {
+        // Start executing at the beginning of the method
+        ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
+    }
+    else
+    {
+        // * Filter funclets are executed in the current frame, because they are executed
+        //   in the first pass of EH when the frames between the current frame and the
+        //   parent frame are still alive. All accesses to the locals and arguments
+        //   in this case use the pExceptionClauseArgs->pFrame->pStack as a frame pointer.
+        // * Catch and finally funclets are running in the parent frame directly
+
+        if (pExceptionClauseArgs->isFilter)
+        {
+            // Since filters run in their own frame, we need to clear the global variables
+            // so that GC doesn't pick garbage in variables that were not yet written to.
+            memset(pFrame->pStack, 0, pMethod->allocaSize);
+        }
+
+        // Start executing at the beginning of the exception clause
+        ip = pExceptionClauseArgs->ip;
+    }
 
     int32_t returnOffset, callArgsOffset, methodSlot;
     const int32_t *targetIp;
@@ -141,7 +175,7 @@ MAIN_LOOP:
                     ip += 2;
                     break;
                 case INTOP_LDC_I8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                    LOCAL_VAR(ip[1], int64_t) = (int64_t)(uint32_t)ip[2] + ((int64_t)ip[3] << 32);
                     ip += 4;
                     break;
                 case INTOP_LDC_R4:
@@ -149,7 +183,7 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_LDC_R8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)ip[2] + ((int64_t)ip[3] << 32);
+                    LOCAL_VAR(ip[1], int64_t) = (int64_t)(uint32_t)ip[2] + ((int64_t)ip[3] << 32);
                     ip += 4;
                     break;
                 case INTOP_LDPTR:
@@ -169,7 +203,12 @@ MAIN_LOOP:
                 case INTOP_LDLOCA:
                     LOCAL_VAR(ip[1], void*) = stack + ip[2];
                     ip += 3;
-                    break;;
+                    break;
+                case INTOP_LOAD_FRAMEVAR:
+                    _ASSERTE((pExceptionClauseArgs != NULL) && (pExceptionClauseArgs->isFilter));
+                    LOCAL_VAR(ip[1], void*) = pExceptionClauseArgs->pFrame->pStack;
+                    ip += 2;
+                    break;
 
 #define MOV(argtype1,argtype2) \
     LOCAL_VAR(ip [1], argtype1) = LOCAL_VAR(ip [2], argtype2); \
@@ -208,11 +247,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int8_t)(int32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (int8_t)HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int8_t)(int32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (int8_t)HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_I4:
@@ -224,11 +263,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)(uint32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)(uint32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -240,11 +279,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int16_t)(int32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (int16_t)HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int16_t)(int32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (int16_t)HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_I4:
@@ -256,27 +295,29 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)(uint32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)(uint32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;;
                 case INTOP_CONV_I4_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;;
-
                 case INTOP_CONV_U4_R4:
-                case INTOP_CONV_U4_R8:
-                    assert(0);
+                    LOCAL_VAR(ip[1], uint32_t) = HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
+                    ip += 3;
                     break;
-
+                case INTOP_CONV_U4_R8:
+                    LOCAL_VAR(ip[1], uint32_t) = HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
+                    ip += 3;
+                    break;
                 case INTOP_CONV_I8_I4:
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
@@ -286,19 +327,19 @@ MAIN_LOOP:
                     ip += 3;
                     break;;
                 case INTOP_CONV_I8_R4:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int64_t) = HCCALL1(JIT_Dbl2Lng, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_R8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int64_t) = HCCALL1(JIT_Dbl2Lng, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
-                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
+                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, (int64_t)LOCAL_VAR(ip[2], int32_t));
                     ip += 3;
-                    break;;
+                    break;
                 case INTOP_CONV_R4_I8:
-                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
+                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, LOCAL_VAR(ip[2], int64_t));
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_R8:
@@ -306,11 +347,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I4:
-                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
+                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, (int64_t)LOCAL_VAR(ip[2], int32_t));
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I8:
-                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
+                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, LOCAL_VAR(ip[2], int64_t));
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_R4:
@@ -318,9 +359,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R4:
+                    LOCAL_VAR(ip[1], uint64_t) = HCCALL1(JIT_Dbl2ULng, (double)LOCAL_VAR(ip[2], float));
+                    ip += 3;
+                    break;
                 case INTOP_CONV_U8_R8:
-                    // TODO
-                    assert(0);
+                    LOCAL_VAR(ip[1], uint64_t) = HCCALL1(JIT_Dbl2ULng, LOCAL_VAR(ip[2], double));
+                    ip += 3;
                     break;
 
                 case INTOP_SWITCH:
@@ -642,7 +686,7 @@ MAIN_LOOP:
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     int32_t i3;
                     if (!ClrSafeInt<int32_t>::multiply(i1, i2, i3))
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i3;
                     ip += 4;
                     break;
@@ -654,7 +698,7 @@ MAIN_LOOP:
                     int64_t i2 = LOCAL_VAR(ip[3], int64_t);
                     int64_t i3;
                     if (!ClrSafeInt<int64_t>::multiply(i1, i2, i3))
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = i3;
                     ip += 4;
                     break;
@@ -666,7 +710,7 @@ MAIN_LOOP:
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     uint32_t i3;
                     if (!ClrSafeInt<uint32_t>::multiply(i1, i2, i3))
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint32_t) = i3;
                     ip += 4;
                     break;
@@ -678,7 +722,7 @@ MAIN_LOOP:
                     uint64_t i2 = LOCAL_VAR(ip[3], uint64_t);
                     uint64_t i3;
                     if (!ClrSafeInt<uint64_t>::multiply(i1, i2, i3))
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], uint64_t) = i3;
                     ip += 4;
                     break;
@@ -688,9 +732,9 @@ MAIN_LOOP:
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     if (i2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     if (i2 == -1 && i1 == INT32_MIN)
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i1 / i2;
                     ip += 4;
                     break;
@@ -700,9 +744,9 @@ MAIN_LOOP:
                     int64_t l1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t l2 = LOCAL_VAR(ip[3], int64_t);
                     if (l2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     if (l2 == -1 && l1 == INT64_MIN)
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = l1 / l2;
                     ip += 4;
                     break;
@@ -719,7 +763,7 @@ MAIN_LOOP:
                 {
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     if (i2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) / i2;
                     ip += 4;
                     break;
@@ -728,7 +772,7 @@ MAIN_LOOP:
                 {
                     uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
                     if (l2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) / l2;
                     ip += 4;
                     break;
@@ -739,9 +783,9 @@ MAIN_LOOP:
                     int32_t i1 = LOCAL_VAR(ip[2], int32_t);
                     int32_t i2 = LOCAL_VAR(ip[3], int32_t);
                     if (i2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     if (i2 == -1 && i1 == INT32_MIN)
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int32_t) = i1 % i2;
                     ip += 4;
                     break;
@@ -751,9 +795,9 @@ MAIN_LOOP:
                     int64_t l1 = LOCAL_VAR(ip[2], int64_t);
                     int64_t l2 = LOCAL_VAR(ip[3], int64_t);
                     if (l2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     if (l2 == -1 && l1 == INT64_MIN)
-                        assert(0); // Interpreter-TODO: OverflowException
+                        COMPlusThrow(kOverflowException);
                     LOCAL_VAR(ip[1], int64_t) = l1 % l2;
                     ip += 4;
                     break;
@@ -770,7 +814,7 @@ MAIN_LOOP:
                 {
                     uint32_t i2 = LOCAL_VAR(ip[3], uint32_t);
                     if (i2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint32_t) = LOCAL_VAR(ip[2], uint32_t) % i2;
                     ip += 4;
                     break;
@@ -779,7 +823,7 @@ MAIN_LOOP:
                 {
                     uint64_t l2 = LOCAL_VAR(ip[3], uint64_t);
                     if (l2 == 0)
-                        assert(0); // Interpreter-TODO: DivideByZeroException
+                        COMPlusThrow(kDivideByZeroException);
                     LOCAL_VAR(ip[1], uint64_t) = LOCAL_VAR(ip[2], uint64_t) % l2;
                     ip += 4;
                     break;
@@ -981,7 +1025,7 @@ MAIN_LOOP:
                 case INTOP_LDIND_VT:
                 {
                     char *src = LOCAL_VAR(ip[2], char*);
-                    NULL_CHECK(obj);
+                    NULL_CHECK(src);
                     memcpy(stack + ip[1], (char*)src + ip[3], ip[4]);
                     ip += 5;
                     break;
@@ -1024,7 +1068,7 @@ MAIN_LOOP:
                 {
                     char *dst = LOCAL_VAR(ip[1], char*);
                     OBJECTREF storeObj = LOCAL_VAR(ip[2], OBJECTREF);
-                    NULL_CHECK(obj);
+                    NULL_CHECK(dst);
                     SetObjectReferenceUnchecked((OBJECTREF*)(dst + ip[3]), storeObj);
                     ip += 4;
                     break;
@@ -1056,19 +1100,33 @@ MAIN_LOOP:
                 }
 
                 case INTOP_CALL_HELPER_PP:
+                case INTOP_CALL_HELPER_PP_2:
                 {
-                    HELPER_FTN_PP helperFtn = (HELPER_FTN_PP)pMethod->pDataItems[ip[2]];
-                    HELPER_FTN_PP* helperFtnSlot = (HELPER_FTN_PP*)pMethod->pDataItems[ip[3]];
-                    void* helperArg = pMethod->pDataItems[ip[4]];
+                    int base = (*ip == INTOP_CALL_HELPER_PP) ? 2 : 3;
 
-                    if (!helperFtn)
-                        helperFtn = *helperFtnSlot;
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[base]];
+                    HELPER_FTN_PP helperFtn = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helperFtn = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helperFtn = (HELPER_FTN_PP)helperDirectOrIndirect;
+
+                    void* helperArg = pMethod->pDataItems[ip[base + 1]];
+
                     // This can call either native or compiled managed code. For an interpreter
                     // only configuration, this might be problematic, at least performance wise.
-                    // FIXME We will need to handle exception throwing here.
-                    LOCAL_VAR(ip[1], void*) = helperFtn(helperArg);
 
-                    ip += 5;
+                    if (*ip == INTOP_CALL_HELPER_PP)
+                    {
+                        LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP)helperFtn)(helperArg);
+                        ip += 4;
+                    }
+                    else
+                    {
+                        LOCAL_VAR(ip[1], void*) = ((HELPER_FTN_PP_2)helperFtn)(helperArg, LOCAL_VAR(ip[2], void*));
+                        ip += 5;
+                    }
+
                     break;
                 }
                 case INTOP_CALLVIRT:
@@ -1172,6 +1230,7 @@ CALL_TARGET_IP:
 
                     // Set execution state for the new frame
                     pMethod = *(InterpMethod**)pFrame->startIp;
+                    assert(pMethod->CheckIntegrity());
                     stack = pFrame->pStack;
                     ip = pFrame->startIp + sizeof(InterpMethod*) / sizeof(int32_t);
                     pThreadContext->pStackPointer = stack + pMethod->allocaSize;
@@ -1224,8 +1283,7 @@ CALL_TARGET_IP:
                         pMemory = pThreadContext->frameDataAllocator.Alloc(pFrame, len);
                         if (pMemory == NULL)
                         {
-                            // Interpreter-TODO: OutOfMemoryException
-                            assert(0);
+                            COMPlusThrowOM();
                         }
                         if (pMethod->initLocals)
                         {
@@ -1265,6 +1323,18 @@ CALL_TARGET_IP:
                     UNREACHABLE();
                     break;
                 }
+                case INTOP_RETHROW:
+                {
+                    DispatchRethrownManagedException();
+                    UNREACHABLE();
+                    break;
+                }
+                case INTOP_LOAD_EXCEPTION:
+                    // This opcode loads the exception object coming from a catch / filter funclet caller to a variable.
+                    assert(pExceptionClauseArgs != NULL);
+                    LOCAL_VAR(ip[1], OBJECTREF) = pExceptionClauseArgs->throwable;
+                    ip += 2;
+                    break;
                 case INTOP_BOX:
                 case INTOP_UNBOX:
                 case INTOP_UNBOX_ANY:
@@ -1301,7 +1371,7 @@ CALL_TARGET_IP:
                 {
                     int32_t length = LOCAL_VAR(ip[2], int32_t);
                     if (length < 0)
-                        assert(0); // Interpreter-TODO: Invalid array length
+                        COMPlusThrow(kArgumentOutOfRangeException);
 
                     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)pMethod->pDataItems[ip[3]];
                     size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[4]];
@@ -1321,13 +1391,13 @@ CALL_TARGET_IP:
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
     if (arrayRef == NULL)                                                      \
-        assert(0);                                                             \
+        COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
     if (idx >= len)                                                            \
-        assert(0);                                                             \
+        COMPlusThrow(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
@@ -1379,13 +1449,13 @@ do {                                                                           \
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
     if (arrayRef == NULL)                                                      \
-        assert(0);                                                             \
+        COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
     if (idx >= len)                                                            \
-        assert(0);                                                             \
+        COMPlusThrow(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
@@ -1423,6 +1493,52 @@ do {                                                                           \
                     STELEM(double, double);
                     break;
                 }
+                case INTOP_LDTOKEN:
+                {
+                    int dreg = ip[1];
+                    void *nativeHandle = pMethod->pDataItems[ip[2]];
+                    size_t helperDirectOrIndirect = (size_t)pMethod->pDataItems[ip[3]];
+                    HELPER_FTN_PP helper = nullptr;
+                    if (helperDirectOrIndirect & INTERP_INDIRECT_HELPER_TAG)
+                        helper = *(HELPER_FTN_PP *)(helperDirectOrIndirect & ~INTERP_INDIRECT_HELPER_TAG);
+                    else
+                        helper = (HELPER_FTN_PP)helperDirectOrIndirect;
+                    void *managedHandle = helper(nativeHandle);
+                    LOCAL_VAR(dreg, void*) = managedHandle;
+                    ip += 4;
+                    break;
+                }
+                case INTOP_CALL_FINALLY:
+                {
+                    const int32_t* targetIp = ip + ip[1];
+                    // Save current execution state for when we return from called method
+                    pFrame->ip = ip + 2;
+
+                    // Allocate child frame.
+                    {
+                        InterpMethodContextFrame *pChildFrame = pFrame->pNext;
+                        if (!pChildFrame)
+                        {
+                            pChildFrame = (InterpMethodContextFrame*)alloca(sizeof(InterpMethodContextFrame));
+                            pChildFrame->pNext = NULL;
+                            pFrame->pNext = pChildFrame;
+                        }
+                        // Set the frame to the same values as the caller frame.
+                        pChildFrame->ReInit(pFrame, pFrame->startIp, pFrame->pRetVal, pFrame->pStack);
+                        pFrame = pChildFrame;
+                    }
+                    assert (((size_t)pFrame->pStack % INTERP_STACK_ALIGNMENT) == 0);
+
+                    // Set execution state for the new frame
+                    ip = targetIp;
+                    break;
+                }
+                case INTOP_LEAVE_FILTER:
+                    *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int32_t);
+                    goto EXIT_FRAME;
+                case INTOP_LEAVE_CATCH:
+                    *(const int32_t**)pFrame->pRetVal = ip + ip[1];
+                    goto EXIT_FRAME;
                 case INTOP_FAILFAST:
                     assert(0);
                     break;
@@ -1456,6 +1572,7 @@ do {                                                                           \
 
         stack = pFrame->pStack;
         pMethod = *(InterpMethod**)pFrame->startIp;
+        assert(pMethod->CheckIntegrity());
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;
         goto MAIN_LOOP;
     }
@@ -1472,6 +1589,7 @@ EXIT_FRAME:
         ip = pFrame->ip;
         stack = pFrame->pStack;
         pMethod = *(InterpMethod**)pFrame->startIp;
+        assert(pMethod->CheckIntegrity());
         pFrame->ip = NULL;
 
         pThreadContext->pStackPointer = pFrame->pStack + pMethod->allocaSize;

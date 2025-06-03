@@ -8,6 +8,12 @@
 
 #include "intopsshared.h"
 
+#ifdef _MSC_VER
+#define INTERP_API
+#else
+#define INTERP_API __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+
 #define INTERP_STACK_SLOT_SIZE 8    // Alignment of each var offset on the interpreter stack
 #define INTERP_STACK_ALIGNMENT 16   // Alignment of interpreter stack at the start of a frame
 
@@ -16,6 +22,9 @@
 
 struct InterpMethod
 {
+#if DEBUG
+    InterpMethod *self;
+#endif
     CORINFO_METHOD_HANDLE methodHnd;
     int32_t allocaSize;
     void** pDataItems;
@@ -23,10 +32,22 @@ struct InterpMethod
 
     InterpMethod(CORINFO_METHOD_HANDLE methodHnd, int32_t allocaSize, void** pDataItems, bool initLocals)
     {
+#if DEBUG
+        this->self = this;
+#endif
         this->methodHnd = methodHnd;
         this->allocaSize = allocaSize;
         this->pDataItems = pDataItems;
         this->initLocals = initLocals;
+    }
+
+    bool CheckIntegrity()
+    {
+#if DEBUG
+        return this->self == this;
+#else
+        return true;
+#endif
     }
 };
 

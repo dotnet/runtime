@@ -500,7 +500,7 @@ namespace System.Threading
         // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
         // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
         // as a small assembly stub which checks the global g_TrapReturningThreads flag and tail-call to this helper
-        private static unsafe void PollGC()
+        private static void PollGC()
         {
             if (CatchAtSafePoint())
             {
