@@ -2913,14 +2913,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                     default:
                         // Invalid enum, so generate the create true mask node.
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
+                        retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
                         break;
                 }
             }
             else
             {
                 // Do not know the pattern, so generate the create true mask node.
-                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
+                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
             }
             break;
         }

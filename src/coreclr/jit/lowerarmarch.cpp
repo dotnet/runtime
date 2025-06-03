@@ -4023,7 +4023,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 // Handle op3
-                if (op3->IsVectorZero() && op1->IsMaskAllBitsSet() && op2->IsEmbMaskOp())
+                if (op3->IsVectorZero() && op1->IsTrueMask(node) && op2->IsEmbMaskOp())
                 {
                     // When we are merging with zero, we can specialize
                     // and avoid instantiating the vector constant.
@@ -4148,7 +4148,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             // op3 is all zeros. Such a Csel operation is absorbed into the instruction when emitted. Skip this
             // optimisation when the nestedOp is a reduce operation.
 
-            if (nestedOp1->IsMaskAllBitsSet() && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
+            if (nestedOp1->IsTrueMask(cndSelNode) && !HWIntrinsicInfo::IsReduceOperation(nestedOp2Id) &&
                 (!HWIntrinsicInfo::IsZeroingMaskedOperation(nestedOp2Id) || op3->IsVectorZero()))
             {
                 GenTree* nestedOp2 = nestedCndSel->Op(2);
@@ -4177,7 +4177,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
             }
         }
     }
-    else if (op1->IsMaskAllBitsSet())
+    else if (op1->IsTrueMask(cndSelNode))
     {
         // Any case where op2 is not an embedded HWIntrinsic
         if (!op2->OperIsHWIntrinsic() ||

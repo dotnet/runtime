@@ -512,7 +512,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // destination using /Z.
 
                     assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == embMaskOp2Reg));
-                    assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
+                    assert(intrin.op3->isContained() || !intrin.op1->IsTrueMask(node));
                     GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                 }
                 else
@@ -610,7 +610,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         {
                             assert(intrin.op3->IsVectorZero());
 
-                            if (intrin.op1->isContained() || intrin.op1->IsMaskAllBitsSet())
+                            if (intrin.op1->isContained() || intrin.op1->IsTrueMask(node))
                             {
                                 // We already skip importing ConditionalSelect if op1 == trueAll, however
                                 // if we still see it here, it is because we wrapped the predicated instruction

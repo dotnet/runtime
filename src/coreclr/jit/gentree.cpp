@@ -33243,7 +33243,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     break;
                 }
 
-                if (op1->IsVectorAllBitsSet() || op1->IsMaskAllBitsSet())
+                if (op1->IsVectorAllBitsSet() || op1->IsTrueMask(tree))
                 {
                     if ((op3->gtFlags & GTF_SIDE_EFFECT) != 0)
                     {
@@ -33362,6 +33362,90 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
     }
 
     return mskCon;
+}
+
+//------------------------------------------------------------------------
+// IsTrueMask: Is the given node a true mask
+//
+// Arguments:
+//   parent - parent of the node
+//
+// Returns true if the node is a true mask for the given parent.
+//
+// Note that a byte true mask is different to an int true mask, therefore
+// the usage of the mask (ie the type of the parent) needs to be taken into account.
+//
+bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
+{
+    var_types ParentSimdBaseType = JitType2PreciseVarType(parent->GetSimdBaseJitType());
+
+#ifdef TARGET_ARM64
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+
+        // Only TrueMaskAlls will be imported
+        if (id != NI_Sve_CreateTrueMaskAll)
+        {
+            return false;
+        }
+
+        // Only a valid true mask if the parent has the same base type
+        return genTypeSize(ParentSimdBaseType) == genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType()));
+    }
+    else if (IsCnsMsk())
+    {
+        switch (parent->gtType)
+        {
+            case TYP_SIMD8:
+                return SveMaskPatternAll == EvaluateSimdMaskPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+
+            case TYP_SIMD12:
+                return SveMaskPatternAll == EvaluateSimdMaskPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+
+            case TYP_SIMD16:
+                return SveMaskPatternAll == EvaluateSimdMaskPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+
+            default:
+                unreached();
+        }
+    }
+
+#endif
+    return false;
+}
+
+
+bool GenTree::IsMaskZero() const
+{
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
+                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
+                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
+                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
+                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
+
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return ((id == NI_Sve_CreateFalseMaskAll) ||
+                ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64)));
+    }
+
+#endif
+    return false;
 }
 
 
