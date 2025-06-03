@@ -64,8 +64,6 @@
 #endif // TARGET_UNIX
 
 #ifdef TARGET_UNIX
-// There are some fairly primitive type definitions below but don't pull them into the rest of NativeAOT unless
-// we have to (in which case these definitions will move to CommonTypes.h).
 typedef int32_t             HRESULT;
 
 #define S_OK  0x0

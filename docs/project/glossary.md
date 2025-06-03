@@ -43,6 +43,7 @@ terminology.
 | POGO | Profile Guided Optimization - see [details](https://blogs.msdn.microsoft.com/vcblog/2008/11/12/pogo/). |
 | ProjectN | Codename for the first version of [.NET Native for UWP](https://msdn.microsoft.com/vstudio/dotnetnative.aspx). |
 | R2R | Ready-to-Run. A flavor of native images - command line switch of [crossgen](../workflow/building/coreclr/crossgen.md). |
+| Redhawk | Codename for experimental minimal managed code runtime that evolved into [CoreRT](https://github.com/dotnet/corert/). |
 | SDK | Software Development Kit. The [.NET SDK](https://learn.microsoft.com/dotnet/core/sdk) contains the .NET CLI, .NET libraries and runtime, and the dotnet driver. |
 | SEH | [Structured Exception Handling](https://learn.microsoft.com/windows/win32/debug/structured-exception-handling). Unified mechanism for handling hardware and software exceptions on Windows. |
 | SOS | [Son of Strike](https://learn.microsoft.com/dotnet/framework/tools/sos-dll-sos-debugging-extension). The debugging extension for DbgEng based debuggers. Uses the DAC as an abstraction layer for its operation. The obscure name derives from the original nickname for the CLR team at Microsoft: "Lightning". The team built a debugging tool humorously named "Strike", and a subset of that dubbed "Son of Strike". |

@@ -3,7 +3,7 @@
 
 //
 // This header provides NativeAOT-specific ETW code and macros, to allow sharing of common
-// ETW code between NativeAOT and desktop CLR.
+// ETW code.
 //
 #ifndef EVENTTRACE_ETW_H
 #define EVENTTRACE_ETW_H
