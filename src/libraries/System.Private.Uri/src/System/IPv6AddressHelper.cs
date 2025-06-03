@@ -87,7 +87,7 @@ namespace System.Net
             return new string(stackSpace.Slice(0, pos));
         }
 
-        private static unsafe bool IsLoopback(ReadOnlySpan<ushort> numbers)
+        private static bool IsLoopback(ReadOnlySpan<ushort> numbers)
         {
             //
             // is the address loopback? Loopback is defined as one of:

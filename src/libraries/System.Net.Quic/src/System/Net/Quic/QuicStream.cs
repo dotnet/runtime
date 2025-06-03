@@ -532,7 +532,7 @@ public sealed partial class QuicStream
         }
     }
 
-    private unsafe int HandleEventStartComplete(ref START_COMPLETE_DATA data)
+    private int HandleEventStartComplete(ref START_COMPLETE_DATA data)
     {
         Debug.Assert(_decrementStreamCapacity is not null);
 
@@ -575,7 +575,7 @@ public sealed partial class QuicStream
         data.TotalBufferLength = totalCopied;
         return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
+    private int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {
         // Release buffer and unlock.
         _sendBuffers.Reset();
@@ -594,7 +594,7 @@ public sealed partial class QuicStream
         // If Canceled != 0, we either aborted write, received PEER_RECEIVE_ABORTED or will receive SHUTDOWN_COMPLETE(ConnectionClose) later, all of which completes the _sendTcs.
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventPeerSendShutdown()
+    private int HandleEventPeerSendShutdown()
     {
         // Same as RECEIVE with FIN flag. Remember that no more RECEIVE events will come.
         // Don't set the task to its final state yet, but wait for all the buffered data to get consumed first.
@@ -602,17 +602,17 @@ public sealed partial class QuicStream
         _receiveTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventPeerSendAborted(ref PEER_SEND_ABORTED_DATA data)
+    private int HandleEventPeerSendAborted(ref PEER_SEND_ABORTED_DATA data)
     {
         _receiveTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode));
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventPeerReceiveAborted(ref PEER_RECEIVE_ABORTED_DATA data)
+    private int HandleEventPeerReceiveAborted(ref PEER_RECEIVE_ABORTED_DATA data)
     {
         _sendTcs.TrySetException(ThrowHelper.GetStreamAbortedException((long)data.ErrorCode));
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventSendShutdownComplete(ref SEND_SHUTDOWN_COMPLETE_DATA data)
+    private int HandleEventSendShutdownComplete(ref SEND_SHUTDOWN_COMPLETE_DATA data)
     {
         if (data.Graceful != 0)
         {
@@ -621,7 +621,7 @@ public sealed partial class QuicStream
         // If Graceful == 0, we either aborted write, received PEER_RECEIVE_ABORTED or will receive SHUTDOWN_COMPLETE(ConnectionClose) later, all of which completes the _sendTcs.
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
+    private int HandleEventShutdownComplete(ref SHUTDOWN_COMPLETE_DATA data)
     {
         if (data.ConnectionShutdown != 0)
         {
@@ -646,13 +646,13 @@ public sealed partial class QuicStream
         _shutdownTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
-    private unsafe int HandleEventPeerAccepted()
+    private int HandleEventPeerAccepted()
     {
         _startedTcs.TrySetResult();
         return QUIC_STATUS_SUCCESS;
     }
 
-    private unsafe int HandleStreamEvent(ref QUIC_STREAM_EVENT streamEvent)
+    private int HandleStreamEvent(ref QUIC_STREAM_EVENT streamEvent)
         => streamEvent.Type switch
         {
             QUIC_STREAM_EVENT_TYPE.START_COMPLETE => HandleEventStartComplete(ref streamEvent.START_COMPLETE),
@@ -749,7 +749,7 @@ public sealed partial class QuicStream
         Debug.Assert(_startedTcs.IsCompleted);
         _handle.Dispose();
 
-        unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
+        void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {
             int status = MsQuicApi.Api.StreamShutdown(
                 _handle,

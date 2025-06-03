@@ -2962,7 +2962,7 @@ namespace System.Xml.Xsl
             }
         }
 
-        public static unsafe double StringToDouble(string s)
+        public static double StringToDouble(string s)
         {
             if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double result) && double.IsFinite(result))
             {

@@ -1560,16 +1560,10 @@ public:
 
     HRESULT SetOption(OptionValue *pOptionValue);
 
-    // HRESULT Init();
-    // void Cleanup();
-
     HRESULT InitWithStgdb(
         IUnknown            *pUnk,          // The IUnknown that owns the life time for the existing stgdb
         CLiteWeightStgdbRW *pStgdb);        // existing light weight stgdb
 
-    ULONG   GetRefCount() { return m_cRef; }
-    HRESULT AddToCache();
-    static HRESULT FindCachedReadOnlyEntry(LPCWSTR szName, DWORD dwOpenFlags, RegMeta **ppMeta);
     BOOL IsReadOnly() { return IsOfReadOnly(m_OpenFlags); }
     BOOL IsCopyMemory() { return IsOfCopyMemory(m_OpenFlags); }
 
@@ -1614,9 +1608,6 @@ public:
         return (m_OptionValue.m_ThreadSafetyOptions & MDThreadSafetyOn) == MDThreadSafetyOn;
     }
 
-    LPCWSTR GetNameOfDBFile() { return (m_pStgdb->m_wszFileName == NULL) ? W("") : m_pStgdb->m_wszFileName; }
-    DWORD   GetLowFileTimeOfDBFile() { return m_pStgdb->m_dwDatabaseLFT; }
-    DWORD   GetLowFileSizeOfDBFile() { return m_pStgdb->m_dwDatabaseLFS; }
 protected:
     // Helper functions used for implementation of MetaData APIs.
     HRESULT RefToDefOptimization();
@@ -1627,9 +1618,6 @@ protected:
     }
 
     HRESULT PreSave();
-
-    // Initialize the EE
-    HRESULT StartupEE();
 
     // Define a TypeRef given the name.
     enum eCheckDups {eCheckDefault=0, eCheckNo=1, eCheckYes=2};
@@ -2028,15 +2016,8 @@ private:
     ULONG       m_OpenFlags;                // Open time flags.
 
     LONG        m_cRef;                     // Ref count.
-    IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
-
-    // If true, cached in list of global scopes. This is very dangerous because it may allow
-    // unpredictable state sharing between seemingly unrelated dispensers.
-    bool        m_bCached;
 
     OptionValue m_OptionValue;
-
-    mdTypeRef   m_trLanguageType;
 
     // Specifies whether the caller of the Set API is one of the Define functions
     // or an external API.  This allows for performance optimization in the Set APIs

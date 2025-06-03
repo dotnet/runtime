@@ -224,19 +224,6 @@ bool InitGSCookie()
 #endif // TARGET_UNIX
 
 #ifdef PROFILE_STARTUP
-#define STD_OUTPUT_HANDLE ((uint32_t)-11)
-
-struct RegisterModuleTrace
-{
-    LARGE_INTEGER Begin;
-    LARGE_INTEGER End;
-};
-
-const int NUM_REGISTER_MODULE_TRACES = 16;
-int g_registerModuleCount = 0;
-
-RegisterModuleTrace g_registerModuleTraces[NUM_REGISTER_MODULE_TRACES] = { 0 };
-
 static void AppendInt64(char * pBuffer, uint32_t* pLen, uint64_t value)
 {
     char localBuffer[20];
@@ -269,12 +256,6 @@ static void UninitDLL()
     AppendInt64(buffer, &len, g_startupTimelineEvents[NONGC_INIT_COMPLETE]);
     AppendInt64(buffer, &len, g_startupTimelineEvents[GC_INIT_COMPLETE]);
     AppendInt64(buffer, &len, g_startupTimelineEvents[PROCESS_ATTACH_COMPLETE]);
-
-    for (int i = 0; i < g_registerModuleCount; i++)
-    {
-        AppendInt64(buffer, &len, g_registerModuleTraces[i].Begin.QuadPart);
-        AppendInt64(buffer, &len, g_registerModuleTraces[i].End.QuadPart);
-    }
 
     buffer[len++] = '\n';
 

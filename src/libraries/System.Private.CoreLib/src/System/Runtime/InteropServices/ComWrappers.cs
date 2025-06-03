@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices
             return Marshal.QueryInterface(wrapper.ExternalComObject, iid, out unknown) == HResults.S_OK;
         }
 
-        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
+        public static bool TryGetComInstance(object obj, out IntPtr unknown)
         {
             unknown = IntPtr.Zero;
             if (obj == null
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// ABI for function dispatch of a COM interface.
         /// </summary>
-        public unsafe partial struct ComInterfaceDispatch
+        public partial struct ComInterfaceDispatch
         {
             public IntPtr Vtable;
 
@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices
             public DispatchTable Vtables;
 
             [InlineArray(NumEntriesInDispatchTable)]
-            internal unsafe struct DispatchTable
+            internal struct DispatchTable
             {
                 private IntPtr _element;
             }
@@ -289,7 +289,7 @@ namespace System.Runtime.InteropServices
             }
 
 
-            public unsafe int QueryInterfaceForTracker(in Guid riid, out IntPtr ppvObject)
+            public int QueryInterfaceForTracker(in Guid riid, out IntPtr ppvObject)
             {
                 if (IsMarkedToDestroy(RefCount) || Holder is null)
                 {
@@ -300,7 +300,7 @@ namespace System.Runtime.InteropServices
                 return QueryInterface(in riid, out ppvObject);
             }
 
-            public unsafe int QueryInterface(in Guid riid, out IntPtr ppvObject)
+            public int QueryInterface(in Guid riid, out IntPtr ppvObject)
             {
                 ppvObject = AsRuntimeDefined(in riid);
                 if (ppvObject == IntPtr.Zero)
@@ -347,7 +347,7 @@ namespace System.Runtime.InteropServices
             }
 
             /// <returns>true if actually destroyed</returns>
-            public unsafe bool Destroy()
+            public bool Destroy()
             {
                 Debug.Assert(GetComCount(RefCount) == 0 || HolderHandle == IntPtr.Zero);
 
@@ -380,14 +380,14 @@ namespace System.Runtime.InteropServices
                 }
             }
 
-            private unsafe IntPtr GetDispatchPointerAtIndex(int index)
+            private IntPtr GetDispatchPointerAtIndex(int index)
             {
                 InternalComInterfaceDispatch* dispatch = &Dispatches[index / InternalComInterfaceDispatch.NumEntriesInDispatchTable];
                 IntPtr* vtables = (IntPtr*)(void*)&dispatch->Vtables;
                 return (IntPtr)(&vtables[index % InternalComInterfaceDispatch.NumEntriesInDispatchTable]);
             }
 
-            private unsafe IntPtr AsRuntimeDefined(in Guid riid)
+            private IntPtr AsRuntimeDefined(in Guid riid)
             {
                 // The order of interface lookup here is important.
                 // See CreateManagedObjectWrapper() for the expected order.
@@ -422,7 +422,7 @@ namespace System.Runtime.InteropServices
                 return IntPtr.Zero;
             }
 
-            private unsafe IntPtr AsUserDefined(in Guid riid)
+            private IntPtr AsUserDefined(in Guid riid)
             {
                 for (int i = 0; i < UserDefinedCount; ++i)
                 {
@@ -483,7 +483,7 @@ namespace System.Runtime.InteropServices
                 _wrapper->HolderHandle = AllocateRefCountedHandle(this);
             }
 
-            public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
+            public IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
             public object WrappedObject => _wrappedObject;
 
@@ -1555,7 +1555,7 @@ namespace System.Runtime.InteropServices
             return null;
         }
 
-        private static unsafe bool PossiblyComObject(object target)
+        private static bool PossiblyComObject(object target)
         {
             // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
             // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
@@ -1563,7 +1563,7 @@ namespace System.Runtime.InteropServices
             return s_nativeObjectWrapperTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper.IsAggregatedWithManagedObjectWrapper;
         }
 
-        private static unsafe IntPtr ObjectToComWeakRef(object target, out object? context)
+        private static IntPtr ObjectToComWeakRef(object target, out object? context)
         {
             context = null;
             if (TryGetComInstanceForIID(

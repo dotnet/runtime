@@ -2934,6 +2934,22 @@ ErrExit:
 } // RegMeta::SetParamProps
 
 //*****************************************************************************
+// Persist a set of security custom attributes into a set of permission set
+// blobs on the same class or method.
+//
+// Notes:
+//    Only in the full version because this is an emit operation.
+//*****************************************************************************
+HRESULT RegMeta::DefineSecurityAttributeSet(// Return code.
+    mdToken     tkObj,                  // [IN] Class or method requiring security attributes.
+    COR_SECATTR rSecAttrs[],            // [IN] Array of security attribute descriptions.
+    ULONG       cSecAttrs,              // [IN] Count of elements in above array.
+    ULONG       *pulErrorAttr)          // [OUT] On error, index of attribute causing problem.
+{
+    return E_NOTIMPL;
+} // RegMeta::DefineSecurityAttributeSet
+
+//*****************************************************************************
 // Apply edit and continue changes to this metadata.
 //*****************************************************************************
 STDMETHODIMP RegMeta::ApplyEditAndContinue(   // S_OK or error.

@@ -347,7 +347,7 @@ namespace System.Net.Sockets
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncWriteOperation(this);
         }
 
-        private abstract unsafe class SendOperation : WriteOperation
+        private abstract class SendOperation : WriteOperation
         {
             public SocketFlags Flags;
             public int BytesTransferred;
@@ -358,7 +358,7 @@ namespace System.Net.Sockets
 
             public Action<int, Memory<byte>, SocketFlags, SocketError>? Callback { get; set; }
 
-            public override unsafe void InvokeCallback(bool allowPooling) =>
+            public override void InvokeCallback(bool allowPooling) =>
                 Callback!(BytesTransferred, SocketAddress, SocketFlags.None, ErrorCode);
         }
 
@@ -374,7 +374,7 @@ namespace System.Net.Sockets
                 return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress.Span, ref BytesTransferred, out ErrorCode);
             }
 
-            public override unsafe void InvokeCallback(bool allowPooling)
+            public override void InvokeCallback(bool allowPooling)
             {
                 var cb = Callback!;
                 int bt = BytesTransferred;
@@ -668,7 +668,7 @@ namespace System.Net.Sockets
                 return result;
             }
 
-            public override unsafe void InvokeCallback(bool allowPooling)
+            public override void InvokeCallback(bool allowPooling)
             {
                 var cb = Callback!;
                 int bt = BytesTransferred;
@@ -1601,7 +1601,7 @@ namespace System.Net.Sockets
             return ReceiveFromAsync(buffer, flags, Memory<byte>.Empty, out int _, out bytesReceived, out receivedFlags, callback, cancellationToken);
         }
 
-        public unsafe SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
+        public SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
 
@@ -1746,7 +1746,7 @@ namespace System.Net.Sockets
             return ReceiveFromAsync(buffers, flags, Memory<byte>.Empty, out int _, out bytesReceived, out receivedFlags, callback);
         }
 
-        public unsafe SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
+        public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
             if (!Socket.OSSupportsThreads) throw new PlatformNotSupportedException();
 
@@ -2247,7 +2247,7 @@ namespace System.Net.Sockets
         }
 
         // Called on ThreadPool thread.
-        public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
+        public void HandleEvents(Interop.Sys.SocketEvents events)
         {
             Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0);
 

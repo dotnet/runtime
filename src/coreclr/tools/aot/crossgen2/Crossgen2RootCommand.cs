@@ -285,69 +285,62 @@ namespace ILCompiler
             });
         }
 
-        public static IEnumerable<Func<HelpContext, bool>> GetExtendedHelp(HelpContext _)
+        public static void PrintExtendedHelp(ParseResult _)
         {
-            foreach (Func<HelpContext, bool> sectionDelegate in HelpBuilder.Default.GetLayout())
-                yield return sectionDelegate;
+            Console.WriteLine(SR.OptionPassingHelp);
+            Console.WriteLine();
+            Console.WriteLine(SR.DashDashHelp);
+            Console.WriteLine();
 
-            yield return _ =>
+            string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
+            string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
+
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
+            Console.WriteLine();
+
+            Console.WriteLine(SR.CrossModuleInliningExtraHelp);
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<MethodLayoutAlgorithm>())));
+            Console.WriteLine();
+            Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<FileLayoutAlgorithm>())));
+            Console.WriteLine();
+
+            Console.WriteLine(SR.InstructionSetHelp);
+            foreach (string arch in ValidArchitectures)
             {
-                Console.WriteLine(SR.OptionPassingHelp);
-                Console.WriteLine();
-                Console.WriteLine(SR.DashDashHelp);
-                Console.WriteLine();
-
-                string[] ValidArchitectures = new string[] {"arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64"};
-                string[] ValidOS = new string[] {"windows", "linux", "osx", "ios", "iossimulator", "maccatalyst"};
-
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetos", String.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant()));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
-                Console.WriteLine();
-
-                Console.WriteLine(SR.CrossModuleInliningExtraHelp);
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<MethodLayoutAlgorithm>())));
-                Console.WriteLine();
-                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<FileLayoutAlgorithm>())));
-                Console.WriteLine();
-
-                Console.WriteLine(SR.InstructionSetHelp);
-                foreach (string arch in ValidArchitectures)
+                TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
+                bool first = true;
+                foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
                 {
-                    TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
-                    bool first = true;
-                    foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
+                    // Only instruction sets with are specifiable should be printed to the help text
+                    if (instructionSet.Specifiable)
                     {
-                        // Only instruction sets with are specifiable should be printed to the help text
-                        if (instructionSet.Specifiable)
+                        if (first)
                         {
-                            if (first)
-                            {
-                                Console.Write(arch);
-                                Console.Write(": ");
-                                first = false;
-                            }
-                            else
-                            {
-                                Console.Write(", ");
-                            }
-                            Console.Write(instructionSet.Name);
+                            Console.Write(arch);
+                            Console.Write(": ");
+                            first = false;
                         }
+                        else
+                        {
+                            Console.Write(", ");
+                        }
+                        Console.Write(instructionSet.Name);
                     }
-
-                    if (first) continue; // no instruction-set found for this architecture
-
-                    Console.WriteLine();
                 }
 
+                if (first) continue; // no instruction-set found for this architecture
+
                 Console.WriteLine();
-                Console.WriteLine(SR.CpuFamilies);
-                Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
-                return true;
-            };
+            }
+
+            Console.WriteLine();
+            Console.WriteLine(SR.CpuFamilies);
+            Console.WriteLine(string.Join(", ", Internal.JitInterface.InstructionSetFlags.AllCpuNames));
         }
 
         private static TargetArchitecture MakeTargetArchitecture(ArgumentResult result)

@@ -138,7 +138,7 @@ namespace System.Reflection
             return GetTypeHelper(typeName, requestingAssembly, throwOnError, requireAssemblyQualifiedName, unsafeAccessorMethod);
         }
 
-        internal static unsafe RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
+        internal static RuntimeType? GetTypeHelper(ReadOnlySpan<char> typeName, RuntimeAssembly? requestingAssembly,
             bool throwOnError, bool requireAssemblyQualifiedName, IntPtr unsafeAccessorMethod = 0)
         {
             // Compat: Empty name throws TypeLoadException instead of

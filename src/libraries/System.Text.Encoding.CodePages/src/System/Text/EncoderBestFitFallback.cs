@@ -158,7 +158,7 @@ namespace System.Text
         }
 
         // Clear the buffer
-        public override unsafe void Reset()
+        public override void Reset()
         {
             _iCount = -1;
         }

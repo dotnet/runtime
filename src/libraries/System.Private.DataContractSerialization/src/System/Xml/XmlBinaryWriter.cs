@@ -565,7 +565,7 @@ namespace System.Xml
             }
         }
 
-        public override unsafe void WriteText(string value)
+        public override void WriteText(string value)
             => WriteTextImpl(value);
 
         public override void WriteText(char[] chars, int offset, int count)

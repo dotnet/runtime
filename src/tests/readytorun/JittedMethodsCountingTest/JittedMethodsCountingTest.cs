@@ -14,13 +14,12 @@ public class JittedMethodsCountingTest
     [Fact]
     public static int TestEntryPoint()
     {
-        // If either of DOTNET_ReadyToRun, DOTNET_EnableHWIntrinsics, or
-        // DOTNET_EnableSSE(2) are disabled (i.e. set to "0"), then this test
-        // ought to be skipped.
-        if (!IsReadyToRunEnabled() || !IsHardwareIntrinsicsEnabled() || !IsSSEEnabled())
+        // If either of DOTNET_ReadyToRun or DOTNET_EnableHWIntrinsics
+        // are disabled (i.e. set to "0"), then this test ought to be skipped.
+        if (!IsReadyToRunEnabled() || !IsHardwareIntrinsicsEnabled())
         {
             Console.WriteLine("\nThis test is only supported in ReadyToRun scenarios"
-                              + " with Hardware Intrinsics and SSE(2) enabled."
+                              + " with Hardware Intrinsics enabled."
                               + " Skipping...\n");
             return 100;
         }
@@ -49,14 +48,5 @@ public class JittedMethodsCountingTest
 
         return (string.IsNullOrEmpty(dotnetEnableHWIntrinsics)
                 || dotnetEnableHWIntrinsics != "0");
-    }
-
-    private static bool IsSSEEnabled()
-    {
-        string? dotnetSSE = Environment.GetEnvironmentVariable("DOTNET_EnableSSE");
-        string? dotnetSSE2 = Environment.GetEnvironmentVariable("DOTNET_EnableSSE2");
-
-        return ((string.IsNullOrEmpty(dotnetSSE) || dotnetSSE != "0")
-                && (string.IsNullOrEmpty(dotnetSSE2) || dotnetSSE2 != "0"));
     }
 }

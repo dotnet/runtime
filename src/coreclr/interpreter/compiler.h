@@ -137,21 +137,52 @@ enum InterpBBState
     BBStateEmitted
 };
 
+enum InterpBBClauseType
+{
+    BBClauseNone,
+    BBClauseTry,
+    BBClauseCatch,
+    BBClauseFinally,
+    BBClauseFilter,
+};
+
 struct InterpBasicBlock
 {
     int32_t index;
     int32_t ilOffset, nativeOffset;
+    int32_t nativeEndOffset;
     int32_t stackHeight;
     StackInfo *pStackState;
 
     InterpInst *pFirstIns, *pLastIns;
     InterpBasicBlock *pNextBB;
 
+    // * If this basic block is a finally, this points to a finally call island that is located where the finally
+    //   was before all funclets were moved to the end of the method.
+    // * If this basic block is a call island, this points to the next finally call island basic block.
+    // * Otherwise, this is NULL.
+    InterpBasicBlock *pFinallyCallIslandBB;
+    // Target of a leave instruction that is located in this basic block. NULL if there is none.
+    InterpBasicBlock *pLeaveTargetBB;
+
     int inCount, outCount;
     InterpBasicBlock **ppInBBs;
     InterpBasicBlock **ppOutBBs;
 
     InterpBBState emitState;
+
+    // Type of the innermost try block, catch, filter, or finally that contains this basic block.
+    uint8_t clauseType;
+
+    // True indicates that this basic block is the first block of a filter, catch or filtered handler funclet.
+    bool isFilterOrCatchFuncletEntry;
+
+    // If this basic block is a catch or filter funclet entry, this is the index of the variable
+    // that holds the exception object.
+    int clauseVarIndex;
+
+    // Number of catch, filter or finally clauses that overlap with this basic block.
+    int32_t overlappingEHClauseCount;
 
     InterpBasicBlock(int32_t index) : InterpBasicBlock(index, 0) { }
 
@@ -160,15 +191,23 @@ struct InterpBasicBlock
         this->index = index;
         this->ilOffset = ilOffset;
         nativeOffset = -1;
+        nativeEndOffset = -1;
         stackHeight = -1;
 
         pFirstIns = pLastIns = NULL;
         pNextBB = NULL;
+        pFinallyCallIslandBB = NULL;
+        pLeaveTargetBB = NULL;
 
         inCount = 0;
         outCount = 0;
 
         emitState = BBStateNotEmitted;
+
+        clauseType = BBClauseNone;
+        isFilterOrCatchFuncletEntry = false;
+        clauseVarIndex = -1;
+        overlappingEHClauseCount = 0;
     }
 };
 
@@ -176,7 +215,6 @@ struct InterpVar
 {
     CORINFO_CLASS_HANDLE clsHnd;
     InterpType interpType;
-    int indirects;
     int offset;
     int size;
     // live_start and live_end are used by the offset allocator
@@ -202,7 +240,6 @@ struct InterpVar
         offset = -1;
         liveStart = NULL;
         bbIndex = -1;
-        indirects = 0;
 
         callArgs = false;
         noCallArgs = false;
@@ -261,6 +298,17 @@ typedef class ICorJitInfo* COMP_HANDLE;
 
 class InterpIAllocator;
 
+// Entry of the table where for each leave instruction we store the first finally call island
+// to be executed when the leave instruction is executed.
+struct LeavesTableEntry
+{
+    // offset of the CEE_LEAVE instruction
+    int32_t ilOffset;
+    // The BB of the call island BB that will be the first to call when the leave
+    // instruction is executed.
+    InterpBasicBlock *pFinallyCallIslandBB;
+};
+
 class InterpCompiler
 {
     friend class InterpIAllocator;
@@ -284,6 +332,10 @@ private:
     int32_t m_currentILOffset;
     InterpInst* m_pInitLocalsIns;
 
+    // Table of mappings of leave instructions to the first finally call island the leave
+    // needs to execute.
+    TArray<LeavesTableEntry> m_leavesTable;
+
     // This represents a mapping from indexes to pointer sized data. During compilation, an
     // instruction can request an index for some data (like a MethodDesc pointer), that it
     // will then embed in the instruction stream. The data item table will be referenced
@@ -295,6 +347,7 @@ private:
     int32_t GetDataItemIndexForHelperFtn(CorInfoHelpFunc ftn);
 
     int GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+    InterpBasicBlock* GenerateCodeForFinallyCallIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
     void                    ResolveToken(uint32_t token, CorInfoTokenKind tokenKind, CORINFO_RESOLVED_TOKEN *pResolvedToken);
@@ -347,6 +400,7 @@ private:
     void    EmitBranch(InterpOpcode opcode, int ilOffset);
     void    EmitOneArgBranch(InterpOpcode opcode, int ilOffset, int insSize);
     void    EmitTwoArgBranch(InterpOpcode opcode, int ilOffset, int insSize);
+    void    EmitBranchToBB(InterpOpcode opcode, InterpBasicBlock *pTargetBB);
 
     void    EmitBBEndVarMoves(InterpBasicBlock *pTargetBB);
     void    InitBBStackState(InterpBasicBlock *pBB);
@@ -357,6 +411,9 @@ private:
     int32_t m_varsSize = 0;
     int32_t m_varsCapacity = 0;
     int32_t m_numILVars = 0;
+    // For each catch or filter clause, we create a variable that holds the exception object.
+    // This is the index of the first such variable.
+    int32_t m_clauseVarsIndex = 0;
 
     int32_t CreateVarExplicit(InterpType interpType, CORINFO_CLASS_HANDLE clsHnd, int size);
 
@@ -423,10 +480,14 @@ private:
     int32_t ComputeCodeSize();
     uint32_t ConvertOffset(int32_t offset);
     void EmitCode();
+    int32_t* EmitBBCode(int32_t *ip, InterpBasicBlock *bb, TArray<Reloc*> *relocs);
     int32_t* EmitCodeIns(int32_t *ip, InterpInst *pIns, TArray<Reloc*> *relocs);
     void PatchRelocations(TArray<Reloc*> *relocs);
     InterpMethod* CreateInterpMethod();
     bool CreateBasicBlocks(CORINFO_METHOD_INFO* methodInfo);
+    bool InitializeClauseBuildingBlocks(CORINFO_METHOD_INFO* methodInfo);
+    void CreateFinallyCallIslandBasicBlocks(CORINFO_METHOD_INFO* methodInfo, int32_t leaveOffset, InterpBasicBlock* pLeaveTargetBB);
+    void GetNativeRangeForClause(uint32_t startILOffset, uint32_t endILOffset, int32_t *nativeStartOffset, int32_t* nativeEndOffset);
 
     // Debug
     void PrintClassName(CORINFO_CLASS_HANDLE cls);
@@ -443,6 +504,7 @@ public:
 
     InterpMethod* CompileMethod();
     void BuildGCInfo(InterpMethod *pInterpMethod);
+    void BuildEHInfo();
 
     int32_t* GetCode(int32_t *pCodeSize);
 };

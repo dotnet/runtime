@@ -1762,9 +1762,9 @@ namespace CorUnix
                 }
                 else
                 {
-                    tv.tv_usec = (iTimeout % tccSecondsToMillieSeconds) *
-                        tccMillieSecondsToMicroSeconds;
-                    tv.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                    tv.tv_usec = (iTimeout % tccSecondsToMilliSeconds) *
+                        tccMilliSecondsToMicroSeconds;
+                    tv.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                     ptv = &tv;
                 }
 
@@ -1793,9 +1793,9 @@ namespace CorUnix
                     }
                     else
                     {
-                        ts.tv_nsec = (iTimeout % tccSecondsToMillieSeconds) *
-                            tccMillieSecondsToNanoSeconds;
-                        ts.tv_sec = iTimeout / tccSecondsToMillieSeconds;
+                        ts.tv_nsec = (iTimeout % tccSecondsToMilliSeconds) *
+                            tccMilliSecondsToNanoSeconds;
+                        ts.tv_sec = iTimeout / tccSecondsToMilliSeconds;
                         pts = &ts;
                     }
 
@@ -3578,8 +3578,8 @@ namespace CorUnix
 #endif
         if (0 == iRet)
         {
-            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMillieSeconds;
-            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMillieSeconds) * tccMillieSecondsToNanoSeconds;
+            ptsAbsTmo->tv_sec  += dwTimeout / tccSecondsToMilliSeconds;
+            ptsAbsTmo->tv_nsec += (dwTimeout % tccSecondsToMilliSeconds) * tccMilliSecondsToNanoSeconds;
             while (ptsAbsTmo->tv_nsec >= tccSecondsToNanoSeconds)
             {
                 ptsAbsTmo->tv_sec  += 1;

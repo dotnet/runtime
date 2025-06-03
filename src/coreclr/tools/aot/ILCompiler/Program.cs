@@ -788,7 +788,7 @@ namespace ILCompiler
         private static int Main(string[] args) =>
             new CommandLineConfiguration(new ILCompilerRootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(ILCompilerRootCommand.GetExtendedHelp))
+                .UseExtendedHelp(ILCompilerRootCommand.PrintExtendedHelp))
             {
                 ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
                 EnableDefaultExceptionHandler = false,

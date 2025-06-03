@@ -827,13 +827,9 @@ one_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 }
 
 static void
-interp_add_conv (TransformData *td, StackInfo *sp, InterpInst *prev_ins, int type, int conv_op)
+interp_add_conv (TransformData *td, StackInfo *sp, int type, int conv_op)
 {
-	InterpInst *new_inst;
-	if (prev_ins)
-		new_inst = interp_insert_ins (td, prev_ins, conv_op);
-	else
-		new_inst = interp_add_ins (td, conv_op);
+	InterpInst *new_inst = interp_add_ins (td, conv_op);
 
 	interp_ins_set_sreg (new_inst, sp->var);
 	set_simple_type_and_var (td, sp, type);
@@ -883,16 +879,15 @@ two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 	int type2 = td->sp [-2].type == STACK_TYPE_O || td->sp [-2].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-2].type;
 
 	if (type1 == STACK_TYPE_I4 && type2 == STACK_TYPE_I8) {
-		// The il instruction starts with the actual branch, and not with the conversion opcodes
-		interp_add_conv (td, td->sp - 1, td->last_ins, STACK_TYPE_I8, MINT_CONV_I8_I4);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_I4);
 		type1 = STACK_TYPE_I8;
 	} else if (type1 == STACK_TYPE_I8 && type2 == STACK_TYPE_I4) {
-		interp_add_conv (td, td->sp - 2, td->last_ins, STACK_TYPE_I8, MINT_CONV_I8_I4);
+		interp_add_conv (td, td->sp - 2, STACK_TYPE_I8, MINT_CONV_I8_I4);
 	} else if (type1 == STACK_TYPE_R4 && type2 == STACK_TYPE_R8) {
-		interp_add_conv (td, td->sp - 1, td->last_ins, STACK_TYPE_R8, MINT_CONV_R8_R4);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_R4);
 		type1 = STACK_TYPE_R8;
 	} else if (type1 == STACK_TYPE_R8 && type2 == STACK_TYPE_R4) {
-		interp_add_conv (td, td->sp - 2, td->last_ins, STACK_TYPE_R8, MINT_CONV_R8_R4);
+		interp_add_conv (td, td->sp - 2, STACK_TYPE_R8, MINT_CONV_R8_R4);
 	} else if (type1 != type2) {
 		g_warning("%s.%s: branch type mismatch %d %d",
 			m_class_get_name (td->method->klass), td->method->name,
@@ -943,20 +938,20 @@ binary_arith_op(TransformData *td, int mint_op)
 	int op;
 #if SIZEOF_VOID_P == 8
 	if ((type1 == STACK_TYPE_MP || type1 == STACK_TYPE_I8) && type2 == STACK_TYPE_I4) {
-		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_I4);
 		type2 = STACK_TYPE_I8;
 	}
 	if (type1 == STACK_TYPE_I4 && (type2 == STACK_TYPE_MP || type2 == STACK_TYPE_I8)) {
-		interp_add_conv (td, td->sp - 2, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+		interp_add_conv (td, td->sp - 2, STACK_TYPE_I8, MINT_CONV_I8_I4);
 		type1 = STACK_TYPE_I8;
 	}
 #endif
 	if (type1 == STACK_TYPE_R8 && type2 == STACK_TYPE_R4) {
-		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_R4);
 		type2 = STACK_TYPE_R8;
 	}
 	if (type1 == STACK_TYPE_R4 && type2 == STACK_TYPE_R8) {
-		interp_add_conv (td, td->sp - 2, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+		interp_add_conv (td, td->sp - 2, STACK_TYPE_R8, MINT_CONV_R8_R4);
 		type1 = STACK_TYPE_R8;
 	}
 	if (type1 == STACK_TYPE_MP)
@@ -1122,14 +1117,14 @@ store_local (TransformData *td, int local)
 #if SIZEOF_VOID_P == 8
 	// nint and int32 can be used interchangeably. Add implicit conversions.
 	if (td->sp [-1].type == STACK_TYPE_I4 && stack_type [mt] == STACK_TYPE_I8)
-		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_I4);
 	else if (td->sp [-1].type == STACK_TYPE_I8 && stack_type [mt] == STACK_TYPE_I4)
-		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_MOV_8);
 #endif
 	if (td->sp [-1].type == STACK_TYPE_R4 && stack_type [mt] == STACK_TYPE_R8)
-		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_R4);
 	else if (td->sp [-1].type == STACK_TYPE_R8 && stack_type [mt] == STACK_TYPE_R4)
-		interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+		interp_add_conv (td, td->sp - 1, STACK_TYPE_R4, MINT_CONV_R4_R8);
 
 	if (!can_store(td->sp [-1].type, stack_type [mt])) {
 		g_error ("%s.%s: Store local stack type mismatch %d %d",
@@ -3307,7 +3302,7 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 	case MONO_TYPE_I8: {
 		switch (stype) {
 		case STACK_TYPE_I4:
-			interp_add_conv (td, sp, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+			interp_add_conv (td, sp, STACK_TYPE_I8, MINT_CONV_I8_I4);
 			break;
 		default:
 			break;
@@ -3317,7 +3312,7 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 	case MONO_TYPE_R4: {
 		switch (stype) {
 		case STACK_TYPE_R8:
-			interp_add_conv (td, sp, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+			interp_add_conv (td, sp, STACK_TYPE_R4, MINT_CONV_R4_R8);
 			break;
 		default:
 			break;
@@ -3327,7 +3322,7 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 	case MONO_TYPE_R8: {
 		switch (stype) {
 		case STACK_TYPE_R4:
-			interp_add_conv (td, sp, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+			interp_add_conv (td, sp, STACK_TYPE_R8, MINT_CONV_R8_R4);
 			break;
 		default:
 			break;
@@ -3338,7 +3333,7 @@ emit_convert (TransformData *td, StackInfo *sp, MonoType *target_type)
 	case MONO_TYPE_U: {
 		switch (stype) {
 		case STACK_TYPE_I4:
-			interp_add_conv (td, sp, NULL, STACK_TYPE_I8, MINT_CONV_I8_U4);
+			interp_add_conv (td, sp, STACK_TYPE_I8, MINT_CONV_I8_U4);
 			break;
 		default:
 			break;
@@ -3853,6 +3848,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			return FALSE;
 		} else if (td->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
 			// This scenario causes https://github.com/dotnet/runtime/issues/83792
+			return FALSE;
+		} else if (target_method->flags & METHOD_ATTRIBUTE_REQSECOBJ) {
 			return FALSE;
 		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
@@ -6269,16 +6266,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U1_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U1_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U1_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U1_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U1_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U1_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U1_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U1_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -6289,16 +6286,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I1_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I1_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I1_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I1_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I1_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I1_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I1_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I1_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -6309,16 +6306,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U2_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U2_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U2_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U2_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U2_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U2_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U2_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U2_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -6329,16 +6326,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I2_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I2_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I2_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I2_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I2_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I2_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I2_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I2_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -6350,26 +6347,26 @@ retry_emit:
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R8:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_U4_R8);
 #else
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_U8_R8);
 #endif
 				break;
 			case STACK_TYPE_R4:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U4_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_U4_R4);
 #else
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_U8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_U8_R4);
 #endif
 				break;
 			case STACK_TYPE_I4:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_U4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_I8_U4);
 #endif
 				break;
 			case STACK_TYPE_I8:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_MOV_8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_MOV_8);
 #endif
 				break;
 			case STACK_TYPE_MP:
@@ -6386,21 +6383,21 @@ retry_emit:
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R8:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_I8_R8);
 #else
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_I4_R8);
 #endif
 				break;
 			case STACK_TYPE_R4:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_I8_R4);
 #else
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I4_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_I4_R4);
 #endif
 				break;
 			case STACK_TYPE_I4:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_CONV_I8_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_CONV_I8_I4);
 #endif
 				break;
 			case STACK_TYPE_O:
@@ -6409,7 +6406,7 @@ retry_emit:
 				break;
 			case STACK_TYPE_I8:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I, MINT_MOV_8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I, MINT_MOV_8);
 #endif
 				break;
 			default:
@@ -6421,19 +6418,19 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U4_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U4_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_U4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_U4_R8);
 				break;
 			case STACK_TYPE_I4:
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_MOV_8);
 				break;
 			case STACK_TYPE_MP:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_MOV_8);
 #else
 				SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
@@ -6447,19 +6444,19 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I4_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_I4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_I4_R8);
 				break;
 			case STACK_TYPE_I4:
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_MOV_8);
 				break;
 			case STACK_TYPE_MP:
 #if SIZEOF_VOID_P == 8
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_MOV_8);
 #else
 				SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 #endif
@@ -6473,10 +6470,10 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_R8);
 				break;
 			case STACK_TYPE_I4: {
 				if (interp_ins_is_ldc (td->last_ins) && td->last_ins == td->cbb->last_ins) {
@@ -6489,7 +6486,7 @@ retry_emit:
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 					WRITE64_INS (td->last_ins, 0, &ct);
 				} else {
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_I4);
 				}
 				break;
 			}
@@ -6511,13 +6508,13 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R4, MINT_CONV_R4_R8);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R4, MINT_CONV_R4_I8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R4, MINT_CONV_R4_I4);
 				break;
 			case STACK_TYPE_R4:
 				/* no-op */
@@ -6531,13 +6528,13 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_I8);
 				break;
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_R4);
 				break;
 			case STACK_TYPE_R8:
 				break;
@@ -6560,20 +6557,20 @@ retry_emit:
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 					WRITE64_INS (td->last_ins, 0, &ct);
 				} else {
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_U4);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_U4);
 				}
 				break;
 			case STACK_TYPE_I8:
 				break;
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_U8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_U8_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_U8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_U8_R8);
 				break;
 			case STACK_TYPE_MP:
 #if SIZEOF_VOID_P == 4
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_U4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_U4);
 #else
 				SET_SIMPLE_TYPE(td->sp - 1, STACK_TYPE_I8);
 #endif
@@ -6699,10 +6696,10 @@ retry_emit:
 			if (klass == mono_defaults.int_class && csignature->param_count == 1) {
 #if SIZEOF_VOID_P == 8
 				if (td->sp [-1].type == STACK_TYPE_I4)
-					interp_add_conv (td, td->sp - 1, NULL, stack_type [ret_mt], MINT_CONV_I8_I4);
+					interp_add_conv (td, td->sp - 1, stack_type [ret_mt], MINT_CONV_I8_I4);
 #else
 				if (td->sp [-1].type == STACK_TYPE_I8)
-					interp_add_conv (td, td->sp - 1, NULL, stack_type [ret_mt], MINT_CONV_OVF_I4_I8);
+					interp_add_conv (td, td->sp - 1, stack_type [ret_mt], MINT_CONV_OVF_I4_I8);
 #endif
 			} else if (m_class_get_parent (klass) == mono_defaults.array_class) {
 				int *call_args = (int*)mono_mempool_alloc (td->mempool, (csignature->param_count + 1) * sizeof (int));
@@ -6958,15 +6955,15 @@ retry_emit:
 		case CEE_CONV_R_UN:
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_R4);
 				break;
 			case STACK_TYPE_R8:
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R_UN_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R_UN_I8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R_UN_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R_UN_I4);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7360,16 +7357,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_I8_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_I8_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_U4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_U4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_U8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_I8_U8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7384,13 +7381,13 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_U8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_U8_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_U8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_U8_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_U4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_U4);
 				break;
 			case STACK_TYPE_I8:
 				break;
@@ -7426,7 +7423,7 @@ retry_emit:
 				const gboolean vt = mono_mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT;
 
 				if (td->sp [-1].type == STACK_TYPE_R8 && m_class_get_byval_arg (klass)->type == MONO_TYPE_R4)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R4, MINT_CONV_R4_R8);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_R4, MINT_CONV_R4_R8);
 				MonoVTable *vtable = mono_class_vtable_checked (klass, error);
 				goto_if_nok (error, exit);
 
@@ -7458,10 +7455,10 @@ retry_emit:
 			unsigned char lentype = (td->sp - 1)->type;
 			if (lentype == STACK_TYPE_I8) {
 				/* mimic mini behaviour */
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_I8);
 			} else {
 				g_assert (lentype == STACK_TYPE_I4);
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_I4);
 			}
 			td->sp--;
 			interp_add_ins (td, MINT_NEWARR);
@@ -7753,16 +7750,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I1_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I1_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I1_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I1_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I1_U4 : MINT_CONV_OVF_I1_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I1_U4 : MINT_CONV_OVF_I1_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I1_U8 : MINT_CONV_OVF_I1_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I1_U8 : MINT_CONV_OVF_I1_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7775,16 +7772,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U1_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U1_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U1_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U1_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U1_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U1_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U1_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U1_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7797,16 +7794,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I2_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I2_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I2_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I2_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I2_U4 : MINT_CONV_OVF_I2_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I2_U4 : MINT_CONV_OVF_I2_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I2_U8 : MINT_CONV_OVF_I2_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, is_un ? MINT_CONV_OVF_I2_U8 : MINT_CONV_OVF_I2_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7819,16 +7816,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U2_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U2_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U2_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U2_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U2_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U2_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U2_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U2_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7844,20 +7841,20 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I4_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I4_R8);
 				break;
 			case STACK_TYPE_I4:
 				if (*td->ip == CEE_CONV_OVF_I4_UN || *td->ip == CEE_CONV_OVF_I_UN)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_U4);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I4_U4);
 				break;
 			case STACK_TYPE_I8:
 				if (*td->ip == CEE_CONV_OVF_I4_UN || *td->ip == CEE_CONV_OVF_I_UN)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_U8);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I4_U8);
 				else
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_I4_I8);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_I4_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7873,20 +7870,20 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_R8);
 				break;
 			case STACK_TYPE_I4:
 				if (*td->ip == CEE_CONV_OVF_U4 || *td->ip == CEE_CONV_OVF_U)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_I4);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_I8);
 				break;
 			case STACK_TYPE_MP:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_CONV_OVF_U4_P);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_CONV_OVF_U4_P);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7900,13 +7897,13 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_I8_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_I8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_I8_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_I8_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_I8_I4);
 				break;
 			case STACK_TYPE_I8:
 				break;
@@ -7922,16 +7919,16 @@ retry_emit:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_R4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_U8_R4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_U8_R4);
 				break;
 			case STACK_TYPE_R8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_U8_R8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_U8_R8);
 				break;
 			case STACK_TYPE_I4:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_U8_I4);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_U8_I4);
 				break;
 			case STACK_TYPE_I8:
-				interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I8, MINT_CONV_OVF_U8_I8);
+				interp_add_conv (td, td->sp - 1, STACK_TYPE_I8, MINT_CONV_OVF_U8_I8);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -8378,9 +8375,9 @@ retry_emit:
 					interp_add_ins (td, MINT_CEQ_I4 + STACK_TYPE_I - STACK_TYPE_I4);
 				} else {
 					if (td->sp [-1].type == STACK_TYPE_R4 && td->sp [-2].type == STACK_TYPE_R8)
-						interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+						interp_add_conv (td, td->sp - 1, STACK_TYPE_R8, MINT_CONV_R8_R4);
 					if (td->sp [-1].type == STACK_TYPE_R8 && td->sp [-2].type == STACK_TYPE_R4)
-						interp_add_conv (td, td->sp - 2, NULL, STACK_TYPE_R8, MINT_CONV_R8_R4);
+						interp_add_conv (td, td->sp - 2, STACK_TYPE_R8, MINT_CONV_R8_R4);
 					interp_add_ins (td, MINT_CEQ_I4 + td->sp [-1].type - STACK_TYPE_I4);
 				}
 				td->sp -= 2;
@@ -8609,7 +8606,7 @@ retry_emit:
 				CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
 				if (td->sp [-1].type == STACK_TYPE_I8)
-					interp_add_conv (td, td->sp - 1, NULL, STACK_TYPE_I4, MINT_MOV_8);
+					interp_add_conv (td, td->sp - 1, STACK_TYPE_I4, MINT_MOV_8);
 #endif
 				interp_add_ins (td, MINT_LOCALLOC);
 				td->sp--;

@@ -739,11 +739,18 @@ namespace System.Runtime
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
 #if NATIVEAOT
+
+#if TARGET_WINDOWS
+            // Alert the debugger that we threw an exception.
+            InternalCalls.RhpFirstChanceExceptionNotification();
+#endif // TARGET_WINDOWS
+
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif
+#endif // NATIVEAOT
+
             // We need to copy the exception object to this stack location because collided unwinds
             // will cause the original stack location to go dead.
             object rethrownException = activeExInfo.ThrownException;

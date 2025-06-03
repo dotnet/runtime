@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
-    <DefineConstants Condition="'$(StabilizePackageVersion)' == 'true'">$(DefineConstants);STABILIZE_PACKAGE_VERSION</DefineConstants>
+    <DefineConstants Condition="'$(DotNetFinalVersionKind)' != ''">$(DefineConstants);STABILIZE_PACKAGE_VERSION</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
