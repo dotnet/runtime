@@ -275,7 +275,9 @@ namespace Microsoft.NET.HostModel.Bundle
             string entitlementsPath = null;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
             {
-                entitlementsPath = Path.Combine(_outputDir, "entitlements.plist");
+                entitlementsPath = _macosCodesign ?
+                    Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".plist")
+                    : null;
                 RemoveCodesignIfNecessary(bundlePath, entitlementsPath);
             }
 
@@ -377,10 +379,15 @@ namespace Microsoft.NET.HostModel.Bundle
                 // `codesign -v` returns 0 if app is signed
                 if (HostModelUtils.RunCodesign("-v", bundlePath).ExitCode == 0)
                 {
-                    var (exitCode, stdErr) = HostModelUtils.RunCodesign($"-d --entitlements {entitlementsPath} --xml", bundlePath);
-                    if (exitCode != 0)
+                    int exitCode;
+                    string stdErr;
+                    if (entitlementsPath != null)
                     {
-                        throw new InvalidOperationException($"Failed to get entitlements from '{bundlePath}': {stdErr}");
+                        (exitCode, stdErr) = HostModelUtils.RunCodesign($"-d --entitlements {entitlementsPath} --xml", bundlePath);
+                        if (exitCode != 0)
+                        {
+                            throw new InvalidOperationException($"Failed to get entitlements from '{bundlePath}': {stdErr}");
+                        }
                     }
                     (exitCode, stdErr) = HostModelUtils.RunCodesign("--remove-signature", bundlePath);
                     if (exitCode != 0)
