@@ -574,8 +574,8 @@
 
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to set
          rpath so that the test can load its native library dependencies if there's any -->
-    <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'win' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
-    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'win' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
+    <LinkerArg Include="-Wl,-rpath,'@executable_path/..'" Condition="'$(SetIlcRPath)' != 'false' and ('$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true')" />
+    <LinkerArg Include="-Wl,-rpath,'$ORIGIN/..'" Condition="'$(SetIlcRPath)' != 'false' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'osx' and '$(TargetsAppleMobile)' != 'true'" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
