@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     TypeDesc typeMapGroup = entryNode.TypeMapGroup;
                     typeMapHashTable = typeMapHashTables[typeMapGroup] = new VertexHashtable();
-                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Hash table
+                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(1); // Valid type map state
                     Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
                     typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, hashTableSection.Place(typeMapHashTable)));
                 }
@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     TypeDesc typeMapGroup = invalidNode.TypeMapGroup;
                     typeMapHashTables[typeMapGroup] = new VertexHashtable();
-                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(0);
+                    Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
                     Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(typeMapGroup)));
                     Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(invalidNode.ThrowingMethodStub)));
                     typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex));
