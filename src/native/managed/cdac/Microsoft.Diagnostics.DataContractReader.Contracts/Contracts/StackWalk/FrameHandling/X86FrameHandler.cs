@@ -26,7 +26,7 @@ internal class X86FrameHandler(Target target, ContextHolder<X86Context> contextH
 
     void IPlatformFrameHandler.HandleHijackFrame(HijackFrame frame)
     {
-        // TODO(cdacX86):
+        // TODO(cdacX86): Implement handling for HijackFrame
         throw new NotImplementedException();
     }
 }

@@ -12,6 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X8
 public class X86Unwinder(Target target)
 {
     private readonly Target _target = target;
+    private readonly uint _pointerSize = (uint)target.PointerSize;
     private readonly bool _updateAllRegs = true;
     private readonly bool _unixX86ABI = target.Contracts.RuntimeInfo.GetTargetOperatingSystem() == RuntimeInfoOperatingSystem.Unix;
 
@@ -37,8 +38,8 @@ public class X86Unwinder(Target target)
 
         eman.GetGCInfo(cbh, out TargetPointer gcInfoAddress, out uint _);
         uint relOffset = (uint)eman.GetRelativeOffset(cbh).Value;
-        TargetCodePointer methodStart = eman.GetStartAddress(cbh);
-        TargetCodePointer funcletStart = eman.GetFuncletStartAddress(cbh);
+        TargetPointer methodStart = eman.GetStartAddress(cbh).AsTargetPointer;
+        TargetPointer funcletStart = eman.GetFuncletStartAddress(cbh).AsTargetPointer;
         bool isFunclet = eman.IsFunclet(cbh);
 
         GCInfo gcInfo = new(_target, gcInfoAddress, relOffset);
@@ -145,7 +146,7 @@ public class X86Unwinder(Target target)
                 // "pop ecx" will make ESP point to the callee-saved registers
                 if (!InstructionAlreadyExecuted(offset, gcInfo.EpilogOffset))
                 {
-                    esp += (uint)_target.PointerSize;
+                    esp += _pointerSize;
                 }
                 offset = SKIP_POP_REG(epilogBase, offset);
             }
@@ -161,7 +162,7 @@ public class X86Unwinder(Target target)
             {
                 // lea esp, [ebp-calleeSavedRegs]
 
-                uint calleeSavedRegsSize = gcInfo.SavedRegsCountExclFP * (uint)_target.PointerSize;
+                uint calleeSavedRegsSize = gcInfo.SavedRegsCountExclFP * _pointerSize;
 
                 if (!InstructionAlreadyExecuted(offset, gcInfo.EpilogOffset))
                 {
@@ -186,8 +187,12 @@ public class X86Unwinder(Target target)
 
             if (!InstructionAlreadyExecuted(offset, gcInfo.EpilogOffset))
             {
-                // TODO(cdacX86): UpdateAllRegs set location??
-                esp += (uint)_target.PointerSize;
+                if (_updateAllRegs)
+                {
+                    TargetPointer regValueFromStack = _target.ReadPointer(esp);
+                    SetRegValue(ref context, regMask, regValueFromStack);
+                }
+                esp += _pointerSize;
             }
 
             offset = SKIP_POP_REG(epilogBase, offset);
@@ -206,16 +211,12 @@ public class X86Unwinder(Target target)
         {
             // TODO(cdacx86): are these equivalent?
             // pContext->SetEbpLocation(PTR_DWORD(TADDR(ESP)));
-            // context.Ebp = _target.Read<uint>(esp);
-            esp += (uint)_target.PointerSize;
+            context.Ebp = _target.Read<uint>(esp);
+            esp += _pointerSize;
         }
         _ = SKIP_POP_REG(epilogBase, offset);
 
-
-        // TODO(cdacx86): are these equivalent?
-        // SetRegdisplayPCTAddr(pContext, (TADDR)ESP);
         context.Eip = _target.Read<uint>(esp);
-
         context.Esp = esp;
     }
 
@@ -263,8 +264,12 @@ public class X86Unwinder(Target target)
             {
                 /* We have NOT yet popped off the register.
                    Get the value from the stack if needed */
-                // TODO(cdacX86): UpdateAllRegs set location??
-                esp += (uint)_target.PointerSize;
+                if (_updateAllRegs || regMask == RegMask.EBP)
+                {
+                    TargetPointer regValueFromStack = _target.ReadPointer(esp);
+                    SetRegValue(ref context, regMask, regValueFromStack);
+                }
+                esp += _pointerSize;
             }
 
             offset = SKIP_POP_REG(epilogBase, offset);
@@ -277,14 +282,11 @@ public class X86Unwinder(Target target)
             || CheckInstrWord(ReadShortAt(epilogBase + offset), X86_INSTR_w_JMP_FAR_IND_IMM)); //jmp [addr32]
 
         /* Finally we can set pPC */
-        // TODO(cdacx86): are these equivalent?
-        // SetRegdisplayPCTAddr(pContext, (TADDR)ESP);
         context.Eip = _target.Read<uint>(esp);
-
         context.Esp = esp;
     }
 
-    private void UnwindEspFrame(ref X86Context context, GCInfo gcInfo, TargetCodePointer methodStart)
+    private void UnwindEspFrame(ref X86Context context, GCInfo gcInfo, TargetPointer methodStart)
     {
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
         Debug.Assert(!gcInfo.IsInEpilog);
@@ -317,26 +319,30 @@ public class X86Unwinder(Target target)
                 SetRegValue(ref context, regMask, regValueFromStack);
 
                 // Pop the callee-saved registers
-                esp += (uint)_target.PointerSize;
+                esp += _pointerSize;
             }
         }
 
         /* we can now set the (address of the) return address */
-        // TODO(cdacx86): are these equivalent?
-        // SetRegdisplayPCTAddr(pContext, (TADDR)ESP);
         context.Eip = _target.Read<uint>(esp);
-
         context.Esp = esp + ESPIncrementOnReturn(gcInfo);
     }
 
-    private void UnwindEspFrameProlog(ref X86Context context, GCInfo gcInfo, TargetCodePointer methodStart)
+    private void UnwindEspFrameProlog(ref X86Context context, GCInfo gcInfo, TargetPointer methodStart)
     {
         Debug.Assert(gcInfo.IsInProlog);
         Debug.Assert(!gcInfo.Header.EbpFrame && !gcInfo.Header.DoubleAlign);
 
         uint offset = 0;
 
-        // TODO(cdacX86): Why only check for methods with JitHalt in debug builds?
+        // TODO(cdacX86): JitHalt DEBUG only check. Can this always exist or should it really depend
+        // on the target runtimes configuration?
+        // If the first two instructions are 'nop, int3', then  we will
+        // assume that is from a JitHalt operation and skip past it
+        if (ReadByteAt(methodStart) == X86_INSTR_NOP && ReadByteAt(methodStart + 1) == X86_INSTR_INT3)
+        {
+            offset += 2;
+        }
 
         uint curOffs = gcInfo.PrologOffset;
         uint esp = context.Esp;
@@ -352,7 +358,7 @@ public class X86Unwinder(Target target)
 
             if (InstructionAlreadyExecuted(offset, curOffs))
             {
-                esp += (uint)_target.PointerSize;
+                esp += _pointerSize;
                 regsMask |= regMask;
             }
 
@@ -385,7 +391,7 @@ public class X86Unwinder(Target target)
         if (regsMask.HasFlag(RegMask.EBP))
         {
             context.Ebp = _target.Read<uint>(savedRegPtr);
-            savedRegPtr += (uint)_target.PointerSize;
+            savedRegPtr += _pointerSize;
         }
 
         if (_updateAllRegs)
@@ -393,33 +399,22 @@ public class X86Unwinder(Target target)
             if (regsMask.HasFlag(RegMask.EBX))
             {
                 context.Ebx = _target.Read<uint>(savedRegPtr);
-                savedRegPtr += (uint)_target.PointerSize;
+                savedRegPtr += _pointerSize;
             }
             if (regsMask.HasFlag(RegMask.ESI))
             {
                 context.Esi = _target.Read<uint>(savedRegPtr);
-                savedRegPtr += (uint)_target.PointerSize;
+                savedRegPtr += _pointerSize;
             }
             if (regsMask.HasFlag(RegMask.EDI))
             {
                 context.Edi = _target.Read<uint>(savedRegPtr);
-                savedRegPtr += (uint)_target.PointerSize;
+                savedRegPtr += _pointerSize;
             }
 
-            // TODO(cdacX86): Do we handle trashing anything here?
+            // TODO(cdacX86): Should cDAC trash caller saved registers?
             // TRASH_CALLEE_UNSAVED_REGS(pContext);
         }
-
-        // NOTE:
-        // THIS IS ONLY TRUE IF PROLOGSIZE DOES NOT INCLUDE REG-VAR INITIALIZATION !!!!
-        //
-        /* there is (potentially) only one additional
-            instruction in the prolog, (push ebp)
-            but if we would have been passed that instruction,
-            info->prologOffs would be hdrInfo::NOT_IN_PROLOG!
-        */
-        // TODO(cdacX86): Does this check matter? It was disabled in the runtime
-        //_ASSERTE(offset == info->prologOffs);
 
         context.Esp = esp;
     }
@@ -427,8 +422,8 @@ public class X86Unwinder(Target target)
     private bool UnwindEbpDoubleAlignFrame(
         ref X86Context context,
         GCInfo gcInfo,
-        TargetCodePointer methodStart,
-        TargetCodePointer funcletStart,
+        TargetPointer methodStart,
+        TargetPointer funcletStart,
         bool isFunclet)
     {
         Debug.Assert(gcInfo.Header.EbpFrame || gcInfo.Header.DoubleAlign);
@@ -461,11 +456,12 @@ public class X86Unwinder(Target target)
                 }
 
                 context.Eip = (uint)_target.ReadPointer(baseSP);
-                context.Esp = (uint)baseSP + (uint)_target.PointerSize;
+                context.Esp = (uint)baseSP + _pointerSize;
                 return true;
             }
 
-            // TODO(cdacX86): Handle filter frames
+            /* The cDAC only supports FEATURE_EH_FUNCLETS and therefore does not
+               support unwinding filters without funclets. */
         }
 
         //
@@ -487,7 +483,7 @@ public class X86Unwinder(Target target)
             // Get to the first callee-saved register
             TargetPointer pSavedRegs = curEbp;
             if (gcInfo.Header.DoubleAlign && (curEbp & 0x04) != 0)
-                pSavedRegs -= (uint)_target.PointerSize;
+                pSavedRegs -= _pointerSize;
 
             foreach (RegMask regMask in registerOrder.Reverse())
             {
@@ -495,17 +491,17 @@ public class X86Unwinder(Target target)
 
                 if (!gcInfo.SavedRegsMask.HasFlag(regMask)) continue;
 
-                pSavedRegs -= (uint)_target.PointerSize;
+                pSavedRegs -= _pointerSize;
                 TargetPointer regValueFromStack = _target.ReadPointer(pSavedRegs);
                 SetRegValue(ref context, regMask, regValueFromStack);
             }
         }
 
         /* The caller's ESP will be equal to EBP + retAddrSize + argSize. */
-        context.Esp = curEbp + (uint)_target.PointerSize + ESPIncrementOnReturn(gcInfo);
+        context.Esp = curEbp + _pointerSize + ESPIncrementOnReturn(gcInfo);
 
         /* The caller's saved EIP is right after our EBP */
-        context.Eip = (uint)_target.ReadPointer(curEbp + (uint)_target.PointerSize);
+        context.Eip = (uint)_target.ReadPointer(curEbp + _pointerSize);
 
         /* The caller's saved EBP is pointed to by our EBP */
         context.Ebp = (uint)_target.ReadPointer(curEbp);
@@ -519,7 +515,14 @@ public class X86Unwinder(Target target)
 
         uint offset = 0;
 
-        // TODO(cdacX86): Why only check for methods with JitHalt in debug builds?
+        // TODO(cdacX86): JitHalt DEBUG only check. Can this always exist or should it really depend
+        // on the target runtimes configuration?
+        // If the first two instructions are 'nop, int3', then  we will
+        // assume that is from a JitHalt operation and skip past it
+        if (ReadByteAt(methodStart) == X86_INSTR_NOP && ReadByteAt(methodStart + 1) == X86_INSTR_INT3)
+        {
+            offset += 2;
+        }
 
         /* Check for the case where EBP has not been updated yet. */
         uint curOffs = gcInfo.PrologOffset;
@@ -535,7 +538,7 @@ public class X86Unwinder(Target target)
 
             /* If we're past the "push ebp", adjust ESP to pop EBP off */
             if (curOffs == (offset + 1))
-                context.Esp += (uint)_target.PointerSize;
+                context.Esp += _pointerSize;
 
             /* Stack pointer points to return address */
             context.Eip = (uint)_target.ReadPointer(context.Esp);
@@ -575,7 +578,7 @@ public class X86Unwinder(Target target)
 
                 if (InstructionAlreadyExecuted(offset, curOffs))
                 {
-                    pSavedRegs -= (uint)_target.PointerSize;
+                    pSavedRegs -= _pointerSize;
                     TargetPointer regValueFromStack = _target.ReadPointer(pSavedRegs);
                     SetRegValue(ref context, regMask, regValueFromStack);
                 }
@@ -583,13 +586,13 @@ public class X86Unwinder(Target target)
                 offset = SKIP_PUSH_REG(methodStart, offset);
             }
 
-            // TODO(cdacX86): Do we handle trashing anything here?
+            // TODO(cdacX86): Should cDAC trash caller saved registers?
             // TRASH_CALLEE_UNSAVED_REGS(pContext);
         }
 
         /* The caller's saved EBP is pointed to by our EBP */
         context.Ebp = (uint)_target.ReadPointer(curEBP);
-        context.Esp = (uint)_target.ReadPointer(curEBP + (uint)_target.PointerSize);
+        context.Esp = (uint)_target.ReadPointer(curEBP + _pointerSize);
 
         /* Stack pointer points to return address */
         context.Eip = (uint)_target.ReadPointer(context.Esp);
@@ -614,8 +617,8 @@ public class X86Unwinder(Target target)
     {
 
         uint stackParameterSize = gcInfo.Header.VarArgs ? 0 // varargs are caller-popped
-            : gcInfo.Header.ArgCount * (uint)_target.PointerSize;
-        return (uint)_target.PointerSize /* return address size */ + stackParameterSize;
+            : gcInfo.Header.ArgCount * _pointerSize;
+        return _pointerSize /* return address size */ + stackParameterSize;
     }
 
     // skips past a "arith REG, IMM"
@@ -709,8 +712,6 @@ public class X86Unwinder(Target target)
 
             if (CheckInstrWord(wOpcode, X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX))
             {
-                // TODO(cdacX86): This whole section is probably irrelevant for modern versions.
-
                 // In .NET 5.0 and earlier for frames that have size smaller than 0x3000 bytes
                 // JIT emits one or two 'test eax, [esp-dwOffset]' instructions before adjusting the stack pointer.
                 Debug.Assert(size < 0x3000);
@@ -744,8 +745,6 @@ public class X86Unwinder(Target target)
 
                 if (CheckInstrByte(ReadByteAt(baseAddress + offset), X86_INSTR_XOR))
                 {
-                    // TODO(cdacX86): This whole section is probably irrelevant for modern versions.
-
                     // In .NET Core 3.1 and earlier for frames that have size greater than or equal to 0x3000 bytes
                     // JIT emits the following loop.
                     Debug.Assert(size >= 0x3000);
