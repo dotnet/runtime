@@ -316,8 +316,7 @@ public class ConstantMasks
     static void CndSelectEmbeddedReductionTrueMaskF(Vector<int> op1) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE-NEXT: movz {{.*}}
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt64(), Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
     }
@@ -326,8 +325,7 @@ public class ConstantMasks
     static void CndSelectEmbeddedReductionTrueMaskZ(Vector<int> op1) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE-NEXT: movz {{.*}}
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateTrueMaskInt64(), Sve.AddAcross(op1), Vector<long>.Zero);
         Consume(result);
     }
@@ -336,8 +334,7 @@ public class ConstantMasks
     static void CndSelectEmbeddedReductionAllBitsF(Vector<int> op1) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE-NEXT: movz {{.*}}
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.AllBitsSet, Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
     }
@@ -346,8 +343,7 @@ public class ConstantMasks
     static void CndSelectEmbeddedReductionAllBitsZ(Vector<int> op1) {
         //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
         //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE-NEXT: movz {{.*}}
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.AllBitsSet, Sve.AddAcross(op1), Vector<long>.Zero);
         Consume(result);
     }
