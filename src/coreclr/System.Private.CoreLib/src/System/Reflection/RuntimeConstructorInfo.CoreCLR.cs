@@ -173,6 +173,7 @@ namespace System.Reflection
         internal RuntimeType GetRuntimeType() { return m_declaringType; }
         internal RuntimeModule GetRuntimeModule() { return RuntimeTypeHandle.GetModule(m_declaringType); }
         internal RuntimeAssembly GetRuntimeAssembly() { return GetRuntimeModule().GetRuntimeAssembly(); }
+        public override bool IsCollectible => m_declaringType.IsCollectible;
         #endregion
 
         #region MethodBase Overrides

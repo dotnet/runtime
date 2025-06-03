@@ -26,6 +26,9 @@ namespace System.Security.Cryptography
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination) =>
             throw new PlatformNotSupportedException();
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException();
+
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm) =>
             throw new PlatformNotSupportedException();
 

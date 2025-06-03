@@ -36,6 +36,7 @@
 #include "RhConfig.h"
 #include <minipal/cpuid.h>
 #include <minipal/debugger.h>
+#include <minipal/time.h>
 
 FCIMPL0(void, RhDebugBreak)
 {
@@ -417,11 +418,6 @@ FCIMPL1(uint8_t *, RhGetCodeTarget, uint8_t * pCodeOrg)
     return pCodeOrg;
 }
 FCIMPLEND
-
-EXTERN_C uint64_t QCALLTYPE RhpGetTickCount64()
-{
-    return PalGetTickCount64();
-}
 
 EXTERN_C int32_t QCALLTYPE RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
