@@ -280,8 +280,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 header.SyncStartOffset ^= HAS_SYNC_OFFSET;
                                 break;
                             case (byte)InfoHdrAdjust.FLIP_REV_PINVOKE_FRAME:
-                                header.RevPInvokeOffset = header.RevPInvokeOffset == INVALID_REV_PINVOKE_OFFSET ?
-                                    HAS_REV_PINVOKE_FRAME_OFFSET : INVALID_REV_PINVOKE_OFFSET;
+                                header.RevPInvokeOffset ^= (INVALID_REV_PINVOKE_OFFSET ^ HAS_REV_PINVOKE_FRAME_OFFSET);
                                 break;
 
                             case (byte)InfoHdrAdjust.NEXT_OPCODE:
