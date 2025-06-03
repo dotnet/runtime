@@ -22,9 +22,6 @@
     <EnableBlobArtifacts>true</EnableBlobArtifacts>
     <EnableBlobArtifacts Condition="'$(MonoAOTEnableLLVM)' == 'true'">false</EnableBlobArtifacts>
 
-    <!-- Set the TargetRid property to our OutputRID, which is the right RID to use for selecting packages from our repo. -->
-    <TargetRid>$(OutputRID)</TargetRid>
-
     <!-- The final stage of the runtime official build should publish everything. -->
     <EnableDefaultRidSpecificArtifacts Condition="'$(EnableDefaultRidSpecificArtifacts)' == '' and '$(DotNetBuildOrchestrator)' != 'true'">true</EnableDefaultRidSpecificArtifacts>
 
@@ -105,29 +102,29 @@
   <Choose>
     <When Condition="'$(MonoAOTEnableLLVM)' == 'true'">
       <ItemGroup>
-        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(OutputRID).*.nupkg" />
+        <PackageArtifacts Include="$(ArtifactsPackagesDir)**\*.LLVM.AOT.$(TargetRid).*.nupkg" />
         <Artifact Include="@(PackageArtifacts)"
                   IsShipping="$([System.String]::Copy('%(RecursiveDir)').StartsWith('Shipping'))"
                   Kind="Package" />
       </ItemGroup>
     </When>
     <When Condition="'$(EnableDefaultRidSpecificArtifacts)' == 'true'">
-      <ItemGroup Condition="'$(OutputRID)' == 'ios-arm64'">
+      <ItemGroup Condition="'$(TargetRid)' == 'ios-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.iOS.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.LibraryBuilder.Sdk.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoAOTCompiler.Task.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.MonoTargets.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(OutputRID)' == 'android-arm64'">
+      <ItemGroup Condition="'$(TargetRid)' == 'android-arm64'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.Android.Sample.Mono.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(OutputRID)' == 'wasi-wasm'">
+      <ItemGroup Condition="'$(TargetRid)' == 'wasi-wasm'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.*.nupkg" />
       </ItemGroup>
-      <ItemGroup Condition="'$(OutputRID)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
+      <ItemGroup Condition="'$(TargetRid)' == 'browser-wasm' and '$(WasmEnableThreads)' != 'true'">
         <PackageArtifacts
           Include="$(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.wasm.Sample.Mono.*.nupkg;
                   $(ArtifactsPackagesDir)**\Microsoft.NET.Runtime.WorkloadTesting.Internal.*.nupkg;
