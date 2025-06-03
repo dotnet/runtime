@@ -711,6 +711,9 @@ namespace System.Net.Http
 
         private static bool IsAscii(string value)
         {
+#if NET
+            return Ascii.IsValid(value);
+#else
             for (int i = 0; i < value.Length; i++)
             {
                 if (value[i] > 127)
@@ -719,6 +722,7 @@ namespace System.Net.Http
                 }
             }
             return true;
+#endif
         }
 
         private static void ValidateHeadersForAscii(string headers)
