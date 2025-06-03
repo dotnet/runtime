@@ -1245,8 +1245,8 @@ namespace System.Runtime.CompilerServices
 
             // Conversion between nullable value types should succeed
 
-            Assert.Equal(42, Unsafe.BitCast<int?, uint?>(42));
-            Assert.Equal(null, Unsafe.BitCast<long?, ulong?>(null));
+            Assert.Equal((uint)42, (uint)Unsafe.BitCast<int?, uint?>(42));
+            Assert.Null(Unsafe.BitCast<long?, ulong?>(null));
 
             // Conversion between floating-point and same sized integral should succeed
 
