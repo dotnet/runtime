@@ -1543,7 +1543,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData(2)]
+        [InlineData(3)]
         public static void PredefinedSerializerOptions_UnhandledDefaults(int enumValue)
         {
             var outOfRangeSerializerDefaults = (JsonSerializerDefaults)enumValue;
