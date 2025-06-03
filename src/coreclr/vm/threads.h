@@ -3964,10 +3964,8 @@ private:
     friend struct ::cdac_data<Thread>;
 
 #ifdef FEATURE_INTERPRETER
-private:
-    InterpThreadContext *m_pInterpThreadContext;
-
 public:
+    InterpThreadContext *m_pInterpThreadContext;
     InterpThreadContext* GetInterpThreadContext();
 #endif // FEATURE_INTERPRETER
 };

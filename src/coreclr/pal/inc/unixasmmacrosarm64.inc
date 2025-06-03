@@ -184,6 +184,7 @@ C_FUNC(\Name\()_End):
 // ArgumentRegisters::x2
 // ArgumentRegisters::x1
 // ArgumentRegisters::x0
+// ArgumentRegisters::x8
 // FloatRegisters::q7
 // FloatRegisters::q6
 // FloatRegisters::q5
@@ -192,7 +193,7 @@ C_FUNC(\Name\()_End):
 // FloatRegisters::q2
 // FloatRegisters::q1
 // FloatRegisters::q0
-.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1
+.macro PROLOG_WITH_TRANSITION_BLOCK extraLocals = 0, SaveFPArgs = 1, SaveGPArgs = 1
 
         __PWTB_FloatArgumentRegisters = \extraLocals
         __PWTB_SaveFPArgs = \SaveFPArgs
@@ -222,8 +223,10 @@ C_FUNC(\Name\()_End):
         // Allocate space for the rest of the frame
         PROLOG_STACK_ALLOC  __PWTB_StackAlloc
 
-        // Spill argument registers.
-        SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+        .if (\SaveGPArgs == 1)
+                // Spill argument registers.
+                SAVE_ARGUMENT_REGISTERS        sp, __PWTB_ArgumentRegisters
+        .endif
 
         .if (__PWTB_SaveFPArgs == 1)
                 SAVE_FLOAT_ARGUMENT_REGISTERS sp, \extraLocals
@@ -300,7 +303,6 @@ C_FUNC(\Name\()_End):
         ret
 
 .endm
-
 
 //-----------------------------------------------------------------------------
 // Provides a matching epilog to PROLOG_WITH_TRANSITION_BLOCK and ends by preparing for tail-calling.
@@ -469,4 +471,48 @@ $__RedirectionStubEndFuncName
         EMIT_BREAKPOINT
 0:
 #endif
+.endm
+
+#define xip0 x16
+#define xip1 x17
+#define xpr x18
+
+// Loads the address of a thread-local variable into the target register,
+// which cannot be x0.
+// Preserves registers except for xip0 and xip1 on Apple
+.macro INLINE_GET_TLS_VAR target, var
+    .ifc \target, x0
+        .error "target cannot be x0"
+    .endif
+
+    // This sequence of instructions is recognized and potentially patched
+    // by the linker (GD->IE/LE relaxation).
+#if defined(__APPLE__)
+
+    adrp    x0, \var@TLVPPAGE
+    ldr     x0, [x0, \var@TLVPPAGEOFF]
+    ldr     \target, [x0]
+
+    blr     \target
+    // End of the sequence
+
+    mov     \target, x0
+#else
+    adrp    x0, :tlsdesc:\var
+    ldr     \target, [x0, #:tlsdesc_lo12:\var]
+    add     x0, x0, :tlsdesc_lo12:\var
+    .tlsdesccall \var
+    blr     \target
+    // End of the sequence
+
+    mrs     \target, tpidr_el0
+    add     \target, \target, x0
+#endif
+
+.endm
+
+// Inlined version of RhpGetThread. Target cannot be x0.
+.macro INLINE_GETTHREAD target
+    INLINE_GET_TLS_VAR \target, C_FUNC(t_CurrentThreadInfo)
+    ldr     \target, [\target, #OFFSETOF__ThreadLocalInfo__m_pThread]
 .endm
