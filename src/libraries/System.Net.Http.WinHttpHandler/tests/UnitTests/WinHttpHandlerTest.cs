@@ -837,6 +837,68 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             }
         }
 
+        [Fact]
+        public void SendAsync_RequestWithNonAsciiHeaderValue_ThrowsHttpRequestException()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+                
+                var invoker = new HttpMessageInvoker(handler, false);
+                var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+                request.Headers.Add("Custom-Header", "HeaderValue\u00A9WithNon-ASCII");
+                
+                var ex = Assert.Throws<HttpRequestException>(() =>
+                {
+                    Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                    task.GetAwaiter().GetResult();
+                });
+                
+                Assert.Contains("ASCII", ex.Message);
+            }
+        }
+
+        [Fact] 
+        public void SendAsync_RequestWithAsciiHeaderValue_Succeeds()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+                
+                var invoker = new HttpMessageInvoker(handler, false);
+                var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+                request.Headers.Add("Custom-Header", "ValidASCIIHeaderValue123");
+                
+                Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                using (HttpResponseMessage response = task.GetAwaiter().GetResult())
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }
+        }
+
+        [Fact]
+        public void SendAsync_RequestWithNonAsciiContentHeader_ThrowsHttpRequestException()
+        {
+            using (var handler = new WinHttpHandler())
+            {
+                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+                
+                var invoker = new HttpMessageInvoker(handler, false);
+                var request = new HttpRequestMessage(HttpMethod.Post, TestServer.FakeServerEndpoint);
+                request.Content = new StringContent("test content");
+                request.Content.Headers.Add("Custom-Content-Header", "ContentValue\u00A9WithNon-ASCII");
+                
+                var ex = Assert.Throws<HttpRequestException>(() =>
+                {
+                    Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                    task.GetAwaiter().GetResult();
+                });
+                
+                Assert.Contains("ASCII", ex.Message);
+            }
+        }
+
         // Commented out as the test relies on finalizer for cleanup and only has value as written
         // when run on its own and manual analysis is done of logs.
         //[Fact]

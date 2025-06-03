@@ -709,6 +709,26 @@ namespace System.Net.Http
             return chunkedMode;
         }
 
+        private static bool IsAscii(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] > 127)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static void ValidateHeadersForAscii(string headers)
+        {
+            if (!IsAscii(headers))
+            {
+                throw new HttpRequestException("Request headers must contain only ASCII characters.");
+            }
+        }
+
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
             HttpRequestMessage requestMessage,
@@ -734,14 +754,17 @@ namespace System.Net.Http
                 string? cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
                 {
+                    ValidateHeadersForAscii(cookieHeader);
                     requestHeadersBuffer.AppendLine(cookieHeader);
                 }
             }
 
-            // Serialize general request headers.
-            requestHeadersBuffer.AppendLine(requestMessage.Headers.ToString());
+            // Serialize general request headers and validate for ASCII.
+            string generalHeaders = requestMessage.Headers.ToString();
+            ValidateHeadersForAscii(generalHeaders);
+            requestHeadersBuffer.Append(generalHeaders);
 
-            // Serialize entity-body (content) headers.
+            // Serialize entity-body (content) headers and validate for ASCII.
             if (requestMessage.Content != null)
             {
                 // TODO https://github.com/dotnet/runtime/issues/16162:
@@ -754,7 +777,9 @@ namespace System.Net.Http
                     requestMessage.Content.Headers.ContentLength = contentLength;
                 }
 
-                requestHeadersBuffer.AppendLine(requestMessage.Content.Headers.ToString());
+                string contentHeaders = requestMessage.Content.Headers.ToString();
+                ValidateHeadersForAscii(contentHeaders);
+                requestHeadersBuffer.Append(contentHeaders);
             }
 
             // Add request headers to WinHTTP request handle.
