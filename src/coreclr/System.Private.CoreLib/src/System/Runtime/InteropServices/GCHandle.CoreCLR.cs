@@ -43,7 +43,15 @@ namespace System.Runtime.InteropServices
 
 #if FEATURE_GCBRIDGE
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? InternalGetBridgeWait(IntPtr handle);
+        internal static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
+        internal static partial void InternalGetBridgeWait(IntPtr handle, ObjectHandleOnStack result);
+
+        internal static void InternalGetBridgeWait(IntPtr handle, ref object? result)
+        {
+            InternalGetBridgeWait(handle, ObjectHandleOnStack.Create(ref result));
+        }
 #endif
 #if DEBUG
         // The runtime performs additional checks in debug builds

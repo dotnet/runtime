@@ -337,6 +337,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(GCHandle_InternalAllocWithGCTransition)
     DllImportEntry(GCHandle_InternalFreeWithGCTransition)
+    DllImportEntry(GCHandle_InternalGetBridgeWait)
     DllImportEntry(MarshalNative_OffsetOf)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)

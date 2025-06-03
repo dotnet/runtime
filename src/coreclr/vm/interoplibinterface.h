@@ -128,6 +128,8 @@ public:
 
 #ifdef FEATURE_GCBRIDGE
 
+    static bool IsGCBridgeActive();
+
     static void WaitForGCBridgeFinish();
 
     static void TriggerClientBridgeProcessing(

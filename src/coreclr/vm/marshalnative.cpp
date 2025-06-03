@@ -405,21 +405,41 @@ FCIMPLEND
 #ifdef FEATURE_GCBRIDGE
 // Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
 // Used by WeakReference
-FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGetBridgeWait, OBJECTHANDLE handle)
+FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF objRef;
+    if (Interop::IsGCBridgeActive())
+    {
+        FC_RETURN_BOOL(false);
+    }
 
-    Interop::WaitForGCBridgeFinish();
-    // No GC can happen between the wait and obtaining of the reference, so the
-    // bridge processing status can't change, guaranteeing the nulling of weak refs
-    // took place in the bridge processing finish stage.
-    objRef = ObjectFromHandle(handle);
-
-    return *((LPVOID*)&objRef);
+    *pObjResult = OBJECTREFToObject(ObjectFromHandle(handle));
+    FC_RETURN_BOOL(true);
 }
 FCIMPLEND
+
+// Unlike the fast call above, this can block
+extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QCall::ObjectHandleOnStack result)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    {
+        GCX_COOP();
+
+        Interop::WaitForGCBridgeFinish();
+        // No GC can happen between the wait and obtaining of the reference, so the
+        // bridge processing status can't change, guaranteeing the nulling of weak refs
+        // took place in the bridge processing finish stage.
+        result.Set(ObjectFromHandle(handle));
+    }
+
+    END_QCALL;
+}
 #endif
 
 // Update the object referenced by a GC handle.
