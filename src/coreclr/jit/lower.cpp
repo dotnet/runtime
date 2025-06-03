@@ -11145,8 +11145,25 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     GenTree* src = blkNode->Data();
     if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
-        // TODO-CQ: support STORE_IND SIMD16(SIMD16, CNT_INT 0).
-        return false;
+        assert(!blkNode->ContainsReferences());
+        if (src->OperIsInitVal())
+        {
+            BlockRange().Remove(src);
+            src = src->gtGetOp1();
+        }
+
+        uint8_t  initVal = static_cast<uint8_t>(static_cast<size_t>(src->AsIntCon()->IconValue()));
+        simd64_t vec     = {};
+        memset(&vec, initVal, sizeof(simd64_t));
+        GenTreeVecCon* cnsVec = comp->gtNewVconNode(regType, &vec);
+
+        BlockRange().InsertAfter(src, cnsVec);
+        BlockRange().Remove(src);
+        blkNode->SetData(cnsVec);
+        blkNode->ChangeOper(GT_STOREIND);
+        blkNode->ChangeType(regType);
+        LowerStoreIndirCommon(blkNode->AsStoreInd());
+        return true;
     }
 
     if (varTypeIsGC(regType))
