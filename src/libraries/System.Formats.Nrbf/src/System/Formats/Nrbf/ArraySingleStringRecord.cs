@@ -17,7 +17,7 @@ namespace System.Formats.Nrbf;
 /// </remarks>
 internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
 {
-    private ArraySingleStringRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
+    internal ArraySingleStringRecord(ArrayInfo arrayInfo) : base(arrayInfo) => Records = [];
 
     public override SerializationRecordType RecordType => SerializationRecordType.ArraySingleString;
 

@@ -273,6 +273,7 @@ virtual GenericParamContextType GetParamContextType(PREGDISPLAY     pContext,
 */
 virtual void * GetGSCookieAddr(PREGDISPLAY     pContext,
                                EECodeInfo    * pCodeInfo,
+                               unsigned        flags,
                                CodeManState  * pState) = 0;
 
 #ifndef USE_GC_INFO_DECODER
@@ -541,6 +542,7 @@ PTR_VOID GetExactGenericsToken(SIZE_T          baseStackSlot,
 virtual
 void * GetGSCookieAddr(PREGDISPLAY     pContext,
                        EECodeInfo    * pCodeInfo,
+                       unsigned        flags,
                        CodeManState  * pState);
 
 

@@ -4,6 +4,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Formats.Nrbf.Utils;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace System.Formats.Nrbf;
 
@@ -26,12 +29,6 @@ public abstract class ArrayRecord : SerializationRecord
     /// </summary>
     /// <value>A buffer of integers that represent the number of elements in every dimension.</value>
     public abstract ReadOnlySpan<int> Lengths { get; }
-
-    /// <summary>
-    /// When overridden in a derived class, gets the total number of all elements in every dimension.
-    /// </summary>
-    /// <value>A number that represent the total number of all elements in every dimension.</value>
-    public virtual long FlattenedLength => ArrayInfo.FlattenedLength;
 
     /// <summary>
     /// Gets the rank of the array.
@@ -118,4 +115,86 @@ public abstract class ArrayRecord : SerializationRecord
     }
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
+
+    internal static void Populate(List<SerializationRecord> source, Array destination, int[] lengths, AllowedRecordTypes allowedRecordTypes, bool allowNulls)
+    {
+        int[] indices = new int[lengths.Length];
+        nuint numElementsWritten = 0; // only for debugging; not used in release builds
+
+        foreach (SerializationRecord record in source)
+        {
+            object? value = GetActualValue(record, allowedRecordTypes, out int incrementCount);
+            if (value is not null)
+            {
+                // null is a default element for all array of reference types, so we don't call SetValue for nulls.
+                destination.SetValue(value, indices);
+                Debug.Assert(incrementCount == 1, "IncrementCount other than 1 is allowed only for null records.");
+            }
+            else if (!allowNulls)
+            {
+                ThrowHelper.ThrowArrayContainedNulls();
+            }
+
+            while (incrementCount > 0)
+            {
+                incrementCount--;
+                numElementsWritten++;
+                int dimension = indices.Length - 1;
+                while (dimension >= 0)
+                {
+                    indices[dimension]++;
+                    if (indices[dimension] < lengths[dimension])
+                    {
+                        break;
+                    }
+                    indices[dimension] = 0;
+                    dimension--;
+                }
+
+                if (dimension < 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        Debug.Assert(numElementsWritten == (uint)source.Count, "We should have traversed the entirety of the source records collection.");
+        Debug.Assert(numElementsWritten == (ulong)destination.LongLength, "We should have traversed the entirety of the destination array.");
+    }
+
+    private static object? GetActualValue(SerializationRecord record, AllowedRecordTypes allowedRecordTypes, out int repeatCount)
+    {
+        repeatCount = 1;
+
+        if (record is NullsRecord nullsRecord)
+        {
+            repeatCount = nullsRecord.NullCount;
+            return null;
+        }
+        else if (record.RecordType == SerializationRecordType.MemberReference)
+        {
+            record = ((MemberReferenceRecord)record).GetReferencedRecord();
+        }
+
+        if (allowedRecordTypes == AllowedRecordTypes.BinaryObjectString)
+        {
+            if (record is not BinaryObjectStringRecord stringRecord)
+            {
+                throw new SerializationException(SR.Serialization_InvalidReference);
+            }
+
+            return stringRecord.Value;
+        }
+        else if (allowedRecordTypes == AllowedRecordTypes.Arrays)
+        {
+            if (record is not ArrayRecord arrayRecord)
+            {
+                throw new SerializationException(SR.Serialization_InvalidReference);
+            }
+
+            return arrayRecord;
+        }
+
+        return record;
+    }
 }

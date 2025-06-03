@@ -983,5 +983,25 @@ namespace System.Reflection.Metadata
                 Assert.True(frame1Name == null || frame1Name.Contains("NewMethodThrows.cs"));
             });
         }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof (ApplyUpdateUtil.IsSupported))]
+        void TestIncreaseMetadataRowSize()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                // Get the custom attribtues from a newly-added type and method
+                // and check that they are the expected ones.
+                var assm = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).Assembly;
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+                ApplyUpdateUtil.ClearAllReflectionCaches();
+
+                var r = ApplyUpdate.Test.IncreaseMetadataRowSize.VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_1();
+                Assert.Equal(50000, r);
+                MethodInfo mi = typeof(ApplyUpdate.Test.IncreaseMetadataRowSize).GetMethod("VeryLooooooooooooooooooooooooooooooooongMethodNameToPushTheStringBlobOver64k_800");
+                ParameterInfo[] pars = mi.GetParameters();
+                Assert.Equal("x800", pars[0].Name);
+            });
+        }
     }       
 }

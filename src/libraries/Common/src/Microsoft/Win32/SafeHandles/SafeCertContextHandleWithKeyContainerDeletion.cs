@@ -50,10 +50,16 @@ namespace Microsoft.Win32.SafeHandles
 
                         string providerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszProvName))!;
                         string keyContainerName = Marshal.PtrToStringUni((IntPtr)(pProvInfo->pwszContainerName))!;
+                        CngKeyOpenOptions openOpts = CngKeyOpenOptions.None;
+
+                        if ((pProvInfo->dwFlags & Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) != 0)
+                        {
+                            openOpts = CngKeyOpenOptions.MachineKey;
+                        }
 
                         try
                         {
-                            using (CngKey cngKey = CngKey.Open(keyContainerName, new CngProvider(providerName)))
+                            using (CngKey cngKey = CngKey.Open(keyContainerName, new CngProvider(providerName), openOpts))
                             {
                                 cngKey.Delete();
                             }

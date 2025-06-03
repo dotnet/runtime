@@ -926,25 +926,25 @@ extends:
 
       # WASI/WASM
 
-      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          nameSuffix: '_Smoke'
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          shouldRunSmokeOnly: true
-          alwaysRun: ${{ variables.isRollingBuild }}
-          scenarios:
-            - WasmTestOnWasmtime
+      # - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - wasi_wasm
+      #       - wasi_wasm_win
+      #     nameSuffix: '_Smoke'
+      #     extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     shouldRunSmokeOnly: true
+      #     alwaysRun: ${{ variables.isRollingBuild }}
+      #     scenarios:
+      #       - WasmTestOnWasmtime
 
-      - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
-        parameters:
-          platforms:
-            - wasi_wasm
-            - wasi_wasm_win
-          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-          alwaysRun: ${{ variables.isRollingBuild }}
+      # - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
+      #   parameters:
+      #     platforms:
+      #       - wasi_wasm
+      #       - wasi_wasm_win
+      #     extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      #     alwaysRun: ${{ variables.isRollingBuild }}
 
       #
       # Android devices
@@ -1010,8 +1010,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            # Tracking issue: https://github.com/dotnet/runtime/issues/82637
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=false
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 480
             condition: >-
               or(
@@ -1087,8 +1086,7 @@ extends:
           runtimeFlavor: mono
           platforms:
           - maccatalyst_x64
-          - ${{ if eq(variables['isRollingBuild'], true) }}:
-            - maccatalyst_arm64
+          - maccatalyst_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange

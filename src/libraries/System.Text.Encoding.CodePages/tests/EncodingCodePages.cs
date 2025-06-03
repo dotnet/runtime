@@ -519,6 +519,7 @@ namespace System.Text.Tests
             Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))));
 
             TestRegister1252();
+            TestMultiBytesEncodingsSupportSurrogate();
         }
 
         private static void ValidateDefaultEncodings()
@@ -637,6 +638,23 @@ namespace System.Text.Tests
             // Names can't be empty, and must be printable characters.
             Assert.False(string.IsNullOrWhiteSpace(name));
             Assert.All(name, c => Assert.True(c >= ' ' && c < '~' + 1, "Name: " + name + " contains character: " + c));
+        }
+
+        private static void TestMultiBytesEncodingsSupportSurrogate()
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            Encoding encoding = Encoding.GetEncoding("GB18030");
+            Assert.NotNull(encoding);
+
+            string surrogatePair = "\uD840\uDE13"; // Surrogate Pair codepoint '𠈓' \U00020213
+            byte[] expectedBytes = new byte[] { 0x95, 0x32, 0xB7, 0x37 };
+
+            Assert.Equal(expectedBytes, encoding.GetBytes(surrogatePair));
+            Assert.Equal(expectedBytes.Length, encoding.GetByteCount(surrogatePair));
+
+            Assert.Equal(surrogatePair, encoding.GetString(expectedBytes));
+            Assert.Equal(surrogatePair.Length, encoding.GetCharCount(expectedBytes));
         }
 
         // This test is run as part of the default mappings test, since it modifies global state which that test

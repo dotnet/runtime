@@ -267,15 +267,21 @@ FlowEdge* Compiler::BlockPredsWithEH(BasicBlock* blk)
 //   'blk'.
 //
 // Arguments:
-//    blk - Block to get dominance predecessors for.
+//   blk - Block to get dominance predecessors for.
 //
 // Returns:
-//    List of edges.
+//   List of edges.
 //
 // Remarks:
-//    Differs from BlockPredsWithEH only in the treatment of handler blocks;
-//    enclosed blocks are never dominance preds, while all predecessors of
-//    blocks in the 'try' are (currently only the first try block expected).
+//   Differs from BlockPredsWithEH only in the treatment of handler blocks;
+//   enclosed blocks are never dominance preds, while all predecessors of
+//   blocks in the 'try' are (currently only the first try block expected).
+//
+//   There are additional complications due to spurious flow because of
+//   two-pass EH. In the flow graph with EH edges we can see entries into the
+//   try from filters outside the try, to blocks other than the "try-begin"
+//   block. Hence we need to consider the full set of blocks in the try region
+//   when considering the block dominance preds.
 //
 FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
 {
@@ -284,14 +290,6 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
         return blk->bbPreds;
     }
 
-    EHblkDsc* ehblk = ehGetBlockHndDsc(blk);
-    if (!ehblk->HasFinallyOrFaultHandler() || (ehblk->ebdHndBeg != blk))
-    {
-        return ehblk->ebdTryBeg->bbPreds;
-    }
-
-    // Finally/fault handlers can be preceded by enclosing filters due to 2
-    // pass EH, so add those and keep them cached.
     BlockToFlowEdgeMap* domPreds = GetDominancePreds();
     FlowEdge*           res;
     if (domPreds->Lookup(blk, &res))
@@ -299,29 +297,11 @@ FlowEdge* Compiler::BlockDominancePreds(BasicBlock* blk)
         return res;
     }
 
-    res = ehblk->ebdTryBeg->bbPreds;
-    if (ehblk->HasFinallyOrFaultHandler() && (ehblk->ebdHndBeg == blk))
+    EHblkDsc* ehblk = ehGetBlockHndDsc(blk);
+    res             = BlockPredsWithEH(blk);
+    for (BasicBlock* predBlk : ehblk->ebdTryBeg->PredBlocks())
     {
-        // block is a finally or fault handler; all enclosing filters are predecessors
-        unsigned enclosing = ehblk->ebdEnclosingTryIndex;
-        while (enclosing != EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            EHblkDsc* enclosingDsc = ehGetDsc(enclosing);
-            if (enclosingDsc->HasFilter())
-            {
-                for (BasicBlock* filterBlk = enclosingDsc->ebdFilter; filterBlk != enclosingDsc->ebdHndBeg;
-                     filterBlk             = filterBlk->Next())
-                {
-                    res = new (this, CMK_FlowEdge) FlowEdge(filterBlk, blk, res);
-
-                    assert(filterBlk->VisitEHEnclosedHandlerSecondPassSuccs(this, [blk](BasicBlock* succ) {
-                        return succ == blk ? BasicBlockVisit::Abort : BasicBlockVisit::Continue;
-                    }) == BasicBlockVisit::Abort);
-                }
-            }
-
-            enclosing = enclosingDsc->ebdEnclosingTryIndex;
-        }
+        res = new (this, CMK_FlowEdge) FlowEdge(predBlk, blk, res);
     }
 
     domPreds->Set(blk, res);

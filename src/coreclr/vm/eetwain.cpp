@@ -1952,6 +1952,7 @@ PTR_VOID EECodeManager::GetExactGenericsToken(SIZE_T          baseStackSlot,
 
 void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
                                       EECodeInfo *    pCodeInfo,
+                                      unsigned        flags,
                                       CodeManState  * pState)
 {
     CONTRACTL {
@@ -1964,6 +1965,14 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
 
 #ifdef FEATURE_EH_FUNCLETS
     if (pCodeInfo->IsFunclet())
+    {
+        return NULL;
+    }
+#endif
+
+#ifdef HAS_LIGHTUNWIND
+    // LightUnwind does not track sufficient context to compute GS cookie address
+    if (flags & LightUnwind)
     {
         return NULL;
     }

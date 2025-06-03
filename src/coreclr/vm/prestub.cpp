@@ -1445,11 +1445,18 @@ namespace
 
         DWORD declArgCount;
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
-
-        // UnsafeAccessors for fields require return types be byref.
-        // This was explicitly checked in TryGenerateUnsafeAccessor().
         if (pSig1 >= pEndSig1)
             ThrowHR(META_E_BAD_SIGNATURE);
+
+        // UnsafeAccessors for fields require return types be byref. However, we first need to
+        // consume any custom modifiers which are prior to the expected ELEMENT_TYPE_BYREF in
+        // the RetType signature (II.23.2.11).
+        _ASSERTE(state.IgnoreCustomModifiers); // We should always ignore custom modifiers for field look-up.
+        MetaSig::ConsumeCustomModifiers(pSig1, pEndSig1);
+        if (pSig1 >= pEndSig1)
+            ThrowHR(META_E_BAD_SIGNATURE);
+
+        // The ELEMENT_TYPE_BYREF was explicitly checked in TryGenerateUnsafeAccessor().
         CorElementType byRefType = CorSigUncompressElementType(pSig1);
         _ASSERTE(byRefType == ELEMENT_TYPE_BYREF);
 
@@ -1497,7 +1504,7 @@ namespace
 
             TokenPairList list { nullptr };
             MetaSig::CompareState state{ &list };
-            state.IgnoreCustomModifiers = false;
+            state.IgnoreCustomModifiers = true;
             if (!DoesFieldMatchUnsafeAccessorDeclaration(cxt, pField, state))
                 continue;
 

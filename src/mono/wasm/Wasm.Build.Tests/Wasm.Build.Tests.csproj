@@ -47,6 +47,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+	<PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
     <!-- Update the version provided by Microsoft.Playwright but drop it in favor of framework copy-->
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" PrivateAssets="All" ExcludeAssets="All" />
@@ -134,13 +135,18 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. Copy & paste to Wasi.Build.Tests -->
+      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(StabilizePackageVersion)' != 'true'">$(PackageVersion)</_RuntimePackCurrentVersion>
+    </PropertyGroup>
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER9" />
 
       <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''" />
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />

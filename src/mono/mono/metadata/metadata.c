@@ -38,17 +38,13 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-logger-internals.h>
+#include "../native/containers/dn-simdhash-utils.h"
 
 /* Auxiliary structure used for caching inflated signatures */
 typedef struct {
 	MonoMethodSignature *sig;
 	MonoGenericContext context;
 } MonoInflatedMethodSignature;
-
-enum {
-	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
-	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2,
-};
 
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
 					 const char *ptr, const char **rptr, MonoError *error);
@@ -1879,18 +1875,21 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 guint
 mono_metadata_generic_inst_hash (gconstpointer data)
 {
+	// Custom MurmurHash3 for generic instances to produce a high quality hash
 	const MonoGenericInst *ginst = (const MonoGenericInst *) data;
-	guint hash = 0;
 	g_assert (ginst);
 	g_assert (ginst->type_argv);
 
+	uint32_t h1 = ginst->type_argc;
+
 	for (guint i = 0; i < ginst->type_argc; ++i) {
-		hash *= 13;
 		g_assert (ginst->type_argv [i]);
-		hash += mono_metadata_type_hash (ginst->type_argv [i]);
+		MURMUR3_HASH_BLOCK ((uint32_t) mono_metadata_type_hash (ginst->type_argv [i]));
 	}
 
-	return hash ^ (ginst->is_open << 8);
+	h1 ^= ginst->is_open;
+
+	return (guint)murmur3_fmix32 (h1);
 }
 
 static gboolean
@@ -2936,7 +2935,7 @@ aggregate_modifiers_equal (gconstpointer ka, gconstpointer kb)
 	for (int i = 0; i < amods1->count; ++i) {
 		if (amods1->modifiers [i].required != amods2->modifiers [i].required)
 			return FALSE;
-		if (!mono_metadata_type_equal_full (amods1->modifiers [i].type, amods2->modifiers [i].type, TRUE))
+		if (!mono_metadata_type_equal_full (amods1->modifiers [i].type, amods2->modifiers [i].type, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 			return FALSE;
 	}
 	return TRUE;
@@ -3499,10 +3498,9 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 	mono_loader_lock ();
 
 	if (!mm->ginst_cache)
-		mm->ginst_cache = dn_simdhash_ght_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst, 0, NULL);
+		mm->ginst_cache = g_hash_table_new_full (mono_metadata_generic_inst_hash, mono_metadata_generic_inst_equal, NULL, (GDestroyNotify)free_generic_inst);
 
-	MonoGenericInst *ginst = NULL;
-	dn_simdhash_ght_try_get_value (mm->ginst_cache, candidate, (void **)&ginst);
+	MonoGenericInst *ginst = g_hash_table_lookup (mm->ginst_cache, candidate);
 	if (!ginst) {
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_mem_manager_alloc0 (mm, size);
@@ -3516,7 +3514,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		for (int i = 0; i < type_argc; ++i)
 			ginst->type_argv [i] = mono_metadata_type_dup (NULL, candidate->type_argv [i]);
 
-		dn_simdhash_ght_insert (mm->ginst_cache, ginst, ginst);
+		g_hash_table_insert (mm->ginst_cache, ginst, ginst);
 	}
 
 	mono_loader_unlock ();
@@ -5936,24 +5934,23 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags)
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
-	return do_mono_metadata_type_equal (t1, t2, 0);
+	return do_mono_metadata_type_equal (t1, t2, MONO_TYPE_EQ_FLAGS_NONE);
 }
 
 /**
  * mono_metadata_type_equal_full:
  * \param t1 a type
  * \param t2 another type
- * \param signature_only if signature only comparison should be made
+ * \param flags flags used to modify comparison logic
  *
- * Determine if \p t1 and \p t2 are signature compatible if \p signature_only is TRUE, otherwise
- * behaves the same way as mono_metadata_type_equal.
- * The function mono_metadata_type_equal(a, b) is just a shortcut for mono_metadata_type_equal_full(a, b, FALSE).
- * \returns TRUE if \p t1 and \p t2 are equal taking \p signature_only into account.
+ * Determine if \p t1 and \p t2 are compatible based on the supplied flags.
+ * The function mono_metadata_type_equal(a, b) is just a shortcut for mono_metadata_type_equal_full(a, b, MONO_TYPE_EQ_FLAGS_NONE).
+ * \returns TRUE if \p t1 and \p t2 are equal.
  */
 gboolean
-mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
+mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, int flags)
 {
-	return do_mono_metadata_type_equal (t1, t2, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
+	return do_mono_metadata_type_equal (t1, t2, flags);
 }
 
 enum {

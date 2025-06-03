@@ -210,6 +210,7 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.CurrentCulture, true)]
         [InlineData("Hello", 'E', StringComparison.CurrentCulture, false)]
         [InlineData("", 'H', StringComparison.CurrentCulture, false)]
+        [InlineData("", '\u0301', StringComparison.CurrentCulture, false)] // Using non-ASCII character to test ICU path
         // CurrentCultureIgnoreCase
         [InlineData("Hello", 'H', StringComparison.CurrentCultureIgnoreCase, true)]
         [InlineData("Hello", 'Z', StringComparison.CurrentCultureIgnoreCase, false)]

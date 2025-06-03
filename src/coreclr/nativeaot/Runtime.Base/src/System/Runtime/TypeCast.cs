@@ -1066,10 +1066,14 @@ namespace System.Runtime
             bool result = TypeCast.AreTypesAssignableInternalUncached(pSourceType, pTargetType, variation, &newList);
 
             //
-            // Update the cache
+            // Update the cache. We only consider type-based conversion rules here.
+            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
             //
-            nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            if (result || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
+            {
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            }
 
             return result;
         }
@@ -1252,13 +1256,11 @@ namespace System.Runtime
             }
 
             //
-            // Update the cache
+            // Update the cache. We only consider type-based conversion rules here.
+            // Therefore a negative result cannot rule out convertibility for IDynamicInterfaceCastable.
             //
-            if (!pSourceType->IsIDynamicInterfaceCastable)
+            if (retObj != null || !(pTargetType->IsInterface && pSourceType->IsIDynamicInterfaceCastable))
             {
-                //
-                // Update the cache
-                //
                 nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
                 s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, retObj != null);
             }
@@ -1293,14 +1295,11 @@ namespace System.Runtime
                 obj = CheckCastClass(pTargetType, obj);
             }
 
-            if (!pSourceType->IsIDynamicInterfaceCastable)
-            {
-                //
-                // Update the cache
-                //
-                nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
-                s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
-            }
+            //
+            // Update the cache
+            //
+            nuint sourceAndVariation = (nuint)pSourceType + (uint)AssignmentVariation.BoxedSource;
+            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, true);
 
             return obj;
         }

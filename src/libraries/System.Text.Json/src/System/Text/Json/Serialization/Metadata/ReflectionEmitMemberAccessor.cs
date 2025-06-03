@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
         }
 
-        [SuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
             Justification = "The constructor has been marked RequiresDynamicCode")]
         public override Func<object>? CreateParameterlessConstructor(Type type, ConstructorInfo? constructorInfo)
         {
