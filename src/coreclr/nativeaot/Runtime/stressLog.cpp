@@ -13,7 +13,7 @@
 #endif // DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "Pal.h"
 #include "daccess.h"
 #include "stressLog.h"

@@ -7,7 +7,7 @@
 #include "rhassert.h"
 #include "rhbinder.h"
 #include "MethodTable.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "Pal.h"
 
 #include "CommonMacros.inl"

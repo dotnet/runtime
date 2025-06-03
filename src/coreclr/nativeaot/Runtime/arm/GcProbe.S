@@ -97,7 +97,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
 
 LOCAL_LABEL(ThrowThreadAbort):
     POP_PROBE_FRAME
-    mov         r0, #STATUS_THREAD_ABORT
+    mov         r0, #STATUS_NATIVEAOT_THREAD_ABORT
     mov         r1, lr // return address as exception PC
     b           C_FUNC(RhpThrowHwEx)
 NESTED_END RhpWaitForGC

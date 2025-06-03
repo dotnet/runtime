@@ -6,7 +6,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "regdisplay.h"
 #include "config.h"
 

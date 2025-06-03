@@ -124,7 +124,7 @@ NESTED_ENTRY RhpWaitForGC, _TEXT
         ret
 Abort:
         POP_PROBE_FRAME
-        mov         rcx, STATUS_THREAD_ABORT
+        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 

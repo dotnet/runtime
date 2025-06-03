@@ -8,7 +8,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "Pal.h"
 #include "rhassert.h"
 #include "holder.h"

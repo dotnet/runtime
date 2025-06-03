@@ -26,7 +26,6 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "gcenv.structs.h" // EEThreadId
-#include "PalCommon.h"
 
 #ifndef PAL_INCLUDED
 #define PAL_INCLUDED
@@ -100,8 +99,8 @@ typedef struct _EXCEPTION_RECORD EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 
 #endif // TARGET_UNIX
 
-#define STATUS_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
-#define STATUS_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
+#define STATUS_NATIVEAOT_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
+#define STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
 #ifdef TARGET_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
@@ -286,6 +285,23 @@ void* PalGetProcAddress(HANDLE module, const char* functionName);
 #ifdef TARGET_UNIX
 int32_t _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
+
+uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4);
+UInt32_BOOL PalCloseHandle(HANDLE arg1);
+void PalFlushProcessWriteBuffers();
+uint32_t PalGetCurrentProcessId();
+
+#ifdef UNICODE
+uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize);
+#else
+uint32_t PalGetEnvironmentVariable(_In_opt_ LPCSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPSTR lpBuffer, _In_ uint32_t nSize);
+#endif
+
+UInt32_BOOL PalResetEvent(HANDLE arg1);
+UInt32_BOOL PalSetEvent(HANDLE arg1);
+uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3);
+
+void PalGetSystemTimeAsFileTime(FILETIME * arg1);
 
 #include "PalInline.h"
 

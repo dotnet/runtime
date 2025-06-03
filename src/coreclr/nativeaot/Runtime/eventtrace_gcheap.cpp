@@ -415,13 +415,7 @@ void ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     if (!GCHeapUtilities::IsGCHeapInitialized())
         return;
 
-    // No InterlockedExchange64 on NativeAOT, even though there is one for
-    // InterlockedCompareExchange64. Technically, there's a race here by using
-    // InterlockedCompareExchange64, but it's not worth addressing. The race would be
-    // between two ETW controllers trying to trigger GCs simultaneously, in which case
-    // one will win and get its sequence number to appear in the GCStart event, while the
-    // other will lose. Rare, uninteresting, and low-impact.
-    PalInterlockedCompareExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber, s_l64LastClientSequenceNumber);
+    InterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
     ForceGCForDiagnostics();
 }

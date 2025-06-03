@@ -6,7 +6,7 @@
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-#include "PalCommon.h" // Fp128
+#include "PalLimitedContext.h" // Fp128
 
 struct REGDISPLAY
 {

@@ -5,10 +5,6 @@
 // Implementation of the portions of the Platform Abstraction Layer (PAL) library that are common among
 // multiple PAL variants.
 //
-// Note that in general we don't want to assume that Windows and NativeAOT global definitions can co-exist.
-// Since this code must include Windows headers to do its job we can't therefore safely include general
-// NativeAOT header files.
-//
 
 #include <windows.h>
 #include <stdio.h>
@@ -16,7 +12,7 @@
 #include <evntprov.h>
 #include "CommonTypes.h"
 #include "daccess.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "Pal.h"
 #include <winternl.h>
 #include "CommonMacros.h"

@@ -4,7 +4,7 @@
 #ifndef DACCESS_COMPILE
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "Pal.h"
 #include "holder.h"
 #include "RhConfig.h"

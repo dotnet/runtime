@@ -7,7 +7,7 @@
 
 #include "common.h"
 #include "gcenv.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "CommonMacros.inl"
 #include "GCMemoryHelpers.inl"
 

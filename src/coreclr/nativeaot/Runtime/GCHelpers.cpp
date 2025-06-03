@@ -15,7 +15,7 @@
 #include "forward_declarations.h"
 #include "RhConfig.h"
 
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "slist.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"

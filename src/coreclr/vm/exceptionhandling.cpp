@@ -1503,7 +1503,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         {
             if (ex->GetExceptionRecord()->ExceptionInformation[1] < NULL_AREA_SIZE)
             {
-                exceptionCode = 0; //STATUS_NULL_REFERENCE;
+                exceptionCode = 0; //STATUS_NATIVEAOT_NULL_REFERENCE;
             }
         }
 

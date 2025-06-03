@@ -1,14 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Provide common definitions between the NativeAOT runtime and the NativeAOT PAL implementation. This header file is used
-// (rather than Pal.h) since the PAL implementation is built in a different environment than NativeAOT
-// code. For instance both environments may provide a definition of various common macros such as NULL.
-//
-// This header contains only environment neutral definitions (i.e. using only base C++ types and compositions
-// of those types) and can thus be included from either environment without issue.
-//
 
 #ifndef __PAL_COMMON_INCLUDED
 #define __PAL_COMMON_INCLUDED

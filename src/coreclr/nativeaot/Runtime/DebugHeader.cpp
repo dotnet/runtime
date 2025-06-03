@@ -7,7 +7,7 @@
 #include "gcinterface.dac.h"
 #include "rhassert.h"
 #include "TargetPtrs.h"
-#include "PalCommon.h"
+#include "PalLimitedContext.h"
 #include "Pal.h"
 #include "holder.h"
 #include "RuntimeInstance.h"

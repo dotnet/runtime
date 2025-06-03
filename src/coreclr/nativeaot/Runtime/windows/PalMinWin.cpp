@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Implementation of the NativeAOT Platform Abstraction Layer (PAL) library when MinWin is the platform. In this
-// case most or all of the import requirements which NativeAOT has can be satisfied via a forwarding export to
-// some native MinWin library. Therefore most of the work is done in the .def file and there is very little
-// code here.
-//
-// Note that in general we don't want to assume that Windows and NativeAOT global definitions can co-exist.
-// Since this code must include Windows headers to do its job we can't therefore safely include general
-// NativeAOT header files.
-//
 #include "common.h"
 #include <windows.h>
 #include <stdio.h>
