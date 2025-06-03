@@ -1139,6 +1139,9 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
+#if TARGET_BROWSER || TARGET_WASI
+            if (OperatingSystem.IsWasi() || OperatingSystem.IsBrowser()) throw new PlatformNotSupportedException(SR.PlatformNotSupported_DynamicEntrypoint);
+#endif
             ArgumentNullException.ThrowIfNull(d);
 
             return GetFunctionPointerForDelegateInternal(d);
