@@ -37,6 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                // TODO: Use TryAdd once https://github.com/dotnet/runtime/issues/110244 is resolved.
                 if (jObject.ContainsKey(propertyName))
                 {
                     ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed(propertyName);
@@ -81,7 +82,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal static JsonObject ReadAsJsonNode(ref Utf8JsonReader reader, JsonNodeOptions options)
         {
-            Debug.Assert(reader.TokenType == JsonTokenType.StartArray);
+            Debug.Assert(reader.TokenType == JsonTokenType.StartObject);
 
             JsonObject jObject = new JsonObject(options);
 
