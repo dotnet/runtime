@@ -11145,6 +11145,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     GenTree* src = blkNode->Data();
     if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
+#if defined(FEATURE_HW_INTRINSICS)
         assert(!blkNode->ContainsReferences());
         if (src->OperIsInitVal())
         {
@@ -11152,9 +11153,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
             src = src->gtGetOp1();
         }
 
-        uint8_t  initVal = static_cast<uint8_t>(static_cast<size_t>(src->AsIntCon()->IconValue()));
-        simd64_t vec     = {};
-        memset(&vec, initVal, sizeof(simd64_t));
+        uint8_t initVal = static_cast<uint8_t>(static_cast<size_t>(src->AsIntCon()->IconValue()));
+        simd_t  vec     = {};
+        memset(&vec, initVal, sizeof(simd_t));
         GenTreeVecCon* cnsVec = comp->gtNewVconNode(regType, &vec);
 
         BlockRange().InsertAfter(src, cnsVec);
@@ -11164,6 +11165,9 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         blkNode->ChangeType(regType);
         LowerStoreIndirCommon(blkNode->AsStoreInd());
         return true;
+#else
+        return false;
+#endif
     }
 
     if (varTypeIsGC(regType))
