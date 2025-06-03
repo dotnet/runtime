@@ -18,9 +18,9 @@ internal struct DacpThreadStoreData
     public int backgroundThreadCount;
     public int pendingThreadCount;
     public int deadThreadCount;
-    public ulong firstThread;
-    public ulong finalizerThread;
-    public ulong gcThread;
+    public ClrDataAddress firstThread;
+    public ClrDataAddress finalizerThread;
+    public ClrDataAddress gcThread;
     public int fHostConfig; // Uses hosting flags defined above
 };
 
@@ -30,27 +30,27 @@ internal struct DacpThreadData
     public int osThreadId;
     public int state;
     public uint preemptiveGCDisabled;
-    public ulong allocContextPtr;
-    public ulong allocContextLimit;
-    public ulong context;
-    public ulong domain;
-    public ulong pFrame;
+    public ClrDataAddress allocContextPtr;
+    public ClrDataAddress allocContextLimit;
+    public ClrDataAddress context;
+    public ClrDataAddress domain;
+    public ClrDataAddress pFrame;
     public int lockCount;
-    public ulong firstNestedException;  // Pass this pointer to DacpNestedExceptionInfo
-    public ulong teb;
-    public ulong fiberData;
-    public ulong lastThrownObjectHandle;
-    public ulong nextThread;
+    public ClrDataAddress firstNestedException;  // Pass this pointer to DacpNestedExceptionInfo
+    public ClrDataAddress teb;
+    public ClrDataAddress fiberData;
+    public ClrDataAddress lastThrownObjectHandle;
+    public ClrDataAddress nextThread;
 }
 
 internal struct DacpModuleData
 {
-    public ulong Address;
-    public ulong PEAssembly; // Actually the module address in .NET 9+
-    public ulong ilBase;
-    public ulong metadataStart;
+    public ClrDataAddress Address;
+    public ClrDataAddress PEAssembly; // Actually the module address in .NET 9+
+    public ClrDataAddress ilBase;
+    public ClrDataAddress metadataStart;
     public ulong metadataSize;
-    public ulong Assembly; // Assembly pointer
+    public ClrDataAddress Assembly; // Assembly pointer
     public uint isReflection;
     public uint isPEFile;
 
@@ -59,16 +59,16 @@ internal struct DacpModuleData
 
     public uint dwTransientFlags;
 
-    public ulong TypeDefToMethodTableMap;
-    public ulong TypeRefToMethodTableMap;
-    public ulong MethodDefToDescMap;
-    public ulong FieldDefToDescMap;
-    public ulong MemberRefToDescMap;
-    public ulong FileReferencesMap;
-    public ulong ManifestModuleReferencesMap;
+    public ClrDataAddress TypeDefToMethodTableMap;
+    public ClrDataAddress TypeRefToMethodTableMap;
+    public ClrDataAddress MethodDefToDescMap;
+    public ClrDataAddress FieldDefToDescMap;
+    public ClrDataAddress MemberRefToDescMap;
+    public ClrDataAddress FileReferencesMap;
+    public ClrDataAddress ManifestModuleReferencesMap;
 
-    public ulong LoaderAllocator;
-    public ulong ThunkHeap;
+    public ClrDataAddress LoaderAllocator;
+    public ClrDataAddress ThunkHeap;
 
     public ulong dwModuleIndex; // Always 0 - .NET no longer has this
 }
@@ -76,9 +76,9 @@ internal struct DacpModuleData
 internal struct DacpMethodTableData
 {
     public int bIsFree; // everything else is NULL if this is true.
-    public ulong module;
-    public ulong klass;
-    public ulong parentMethodTable;
+    public ClrDataAddress module;
+    public ClrDataAddress klass;
+    public ClrDataAddress parentMethodTable;
     public ushort wNumInterfaces;
     public ushort wNumMethods;
     public ushort wNumVtableSlots;
@@ -103,28 +103,28 @@ internal enum DacpObjectType
 
 internal struct DacpObjectData
 {
-    public ulong MethodTable;
+    public ClrDataAddress MethodTable;
     public DacpObjectType ObjectType;
     public ulong Size;
-    public ulong ElementTypeHandle;
+    public ClrDataAddress ElementTypeHandle;
     public uint ElementType;
     public uint dwRank;
     public ulong dwNumComponents;
     public ulong dwComponentSize;
-    public ulong ArrayDataPtr;
-    public ulong ArrayBoundsPtr;
-    public ulong ArrayLowerBoundsPtr;
+    public ClrDataAddress ArrayDataPtr;
+    public ClrDataAddress ArrayBoundsPtr;
+    public ClrDataAddress ArrayLowerBoundsPtr;
     public ulong RCW;
     public ulong CCW;
 }
 
 internal struct DacpUsefulGlobalsData
 {
-    public ulong ArrayMethodTable;
-    public ulong StringMethodTable;
-    public ulong ObjectMethodTable;
-    public ulong ExceptionMethodTable;
-    public ulong FreeMethodTable;
+    public ClrDataAddress ArrayMethodTable;
+    public ClrDataAddress StringMethodTable;
+    public ClrDataAddress ObjectMethodTable;
+    public ClrDataAddress ExceptionMethodTable;
+    public ClrDataAddress FreeMethodTable;
 }
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
@@ -139,9 +139,9 @@ internal struct DacpReJitData
         kReverted = 3,
     };
 
-    public ulong /*CLRDATA_ADDRESS*/ rejitID;
+    public ClrDataAddress rejitID;
     public Flags flags; /* = Flags::kUnknown*/
-    public ulong /*CLRDATA_ADDRESS*/ NativeCodeAddr;
+    public ClrDataAddress NativeCodeAddr;
 };
 
 internal struct DacpMethodDescData
@@ -149,22 +149,22 @@ internal struct DacpMethodDescData
     public int bHasNativeCode;
     public int bIsDynamic;
     public ushort wSlotNumber;
-    public ulong /*CLRDATA_ADDRESS*/ NativeCodeAddr;
+    public ClrDataAddress NativeCodeAddr;
     // Useful for breaking when a method is jitted.
-    public ulong /*CLRDATA_ADDRESS*/ AddressOfNativeCodeSlot;
+    public ClrDataAddress AddressOfNativeCodeSlot;
 
-    public ulong /*CLRDATA_ADDRESS*/ MethodDescPtr;
-    public ulong /*CLRDATA_ADDRESS*/ MethodTablePtr;
-    public ulong /*CLRDATA_ADDRESS*/ ModulePtr;
+    public ClrDataAddress MethodDescPtr;
+    public ClrDataAddress MethodTablePtr;
+    public ClrDataAddress ModulePtr;
 
     public uint /*mdToken*/ MDToken;
-    public ulong /*CLRDATA_ADDRESS*/ GCInfo;
-    public ulong /*CLRDATA_ADDRESS*/ GCStressCodeCopy;
+    public ClrDataAddress GCInfo;
+    public ClrDataAddress GCStressCodeCopy;
 
     // This is only valid if bIsDynamic is true
-    public ulong /*CLRDATA_ADDRESS*/ managedDynamicMethodObject;
+    public ClrDataAddress managedDynamicMethodObject;
 
-    public ulong /*CLRDATA_ADDRESS*/ requestedIP;
+    public ClrDataAddress requestedIP;
 
     // Gives info for the single currently active version of a method
     public DacpReJitData rejitDataCurrent;
@@ -192,17 +192,17 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetAppDomainStoreData(/*struct DacpAppDomainStoreData*/ void* data);
     [PreserveSig]
-    int GetAppDomainList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] values, uint* pNeeded);
+    int GetAppDomainList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
     [PreserveSig]
     int GetAppDomainData(ulong addr, /*struct DacpAppDomainData*/ void* data);
     [PreserveSig]
     int GetAppDomainName(ulong addr, uint count, char* name, uint* pNeeded);
     [PreserveSig]
-    int GetDomainFromContext(ulong context, ulong* domain);
+    int GetDomainFromContext(ulong context, ClrDataAddress* domain);
 
     // Assemblies
     [PreserveSig]
-    int GetAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[]? values, int* pNeeded);
+    int GetAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? values, int* pNeeded);
     [PreserveSig]
     int GetAssemblyData(ulong baseDomainPtr, ulong assembly, /*struct DacpAssemblyData*/ void* data);
     [PreserveSig]
@@ -216,29 +216,29 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int TraverseModuleMap(/*ModuleMapType*/ int mmt, ulong moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
     [PreserveSig]
-    int GetAssemblyModuleList(ulong assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] modules, uint* pNeeded);
+    int GetAssemblyModuleList(ulong assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]
-    int GetILForModule(ulong moduleAddr, int rva, ulong* il);
+    int GetILForModule(ulong moduleAddr, int rva, ClrDataAddress* il);
 
     // Threads
     [PreserveSig]
     int GetThreadData(ulong thread, DacpThreadData *data);
     [PreserveSig]
-    int GetThreadFromThinlockID(uint thinLockId, ulong* pThread);
+    int GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread);
     [PreserveSig]
-    int GetStackLimits(ulong threadPtr, ulong* lower, ulong* upper, ulong* fp);
+    int GetStackLimits(ulong threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp);
 
     // MethodDescs
     [PreserveSig]
     int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
     [PreserveSig]
-    int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD);
+    int GetMethodDescPtrFromIP(ulong ip, ClrDataAddress* ppMD);
     [PreserveSig]
     int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded);
     [PreserveSig]
-    int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD);
+    int GetMethodDescPtrFromFrame(ulong frameAddr, ClrDataAddress* ppMD);
     [PreserveSig]
-    int GetMethodDescFromToken(ulong moduleAddr, /*mdToken*/ uint token, ulong* methodDesc);
+    int GetMethodDescFromToken(ulong moduleAddr, /*mdToken*/ uint token, ClrDataAddress* methodDesc);
     [PreserveSig]
     int GetMethodDescTransparencyData(ulong methodDesc, /*struct DacpMethodDescTransparencyData*/ void* data);
 
@@ -250,7 +250,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded);
     [PreserveSig]
-    int GetJumpThunkTarget(/*T_CONTEXT*/void* ctx, ulong* targetIP, ulong* targetMD);
+    int GetJumpThunkTarget(/*T_CONTEXT*/void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD);
 
     // ThreadPool
     [PreserveSig]
@@ -274,7 +274,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableData(ulong mt, DacpMethodTableData* data);
     [PreserveSig]
-    int GetMethodTableSlot(ulong mt, uint slot, ulong* value);
+    int GetMethodTableSlot(ulong mt, uint slot, ClrDataAddress* value);
     [PreserveSig]
     int GetMethodTableFieldData(ulong mt, /*struct DacpMethodTableFieldData*/ void* data);
     [PreserveSig]
@@ -282,7 +282,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // EEClass
     [PreserveSig]
-    int GetMethodTableForEEClass(ulong eeClass, ulong* value);
+    int GetMethodTableForEEClass(ulong eeClass, ClrDataAddress* value);
 
     // FieldDesc
     [PreserveSig]
@@ -294,7 +294,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // PEFiles
     [PreserveSig]
-    int GetPEFileBase(ulong addr, ulong* peBase);
+    int GetPEFileBase(ulong addr, ClrDataAddress* peBase);
     [PreserveSig]
     int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded);
 
@@ -302,7 +302,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetGCHeapData(/*struct DacpGcHeapData*/ void* data);
     [PreserveSig]
-    int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] heaps, uint* pNeeded); // svr only
+    int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
     int GetGCHeapDetails(ulong heap, /*struct DacpGcHeapDetails */ void* details); // wks only
     [PreserveSig]
@@ -348,11 +348,11 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int TraverseEHInfo(ulong ip, /*DUMPEHINFO*/ void* pCallback, void* token);
     [PreserveSig]
-    int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException);
+    int GetNestedExceptionData(ulong exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
 
     // StressLog
     [PreserveSig]
-    int GetStressLogAddress(ulong* stressLog);
+    int GetStressLogAddress(ClrDataAddress* stressLog);
 
     // Heaps
     [PreserveSig]
@@ -401,7 +401,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // For BindingDisplay plugin
     [PreserveSig]
-    int GetFailedAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] values, uint* pNeeded);
+    int GetFailedAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
     [PreserveSig]
     int GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded);
     [PreserveSig]
@@ -459,7 +459,7 @@ internal unsafe partial interface ISOSDacInterface3
 internal unsafe partial interface ISOSDacInterface4
 {
     [PreserveSig]
-    int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ulong[] arguments, int count, int* pNeeded);
+    int GetClrNotification([In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] arguments, int count, int* pNeeded);
 };
 
 [GeneratedComInterface]
@@ -489,7 +489,7 @@ internal unsafe partial interface ISOSDacInterface7
     [PreserveSig]
     int GetProfilerModifiedILInformation(ulong methodDesc, /*struct DacpProfilerILData*/ void* pILData);
     [PreserveSig]
-    int GetMethodsWithProfilerModifiedIL(ulong mod, ulong* methodDescs, int cMethodDescs, int* pcMethodDescs);
+    int GetMethodsWithProfilerModifiedIL(ulong mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs);
 };
 
 [GeneratedComInterface]
@@ -503,16 +503,16 @@ internal unsafe partial interface ISOSDacInterface8
     [PreserveSig]
     int GetGenerationTable(uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
     [PreserveSig]
-    int GetFinalizationFillPointers(uint cFillPointers, ulong* pFinalizationFillPointers, uint* pNeeded);
+    int GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
     // SVR
     [PreserveSig]
     int GetGenerationTableSvr(ulong heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
     [PreserveSig]
-    int GetFinalizationFillPointersSvr(ulong heapAddr, uint cFillPointers, ulong* pFinalizationFillPointers, uint* pNeeded);
+    int GetFinalizationFillPointersSvr(ulong heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
     [PreserveSig]
-    int GetAssemblyLoadContext(ulong methodTable, ulong* assemblyLoadContext);
+    int GetAssemblyLoadContext(ulong methodTable, ClrDataAddress* assemblyLoadContext);
 }
 
 [GeneratedComInterface]
@@ -527,15 +527,15 @@ internal partial interface ISOSDacInterface9
 internal unsafe partial interface ISOSDacInterface10
 {
     [PreserveSig]
-    int GetObjectComWrappersData(ulong objAddr, ulong* rcw, uint count, ulong* mowList, uint* pNeeded);
+    int GetObjectComWrappersData(ulong objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
     [PreserveSig]
     int IsComWrappersCCW(ulong ccw, Interop.BOOL* isComWrappersCCW);
     [PreserveSig]
-    int GetComWrappersCCWData(ulong ccw, ulong* managedObject, int* refCount);
+    int GetComWrappersCCWData(ulong ccw, ClrDataAddress* managedObject, int* refCount);
     [PreserveSig]
     int IsComWrappersRCW(ulong rcw, Interop.BOOL* isComWrappersRCW);
     [PreserveSig]
-    int GetComWrappersRCWData(ulong rcw, ulong* identity);
+    int GetComWrappersRCWData(ulong rcw, ClrDataAddress* identity);
 }
 
 [GeneratedComInterface]
@@ -545,7 +545,7 @@ internal unsafe partial interface ISOSDacInterface11
     [PreserveSig]
     int IsTrackedType(ulong objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory);
     [PreserveSig]
-    int GetTaggedMemory(ulong objAddr, ulong* taggedMemory, nuint* taggedMemorySizeInBytes);
+    int GetTaggedMemory(ulong objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes);
 }
 
 [GeneratedComInterface]
@@ -553,7 +553,7 @@ internal unsafe partial interface ISOSDacInterface11
 internal unsafe partial interface ISOSDacInterface12
 {
     [PreserveSig]
-    int GetGlobalAllocationContext(ulong* allocPtr, ulong* allocLimit);
+    int GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit);
 }
 
 [GeneratedComInterface]
@@ -563,11 +563,11 @@ internal unsafe partial interface ISOSDacInterface13
     [PreserveSig]
     int TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
     [PreserveSig]
-    int GetDomainLoaderAllocator(ulong domainAddress, ulong* pLoaderAllocator);
+    int GetDomainLoaderAllocator(ulong domainAddress, ClrDataAddress* pLoaderAllocator);
     [PreserveSig]
     int GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded);
     [PreserveSig]
-    int GetLoaderAllocatorHeaps(ulong loaderAllocator, int count, ulong* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
+    int GetLoaderAllocatorHeaps(ulong loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
     [PreserveSig]
     int GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
     [PreserveSig]
@@ -583,9 +583,9 @@ internal unsafe partial interface ISOSDacInterface13
 internal unsafe partial interface ISOSDacInterface14
 {
     [PreserveSig]
-    int GetStaticBaseAddress(ulong methodTable, ulong* nonGCStaticsAddress, ulong* GCStaticsAddress);
+    int GetStaticBaseAddress(ulong methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
-    int GetThreadStaticBaseAddress(ulong methodTable, ulong thread, ulong* nonGCStaticsAddress, ulong* GCStaticsAddress);
+    int GetThreadStaticBaseAddress(ulong methodTable, ulong thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
     int GetMethodTableInitializationFlags(ulong methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
 }

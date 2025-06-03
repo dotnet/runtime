@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 internal struct CLRDataModuleExtent
 {
-    public ulong /* CLRDATA_ADDRESS */ baseAddress;
+    public ClrDataAddress baseAddress;
     public uint length;
     public uint /* CLRDataModuleExtentType */ type;
 }
@@ -22,10 +22,10 @@ internal struct DacpGetModuleData
     public uint IsDynamic;
     public uint IsInMemory;
     public uint IsFileLayout;
-    public ulong /* CLRDATA_ADDRESS */ PEAssembly; // Actually the module address in .NET 9+
-    public ulong /* CLRDATA_ADDRESS */ LoadedPEAddress;
+    public ClrDataAddress PEAssembly; // Actually the module address in .NET 9+
+    public ClrDataAddress LoadedPEAddress;
     public ulong LoadedPESize;
-    public ulong /* CLRDATA_ADDRESS */ InMemoryPdbAddress;
+    public ClrDataAddress InMemoryPdbAddress;
     public ulong InMemoryPdbSize;
 }
 
@@ -178,7 +178,7 @@ internal unsafe partial interface IXCLRDataProcess
         uint bufLen,
         uint* nameLen,
         char* nameBuf,
-        ulong* displacement);
+        ClrDataAddress* displacement);
 
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
@@ -222,7 +222,7 @@ internal unsafe partial interface IXCLRDataProcess
         uint* nameLen,
         char* nameBuf,
         /*IXCLRDataValue*/ void** value,
-        ulong* displacement);
+        ClrDataAddress* displacement);
 
     [PreserveSig]
     int GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState);
@@ -291,7 +291,7 @@ internal unsafe partial interface IXCLRDataProcess
         uint inFlags,
         ulong inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags);
     [PreserveSig]
@@ -300,7 +300,7 @@ internal unsafe partial interface IXCLRDataProcess
         uint inFlags,
         ulong inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags);
 

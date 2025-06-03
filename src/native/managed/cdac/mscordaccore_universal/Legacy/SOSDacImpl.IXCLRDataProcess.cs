@@ -95,7 +95,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         uint bufLen,
         uint* nameLen,
         char* nameBuf,
-        ulong* displacement)
+        ClrDataAddress* displacement)
         => _legacyProcess is not null ? _legacyProcess.GetRuntimeNameByAddress(address, flags, bufLen, nameLen, nameBuf, displacement) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.StartEnumAppDomains(ulong* handle)
@@ -149,7 +149,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         uint* nameLen,
         char* nameBuf,
         /*IXCLRDataValue*/ void** value,
-        ulong* displacement)
+        ClrDataAddress* displacement)
         => _legacyProcess is not null ? _legacyProcess.GetDataByAddress(address, flags, appDomain, tlsTask, bufLen, nameLen, nameBuf, value, displacement) : HResults.E_NOTIMPL;
 
     int IXCLRDataProcess.GetExceptionStateByExceptionRecord(/*struct EXCEPTION_RECORD64*/ void* record, /*IXCLRDataExceptionState*/ void** exState)
@@ -228,7 +228,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         uint inFlags,
         ulong inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
         => _legacyProcess is not null ? _legacyProcess.FollowStub(inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
@@ -238,7 +238,7 @@ internal sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataPro
         uint inFlags,
         ulong inAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* inBuffer,
-        ulong* outAddr,
+        ClrDataAddress* outAddr,
         /*struct CLRDATA_FOLLOW_STUB_BUFFER*/ void* outBuffer,
         uint* outFlags)
         => _legacyProcess is not null ? _legacyProcess.FollowStub2(task, inFlags, inAddr, inBuffer, outAddr, outBuffer, outFlags) : HResults.E_NOTIMPL;
