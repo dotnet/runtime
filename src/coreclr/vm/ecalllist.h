@@ -365,7 +365,7 @@ FCFuncStart(gGCHandleFuncs)
     FCFuncElement("_InternalFree", MarshalNative::GCHandleInternalFree)
     FCFuncElement("InternalGet", MarshalNative::GCHandleInternalGet)
 #ifdef FEATURE_GCBRIDGE
-    FCFuncElement("InternalGetBridgeWait", MarshalNative::GCHandleInternalGetBridgeWait)
+    FCFuncElement("InternalTryGetBridgeWait", MarshalNative::GCHandleInternalTryGetBridgeWait)
 #endif
     FCFuncElement("InternalSet", MarshalNative::GCHandleInternalSet)
     FCFuncElement("InternalCompareExchange", MarshalNative::GCHandleInternalCompareExchange)

@@ -67,10 +67,13 @@ namespace System.Runtime.InteropServices.Java
 #elif MONO
             throw new NotSupportedException();
 #else
-            FinishCrossReferenceProcessing(
-                crossReferences,
-                unreachableObjectHandles.Length,
-                Unsafe.AsPointer(ref MemoryMarshal.GetReference(unreachableObjectHandles)));
+            fixed (GCHandle* pHandles = unreachableObjectHandles)
+            {
+                FinishCrossReferenceProcessing(
+                    crossReferences,
+                    unreachableObjectHandles.Length,
+                    pHandles);
+            }
 #endif
         }
 

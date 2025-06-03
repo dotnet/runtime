@@ -15,7 +15,16 @@ namespace System.Runtime.InteropServices
 
 #if FEATURE_GCBRIDGE
         // FIXME implement waiting for bridge processing
-        internal static object? InternalGetBridgeWait(IntPtr handle) => InternalGet(handle);
+        internal static bool InternalTryGetBridgeWait(IntPtr handle, ref object? result)
+        {
+            result = InternalGet(handle);
+            return true;
+        }
+
+        internal static void InternalGetBridgeWait(IntPtr handle, ref object? result)
+        {
+            result = InternalGet(handle);
+        }
 #endif
     }
 }

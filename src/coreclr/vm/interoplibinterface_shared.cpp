@@ -187,6 +187,17 @@ namespace
     }
 }
 
+bool Interop::IsGCBridgeActive()
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    return g_GCBridgeActive;
+}
+
 void Interop::WaitForGCBridgeFinish()
 {
     CONTRACTL
