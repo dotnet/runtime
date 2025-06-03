@@ -11145,7 +11145,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     GenTree* src = blkNode->Data();
     if (varTypeIsSIMD(regType) && src->IsConstInitVal())
     {
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         assert(!blkNode->ContainsReferences());
         if (src->OperIsInitVal())
         {
