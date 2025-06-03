@@ -2342,7 +2342,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         case GT_CNS_MSK:
         {
             GenTreeMskCon* mask = tree->AsMskCon();
-            emitter* emit = GetEmitter();
+            emitter*       emit = GetEmitter();
 
             // Try every type until a match is found
 
@@ -2352,7 +2352,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 break;
             }
 
-            insOpts opt = INS_OPTS_SCALABLE_B;
+            insOpts        opt = INS_OPTS_SCALABLE_B;
             SveMaskPattern pat = EvaluateSimdMaskPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
 
             if (pat == SveMaskPatternNone)

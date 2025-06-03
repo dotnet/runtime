@@ -1674,31 +1674,29 @@ void EvaluateSimdCvtVectorToMask(var_types baseType, simdmask_t* result, TSimd a
     }
 }
 
-
 #if defined(TARGET_ARM64)
 
 enum SveMaskPattern
 {
-    SveMaskPatternLargestPowerOf2 = 0,      // The largest power of 2.
-    SveMaskPatternVectorCount1 = 1,         // Exactly 1 element.
-    SveMaskPatternVectorCount2 = 2,         // Exactly 2 elements.
-    SveMaskPatternVectorCount3 = 3,         // Exactly 3 elements.
-    SveMaskPatternVectorCount4 = 4,         // Exactly 4 elements.
-    SveMaskPatternVectorCount5 = 5,         // Exactly 5 elements.
-    SveMaskPatternVectorCount6 = 6,         // Exactly 6 elements.
-    SveMaskPatternVectorCount7 = 7,         // Exactly 7 elements.
-    SveMaskPatternVectorCount8 = 8,         // Exactly 8 elements.
-    SveMaskPatternVectorCount16 = 9,        // Exactly 16 elements.
-    SveMaskPatternVectorCount32 = 10,       // Exactly 32 elements.
-    SveMaskPatternVectorCount64 = 11,       // Exactly 64 elements.
-    SveMaskPatternVectorCount128 = 12,      // Exactly 128 elements.
-    SveMaskPatternVectorCount256 = 13,      // Exactly 256 elements.
-    SveMaskPatternLargestMultipleOf4 = 29,  // The largest multiple of 4.
-    SveMaskPatternLargestMultipleOf3 = 30,  // The largest multiple of 3.
-    SveMaskPatternAll  = 31,                // All available (implicitly a multiple of two).
-    SveMaskPatternNone = 14                 // Invalid
+    SveMaskPatternLargestPowerOf2    = 0,  // The largest power of 2.
+    SveMaskPatternVectorCount1       = 1,  // Exactly 1 element.
+    SveMaskPatternVectorCount2       = 2,  // Exactly 2 elements.
+    SveMaskPatternVectorCount3       = 3,  // Exactly 3 elements.
+    SveMaskPatternVectorCount4       = 4,  // Exactly 4 elements.
+    SveMaskPatternVectorCount5       = 5,  // Exactly 5 elements.
+    SveMaskPatternVectorCount6       = 6,  // Exactly 6 elements.
+    SveMaskPatternVectorCount7       = 7,  // Exactly 7 elements.
+    SveMaskPatternVectorCount8       = 8,  // Exactly 8 elements.
+    SveMaskPatternVectorCount16      = 9,  // Exactly 16 elements.
+    SveMaskPatternVectorCount32      = 10, // Exactly 32 elements.
+    SveMaskPatternVectorCount64      = 11, // Exactly 64 elements.
+    SveMaskPatternVectorCount128     = 12, // Exactly 128 elements.
+    SveMaskPatternVectorCount256     = 13, // Exactly 256 elements.
+    SveMaskPatternLargestMultipleOf4 = 29, // The largest multiple of 4.
+    SveMaskPatternLargestMultipleOf3 = 30, // The largest multiple of 3.
+    SveMaskPatternAll                = 31, // All available (implicitly a multiple of two).
+    SveMaskPatternNone               = 14  // Invalid
 };
-
 
 template <typename TSimd, typename TBase>
 SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
@@ -1720,7 +1718,7 @@ SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
         // on the corresponding mask bit
 
         bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
-        if(!isSet)
+        if (!isSet)
         {
             finalOne = i;
             break;
@@ -1736,7 +1734,7 @@ SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
         // on the corresponding mask bit
 
         bool isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
-        if(isSet)
+        if (isSet)
         {
             // Invalid sequence
             return SveMaskPatternNone;
@@ -1753,8 +1751,8 @@ SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
     }
     else
     {
-        //TODO: Add other patterns as required. These probably won't be seen until we get
-        //      to wider vector lengths.
+        // TODO: Add other patterns as required. These probably won't be seen until we get
+        //       to wider vector lengths.
         return SveMaskPatternNone;
     }
 }

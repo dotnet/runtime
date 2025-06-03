@@ -32118,7 +32118,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-    //Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
+    // Fold ConvertMaskToVector(ConvertVectorToMask(vec)) to vec
     if (tree->OperIsConvertMaskToVector())
     {
         GenTree* op = op1;
@@ -32151,7 +32151,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         }
     }
 
-    //Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
+    // Fold ConvertVectorToMask(ConvertMaskToVector(mask)) to mask
     if (tree->OperIsConvertVectorToMask())
     {
         GenTree* op        = op1;
@@ -33311,7 +33311,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 }
 #endif // FEATURE_HW_INTRINSICS
 
-
 GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon)
 {
     assert(tree->OperIsConvertVectorToMask());
@@ -33397,20 +33396,24 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
         }
 
         // Only a valid true mask if the parent has the same base type
-        return genTypeSize(ParentSimdBaseType) == genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType()));
+        return genTypeSize(ParentSimdBaseType) ==
+               genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType()));
     }
     else if (IsCnsMsk())
     {
         switch (parent->gtType)
         {
             case TYP_SIMD8:
-                return SveMaskPatternAll == EvaluateSimdMaskPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+                return SveMaskPatternAll ==
+                       EvaluateSimdMaskPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
             case TYP_SIMD12:
-                return SveMaskPatternAll == EvaluateSimdMaskPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+                return SveMaskPatternAll ==
+                       EvaluateSimdMaskPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
             case TYP_SIMD16:
-                return SveMaskPatternAll == EvaluateSimdMaskPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+                return SveMaskPatternAll ==
+                       EvaluateSimdMaskPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
             default:
                 unreached();
@@ -33420,7 +33423,6 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 #endif
     return false;
 }
-
 
 bool GenTree::IsMaskZero() const
 {
@@ -33447,7 +33449,6 @@ bool GenTree::IsMaskZero() const
 #endif
     return false;
 }
-
 
 //------------------------------------------------------------------------
 // gtCanSkipCovariantStoreCheck: see if storing a ref type value to an array
