@@ -73,7 +73,7 @@
 //    |   +-CallCountingHelperFrame - represents a call into the call counting helper when the
 //    |   |                           call count threshold is reached
 //    |   |
-//    |   +-ExternalMethodFrame  - represents a call from an ExternalMethdThunk
+//    |   +-ExternalMethodFrame  - represents a call from an ExternalMethodThunk
 //    |   |
 //    |   +-TPMethodFrame       - for calls on transparent proxy
 //    |
@@ -93,8 +93,6 @@
 //    +-TailCallFrame           - padding for tailcalls
 //    |
 #endif
-//    +-ProtectByRefsFrame
-//    |
 //    +-ProtectValueClassFrame
 //    |
 //    +-DebuggerClassInitMarkFrame - marker frame to indicate that "class init" code is running
@@ -1919,45 +1917,6 @@ private:
     UINT          m_numObjRefs;
     BOOL          m_MaybeInterior;
 };
-
-//-----------------------------------------------------------------------------
-
-struct ByRefInfo;
-typedef DPTR(ByRefInfo) PTR_ByRefInfo;
-
-struct ByRefInfo
-{
-    PTR_ByRefInfo pNext;
-    INT32      argIndex;
-    CorElementType typ;
-    TypeHandle typeHandle;
-    char       data[1];
-};
-
-//-----------------------------------------------------------------------------
-// ProtectByRefsFrame
-//-----------------------------------------------------------------------------
-
-typedef DPTR(class ProtectByRefsFrame) PTR_ProtectByRefsFrame;
-
-class ProtectByRefsFrame : public Frame
-{
-public:
-#ifndef DACCESS_COMPILE
-    ProtectByRefsFrame(Thread *pThread, ByRefInfo *brInfo)
-        : Frame(FrameIdentifier::ProtectByRefsFrame), m_brInfo(brInfo)
-    {
-        WRAPPER_NO_CONTRACT;
-        Frame::Push(pThread);
-    }
-#endif
-
-    void GcScanRoots_Impl(promote_func *fn, ScanContext *sc);
-
-private:
-    PTR_ByRefInfo m_brInfo;
-};
-
 
 //-----------------------------------------------------------------------------
 
