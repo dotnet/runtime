@@ -35,17 +35,14 @@
 
 #ifndef DACCESS_COMPILE
 
+#ifdef TARGET_X86
 //-----------------------------------------------------------------------
 // InstructionFormat for near Jump and short Jump
 //-----------------------------------------------------------------------
 class X86NearJump : public InstructionFormat
 {
     public:
-        X86NearJump() : InstructionFormat(  InstructionFormat::k8|InstructionFormat::k32
-#ifdef TARGET_AMD64
-                                          | InstructionFormat::k64Small | InstructionFormat::k64
-#endif // TARGET_AMD64
-                                          )
+        X86NearJump() : InstructionFormat(InstructionFormat::k8|InstructionFormat::k32)
         {
             LIMITED_METHOD_CONTRACT;
         }
@@ -60,13 +57,7 @@ class X86NearJump : public InstructionFormat
 
                 case k32:
                     return 5;
-#ifdef TARGET_AMD64
-                case k64Small:
-                    return 5 + 2;
 
-                case k64:
-                    return 12;
-#endif // TARGET_AMD64
                 default:
                     _ASSERTE(!"unexpected refsize");
                     return 0;
@@ -87,32 +78,6 @@ class X86NearJump : public InstructionFormat
                 pOutBufferRW[0] = 0xe9;
                 *((int32_t*)(pOutBufferRW+1)) = (int32_t)fixedUpReference;
             }
-#ifdef TARGET_AMD64
-            else if (k64Small == refsize)
-            {
-                UINT64 TargetAddress = (INT64)pOutBufferRX + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
-                _ASSERTE(FitsInU4(TargetAddress));
-
-                // mov eax, imm32  ; zero-extended
-                pOutBufferRW[0] = 0xB8;
-                *((UINT32*)&pOutBufferRW[1]) = (UINT32)TargetAddress;
-
-                // jmp rax
-                pOutBufferRW[5] = 0xFF;
-                pOutBufferRW[6] = 0xE0;
-            }
-            else if (k64 == refsize)
-            {
-                // mov rax, imm64
-                pOutBufferRW[0] = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-                pOutBufferRW[1] = 0xB8;
-                *((UINT64*)&pOutBufferRW[2]) = (UINT64)(((INT64)pOutBufferRX) + fixedUpReference + GetSizeOfInstruction(refsize, variationCode));
-
-                // jmp rax
-                pOutBufferRW[10] = 0xFF;
-                pOutBufferRW[11] = 0xE0;
-            }
-#endif // TARGET_AMD64
             else
             {
                 _ASSERTE(!"unreached");
@@ -138,13 +103,6 @@ class X86NearJump : public InstructionFormat
                 case InstructionFormat::k32:
                     return sizeof(PVOID) <= sizeof(UINT32);
 
-#ifdef TARGET_AMD64
-                case InstructionFormat::k64Small:
-                    return FitsInI4(offset);
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-#endif
                 case InstructionFormat::kAllowAlways:
                     return TRUE;
 
@@ -161,26 +119,9 @@ class X86NearJump : public InstructionFormat
                     return FitsInI1(offset);
 
                 case InstructionFormat::k32:
-#ifdef TARGET_AMD64
-                    return FitsInI4(offset);
-#else
-                    return TRUE;
-#endif
-
-#ifdef TARGET_AMD64
-                case InstructionFormat::k64Small:
-                    // EmitInstruction emits a non-relative jmp for
-                    // k64Small.  We don't have enough info to predict the
-                    // target address.  (Even if we did, this would only
-                    // handle the set of unsigned offsets with bit 31 set
-                    // and no higher bits set, too uncommon/hard to test.)
-                    return FALSE;
-
-                case InstructionFormat::k64:
-                    // intentional fallthru
-#endif
                 case InstructionFormat::kAllowAlways:
                     return TRUE;
+
                 default:
                     _ASSERTE(0);
                     return FALSE;
@@ -190,6 +131,7 @@ class X86NearJump : public InstructionFormat
 };
 
 static BYTE gX86NearJump[sizeof(X86NearJump)];
+#endif // TARGET_X86
 
 /* static */ void StubLinkerCPU::Init()
 {
@@ -200,7 +142,10 @@ static BYTE gX86NearJump[sizeof(X86NearJump)];
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
+
+#ifdef TARGET_X86
     new (gX86NearJump) X86NearJump();
+#endif
 }
 
 //---------------------------------------------------------------
@@ -304,6 +249,7 @@ VOID StubLinkerCPU::X86EmitZeroOutReg(X86Reg reg)
 }
 
 
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //    JMP <ofs8>   or
@@ -314,6 +260,7 @@ VOID StubLinkerCPU::X86EmitNearJump(CodeLabel *target)
     STANDARD_VM_CONTRACT;
     EmitLabelRef(target, reinterpret_cast<X86NearJump&>(gX86NearJump), 0);
 }
+#endif // TARGET_X86
 
 
 //---------------------------------------------------------------
