@@ -17,13 +17,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => false;
 
-        public override bool StaticDependenciesAreComputed => false;
+        public override bool StaticDependenciesAreComputed => true;
 
         public TypeDesc TypeMapGroup { get; } = typeMapGroup;
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
-        protected override string GetName(NodeFactory context) => $"ExternalTypeMapRequestNode({TypeMapGroup})";
+        protected override string GetName(NodeFactory context) => $"ProxyTypeMapRequestNode({TypeMapGroup})";
     }
 }

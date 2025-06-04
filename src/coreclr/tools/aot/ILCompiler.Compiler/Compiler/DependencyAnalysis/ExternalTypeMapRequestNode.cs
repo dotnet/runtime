@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => false;
 
-        public override bool StaticDependenciesAreComputed => false;
+        public override bool StaticDependenciesAreComputed => true;
 
         public TypeDesc TypeMapGroup { get; } = typeMapGroup;
 

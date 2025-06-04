@@ -315,7 +315,6 @@ namespace ILCompiler
 
                 if (entrypointModule != null)
                 {
-                    compilationRoots.Add(new TypeMapManager(entrypointModule));
                     compilationRoots.Add(typeMapManager = new TypeMapManager(entrypointModule));
                 }
             }

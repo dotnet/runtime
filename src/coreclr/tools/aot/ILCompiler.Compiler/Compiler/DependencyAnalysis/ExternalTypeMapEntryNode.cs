@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ExternalTypeMapEntryNode(TypeDesc typeMapGroup, string key, TypeDesc targetType) : DependencyNodeCore<NodeFactory>, ISortableNode
     {
-        public override bool InterestingForDynamicDependencyAnalysis => true;
+        public override bool InterestingForDynamicDependencyAnalysis => false;
 
         public override bool HasDynamicDependencies => false;
 

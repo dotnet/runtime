@@ -83,21 +83,20 @@ namespace ILCompiler
             }
         }
 
-        private sealed class ThrowingMethodStub(TypeDesc owningType, TypeSystemException ex) : ILStubMethod
+        private sealed class ThrowingMethodStub(TypeDesc owningType, TypeDesc typeMapGroup, bool externalTypeMap, TypeSystemException ex) : ILStubMethod
         {
-            public TypeSystemException Exception { get; } = ex;
-
-            public override string Name => "InvalidTypeMapStub";
+            public TypeSystemException Exception => ex;
+            public override string Name => $"InvalidTypeMapStub_{typeMapGroup}_{(externalTypeMap ? "External" : "Proxy")}";
             public override MethodIL EmitIL()
             {
                 return TypeSystemThrowingILEmitter.EmitIL(this, Exception);
             }
 
-            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Exception.Message.CompareTo(otherStub.Exception.Message, StringComparison.Ordinal) : -1;
+            protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer) => other is ThrowingMethodStub otherStub ? Name.CompareTo(otherStub.Name) : -1;
 
             public override bool IsPInvoke => false;
 
-            public override string DiagnosticName => "InvalidTypeMap";
+            public override string DiagnosticName => Name;
 
             protected override int ClassCode => 1744789196;
 
@@ -109,7 +108,6 @@ namespace ILCompiler
         }
 
         private Dictionary<TypeDesc, TypeMapState> _typeMapStates = new Dictionary<TypeDesc, TypeMapState>();
-        private Dictionary<TypeSystemException, ThrowingMethodStub> _exceptionStubs = new Dictionary<TypeSystemException, ThrowingMethodStub>();
 
         private enum TypeMapAttributeKind
         {
@@ -195,19 +193,20 @@ namespace ILCompiler
                     }
                     catch (TypeSystemException ex)
                     {
-                        if (!_exceptionStubs.TryGetValue(ex, out ThrowingMethodStub stub))
+                        if (!_typeMapStates.TryGetValue(typeMapGroup, out TypeMapState value))
                         {
-                            _exceptionStubs[ex] = stub = new ThrowingMethodStub(typeMapGroup, ex);
+                            value = new TypeMapState();
+                            _typeMapStates[typeMapGroup] = value;
                         }
-                        _typeMapStates[typeMapGroup] ??= new TypeMapState();
+
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
                         {
-                            _typeMapStates[typeMapGroup].SetExternalTypeMapStub(stub);
+                            value.SetExternalTypeMapStub(new ThrowingMethodStub(typeMapGroup, typeMapGroup, externalTypeMap: true, ex));
                         }
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapAssociation)
                         {
-                            _typeMapStates[typeMapGroup].SetAssociatedTypeMapStub(stub);
+                            value.SetAssociatedTypeMapStub(new ThrowingMethodStub(typeMapGroup, typeMapGroup, externalTypeMap: false, ex));
                         }
                     }
                 }

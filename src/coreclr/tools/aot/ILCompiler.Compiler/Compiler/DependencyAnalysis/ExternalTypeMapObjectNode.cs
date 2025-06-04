@@ -24,8 +24,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => externalReferences.GetSection(factory);
 
-        public override bool HasDynamicDependencies => true;
-
         public override int ClassCode => 2090746844;
 
         public override bool StaticDependenciesAreComputed => true;
