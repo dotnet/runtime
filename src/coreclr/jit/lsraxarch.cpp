@@ -2969,7 +2969,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     {
                         srcCount += BuildAddrUses(op3->AsHWIntrinsic()->Op(1), op3RegCandidates);
                     }
-                    else if (isRMW)
+                    else if (isRMW && !op3->isContained())
                     {
                         srcCount += BuildDelayFreeUses(op3, op1, op3RegCandidates);
                     }
