@@ -5759,7 +5759,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
     {
         result = CORINFO_HELP_NEWARR_1_PTR;
     }
-    else if (CorTypeInfo::IsObjRef(elemType))
+    else if (CorTypeInfo::Size(elemType) == TARGET_POINTER_SIZE)
     {
         // It is an array of object refs
         result = CORINFO_HELP_NEWARR_1_PTR;

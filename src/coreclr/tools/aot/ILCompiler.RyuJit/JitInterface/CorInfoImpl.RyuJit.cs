@@ -1163,12 +1163,8 @@ namespace Internal.JitInterface
 
             TypeDesc elementType = ((ArrayType)type).ElementType;
 
-            if (elementType.IsGCPointer ||
-                elementType.IsPointer ||
-                elementType.IsFunctionPointer)
-            {
+            if (elementType.GetElementSize().AsInt == _compilation.TypeSystemContext.Target.PointerSize)
                 return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR;
-            }
 
             if (type.RequiresAlign8())
                 return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8;
