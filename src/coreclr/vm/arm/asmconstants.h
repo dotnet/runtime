@@ -41,27 +41,6 @@ ASMCONSTANTS_C_ASSERT(ThisPtrRetBufPrecodeData__Target == offsetof(ThisPtrRetBuf
 
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
-
-// Offset of the array containing the address of captured registers in MachState
-#define MachState__captureR4_R11 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureR4_R11 == offsetof(MachState, captureR4_R11))
-
-// Offset of the array containing the address of preserved registers in MachState
-#define MachState___R4_R11 0x20
-ASMCONSTANTS_C_ASSERT(MachState___R4_R11 == offsetof(MachState, _R4_R11))
-
-#define MachState__isValid 0x48
-ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
-
-#define LazyMachState_captureR4_R11 MachState__captureR4_R11
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureR4_R11 == offsetof(LazyMachState, captureR4_R11))
-
-#define LazyMachState_captureSp     (MachState__isValid+4)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
-
-#define LazyMachState_captureIp     (LazyMachState_captureSp+4)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
-
 #define OFFSETOF__MethodTable__m_dwFlags 0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 

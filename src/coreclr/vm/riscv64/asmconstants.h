@@ -85,27 +85,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__returnValue          == offsetof(CallDescrD
 #define FpStruct__BothFloat           0b10
 ASMCONSTANTS_C_ASSERT(FpStruct__BothFloat == (int)FpStruct::BothFloat)
 
-
-// Offset of the array containing the address of captured registers in MachState
-#define MachState__captureCalleeSavedRegisters 0x0
-ASMCONSTANTS_C_ASSERT(MachState__captureCalleeSavedRegisters == offsetof(MachState, captureCalleeSavedRegisters))
-
-// Offset of the array containing the address of preserved registers in MachState
-#define MachState__ptrCalleeSavedRegisters 0x70
-ASMCONSTANTS_C_ASSERT(MachState__ptrCalleeSavedRegisters == offsetof(MachState, ptrCalleeSavedRegisters))
-
-#define MachState__isValid 0xf0
-ASMCONSTANTS_C_ASSERT(MachState__isValid == offsetof(MachState, _isValid))
-
-#define LazyMachState_captureCalleeSavedRegisters MachState__captureCalleeSavedRegisters
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureCalleeSavedRegisters == offsetof(LazyMachState, captureCalleeSavedRegisters))
-
-#define LazyMachState_captureSp     (MachState__isValid+8) // padding for alignment
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, captureSp))
-
-#define LazyMachState_captureIp     (LazyMachState_captureSp+8)
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
-
 #define VASigCookie__pNDirectILStub 0x8
 ASMCONSTANTS_C_ASSERT(VASigCookie__pNDirectILStub == offsetof(VASigCookie, pNDirectILStub))
 

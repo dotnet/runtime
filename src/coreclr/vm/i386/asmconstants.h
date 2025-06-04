@@ -104,51 +104,6 @@ ASMCONSTANTS_C_ASSERT(EHContext_Esp == offsetof(EHContext,Esp))
 ASMCONSTANTS_C_ASSERT(EHContext_Eip == offsetof(EHContext,Eip))
 #endif // FEATURE_EH_FUNCLETS
 
-
-// from clr/src/fjit/helperframe.h
-#define SIZEOF_MachState          40
-ASMCONSTANTS_C_ASSERT(SIZEOF_MachState == sizeof(MachState))
-
-#define MachState__pEdi           0
-ASMCONSTANTS_C_ASSERT(MachState__pEdi == offsetof(MachState, _pEdi))
-
-#define MachState__edi            4
-ASMCONSTANTS_C_ASSERT(MachState__edi == offsetof(MachState, _edi))
-
-#define MachState__pEsi           8
-ASMCONSTANTS_C_ASSERT(MachState__pEsi == offsetof(MachState, _pEsi))
-
-#define MachState__esi            12
-ASMCONSTANTS_C_ASSERT(MachState__esi == offsetof(MachState, _esi))
-
-#define MachState__pEbx           16
-ASMCONSTANTS_C_ASSERT(MachState__pEbx == offsetof(MachState, _pEbx))
-
-#define MachState__ebx            20
-ASMCONSTANTS_C_ASSERT(MachState__ebx == offsetof(MachState, _ebx))
-
-#define MachState__pEbp           24
-ASMCONSTANTS_C_ASSERT(MachState__pEbp == offsetof(MachState, _pEbp))
-
-#define MachState__ebp            28
-ASMCONSTANTS_C_ASSERT(MachState__ebp == offsetof(MachState, _ebp))
-
-#define MachState__esp            32
-ASMCONSTANTS_C_ASSERT(MachState__esp == offsetof(MachState, _esp))
-
-#define MachState__pRetAddr       36
-ASMCONSTANTS_C_ASSERT(MachState__pRetAddr == offsetof(MachState, _pRetAddr))
-
-#define LazyMachState_captureEbp  40
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEbp == offsetof(LazyMachState, captureEbp))
-
-#define LazyMachState_captureEsp  44
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEsp == offsetof(LazyMachState, captureEsp))
-
-#define LazyMachState_captureEip  48
-ASMCONSTANTS_C_ASSERT(LazyMachState_captureEip == offsetof(LazyMachState, captureEip))
-
-
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pNDirectILStub))
 

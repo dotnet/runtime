@@ -163,7 +163,7 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__GenericDictionaryDynamicHelperStubData__HandleAr
 #define               OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo    DBG_FRE(0x40, 0x18)
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InstantiatedMethodDesc__m_pPerInstInfo
                     == offsetof(InstantiatedMethodDesc, m_pPerInstInfo));
-                    
+
 
 #define               OFFSETOF__MethodTable__m_dwFlags              0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags
@@ -244,54 +244,19 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
-
-// MachState offsets (AMD64\gmscpu.h)
-
-#define               OFFSETOF__MachState__m_Rip            0x00
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rip
-                    == offsetof(MachState, m_Rip));
-
-#define               OFFSETOF__MachState__m_Rsp            0x08
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Rsp
-                    == offsetof(MachState, m_Rsp));
-
-#define               OFFSETOF__MachState__m_Capture        0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Capture
-                    == offsetof(MachState, m_Capture));
-
-#ifdef UNIX_AMD64_ABI
-#define               OFFSETOF__MachState__m_Ptrs           0x40
-#define               OFFSETOF__MachState___pRetAddr        0x70
-#define               OFFSETOF__LazyMachState__m_CaptureRip 0xA8
-#define               OFFSETOF__LazyMachState__m_CaptureRsp 0xB0
-#else
-#define               OFFSETOF__MachState__m_Ptrs           0x50
-#define               OFFSETOF__MachState___pRetAddr        0x90
-#define               OFFSETOF__LazyMachState__m_CaptureRip 0x98
-#define               OFFSETOF__LazyMachState__m_CaptureRsp 0xA0
-#endif
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState__m_Ptrs
-                    == offsetof(MachState, m_Ptrs));
-ASMCONSTANTS_C_ASSERT(OFFSETOF__MachState___pRetAddr
-                    == offsetof(MachState, _pRetAddr));
-ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRip
-                    == offsetof(LazyMachState, m_CaptureRip));
-ASMCONSTANTS_C_ASSERT(OFFSETOF__LazyMachState__m_CaptureRsp
-                    == offsetof(LazyMachState, m_CaptureRsp));
-
 #define               OFFSETOF__VASigCookie__pNDirectILStub     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__VASigCookie__pNDirectILStub
                     == offsetof(VASigCookie, pNDirectILStub));
 
 #if defined(UNIX_AMD64_ABI) && !defined(HOST_WINDOWS)
 // Expression is too complicated, is currently:
-//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 + 
-//      /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 + 
-//      /*XSTATE*/ + 8 + 8 + 
-//      /*XSTATE_AVX*/ 16*16 + 
-//      /*XSTATE_AVX512_KMASK*/ 8*8 + 
-//      /*XSTATE_AVX512_ZMM_H*/ 32*16 + 
-//      /*XSTATE_AVX512_ZMM*/ 64*16 + 
+//     (8*6 + 4*2 + 2*6 + 4 + 8*6 + 8*16 + 8 +
+//      /*XMM_SAVE_AREA32*/(2*2 + 1*2 + 2 + 4 + 2*2 + 4 + 2*2 + 4*2 + 16*8 + 16*16 + 1*96) + 26*16 + 8 + 8*5 +
+//      /*XSTATE*/ + 8 + 8 +
+//      /*XSTATE_AVX*/ 16*16 +
+//      /*XSTATE_AVX512_KMASK*/ 8*8 +
+//      /*XSTATE_AVX512_ZMM_H*/ 32*16 +
+//      /*XSTATE_AVX512_ZMM*/ 64*16 +
 //      /*XSTATE_APX*/ 8*16)
 #define               SIZEOF__CONTEXT                 (3232)
 #else

@@ -1456,8 +1456,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
     }
 #endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
-
     VolatileStore(dst, ref);
 
     // if the dst is outside of the heap (unboxed value classes) then we
@@ -1523,7 +1521,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
     IncUncheckedBarrierCount();
 #endif
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
 
     VolatileStore(dst, ref);
 
@@ -1581,8 +1578,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, 
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     assert(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
-
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
 
     // not a release store because NonHeap.
     *dst = ref;

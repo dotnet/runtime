@@ -858,8 +858,6 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
     Thread *pThread = GetThread();
@@ -960,8 +958,6 @@ HCIMPL0(void, IL_Rethrow)
 {
     FCALL_CONTRACT;
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
     Thread *pThread = GetThread();
 
     SoftwareExceptionFrame exceptionFrame;
@@ -1015,13 +1011,11 @@ HCIMPL1(void, IL_ThrowExact, Object* obj)
     /* Make no assumptions about the current machine state */
     ResetCurrentContext();
 
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
     OBJECTREF oref = ObjectToOBJECTREF(obj);
     GetThread()->GetExceptionState()->SetRaisingForeignException();
 
     Thread *pThread = GetThread();
-    
+
     SoftwareExceptionFrame exceptionFrame;
 #ifdef TARGET_X86
     exceptionFrame.UpdateContextFromTransitionBlock(transitionBlock);
@@ -1321,8 +1315,6 @@ void JIT_RareDisableHelper()
 FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
 
     Thread * pThread = GetThread();
     return pThread->GetThreadId();
@@ -2005,7 +1997,6 @@ FORCEINLINE static bool CheckSample(T* pIndex, size_t* sampleIndex)
 HCIMPL2(void, JIT_ValueProfile32, intptr_t val, ICorJitInfo::ValueHistogram32* valueProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
     if (!CheckSample(&valueProfile->Count, &sampleIndex))
@@ -2025,7 +2016,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ValueProfile64, intptr_t val, ICorJitInfo::ValueHistogram64* valueProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     size_t sampleIndex;
     if (!CheckSample(&valueProfile->Count, &sampleIndex))
@@ -2045,7 +2035,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ClassProfile32, Object *obj, ICorJitInfo::HandleHistogram32* classProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2080,7 +2069,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_ClassProfile64, Object *obj, ICorJitInfo::HandleHistogram64* classProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2110,7 +2098,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2157,7 +2144,6 @@ HCIMPLEND
 HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2203,7 +2189,6 @@ HCIMPLEND
 HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram32* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2252,7 +2237,6 @@ HCIMPLEND
 HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     VALIDATEOBJECTREF(objRef);
@@ -2308,7 +2292,6 @@ HCIMPLEND
 HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     LONG count = *pCounter;
     LONG delta = 1;
@@ -2335,7 +2318,6 @@ HCIMPLEND
 HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 {
     FCALL_CONTRACT;
-    FC_GC_POLL_NOT_NEEDED();
 
     LONG64 count = *pCounter;
     LONG64 delta = 1;
@@ -2452,11 +2434,9 @@ NOINLINE static void JIT_ReversePInvokeEnterRare2(ReversePInvokeFrame* frame, vo
 
 // The following JIT_ReversePInvoke helpers are special.
 // They handle setting up Reverse P/Invoke calls and transitioning back to unmanaged code.
-// As a result, we may not have a thread in JIT_ReversePInvokeEnter and we will be in the wrong GC mode for the HCALL prolog.
-// Additionally, we set up and tear down SEH handlers when we're on x86, so we can't use dynamic contracts anyway.
-// As a result, we specially decorate this method to have the correct calling convention
-// and argument ordering for an HCALL, but we don't use the HCALL macros and contracts
-// since this method doesn't follow the contracts.
+// We may not have a managed thread set up in JIT_ReversePInvokeEnter, and the GC mode may be incorrect.
+// On x86, SEH handlers are set up and torn down explicitly, so we avoid using dynamic contracts.
+// This method uses the correct calling convention and argument layout manually, without relying on standard macros or contracts.
 HCIMPL3_RAW(void, JIT_ReversePInvokeEnterTrackTransitions, ReversePInvokeFrame* frame, CORINFO_METHOD_HANDLE handle, void* secretArg)
 {
     _ASSERTE(frame != NULL && handle != NULL);
