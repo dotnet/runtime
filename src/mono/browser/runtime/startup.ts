@@ -34,7 +34,8 @@ import { runtimeList } from "./exports";
 import { nativeAbort, nativeExit } from "./run";
 import { replaceEmscriptenPThreadInit } from "./pthreads/worker-thread";
 
-const pid = (globalThis.performance?.timeOrigin ?? Date.now()) | 0;
+// make pid positive 31bit integer based on startup time
+const pid = ((globalThis.performance?.timeOrigin ?? Date.now()) | 0) & 0x7FFFFFFF;
 
 export function mono_wasm_process_current_pid ():number {
     return pid;
@@ -519,8 +520,12 @@ async function instantiate_wasm_module (
 }
 
 async function ensureUsedWasmFeatures () {
-    runtimeHelpers.featureWasmSimd = await loaderHelpers.simd();
-    runtimeHelpers.featureWasmEh = await loaderHelpers.exceptions();
+    const simd = loaderHelpers.simd();
+    const relaxedSimd = loaderHelpers.relaxedSimd();
+    const exceptions = loaderHelpers.exceptions();
+    runtimeHelpers.featureWasmSimd = await simd;
+    runtimeHelpers.featureWasmRelaxedSimd = await relaxedSimd;
+    runtimeHelpers.featureWasmEh = await exceptions;
     if (runtimeHelpers.emscriptenBuildOptions.wasmEnableSIMD) {
         mono_assert(runtimeHelpers.featureWasmSimd, "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://aka.ms/dotnet-wasm-features");
     }

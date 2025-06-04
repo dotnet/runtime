@@ -175,6 +175,7 @@ if ($vs) {
     $configToOpen = $runtimeConfiguration
   }
 
+  # Auto-generated solution file that still uses the sln format 
   if ($vs -ieq "coreclr.sln") {
     # If someone passes in coreclr.sln (case-insensitive),
     # launch the generated CMake solution.
@@ -190,6 +191,7 @@ if ($vs) {
       }
     }
   }
+  # Auto-generated solution file that still uses the sln format
   elseif ($vs -ieq "corehost.sln") {
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
     if (-Not (Test-Path $vs)) {
@@ -208,24 +210,24 @@ if ($vs) {
 
     if ($runtimeFlavor -eq "Mono") {
       # Search for the solution in mono
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
     } else {
       # Search for the solution in coreclr
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
     }
 
     if (-Not (Test-Path $vs)) {
       $vs = $solution
 
       # Search for the solution in libraries
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.slnx"
 
       if (-Not (Test-Path $vs)) {
         $vs = $solution
 
         # Search for the solution in installer
-        if (-Not ($vs.endswith(".sln"))) {
-          $vs = "$vs.sln"
+        if (-Not ($vs.endswith(".slnx"))) {
+          $vs = "$vs.slnx"
         }
 
         $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs

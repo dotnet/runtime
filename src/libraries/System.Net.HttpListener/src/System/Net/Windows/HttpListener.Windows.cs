@@ -368,7 +368,7 @@ namespace System.Net
             }
         }
 
-        private unsafe void CreateRequestQueueHandle()
+        private void CreateRequestQueueHandle()
         {
             Debug.Assert(Monitor.IsEntered(_internalLock));
             Debug.Assert(_currentSession is null);
@@ -376,7 +376,7 @@ namespace System.Net
             _currentSession = new HttpListenerSession(this);
         }
 
-        private unsafe void CloseRequestQueueHandle()
+        private void CloseRequestQueueHandle()
         {
             Debug.Assert(Monitor.IsEntered(_internalLock));
 
@@ -590,7 +590,7 @@ namespace System.Net
             }
         }
 
-        internal static unsafe bool ValidateRequest(HttpListenerSession session, RequestContextBase requestMemory)
+        internal static bool ValidateRequest(HttpListenerSession session, RequestContextBase requestMemory)
         {
             // Block potential DOS attacks
             if (requestMemory.RequestBlob->Headers.UnknownHeaderCount > UnknownHeaderLimit)
@@ -1456,7 +1456,7 @@ namespace System.Net
             }
         }
 
-        private static unsafe int GetTokenOffsetFromBlob(IntPtr blob)
+        private static int GetTokenOffsetFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
             IntPtr tokenPointer = ((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelToken;
@@ -1465,7 +1465,7 @@ namespace System.Net
             return (int)((byte*)tokenPointer - (byte*)blob);
         }
 
-        private static unsafe int GetTokenSizeFromBlob(IntPtr blob)
+        private static int GetTokenSizeFromBlob(IntPtr blob)
         {
             Debug.Assert(blob != IntPtr.Zero);
             return (int)((Interop.HttpApi.HTTP_REQUEST_CHANNEL_BIND_STATUS*)blob)->ChannelTokenSize;
@@ -1595,7 +1595,7 @@ namespace System.Net
                 }
             }
 
-            internal unsafe DisconnectAsyncResult(HttpListenerSession session, ulong connectionId)
+            internal DisconnectAsyncResult(HttpListenerSession session, ulong connectionId)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpListener: {session.Listener}, ConnectionId: {connectionId}");
                 _ownershipState = OwnershipState.InHandleAuthentication;

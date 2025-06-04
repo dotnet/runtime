@@ -20,6 +20,7 @@
 #include "array.h"
 #include "fstream.h"
 #include "hash.h"
+#include "minipal/time.h"
 
 #include "appdomain.hpp"
 #include "qcall.h"
@@ -99,7 +100,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     if (s_startTick == 0)
     {
-        s_startTick = GetTickCount();
+        s_startTick = (unsigned)minipal_lowres_ticks();
     }
 
     va_list args;
@@ -108,7 +109,7 @@ void _MulticoreJitTrace(const char * format, ...)
 #ifdef LOGGING
     LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, "Mcj ");
     LogSpew2Valist(LF2_MULTICOREJIT, LL_INFO100, format, args);
-    LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, ", (time=%d ms)\n", GetTickCount() - s_startTick);
+    LogSpew2      (LF2_MULTICOREJIT, LL_INFO100, ", (time=%d ms)\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 #else
 
     // Following LogSpewValist(DWORD facility, DWORD level, const char *fmt, va_list args)
@@ -118,7 +119,7 @@ void _MulticoreJitTrace(const char * format, ...)
 
     len  =  sprintf_s(buffer,       ARRAY_SIZE(buffer),       "Mcj TID %04x: ", GetCurrentThreadId());
     len += _vsnprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, format, args);
-    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", GetTickCount() - s_startTick);
+    len +=  sprintf_s(buffer + len, ARRAY_SIZE(buffer) - len, ", (time=%d ms)\r\n", (unsigned)minipal_lowres_ticks() - s_startTick);
 
     OutputDebugStringA(buffer);
 #endif

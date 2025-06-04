@@ -196,7 +196,10 @@ namespace ILCompiler
             {
                 // Only instruction sets with associated R2R enum values are specifiable
                 if (instructionSet.Specifiable)
-                    support.Add(instructionSet.Name, instructionSet.InstructionSet);
+                {
+                    _ = support.TryAdd(instructionSet.Name, instructionSet.InstructionSet);
+                    Debug.Assert(support[instructionSet.Name] == instructionSet.InstructionSet);
+                }
             }
 
             return support;
@@ -321,43 +324,10 @@ namespace ILCompiler
             if ((_architecture == TargetArchitecture.X86) || (_architecture == TargetArchitecture.ARM))
                 unsupportedInstructionSets.Set64BitInstructionSetVariantsUnconditionally(_architecture);
 
-            // While it's possible to enable individual AVX-512 ISA's, it is not
-            // optimal to do so, since they aren't totally functional this way,
-            // plus it is extremely rare to encounter hardware that doesn't support
-            // all of them. So, here we ensure that we are enabling all the ISA's
-            // if one is specified in the Crossgen2 or ILC command-lines.
-            //
-            // For more information, check this Github comment:
-            // https://github.com/dotnet/runtime/issues/106450#issuecomment-2299504035
-
             if (_supportedInstructionSets.Any(iSet => iSet.Contains("avx512")))
             {
-                // We can simply try adding all of the AVX-512 ISA's here,
-                // since SortedSet just ignores the value if it is already present.
-
-                _supportedInstructionSets.Add("avx512f");
-                _supportedInstructionSets.Add("avx512f_vl");
-                _supportedInstructionSets.Add("avx512bw");
-                _supportedInstructionSets.Add("avx512bw_vl");
-                _supportedInstructionSets.Add("avx512cd");
-                _supportedInstructionSets.Add("avx512cd_vl");
-                _supportedInstructionSets.Add("avx512dq");
-                _supportedInstructionSets.Add("avx512dq_vl");
-
-                // If AVX-512VBMI is specified, then we have to include its VL
-                // counterpart as well.
-
-                if (_supportedInstructionSets.Contains("avx512vbmi"))
-                    _supportedInstructionSets.Add("avx512vbmi_vl");
-
                 // These ISAs should automatically extend to 512-bit if
                 // AVX-512 is enabled.
-
-                if (_supportedInstructionSets.Contains("avx10v1"))
-                    _supportedInstructionSets.Add("avx10v1_v512");
-
-                if (_supportedInstructionSets.Contains("avx10v2"))
-                    _supportedInstructionSets.Add("avx10v2_v512");
 
                 if (_supportedInstructionSets.Contains("gfni"))
                     _supportedInstructionSets.Add("gfni_v512");
@@ -415,9 +385,9 @@ namespace ILCompiler
                 case TargetArchitecture.X64:
                 case TargetArchitecture.X86:
                 {
-                    Debug.Assert(InstructionSet.X86_SSE2 == InstructionSet.X64_SSE2);
+                    Debug.Assert(InstructionSet.X86_X86Base == InstructionSet.X64_X86Base);
                     Debug.Assert(InstructionSet.X86_AVX2 == InstructionSet.X64_AVX2);
-                    Debug.Assert(InstructionSet.X86_AVX512F == InstructionSet.X64_AVX512F);
+                    Debug.Assert(InstructionSet.X86_AVX512 == InstructionSet.X64_AVX512);
 
                     Debug.Assert(InstructionSet.X86_VectorT128 == InstructionSet.X64_VectorT128);
                     Debug.Assert(InstructionSet.X86_VectorT256 == InstructionSet.X64_VectorT256);
@@ -426,11 +396,11 @@ namespace ILCompiler
                     // We only want one size supported for Vector<T> and we want the other sizes explicitly
                     // unsupported to ensure we throw away the given methods if runtime picks a larger size
 
-                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.X86_SSE2));
+                    Debug.Assert(supportedInstructionSets.HasInstructionSet(InstructionSet.X86_X86Base));
                     Debug.Assert((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 128));
                     supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT128);
 
-                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512F) && (maxVectorTBitWidth >= 512))
+                    if (supportedInstructionSets.HasInstructionSet(InstructionSet.X86_AVX512) && (maxVectorTBitWidth >= 512))
                     {
                         supportedInstructionSets.RemoveInstructionSet(InstructionSet.X86_VectorT128);
                         supportedInstructionSets.AddInstructionSet(InstructionSet.X86_VectorT512);
