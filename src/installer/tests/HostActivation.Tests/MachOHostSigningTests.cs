@@ -1,5 +1,5 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 using Xunit;
 using FluentAssertions;
@@ -46,8 +46,8 @@ namespace HostActivation.Tests
 
             HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
 
-            HasEntitlements(testAppHostPath).Should().BeTrue();
-            HasEntitlements(signedHostPath).Should().BeTrue();
+            SignatureHelpers.HasEntitlements(testAppHostPath).Should().BeTrue();
+            SignatureHelpers.HasEntitlements(signedHostPath).Should().BeTrue();
         }
 
         [Fact]
@@ -64,26 +64,8 @@ namespace HostActivation.Tests
             var bundlePath = new Bundler(Path.GetFileName(signedHostPath), testAppHostPath + ".bundle").GenerateBundle([new(signedHostPath, Path.GetFileName(signedHostPath))]);
 
 
-            HasEntitlements(testAppHostPath).Should().BeTrue();
-            HasEntitlements(bundlePath).Should().BeTrue();
-        }
-
-        private static bool HasEntitlements(string path)
-        {
-            ProcessStartInfo psi = new ProcessStartInfo
-            {
-                FileName = "codesign",
-                Arguments = $"-d --entitlements - \"{path}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            var process = Process.Start(psi);
-            process.WaitForExit();
-            process.StandardOutput.ReadLine(); // ExecutableName
-            var entitlements = process.StandardOutput.ReadLine(); // Entitlements
-            return !string.IsNullOrEmpty(entitlements);
+            SignatureHelpers.HasEntitlements(testAppHostPath).Should().BeTrue();
+            SignatureHelpers.HasEntitlements(bundlePath).Should().BeTrue();
         }
     }
 }

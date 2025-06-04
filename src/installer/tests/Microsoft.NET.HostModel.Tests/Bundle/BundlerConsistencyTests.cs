@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -311,15 +312,35 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [InlineData(true, "", true)]
+        [InlineData(false, "", true)]
+        [InlineData(true, "dir with spaces", true)]
+        [InlineData(false, "dir with spaces", true)]
+        [InlineData(true, "", false)]
+        [InlineData(false, "", false)]
+        [InlineData(true, "dir with spaces", false)]
+        [InlineData(false, "dir with spaces", false)]
         [PlatformSpecific(TestPlatforms.OSX)]
-        public void Codesign(bool shouldCodesign)
+        public void Codesign(bool shouldCodesign, string subdir, bool unsignFirst)
         {
             TestApp app = sharedTestState.App;
+            string hostTmpPath = Path.Combine(app.Location, subdir, Binaries.AppHost.FileName);
+            if (!Directory.Exists(Path.GetDirectoryName(hostTmpPath)))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(hostTmpPath));
+            }
+            File.Copy(Binaries.AppHost.FilePath, hostTmpPath, overwrite: true);
+            if (unsignFirst)
+            {
+                // Make sure the bundler can handle unsigned hosts without entitlements
+                Command.Create("codesign", $"--remove-signature \"{hostTmpPath}\"")
+                    .CaptureStdErr()
+                    .CaptureStdOut()
+                    .Execute(expectedToFail: false);
+            }
             FileSpec[] fileSpecs = new FileSpec[]
             {
-                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(hostTmpPath, BundlerHostName),
                 new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
                 new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
                 new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
@@ -329,7 +350,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             string bundledApp = bundler.GenerateBundle(fileSpecs);
 
             // Check if the file is signed
-            CommandResult result = Command.Create("codesign", $"-v {bundledApp}")
+            CommandResult result = Command.Create("codesign", $"-v \"{bundledApp}\"")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(expectedToFail: !shouldCodesign);
@@ -337,6 +358,7 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             if (shouldCodesign)
             {
                 result.Should().Pass();
+                SignatureHelpers.HasEntitlements(bundledApp).Should().Be(!unsignFirst);
             }
             else
             {

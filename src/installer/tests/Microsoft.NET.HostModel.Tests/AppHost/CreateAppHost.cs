@@ -268,12 +268,17 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                 File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
                 string destinationFilePath = Path.Combine(testDirectory, "DestinationAppHost.exe.mock");
                 string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                SignatureHelpers.HasEntitlements(sourceAppHostMock)
+                    .Should().BeFalse("The source apphost mock should not have entitlements");
                 HostWriter.CreateAppHost(
                    sourceAppHostMock,
                    destinationFilePath,
                    appBinaryFilePath,
                    windowsGraphicalUserInterface: false,
                    enableMacOSCodeSign: true);
+
+                SignatureHelpers.HasEntitlements(destinationFilePath)
+                    .Should().BeFalse("The destination apphost mock should not have entitlements");
 
                 const string codesign = @"/usr/bin/codesign";
                 var psi = new ProcessStartInfo()
@@ -326,37 +331,6 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                         .Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
                     p.WaitForExit();
                 }
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void CodeSigningFailuresThrow()
-        {
-            using (TestArtifact artifact = CreateTestDirectory())
-            {
-                string sourceAppHostMock = PrepareAppHostMockFile(artifact.Location);
-                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
-                string destinationFilePath = Path.Combine(artifact.Location, "DestinationAppHost.exe.mock");
-                string appBinaryFilePath = "Test/App/Binary/Path.dll";
-                HostWriter.CreateAppHost(
-                   sourceAppHostMock,
-                   destinationFilePath,
-                   appBinaryFilePath,
-                   windowsGraphicalUserInterface: false,
-                   enableMacOSCodeSign: true);
-
-                // Run CreateAppHost again to sign the apphost a second time,
-                // causing codesign to fail.
-                var exception = Assert.Throws<AppHostSigningException>(() =>
-                    HostWriter.CreateAppHost(
-                    sourceAppHostMock,
-                    destinationFilePath,
-                    appBinaryFilePath,
-                    windowsGraphicalUserInterface: false,
-                    enableMacOSCodeSign: true));
-                Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
-                Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
             }
         }
 

@@ -355,7 +355,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 string args = "-s -";
                 if (File.Exists(entitlementsPath) && new FileInfo(entitlementsPath).Length != 0)
                 {
-                    args += " --entitlements " + entitlementsPath;
+                    args += $" --entitlements \"{entitlementsPath}\"";
                 }
                 var (exitCode, stdErr) = HostModelUtils.RunCodesign(args, bundlePath);
                 if (exitCode != 0)
@@ -383,7 +383,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     string stdErr;
                     if (entitlementsPath != null)
                     {
-                        (exitCode, stdErr) = HostModelUtils.RunCodesign($"-d --entitlements {entitlementsPath} --xml", bundlePath);
+                        (exitCode, stdErr) = HostModelUtils.RunCodesign($"-d --entitlements \"{entitlementsPath}\" --xml", bundlePath);
                         if (exitCode != 0)
                         {
                             throw new InvalidOperationException($"Failed to get entitlements from '{bundlePath}': {stdErr}");
