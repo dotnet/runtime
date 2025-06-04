@@ -75,7 +75,7 @@ LOCAL_LABEL(NewOutOfMemory):
         jmp         RhExceptionHandling_FailedAllocation
 LEAF_END RhpNewObject, _TEXT
 
-// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 //  EAX == string/array size
 //  ECX == MethodTable
 //  EDX == character/element count
@@ -212,10 +212,10 @@ LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow):
 LEAF_END RhpNewArrayFast, _TEXT
 
 
-// Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+// Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  ECX == MethodTable
 //  EDX == element count
-LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
+LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
         // Delegate overflow handling to the generic helper conservatively
 
         cmp         edx, (0x40000000 / 4) // sizeof(void*)
@@ -229,7 +229,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
-LEAF_END RhpNewObjectArrayFast, _TEXT
+LEAF_END RhpNewPtrArrayFast, _TEXT
 
 //
 // Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)

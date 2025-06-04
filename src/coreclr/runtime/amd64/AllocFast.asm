@@ -95,7 +95,7 @@ NewOutOfMemory:
 NESTED_END RhpNewObject, _TEXT
 
 
-;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+;; Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 ;;  RAX == string/array size
 ;;  RCX == MethodTable
 ;;  RDX == character/element count
@@ -182,10 +182,10 @@ ArraySizeOverflow:
 LEAF_END RhpNewArrayFast, _TEXT
 
 
-;; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+;; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 ;;  RCX == MethodTable
 ;;  EDX == element count
-LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
+LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
 
         ; Delegate overflow handling to the generic helper conservatively
 
@@ -203,7 +203,7 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
 
         NEW_ARRAY_FAST
 
-LEAF_END RhpNewObjectArrayFast, _TEXT
+LEAF_END RhpNewPtrArrayFast, _TEXT
 
 
 NESTED_ENTRY RhpNewVariableSizeObject, _TEXT

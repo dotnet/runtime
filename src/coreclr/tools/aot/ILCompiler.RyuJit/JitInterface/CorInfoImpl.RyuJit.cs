@@ -614,8 +614,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT:
                     id = ReadyToRunHelper.NewArray;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_OBJ:
-                    return _compilation.NodeFactory.ExternSymbol("RhpNewObjectArrayFast");
+                case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR:
+                    return _compilation.NodeFactory.ExternSymbol("RhpNewPtrArrayFast");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_ALIGN8:
                     return _compilation.NodeFactory.ExternSymbol("RhpNewArrayFastAlign8");
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_VC:
@@ -1167,7 +1167,7 @@ namespace Internal.JitInterface
                 elementType.IsPointer ||
                 elementType.IsFunctionPointer)
             {
-                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_OBJ;
+                return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_PTR;
             }
 
             if (type.RequiresAlign8())
