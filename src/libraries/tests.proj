@@ -744,7 +744,7 @@
     <ProjectReference
       Include="$(RepoRoot)src\tests\Common\XUnitLogChecker\XUnitLogChecker.csproj"
       Targets="Publish"
-      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(OutputRID)" />
+      AdditionalProperties="%(AdditionalProperties);_IsPublishing=true;Configuration=Release;PublishDir=$(XUnitLogCheckerLibrariesOutDir);ROOTFS_DIR=$(ROOTFS_DIR);RuntimeIdentifier=$(TargetRid)" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR'">

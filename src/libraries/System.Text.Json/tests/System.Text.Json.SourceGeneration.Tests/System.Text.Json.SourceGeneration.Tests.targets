@@ -39,6 +39,7 @@
     <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\JsonTestSerializerOptions.cs" Link="CommonTest\System\Text\Json\JsonTestSerializerOptions.cs" />
     <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SerializerTests.cs" />
     <Compile Include="..\Common\StreamingJsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\StreamingJsonSerializerWrapper.cs" />
     <Compile Include="..\Common\Utf8MemoryStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\Utf8MemoryStream.cs" />

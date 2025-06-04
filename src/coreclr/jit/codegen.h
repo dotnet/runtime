@@ -872,9 +872,6 @@ protected:
     void genIntrinsic(GenTreeIntrinsic* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
-#if FEATURE_ARG_SPLIT
-    void genPutArgSplit(GenTreePutArgSplit* treeNode);
-#endif // FEATURE_ARG_SPLIT
 
 #if defined(TARGET_XARCH)
     unsigned getBaseVarForPutArgStk(GenTree* treeNode);
@@ -1095,10 +1092,6 @@ protected:
                                    regNumber         dstReg,
                                    regNumber         srcReg,
                                    regNumber         sizeReg);
-#if FEATURE_ARG_SPLIT
-    void genConsumeArgSplitStruct(GenTreePutArgSplit* putArgNode);
-#endif // FEATURE_ARG_SPLIT
-
     void genConsumeRegs(GenTree* tree);
     void genConsumeOperands(GenTreeOp* tree);
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)

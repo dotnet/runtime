@@ -801,7 +801,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         fsv.GetParentNode()->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
     {
 #if defined(TARGET_X86)
-        if (fwdSubNode->TypeGet() == TYP_LONG)
+        if (fwdSubNode->TypeIs(TYP_LONG))
         {
             JITDUMP(" TYP_LONG fwd sub node, target is x86\n");
             return false;

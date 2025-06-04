@@ -1,51 +1,46 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <unixasmmacros.inc>
-#include "AsmOffsets.inc"
-
-// GC type flags
-#define GC_ALLOC_FINALIZE               1
-
-//
-// Rename fields of nested structs
-//
-#define OFFSETOF__Thread__m_alloc_context__alloc_ptr        (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__m_rgbAllocContextBuffer + OFFSETOF__gc_alloc_context__alloc_ptr)
-#define OFFSETOF__Thread__m_eeAllocContext__combined_limit  (OFFSETOF__Thread__m_eeAllocContext + OFFSETOF__ee_alloc_context__combined_limit)
+#include "AsmMacros_Shared.h"
 
 // Allocate non-array, non-finalizable object. If the allocation doesn't fit into the current thread's
 // allocation context then automatically fallback to the slow allocation path.
 //  $a0 == MethodTable
     LEAF_ENTRY RhpNewFast, _TEXT
 
-        // a1 = GetThread()
-        INLINE_GETTHREAD  $a1
+        // a1 = ee_alloc_context pointer
+        INLINE_GET_ALLOC_CONTEXT_BASE  $a1
 
         //
         // a0 contains MethodTable pointer
         //
-        ld.w  $a2, $a0, OFFSETOF__MethodTable__m_uBaseSize
+        ld.w  $a2, $a0, OFFSETOF__ee_alloc_context + OFFSETOF__MethodTable__m_uBaseSize
 
         //
         // a0: MethodTable pointer
-        // a1: Thread pointer
+        // a1: ee_alloc_context pointer
         // a2: base size
         //
 
         // Load potential new object address into t3.
-        ld.d  $t3, $a1, OFFSETOF__Thread__m_alloc_context__alloc_ptr
+        ld.d  $t3, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
+        // Load and calculate the maximum size of object we can fit.
+        ld.d  $t2, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit
+        sub.d  $t2, $t2, $t3
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
         // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        bltu  $t2, $a2, LOCAL_LABEL(RhpNewFast_RarePath)
+
+        // Calculate the new alloc pointer to account for the allocation.
         add.d  $a2, $a2, $t3
-        ld.d   $t4, $a1, OFFSETOF__Thread__m_eeAllocContext__combined_limit
-        bltu  $t4, $a2, LOCAL_LABEL(RhpNewFast_RarePath)
 
-        // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a1, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Set the new objects MethodTable pointer
+        // Set the new object's MethodTable pointer.
         st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
+
+        // Update the alloc pointer to the newly calculated one.
+        st.d  $a2, $a1, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
 
         ori  $a0, $t3, 0
         jirl  $r0, $ra, 0
@@ -80,7 +75,7 @@ LOCAL_LABEL(RhpNewFast_RarePath):
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl  C_FUNC(RhpGcAlloc)
 
-        // Set the new objects MethodTable pointer on success.
+        // Set the new object's MethodTable pointer on success.
         beqz  $a0, LOCAL_LABEL(NewOutOfMemory)
 
         .cfi_remember_state
@@ -100,10 +95,47 @@ LOCAL_LABEL(NewOutOfMemory):
 
     NESTED_END RhpNewObject, _TEXT
 
+// Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+//  a0 == MethodTable
+//  a1 == character/element count
+//  a2 == string/array size
+    .macro NEW_ARRAY_FAST
+
+        INLINE_GET_ALLOC_CONTEXT_BASE $a3
+
+        // Load potential new object address into t3.
+        ld.d  $t3, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
+
+        // Load and calculate the maximum size of object we can fit.
+        ld.d  $t2, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__combined_limit
+        sub.d  $t2, $t2, $t3
+
+        // Determine whether the end of the object is too big for the current allocation context. If so,
+        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
+        bltu  $t2, $a2, C_FUNC(RhpNewVariableSizeObject)
+
+        // Calculate the new alloc pointer to account for the allocation.
+        add.d  $a2, $a2, $t3
+
+        // Set the new object's MethodTable pointer and element count.
+        st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
+        st.d  $a1, $t3, OFFSETOF__Array__m_Length
+
+        // Update the alloc pointer to the newly calculated one.
+        st.d  $a2, $a3, OFFSETOF__ee_alloc_context + OFFSETOF__ee_alloc_context__alloc_ptr
+
+        // Return the object allocated in a0.
+        ori  $a0, $t3, 0
+
+        jirl  $r0, $ra, 0
+
+    .endm
+
 // Allocate a string.
 //  a0 == MethodTable
 //  a1 == element/character count
     LEAF_ENTRY RhNewString, _TEXT
+
         // Make sure computing the overall allocation size wont overflow
         lu12i.w  $a2, ((MAX_STRING_LENGTH >> 12) & 0xFFFFF)
         ori  $a2, $a2, (MAX_STRING_LENGTH & 0xFFF)
@@ -115,35 +147,7 @@ LOCAL_LABEL(NewOutOfMemory):
         addi.d  $a2, $a2, STRING_BASE_SIZE + 7  // a2 = a2 + STRING_BASE_SIZE + 7
         bstrins.d  $a2, $r0, 2, 0               // clear the bits[2:0] of $a2
 
-        // a0 == MethodTable
-        // a1 == element count
-        // a2 == string size
-
-        INLINE_GETTHREAD $a3
-
-        // Load potential new object address into t3.
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
-        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add.d  $a2, $a2, $t3
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_eeAllocContext__combined_limit
-        bltu  $t3, $a2, LOCAL_LABEL(RhNewString_Rare)
-
-        // Reload new object address into r12.
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Set the new objects MethodTable pointer and element count.
-        st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
-        st.d  $a1, $t3, OFFSETOF__Array__m_Length
-
-        // Return the object allocated in a0.
-        ori  $a0, $t3, 0
-
-        jirl  $r0, $ra, 0
+        NEW_ARRAY_FAST
 
 LOCAL_LABEL(StringSizeOverflow):
         // We get here if the length of the final string object can not be represented as an unsigned
@@ -154,14 +158,12 @@ LOCAL_LABEL(StringSizeOverflow):
         ori  $a1, $zero, 1                  // Indicate that we should throw OverflowException
         b  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-LOCAL_LABEL(RhNewString_Rare):
-        b  C_FUNC(RhpNewArrayRare)
     LEAF_END    RhNewString, _Text
 
 // Allocate one dimensional, zero based array (SZARRAY).
 //  $a0 == MethodTable
 //  $a1 == element count
-    LEAF_ENTRY RhpNewArray, _Text
+    LEAF_ENTRY RhpNewArrayFast, _Text
 
         // We want to limit the element count to the non-negative 32-bit int range.
         // If the element count is <= 0x7FFFFFFF, no overflow is possible because the component
@@ -173,39 +175,10 @@ LOCAL_LABEL(RhNewString_Rare):
 
         ld.h  $a2, $a0, OFFSETOF__MethodTable__m_usComponentSize
         mulw.d.w  $a2, $a1, $a2
-        ld.w  $a3, $a0, OFFSETOF__MethodTable__m_uBaseSize
-        add.d  $a2, $a2, $a3
-        addi.d  $a2, $a2, 7
+        addi.d  $a2, $a2, SZARRAY_BASE_SIZE + 7
         bstrins.d  $a2, $r0, 2, 0
-        // a0 == MethodTable
-        // a1 == element count
-        // a2 == array size
 
-        INLINE_GETTHREAD $a3
-
-        // Load potential new object address into t3.
-        ld.d         $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Determine whether the end of the object would lie outside of the current allocation context. If so,
-        // we abandon the attempt to allocate the object directly and fall back to the slow helper.
-        add.d  $a2, $a2, $t3
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_eeAllocContext__combined_limit
-        bltu  $t3, $a2, LOCAL_LABEL(RhpNewArray_Rare)
-
-        // Reload new object address into t3.
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Update the alloc pointer to account for the allocation.
-        st.d  $a2, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-
-        // Set the new objects MethodTable pointer and element count.
-        st.d  $a0, $t3, OFFSETOF__Object__m_pEEType
-        st.d  $a1, $t3, OFFSETOF__Array__m_Length
-
-        // Return the object allocated in r0.
-        ori  $a0, $t3, 0
-
-        jirl  $r0, $ra, 0
+        NEW_ARRAY_FAST
 
 LOCAL_LABEL(ArraySizeOverflow):
         // We get here if the size of the final array object can not be represented as an unsigned
@@ -216,20 +189,38 @@ LOCAL_LABEL(ArraySizeOverflow):
         ori  $a1, $zero, 1 // Indicate that we should throw OverflowException
         b  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-LOCAL_LABEL(RhpNewArray_Rare):
-        b  C_FUNC(RhpNewArrayRare)
-    LEAF_END    RhpNewArray, _TEXT
+    LEAF_END    RhpNewArrayFast, _TEXT
+
+#ifndef FEATURE_NATIVEAOT
+// Allocate one-dimensional, zero-based array (SZARRAY) of objects (pointer sized elements).
+//  $a0 == MethodTable
+//  $a1 == element count
+    LEAF_ENTRY RhpNewObjectArrayFast, _Text
+
+        // Delegate overflow handling to the generic helper conservatively
+
+        li.w  $a2, (0x40000000 / 8) // sizeof(void*)
+        bgeu  $a1, $a2, C_FUNC(RhpNewVariableSizeObject)
+
+        // In this case we know the element size is sizeof(void *), or 8 for arm64
+        // This helps us in two ways - we can shift instead of multiplying, and
+        // there's no need to align the size either
+
+        slli.d  $a2, $a1, 3
+        addi.d  $a2, $a2, SZARRAY_BASE_SIZE
+
+        // No need for rounding in this case - element size is 8, and m_BaseSize is guaranteed
+        // to be a multiple of 8.
+
+        NEW_ARRAY_FAST
+
+    LEAF_END    RhpNewObjectArrayFast, _TEXT
+#endif
 
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 //  a0 == MethodTable
 //  a1 == element count
-//  a2 == array size + Thread::m_alloc_context::alloc_ptr
-//  a3 == Thread
-    NESTED_ENTRY RhpNewArrayRare, _TEXT, NoHandler
-
-        // Recover array size by subtracting the alloc_ptr from a2.
-        ld.d  $t3, $a3, OFFSETOF__Thread__m_alloc_context__alloc_ptr
-        sub.d  $a2, $a2, $t3
+    NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler
 
         PUSH_COOP_PINVOKE_FRAME $a3
 
@@ -242,15 +233,15 @@ LOCAL_LABEL(RhpNewArray_Rare):
         // void* RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame)
         bl  C_FUNC(RhpGcAlloc)
 
-        // Set the new objects MethodTable pointer and length on success.
-        beqz  $a0, LOCAL_LABEL(ArrayOutOfMemory)
+        // Set the new object's MethodTable pointer and length on success.
+        beqz  $a0, LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory)
 
         .cfi_remember_state
         POP_COOP_PINVOKE_FRAME
         EPILOG_RETURN
 
         .cfi_restore_state
-LOCAL_LABEL(ArrayOutOfMemory):
+LOCAL_LABEL(RhpNewVariableSizeObject_OutOfMemory):
         // This is the OOM failure path. We are going to tail-call to a managed helper that will throw
         // an out of memory exception that the caller of this allocator understands.
 
@@ -260,4 +251,4 @@ LOCAL_LABEL(ArrayOutOfMemory):
         POP_COOP_PINVOKE_FRAME
         b  C_FUNC(RhExceptionHandling_FailedAllocation)
 
-    NESTED_END RhpNewArrayRare, _TEXT
+    NESTED_END RhpNewVariableSizeObject, _TEXT
