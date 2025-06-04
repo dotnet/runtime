@@ -57,49 +57,49 @@ function deep_merge_resources (target: Assets, source: Assets): Assets {
 
     const providedResources: Assets = { ...source };
     if (providedResources.assembly !== undefined) {
-        providedResources.assembly = { ...(target.assembly || {}), ...(providedResources.assembly || {}) };
+        providedResources.assembly = [...(target.assembly || []), ...(providedResources.assembly || [])];
     }
     if (providedResources.lazyAssembly !== undefined) {
-        providedResources.lazyAssembly = { ...(target.lazyAssembly || {}), ...(providedResources.lazyAssembly || {}) };
+        providedResources.lazyAssembly = [...(target.lazyAssembly || []), ...(providedResources.lazyAssembly || [])];
     }
     if (providedResources.pdb !== undefined) {
-        providedResources.pdb = { ...(target.pdb || {}), ...(providedResources.pdb || {}) };
+        providedResources.pdb = [...(target.pdb || []), ...(providedResources.pdb || [])];
     }
     if (providedResources.jsModuleWorker !== undefined) {
-        providedResources.jsModuleWorker = { ...(target.jsModuleWorker || {}), ...(providedResources.jsModuleWorker || {}) };
+        providedResources.jsModuleWorker = [...(target.jsModuleWorker || []), ...(providedResources.jsModuleWorker || [])];
     }
     if (providedResources.jsModuleNative !== undefined) {
-        providedResources.jsModuleNative = { ...(target.jsModuleNative || {}), ...(providedResources.jsModuleNative || {}) };
+        providedResources.jsModuleNative = [...(target.jsModuleNative || []), ...(providedResources.jsModuleNative || [])];
     }
     if (providedResources.jsModuleDiagnostics !== undefined) {
-        providedResources.jsModuleDiagnostics = { ...(target.jsModuleDiagnostics || {}), ...(providedResources.jsModuleDiagnostics || {}) };
+        providedResources.jsModuleDiagnostics = [...(target.jsModuleDiagnostics || []), ...(providedResources.jsModuleDiagnostics || [])];
     }
     if (providedResources.jsModuleRuntime !== undefined) {
-        providedResources.jsModuleRuntime = { ...(target.jsModuleRuntime || {}), ...(providedResources.jsModuleRuntime || {}) };
+        providedResources.jsModuleRuntime = [...(target.jsModuleRuntime || []), ...(providedResources.jsModuleRuntime || [])];
     }
     if (providedResources.wasmSymbols !== undefined) {
-        providedResources.wasmSymbols = { ...(target.wasmSymbols || {}), ...(providedResources.wasmSymbols || {}) };
+        providedResources.wasmSymbols = [...(target.wasmSymbols || []), ...(providedResources.wasmSymbols || [])];
     }
     if (providedResources.wasmNative !== undefined) {
-        providedResources.wasmNative = { ...(target.wasmNative || {}), ...(providedResources.wasmNative || {}) };
+        providedResources.wasmNative = [...(target.wasmNative || []), ...(providedResources.wasmNative || [])];
     }
     if (providedResources.icu !== undefined) {
-        providedResources.icu = { ...(target.icu || {}), ...(providedResources.icu || {}) };
+        providedResources.icu = [...(target.icu || []), ...(providedResources.icu || [])];
     }
     if (providedResources.satelliteResources !== undefined) {
         providedResources.satelliteResources = deepMergeSatelliteResources(target.satelliteResources || {}, providedResources.satelliteResources || {});
     }
     if (providedResources.modulesAfterConfigLoaded !== undefined) {
-        providedResources.modulesAfterConfigLoaded = { ...(target.modulesAfterConfigLoaded || {}), ...(providedResources.modulesAfterConfigLoaded || {}) };
+        providedResources.modulesAfterConfigLoaded = [...(target.modulesAfterConfigLoaded || []), ...(providedResources.modulesAfterConfigLoaded || [])];
     }
     if (providedResources.modulesAfterRuntimeReady !== undefined) {
-        providedResources.modulesAfterRuntimeReady = { ...(target.modulesAfterRuntimeReady || {}), ...(providedResources.modulesAfterRuntimeReady || {}) };
+        providedResources.modulesAfterRuntimeReady = [...(target.modulesAfterRuntimeReady || []), ...(providedResources.modulesAfterRuntimeReady || [])];
     }
     if (providedResources.extensions !== undefined) {
         providedResources.extensions = { ...(target.extensions || {}), ...(providedResources.extensions || {}) };
     }
     if (providedResources.vfs !== undefined) {
-        providedResources.vfs = { ...(target.vfs || {}), ...(providedResources.vfs || {}) };
+        providedResources.vfs = [...(target.vfs || []), ...(providedResources.vfs || [])];
     }
     return Object.assign(target, providedResources);
 }
