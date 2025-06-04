@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -10,6 +11,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// when converting from 32-bit values to 64-bit values.
 /// For more information see TO_CDADDR in dacimpl.h
 /// </summary>
+[NativeMarshalling(typeof(ClrDataAddressMarshaller))]
 internal struct ClrDataAddress : IEquatable<ClrDataAddress>
 {
     public ulong Address;
@@ -24,4 +26,11 @@ internal struct ClrDataAddress : IEquatable<ClrDataAddress>
     public override readonly int GetHashCode() => Address.GetHashCode();
 
     public override readonly string ToString() => $"0x{Address:x}";
+}
+
+[CustomMarshaller(typeof(ClrDataAddress), MarshalMode.Default, typeof(ClrDataAddressMarshaller))]
+internal static class ClrDataAddressMarshaller
+{
+    public static ClrDataAddress ConvertToManaged(ulong address) => new ClrDataAddress(address);
+    public static ulong ConvertToUnmanaged(ClrDataAddress address) => address.Address;
 }
