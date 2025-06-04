@@ -157,5 +157,15 @@ namespace ILCompiler
         {
             _rootAdder(_factory.StructMarshallingData(type), reason);
         }
+
+        public void RootExternalTypeMapRequest(TypeDesc typeMapGroup, string reason)
+        {
+            _rootAdder(_factory.ExternalTypeMapRequest(typeMapGroup), reason);
+        }
+
+        public void RootProxyTypeMapRequest(TypeDesc typeMapGroup, string reason)
+        {
+            _rootAdder(_factory.ProxyTypeMapRequest(typeMapGroup), reason);
+        }
     }
 }

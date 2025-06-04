@@ -57,7 +57,8 @@ namespace ILCompiler
         private readonly List<FieldDesc> _fieldsWithRuntimeMapping = new List<FieldDesc>();
         private readonly List<ReflectableCustomAttribute> _customAttributesWithMetadata = new List<ReflectableCustomAttribute>();
         private readonly List<ReflectableParameter> _parametersWithMetadata = new List<ReflectableParameter>();
-        private readonly List<TypeDesc> _typeMapTrimTargets = new List<TypeDesc>();
+        private readonly List<TypeDesc> _externalTypeMapGroup = new List<TypeDesc>();
+        private readonly List<TypeDesc> _proxyTypeMapGroup = new List<TypeDesc>();
 
         internal IReadOnlyDictionary<string, bool> FeatureSwitches { get; }
 
@@ -173,9 +174,14 @@ namespace ILCompiler
                 _typesWithForcedEEType.Add(reflectableType.Type);
             }
 
-            if (obj is TypeCastTargetNode typeCastTarget)
+            if (obj is ExternalTypeMapRequestNode externalTypeMapRequest)
             {
-                _typeMapTrimTargets.Add(typeCastTarget.Type);
+                _externalTypeMapGroup.Add(externalTypeMapRequest.TypeMapGroup);
+            }
+
+            if (obj is ProxyTypeMapRequestNode proxyTypeMapRequestNode)
+            {
+                _proxyTypeMapGroup.Add(proxyTypeMapRequestNode.TypeMapGroup);
             }
         }
 
@@ -952,7 +958,7 @@ namespace ILCompiler
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _options);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _parametersWithMetadata, _externalTypeMapGroup, _proxyTypeMapGroup, _options);
         }
 
         private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)

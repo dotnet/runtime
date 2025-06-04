@@ -17,6 +17,9 @@
       <DisabledFeatureSwitches></DisabledFeatureSwitches>
       <SkipOnTestRuntimes>win-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
+
+    <TestConsoleAppSourceFiles Include="TypeMap.cs" NativeAotOnly="true">
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

@@ -31,6 +31,8 @@ namespace ILCompiler
         private readonly Dictionary<FieldDesc, MetadataCategory> _reflectableFields = new Dictionary<FieldDesc, MetadataCategory>();
         private readonly HashSet<ReflectableCustomAttribute> _reflectableAttributes = new HashSet<ReflectableCustomAttribute>();
         private readonly HashSet<ReflectableParameter> _reflectableParameters = new HashSet<ReflectableParameter>();
+        private readonly List<TypeDesc> _externalTypeMapGroupRequests;
+        private readonly List<TypeDesc> _proxyTypeMapGroupRequests;
 
         public AnalysisBasedMetadataManager(CompilerTypeSystemContext typeSystemContext)
             : this(typeSystemContext, new FullyBlockedMetadataBlockingPolicy(),
@@ -38,7 +40,7 @@ namespace ILCompiler
                 new NoDynamicInvokeThunkGenerationPolicy(), null, Array.Empty<ModuleDesc>(), Array.Empty<TypeDesc>(),
                 Array.Empty<ReflectableEntity<TypeDesc>>(), Array.Empty<ReflectableEntity<MethodDesc>>(),
                 Array.Empty<ReflectableEntity<FieldDesc>>(), Array.Empty<ReflectableCustomAttribute>(),
-                Array.Empty<ReflectableParameter>(),
+                Array.Empty<ReflectableParameter>(), Array.Empty<TypeDesc>(), Array.Empty<TypeDesc>(),
                 default)
         {
         }
@@ -58,6 +60,8 @@ namespace ILCompiler
             IEnumerable<ReflectableEntity<FieldDesc>> reflectableFields,
             IEnumerable<ReflectableCustomAttribute> reflectableAttributes,
             IEnumerable<ReflectableParameter> reflectableParameters,
+            IEnumerable<TypeDesc> externalTypeMapGroupRequests,
+            IEnumerable<TypeDesc> proxyTypeMapGroupRequests,
             MetadataManagerOptions options)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
@@ -132,6 +136,9 @@ namespace ILCompiler
                 Debug.Assert((GetMetadataCategory(refField.Entity.GetTypicalFieldDefinition()) & MetadataCategory.Description)
                     == (GetMetadataCategory(refField.Entity) & MetadataCategory.Description));
             }
+
+            _externalTypeMapGroupRequests = [..externalTypeMapGroupRequests];
+            _proxyTypeMapGroupRequests = [..proxyTypeMapGroupRequests];
 #endif
         }
 
@@ -217,6 +224,16 @@ namespace ILCompiler
                     FieldDesc field = pair.Key;
                     rootProvider.AddReflectionRoot(field, reason);
                 }
+            }
+
+            foreach (var typeMapGroup in _externalTypeMapGroupRequests)
+            {
+                rootProvider.RootExternalTypeMapRequest(typeMapGroup, "TypeMapRequest");
+            }
+
+            foreach (var typeMapGroup in _proxyTypeMapGroupRequests)
+            {
+                rootProvider.RootProxyTypeMapRequest(typeMapGroup, "TypeMapRequest");
             }
         }
 

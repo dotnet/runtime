@@ -577,7 +577,6 @@
     <Compile Include="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\SealedVTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StackTraceMethodMappingNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\TypeCastTargetNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
