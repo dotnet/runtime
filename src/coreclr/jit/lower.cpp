@@ -11153,7 +11153,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     if (src->IsConstInitVal())
     {
 #if !defined(TARGET_XARCH)
-        if (varTypeIsSIMD(regType) && (src->AsIntCon()->IconValue() == 0))
+        if (varTypeIsSIMD(regType))
         {
             // Platforms with zero-regs may produce better/more compact codegen
             return false;
