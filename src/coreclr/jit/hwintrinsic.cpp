@@ -2527,13 +2527,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     if (nodeRetType == TYP_MASK)
     {
         // HWInstrinsic returns a mask, but all returns must be vectors, so convert mask to vector.
-
-        GenTreeHWIntrinsic* op = retNode->AsHWIntrinsic();
-
-        CorInfoType simdBaseJitType = op->GetSimdBaseJitType();
-        unsigned    simdSize        = op->GetSimdSize();
-
-        retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
+        retNode = gtNewSimdCvtMaskToVectorNode(retType, retNode, simdBaseJitType, simdSize);
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 

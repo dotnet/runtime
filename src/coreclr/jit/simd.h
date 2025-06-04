@@ -1698,6 +1698,66 @@ enum SveMaskPattern
     SveMaskPatternNone               = 14  // Invalid
 };
 
+inline bool EvaluateSimdPatternToMask(simdmask_t* result,
+                               int       simdSize,
+                               int       simdBaseTypeSize,
+                               SveMaskPattern pattern)
+{
+    uint32_t count    = simdSize / simdBaseTypeSize;
+    uint32_t finalOne = count + 1;
+    uint64_t mask     = 0;
+
+    switch (pattern)
+    {
+        case SveMaskPatternLargestPowerOf2:
+        case SveMaskPatternAll:
+            finalOne = count;
+            break;
+
+        case SveMaskPatternVectorCount1:
+        case SveMaskPatternVectorCount2:
+        case SveMaskPatternVectorCount3:
+        case SveMaskPatternVectorCount4:
+        case SveMaskPatternVectorCount5:
+        case SveMaskPatternVectorCount6:
+        case SveMaskPatternVectorCount7:
+        case SveMaskPatternVectorCount8:
+            finalOne = pattern - SveMaskPatternVectorCount1 + 1;
+            break;
+
+        case SveMaskPatternVectorCount16:
+        case SveMaskPatternVectorCount32:
+        case SveMaskPatternVectorCount64:
+        case SveMaskPatternVectorCount128:
+        case SveMaskPatternVectorCount256:
+            finalOne = std::min(uint32_t(16 << (pattern - SveMaskPatternVectorCount16)), count);
+            break;
+
+        case SveMaskPatternLargestMultipleOf4:
+            finalOne = (count - (count % 4));
+            break;
+
+        case SveMaskPatternLargestMultipleOf3:
+            finalOne = (count - (count % 3));
+            break;
+
+        default:
+            return false;
+    }
+    assert(finalOne <= count);
+    assert(finalOne > 0);
+
+    // Write finalOne number of bits
+    for (uint32_t i = 0; i < finalOne; i++)
+    {
+        mask |= static_cast<uint64_t>(1) << (i * simdBaseTypeSize);
+    }
+
+    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
+    return true;
+}
+
+
 template <typename TSimd, typename TBase>
 SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
 {

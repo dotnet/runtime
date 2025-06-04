@@ -2880,49 +2880,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateTrueMaskUInt64:
         {
             assert(sig->numArgs == 1);
-
             op1 = impPopStack().val;
 
             // TODO: For AOT, always do the gtNewSimdHWIntrinsicNode as we don't know the vector size.
 
-            // Where possible, import a constant vector to allow for optimisations.
+            // Where possible, import a constant mask to allow for optimisations.
             if (op1->IsIntegralConst())
             {
-                int64_t pattern = op1->AsIntConCommon()->IntegralValue();
-                switch (pattern)
-                {
-                    case 0:  // POW2
-                    case 1:  // VL1
-                    case 2:  // VL2
-                    case 3:  // VL3
-                    case 4:  // VL4
-                    case 5:  // VL5
-                    case 6:  // VL6
-                    case 7:  // VL7
-                    case 8:  // VL8
-                    case 9:  // VL16
-                    case 10: // VL32
-                    case 11: // VL64
-                    case 12: // VL128
-                    case 13: // VL256
-                    case 29: // MUL4
-                    case 30: // MUL3
-                    case 31: // ALL
-                        retNode = gtNewSimdCnsVecTrueMaskPattern(retType, simdSize, simdBaseType, pattern);
-                        break;
+                simdmask_t maskVal = {};
 
-                    default:
-                        // Invalid enum, so generate the create true mask node.
-                        retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_Sve_CreateTrueMaskAll, simdBaseJitType,
-                                                           simdSize);
-                        break;
+                int64_t pattern = op1->AsIntConCommon()->IntegralValue();
+
+                if (EvaluateSimdPatternToMask(&maskVal, simdSize, genTypeSize(simdBaseType), (SveMaskPattern)pattern))
+                {
+                    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+                    mskCon->gtSimdMaskVal = maskVal;
+                    retNode = mskCon;
+                    break;
                 }
             }
-            else
-            {
-                // Do not know the pattern, so generate the create true mask node.
-                retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
-            }
+
+            // Was not able to generate a pattern, instead import a truemaskall
+            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
@@ -3464,7 +3443,7 @@ GenTree* Compiler::gtNewSimdCnsVecTrueMaskPattern(var_types retType,
 {
     int64_t lanes    = simdSize / genTypeSize(simdBaseType);
     int64_t laneBits = genTypeSize(simdBaseType) * 8;
-    int64_t laneVal  = 1; //(laneBits > 32) ? UINT64_MAX : (((int64_t)1 << laneBits) - 1);
+    int64_t laneVal  = 1;
 
     // Ensure the base type is integral
     if (simdBaseType == TYP_DOUBLE)
