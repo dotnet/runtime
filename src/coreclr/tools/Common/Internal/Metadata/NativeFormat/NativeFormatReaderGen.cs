@@ -2014,19 +2014,18 @@ namespace Internal.Metadata.NativeFormat
         public string Value => _value;
         private readonly string _value;
 
-        internal static int GetRawStringDataUtf8(MetadataReader reader, ConstantStringValueHandle handle, Span<byte> destinationUtf8)
+        /// <summary>
+        /// Parses a <see cref="Guid"/> value, matching the behavior of decoding a <see cref="string"/> and parsing from that.
+        /// </summary>
+        internal static Guid ParseGuid(MetadataReader reader, ConstantStringValueHandle handle)
         {
             if (handle.IsNil)
             {
-                return 0;
+                // We don't really have a parameter, so just match the name of the 'Guid.ctor' parameter
+                ArgumentNullException.Throw("input");
             }
 
-            uint offset = (uint)handle.Offset;
-
-            // We don't care about the final offset
-            _ = reader._streamReader.DecodeStringUtf8(offset, destinationUtf8, out int bytesWritten);
-
-            return bytesWritten;
+            return reader._streamReader.ParseGuid((uint)handle.Offset);
         }
     } // ConstantStringValue
 
