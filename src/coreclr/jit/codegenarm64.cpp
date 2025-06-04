@@ -2373,6 +2373,12 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal);
             }
 
+            // Should only ever create constant masks for valid patterns.
+            if (pat == SveMaskPatternNone)
+            {
+                unreached();
+            }
+
             emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, (insSvePattern)pat);
             break;
         }
