@@ -106,16 +106,16 @@ namespace System.Net.NetworkInformation
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
-                ReadOnlySpan<byte> opt = BitConverter.IsLittleEndian ? [1, 0, 0, 0] : [0, 0, 0, 1];
+                int opt = 1;
                 if (ipv4)
                 {
                     // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
-                    socket.SetRawSocketOption(0, 11, opt);
+                    socket.SetRawSocketOption(0, 11, MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in opt)));
                 }
                 else
                 {
                     // setsockopt(fd, IPPROTO_IPV6, IPV6_RECVERR, &value, sizeof(int))
-                    socket.SetRawSocketOption(41, 25, opt);
+                    socket.SetRawSocketOption(41, 25, MemoryMarshal.AsBytes(new ReadOnlySpan<int>(in opt)));
                 }
             }
 #pragma warning restore 618
