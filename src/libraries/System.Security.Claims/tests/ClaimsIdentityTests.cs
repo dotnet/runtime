@@ -489,6 +489,37 @@ namespace System.Security.Claims
             Assert.Equal("value", f2.Value);
         }
 
+        [Theory]
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
+        public void FindFirst_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
+        {
+            Claim claim = new(claimType, "value");
+
+            ClaimsIdentity id = new(
+                claims: [claim],
+                stringComparison: stringComparison);
+
+            Claim found = id.FindFirst(findType);
+            Assert.NotNull(found);
+            Assert.Equal(claimType, found.Type);
+        }
+
+        [Theory]
+        [InlineData("Type", "type", StringComparison.InvariantCulture)]
+        [InlineData("Type", "type", StringComparison.Ordinal)]
+        public void FindFirst_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
+        {
+            Claim claim = new(claimType, "value");
+
+            ClaimsIdentity id = new(
+                claims: [claim],
+                stringComparison: stringComparison);
+
+            Claim found = id.FindFirst(findType);
+            Assert.Null(found);
+        }
+
         [Fact]
         public void HasClaim_TypeValue()
         {

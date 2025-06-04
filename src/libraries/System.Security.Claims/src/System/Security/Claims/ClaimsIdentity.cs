@@ -38,6 +38,7 @@ namespace System.Security.Claims
         private readonly List<Claim> _instanceClaims = new List<Claim>();
         private string _nameClaimType = DefaultNameClaimType;
         private string _roleClaimType = DefaultRoleClaimType;
+        private readonly StringComparison _stringComparison = StringComparison.OrdinalIgnoreCase;
 
         public const string DefaultIssuer = @"LOCAL AUTHORITY";
         public const string DefaultNameClaimType = ClaimTypes.Name;
@@ -205,6 +206,12 @@ namespace System.Security.Claims
             Initialize(reader);
         }
 
+        public ClaimsIdentity(BinaryReader reader, StringComparison stringComparison) : this(reader)
+        {
+            ValidateStringComparison(stringComparison);
+            _stringComparison = stringComparison;
+        }
+
         /// <summary>
         /// Copy constructor.
         /// </summary>
@@ -230,6 +237,25 @@ namespace System.Security.Claims
             }
 
             SafeAddClaims(other._instanceClaims);
+        }
+
+        public ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison) : this(other)
+        {
+            ValidateStringComparison(stringComparison);
+            _stringComparison = stringComparison;
+        }
+
+        public ClaimsIdentity(
+            IIdentity? identity = null,
+            IEnumerable<Claim>? claims = null,
+            string? authenticationType = null,
+            string? nameType = null,
+            string? roleType = null,
+            StringComparison stringComparison = StringComparison.OrdinalIgnoreCase)
+            : this(identity, claims, authenticationType, nameType, roleType)
+        {
+            ValidateStringComparison(stringComparison);
+            _stringComparison = stringComparison;
         }
 
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
@@ -401,7 +427,7 @@ namespace System.Security.Claims
         /// </summary>
         public virtual ClaimsIdentity Clone()
         {
-            return new ClaimsIdentity(this);
+            return new ClaimsIdentity(this, _stringComparison);
         }
 
         /// <summary>
@@ -579,7 +605,7 @@ namespace System.Security.Claims
                 {
                     if (claim != null)
                     {
-                        if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                        if (string.Equals(claim.Type, type, _stringComparison))
                         {
                             yield return claim;
                         }
@@ -624,7 +650,7 @@ namespace System.Security.Claims
             {
                 if (claim != null)
                 {
-                    if (string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(claim.Type, type, _stringComparison))
                     {
                         return claim;
                     }
@@ -672,7 +698,7 @@ namespace System.Security.Claims
             foreach (Claim claim in Claims)
             {
                 if (claim != null
-                        && string.Equals(claim.Type, type, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(claim.Type, type, _stringComparison)
                         && string.Equals(claim.Value, value, StringComparison.Ordinal))
                 {
                     return true;
@@ -960,6 +986,22 @@ namespace System.Security.Claims
             }
 
             return debugText;
+        }
+
+        private static void ValidateStringComparison(StringComparison stringComparison)
+        {
+            switch (stringComparison)
+            {
+                case StringComparison.Ordinal:
+                case StringComparison.OrdinalIgnoreCase:
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    break;
+                default:
+                    throw new ArgumentException(
+                        SR.ArgumentException_StringComparisonCultureAware,
+                        nameof(stringComparison));
+            }
         }
     }
 }
