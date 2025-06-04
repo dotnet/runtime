@@ -1226,7 +1226,7 @@ public:
     {
 #ifdef TARGET_AMD64
         // Floating point spill area is between return value and transition block for frames that need it
-        // (code:CLRToCOMMethodFrame)
+        // (see code:CLRToCOMMethodFrame)
         return -(4 * 0x10 /* floating point args */ + 0x8 /* alignment pad */ + TransitionBlock::GetNegSpaceSize()) + (iArg * 0x10);
 #endif
     }
