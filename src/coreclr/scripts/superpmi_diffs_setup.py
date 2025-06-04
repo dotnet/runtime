@@ -456,7 +456,7 @@ def main(main_args):
     ######## Generate partition information
 
     partitions_dir = os.path.join(correlation_payload_directory, "partitions")
-    build_partitions(partitions_dir, do_asmdiffs, checked_directory if use_checked else release_directory, 64 if coreclr_args.arch == "x64" else 32)
+    build_partitions(partitions_dir, do_asmdiffs, checked_directory if use_checked else release_directory, 64 if coreclr_args.arch in ["x64", "arm64"] else 32)
 
     ######## Set pipeline variables
 
