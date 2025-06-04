@@ -1691,8 +1691,7 @@ public:
 #if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
 public:
     // This method is used to restore ReturnKind using the class handle.
-    // It does not support multi-reg return case with pointers. Use this
-    // method only when you can't hit
+    // It does not support multi-reg return case with pointers. Use this method only when you can't hit
     // this case (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
     // Also, for a single field struct return case the function can't distinguish RT_Object and RT_ByRef.
     ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
