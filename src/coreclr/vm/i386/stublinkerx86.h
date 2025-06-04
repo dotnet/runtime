@@ -115,10 +115,12 @@ class StubLinkerCPU : public StubLinker
 
         VOID X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg);
 
+#ifdef TARGET_X86
         VOID X86EmitPushReg(X86Reg reg);
         VOID X86EmitPopReg(X86Reg reg);
         VOID X86EmitPushImm32(UINT value);
         VOID X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg = kR10));
+#endif
 
 #ifdef TARGET_AMD64
         VOID X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg);
