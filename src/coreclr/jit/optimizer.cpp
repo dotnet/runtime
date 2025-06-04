@@ -1943,6 +1943,28 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
             block->bbNum, bTop->bbNum, bTest->bbNum);
 
+    weight_t   loopIterations     = BB_LOOP_WEIGHT_SCALE;
+    const bool haveProfileWeights = fgIsUsingProfileWeights();
+
+    // If we have PGO data, we can estimate the loop iteration count
+    // by computing the loop body's weight relative to its entry weight.
+    if (haveProfileWeights)
+    {
+        // If the loop never iterates, don't invert it.
+        //
+        if (bTop->isRunRarely())
+        {
+            return false;
+        }
+
+        // If the profile is inaccurate such that bTest->bbWeight < bTop->bbWeight,
+        // try to provide a credible estimate using the entering block's weight.
+        // The value should be at least the weight of 'block'.
+        //
+        const weight_t loopEntries = max(block->bbWeight, bTest->bbWeight - bTop->bbWeight);
+        loopIterations             = (loopEntries == BB_ZERO_WEIGHT) ? BB_ZERO_WEIGHT : bTop->bbWeight / loopEntries;
+    }
+
     // Estimate the cost of cloning the entire test block.
     //
     // Note: it would help throughput to compute the maximum cost
@@ -1964,65 +1986,6 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         GenTree* tree = stmt->GetRootNode();
         gtPrepareCost(tree);
         estDupCostSz += tree->GetCostSz();
-    }
-
-    weight_t       loopIterations     = BB_LOOP_WEIGHT_SCALE;
-    bool           haveProfileWeights = false;
-    weight_t const weightBlock        = block->bbWeight;
-    weight_t const weightTest         = bTest->bbWeight;
-    weight_t const weightTop          = bTop->bbWeight;
-
-    // If we have profile data then we calculate the number of times
-    // the loop will iterate into loopIterations
-    if (fgIsUsingProfileWeights())
-    {
-        // Only rely upon the profile weight when all three of these blocks
-        // have good profile weights
-        if (block->hasProfileWeight() && bTest->hasProfileWeight() && bTop->hasProfileWeight())
-        {
-            // If this while loop never iterates then don't bother transforming
-            //
-            if (weightTop == BB_ZERO_WEIGHT)
-            {
-                return true;
-            }
-
-            haveProfileWeights = true;
-
-            // We generally expect weightTest > weightTop
-            //
-            // Tolerate small inconsistencies...
-            //
-            if (!fgProfileWeightsConsistent(weightBlock + weightTop, weightTest))
-            {
-                JITDUMP("Profile weights locally inconsistent: block " FMT_WT ", next " FMT_WT ", test " FMT_WT "\n",
-                        weightBlock, weightTop, weightTest);
-            }
-            else
-            {
-                // Determine average iteration count
-                //
-                //   weightTop is the number of time this loop executes
-                //   weightTest is the number of times that we consider entering or remaining in the loop
-                //   loopIterations is the average number of times that this loop iterates
-                //
-                weight_t loopEntries = weightTest - weightTop;
-
-                // If profile is inaccurate, try and use other data to provide a credible estimate.
-                // The value should at least be >= weightBlock.
-                //
-                if (loopEntries < weightBlock)
-                {
-                    loopEntries = weightBlock;
-                }
-
-                loopIterations = weightTop / loopEntries;
-            }
-        }
-        else
-        {
-            JITDUMP("Missing profile data for loop!\n");
-        }
     }
 
     unsigned maxDupCostSz = 34;
