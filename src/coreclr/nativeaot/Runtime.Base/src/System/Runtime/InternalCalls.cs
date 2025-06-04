@@ -132,10 +132,6 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe object RhpNewArrayFast(MethodTable* pEEType, int length);
 
-        [RuntimeImport(RuntimeLibrary, "RhpNewObjectArrayFast")]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern unsafe object RhpNewObjectArrayFast(MethodTable* pEEType, int length);
-
 #if FEATURE_64BIT_ALIGNMENT
         [RuntimeImport(RuntimeLibrary, "RhpNewFastAlign8")]
         [MethodImpl(MethodImplOptions.InternalCall)]

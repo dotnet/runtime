@@ -1163,8 +1163,7 @@ namespace Internal.JitInterface
 
             TypeDesc elementType = ((ArrayType)type).ElementType;
 
-            if (elementType.IsObject ||
-                elementType.IsInterface ||
+            if (elementType.IsGCPointer ||
                 elementType.IsPointer ||
                 elementType.IsFunctionPointer)
             {
