@@ -1803,7 +1803,7 @@ bool EvaluateSimdPatternToVector(var_types baseType, TSimd* result, SveMaskPatte
 }
 
 template <typename TSimd, typename TBase>
-SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
+SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
 {
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
 
@@ -1862,7 +1862,7 @@ SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)
 }
 
 template <typename TSimd>
-SveMaskPattern EvaluateSimdMaskPattern(var_types baseType, simdmask_t arg0)
+SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
 {
     switch (baseType)
     {
@@ -1870,26 +1870,26 @@ SveMaskPattern EvaluateSimdMaskPattern(var_types baseType, simdmask_t arg0)
         case TYP_INT:
         case TYP_UINT:
         {
-            return EvaluateSimdMaskPattern<TSimd, uint32_t>(arg0);
+            return EvaluateSimdMaskToPattern<TSimd, uint32_t>(arg0);
         }
 
         case TYP_DOUBLE:
         case TYP_LONG:
         case TYP_ULONG:
         {
-            return EvaluateSimdMaskPattern<TSimd, uint64_t>(arg0);
+            return EvaluateSimdMaskToPattern<TSimd, uint64_t>(arg0);
         }
 
         case TYP_BYTE:
         case TYP_UBYTE:
         {
-            return EvaluateSimdMaskPattern<TSimd, uint8_t>(arg0);
+            return EvaluateSimdMaskToPattern<TSimd, uint8_t>(arg0);
         }
 
         case TYP_SHORT:
         case TYP_USHORT:
         {
-            return EvaluateSimdMaskPattern<TSimd, uint16_t>(arg0);
+            return EvaluateSimdMaskToPattern<TSimd, uint16_t>(arg0);
         }
 
         default:

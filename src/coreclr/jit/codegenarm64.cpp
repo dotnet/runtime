@@ -2353,24 +2353,24 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             insOpts        opt = INS_OPTS_SCALABLE_B;
-            SveMaskPattern pat = EvaluateSimdMaskPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
+            SveMaskPattern pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_BYTE, mask->gtSimdMaskVal);
 
             if (pat == SveMaskPatternNone)
             {
                 opt = INS_OPTS_SCALABLE_H;
-                pat = EvaluateSimdMaskPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal);
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_SHORT, mask->gtSimdMaskVal);
             }
 
             if (pat == SveMaskPatternNone)
             {
                 opt = INS_OPTS_SCALABLE_S;
-                pat = EvaluateSimdMaskPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal);
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_INT, mask->gtSimdMaskVal);
             }
 
             if (pat == SveMaskPatternNone)
             {
                 opt = INS_OPTS_SCALABLE_D;
-                pat = EvaluateSimdMaskPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal);
+                pat = EvaluateSimdMaskToPattern<simd16_t>(TYP_LONG, mask->gtSimdMaskVal);
             }
 
             emit->emitIns_R_PATTERN(INS_sve_ptrue, EA_SCALABLE, targetReg, opt, (insSvePattern)pat);

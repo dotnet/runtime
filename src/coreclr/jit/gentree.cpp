@@ -33408,15 +33408,15 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
         {
             case TYP_SIMD8:
                 return SveMaskPatternAll ==
-                       EvaluateSimdMaskPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+                       EvaluateSimdMaskToPattern<simd8_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
             case TYP_SIMD12:
                 return SveMaskPatternAll ==
-                       EvaluateSimdMaskPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+                       EvaluateSimdMaskToPattern<simd12_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
             case TYP_SIMD16:
                 return SveMaskPatternAll ==
-                       EvaluateSimdMaskPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
+                       EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
             default:
                 unreached();
