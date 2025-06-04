@@ -27,7 +27,6 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     archType: ${{ parameters.archType }}
     container: ${{ parameters.container }}
-    pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     helixQueues:
