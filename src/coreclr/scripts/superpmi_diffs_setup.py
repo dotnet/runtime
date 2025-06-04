@@ -201,7 +201,7 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
         # Details: https://bugs.python.org/issue26660
         print('Ignoring PermissionError: {0}'.format(pe_error))
 
-    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe")
+    jit_analyze_tool = os.path.join(jit_analyze_build_directory, "jit-analyze.exe" if is_windows else "jit-analyze")
     if not os.path.isfile(jit_analyze_tool):
         print('Error: {} not found'.format(jit_analyze_tool))
         return 1
