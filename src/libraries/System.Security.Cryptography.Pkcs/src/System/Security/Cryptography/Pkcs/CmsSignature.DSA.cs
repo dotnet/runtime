@@ -118,7 +118,7 @@ namespace System.Security.Cryptography.Pkcs
                 Debug.Assert(Helpers.IsDSASupported);
                 signatureParameters = null;
 
-                using (GetSigningKey(key, certificate, silent, certificate.GetDSAPublicKey, out DSA? dsa))
+                using (GetSigningKey(key, certificate, silent, DSACertificateExtensions.GetDSAPublicKey, out DSA? dsa))
                 {
                     if (dsa == null)
                     {

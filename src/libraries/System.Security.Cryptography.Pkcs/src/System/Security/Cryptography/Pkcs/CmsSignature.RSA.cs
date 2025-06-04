@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.Pkcs
                 RSASignaturePadding signaturePadding,
                 [NotNullWhen(true)] out byte[]? signatureValue)
             {
-                using (GetSigningKey(key, certificate, silent, certificate.GetRSAPublicKey, out RSA? privateKey))
+                using (GetSigningKey(key, certificate, silent, RSACertificateExtensions.GetRSAPublicKey, out RSA? privateKey))
                 {
                     if (privateKey is null)
                     {

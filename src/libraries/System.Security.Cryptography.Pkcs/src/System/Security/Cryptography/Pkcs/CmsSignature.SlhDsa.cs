@@ -102,11 +102,10 @@ namespace System.Security.Cryptography.Pkcs
                 signatureParameters = null;
                 signatureAlgorithm = _signatureAlgorithm;
 
-                using (GetSigningKey(key, certificate, silent, certificate.GetSlhDsaPublicKey, out SlhDsa? signingKey))
+                using (GetSigningKey(key, certificate, silent, static cert => cert.GetSlhDsaPublicKey(), out SlhDsa? signingKey))
                 {
                     if (signingKey is null)
                     {
-                        signatureAlgorithm = null;
                         signatureValue = null;
                         return false;
                     }

@@ -143,7 +143,12 @@ namespace System.Security.Cryptography.Pkcs
             return signed;
         }
 
-        private static IDisposable? GetSigningKey<T>(object? privateKey, X509Certificate2 certificate, bool silent, Func<T?> getCertPublicKey, out T? signingKey)
+        private static IDisposable? GetSigningKey<T>(
+            object? privateKey,
+            X509Certificate2 certificate,
+            bool silent,
+            Func<X509Certificate2, T?> getCertPublicKey,
+            out T? signingKey)
             where T : class, IDisposable
         {
             signingKey = privateKey as T;
@@ -153,7 +158,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 // If there's no private key, fall back to the public key for a "no private key" exception.
                 signingKeyResources = signingKey =
-                    PkcsPal.Instance.GetPrivateKeyForSigning<T>(certificate, silent) ?? getCertPublicKey();
+                    PkcsPal.Instance.GetPrivateKeyForSigning<T>(certificate, silent) ?? getCertPublicKey(certificate);
             }
 
             return signingKeyResources;

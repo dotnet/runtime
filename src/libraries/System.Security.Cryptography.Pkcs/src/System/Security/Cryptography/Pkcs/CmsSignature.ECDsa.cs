@@ -121,7 +121,7 @@ namespace System.Security.Cryptography.Pkcs
                 out byte[]? signatureParameters)
             {
                 signatureParameters = null;
-                using (GetSigningKey(privateKey, certificate, silent, certificate.GetECDsaPublicKey, out ECDsa? key))
+                using (GetSigningKey(privateKey, certificate, silent, ECDsaCertificateExtensions.GetECDsaPublicKey, out ECDsa? key))
                 {
                     if (key == null)
                     {
