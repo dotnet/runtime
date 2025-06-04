@@ -264,9 +264,6 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]    = TREE_NODE_SZ_LARGE;
-#if FEATURE_ARG_SPLIT
-    GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]  = TREE_NODE_SZ_LARGE;
-#endif // FEATURE_ARG_SPLIT
 
     // This list of assertions should come to contain all GenTree subtypes that are declared
     // "small".
@@ -325,9 +322,6 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)       <= TREE_NODE_SZ_LARGE);
-#if FEATURE_ARG_SPLIT
-    static_assert_no_msg(sizeof(GenTreePutArgSplit)     <= TREE_NODE_SZ_LARGE);
-#endif // FEATURE_ARG_SPLIT
 
 #ifdef FEATURE_HW_INTRINSICS
     static_assert_no_msg(sizeof(GenTreeHWIntrinsic)     <= TREE_NODE_SZ_SMALL);
@@ -875,12 +869,6 @@ int GenTree::GetRegisterDstCount(Compiler* compiler) const
     {
         return gtGetOp1()->GetRegisterDstCount(compiler);
     }
-#if FEATURE_ARG_SPLIT
-    else if (OperIsPutArgSplit())
-    {
-        return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
-    }
-#endif
 #if !defined(TARGET_64BIT)
     else if (OperIsMultiRegOp())
     {
@@ -931,13 +919,6 @@ bool GenTree::IsMultiRegNode() const
         return true;
     }
 
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return true;
-    }
-#endif
-
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -981,13 +962,6 @@ unsigned GenTree::GetMultiRegCount(Compiler* comp) const
     {
         return AsCall()->GetReturnTypeDesc()->GetReturnRegCount();
     }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->gtNumRegs;
-    }
-#endif
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
@@ -1095,21 +1069,6 @@ regMaskTP GenTree::gtGetRegMask() const
             }
         }
     }
-#if FEATURE_ARG_SPLIT
-    else if (compFeatureArgSplit() && OperIsPutArgSplit())
-    {
-        const GenTreePutArgSplit* splitArg = AsPutArgSplit();
-        const unsigned            regCount = splitArg->gtNumRegs;
-
-        resultMask = RBM_NONE;
-        for (unsigned i = 0; i < regCount; ++i)
-        {
-            regNumber reg = splitArg->GetRegNumByIdx(i);
-            assert(reg != REG_NA);
-            resultMask |= genRegMask(reg);
-        }
-    }
-#endif // FEATURE_ARG_SPLIT
     else
     {
         resultMask = genRegMask(GetRegNum());
@@ -1169,13 +1128,13 @@ void NewCallArg::ValidateTypes()
 
     if (varTypeIsStruct(SignatureType))
     {
-        assert(SignatureClsHnd != NO_CLASS_HANDLE);
+        assert(SignatureLayout != nullptr);
         assert(SignatureType == Node->TypeGet());
 
-        if (SignatureType == TYP_STRUCT)
+        if ((SignatureType == TYP_STRUCT) && !Node->OperIsFieldList())
         {
             Compiler* comp = JitTls::GetCompiler();
-            assert(ClassLayout::AreCompatible(comp->typGetObjLayout(SignatureClsHnd), Node->GetLayout(comp)));
+            assert(ClassLayout::AreCompatible(SignatureLayout, Node->GetLayout(comp)));
         }
     }
 }
@@ -6680,21 +6639,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             return false;
 
-// Variadic nodes
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-            if (this->AsUnOp()->gtOp1->OperIs(GT_FIELD_LIST))
-            {
-                return this->AsUnOp()->gtOp1->TryGetUse(operand, pUse);
-            }
-            if (operand == this->AsUnOp()->gtOp1)
-            {
-                *pUse = &this->AsUnOp()->gtOp1;
-                return true;
-            }
-            return false;
-#endif // FEATURE_ARG_SPLIT
-
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             for (GenTree** opUse : this->AsMultiOp()->UseEdges())
@@ -9857,7 +9801,7 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
         CallArg* carg           = new (comp, CMK_CallArgs) CallArg();
         carg->m_earlyNode       = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
         carg->m_lateNode        = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
-        carg->m_signatureClsHnd = arg.m_signatureClsHnd;
+        carg->m_signatureLayout = arg.m_signatureLayout;
         carg->m_signatureType   = arg.m_signatureType;
         carg->m_wellKnownArg    = arg.m_wellKnownArg;
         carg->m_needTmp         = arg.m_needTmp;
@@ -10279,9 +10223,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
             m_edge = &m_node->AsUnOp()->gtOp1;
@@ -12717,13 +12658,6 @@ void Compiler::gtDispTree(GenTree*                    tree,
                 }
             }
         }
-#if FEATURE_ARG_SPLIT
-        else if (tree->OperIs(GT_PUTARG_SPLIT))
-        {
-            const GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
-            printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
-        }
-#endif // FEATURE_ARG_SPLIT
 
         if (tree->OperIs(GT_FIELD_ADDR))
         {

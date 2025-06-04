@@ -1256,24 +1256,9 @@ public:
         return OperIsStoreBlk(OperGet());
     }
 
-    bool OperIsPutArgSplit() const
-    {
-#if FEATURE_ARG_SPLIT
-        assert((gtOper != GT_PUTARG_SPLIT) || compFeatureArgSplit());
-        return OperIs(GT_PUTARG_SPLIT);
-#else // !FEATURE_ARG_SPLIT
-        return false;
-#endif
-    }
-
     bool OperIsPutArgStk() const
     {
         return OperIs(GT_PUTARG_STK);
-    }
-
-    bool OperIsPutArgStkOrSplit() const
-    {
-        return OperIsPutArgStk() || OperIsPutArgSplit();
     }
 
     bool OperIsPutArgReg() const
@@ -1283,7 +1268,7 @@ public:
 
     bool OperIsPutArg() const
     {
-        return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
+        return OperIsPutArgStk() || OperIsPutArgReg();
     }
 
     bool OperIsFieldList() const
@@ -4602,8 +4587,8 @@ struct NewCallArg
     GenTree* Node = nullptr;
     // The signature type of the node.
     var_types SignatureType = TYP_UNDEF;
-    // The class handle if SignatureType == TYP_STRUCT.
-    CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
+    // The class layout if varTypeIsStruct(SignatureType).
+    ClassLayout* SignatureLayout = nullptr;
     // The type of well known arg
     enum WellKnownArg WellKnownArg = ::WellKnownArg::None;
 
@@ -4614,13 +4599,13 @@ struct NewCallArg
         return copy;
     }
 
-    static NewCallArg Struct(GenTree* node, var_types type, CORINFO_CLASS_HANDLE clsHnd)
+    static NewCallArg Struct(GenTree* node, var_types type, ClassLayout* layout)
     {
         assert(varTypeIsStruct(node) && varTypeIsStruct(type));
         NewCallArg arg;
         arg.Node            = node;
         arg.SignatureType   = type;
-        arg.SignatureClsHnd = clsHnd;
+        arg.SignatureLayout = layout;
         arg.ValidateTypes();
         return arg;
     }
@@ -4653,8 +4638,8 @@ class CallArg
     CallArg* m_next;
     CallArg* m_lateNext;
 
-    // The class handle for the signature type (when varTypeIsStruct(SignatureType)).
-    CORINFO_CLASS_HANDLE m_signatureClsHnd;
+    // The class layout for the signature type (when varTypeIsStruct(SignatureType)).
+    ClassLayout* m_signatureLayout;
     // The type of the argument in the signature.
     var_types m_signatureType : 5;
     // The type of well-known argument this is.
@@ -4672,7 +4657,7 @@ private:
         , m_lateNode(nullptr)
         , m_next(nullptr)
         , m_lateNext(nullptr)
-        , m_signatureClsHnd(NO_CLASS_HANDLE)
+        , m_signatureLayout(nullptr)
         , m_signatureType(TYP_UNDEF)
         , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
@@ -4690,7 +4675,7 @@ public:
         m_earlyNode       = arg.Node;
         m_wellKnownArg    = arg.WellKnownArg;
         m_signatureType   = arg.SignatureType;
-        m_signatureClsHnd = arg.SignatureClsHnd;
+        m_signatureLayout = arg.SignatureLayout;
     }
 
     CallArg(const CallArg&)      = delete;
@@ -4709,7 +4694,8 @@ public:
     CallArg*& LateNextRef() { return m_lateNext; }
     CallArg* GetLateNext() { return m_lateNext; }
     void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
-    CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
+    ClassLayout* GetSignatureLayout() { return m_signatureLayout; }
+    CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureLayout == nullptr ? NO_CLASS_HANDLE : m_signatureLayout->GetClassHandle(); }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
     // clang-format on
@@ -8674,154 +8660,6 @@ public:
 #endif
 };
 
-#if FEATURE_ARG_SPLIT
-// Represent the struct argument: split value in register(s) and stack
-struct GenTreePutArgSplit : public GenTreePutArgStk
-{
-    unsigned gtNumRegs;
-
-    GenTreePutArgSplit(GenTree*     op1,
-                       unsigned     stackByteOffset,
-                       unsigned     stackByteSize,
-                       unsigned     numRegs,
-                       GenTreeCall* callNode,
-                       bool         putIncomingArgArea)
-        : GenTreePutArgStk(GT_PUTARG_SPLIT,
-                           TYP_STRUCT,
-                           op1,
-                           stackByteOffset,
-                           stackByteSize,
-                           callNode,
-                           putIncomingArgArea)
-        , gtNumRegs(numRegs)
-    {
-        ClearOtherRegs();
-        ClearOtherRegFlags();
-    }
-
-    // Type required to support multi-reg struct arg.
-    var_types m_regType[MAX_REG_ARG];
-
-    // First reg of struct is always given by GetRegNum().
-    // gtOtherRegs holds the other reg numbers of struct.
-    regNumberSmall gtOtherRegs[MAX_REG_ARG - 1];
-
-    MultiRegSpillFlags gtSpillFlags;
-
-    //---------------------------------------------------------------------------
-    // GetRegNumByIdx: get i'th register allocated to this struct argument.
-    //
-    // Arguments:
-    //     idx   -   index of the struct
-    //
-    // Return Value:
-    //     Return regNumber of i'th register of this struct argument
-    //
-    regNumber GetRegNumByIdx(unsigned idx) const
-    {
-        assert(idx < MAX_REG_ARG);
-
-        if (idx == 0)
-        {
-            return GetRegNum();
-        }
-
-        return (regNumber)gtOtherRegs[idx - 1];
-    }
-
-    //----------------------------------------------------------------------
-    // SetRegNumByIdx: set i'th register of this struct argument
-    //
-    // Arguments:
-    //    reg    -   reg number
-    //    idx    -   index of the struct
-    //
-    // Return Value:
-    //    None
-    //
-    void SetRegNumByIdx(regNumber reg, unsigned idx)
-    {
-        assert(idx < MAX_REG_ARG);
-        if (idx == 0)
-        {
-            SetRegNum(reg);
-        }
-        else
-        {
-            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
-            assert(gtOtherRegs[idx - 1] == reg);
-        }
-    }
-
-    //----------------------------------------------------------------------------
-    // ClearOtherRegs: clear multi-reg state to indicate no regs are allocated
-    //
-    // Arguments:
-    //    None
-    //
-    // Return Value:
-    //    None
-    //
-    void ClearOtherRegs()
-    {
-        for (unsigned i = 0; i < MAX_REG_ARG - 1; ++i)
-        {
-            gtOtherRegs[i] = REG_NA;
-        }
-    }
-
-    GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
-    {
-        return GetMultiRegSpillFlagsByIdx(gtSpillFlags, idx);
-    }
-
-    void SetRegSpillFlagByIdx(GenTreeFlags flags, unsigned idx)
-    {
-#if FEATURE_MULTIREG_RET
-        gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
-#endif
-    }
-
-    //--------------------------------------------------------------------------
-    // GetRegType:  Get var_type of the register specified by index.
-    //
-    // Arguments:
-    //    index - Index of the register.
-    //            First register will have an index 0 and so on.
-    //
-    // Return Value:
-    //    var_type of the register specified by its index.
-
-    var_types GetRegType(unsigned index) const
-    {
-        assert(index < gtNumRegs);
-        var_types result = m_regType[index];
-        return result;
-    }
-
-    //-------------------------------------------------------------------
-    // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
-    //
-    // Arguments:
-    //     None
-    //
-    // Return Value:
-    //     None
-    //
-    void ClearOtherRegFlags()
-    {
-        gtSpillFlags = 0;
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreePutArgSplit()
-        : GenTreePutArgStk()
-    {
-    }
-#endif
-};
-#endif // FEATURE_ARG_SPLIT
-
 // Represents GT_COPY or GT_RELOAD node
 //
 // Needed to support multi-reg ops.
@@ -10030,13 +9868,6 @@ inline regNumber GenTree::GetRegByIndex(int regIndex) const
         return AsCall()->GetRegNumByIdx(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegNumByIdx(regIndex);
-    }
-#endif
-
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -10091,13 +9922,6 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex) const
     {
         return AsCall()->AsCall()->GetReturnTypeDesc()->GetReturnRegType(regIndex);
     }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegType(regIndex);
-    }
-#endif // FEATURE_ARG_SPLIT
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
@@ -10169,13 +9993,6 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
         return AsCall()->GetRegSpillFlagByIdx(regIndex);
     }
 
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        return AsPutArgSplit()->GetRegSpillFlagByIdx(regIndex);
-    }
-#endif // FEATURE_ARG_SPLIT
-
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
@@ -10221,14 +10038,6 @@ inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
         AsCall()->SetRegSpillFlagByIdx(flags, regIndex);
         return;
     }
-
-#if FEATURE_ARG_SPLIT
-    if (OperIsPutArgSplit())
-    {
-        AsPutArgSplit()->SetRegSpillFlagByIdx(flags, regIndex);
-        return;
-    }
-#endif // FEATURE_ARG_SPLIT
 
 #if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())

@@ -394,6 +394,34 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 }
 
 //------------------------------------------------------------------------
+// LowerRange:
+//   Lower the specified range of nodes.
+//
+// Arguments:
+//   firstNode - First node to lower
+//   lastNode  - Last node to lower
+//
+void Lowering::LowerRange(GenTree* firstNode, GenTree* lastNode)
+{
+    assert(lastNode != nullptr);
+
+    // Multiple possible behaviors of LowerNode are possible:
+    // 1. The node being lowered may be removed
+    // 2. The node being lowered may be replaced by a new region of nodes and
+    //    ask lowering to go back to those nodes
+    // 3. The node being lowered may have its user removed
+    //
+    // The solution here does not actually try to handle the 3rd case.
+    //
+    GenTree* stopNode = lastNode->gtNext;
+
+    for (GenTree* cur = firstNode; cur != stopNode;)
+    {
+        cur = LowerNode(cur);
+    }
+}
+
+//------------------------------------------------------------------------
 // IsProfitableToSetZeroFlag: Checks if it's profitable to optimize an shift
 // and rotate operations to set the zero flag.
 //
@@ -1612,7 +1640,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     GenTree*  arg   = *ppArg;
     assert(arg != nullptr);
 
-    JITDUMP("Lowering arg: ");
+    JITDUMP("Lowering arg: \n");
     DISPTREERANGE(BlockRange(), arg);
     assert(arg->IsValue());
 
@@ -1665,60 +1693,9 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
     // Structs can be split into register(s) and stack on some targets
     if (compFeatureArgSplit() && abiInfo.IsSplitAcrossRegistersAndStack())
     {
-        assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
-        assert(!call->IsFastTailCall());
-
-#ifdef DEBUG
-        for (unsigned i = 0; i < abiInfo.NumSegments; i++)
-        {
-            assert((i < abiInfo.NumSegments - 1) == abiInfo.Segment(i).IsPassedInRegister());
-        }
-#endif
-
-        unsigned                 numRegs  = abiInfo.NumSegments - 1;
-        const ABIPassingSegment& stackSeg = abiInfo.Segment(abiInfo.NumSegments - 1);
-
-        assert(!call->IsFastTailCall());
-        GenTree* putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, stackSeg.GetStackOffset(), stackSeg.GetStackSize(), abiInfo.NumSegments - 1, call,
-                               /* putInIncomingArgArea */ false);
-
-        GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
-        for (unsigned regIndex = 0; regIndex < numRegs; regIndex++)
-        {
-            argSplit->SetRegNumByIdx(abiInfo.Segment(regIndex).GetRegister(), regIndex);
-        }
-
-        if (arg->OperIs(GT_FIELD_LIST))
-        {
-            unsigned regIndex = 0;
-            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
-            {
-                if (regIndex >= numRegs)
-                {
-                    break;
-                }
-
-                InsertBitCastIfNecessary(&use.NodeRef(), abiInfo.Segment(regIndex));
-                argSplit->m_regType[regIndex] = use.GetNode()->TypeGet();
-                regIndex++;
-            }
-
-            // Clear the register assignment on the fieldList node, as these are contained.
-            arg->SetRegNum(REG_NA);
-        }
-        else
-        {
-            ClassLayout* layout = arg->GetLayout(comp);
-
-            for (unsigned index = 0; index < numRegs; index++)
-            {
-                argSplit->m_regType[index] = layout->GetGCPtrType(index);
-            }
-        }
-
-        BlockRange().InsertAfter(arg, argSplit);
-        *ppArg = arg = argSplit;
+        SplitArgumentBetweenRegistersAndStack(call, callArg);
+        LowerArg(call, callArg);
+        return;
     }
     else
 #endif // FEATURE_ARG_SPLIT
@@ -1762,12 +1739,288 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg)
         }
     }
 
-    if (arg->OperIsPutArgStk() || arg->OperIsPutArgSplit())
+    if (arg->OperIsPutArgStk())
     {
-        LowerPutArgStkOrSplit(arg->AsPutArgStk());
+        LowerPutArgStk(arg->AsPutArgStk());
     }
 
     DISPTREERANGE(BlockRange(), arg);
+}
+
+//------------------------------------------------------------------------
+// SplitArgumentBetweenRegistersAndStack:
+//   Split an argument that is passed in both registers and stack into two
+//   separate arguments, one for registers and one for stack.
+//
+// Parameters:
+//   call    - The call node
+//   callArg - Call argument
+//
+// Remarks:
+//   The argument is changed to be its stack part, and a new argument is
+//   inserted after it representing its registers.
+//
+void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg* callArg)
+{
+    GenTree** ppArg = &callArg->NodeRef();
+    GenTree*  arg   = *ppArg;
+
+    assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
+    assert(!call->IsFastTailCall());
+
+    const ABIPassingInformation& abiInfo = callArg->AbiInfo;
+    assert(abiInfo.IsSplitAcrossRegistersAndStack());
+
+#ifdef DEBUG
+    for (unsigned i = 0; i < abiInfo.NumSegments; i++)
+    {
+        assert((i < abiInfo.NumSegments - 1) == abiInfo.Segment(i).IsPassedInRegister());
+    }
+#endif
+
+    unsigned                 numRegs  = abiInfo.NumSegments - 1;
+    const ABIPassingSegment& stackSeg = abiInfo.Segment(abiInfo.NumSegments - 1);
+
+    JITDUMP("Dividing split arg [%06u] with %u registers, %u stack space into two arguments\n",
+            Compiler::dspTreeID(arg), numRegs, stackSeg.Size);
+
+    ClassLayout* registersLayout = SliceLayout(callArg->GetSignatureLayout(), 0, stackSeg.Offset);
+    ClassLayout* stackLayout     = SliceLayout(callArg->GetSignatureLayout(), stackSeg.Offset,
+                                               callArg->GetSignatureLayout()->GetSize() - stackSeg.Offset);
+
+    GenTree* stackNode     = nullptr;
+    GenTree* registersNode = nullptr;
+
+    if (arg->OperIsFieldList())
+    {
+        JITDUMP("Argument is a FIELD_LIST\n", numRegs, stackSeg.Size);
+
+        GenTreeFieldList::Use* splitPoint = nullptr;
+        // Split the field list into its register and stack parts.
+        for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
+        {
+            if (use.GetOffset() >= stackSeg.Offset)
+            {
+                splitPoint = &use;
+                JITDUMP("Found split point at offset %u\n", splitPoint->GetOffset());
+                break;
+            }
+
+            if (use.GetOffset() + genTypeSize(use.GetType()) > stackSeg.Offset)
+            {
+                // Field overlaps partially into the stack segment, cannot
+                // handle this without spilling.
+                break;
+            }
+        }
+
+        if (splitPoint == nullptr)
+        {
+            JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
+
+            unsigned int newLcl =
+                StoreFieldListToNewLocal(comp->typGetObjLayout(callArg->GetSignatureClassHandle()), arg->AsFieldList());
+            stackNode     = comp->gtNewLclFldNode(newLcl, TYP_STRUCT, stackSeg.Offset, stackLayout);
+            registersNode = comp->gtNewLclFldNode(newLcl, TYP_STRUCT, 0, registersLayout);
+            BlockRange().InsertBefore(arg, stackNode);
+            BlockRange().InsertBefore(arg, registersNode);
+        }
+        else
+        {
+            stackNode     = comp->gtNewFieldList();
+            registersNode = comp->gtNewFieldList();
+
+            BlockRange().InsertBefore(arg, stackNode);
+            BlockRange().InsertBefore(arg, registersNode);
+
+            for (GenTreeFieldList::Use& use : arg->AsFieldList()->Uses())
+            {
+                if (&use == splitPoint)
+                {
+                    break;
+                }
+
+                registersNode->AsFieldList()->AddFieldLIR(comp, use.GetNode(), use.GetOffset(), use.GetType());
+            }
+
+            for (GenTreeFieldList::Use* use = splitPoint; use != nullptr; use = use->GetNext())
+            {
+                stackNode->AsFieldList()->AddFieldLIR(comp, use->GetNode(), use->GetOffset() - stackSeg.Offset,
+                                                      use->GetType());
+            }
+        }
+
+        BlockRange().Remove(arg);
+    }
+    else if (arg->OperIs(GT_BLK))
+    {
+        JITDUMP("Argument is a BLK\n", numRegs, stackSeg.Size);
+
+        GenTree*       blkAddr = arg->AsBlk()->Addr();
+        target_ssize_t offset  = 0;
+        comp->gtPeelOffsets(&blkAddr, &offset);
+
+        LIR::Use addrUse;
+        bool     gotUse = BlockRange().TryGetUse(blkAddr, &addrUse);
+        assert(gotUse);
+
+        unsigned addrLcl;
+        if (addrUse.Def()->OperIsScalarLocal() &&
+            !comp->lvaGetDesc(addrUse.Def()->AsLclVarCommon())->IsAddressExposed() &&
+            IsInvariantInRange(addrUse.Def(), arg))
+        {
+            JITDUMP("Reusing LCL_VAR\n", numRegs, stackSeg.Size);
+            addrLcl = addrUse.Def()->AsLclVarCommon()->GetLclNum();
+        }
+        else
+        {
+            JITDUMP("Spilling address\n", numRegs, stackSeg.Size);
+            addrLcl = addrUse.ReplaceWithLclVar(comp);
+        }
+
+        auto createAddr = [=](unsigned offs) {
+            GenTree* addr = comp->gtNewLclVarNode(addrLcl);
+            offs += (unsigned)offset;
+            if (offs != 0)
+            {
+                GenTree* addrOffs = comp->gtNewIconNode((ssize_t)offs, TYP_I_IMPL);
+                addr = comp->gtNewOperNode(GT_ADD, varTypeIsGC(addr) ? TYP_BYREF : TYP_I_IMPL, addr, addrOffs);
+            }
+
+            return addr;
+        };
+
+        GenTree* addr = createAddr(stackSeg.Offset);
+        stackNode     = comp->gtNewBlkIndir(stackLayout, addr, arg->gtFlags & GTF_IND_COPYABLE_FLAGS);
+        BlockRange().InsertBefore(arg, LIR::SeqTree(comp, stackNode));
+        LowerRange(addr, stackNode);
+
+        registersNode = comp->gtNewFieldList();
+        BlockRange().InsertBefore(arg, registersNode);
+
+        for (unsigned i = 0; i < numRegs; i++)
+        {
+            const ABIPassingSegment& seg = abiInfo.Segment(i);
+
+            GenTree* addr  = createAddr(seg.Offset);
+            GenTree* indir = comp->gtNewIndir(seg.GetRegisterType(callArg->GetSignatureLayout()), addr,
+                                              arg->gtFlags & GTF_IND_COPYABLE_FLAGS);
+            registersNode->AsFieldList()->AddFieldLIR(comp, indir, seg.Offset, indir->TypeGet());
+            BlockRange().InsertBefore(registersNode, LIR::SeqTree(comp, indir));
+            LowerRange(addr, indir);
+        }
+
+        BlockRange().Remove(arg, /* markOperandsUnused */ true);
+    }
+    else
+    {
+        assert(arg->OperIsLocalRead());
+
+        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+
+        GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
+
+        stackNode =
+            comp->gtNewLclFldNode(lcl->GetLclNum(), TYP_STRUCT, lcl->GetLclOffs() + stackSeg.Offset, stackLayout);
+        BlockRange().InsertBefore(arg, stackNode);
+
+        registersNode = comp->gtNewFieldList();
+        BlockRange().InsertBefore(arg, registersNode);
+
+        for (unsigned i = 0; i < numRegs; i++)
+        {
+            const ABIPassingSegment& seg = abiInfo.Segment(i);
+            GenTree*                 fldNode =
+                comp->gtNewLclFldNode(lcl->GetLclNum(), seg.GetRegisterType(callArg->GetSignatureLayout()),
+                                      lcl->GetLclOffs() + seg.Offset);
+            registersNode->AsFieldList()->AddFieldLIR(comp, fldNode, seg.Offset, fldNode->TypeGet());
+            BlockRange().InsertBefore(registersNode, fldNode);
+        }
+
+        BlockRange().Remove(arg);
+    }
+
+    JITDUMP("New stack node is:\n");
+    DISPTREERANGE(BlockRange(), stackNode);
+
+    JITDUMP("New registers node is:\n");
+    DISPTREERANGE(BlockRange(), registersNode);
+
+    ABIPassingSegment     newStackSeg = ABIPassingSegment::OnStack(stackSeg.GetStackOffset(), 0, stackSeg.Size);
+    ABIPassingInformation newStackAbi = ABIPassingInformation::FromSegment(comp, false, newStackSeg);
+
+    ABIPassingInformation newRegistersAbi(comp, numRegs);
+    for (unsigned i = 0; i < numRegs; i++)
+    {
+        newRegistersAbi.Segment(i) = abiInfo.Segment(i);
+    }
+
+    callArg->AbiInfo = newStackAbi;
+    *ppArg = arg = stackNode;
+
+    NewCallArg newRegisterArgAdd = NewCallArg::Struct(registersNode, TYP_STRUCT, registersLayout);
+    CallArg*   newRegisterArg    = call->gtArgs.InsertAfter(comp, callArg, newRegisterArgAdd);
+
+    newRegisterArg->AbiInfo = newRegistersAbi;
+
+    if (callArg->GetLateNode() != nullptr)
+    {
+        newRegisterArg->SetLateNext(callArg->GetLateNext());
+        callArg->SetLateNext(newRegisterArg);
+
+        newRegisterArg->SetLateNode(registersNode);
+        newRegisterArg->SetEarlyNode(nullptr);
+    }
+
+    JITDUMP("Added a new call arg. New call is:\n");
+    DISPTREERANGE(BlockRange(), call);
+}
+
+//------------------------------------------------------------------------
+// SliceLayout:
+//   Slice a class layout into the specified range.
+//
+// Parameters:
+//   layout - The layout
+//   offset - Start offset of the slice
+//   size   - Size of the slice
+//
+// Returns:
+//   New layout of size 'size'
+//
+ClassLayout* Lowering::SliceLayout(ClassLayout* layout, unsigned offset, unsigned size)
+{
+    ClassLayoutBuilder builder(comp, size);
+    INDEBUG(builder.SetName(comp->printfAlloc("%s[%03u..%03u)", layout->GetClassName(), offset, offset + size),
+                            comp->printfAlloc("%s[%03u..%03u)", layout->GetShortClassName(), offset, offset + size)));
+
+    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && layout->HasGCPtr())
+    {
+        for (unsigned i = 0; i < size; i += TARGET_POINTER_SIZE)
+        {
+            builder.SetGCPtrType(i / TARGET_POINTER_SIZE, layout->GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
+        }
+    }
+    else
+    {
+        assert(!layout->HasGCPtr());
+    }
+
+    builder.AddPadding(SegmentList::Segment(0, size));
+
+    for (const SegmentList::Segment& nonPadding : layout->GetNonPadding(comp))
+    {
+        if ((nonPadding.End <= offset) || (nonPadding.Start >= offset + size))
+        {
+            continue;
+        }
+
+        unsigned start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
+        unsigned end   = nonPadding.End >= (offset + size) ? size : (nonPadding.End - offset);
+
+        builder.RemovePadding(SegmentList::Segment(start, end));
+    }
+    return comp->typGetCustomLayout(builder);
 }
 
 //------------------------------------------------------------------------
@@ -2006,9 +2259,9 @@ void Lowering::InsertSpecialCopyArg(GenTreePutArgStk* putArgStk, CORINFO_CLASS_H
 //   argument values. However, there are constraints on how the PUTARG nodes
 //   can appear:
 //
-//   - No other GT_CALL nodes are allowed between a PUTARG_REG/PUTARG_SPLIT
-//   node and the call. For FEATURE_FIXED_OUT_ARGS this condition is also true
-//   for PUTARG_STK.
+//   - No other GT_CALL nodes are allowed between a PUTARG_REG node and the
+//   call. For FEATURE_FIXED_OUT_ARGS this condition is also true for
+//   PUTARG_STK.
 //   - For !FEATURE_FIXED_OUT_ARGS, the PUTARG_STK nodes must come in push
 //   order.
 //
@@ -9204,10 +9457,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-#if FEATURE_ARG_SPLIT
-        case GT_PUTARG_SPLIT:
-#endif // FEATURE_ARG_SPLIT
-       // The regNum must have been set by the lowering of the call.
+            // The regNum must have been set by the lowering of the call.
             assert(node->GetRegNum() != REG_NA);
             break;
 #ifdef TARGET_XARCH

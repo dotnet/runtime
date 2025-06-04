@@ -7218,36 +7218,6 @@ void CodeGen::genCallPlaceRegArgs(GenTreeCall* call)
         }
 #endif
 
-#if FEATURE_ARG_SPLIT
-        if (argNode->OperIs(GT_PUTARG_SPLIT))
-        {
-            assert(compFeatureArgSplit());
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            unsigned regIndex = 0;
-            for (const ABIPassingSegment& seg : abiInfo.Segments())
-            {
-                if (!seg.IsPassedInRegister())
-                {
-                    continue;
-                }
-
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(regIndex);
-                var_types type     = argNode->AsPutArgSplit()->GetRegType(regIndex);
-                inst_Mov(genActualType(type), seg.GetRegister(), allocReg, /* canSkip */ true);
-
-                if (call->IsFastTailCall())
-                {
-                    // We won't actually consume the register here -- keep it alive into the epilog.
-                    gcInfo.gcMarkRegPtrVal(seg.GetRegister(), type);
-                }
-
-                regIndex++;
-            }
-
-            continue;
-        }
-#endif
-
         if (abiInfo.HasExactlyOneRegisterSegment())
         {
             regNumber argReg = abiInfo.Segment(0).GetRegister();
