@@ -576,9 +576,8 @@ namespace System.Net.Http
                         _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
                         await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // Stop looping after a trailing header.
-                        // Note: this does leave us open to a bad server sending us an out of order DATA frame.
-                        // TODO: Add comments here.
+                        // We do not expect more DATA frames after the trailers.
+                        // Start draining the response to avoid aborting reads during disposal.
                         _responseDrainTask = DrainResponseAsync();
                         goto case null;
                     case null:
@@ -1348,6 +1347,10 @@ namespace System.Net.Http
         }
 
 
+        /// <summary>
+        /// Drain the underlying QuicStream without attempting to interpret the data.
+        /// Note: this does leave us open to a bad server sending us out of order frames.
+        /// </summary>
         private async Task DrainResponseAsync()
         {
             HttpConnectionSettings settings = _connection.Pool.Settings;
@@ -1362,6 +1365,7 @@ namespace System.Net.Http
             using CancellationTokenSource cts = new CancellationTokenSource(settings._maxResponseDrainTime);
             try
             {
+                // If there is more data than MaxResponseDrainSize, we will silently stop draining and let Dispose(Async) abort the reads.
                 while (remaining > 0)
                 {
                     _recvBuffer.EnsureAvailableSpace(1);
@@ -1420,7 +1424,8 @@ namespace System.Net.Http
                         _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
                         await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // TODO: add proper comment.
+                        // We do not expect more DATA frames after the trailers.
+                        // Start draining the response to avoid aborting reads during disposal.
                         _responseDrainTask = DrainResponseAsync();
 
                         goto case null;
