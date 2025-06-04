@@ -380,14 +380,22 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             string bootJsonPath = GetBootConfigPath(paths.BinFrameworkDir, "dotnet.js");
             BootJsonData bootJson = GetBootJson(bootJsonPath);
+            AssetsData assets = (AssetsData)bootJson.resources;
             var keysToUpdate = new List<string>();
             var updates = new List<(string oldKey, string newKey, (string fullPath, bool unchanged) value)>();
+
             foreach (var expectedItem in dict)
             {
                 string filename = Path.GetFileName(expectedItem.Value.fullPath);
-                var expectedFingerprintedItem = bootJson.resources.fingerprinting
-                    .Where(kv => kv.Value == filename)
-                    .SingleOrDefault().Key;
+                string? expectedFingerprintedItem = filename switch
+                {
+                    "dotnet.runtime.js" => assets.jsModuleRuntime?.SingleOrDefault()?.name,
+                    "dotnet.native.js" => assets.jsModuleNative?.SingleOrDefault()?.name,
+                    "dotnet.native.wasm" => assets.wasmNative?.SingleOrDefault()?.name,
+                    _ => filename == $"{projectName}{WasmAssemblyExtension}"
+                        ? assets.assembly?.SingleOrDefault(a => a.virtualPath == $"{projectName}{WasmAssemblyExtension}")?.name
+                        : null
+                };
 
                 if (string.IsNullOrEmpty(expectedFingerprintedItem))
                     continue;
@@ -436,6 +444,8 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public void AssertIcuAssets(AssertBundleOptions assertOptions, BootJsonData bootJson)
     {
+        AssetsData assets = (AssetsData)bootJson.resources;
+
         List<string> expected = new();
         switch (assertOptions.BuildOptions.GlobalizationMode)
         {
@@ -468,7 +478,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             var expectedFingerprinted = new List<string>(expected.Count);
             foreach (var expectedItem in expected)
             {
-                var expectedFingerprintedItem = bootJson.resources.fingerprinting.Where(kv => kv.Value == expectedItem).SingleOrDefault().Key;
+                var expectedFingerprintedItem = assets.icu.FirstOrDefault(a => a.virtualPath == expectedItem)?.name;
                 if (string.IsNullOrEmpty(expectedFingerprintedItem))
                     throw new XunitException($"Could not find ICU asset {expectedItem} in fingerprinting in boot config");
 
@@ -540,30 +550,24 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public BootJsonData AssertBootJson(AssertBundleOptions options)
     {
+
         EnsureProjectDirIsSet();
         string bootJsonPath = GetBootConfigPath(options.BinFrameworkDir, options.BuildOptions.BootConfigFileName);
         BootJsonData bootJson = GetBootJson(bootJsonPath);
+        AssetsData assets = (AssetsData)bootJson.resources;
+
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
-        if (IsFingerprintingEnabled)
-        {
-            spcExpectedFilename = bootJson.resources.fingerprinting.Where(kv => kv.Value == spcExpectedFilename).SingleOrDefault().Key;
-            if (string.IsNullOrEmpty(spcExpectedFilename))
-                throw new XunitException($"Could not find an assembly System.Private.CoreLib in fingerprinting in {bootJsonPath}");
-        }
-
-        string? spcActualFilename = bootJson.resources.coreAssembly.Keys
-                                        .Where(a => a == spcExpectedFilename)
-                                        .SingleOrDefault();
+        string? spcActualFilename = assets.coreAssembly.SingleOrDefault(a => a.virtualPath == spcExpectedFilename)?.name;
         if (spcActualFilename is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
 
-        var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
-            .Union(bootJson.resources.wasmNative.Keys)
-            .Union(bootJson.resources.jsModuleRuntime.Keys)
-            .Union(bootJson.resources.jsModuleWorker?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.jsModuleDiagnostics?.Keys ?? Enumerable.Empty<string>())
-            .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
+        var bootJsonEntries = assets.jsModuleNative.Select(a => a.name)
+            .Union(assets.wasmNative.Select(a => a.name))
+            .Union(assets.jsModuleRuntime.Select(a => a.name))
+            .Union(assets.jsModuleWorker?.Select(a => a.name) ?? Enumerable.Empty<string>())
+            .Union(assets.jsModuleDiagnostics?.Select(a => a.name) ?? Enumerable.Empty<string>())
+            .Union(assets.wasmSymbols?.Select(a => a.name) ?? Enumerable.Empty<string>())
             .ToArray();
 
         var expectedEntries = new SortedDictionary<string, Func<string, bool>>();
