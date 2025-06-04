@@ -40,6 +40,7 @@ C_FUNC(\Name):
 #else
         .type \Name, %function
 #endif
+        .p2align 4
 C_FUNC(\Name):
         .cfi_startproc
 .endm
@@ -365,4 +366,42 @@ C_FUNC(\Name\()_End):
         pop_nonvol_reg rbp
         .cfi_same_value rbp
 
+.endm
+
+// Inlined version of GetThreadEEAllocContext. Trashes volatile registers.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE
+#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+        call    C_FUNC(GetThreadEEAllocContext)
+#else
+        .att_syntax
+        .byte 0x66  // data16 prefix - padding to have space for linker relaxations
+        leaq    t_runtime_thread_locals@TLSGD(%rip), %rdi
+        .byte 0x66  //
+        .byte 0x66  //
+        .byte 0x48  // rex.W prefix, also for padding
+        callq   __tls_get_addr@PLT
+        .intel_syntax noprefix
+
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                lea     rax, [rax + OFFSETOF__RuntimeThreadLocals__ee_alloc_context]
+        .endif
+#endif
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+        set_cfa_register rsp, 8
+
+        PUSH_CALLEE_SAVED_REGISTERS
+        // 6 * 8 for argument register space in TransitionBlock + alignment of the stack to 16b
+        alloc_stack     56
+        END_PROLOGUE
+
+        lea     \target, [rsp + 8]
+.endm
+
+.macro POP_COOP_PINVOKE_FRAME
+        free_stack      56
+        POP_CALLEE_SAVED_REGISTERS
 .endm

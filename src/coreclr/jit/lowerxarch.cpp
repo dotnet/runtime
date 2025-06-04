@@ -502,7 +502,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 return;
             }
 
-            assert((dstAddr->TypeGet() == TYP_BYREF) || (dstAddr->TypeGet() == TYP_I_IMPL));
+            assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
 
             // If we have a long enough sequence of slots that do not require write barriers then
             // we can use REP MOVSD/Q instead of a sequence of MOVSD/Q instructions. According to the
@@ -1443,7 +1443,7 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    if (node->TypeGet() == TYP_SIMD12)
+    if (node->TypeIs(TYP_SIMD12))
     {
         // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
         // produces a TYP_SIMD16 result
@@ -3127,7 +3127,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             maskNode = node;
         }
 
-        if (maskNode->gtType != TYP_MASK)
+        if (!maskNode->TypeIs(TYP_MASK))
         {
             assert(node == maskNode);
 
@@ -3417,7 +3417,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
                 BlockRange().InsertBefore(node, maskNode);
             }
 
-            assert(maskNode->TypeGet() == TYP_MASK);
+            assert(maskNode->TypeIs(TYP_MASK));
             blendVariableId = NI_AVX512_BlendVariableMask;
             op1             = maskNode;
         }
@@ -7058,7 +7058,7 @@ void Lowering::LowerBswapOp(GenTreeOp* node)
 bool Lowering::IsRMWIndirCandidate(GenTree* operand, GenTree* storeInd)
 {
     // If the operand isn't an indirection, it's trivially not a candidate.
-    if (operand->OperGet() != GT_IND)
+    if (!operand->OperIs(GT_IND))
     {
         return false;
     }
@@ -7560,7 +7560,7 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
     if (ctrlExpr != nullptr)
     {
         // we should never see a gtControlExpr whose type is void.
-        assert(ctrlExpr->TypeGet() != TYP_VOID);
+        assert(!ctrlExpr->TypeIs(TYP_VOID));
 
 #ifdef TARGET_X86
         // On x86, we need to generate a very specific pattern for indirect VSD calls:
@@ -7605,7 +7605,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
     GenTree* addr = node->Addr();
 
     // If this is the rhs of a block copy it will be handled when we handle the store.
-    if (node->TypeGet() == TYP_STRUCT)
+    if (node->TypeIs(TYP_STRUCT))
     {
         return;
     }
@@ -7626,7 +7626,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
 
 #if defined(FEATURE_SIMD)
-        if (((addr->TypeGet() != TYP_SIMD12) || !icon->ImmedValNeedsReloc(comp)) && icon->FitsInAddrBase(comp))
+        if ((!addr->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(comp)) && icon->FitsInAddrBase(comp))
 #else
         if (icon->FitsInAddrBase(comp))
 #endif
@@ -7640,7 +7640,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
             MakeSrcContained(node, addr);
         }
     }
-    else if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, node))
+    else if (addr->OperIs(GT_LEA) && IsInvariantInRange(addr, node))
     {
         MakeSrcContained(node, addr);
     }
@@ -7969,12 +7969,12 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     {
         hasImpliedFirstOperand = true;
     }
-    else if (node->OperGet() == GT_MULHI)
+    else if (node->OperIs(GT_MULHI))
     {
         hasImpliedFirstOperand = true;
     }
 #if defined(TARGET_X86)
-    else if (node->OperGet() == GT_MUL_LONG)
+    else if (node->OperIs(GT_MUL_LONG))
     {
         hasImpliedFirstOperand = true;
     }
@@ -8109,7 +8109,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
     bool divisorCanBeRegOptional = true;
 #ifdef TARGET_X86
     GenTree* dividend = node->gtGetOp1();
-    if (dividend->OperGet() == GT_LONG)
+    if (dividend->OperIs(GT_LONG))
     {
         divisorCanBeRegOptional = false;
         MakeSrcContained(node, dividend);
@@ -8217,7 +8217,7 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
         MakeSrcContained(storeLoc, op1);
     }
 #ifdef TARGET_X86
-    else if (op1->OperGet() == GT_LONG)
+    else if (op1->OperIs(GT_LONG))
     {
         MakeSrcContained(storeLoc, op1);
     }
@@ -8277,7 +8277,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 #if !defined(TARGET_64BIT)
     if (varTypeIsLong(srcType))
     {
-        noway_assert(castOp->OperGet() == GT_LONG);
+        noway_assert(castOp->OperIs(GT_LONG));
         castOp->SetContained();
     }
 #endif // !defined(TARGET_64BIT)
@@ -8488,7 +8488,7 @@ void Lowering::ContainCheckSelect(GenTreeOp* select)
 //
 bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
 {
-    assert(storeInd->OperGet() == GT_STOREIND);
+    assert(storeInd->OperIs(GT_STOREIND));
 
     // SSE2 doesn't support RMW on float values
     assert(!varTypeIsFloating(storeInd));
@@ -8560,7 +8560,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
     GenTree* indirCandidateChild = indirCandidate->gtGetOp1();
     indirCandidateChild->SetContained();
 
-    if (indirCandidateChild->OperGet() == GT_LEA)
+    if (indirCandidateChild->OperIs(GT_LEA))
     {
         GenTreeAddrMode* addrMode = indirCandidateChild->AsAddrMode();
 
@@ -9408,7 +9408,7 @@ void Lowering::TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, 
 //
 void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr, unsigned size)
 {
-    assert((genActualType(addr) == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
+    assert((genActualType(addr) == TYP_I_IMPL) || addr->TypeIs(TYP_BYREF));
     if ((addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), size)) ||
         (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp)))
     {

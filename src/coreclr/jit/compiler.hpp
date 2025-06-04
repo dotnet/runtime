@@ -291,7 +291,7 @@ inline bool Compiler::jitIsBetweenInclusive(unsigned value, unsigned start, unsi
 
 #define HISTOGRAM_MAX_SIZE_COUNT 64
 
-#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
+#if CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE || MEASURE_MEM_ALLOC
 
 class Dumpable
 {
@@ -388,7 +388,7 @@ public:
     static void DumpAll();
 };
 
-#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || COUNT_LOOPS || EMITTER_STATS || MEASURE_NODE_SIZE
+#endif // CALL_ARG_STATS || COUNT_BASIC_BLOCKS || EMITTER_STATS || MEASURE_NODE_SIZE
 
 /******************************************************************************************
  * Return the EH descriptor for the given region index.
@@ -1858,7 +1858,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return (gtOper == GT_NOP && gtType == TYP_VOID);
+    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
 }
 
 /*****************************************************************************
@@ -1994,7 +1994,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     assert(GenTree::s_gtNodeSizes[oper] == TREE_NODE_SZ_SMALL || (gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
 #if defined(HOST_64BIT) && !defined(TARGET_64BIT)
-    if (gtOper == GT_CNS_LNG && oper == GT_CNS_INT)
+    if (OperIs(GT_CNS_LNG) && oper == GT_CNS_INT)
     {
         // When casting from LONG to INT, we need to force cast of the value,
         // if the host architecture represents INT and LONG with the same data size.
@@ -3345,7 +3345,7 @@ inline bool Compiler::fgIsThrowHlpBlk(BasicBlock* block)
     //
     GenTree* const call = block->lastNode();
 
-    if ((call == nullptr) || (call->gtOper != GT_CALL))
+    if ((call == nullptr) || !call->OperIs(GT_CALL))
     {
         return false;
     }
@@ -4172,7 +4172,7 @@ inline bool Compiler::impIsThis(GenTree* obj)
     }
     else
     {
-        return ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR) &&
+        return ((obj != nullptr) && obj->OperIs(GT_LCL_VAR) &&
                 lvaIsOriginalThisArg(obj->AsLclVarCommon()->GetLclNum()));
     }
 }

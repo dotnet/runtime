@@ -997,6 +997,17 @@ public:
         return (var_types)lvType;
     }
 
+    bool TypeIs(var_types type) const
+    {
+        return TypeGet() == type;
+    }
+
+    template <typename... T>
+    bool TypeIs(var_types type, T... rest) const
+    {
+        return TypeIs(type) || TypeIs(rest...);
+    }
+
     // NormalizeOnLoad Rules:
     //     1. All small locals are actually TYP_INT locals.
     //     2. NOL locals are such that not all definitions can be controlled by the compiler and so the upper bits can
@@ -1030,7 +1041,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -4318,7 +4329,7 @@ public:
     bool lvaMapSimd12ToSimd16(unsigned varNum)
     {
         LclVarDsc* varDsc = lvaGetDesc(varNum);
-        assert(varDsc->TypeGet() == TYP_SIMD12);
+        assert(varDsc->TypeIs(TYP_SIMD12));
 
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 
@@ -7529,7 +7540,8 @@ public:
                  CORINFO_CLASS_HANDLE*  classGuesses,
                  CORINFO_METHOD_HANDLE* methodGuesses,
                  int*                   candidatesCount,
-                 unsigned*              likelihoods);
+                 unsigned*              likelihoods,
+                 bool                   verboseLogging = true);
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
@@ -12335,32 +12347,6 @@ extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
 extern Histogram computeReachabilitySetsIterationTable;
 #endif
-
-/*****************************************************************************
- *
- *  Used by optFindNaturalLoops to gather statistical information such as
- *   - total number of natural loops
- *   - number of loops with 1, 2, ... exit conditions
- *   - number of loops that have an iterator (for like)
- *   - number of loops that have a constant iterator
- */
-
-#if COUNT_LOOPS
-
-extern unsigned  totalLoopMethods;        // counts the total number of methods that have natural loops
-extern unsigned  maxLoopsPerMethod;       // counts the maximum number of loops a method has
-extern unsigned  totalLoopCount;          // counts the total number of natural loops
-extern unsigned  totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
-extern unsigned  totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
-extern unsigned  iterLoopCount;           // counts the # of loops with an iterator (for like)
-extern unsigned  constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
-extern bool      hasMethodLoops;          // flag to keep track if we already counted a method as having loops
-extern unsigned  loopsThisMethod;         // counts the number of loops in the current method
-extern bool      loopOverflowThisMethod;  // True if we exceeded the max # of loops in the method.
-extern Histogram loopCountTable;          // Histogram of loop counts
-extern Histogram loopExitCountTable;      // Histogram of loop exit counts
-
-#endif // COUNT_LOOPS
 
 #if MEASURE_BLOCK_SIZE
 extern size_t genFlowNodeSize;

@@ -89,7 +89,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
 #ifdef FEATURE_SIMD
             // Need an additional register to read upper 4 bytes of Vector3.
-            if (tree->TypeGet() == TYP_SIMD12)
+            if (tree->TypeIs(TYP_SIMD12))
             {
                 // We need an internal register different from targetReg in which 'tree' produces its result
                 // because both targetReg and internal reg will be in use at the same time.
@@ -175,13 +175,13 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_RETFILT:
             assert(dstCount == 0);
-            if (tree->TypeGet() == TYP_VOID)
+            if (tree->TypeIs(TYP_VOID))
             {
                 srcCount = 0;
             }
             else
             {
-                assert(tree->TypeGet() == TYP_INT);
+                assert(tree->TypeIs(TYP_INT));
                 srcCount = 1;
                 BuildUse(tree->gtGetOp1(), RBM_INTRET.GetIntRegSet());
             }
@@ -622,7 +622,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 {
     // struct typed indirs are expected only on rhs of a block copy,
     // but in this case they must be contained.
-    assert(indirTree->TypeGet() != TYP_STRUCT);
+    assert(!indirTree->TypeIs(TYP_STRUCT));
 
     GenTree* addr  = indirTree->Addr();
     GenTree* index = nullptr;
@@ -630,7 +630,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 
     if (addr->isContained())
     {
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             GenTreeAddrMode* lea = addr->AsAddrMode();
             index                = lea->Index();
@@ -652,7 +652,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 
 #ifdef FEATURE_SIMD
-    if (indirTree->TypeGet() == TYP_SIMD12)
+    if (indirTree->TypeIs(TYP_SIMD12))
     {
         // If indirTree is of TYP_SIMD12, addr is not contained. See comment in LowerIndir().
         assert(!addr->isContained());
@@ -690,7 +690,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
     int srcCount = 0;
     int dstCount = 0;
-    if (call->TypeGet() != TYP_VOID)
+    if (!call->TypeIs(TYP_VOID))
     {
         hasMultiRegRetVal = call->HasMultiRegRetVal();
         if (hasMultiRegRetVal)
@@ -720,7 +720,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     if (ctrlExpr != nullptr)
     {
         // we should never see a gtControlExpr whose type is void.
-        assert(ctrlExpr->TypeGet() != TYP_VOID);
+        assert(!ctrlExpr->TypeIs(TYP_VOID));
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
         // computed into a register.
@@ -833,7 +833,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 //
 int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 {
-    assert(argNode->gtOper == GT_PUTARG_STK);
+    assert(argNode->OperIs(GT_PUTARG_STK));
 
     GenTree* putArgChild = argNode->gtGetOp1();
 
@@ -860,7 +860,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             buildInternalIntRegisterDefForNode(argNode);
             buildInternalIntRegisterDefForNode(argNode);
 
-            if (putArgChild->OperGet() == GT_BLK)
+            if (putArgChild->OperIs(GT_BLK))
             {
                 assert(putArgChild->isContained());
                 GenTree* objChild = putArgChild->gtGetOp1();
@@ -910,7 +910,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
 {
     int srcCount = 0;
-    assert(argNode->gtOper == GT_PUTARG_SPLIT);
+    assert(argNode->OperIs(GT_PUTARG_SPLIT));
 
     GenTree* putArgChild = argNode->gtGetOp1();
 
@@ -928,7 +928,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     assert((argMask == RBM_NONE) || ((argMask & availableIntRegs) != RBM_NONE) ||
            ((argMask & availableFloatRegs) != RBM_NONE));
 
-    if (putArgChild->OperGet() == GT_FIELD_LIST)
+    if (putArgChild->OperIs(GT_FIELD_LIST))
     {
         // Generated code:
         // 1. Consume all of the items in the GT_FIELD_LIST (source)
@@ -961,8 +961,8 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     }
     else
     {
-        assert(putArgChild->TypeGet() == TYP_STRUCT);
-        assert(putArgChild->OperGet() == GT_BLK);
+        assert(putArgChild->TypeIs(TYP_STRUCT));
+        assert(putArgChild->OperIs(GT_BLK));
 
         // We can use a ld/st sequence so we need an internal register
         buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
