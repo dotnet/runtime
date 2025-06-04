@@ -597,7 +597,7 @@ namespace System.Runtime
                     break;
 
                 // N.B. -- AVs that have a read/write address lower than 64k are already transformed to
-                //         HwExceptionCode.NULL_REFERENCE prior to calling this routine.
+                //         HwExceptionCode.STATUS_NATIVEAOT_NULL_REFERENCE prior to calling this routine.
                 case (uint)HwExceptionCode.STATUS_ACCESS_VIOLATION:
                     exceptionId = ExceptionIDs.AccessViolation;
                     break;
