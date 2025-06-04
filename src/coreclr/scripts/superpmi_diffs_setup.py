@@ -38,6 +38,7 @@ parser.add_argument("-checked_directory", help="Path to the directory containing
 parser.add_argument("-release_directory", help="Path to the directory containing built release binaries (e.g., <source_directory>/artifacts/bin/coreclr/windows.x64.Release)")
 
 is_windows = platform.system() == "Windows"
+is_macos = platform.system() == "Darwin"
 target_windows = True
 
 
@@ -208,6 +209,10 @@ def build_jit_analyze(coreclr_args, source_directory, jit_analyze_build_director
 
 def build_partitions(partitions_dir, do_asmdiffs, bin_path, host_bitness):
     mcs_path = os.path.join(bin_path, "mcs.exe" if is_windows else "mcs")
+    if is_macos:
+        # Hack: the target is arm64, but the build machine is x64. We build SPMI for x64 because of that,
+        # but it exists at a different path.
+        mcs_path = os.path.join(bin_path, "..", "osx.x64.Checked", "mcs")
     assert(os.path.exists(mcs_path))
 
     command = [mcs_path, "-printJITEEVersion"]
