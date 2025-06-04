@@ -299,14 +299,6 @@ public:
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // Because the large object heap is 8 byte aligned, we want to put
-    // arrays of doubles there more agressively than normal objects.
-    // This is the threshold for this.  It is the number of doubles,
-    // not the number of bytes in the array.
-    unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
-#endif
-
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
     // held locks in DAC builds. This is determined by an environment variable.
@@ -516,10 +508,6 @@ private: //----------------------------------------------------------------
     bool fEnableRCWCleanupOnSTAShutdown;  // Register our IInitializeSpy even in classic processes
     bool m_fBuiltInCOMInteropSupported;   // COM built-in support
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    unsigned int DoubleArrayToLargeObjectHeapThreshold;  // double arrays of more than this number of elems go in large object heap
-#endif
 
 #ifdef _DEBUG
     bool fExpandAllOnLoad;              // True if we want to load all types/jit all methods in an assembly

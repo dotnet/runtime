@@ -65,12 +65,14 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 }
 
 
-void InitJITHelpers1();
+void InitJITAllocationHelpers();
+
+void InitJITWriteBarrierHelpers();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
-                        CORJIT_FLAGS* pJitFlags,
-                        ULONG* pSizeOfCode);
+                        _Out_ bool* isTier0,
+                        _Out_ ULONG* pSizeOfCode);
 
 void getMethodInfoILMethodHeaderHelper(
     COR_ILMETHOD_DECODER* header,
@@ -143,15 +145,31 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStatic
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
-extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
-extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 
-extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
+#if defined(FEATURE_64BIT_ALIGNMENT)
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+#endif
 
-extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
+EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
+#endif
+
+EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+
+EXTERN_C FCDECL1(Object*, AllocateStringFast, DWORD stringLength);
+EXTERN_C FCDECL1(Object*, AllocateStringSlow, DWORD stringLength);
 
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);
@@ -356,17 +374,16 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL, bool fAllowInlining = true) :
-        m_pJitHandles(nullptr),
-        m_pMethodBeingCompiled(fd),
-        m_transientDetails(NULL),
-        m_pThread(GetThreadNULLOk()),
-        m_hMethodForSecurity_Key(NULL),
-        m_pMethodForSecurity_Value(NULL),
+    CEEInfo(MethodDesc * fd = NULL)
+        : m_pJitHandles(nullptr)
+        , m_pMethodBeingCompiled(fd)
+        , m_transientDetails(NULL)
+        , m_pThread(GetThreadNULLOk())
+        , m_hMethodForSecurity_Key(NULL)
+        , m_pMethodForSecurity_Value(NULL)
 #if defined(FEATURE_GDBJIT)
-        m_pCalledMethods(NULL),
+        , m_pCalledMethods(NULL)
 #endif
-        m_allowInlining(fAllowInlining)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -395,14 +412,6 @@ public:
     // Performs any work JIT-related work that should be performed at process shutdown.
     void JitProcessShutdownWork();
 
-    void setJitFlags(const CORJIT_FLAGS& jitFlags);
-
-private:
-#ifdef _DEBUG
-    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuff;
-    InlineSString<MAX_CLASSNAME_LENGTH> ssClsNameBuffUTF8;
-#endif
-
 public:
     MethodDesc * GetMethodForSecurity(CORINFO_METHOD_HANDLE callerHandle);
 
@@ -424,8 +433,12 @@ public:
     TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
-    // Get method info for a transient method
-    void getTransientMethodInfo(MethodDesc* pMD, CORINFO_METHOD_INFO* methInfo);
+protected:
+    COR_ILMETHOD_DECODER* getMethodInfoWorker(
+        MethodDesc* ftn,
+        COR_ILMETHOD_DECODER* header,
+        CORINFO_METHOD_INFO* methInfo,
+        CORINFO_CONTEXT_HANDLE exactContext = NULL);
 
 protected:
     SArray<OBJECTHANDLE>*   m_pJitHandles;          // GC handles used by JIT
@@ -451,8 +464,6 @@ protected:
     CalledMethod *          m_pCalledMethods;
 #endif
 
-    bool                    m_allowInlining;
-
     void EnsureActive(TypeHandle th, MethodDesc * pMD = NULL);
 };
 
@@ -469,34 +480,7 @@ class CEECodeGenInfo : public CEEInfo
 {
 public:
     // ICorJitInfo stuff
-    CEECodeGenInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm, bool allowInlining = true)
-        : CEEInfo(fd, allowInlining),
-          m_jitManager(jm),
-          m_CodeHeader(NULL),
-          m_CodeHeaderRW(NULL),
-          m_codeWriteBufferSize(0),
-          m_pRealCodeHeader(NULL),
-          m_pCodeHeap(NULL),
-          m_ILHeader(header),
-          m_GCinfo_len(0),
-          m_EHinfo_len(0),
-          m_iOffsetMapping(0),
-          m_pOffsetMapping(NULL),
-          m_iNativeVarInfo(0),
-          m_pNativeVarInfo(NULL),
-          m_inlineTreeNodes(NULL),
-          m_numInlineTreeNodes(0),
-          m_richOffsetMappings(NULL),
-          m_numRichOffsetMappings(0),
-          m_gphCache()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        } CONTRACTL_END;
-    }
+    CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm);
 
     ~CEECodeGenInfo()
     {
@@ -595,6 +579,9 @@ public:
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override;
 
+    CORINFO_METHOD_INFO* getMethodInfoInternal();
+    CORJIT_FLAGS* getJitFlagsInternal();
+
 protected:
 
     template <typename TCodeHeader>
@@ -624,7 +611,8 @@ protected:
     size_t                  m_codeWriteBufferSize;
     BYTE*                   m_pRealCodeHeader;
     HeapList*               m_pCodeHeap;
-    COR_ILMETHOD_DECODER *  m_ILHeader;     // the code header as exist in the file
+    COR_ILMETHOD_DECODER*   m_ILHeader;     // the code header to use. This may have been generated due to dynamic IL generation.
+    CORINFO_METHOD_INFO     m_MethodInfo;
 
 #if defined(_DEBUG)
     ULONG                   m_codeSize;     // Code size requested via allocMem
@@ -831,9 +819,9 @@ public:
 
     void PublishFinalCodeAddress(PCODE addr);
 
-    CEEJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
-               EECodeGenManager* jm, bool allowInlining = true)
-        : CEECodeGenInfo(fd, header, jm, allowInlining)
+    CEEJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
+               EECodeGenManager* jm)
+        : CEECodeGenInfo(config, fd, header, jm)
 #ifdef FEATURE_EH_FUNCLETS
         , m_moduleBase(0),
           m_totalUnwindSize(0),
@@ -961,9 +949,9 @@ class CInterpreterJitInfo final : public CEECodeGenInfo
 public:
     // ICorJitInfo stuff
 
-    CInterpreterJitInfo(MethodDesc* fd, COR_ILMETHOD_DECODER* header,
-                        EECodeGenManager* jm, bool allowInlining = true)
-        : CEECodeGenInfo(fd, header, jm, allowInlining)
+    CInterpreterJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
+                        EECodeGenManager* jm)
+        : CEECodeGenInfo(config, fd, header, jm)
     {
         CONTRACTL
         {
