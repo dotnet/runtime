@@ -1738,16 +1738,6 @@ BOOL TransitionFrame::Protects_Impl(OBJECTREF * ppORef)
 }
 #endif //defined (_DEBUG) && !defined (DACCESS_COMPILE)
 
-//+----------------------------------------------------------------------------
-//
-//  Method:     TPMethodFrame::GcScanRoots    public
-//
-//  Synopsis:   GC protects arguments on the stack
-//
-
-//
-//+----------------------------------------------------------------------------
-
 #ifdef FEATURE_COMINTEROP
 
 #ifdef TARGET_X86
