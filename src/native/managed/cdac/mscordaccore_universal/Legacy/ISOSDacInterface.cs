@@ -194,61 +194,61 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetAppDomainList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
     [PreserveSig]
-    int GetAppDomainData(ulong addr, /*struct DacpAppDomainData*/ void* data);
+    int GetAppDomainData(ClrDataAddress addr, /*struct DacpAppDomainData*/ void* data);
     [PreserveSig]
-    int GetAppDomainName(ulong addr, uint count, char* name, uint* pNeeded);
+    int GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded);
     [PreserveSig]
-    int GetDomainFromContext(ulong context, ClrDataAddress* domain);
+    int GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain);
 
     // Assemblies
     [PreserveSig]
-    int GetAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? values, int* pNeeded);
+    int GetAssemblyList(ClrDataAddress appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[]? values, int* pNeeded);
     [PreserveSig]
-    int GetAssemblyData(ulong baseDomainPtr, ulong assembly, /*struct DacpAssemblyData*/ void* data);
+    int GetAssemblyData(ClrDataAddress baseDomainPtr, ClrDataAddress assembly, /*struct DacpAssemblyData*/ void* data);
     [PreserveSig]
-    int GetAssemblyName(ulong assembly, uint count, char* name, uint* pNeeded);
+    int GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 
     // Modules
     [PreserveSig]
-    int GetModule(ulong addr, out IXCLRDataModule? mod);
+    int GetModule(ClrDataAddress addr, out IXCLRDataModule? mod);
     [PreserveSig]
-    int GetModuleData(ulong moduleAddr, DacpModuleData* data);
+    int GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data);
     [PreserveSig]
-    int TraverseModuleMap(/*ModuleMapType*/ int mmt, ulong moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
+    int TraverseModuleMap(/*ModuleMapType*/ int mmt, ClrDataAddress moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
     [PreserveSig]
-    int GetAssemblyModuleList(ulong assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
+    int GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] modules, uint* pNeeded);
     [PreserveSig]
-    int GetILForModule(ulong moduleAddr, int rva, ClrDataAddress* il);
+    int GetILForModule(ClrDataAddress moduleAddr, int rva, ClrDataAddress* il);
 
     // Threads
     [PreserveSig]
-    int GetThreadData(ulong thread, DacpThreadData *data);
+    int GetThreadData(ClrDataAddress thread, DacpThreadData *data);
     [PreserveSig]
     int GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread);
     [PreserveSig]
-    int GetStackLimits(ulong threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp);
+    int GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp);
 
     // MethodDescs
     [PreserveSig]
-    int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
+    int GetMethodDescData(ClrDataAddress methodDesc, ClrDataAddress ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
     [PreserveSig]
-    int GetMethodDescPtrFromIP(ulong ip, ClrDataAddress* ppMD);
+    int GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD);
     [PreserveSig]
-    int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded);
+    int GetMethodDescName(ClrDataAddress methodDesc, uint count, char* name, uint* pNeeded);
     [PreserveSig]
-    int GetMethodDescPtrFromFrame(ulong frameAddr, ClrDataAddress* ppMD);
+    int GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD);
     [PreserveSig]
-    int GetMethodDescFromToken(ulong moduleAddr, /*mdToken*/ uint token, ClrDataAddress* methodDesc);
+    int GetMethodDescFromToken(ClrDataAddress moduleAddr, /*mdToken*/ uint token, ClrDataAddress* methodDesc);
     [PreserveSig]
-    int GetMethodDescTransparencyData(ulong methodDesc, /*struct DacpMethodDescTransparencyData*/ void* data);
+    int GetMethodDescTransparencyData(ClrDataAddress methodDesc, /*struct DacpMethodDescTransparencyData*/ void* data);
 
     // JIT Data
     [PreserveSig]
-    int GetCodeHeaderData(ulong ip, /*struct DacpCodeHeaderData*/ void* data);
+    int GetCodeHeaderData(ClrDataAddress ip, /*struct DacpCodeHeaderData*/ void* data);
     [PreserveSig]
     int GetJitManagerList(uint count, /*struct DacpJitManagerInfo*/ void* managers, uint* pNeeded);
     [PreserveSig]
-    int GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded);
+    int GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded);
     [PreserveSig]
     int GetJumpThunkTarget(/*T_CONTEXT*/void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD);
 
@@ -256,47 +256,47 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetThreadpoolData(/*struct DacpThreadpoolData*/ void* data);
     [PreserveSig]
-    int GetWorkRequestData(ulong addrWorkRequest, /*struct DacpWorkRequestData*/ void* data);
+    int GetWorkRequestData(ClrDataAddress addrWorkRequest, /*struct DacpWorkRequestData*/ void* data);
     [PreserveSig]
-    int GetHillClimbingLogEntry(ulong addr, /*struct DacpHillClimbingLogEntry*/ void* data);
+    int GetHillClimbingLogEntry(ClrDataAddress addr, /*struct DacpHillClimbingLogEntry*/ void* data);
 
     // Objects
     [PreserveSig]
-    int GetObjectData(ulong objAddr, DacpObjectData* data);
+    int GetObjectData(ClrDataAddress objAddr, DacpObjectData* data);
     [PreserveSig]
-    int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded);
+    int GetObjectStringData(ClrDataAddress obj, uint count, char* stringData, uint* pNeeded);
     [PreserveSig]
-    int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded);
+    int GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded);
 
     // MethodTable
     [PreserveSig]
-    int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded);
+    int GetMethodTableName(ClrDataAddress mt, uint count, char* mtName, uint* pNeeded);
     [PreserveSig]
-    int GetMethodTableData(ulong mt, DacpMethodTableData* data);
+    int GetMethodTableData(ClrDataAddress mt, DacpMethodTableData* data);
     [PreserveSig]
-    int GetMethodTableSlot(ulong mt, uint slot, ClrDataAddress* value);
+    int GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value);
     [PreserveSig]
-    int GetMethodTableFieldData(ulong mt, /*struct DacpMethodTableFieldData*/ void* data);
+    int GetMethodTableFieldData(ClrDataAddress mt, /*struct DacpMethodTableFieldData*/ void* data);
     [PreserveSig]
-    int GetMethodTableTransparencyData(ulong mt, /*struct DacpMethodTableTransparencyData*/ void* data);
+    int GetMethodTableTransparencyData(ClrDataAddress mt, /*struct DacpMethodTableTransparencyData*/ void* data);
 
     // EEClass
     [PreserveSig]
-    int GetMethodTableForEEClass(ulong eeClass, ClrDataAddress* value);
+    int GetMethodTableForEEClass(ClrDataAddress eeClass, ClrDataAddress* value);
 
     // FieldDesc
     [PreserveSig]
-    int GetFieldDescData(ulong fieldDesc, /*struct DacpFieldDescData*/ void* data);
+    int GetFieldDescData(ClrDataAddress fieldDesc, /*struct DacpFieldDescData*/ void* data);
 
     // Frames
     [PreserveSig]
-    int GetFrameName(ulong vtable, uint count, char* frameName, uint* pNeeded);
+    int GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded);
 
     // PEFiles
     [PreserveSig]
-    int GetPEFileBase(ulong addr, ClrDataAddress* peBase);
+    int GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase);
     [PreserveSig]
-    int GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded);
+    int GetPEFileName(ClrDataAddress addr, uint count, char* fileName, uint* pNeeded);
 
     // GC
     [PreserveSig]
@@ -304,37 +304,37 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetGCHeapList(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] heaps, uint* pNeeded); // svr only
     [PreserveSig]
-    int GetGCHeapDetails(ulong heap, /*struct DacpGcHeapDetails */ void* details); // wks only
+    int GetGCHeapDetails(ClrDataAddress heap, /*struct DacpGcHeapDetails */ void* details); // wks only
     [PreserveSig]
     int GetGCHeapStaticData(/*struct DacpGcHeapDetails */ void* data);
     [PreserveSig]
-    int GetHeapSegmentData(ulong seg, /*struct DacpHeapSegmentData */ void* data);
+    int GetHeapSegmentData(ClrDataAddress seg, /*struct DacpHeapSegmentData */ void* data);
     [PreserveSig]
-    int GetOOMData(ulong oomAddr, /*struct DacpOomData */ void* data);
+    int GetOOMData(ClrDataAddress oomAddr, /*struct DacpOomData */ void* data);
     [PreserveSig]
     int GetOOMStaticData(/*struct DacpOomData */ void* data);
     [PreserveSig]
-    int GetHeapAnalyzeData(ulong addr, /*struct DacpGcHeapAnalyzeData */ void* data);
+    int GetHeapAnalyzeData(ClrDataAddress addr, /*struct DacpGcHeapAnalyzeData */ void* data);
     [PreserveSig]
     int GetHeapAnalyzeStaticData(/*struct DacpGcHeapAnalyzeData */ void* data);
 
     // DomainLocal
     [PreserveSig]
-    int GetDomainLocalModuleData(ulong addr, /*struct DacpDomainLocalModuleData */ void* data);
+    int GetDomainLocalModuleData(ClrDataAddress addr, /*struct DacpDomainLocalModuleData */ void* data);
     [PreserveSig]
-    int GetDomainLocalModuleDataFromAppDomain(ulong appDomainAddr, int moduleID, /*struct DacpDomainLocalModuleData */ void* data);
+    int GetDomainLocalModuleDataFromAppDomain(ClrDataAddress appDomainAddr, int moduleID, /*struct DacpDomainLocalModuleData */ void* data);
     [PreserveSig]
-    int GetDomainLocalModuleDataFromModule(ulong moduleAddr, /*struct DacpDomainLocalModuleData */ void* data);
+    int GetDomainLocalModuleDataFromModule(ClrDataAddress moduleAddr, /*struct DacpDomainLocalModuleData */ void* data);
 
     // ThreadLocal
     [PreserveSig]
-    int GetThreadLocalModuleData(ulong thread, uint index, /*struct DacpThreadLocalModuleData */ void* data);
+    int GetThreadLocalModuleData(ClrDataAddress thread, uint index, /*struct DacpThreadLocalModuleData */ void* data);
 
     // SyncBlock
     [PreserveSig]
     int GetSyncBlockData(uint number, /*struct DacpSyncBlockData */ void* data);
     [PreserveSig]
-    int GetSyncBlockCleanupData(ulong addr, /*struct DacpSyncBlockCleanupData */ void* data);
+    int GetSyncBlockCleanupData(ClrDataAddress addr, /*struct DacpSyncBlockCleanupData */ void* data);
 
     // Handles
     [PreserveSig]
@@ -346,9 +346,9 @@ internal unsafe partial interface ISOSDacInterface
 
     // EH
     [PreserveSig]
-    int TraverseEHInfo(ulong ip, /*DUMPEHINFO*/ void* pCallback, void* token);
+    int TraverseEHInfo(ClrDataAddress ip, /*DUMPEHINFO*/ void* pCallback, void* token);
     [PreserveSig]
-    int GetNestedExceptionData(ulong exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
+    int GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException);
 
     // StressLog
     [PreserveSig]
@@ -356,17 +356,17 @@ internal unsafe partial interface ISOSDacInterface
 
     // Heaps
     [PreserveSig]
-    int TraverseLoaderHeap(ulong loaderHeapAddr, /*VISITHEAP*/ void* pCallback);
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*VISITHEAP*/ void* pCallback);
     [PreserveSig]
-    int GetCodeHeapList(ulong jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
+    int GetCodeHeapList(ClrDataAddress jitManager, uint count, /*struct DacpJitCodeHeapInfo*/ void* codeHeaps, uint* pNeeded);
     [PreserveSig]
-    int TraverseVirtCallStubHeap(ulong pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
+    int TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, /*VCSHeapType*/ int heaptype, /*VISITHEAP*/ void* pCallback);
 
     // Other
     [PreserveSig]
     int GetUsefulGlobals(DacpUsefulGlobalsData* data);
     [PreserveSig]
-    int GetClrWatsonBuckets(ulong thread, void* pGenericModeBlock);
+    int GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock);
     [PreserveSig]
     int GetTLSIndex(uint* pIndex);
     [PreserveSig]
@@ -374,15 +374,15 @@ internal unsafe partial interface ISOSDacInterface
 
     // COM
     [PreserveSig]
-    int GetRCWData(ulong addr, /*struct DacpRCWData */ void* data);
+    int GetRCWData(ClrDataAddress addr, /*struct DacpRCWData */ void* data);
     [PreserveSig]
-    int GetRCWInterfaces(ulong rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetRCWInterfaces(ClrDataAddress rcw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int GetCCWData(ulong ccw, /*struct DacpCCWData */ void* data);
+    int GetCCWData(ClrDataAddress ccw, /*struct DacpCCWData */ void* data);
     [PreserveSig]
-    int GetCCWInterfaces(ulong ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
+    int GetCCWInterfaces(ClrDataAddress ccw, uint count, /*struct DacpCOMInterfacePointerData*/ void* interfaces, uint* pNeeded);
     [PreserveSig]
-    int TraverseRCWCleanupList(ulong cleanupListPtr, /*VISITRCWFORCLEANUP*/ void* pCallback, void* token);
+    int TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, /*VISITRCWFORCLEANUP*/ void* pCallback, void* token);
 
     // GC Reference Functions
 
@@ -395,38 +395,38 @@ internal unsafe partial interface ISOSDacInterface
     int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded);
 
     [PreserveSig]
-    int GetThreadAllocData(ulong thread, /*struct DacpAllocData */ void* data);
+    int GetThreadAllocData(ClrDataAddress thread, /*struct DacpAllocData */ void* data);
     [PreserveSig]
     int GetHeapAllocData(uint count, /*struct DacpGenerationAllocData */ void* data, uint* pNeeded);
 
     // For BindingDisplay plugin
     [PreserveSig]
-    int GetFailedAssemblyList(ulong appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
+    int GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, Out, MarshalUsing(CountElementName = nameof(count))] ClrDataAddress[] values, uint* pNeeded);
     [PreserveSig]
-    int GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded);
+    int GetPrivateBinPaths(ClrDataAddress appDomain, int count, char* paths, uint* pNeeded);
     [PreserveSig]
-    int GetAssemblyLocation(ulong assembly, int count, char* location, uint* pNeeded);
+    int GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded);
     [PreserveSig]
-    int GetAppDomainConfigFile(ulong appDomain, int count, char* configFile, uint* pNeeded);
+    int GetAppDomainConfigFile(ClrDataAddress appDomain, int count, char* configFile, uint* pNeeded);
     [PreserveSig]
-    int GetApplicationBase(ulong appDomain, int count, char* appBase, uint* pNeeded);
+    int GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded);
     [PreserveSig]
-    int GetFailedAssemblyData(ulong assembly, uint* pContext, int* pResult);
+    int GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult);
     [PreserveSig]
-    int GetFailedAssemblyLocation(ulong assesmbly, uint count, char* location, uint* pNeeded);
+    int GetFailedAssemblyLocation(ClrDataAddress assesmbly, uint count, char* location, uint* pNeeded);
     [PreserveSig]
-    int GetFailedAssemblyDisplayName(ulong assembly, uint count, char* name, uint* pNeeded);
+    int GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded);
 };
 
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
 internal struct DacpExceptionObjectData
 {
-    public ulong Message;
-    public ulong InnerException;
-    public ulong StackTrace;
-    public ulong WatsonBuckets;
-    public ulong StackTraceString;
-    public ulong RemoteStackTraceString;
+    public ClrDataAddress Message;
+    public ClrDataAddress InnerException;
+    public ClrDataAddress StackTrace;
+    public ClrDataAddress WatsonBuckets;
+    public ClrDataAddress StackTraceString;
+    public ClrDataAddress RemoteStackTraceString;
     public int HResult;
     public int XCode;
 }
@@ -437,9 +437,9 @@ internal struct DacpExceptionObjectData
 internal unsafe partial interface ISOSDacInterface2
 {
     [PreserveSig]
-    int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data);
+    int GetObjectExceptionData(ClrDataAddress objectAddress, DacpExceptionObjectData* data);
     [PreserveSig]
-    int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy);
+    int IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy);
 }
 
 [GeneratedComInterface]
@@ -447,7 +447,7 @@ internal unsafe partial interface ISOSDacInterface2
 internal unsafe partial interface ISOSDacInterface3
 {
     [PreserveSig]
-    int GetGCInterestingInfoData(ulong interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data);
+    int GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data);
     [PreserveSig]
     int GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ void* data);
     [PreserveSig]
@@ -467,7 +467,7 @@ internal unsafe partial interface ISOSDacInterface4
 internal unsafe partial interface ISOSDacInterface5
 {
     [PreserveSig]
-    int GetTieredVersions(ulong methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
+    int GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs);
 };
 
 [GeneratedComInterface]
@@ -475,7 +475,7 @@ internal unsafe partial interface ISOSDacInterface5
 internal unsafe partial interface ISOSDacInterface6
 {
     [PreserveSig]
-    int GetMethodTableCollectibleData(ulong mt, /*struct DacpMethodTableCollectibleData*/ void* data);
+    int GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data);
 };
 
 [GeneratedComInterface]
@@ -483,13 +483,13 @@ internal unsafe partial interface ISOSDacInterface6
 internal unsafe partial interface ISOSDacInterface7
 {
     [PreserveSig]
-    int GetPendingReJITID(ulong methodDesc, int* pRejitId);
+    int GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId);
     [PreserveSig]
-    int GetReJITInformation(ulong methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData);
+    int GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData);
     [PreserveSig]
-    int GetProfilerModifiedILInformation(ulong methodDesc, /*struct DacpProfilerILData*/ void* pILData);
+    int GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData);
     [PreserveSig]
-    int GetMethodsWithProfilerModifiedIL(ulong mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs);
+    int GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs);
 };
 
 [GeneratedComInterface]
@@ -507,12 +507,12 @@ internal unsafe partial interface ISOSDacInterface8
 
     // SVR
     [PreserveSig]
-    int GetGenerationTableSvr(ulong heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
+    int GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded);
     [PreserveSig]
-    int GetFinalizationFillPointersSvr(ulong heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
+    int GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded);
 
     [PreserveSig]
-    int GetAssemblyLoadContext(ulong methodTable, ClrDataAddress* assemblyLoadContext);
+    int GetAssemblyLoadContext(ClrDataAddress methodTable, ClrDataAddress* assemblyLoadContext);
 }
 
 [GeneratedComInterface]
@@ -527,15 +527,15 @@ internal partial interface ISOSDacInterface9
 internal unsafe partial interface ISOSDacInterface10
 {
     [PreserveSig]
-    int GetObjectComWrappersData(ulong objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
+    int GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded);
     [PreserveSig]
-    int IsComWrappersCCW(ulong ccw, Interop.BOOL* isComWrappersCCW);
+    int IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW);
     [PreserveSig]
-    int GetComWrappersCCWData(ulong ccw, ClrDataAddress* managedObject, int* refCount);
+    int GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount);
     [PreserveSig]
-    int IsComWrappersRCW(ulong rcw, Interop.BOOL* isComWrappersRCW);
+    int IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW);
     [PreserveSig]
-    int GetComWrappersRCWData(ulong rcw, ClrDataAddress* identity);
+    int GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity);
 }
 
 [GeneratedComInterface]
@@ -543,9 +543,9 @@ internal unsafe partial interface ISOSDacInterface10
 internal unsafe partial interface ISOSDacInterface11
 {
     [PreserveSig]
-    int IsTrackedType(ulong objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory);
+    int IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory);
     [PreserveSig]
-    int GetTaggedMemory(ulong objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes);
+    int GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes);
 }
 
 [GeneratedComInterface]
@@ -561,13 +561,13 @@ internal unsafe partial interface ISOSDacInterface12
 internal unsafe partial interface ISOSDacInterface13
 {
     [PreserveSig]
-    int TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
+    int TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback);
     [PreserveSig]
-    int GetDomainLoaderAllocator(ulong domainAddress, ClrDataAddress* pLoaderAllocator);
+    int GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator);
     [PreserveSig]
     int GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded);
     [PreserveSig]
-    int GetLoaderAllocatorHeaps(ulong loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
+    int GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded);
     [PreserveSig]
     int GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum);
     [PreserveSig]
@@ -583,11 +583,11 @@ internal unsafe partial interface ISOSDacInterface13
 internal unsafe partial interface ISOSDacInterface14
 {
     [PreserveSig]
-    int GetStaticBaseAddress(ulong methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
+    int GetStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
-    int GetThreadStaticBaseAddress(ulong methodTable, ulong thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
+    int GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress);
     [PreserveSig]
-    int GetMethodTableInitializationFlags(ulong methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
+    int GetMethodTableInitializationFlags(ClrDataAddress methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus);
 }
 
 [GeneratedComInterface]
@@ -595,5 +595,5 @@ internal unsafe partial interface ISOSDacInterface14
 internal unsafe partial interface ISOSDacInterface15
 {
     [PreserveSig]
-    int GetMethodTableSlotEnumerator(ulong mt, /*ISOSMethodEnum*/void** enumerator);
+    int GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator);
 }

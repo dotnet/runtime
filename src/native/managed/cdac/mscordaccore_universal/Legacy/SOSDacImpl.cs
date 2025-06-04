@@ -92,7 +92,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
 
     #region ISOSDacInterface
-    int ISOSDacInterface.GetAppDomainConfigFile(ulong appDomain, int count, char* configFile, uint* pNeeded)
+    int ISOSDacInterface.GetAppDomainConfigFile(ClrDataAddress appDomain, int count, char* configFile, uint* pNeeded)
     {
         // Method is not supported on CoreCLR
         int hr = HResults.E_FAIL;
@@ -107,15 +107,15 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetAppDomainData(ulong addr, void* data)
+    int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainList(count, values, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetAppDomainName(ulong addr, uint count, char* name, uint* pNeeded)
+    int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainName(addr, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAppDomainStoreData(data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetApplicationBase(ulong appDomain, int count, char* appBase, uint* pNeeded)
+    int ISOSDacInterface.GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded)
     {
         // Method is not supported on CoreCLR
         int hr = HResults.E_FAIL;
@@ -130,11 +130,11 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetAssemblyData(ulong baseDomainPtr, ulong assembly, void* data)
+    int ISOSDacInterface.GetAssemblyData(ClrDataAddress baseDomainPtr, ClrDataAddress assembly, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyData(baseDomainPtr, assembly, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetAssemblyList(ulong appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
+    int ISOSDacInterface.GetAssemblyList(ClrDataAddress addr, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
     {
-        if (appDomain == 0)
+        if (addr == 0)
         {
             return HResults.E_INVALIDARG;
         }
@@ -143,9 +143,10 @@ internal sealed unsafe partial class SOSDacImpl
 
         try
         {
+            TargetPointer appDomain = addr.ToTargetPointer(_target);
             TargetPointer systemDomainPtr = _target.ReadGlobalPointer(Constants.Globals.SystemDomain);
-            TargetPointer systemDomain = _target.ReadPointer(systemDomainPtr);
-            if (appDomain == systemDomain)
+            ClrDataAddress systemDomain = _target.ReadPointer(systemDomainPtr).ToClrDataAddress(_target);
+            if (addr == systemDomain)
             {
                 // We shouldn't be asking for the assemblies in SystemDomain
                 hr = HResults.E_INVALIDARG;
@@ -199,7 +200,7 @@ internal sealed unsafe partial class SOSDacImpl
         {
             ClrDataAddress[]? valuesLocal = values != null ? new ClrDataAddress[count] : null;
             int neededLocal;
-            int hrLocal = _legacyImpl.GetAssemblyList(appDomain, count, valuesLocal, &neededLocal);
+            int hrLocal = _legacyImpl.GetAssemblyList(addr, count, valuesLocal, &neededLocal);
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
             {
@@ -219,27 +220,27 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetAssemblyLocation(ulong assembly, int count, char* location, uint* pNeeded)
+    int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyLocation(assembly, count, location, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetAssemblyModuleList(ulong assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] modules, uint* pNeeded)
+    int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] modules, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyModuleList(assembly, count, modules, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetAssemblyName(ulong assembly, uint count, char* name, uint* pNeeded)
+    int ISOSDacInterface.GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetAssemblyName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCCWData(ulong ccw, void* data)
+    int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCCWData(ccw, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCCWInterfaces(ulong ccw, uint count, void* interfaces, uint* pNeeded)
+    int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, void* interfaces, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetCCWInterfaces(ccw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetClrWatsonBuckets(ulong thread, void* pGenericModeBlock)
+    int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
         => _legacyImpl is not null ? _legacyImpl.GetClrWatsonBuckets(thread, pGenericModeBlock) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCodeHeaderData(ulong ip, void* data)
+    int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetCodeHeaderData(ip, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetCodeHeapList(ulong jitManager, uint count, void* codeHeaps, uint* pNeeded)
+    int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, void* codeHeaps, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetCodeHeapList(jitManager, count, codeHeaps, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
         => _legacyImpl is not null ? _legacyImpl.GetDacModuleHandle(phModule) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetDomainFromContext(ulong context, ClrDataAddress* domain)
+    int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
         => _legacyImpl is not null ? _legacyImpl.GetDomainFromContext(context, domain) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetDomainLocalModuleData(ulong addr, void* data)
+    int ISOSDacInterface.GetDomainLocalModuleData(ClrDataAddress addr, void* data)
     {
         // CoreCLR does not use domain local modules anymore
         int hr = HResults.E_NOTIMPL;
@@ -255,7 +256,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetDomainLocalModuleDataFromAppDomain(ulong appDomainAddr, int moduleID, void* data)
+    int ISOSDacInterface.GetDomainLocalModuleDataFromAppDomain(ClrDataAddress appDomainAddr, int moduleID, void* data)
     {
         // CoreCLR does not support multi-appdomain shared assembly loading. Thus, a non-pointer sized moduleID cannot exist.
         int hr = HResults.E_INVALIDARG;
@@ -270,7 +271,7 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetDomainLocalModuleDataFromModule(ulong moduleAddr, void* data)
+    int ISOSDacInterface.GetDomainLocalModuleDataFromModule(ClrDataAddress moduleAddr, void* data)
     {
         // CoreCLR does not use domain local modules anymore
         int hr = HResults.E_NOTIMPL;
@@ -285,17 +286,17 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetFailedAssemblyData(ulong assembly, uint* pContext, int* pResult)
+    int ISOSDacInterface.GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyData(assembly, pContext, pResult) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetFailedAssemblyDisplayName(ulong assembly, uint count, char* name, uint* pNeeded)
+    int ISOSDacInterface.GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyDisplayName(assembly, count, name, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetFailedAssemblyList(ulong appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
+    int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyList(appDomain, count, values, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetFailedAssemblyLocation(ulong assesmbly, uint count, char* location, uint* pNeeded)
+    int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assesmbly, uint count, char* location, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetFailedAssemblyLocation(assesmbly, count, location, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetFieldDescData(ulong fieldDesc, void* data)
+    int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetFieldDescData(fieldDesc, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetFrameName(ulong vtable, uint count, char* frameName, uint* pNeeded)
+    int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
     {
         if (vtable == 0)
         {
@@ -353,7 +354,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetGCHeapData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapData(data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetGCHeapDetails(ulong heap, void* details)
+    int ISOSDacInterface.GetGCHeapDetails(ClrDataAddress heap, void* details)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapDetails(heap, details) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetGCHeapList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] heaps, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetGCHeapList(count, heaps, pNeeded) : HResults.E_NOTIMPL;
@@ -367,14 +368,14 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl is not null ? _legacyImpl.GetHandleEnumForTypes(types, count, ppHandleEnum) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetHeapAllocData(count, data, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetHeapAnalyzeData(ulong addr, void* data)
+    int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetHeapAnalyzeStaticData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetHeapAnalyzeStaticData(data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetHeapSegmentData(ulong seg, void* data)
+    int ISOSDacInterface.GetHeapSegmentData(ClrDataAddress seg, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetHeapSegmentData(seg, data) : HResults.E_NOTIMPL;
 
-    int ISOSDacInterface.GetHillClimbingLogEntry(ulong addr, void* data)
+    int ISOSDacInterface.GetHillClimbingLogEntry(ClrDataAddress addr, void* data)
     {
         // This API is not implemented by the legacy DAC
         int hr = HResults.E_NOTIMPL;
@@ -389,17 +390,17 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetILForModule(ulong moduleAddr, int rva, ClrDataAddress* il)
+    int ISOSDacInterface.GetILForModule(ClrDataAddress moduleAddr, int rva, ClrDataAddress* il)
         => _legacyImpl is not null ? _legacyImpl.GetILForModule(moduleAddr, rva, il) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetJitHelperFunctionName(ulong ip, uint count, byte* name, uint* pNeeded)
+    int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetJitHelperFunctionName(ip, count, name, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetJitManagerList(uint count, void* managers, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetJitManagerList(count, managers, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
         => _legacyImpl is not null ? _legacyImpl.GetJumpThunkTarget(ctx, targetIP, targetMD) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
+    int ISOSDacInterface.GetMethodDescData(ClrDataAddress addr, ClrDataAddress ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
     {
-        if (methodDesc == 0)
+        if (addr == 0)
         {
             return HResults.E_INVALIDARG;
         }
@@ -418,6 +419,8 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+
+            TargetPointer methodDesc = addr.ToTargetPointer(_target);
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
             Contracts.ICodeVersions nativeCodeContract = _target.Contracts.CodeVersions;
             Contracts.IReJIT rejitContract = _target.Contracts.ReJIT;
@@ -470,7 +473,7 @@ internal sealed unsafe partial class SOSDacImpl
                 data->AddressOfNativeCodeSlot = 0;
             }
             data->MDToken = rtsContract.GetMethodToken(methodDescHandle);
-            data->MethodDescPtr = methodDesc;
+            data->MethodDescPtr = addr;
             TargetPointer methodTableAddr = rtsContract.GetMethodTable(methodDescHandle);
             data->MethodTablePtr = methodTableAddr.ToClrDataAddress(_target);
             TypeHandle typeHandle = rtsContract.GetTypeHandle(methodTableAddr);
@@ -607,7 +610,7 @@ internal sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (DacpReJitData* rgRevertedRejitDataLocalPtr = rgRevertedRejitDataLocal)
             {
-                hrLocal = _legacyImpl.GetMethodDescData(methodDesc, ip, &dataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocalPtr, pcNeededRevertedRejitDataLocal);
+                hrLocal = _legacyImpl.GetMethodDescData(addr, ip, &dataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocalPtr, pcNeededRevertedRejitDataLocal);
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
@@ -694,11 +697,11 @@ internal sealed unsafe partial class SOSDacImpl
         }
     }
 
-    int ISOSDacInterface.GetMethodDescFromToken(ulong moduleAddr, uint token, ClrDataAddress* methodDesc)
+    int ISOSDacInterface.GetMethodDescFromToken(ClrDataAddress moduleAddr, uint token, ClrDataAddress* methodDesc)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescFromToken(moduleAddr, token, methodDesc) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded)
+    int ISOSDacInterface.GetMethodDescName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
-        if (methodDesc == 0)
+        if (addr == 0)
             return HResults.E_INVALIDARG;
 
         int hr = HResults.S_OK;
@@ -706,6 +709,7 @@ internal sealed unsafe partial class SOSDacImpl
             *pNeeded = 0;
         try
         {
+            TargetPointer methodDesc = addr.ToTargetPointer(_target);
             StringBuilder stringBuilder = new StringBuilder();
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
@@ -772,7 +776,7 @@ internal sealed unsafe partial class SOSDacImpl
             int hrLocal;
             fixed (char* ptr = nameLocal)
             {
-                hrLocal = _legacyImpl.GetMethodDescName(methodDesc, count, ptr, &neededLocal);
+                hrLocal = _legacyImpl.GetMethodDescName(addr, count, ptr, &neededLocal);
             }
             Debug.Assert(hrLocal == hr, $"cDAC: {hr:x}, DAC: {hrLocal:x}");
             if (hr == HResults.S_OK)
@@ -785,9 +789,9 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetMethodDescPtrFromFrame(ulong frameAddr, ClrDataAddress* ppMD)
+    int ISOSDacInterface.GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescPtrFromFrame(frameAddr, ppMD) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetMethodDescPtrFromIP(ulong ip, ClrDataAddress* ppMD)
+    int ISOSDacInterface.GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD)
     {
         if (ip == 0 || ppMD == null)
             return HResults.E_INVALIDARG;
@@ -844,9 +848,9 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetMethodDescTransparencyData(ulong methodDesc, void* data)
+    int ISOSDacInterface.GetMethodDescTransparencyData(ClrDataAddress methodDesc, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodDescTransparencyData(methodDesc, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetMethodTableData(ulong mt, DacpMethodTableData* data)
+    int ISOSDacInterface.GetMethodTableData(ClrDataAddress mt, DacpMethodTableData* data)
     {
         if (mt == 0 || data == null)
             return HResults.E_INVALIDARG;
@@ -855,7 +859,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt);
+            Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt.ToTargetPointer(_target));
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
@@ -918,9 +922,9 @@ internal sealed unsafe partial class SOSDacImpl
 #endif
         return hr;
     }
-    int ISOSDacInterface.GetMethodTableFieldData(ulong mt, void* data)
+    int ISOSDacInterface.GetMethodTableFieldData(ClrDataAddress mt, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableFieldData(mt, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetMethodTableForEEClass(ulong eeClassReallyCanonMT, ClrDataAddress* value)
+    int ISOSDacInterface.GetMethodTableForEEClass(ClrDataAddress eeClassReallyCanonMT, ClrDataAddress* value)
     {
         if (eeClassReallyCanonMT == 0 || value == null)
             return HResults.E_INVALIDARG;
@@ -929,7 +933,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT);
+            Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT.ToTargetPointer(_target));
             *value = methodTableHandle.Address.ToClrDataAddress(_target);
         }
         catch (global::System.Exception ex)
@@ -950,7 +954,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded)
+    int ISOSDacInterface.GetMethodTableName(ClrDataAddress mt, uint count, char* mtName, uint* pNeeded)
     {
         if (mt == 0)
             return HResults.E_INVALIDARG;
@@ -959,7 +963,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt);
+            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt.ToTargetPointer(_target));
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
                 OutputBufferHelpers.CopyStringToBuffer(mtName, count, pNeeded, "Free");
@@ -978,7 +982,7 @@ internal sealed unsafe partial class SOSDacImpl
             {
                 try
                 {
-                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt.ToTargetPointer(_target));
                     if (fallbackName != null)
                     {
                         methodTableName.Clear();
@@ -1016,11 +1020,11 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetMethodTableSlot(ulong mt, uint slot, ClrDataAddress* value)
+    int ISOSDacInterface.GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value)
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableSlot(mt, slot, value) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetMethodTableTransparencyData(ulong mt, void* data)
+    int ISOSDacInterface.GetMethodTableTransparencyData(ClrDataAddress mt, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetMethodTableTransparencyData(mt, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetModule(ulong addr, out IXCLRDataModule? mod)
+    int ISOSDacInterface.GetModule(ClrDataAddress addr, out IXCLRDataModule? mod)
     {
         mod = default;
 
@@ -1032,11 +1036,11 @@ internal sealed unsafe partial class SOSDacImpl
                 return hr;
         }
 
-        mod = new ClrDataModule(addr, _target, legacyModule);
+        mod = new ClrDataModule(addr.ToTargetPointer(_target), _target, legacyModule);
         return HResults.S_OK;
     }
 
-    int ISOSDacInterface.GetModuleData(ulong moduleAddr, DacpModuleData* data)
+    int ISOSDacInterface.GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data)
     {
         if (moduleAddr == 0 || data == null)
             return HResults.E_INVALIDARG;
@@ -1045,7 +1049,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr.ToTargetPointer(_target));
 
             data->Address = moduleAddr;
             data->PEAssembly = moduleAddr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
@@ -1131,7 +1135,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetNestedExceptionData(ulong exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException)
+    int ISOSDacInterface.GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException)
     {
         if (exception == 0 || exceptionObject == null || nextNestedException == null)
             return HResults.E_INVALIDARG;
@@ -1140,7 +1144,9 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(
+                exception.ToTargetPointer(_target),
+                out TargetPointer nextNestedExceptionLocal);
             *exceptionObject = exceptionObjectLocal.ToClrDataAddress(_target);
             *nextNestedException = nextNestedExceptionLocal.Value;
         }
@@ -1166,10 +1172,10 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded)
+    int ISOSDacInterface.GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetObjectClassName(obj, count, className, pNeeded) : HResults.E_NOTIMPL;
 
-    int ISOSDacInterface.GetObjectData(ulong objAddr, DacpObjectData* data)
+    int ISOSDacInterface.GetObjectData(ClrDataAddress objAddr, DacpObjectData* data)
     {
         if (objAddr == 0 || data == null)
             return HResults.E_INVALIDARG;
@@ -1180,7 +1186,8 @@ internal sealed unsafe partial class SOSDacImpl
             Contracts.IObject objectContract = _target.Contracts.Object;
             Contracts.IRuntimeTypeSystem runtimeTypeSystemContract = _target.Contracts.RuntimeTypeSystem;
 
-            TargetPointer mt = objectContract.GetMethodTableAddress(objAddr);
+            TargetPointer objPtr = objAddr.ToTargetPointer(_target);
+            TargetPointer mt = objectContract.GetMethodTableAddress(objPtr);
             TypeHandle handle = runtimeTypeSystemContract.GetTypeHandle(mt);
 
             data->MethodTable = mt.ToClrDataAddress(_target);
@@ -1202,7 +1209,7 @@ internal sealed unsafe partial class SOSDacImpl
                 data->ObjectType = DacpObjectType.OBJ_STRING;
 
                 // Update the size to include the string character components
-                data->Size += (uint)objectContract.GetStringValue(objAddr).Length * data->dwComponentSize;
+                data->Size += (uint)objectContract.GetStringValue(objPtr).Length * data->dwComponentSize;
             }
             else if (mt == _objectMethodTable.Value)
             {
@@ -1213,7 +1220,7 @@ internal sealed unsafe partial class SOSDacImpl
                 data->ObjectType = DacpObjectType.OBJ_ARRAY;
                 data->dwRank = rank;
 
-                TargetPointer arrayData = objectContract.GetArrayData(objAddr, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                TargetPointer arrayData = objectContract.GetArrayData(objPtr, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
                 data->ArrayDataPtr = arrayData.ToClrDataAddress(_target);
                 data->dwNumComponents = numComponents;
                 data->ArrayBoundsPtr = boundsStart.ToClrDataAddress(_target);
@@ -1240,7 +1247,7 @@ internal sealed unsafe partial class SOSDacImpl
 
             // Populate COM data if this is a COM object
             if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0
-                && objectContract.GetBuiltInComData(objAddr, out TargetPointer rcw, out TargetPointer ccw))
+                && objectContract.GetBuiltInComData(objPtr, out TargetPointer rcw, out TargetPointer ccw))
             {
                 data->RCW = rcw;
                 data->CCW = ccw;
@@ -1279,7 +1286,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded)
+    int ISOSDacInterface.GetObjectStringData(ClrDataAddress obj, uint count, char* stringData, uint* pNeeded)
     {
         if (obj == 0 || (stringData == null && pNeeded == null) || (stringData is not null && count <= 0))
             return HResults.E_INVALIDARG;
@@ -1288,7 +1295,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IObject contract = _target.Contracts.Object;
-            string str = contract.GetStringValue(obj);
+            string str = contract.GetStringValue(obj.ToTargetPointer(_target));
             OutputBufferHelpers.CopyStringToBuffer(stringData, count, pNeeded, str);
         }
         catch (System.Exception ex)
@@ -1318,12 +1325,12 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetOOMData(ulong oomAddr, void* data)
+    int ISOSDacInterface.GetOOMData(ClrDataAddress oomAddr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetOOMData(oomAddr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetOOMStaticData(void* data)
         => _legacyImpl is not null ? _legacyImpl.GetOOMStaticData(data) : HResults.E_NOTIMPL;
 
-    int ISOSDacInterface.GetPEFileBase(ulong addr, ClrDataAddress* peBase)
+    int ISOSDacInterface.GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase)
     {
         if (addr == 0 || peBase == null)
             return HResults.E_INVALIDARG;
@@ -1332,7 +1339,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr.ToTargetPointer(_target));
             Contracts.ModuleFlags flags = contract.GetFlags(handle);
 
             if (!flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit))
@@ -1362,7 +1369,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetPEFileName(ulong addr, uint count, char* fileName, uint* pNeeded)
+    int ISOSDacInterface.GetPEFileName(ClrDataAddress addr, uint count, char* fileName, uint* pNeeded)
     {
         if (addr == 0 || (fileName == null && pNeeded == null) || (fileName is not null && count <= 0))
             return HResults.E_INVALIDARG;
@@ -1371,7 +1378,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.ILoader contract = _target.Contracts.Loader;
-            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr);
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(addr.ToTargetPointer(_target));
             string path = contract.GetPath(handle);
 
             // Return not implemented for empty paths for non-reflection emit assemblies (for example, loaded from memory)
@@ -1412,7 +1419,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetPrivateBinPaths(ulong appDomain, int count, char* paths, uint* pNeeded)
+    int ISOSDacInterface.GetPrivateBinPaths(ClrDataAddress appDomain, int count, char* paths, uint* pNeeded)
     {
         // Method is not supported on CoreCLR
         int hr = HResults.E_NOTIMPL;
@@ -1427,13 +1434,13 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.GetRCWData(ulong addr, void* data)
+    int ISOSDacInterface.GetRCWData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetRCWData(addr, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetRCWInterfaces(ulong rcw, uint count, void* interfaces, uint* pNeeded)
+    int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, void* interfaces, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetRCWInterfaces(rcw, count, interfaces, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
         => _legacyImpl is not null ? _legacyImpl.GetRegisterName(regName, count, buffer, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetStackLimits(ulong threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
+    int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
         => _legacyImpl is not null ? _legacyImpl.GetStackLimits(threadPtr, lower, upper, fp) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetStackReferences(int osThreadID, void** ppEnum)
         => _legacyImpl is not null ? _legacyImpl.GetStackReferences(osThreadID, ppEnum) : HResults.E_NOTIMPL;
@@ -1454,14 +1461,14 @@ internal sealed unsafe partial class SOSDacImpl
         return HResults.S_OK;
     }
 
-    int ISOSDacInterface.GetSyncBlockCleanupData(ulong addr, void* data)
+    int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockCleanupData(addr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface.GetSyncBlockData(uint number, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetSyncBlockData(number, data) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetThreadAllocData(ulong thread, void* data)
+    int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, void* data)
         => _legacyImpl is not null ? _legacyImpl.GetThreadAllocData(thread, data) : HResults.E_NOTIMPL;
 
-    int ISOSDacInterface.GetThreadData(ulong thread, DacpThreadData* data)
+    int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {
         if (thread == 0 || data == null)
             return HResults.E_INVALIDARG;
@@ -1470,7 +1477,7 @@ internal sealed unsafe partial class SOSDacImpl
         try
         {
             Contracts.IThread contract = _target.Contracts.Thread;
-            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            Contracts.ThreadData threadData = contract.GetThreadData(thread.ToTargetPointer(_target));
             data->corThreadId = (int)threadData.Id;
             data->osThreadId = (int)threadData.OSId.Value;
             data->state = (int)threadData.State;
@@ -1526,7 +1533,7 @@ internal sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread)
         => _legacyImpl is not null ? _legacyImpl.GetThreadFromThinlockID(thinLockId, pThread) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.GetThreadLocalModuleData(ulong thread, uint index, void* data)
+    int ISOSDacInterface.GetThreadLocalModuleData(ClrDataAddress thread, uint index, void* data)
     {
         // CoreCLR does not use thread local modules anymore
         int hr = HResults.E_NOTIMPL;
@@ -1660,7 +1667,7 @@ internal sealed unsafe partial class SOSDacImpl
         return hr;
     }
 
-    int ISOSDacInterface.GetWorkRequestData(ulong addrWorkRequest, void* data)
+    int ISOSDacInterface.GetWorkRequestData(ClrDataAddress addrWorkRequest, void* data)
     {
         // This API is not implemented by the legacy DAC
         int hr = HResults.E_NOTIMPL;
@@ -1675,31 +1682,31 @@ internal sealed unsafe partial class SOSDacImpl
 
         return hr;
     }
-    int ISOSDacInterface.TraverseEHInfo(ulong ip, void* pCallback, void* token)
+    int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseEHInfo(ip, pCallback, token) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.TraverseLoaderHeap(ulong loaderHeapAddr, void* pCallback)
+    int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseLoaderHeap(loaderHeapAddr, pCallback) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.TraverseModuleMap(int mmt, ulong moduleAddr, void* pCallback, void* token)
+    int ISOSDacInterface.TraverseModuleMap(int mmt, ClrDataAddress moduleAddr, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseModuleMap(mmt, moduleAddr, pCallback, token) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.TraverseRCWCleanupList(ulong cleanupListPtr, void* pCallback, void* token)
+    int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, void* pCallback, void* token)
         => _legacyImpl is not null ? _legacyImpl.TraverseRCWCleanupList(cleanupListPtr, pCallback, token) : HResults.E_NOTIMPL;
-    int ISOSDacInterface.TraverseVirtCallStubHeap(ulong pAppDomain, int heaptype, void* pCallback)
+    int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, int heaptype, void* pCallback)
         => _legacyImpl is not null ? _legacyImpl.TraverseVirtCallStubHeap(pAppDomain, heaptype, pCallback) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface
 
     #region ISOSDacInterface2
-    int ISOSDacInterface2.GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
+    int ISOSDacInterface2.GetObjectExceptionData(ClrDataAddress objectAddress, DacpExceptionObjectData* data)
     {
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            Contracts.ExceptionData exceptionData = contract.GetExceptionData(objectAddress);
-            data->Message = exceptionData.Message;
-            data->InnerException = exceptionData.InnerException;
-            data->StackTrace = exceptionData.StackTrace;
-            data->WatsonBuckets = exceptionData.WatsonBuckets;
-            data->StackTraceString = exceptionData.StackTraceString;
-            data->RemoteStackTraceString = exceptionData.RemoteStackTraceString;
+            Contracts.ExceptionData exceptionData = contract.GetExceptionData(objectAddress.ToTargetPointer(_target));
+            data->Message = exceptionData.Message.ToClrDataAddress(_target);
+            data->InnerException = exceptionData.InnerException.ToClrDataAddress(_target);
+            data->StackTrace = exceptionData.StackTrace.ToClrDataAddress(_target);
+            data->WatsonBuckets = exceptionData.WatsonBuckets.ToClrDataAddress(_target);
+            data->StackTraceString = exceptionData.StackTraceString.ToClrDataAddress(_target);
+            data->RemoteStackTraceString = exceptionData.RemoteStackTraceString.ToClrDataAddress(_target);
             data->HResult = exceptionData.HResult;
             data->XCode = exceptionData.XCode;
         }
@@ -1711,12 +1718,12 @@ internal sealed unsafe partial class SOSDacImpl
         return HResults.S_OK;
     }
 
-    int ISOSDacInterface2.IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy)
+    int ISOSDacInterface2.IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy)
         => _legacyImpl2 is not null ? _legacyImpl2.IsRCWDCOMProxy(rcwAddress, inDCOMProxy) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface2
 
     #region ISOSDacInterface3
-    int ISOSDacInterface3.GetGCInterestingInfoData(ulong interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data)
+    int ISOSDacInterface3.GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, /*struct DacpGCInterestingInfoData*/ void* data)
         => _legacyImpl3 is not null ? _legacyImpl3.GetGCInterestingInfoData(interestingInfoAddr, data) : HResults.E_NOTIMPL;
     int ISOSDacInterface3.GetGCInterestingInfoStaticData(/*struct DacpGCInterestingInfoData*/ void* data)
         => _legacyImpl3 is not null ? _legacyImpl3.GetGCInterestingInfoStaticData(data) : HResults.E_NOTIMPL;
@@ -1730,23 +1737,23 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface4
 
     #region ISOSDacInterface5
-    int ISOSDacInterface5.GetTieredVersions(ulong methodDesc, int rejitId, /*struct DacpTieredVersionData*/ void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
+    int ISOSDacInterface5.GetTieredVersions(ClrDataAddress methodDesc, int rejitId, /*struct DacpTieredVersionData*/ void* nativeCodeAddrs, int cNativeCodeAddrs, int* pcNativeCodeAddrs)
         => _legacyImpl5 is not null ? _legacyImpl5.GetTieredVersions(methodDesc, rejitId, nativeCodeAddrs, cNativeCodeAddrs, pcNativeCodeAddrs) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface5
 
     #region ISOSDacInterface6
-    int ISOSDacInterface6.GetMethodTableCollectibleData(ulong mt, /*struct DacpMethodTableCollectibleData*/ void* data)
+    int ISOSDacInterface6.GetMethodTableCollectibleData(ClrDataAddress mt, /*struct DacpMethodTableCollectibleData*/ void* data)
         => _legacyImpl6 is not null ? _legacyImpl6.GetMethodTableCollectibleData(mt, data) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface6
 
     #region ISOSDacInterface7
-    int ISOSDacInterface7.GetPendingReJITID(ulong methodDesc, int* pRejitId)
+    int ISOSDacInterface7.GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId)
         => _legacyImpl7 is not null ? _legacyImpl7.GetPendingReJITID(methodDesc, pRejitId) : HResults.E_NOTIMPL;
-    int ISOSDacInterface7.GetReJITInformation(ulong methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
+    int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, /*struct DacpReJitData2*/ void* pRejitData)
         => _legacyImpl7 is not null ? _legacyImpl7.GetReJITInformation(methodDesc, rejitId, pRejitData) : HResults.E_NOTIMPL;
-    int ISOSDacInterface7.GetProfilerModifiedILInformation(ulong methodDesc, /*struct DacpProfilerILData*/ void* pILData)
+    int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, /*struct DacpProfilerILData*/ void* pILData)
         => _legacyImpl7 is not null ? _legacyImpl7.GetProfilerModifiedILInformation(methodDesc, pILData) : HResults.E_NOTIMPL;
-    int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ulong mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)
+    int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)
         => _legacyImpl7 is not null ? _legacyImpl7.GetMethodsWithProfilerModifiedIL(mod, methodDescs, cMethodDescs, pcMethodDescs) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface7
 
@@ -1761,12 +1768,12 @@ internal sealed unsafe partial class SOSDacImpl
         => _legacyImpl8 is not null ? _legacyImpl8.GetFinalizationFillPointers(cFillPointers, pFinalizationFillPointers, pNeeded) : HResults.E_NOTIMPL;
 
     // SVR
-    int ISOSDacInterface8.GetGenerationTableSvr(ulong heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
+    int ISOSDacInterface8.GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, /*struct DacpGenerationData*/ void* pGenerationData, uint* pNeeded)
         => _legacyImpl8 is not null ? _legacyImpl8.GetGenerationTableSvr(heapAddr, cGenerations, pGenerationData, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface8.GetFinalizationFillPointersSvr(ulong heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
+    int ISOSDacInterface8.GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
         => _legacyImpl8 is not null ? _legacyImpl8.GetFinalizationFillPointersSvr(heapAddr, cFillPointers, pFinalizationFillPointers, pNeeded) : HResults.E_NOTIMPL;
 
-    int ISOSDacInterface8.GetAssemblyLoadContext(ulong methodTable, ClrDataAddress* assemblyLoadContext)
+    int ISOSDacInterface8.GetAssemblyLoadContext(ClrDataAddress methodTable, ClrDataAddress* assemblyLoadContext)
         => _legacyImpl8 is not null ? _legacyImpl8.GetAssemblyLoadContext(methodTable, assemblyLoadContext) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface8
 
@@ -1786,22 +1793,22 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface9
 
     #region ISOSDacInterface10
-    int ISOSDacInterface10.GetObjectComWrappersData(ulong objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded)
+    int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, ClrDataAddress* mowList, uint* pNeeded)
         => _legacyImpl10 is not null ? _legacyImpl10.GetObjectComWrappersData(objAddr, rcw, count, mowList, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface10.IsComWrappersCCW(ulong ccw, Interop.BOOL* isComWrappersCCW)
+    int ISOSDacInterface10.IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW)
         => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersCCW(ccw, isComWrappersCCW) : HResults.E_NOTIMPL;
-    int ISOSDacInterface10.GetComWrappersCCWData(ulong ccw, ClrDataAddress* managedObject, int* refCount)
+    int ISOSDacInterface10.GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount)
         => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersCCWData(ccw, managedObject, refCount) : HResults.E_NOTIMPL;
-    int ISOSDacInterface10.IsComWrappersRCW(ulong rcw, Interop.BOOL* isComWrappersRCW)
+    int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
         => _legacyImpl10 is not null ? _legacyImpl10.IsComWrappersRCW(rcw, isComWrappersRCW) : HResults.E_NOTIMPL;
-    int ISOSDacInterface10.GetComWrappersRCWData(ulong rcw, ClrDataAddress* identity)
+    int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
         => _legacyImpl10 is not null ? _legacyImpl10.GetComWrappersRCWData(rcw, identity) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface10
 
     #region ISOSDacInterface11
-    int ISOSDacInterface11.IsTrackedType(ulong objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
+    int ISOSDacInterface11.IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
         => _legacyImpl11 is not null ? _legacyImpl11.IsTrackedType(objAddr, isTrackedType, hasTaggedMemory) : HResults.E_NOTIMPL;
-    int ISOSDacInterface11.GetTaggedMemory(ulong objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
+    int ISOSDacInterface11.GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
         => _legacyImpl11 is not null ? _legacyImpl11.GetTaggedMemory(objAddr, taggedMemory, taggedMemorySizeInBytes) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface11
 
@@ -1811,13 +1818,13 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface12
 
     #region ISOSDacInterface13
-    int ISOSDacInterface13.TraverseLoaderHeap(ulong loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
+    int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL> pCallback)
         => _legacyImpl13 is not null ? _legacyImpl13.TraverseLoaderHeap(loaderHeapAddr, kind, pCallback) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetDomainLoaderAllocator(ulong domainAddress, ClrDataAddress* pLoaderAllocator)
+    int ISOSDacInterface13.GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator)
         => _legacyImpl13 is not null ? _legacyImpl13.GetDomainLoaderAllocator(domainAddress, pLoaderAllocator) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeapNames(count, ppNames, pNeeded) : HResults.E_NOTIMPL;
-    int ISOSDacInterface13.GetLoaderAllocatorHeaps(ulong loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
+    int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
         => _legacyImpl13 is not null ? _legacyImpl13.GetLoaderAllocatorHeaps(loaderAllocator, count, pLoaderHeaps, pKinds, pNeeded) : HResults.E_NOTIMPL;
     int ISOSDacInterface13.GetHandleTableMemoryRegions(/*ISOSMemoryEnum*/ void** ppEnum)
         => _legacyImpl13 is not null ? _legacyImpl13.GetHandleTableMemoryRegions(ppEnum) : HResults.E_NOTIMPL;
@@ -1830,16 +1837,16 @@ internal sealed unsafe partial class SOSDacImpl
     #endregion ISOSDacInterface13
 
     #region ISOSDacInterface14
-    int ISOSDacInterface14.GetStaticBaseAddress(ulong methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
+    int ISOSDacInterface14.GetStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
         => _legacyImpl14 is not null ? _legacyImpl14.GetStaticBaseAddress(methodTable, nonGCStaticsAddress, GCStaticsAddress) : HResults.E_NOTIMPL;
-    int ISOSDacInterface14.GetThreadStaticBaseAddress(ulong methodTable, ulong thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
+    int ISOSDacInterface14.GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
         => _legacyImpl14 is not null ? _legacyImpl14.GetThreadStaticBaseAddress(methodTable, thread, nonGCStaticsAddress, GCStaticsAddress) : HResults.E_NOTIMPL;
-    int ISOSDacInterface14.GetMethodTableInitializationFlags(ulong methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus)
+    int ISOSDacInterface14.GetMethodTableInitializationFlags(ClrDataAddress methodTable, /*MethodTableInitializationFlags*/ int* initializationStatus)
         => _legacyImpl14 is not null ? _legacyImpl14.GetMethodTableInitializationFlags(methodTable, initializationStatus) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface14
 
     #region ISOSDacInterface15
-    int ISOSDacInterface15.GetMethodTableSlotEnumerator(ulong mt, /*ISOSMethodEnum*/void** enumerator)
+    int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, /*ISOSMethodEnum*/void** enumerator)
         => _legacyImpl15 is not null ? _legacyImpl15.GetMethodTableSlotEnumerator(mt, enumerator) : HResults.E_NOTIMPL;
     #endregion ISOSDacInterface15
 }
