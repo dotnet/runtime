@@ -53,10 +53,10 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
-          - windows_x86
           - osx_arm64
+          - windows_x86
           jobParameters:
-            buildArgs: -s clr.alljits+clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
+            buildArgs: -s clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
