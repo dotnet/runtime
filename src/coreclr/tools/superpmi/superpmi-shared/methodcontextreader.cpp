@@ -13,6 +13,10 @@
 #include "logging.h"
 #include "runtimedetails.h"
 
+#if TARGET_UNIX
+#include <sys/stat.h>
+#endif // TARGET_UNIX
+
 // Just a helper...
 HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
 {
@@ -32,6 +36,20 @@ static std::string to_lower(const std::string& input)
     return res;
 }
 
+bool test_filename_available(const std::string& path)
+{
+#ifdef TARGET_WINDOWS
+    DWORD attribs = GetFileAttributesA(path.c_str());
+    return (attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY);
+#else // TARGET_WINDOWS
+    struct stat stat_data;
+    if (stat(path.c_str(), &stat_data) != 0)
+        return false;
+
+    return (stat_data.st_mode & S_IFMT) == S_IFREG;
+#endif // TARGET_WINDOWS
+}
+
 // Looks for a file named foo.origSuffix.newSuffix or foo.newSuffix
 // but only if foo.origSuffix exists.
 //
@@ -47,20 +65,17 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
     if (suffix_offset == std::string::npos || suffix_offset == 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
         return std::string();
 
-    DWORD attribs = GetFileAttributesA(fileName.c_str());
-    if ((attribs == INVALID_FILE_ATTRIBUTES) || (attribs & FILE_ATTRIBUTE_DIRECTORY))
+    if (test_filename_available(fileName))
         return std::string();
 
     // next, check foo.orig.new from foo.orig
     tmp = fileName + newSuffix;
-    attribs = GetFileAttributesA(tmp.c_str());
-    if ((attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY))
+    if (test_filename_available(tmp))
         return tmp;
 
     // Finally, lets try foo.new from foo.orig
     tmp = fileName.substr(0, suffix_offset) + newSuffix;
-    attribs = GetFileAttributesA(tmp.c_str());
-    if ((attribs != INVALID_FILE_ATTRIBUTES) && !(attribs & FILE_ATTRIBUTE_DIRECTORY))
+    if (test_filename_available(tmp))
         return tmp;
 
     return std::string();

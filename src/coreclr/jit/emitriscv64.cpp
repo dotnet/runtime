@@ -5003,7 +5003,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
         int   offset = 0;
         DWORD lsl    = 0;
 
-        if (addr->OperGet() == GT_LEA)
+        if (addr->OperIs(GT_LEA))
         {
             offset = addr->AsAddrMode()->Offset();
             if (addr->AsAddrMode()->gtScale > 0)
@@ -5492,7 +5492,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 // TODO-RISCV64-CQ: here sign-extend dst when deal with 32bit data is too conservative.
                 if (EA_SIZE(attr) == EA_4BYTE)
-                    emitIns_R_R_I(INS_slliw, attr, dstReg, dstReg, 0);
+                    emitIns_R_R(INS_sext_w, attr, dstReg, dstReg);
             }
             break;
 
@@ -5506,12 +5506,12 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                 if ((dst->gtFlags & GTF_UNSIGNED) && (attr == EA_8BYTE))
                 {
-                    if (src1->gtType == TYP_INT)
+                    if (src1->TypeIs(TYP_INT))
                     {
                         emitIns_R_R_I(INS_slli, EA_8BYTE, regOp1, regOp1, 32);
                         emitIns_R_R_I(INS_srli, EA_8BYTE, regOp1, regOp1, 32);
                     }
-                    if (src2->gtType == TYP_INT)
+                    if (src2->TypeIs(TYP_INT))
                     {
                         emitIns_R_R_I(INS_slli, EA_8BYTE, regOp2, regOp2, 32);
                         emitIns_R_R_I(INS_srli, EA_8BYTE, regOp2, regOp2, 32);
@@ -5567,7 +5567,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
                 {
                     regNumber resultReg = REG_NA;
 
-                    if (dst->OperGet() == GT_ADD)
+                    if (dst->OperIs(GT_ADD))
                     {
                         resultReg = dstReg;
                         regOp1    = saveOperReg1;
@@ -5599,8 +5599,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
                         if (attr == EA_4BYTE)
                         {
-                            assert(src1->gtType != TYP_LONG);
-                            assert(src2->gtType != TYP_LONG);
+                            assert(!src1->TypeIs(TYP_LONG));
+                            assert(!src2->TypeIs(TYP_LONG));
 
                             emitIns_R_R_R(INS_add, attr, tempReg1, regOp1, regOp2);
 

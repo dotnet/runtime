@@ -521,6 +521,40 @@ static void PopExplicitFrames(Thread *pThread, void *targetSp, void *targetCalle
     }
 }
 
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+static void DispatchLongJmp(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                            IN     PVOID               pEstablisherFrame,
+                            IN OUT PCONTEXT            pContextRecord)
+{
+    // Pop all the SEH frames including the one that is currently called
+    // to prevent setjmp from trying to unwind it again when we inject our
+    // longjmp.
+    SetCurrentSEHRecord(((PEXCEPTION_REGISTRATION_RECORD)pEstablisherFrame)->Next);
+
+#pragma warning(push)
+#pragma warning(disable:4611) // interaction between 'function' and C++ object destruction is non-portable
+    jmp_buf jumpBuffer;
+    if (setjmp(jumpBuffer))
+    {
+        // We reach this point after the finally handlers were called and
+        // the unwinding should continue below the managed frame.
+        return;
+    }
+#pragma warning(pop)
+
+    // Emulate the parameters that are passed on 64-bit systems and expected by
+    // DispatchManagedException.
+    EXCEPTION_RECORD newExceptionRecord = *pExceptionRecord;
+    newExceptionRecord.NumberParameters = 2;
+    newExceptionRecord.ExceptionInformation[0] = (DWORD_PTR)&jumpBuffer;
+    newExceptionRecord.ExceptionInformation[1] = 1;
+
+    OBJECTREF oref = ExInfo::CreateThrowable(&newExceptionRecord, FALSE);
+    DispatchManagedException(oref, pContextRecord, &newExceptionRecord);
+    UNREACHABLE();
+}
+#endif
+
 EXTERN_C EXCEPTION_DISPOSITION __cdecl
 ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                     IN     PVOID               pEstablisherFrame,
@@ -571,7 +605,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
                 // The 3rd argument passes to PopExplicitFrame is normally the parent SP to correctly handle InlinedCallFrame embbeded
                 // in parent managed frame. But at this point there are no further managed frames are on the stack, so we can pass NULL.
                 // Also don't pop the GC frames, their destructor will pop them as the exception propagates.
-                // NOTE: this needs to be popped in the 2nd pass to ensure that crash dumps and Watson get the dump with these still 
+                // NOTE: this needs to be popped in the 2nd pass to ensure that crash dumps and Watson get the dump with these still
                 // present.
                 ExInfo *pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
                 void *sp = (void*)GetRegdisplaySP(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
@@ -603,7 +637,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
 
 #ifdef TARGET_X86
         CallRtlUnwind((PEXCEPTION_REGISTRATION_RECORD)pEstablisherFrame, NULL, pExceptionRecord, 0);
-#else        
+#else
         ClrUnwindEx(pExceptionRecord,
                     (UINT_PTR)pThread,
                     INVALID_RESUME_ADDRESS,
@@ -613,7 +647,7 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
     }
 
     // Second pass (unwinding)
-    GCX_COOP();
+    GCX_COOP_NO_DTOR();
     ThreadExceptionState* pExState = pThread->GetExceptionState();
     ExInfo *pPrevExInfo = (ExInfo*)pExState->GetCurrentExceptionTracker();
     if (pPrevExInfo != NULL && pPrevExInfo->m_DebuggerExState.GetDebuggerInterceptContext() != NULL)
@@ -621,6 +655,14 @@ ProcessCLRException(IN     PEXCEPTION_RECORD   pExceptionRecord,
         ContinueExceptionInterceptionUnwind();
         UNREACHABLE();
     }
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+    else if (pExceptionRecord->ExceptionCode == STATUS_LONGJUMP)
+    {
+        DispatchLongJmp(pExceptionRecord, pEstablisherFrame, pContextRecord);
+        GCX_COOP_NO_DTOR_END();
+        return ExceptionContinueSearch;
+    }
+#endif
     else
     {
         OBJECTREF oref = ExInfo::CreateThrowable(pExceptionRecord, FALSE);
@@ -1536,19 +1578,21 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 
 void FirstChanceExceptionNotification()
 {
-#ifndef TARGET_UNIX
+#ifdef TARGET_WINDOWS
+    // Throw an SEH exception and immediately catch it. This is used to notify debuggers and other tools
+    // that an exception has been thrown.
     if (minipal_is_native_debugger_present())
     {
-        PAL_TRY(VOID *, unused, NULL)
+        __try
         {
             RaiseException(EXCEPTION_COMPLUS, 0, 0, NULL);
         }
-        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+        __except (EXCEPTION_EXECUTE_HANDLER)
         {
+            // Do nothing, we just want to notify the debugger.
         }
-        PAL_ENDTRY;
     }
-#endif // TARGET_UNIX
+#endif // TARGET_WINDOWS
 }
 
 VOID DECLSPEC_NORETURN DispatchManagedException(OBJECTREF throwable, CONTEXT* pExceptionContext, EXCEPTION_RECORD* pExceptionRecord)
@@ -1652,6 +1696,46 @@ VOID DECLSPEC_NORETURN DispatchManagedException(RuntimeExceptionKind reKind)
     OBJECTREF throwable = ex.CreateThrowable();
 
     DispatchManagedException(throwable);
+}
+
+VOID DECLSPEC_NORETURN DispatchRethrownManagedException(CONTEXT* pExceptionContext)
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    Thread *pThread = GetThread();
+
+    ExInfo *pActiveExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
+
+    ExInfo exInfo(pThread, pActiveExInfo->m_ptrs.ExceptionRecord, pExceptionContext, ExKind::None);
+
+    GCPROTECT_BEGIN(exInfo.m_exception);
+    PREPARE_NONVIRTUAL_CALLSITE(METHOD__EH__RH_RETHROW);
+    DECLARE_ARGHOLDER_ARRAY(args, 2);
+
+    args[ARGNUM_0] = PTR_TO_ARGHOLDER(pActiveExInfo);
+    args[ARGNUM_1] = PTR_TO_ARGHOLDER(&exInfo);
+
+    pThread->IncPreventAbort();
+
+    //Ex.RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+    CALL_MANAGED_METHOD_NORET(args)
+    GCPROTECT_END();
+
+    UNREACHABLE();
+}
+
+VOID DECLSPEC_NORETURN DispatchRethrownManagedException()
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+    CONTEXT exceptionContext;
+    ClrCaptureContext(&exceptionContext);
+
+    DispatchRethrownManagedException(&exceptionContext);
 }
 
 #ifndef TARGET_UNIX
@@ -2096,27 +2180,13 @@ CallDescrWorkerUnwindFrameChainHandler(IN     PEXCEPTION_RECORD   pExceptionReco
         InterlockedAnd((LONG*)&pThread->m_fPreemptiveGCDisabled, 0);
         // We'll let the SO infrastructure handle this exception... at that point, we
         // know that we'll have enough stack to do it.
-        return ExceptionContinueSearch;
     }
-
-    EXCEPTION_DISPOSITION retVal;
-
-    retVal = ExceptionContinueSearch;
-
-    if (retVal == ExceptionContinueSearch)
+    else if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
     {
-
-        if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-        {
-            CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
-        }
-
-        // We're scanning out from CallDescr and potentially through the EE and out to unmanaged.
-        // So switch to preemptive mode.
-        GCX_PREEMP_NO_DTOR();
+        CleanUpForSecondPass(pThread, false, pEstablisherFrame, pEstablisherFrame);
     }
 
-    return retVal;
+    return ExceptionContinueSearch;
 }
 
 #endif // TARGET_UNIX
@@ -3030,10 +3100,12 @@ void ExecuteFunctionBelowContext(PCODE functionPtr, CONTEXT *pContext, size_t ta
 }
 
 #ifdef HOST_WINDOWS
-VOID DECLSPEC_NORETURN PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
+VOID DECLSPEC_NORETURN __fastcall PropagateLongJmpThroughNativeFrames(jmp_buf *pJmpBuf, int retVal)
 {
     WRAPPER_NO_CONTRACT;
+    GCX_PREEMP_NO_DTOR();
     longjmp(*pJmpBuf, retVal);
+    UNREACHABLE();
 }
 
 // This is a personality routine that the RtlRestoreContext calls when it is called with
@@ -3235,7 +3307,14 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
         if (pLongJmpBuf != NULL)
         {
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of longjmp through native frames at IP=%p, SP=%p\n", GetIP(pvRegDisplay->pCurrentContext), GetSP(pvRegDisplay->pCurrentContext));
+#ifdef HOST_X86
+            // On x86 we don't jump to the original longjmp target. Instead we return to DispatchLongJmp called
+            // from ProcessCLRException which in turn return ExceptionContinueSearch to continue unwinding the
+            // original longjmp call.
+            longjmp(*pLongJmpBuf, longJmpReturnValue);
+#else
             ExecuteFunctionBelowContext((PCODE)PropagateLongJmpThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)pLongJmpBuf, longJmpReturnValue);
+#endif
         }
         else
 #endif
@@ -3296,7 +3375,7 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
-    
+
     STRESS_LOG2(LF_EH, LL_INFO100, "Resuming at interception location at IP=%p, SP=%p\n", uResumePC, GetSP(pvRegDisplay->pCurrentContext));
     ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
 }
@@ -3391,7 +3470,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumInitFromStackFrameIterator(StackFrameIterato
     IJitManager* pJitMan = pFrameIter->m_crawl.GetJitManager();
     const METHODTOKEN& MethToken = pFrameIter->m_crawl.GetMethodToken();
     pExtendedEHEnum->EHCount = pJitMan->InitializeEHEnumeration(MethToken, pEHEnum);
-    EH_LOG((LL_INFO100, "Initialized EH enumeration, %d clauses found\n", pExtendedEHEnum->EHCount));    
+    EH_LOG((LL_INFO100, "Initialized EH enumeration, %d clauses found\n", pExtendedEHEnum->EHCount));
 
     if (pExtendedEHEnum->EHCount == 0)
     {
@@ -4020,7 +4099,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
                             // Unwind to the frame of the prevExInfo
                             ExInfo* pPrevExInfo = pThis->GetNextExInfo();
-                            EH_LOG((LL_INFO100, "SfiNext: collided with previous exception handling, skipping from IP=%p, SP=%p to IP=%p, SP=%p\n", 
+                            EH_LOG((LL_INFO100, "SfiNext: collided with previous exception handling, skipping from IP=%p, SP=%p to IP=%p, SP=%p\n",
                                     GetControlPC(&pTopExInfo->m_regDisplay), GetRegdisplaySP(&pTopExInfo->m_regDisplay),
                                     GetControlPC(&pPrevExInfo->m_regDisplay), GetRegdisplaySP(&pPrevExInfo->m_regDisplay)));
 
