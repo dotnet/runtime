@@ -321,12 +321,33 @@ int minipal_getcpufeatures(void)
                                             // once, with the notable exception being Knight's Landing which
                                             // provided a similar but not quite the same feature.
 
-                                            result |= XArchIntrinsicConstants_Evex;
                                             result |= XArchIntrinsicConstants_Avx512;
 
                                             if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
                                             {
                                                 result |= XArchIntrinsicConstants_Avx512Vbmi;
+                                            }
+
+                                            if (((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0) &&                    // Avx10
+                                                ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0) &&                    // Avx10/V256
+                                                ((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0))                      // Avx10/V512
+                                            {
+                                                // While AVX10 was originally spec'd to allow no V512 support
+                                                // this was later changed and all implementations must provide
+                                                // V512 support
+
+                                                __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
+                                                uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
+
+                                                if (avx10Version >= 1)                                          // Avx10.1
+                                                {
+                                                    result |= XArchIntrinsicConstants_Avx10v1;
+                                                }
+
+                                                if (avx10Version >= 2)                                          // Avx10.2
+                                                {
+                                                    result |= XArchIntrinsicConstants_Avx10v2;
+                                                }
                                             }
                                         }
                                     }
@@ -343,29 +364,6 @@ int minipal_getcpufeatures(void)
                                         if ((cpuidInfo[CPUID_EDX] & (1 << 21)) != 0)                            // Apx
                                         {
                                             result |= XArchIntrinsicConstants_Apx;
-                                        }
-                                    }
-
-                                    if ((cpuidInfo[CPUID_EDX] & (1 << 19)) != 0)                                // Avx10
-                                    {
-                                        __cpuidex(cpuidInfo, 0x00000024, 0x00000000);
-                                        uint8_t avx10Version = (uint8_t)(cpuidInfo[CPUID_EBX] & 0xFF);
-
-                                        if((avx10Version >= 1) &&
-                                           ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0))                           // Avx10/V256
-                                        {
-                                            result |= XArchIntrinsicConstants_Evex;
-                                            result |= XArchIntrinsicConstants_Avx10v1;                          // Avx10.1
-
-                                            if (avx10Version >= 2)                                              // Avx10.2
-                                            {
-                                                result |= XArchIntrinsicConstants_Avx10v2;
-                                            }
-
-                                            // We assume that the Avx10/V512 support can be inferred from
-                                            // both Avx10v1 and Avx512 being present.
-                                            assert(((cpuidInfo[CPUID_EBX] & (1 << 18)) != 0) ==                 // Avx10/V512
-                                                ((result & XArchIntrinsicConstants_Avx512) != 0));
                                         }
                                     }
                                 }
@@ -418,6 +416,8 @@ int minipal_getcpufeatures(void)
 #if HAVE_AUXV_HWCAP_H
     unsigned long hwCap = getauxval(AT_HWCAP);
 
+    assert(hwCap & HWCAP_ASIMD);
+
     if (hwCap & HWCAP_AES)
         result |= ARM64IntrinsicConstants_Aes;
 
@@ -441,9 +441,6 @@ int minipal_getcpufeatures(void)
 
     if (hwCap & HWCAP_SHA2)
         result |= ARM64IntrinsicConstants_Sha256;
-
-    if (hwCap & HWCAP_ASIMD)
-        result |= ARM64IntrinsicConstants_AdvSimd;
 
     if (hwCap & HWCAP_ASIMDRDM)
         result |= ARM64IntrinsicConstants_Rdm;
@@ -489,18 +486,10 @@ int minipal_getcpufeatures(void)
     if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC2", &valueFromSysctl, &sz, NULL, 0) == 0) && (valueFromSysctl != 0))
         result |= ARM64IntrinsicConstants_Rcpc2;
 #endif // HAVE_SYSCTLBYNAME
-
-    // Every ARM64 CPU should support SIMD and FP
-    // If the OS have no function to query for CPU capabilities we set just these
-
-    result |= ARM64IntrinsicConstants_AdvSimd;
 #endif // HAVE_AUXV_HWCAP_H
 #endif // HOST_UNIX
 
 #if defined(HOST_WINDOWS)
-    // FP and SIMD support are enabled by default
-    result |= ARM64IntrinsicConstants_AdvSimd;
-
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {
         result |= ARM64IntrinsicConstants_Aes;

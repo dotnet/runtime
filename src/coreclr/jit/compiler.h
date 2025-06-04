@@ -997,6 +997,17 @@ public:
         return (var_types)lvType;
     }
 
+    bool TypeIs(var_types type) const
+    {
+        return TypeGet() == type;
+    }
+
+    template <typename... T>
+    bool TypeIs(var_types type, T... rest) const
+    {
+        return TypeIs(type) || TypeIs(rest...);
+    }
+
     // NormalizeOnLoad Rules:
     //     1. All small locals are actually TYP_INT locals.
     //     2. NOL locals are such that not all definitions can be controlled by the compiler and so the upper bits can
@@ -1030,7 +1041,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && (TypeGet() == TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -3065,6 +3076,9 @@ public:
     GenTreeCall* gtNewHelperCallNode(
         unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
 
+    GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
+        unsigned helper, var_types type, GenTree* thisPtr, GenTree* methHnd, GenTree* clsHnd = nullptr);
+
     GenTreeCall* gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
                                                   GenTree*                ctxTree,
                                                   void*                   compileTimeHandle);
@@ -4315,7 +4329,7 @@ public:
     bool lvaMapSimd12ToSimd16(unsigned varNum)
     {
         LclVarDsc* varDsc = lvaGetDesc(varNum);
-        assert(varDsc->TypeGet() == TYP_SIMD12);
+        assert(varDsc->TypeIs(TYP_SIMD12));
 
         unsigned stackHomeSize = lvaLclStackHomeSize(varNum);
 
@@ -6161,8 +6175,6 @@ public:
     PhaseStatus fgHeadTailMerge(bool early);
     bool fgHeadMerge(BasicBlock* block, bool early);
     bool fgTryOneHeadMerge(BasicBlock* block, bool early);
-    template<typename Predicate>
-    bool gtTreeContainsCall(GenTree* tree, Predicate pred);
     bool gtTreeContainsTailCall(GenTree* tree);
     bool gtTreeContainsAsyncCall(GenTree* tree);
     bool fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt, BasicBlock* pred);
@@ -6479,6 +6491,7 @@ public:
     bool                                   fgPgoSynthesized;
     bool                                   fgPgoDynamic;
     bool                                   fgPgoConsistent;
+    bool                                   fgPgoSingleEdge = false;
 
 #ifdef DEBUG
     bool                                   fgPgoDeferredInconsistency;
@@ -6914,6 +6927,9 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
 
+    template<GenTreeFlags RequiredFlagsToDescendIntoTree, typename Predicate>
+    GenTree* gtFindNodeInTree(GenTree* tree, Predicate predicate);
+
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
 
@@ -7083,12 +7099,8 @@ protected:
 #endif
 
     void optResetLoopInfo();
-    void optFindAndScaleGeneralLoopBlocks();
 
-    // Determine if there are any potential loops, and set BBF_LOOP_HEAD on potential loop heads.
-    void optMarkLoopHeads();
-
-    void optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
+    void optScaleLoopBlocks(FlowGraphNaturalLoop* loop);
 
     bool optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTestStmt);
     unsigned optIsLoopIncrTree(GenTree* incr);
@@ -7528,7 +7540,8 @@ public:
                  CORINFO_CLASS_HANDLE*  classGuesses,
                  CORINFO_METHOD_HANDLE* methodGuesses,
                  int*                   candidatesCount,
-                 unsigned*              likelihoods);
+                 unsigned*              likelihoods,
+                 bool                   verboseLogging = true);
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
@@ -8918,7 +8931,7 @@ private:
     {
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+        CORINFO_InstructionSet minimumIsa = InstructionSet_X86Base;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
 #elif defined(TARGET_LOONGARCH64)
@@ -8940,7 +8953,7 @@ private:
     {
 #ifdef FEATURE_SIMD
 #if defined(TARGET_XARCH)
-        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+        CORINFO_InstructionSet minimumIsa = InstructionSet_X86Base;
 #elif defined(TARGET_ARM64)
         CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
 #else
@@ -9222,11 +9235,11 @@ public:
     // X86.SSE:      16-byte Vector<T> and Vector128<T>
     // X86.AVX:      16-byte Vector<T> and Vector256<T>
     // X86.AVX2:     32-byte Vector<T> and Vector256<T>
-    // X86.AVX512F:  32-byte Vector<T> and Vector512<T>
+    // X86.AVX512:   32-byte Vector<T> and Vector512<T>
     uint32_t getMaxVectorByteLength() const
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             return ZMM_REGSIZE_BYTES;
         }
@@ -9234,7 +9247,7 @@ public:
         {
             return YMM_REGSIZE_BYTES;
         }
-        else if (compOpportunisticallyDependsOn(InstructionSet_SSE))
+        else if (compOpportunisticallyDependsOn(InstructionSet_X86Base))
         {
             return XMM_REGSIZE_BYTES;
         }
@@ -9716,45 +9729,7 @@ private:
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
-    // Following cases should be taken into consideration when using the below APIs:
-    // InstructionSet_EVEX implies Avx10v1 -or- Avx512F+CD+DQ+BW+VL and can be used for 128-bit or 256-bit EVEX encoding
-    // instructions in these instruction sets InstructionSet_Avx10v1_V512 should never be queried directly, it is
-    // covered by querying Avx512* InstructionSet_Avx512F (and same for BW, CD, DQ) is only queried for 512-bit EVEX
-    // encoded instructions
-    // InstructionSet_Avx10v1 is only queried for cases like 128-bit/256-bit instructions that wouldn't be in
-    // F+CD+DQ+BW+VL (such as VBMI) and should appear with a corresponding query around AVX512*_VL (i.e. AVX512_VBMI_VL)
-
 #ifdef DEBUG
-    //------------------------------------------------------------------------
-    // IsBaselineVector256IsaSupportedDebugOnly - Does isa support exist for Vector256.
-    //
-    // Returns:
-    //    `true` if AVX.
-    //
-    bool IsBaselineVector256IsaSupportedDebugOnly() const
-    {
-#ifdef TARGET_XARCH
-        return compIsaSupportedDebugOnly(InstructionSet_AVX);
-#else
-        return false;
-#endif
-    }
-
-    //------------------------------------------------------------------------
-    // IsBaselineVector512IsaSupportedDebugOnly - Does isa support exist for Vector512.
-    //
-    // Returns:
-    //    `true` if AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL are supported.
-    //
-    bool IsBaselineVector512IsaSupportedDebugOnly() const
-    {
-#ifdef TARGET_XARCH
-        return compIsaSupportedDebugOnly(InstructionSet_AVX512F);
-#else
-        return false;
-#endif
-    }
-
     //------------------------------------------------------------------------
     // canUseEvexEncodingDebugOnly - Answer the question: Is Evex encoding supported on this target.
     //
@@ -9764,63 +9739,12 @@ private:
     bool canUseEvexEncodingDebugOnly() const
     {
 #ifdef TARGET_XARCH
-        return (compIsaSupportedDebugOnly(InstructionSet_EVEX));
-#else
-        return false;
-#endif
-    }
-
-    //------------------------------------------------------------------------
-    // IsAvx10OrIsaSupportedDebugOnly - Answer the question: Is AVX10v1 or the given ISA supported.
-    //
-    // Returns:
-    //    `true` if AVX10v1 or the given ISA is supported, `false` if not.
-    //
-    bool IsAvx10OrIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
-    {
-#ifdef TARGET_XARCH
-        // For the below cases, check for evex encoding should be used.
-        assert(isa != InstructionSet_AVX512F || isa != InstructionSet_AVX512F_VL || isa != InstructionSet_AVX512BW ||
-               isa != InstructionSet_AVX512BW_VL || isa != InstructionSet_AVX512CD ||
-               isa != InstructionSet_AVX512CD_VL || isa != InstructionSet_AVX512DQ ||
-               isa != InstructionSet_AVX512DQ_VL);
-
-        return (compIsaSupportedDebugOnly(InstructionSet_AVX10v1) || compIsaSupportedDebugOnly(isa));
+        return compIsaSupportedDebugOnly(InstructionSet_AVX512);
 #else
         return false;
 #endif
     }
 #endif // DEBUG
-
-    //------------------------------------------------------------------------
-    // IsBaselineVector512IsaSupportedOpportunistically - Does opportunistic isa support exist for Vector512.
-    //
-    // Returns:
-    //    `true` if AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL are supported.
-    //
-    bool IsBaselineVector512IsaSupportedOpportunistically() const
-    {
-#ifdef TARGET_XARCH
-        return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
-#else
-        return false;
-#endif
-    }
-
-    //------------------------------------------------------------------------
-    // IsAvx10OrIsaSupportedOpportunistically - Does opportunistic isa support exist for AVX10v1 or the given ISA.
-    //
-    // Returns:
-    //    `true` if AVX10v1 or the given ISA is supported, `false` if not.
-    //
-    bool IsAvx10OrIsaSupportedOpportunistically(CORINFO_InstructionSet isa) const
-    {
-#ifdef TARGET_XARCH
-        return (compOpportunisticallyDependsOn(InstructionSet_AVX10v1) || compOpportunisticallyDependsOn(isa));
-#else
-        return false;
-#endif
-    }
 
     bool canUseEmbeddedBroadcast() const
     {
@@ -9835,34 +9759,6 @@ private:
 #ifdef TARGET_XARCH
 public:
 
-    //------------------------------------------------------------------------
-    // compIsEvexOpportunisticallySupported - Checks for whether AVX10v1 or avx512InstructionSet is supported
-    // opportunistically.
-    //
-    // Returns:
-    //    returns true if AVX10v1 or avx512InstructionSet is supported opportunistically and
-    //    sets isV512Supported to true if AVX512F is supported, false otherwise.
-    //
-    bool compIsEvexOpportunisticallySupported(bool&                  isV512Supported,
-                                              CORINFO_InstructionSet avx512InstructionSet = InstructionSet_AVX512F)
-    {
-        assert(avx512InstructionSet == InstructionSet_AVX512F || avx512InstructionSet == InstructionSet_AVX512F_VL ||
-               avx512InstructionSet == InstructionSet_AVX512BW || avx512InstructionSet == InstructionSet_AVX512BW_VL ||
-               avx512InstructionSet == InstructionSet_AVX512CD || avx512InstructionSet == InstructionSet_AVX512CD_VL ||
-               avx512InstructionSet == InstructionSet_AVX512DQ || avx512InstructionSet == InstructionSet_AVX512DQ_VL ||
-               avx512InstructionSet == InstructionSet_AVX512VBMI ||
-               avx512InstructionSet == InstructionSet_AVX512VBMI_VL);
-
-        if (compOpportunisticallyDependsOn(avx512InstructionSet))
-        {
-            isV512Supported = true;
-            return true;
-        }
-
-        isV512Supported = false;
-        return compOpportunisticallyDependsOn(InstructionSet_AVX10v1);
-    }
-
     bool canUseVexEncoding() const
     {
         return compOpportunisticallyDependsOn(InstructionSet_AVX);
@@ -9876,7 +9772,7 @@ public:
     //
     bool canUseEvexEncoding() const
     {
-        return (compOpportunisticallyDependsOn(InstructionSet_EVEX));
+        return compOpportunisticallyDependsOn(InstructionSet_AVX512);
     }
 
     //------------------------------------------------------------------------
@@ -9902,25 +9798,7 @@ private:
 #ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
-
-        if (JitStressEvexEncoding() && IsBaselineVector512IsaSupportedOpportunistically())
-        {
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD_VL));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
-            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
-
-            return true;
-        }
-        else if (JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
-        {
-            return true;
-        }
+        return JitStressEvexEncoding() && canUseEvexEncoding();
 #endif // DEBUG
 
         return false;
@@ -11634,13 +11512,14 @@ public:
 #endif // defined(UNIX_AMD64_ABI)
 
     bool fgTryMorphStructArg(CallArg* arg);
+    bool FieldsMatchAbi(LclVarDsc* varDsc, const ABIPassingInformation& abiInfo);
 
     bool killGCRefs(GenTree* tree);
 
 #if defined(TARGET_AMD64)
 private:
     // The following are for initializing register allocator "constants" defined in targetamd64.h
-    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which increases
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512, which increases
     // the number of SIMD (xmm, ymm, and zmm) registers from 16 to 32.
     // As only 64-bit xarch has the capability to have the additional registers, we limit the changes
     // to TARGET_AMD64 only.
@@ -11705,7 +11584,7 @@ public:
 #if defined(TARGET_XARCH)
 private:
     // The following are for initializing register allocator "constants" defined in targetamd64.h
-    // that now depend upon runtime ISA information, e.g., the presence of AVX512F/VL, which adds
+    // that now depend upon runtime ISA information, e.g., the presence of AVX512, which adds
     // 8 mask registers for use.
     //
     // Users of these values need to define four accessor functions:
@@ -12468,32 +12347,6 @@ extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
 extern Histogram computeReachabilitySetsIterationTable;
 #endif
-
-/*****************************************************************************
- *
- *  Used by optFindNaturalLoops to gather statistical information such as
- *   - total number of natural loops
- *   - number of loops with 1, 2, ... exit conditions
- *   - number of loops that have an iterator (for like)
- *   - number of loops that have a constant iterator
- */
-
-#if COUNT_LOOPS
-
-extern unsigned  totalLoopMethods;        // counts the total number of methods that have natural loops
-extern unsigned  maxLoopsPerMethod;       // counts the maximum number of loops a method has
-extern unsigned  totalLoopCount;          // counts the total number of natural loops
-extern unsigned  totalUnnatLoopCount;     // counts the total number of (not-necessarily natural) loops
-extern unsigned  totalUnnatLoopOverflows; // # of methods that identified more unnatural loops than we can represent
-extern unsigned  iterLoopCount;           // counts the # of loops with an iterator (for like)
-extern unsigned  constIterLoopCount;      // counts the # of loops with a constant iterator (for like)
-extern bool      hasMethodLoops;          // flag to keep track if we already counted a method as having loops
-extern unsigned  loopsThisMethod;         // counts the number of loops in the current method
-extern bool      loopOverflowThisMethod;  // True if we exceeded the max # of loops in the method.
-extern Histogram loopCountTable;          // Histogram of loop counts
-extern Histogram loopExitCountTable;      // Histogram of loop exit counts
-
-#endif // COUNT_LOOPS
 
 #if MEASURE_BLOCK_SIZE
 extern size_t genFlowNodeSize;

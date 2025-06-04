@@ -135,23 +135,6 @@ CallDescrWorkerInternalReturnAddressOffset:
 
 // ------------------------------------------------------------------
 
-// void LazyMachStateCaptureState(struct LazyMachState *pState)//
-    LEAF_ENTRY LazyMachStateCaptureState, _TEXT
-
-        // marks that this is not yet valid
-        mov     r1, #0
-        str     r1, [r0, #MachState__isValid]
-
-        str     lr, [r0, #LazyMachState_captureIp]
-        str     sp, [r0, #LazyMachState_captureSp]
-
-        add     r1, r0, #LazyMachState_captureR4_R11
-        stm     r1, {r4-r11}
-
-        mov     pc, lr
-
-    LEAF_END LazyMachStateCaptureState, _TEXT
-
 //
 // r12 = UMEntryThunk*
 //
@@ -260,46 +243,6 @@ ThePreStubPatchLabel:
 
         NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 
-        //
-        // If a preserved register were pushed onto the stack between
-        // the managed caller and the H_M_F, _R4_R11 will point to its
-        // location on the stack and it would have been updated on the
-        // stack by the GC already and it will be popped back into the
-        // appropriate register when the appropriate epilog is run.
-        //
-        // Otherwise, the register is preserved across all the code
-        // in this HCALL or FCALL, so we need to update those registers
-        // here because the GC will have updated our copies in the
-        // frame.
-        //
-        // So, if _R4_R11 points into the MachState, we need to update
-        // the register here.  That's what this macro does.
-        //
-
-        .macro RestoreRegMS regIndex, reg
-
-        // Incoming:
-        //
-        // R0 = address of MachState
-        //
-        // $regIndex: Index of the register (R4-R11). For R4, index is 4.
-        //            For R5, index is 5, and so on.
-        //
-        // $reg: Register name (e.g. R4, R5, etc)
-        //
-        // Get the address of the specified captured register from machine state
-        add     r2, r0, #(MachState__captureR4_R11 + ((\regIndex-4)*4))
-
-        // Get the address of the specified preserved register from machine state
-        ldr     r3, [r0, #(MachState___R4_R11 + ((\regIndex-4)*4))]
-
-        cmp     r2, r3
-        bne     0f
-        ldr     \reg, [r2]
-0:
-
-        .endm
-
 #ifdef PROFILING_SUPPORTED
 
 //
@@ -334,7 +277,7 @@ LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     PROLOG_PUSH "{r0,r3,r9,r12}"
 
-    // for the 5 arguments that do not need popped plus 4 bytes of alignment 
+    // for the 5 arguments that do not need popped plus 4 bytes of alignment
     alloc_stack 6*4
 
     // push fp regs
@@ -362,7 +305,7 @@ NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
     // clear hiddenArg
     movw        r2, #0
     str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__hiddenArg]
-    
+
     // set the flag to indicate what hook this is
     movw        r2, \flags
     str         r2, [sp, PROFILE_PLATFORM_SPECIFIC_DATA__flags]
@@ -389,38 +332,6 @@ GenerateProfileHelper ProfileLeave, PROFILE_LEAVE
 GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 #endif
-
-// EXTERN_C int __fastcall HelperMethodFrameRestoreState(
-//         INDEBUG_COMMA(HelperMethodFrame *pFrame)
-//         MachState *pState
-//         )
-        LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
-
-#ifdef _DEBUG
-        mov r0, r1
-#endif
-
-        // If machine state is invalid, then simply exit
-        ldr r1, [r0, #MachState__isValid]
-        cmp r1, #0
-        beq LOCAL_LABEL(Done)
-
-        RestoreRegMS 4, R4
-        RestoreRegMS 5, R5
-        RestoreRegMS 6, R6
-        RestoreRegMS 7, R7
-        RestoreRegMS 8, R8
-        RestoreRegMS 9, R9
-        RestoreRegMS 10, R10
-        RestoreRegMS 11, R11
-LOCAL_LABEL(Done):
-        // Its imperative that the return value of HelperMethodFrameRestoreState is zero
-        // as it is used in the state machine to loop until it becomes zero.
-        // Refer to HELPER_METHOD_FRAME_END macro for details.
-        mov r0,#0
-        bx lr
-
-        LEAF_END HelperMethodFrameRestoreState, _TEXT
 
 #if 0
 // ------------------------------------------------------------------

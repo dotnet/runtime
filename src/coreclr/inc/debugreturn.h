@@ -54,7 +54,6 @@ private:
     // If you got here, and you're wondering what you did wrong -- you're using
     // a return statement where it's not allowed.  Likely, it's inside one of:
     //     GCPROTECT_BEGIN ... GCPROTECT_END
-    //     HELPER_METHOD_FRAME_BEGIN ... HELPER_METHOD_FRAME_END
     //
     static int safe_to_return() {return 0;};
 public:

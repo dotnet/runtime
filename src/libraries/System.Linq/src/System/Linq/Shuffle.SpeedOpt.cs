@@ -47,7 +47,7 @@ namespace System.Linq
                         return iterator.TryGetElementAt(Random.Shared.Next(0, iteratorCount), out found);
                     }
                 }
-                else if (_source is IList<TSource> list)
+                else if (_source is IReadOnlyList<TSource> list)
                 {
                     int listCount = list.Count;
                     if ((uint)index < (uint)listCount)
@@ -172,7 +172,7 @@ namespace System.Linq
                         return iterator.TryGetElementAt(Random.Shared.Next(0, iteratorCount), out found);
                     }
                 }
-                else if (_source is IList<TSource> list)
+                else if (_source is IReadOnlyList<TSource> list)
                 {
                     int count = list.Count;
                     if ((uint)index < (uint)Math.Min(_takeCount, count))
@@ -203,7 +203,7 @@ namespace System.Linq
             {
                 List<TSource>? reservoir = null;
 
-                if (source is IList<TSource> list)
+                if (source is IReadOnlyList<TSource> list)
                 {
                     int listCount = list.Count;
                     Debug.Assert(listCount > takeCount, "Known listCount <= takeCount should have been handled by Iterator.Take override");
