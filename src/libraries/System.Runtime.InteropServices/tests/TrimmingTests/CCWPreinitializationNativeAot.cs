@@ -4,9 +4,23 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
-Type cwType = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IComInterface).TypeHandle).Implementation;
-if (HasCctor(cwType))
-    return -1;
+var comTypeInfo = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IComInterface).TypeHandle)!;
+Type cwType = comTypeInfo.Implementation;
+unsafe
+{
+    nint* vtable = (nint*)comTypeInfo.ManagedVirtualMethodTable;
+
+    if (HasCctor(cwType))
+        return -1;
+
+    ComWrappers.GetIUnknownImpl(
+        out nint queryInterface,
+        out nint addRef,
+        out nint release);
+    if (vtable[0] != queryInterface || vtable[1] != addRef || vtable[2] != release)
+        return -2;
+}
+
 return 100;
 
 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
