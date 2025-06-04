@@ -1233,7 +1233,7 @@ void Thread::EnsureRuntimeInitialized()
     {
         if (g_RuntimeInitializationCallback() != 0)
         {
-            PalPrintFatalError("\nFatal error. Runtime failed to initialize.\n");
+            PalPrintFatalError("\nFatal error. .NET runtime failed to initialize.\n");
             RhFailFast();
         }
 
