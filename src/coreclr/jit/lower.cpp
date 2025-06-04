@@ -11153,10 +11153,8 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
             src = src->gtGetOp1();
         }
 
-        uint8_t initVal = static_cast<uint8_t>(static_cast<size_t>(src->AsIntCon()->IconValue()));
-        simd_t  vec     = {};
-        memset(&vec, initVal, sizeof(simd_t));
-        GenTreeVecCon* cnsVec = comp->gtNewVconNode(regType, &vec);
+        uint8_t initVal = static_cast<uint8_t>(src->AsIntCon()->IconValue());
+        GenTree* cnsVec = comp->gtNewConWithPattern(regType, initVal);
 
         BlockRange().InsertAfter(src, cnsVec);
         BlockRange().Remove(src);
