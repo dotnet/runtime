@@ -64,27 +64,26 @@ namespace Internal.NativeFormat
             return endOffset;
         }
 
-        public unsafe uint DecodeStringUtf8(uint offset, Span<byte> destinationUtf8, out int bytesWritten)
+#if !NETFX_45
+        public unsafe Guid ParseGuid(uint offset)
         {
             uint numBytes;
             offset = DecodeUnsigned(offset, out numBytes);
 
-            if (numBytes == 0)
+            ReadOnlySpan<byte> bytes = [];
+
+            if (numBytes != 0)
             {
-                bytesWritten = 0;
-                return offset;
+                uint endOffset = offset + numBytes;
+                if (endOffset < numBytes || endOffset > _size)
+                    ThrowBadImageFormatException();
+
+                bytes = new ReadOnlySpan<byte>(_base + offset, (int)numBytes);
             }
 
-            uint endOffset = offset + numBytes;
-            if (endOffset < numBytes || endOffset > _size)
-                ThrowBadImageFormatException();
-
-            new ReadOnlySpan<byte>(_base + offset, (int)numBytes).CopyTo(destinationUtf8);
-
-            bytesWritten = (int)numBytes;
-
-            return endOffset;
+            return Guid.Parse(bytes);
         }
+#endif
 
         // Decode a string, but just skip it instead of returning it
         public uint SkipString(uint offset)
