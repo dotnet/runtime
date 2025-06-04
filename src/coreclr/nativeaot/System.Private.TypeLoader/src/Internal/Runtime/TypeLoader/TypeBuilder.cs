@@ -438,21 +438,19 @@ namespace Internal.Runtime.TypeLoader
             private bool[] _bitfield;
             private unsafe void* _gcdesc;
             private int _size;
-            private bool _isReferenceTypeGCLayout;
 
             public static GCLayout None { get { return default(GCLayout); } }
-            public static GCLayout SingleReference { get; } = new GCLayout([true], false);
+            public static GCLayout SingleReference { get; } = new GCLayout([true]);
 
             public bool IsNone { get { return _bitfield == null && _gcdesc == null; } }
 
-            public GCLayout(bool[] bitfield, bool isReferenceTypeGCLayout)
+            public GCLayout(bool[] bitfield)
             {
                 Debug.Assert(bitfield != null);
 
                 _bitfield = bitfield;
                 _gcdesc = null;
                 _size = 0;
-                _isReferenceTypeGCLayout = isReferenceTypeGCLayout;
             }
 
             public GCLayout(RuntimeTypeHandle rtth)
@@ -461,7 +459,6 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(MethodTable != null);
 
                 _bitfield = null;
-                _isReferenceTypeGCLayout = false; // This field is only used for the bool[] path
                 _gcdesc = MethodTable->ContainsGCPointers ? (void**)MethodTable - 1 : null;
                 _size = (int)MethodTable->BaseSize;
             }
@@ -478,10 +475,7 @@ namespace Internal.Runtime.TypeLoader
                 // Ensure exactly one of these two are set.
                 Debug.Assert(_gcdesc != null ^ _bitfield != null);
 
-                if (_bitfield != null)
-                    return MergeBitfields();
-                else
-                    return WriteGCDescToBitfield();
+                return _bitfield ?? WriteGCDescToBitfield();
             }
 
             private unsafe bool[] WriteGCDescToBitfield()
@@ -510,31 +504,6 @@ namespace Internal.Runtime.TypeLoader
                 }
 
                 return bitfield;
-            }
-
-            private bool[] MergeBitfields()
-            {
-                // These routines represent the GC layout after the MethodTable pointer
-                // in an object, but the bool[] bitfield logically contains the EETypepointer
-                // if it is describing a reference type. So, skip the first value.
-                int itemsToSkip = _isReferenceTypeGCLayout ? 1 : 0;
-
-                // Assert that we only skip a non-reported pointer.
-                Debug.Assert(itemsToSkip == 0 || _bitfield[0] == false);
-
-                // Ensure capacity for the values we are about to write
-                int capacity = _bitfield.Length - itemsToSkip;
-                bool[] outputBitfield = new bool[capacity];
-
-                for (int i = itemsToSkip; i < _bitfield.Length; i++)
-                {
-                    // We should never overwrite a TRUE value in the table.
-                    Debug.Assert(!outputBitfield[i - itemsToSkip] || _bitfield[i]);
-
-                    outputBitfield[i - itemsToSkip] = _bitfield[i];
-                }
-
-                return outputBitfield;
             }
         }
 
