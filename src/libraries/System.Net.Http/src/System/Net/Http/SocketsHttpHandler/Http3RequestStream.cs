@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -46,6 +47,9 @@ namespace System.Net.Http
         /// <summary>Any trailing headers.</summary>
         private List<(HeaderDescriptor name, string value)>? _trailingHeaders;
 
+        /// <summary>Response drain task after receiving trailers.</summary>
+        private Task? _responseDrainTask;
+
         // When reading response content, keep track of the number of bytes left in the current data frame.
         private long _responseDataPayloadRemaining;
 
@@ -82,21 +86,55 @@ namespace System.Net.Http
             _responseRecvCompleted = false;
         }
 
-        public void Dispose()
+        // Synchronous QuicStream.Dispose() is implemented in a sync-over-async manner,
+        // there is no benefit from maintaining a separate synchronous implementation in this type.
+        public void Dispose() => DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+        public async ValueTask DisposeAsync()
         {
             if (!_disposed)
             {
                 _disposed = true;
-                AbortStream();
-                if (_stream.WritesClosed.IsCompleted)
+                Task? disposeTask = null;
+                if (_responseDrainTask is not null)
                 {
-                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
+                    disposeTask = WaitForDrainCompletionAndDisposeAsync();
                 }
                 else
                 {
-                    _stream.Dispose();
+                    AbortStream();
+                    if (_stream.WritesClosed.IsCompleted)
+                    {
+                        disposeTask = _stream.DisposeAsync().AsTask();
+                    }
                 }
-                DisposeSyncHelper();
+
+                if (disposeTask is not null)
+                {
+                    _connection.LogExceptions(disposeTask);
+                }
+                else
+                {
+                    await _stream.DisposeAsync().ConfigureAwait(false);
+                }
+
+                _connection.RemoveStream(_stream);
+                _sendBuffer.Dispose();
+
+                // If response drain is in progress it might be still using _recvBuffer; let WaitForDrainCompletionAndDisposeAsync() dispose it.
+                if (_responseDrainTask is null)
+                {
+                    _recvBuffer.Dispose();
+                }
+            }
+
+            async Task WaitForDrainCompletionAndDisposeAsync()
+            {
+                Debug.Assert(_responseDrainTask is not null);
+                await _responseDrainTask.ConfigureAwait(false);
+                AbortStream();
+                await _stream.DisposeAsync().ConfigureAwait(false);
+                _recvBuffer.Dispose();
             }
         }
 
@@ -106,32 +144,6 @@ namespace System.Net.Http
             {
                 _connection.RemoveStream(_stream);
             }
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            if (!_disposed)
-            {
-                _disposed = true;
-                AbortStream();
-                if (_stream.WritesClosed.IsCompleted)
-                {
-                    _connection.LogExceptions(_stream.DisposeAsync().AsTask());
-                }
-                else
-                {
-                    await _stream.DisposeAsync().ConfigureAwait(false);
-                }
-                DisposeSyncHelper();
-            }
-        }
-
-        private void DisposeSyncHelper()
-        {
-            _connection.RemoveStream(_stream);
-
-            _sendBuffer.Dispose();
-            _recvBuffer.Dispose();
         }
 
         public void GoAway()
@@ -565,9 +577,9 @@ namespace System.Net.Http
                         await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
                         // Stop looping after a trailing header.
-                        // There may be extra frames after this one, but they would all be unknown extension
-                        // frames that can be safely ignored. Just stop reading here.
                         // Note: this does leave us open to a bad server sending us an out of order DATA frame.
+                        // TODO: Add comments here.
+                        _responseDrainTask = DrainResponseAsync();
                         goto case null;
                     case null:
                         // Done receiving: copy over trailing headers.
@@ -1335,6 +1347,49 @@ namespace System.Net.Http
             throw new HttpIOException(HttpRequestError.Unknown, SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
         }
 
+
+        private async Task DrainResponseAsync()
+        {
+            HttpConnectionSettings settings = _connection.Pool.Settings;
+            TimeSpan drainTime = settings._maxResponseDrainTime;
+            int remaining = settings._maxResponseDrainSize;
+            Debug.Assert(remaining >= 0);
+            if (drainTime == TimeSpan.Zero || remaining == 0)
+            {
+                return;
+            }
+
+            using CancellationTokenSource cts = new CancellationTokenSource(settings._maxResponseDrainTime);
+            try
+            {
+                while (remaining > 0)
+                {
+                    _recvBuffer.EnsureAvailableSpace(1);
+                    Memory<byte> buffer = remaining >= _recvBuffer.AvailableMemory.Length ? _recvBuffer.AvailableMemory : _recvBuffer.AvailableMemory.Slice(0, remaining);
+                    int bytesRead = await _stream.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
+                    if (bytesRead == 0)
+                    {
+                        // Reached EOS.
+                        return;
+                    }
+                    remaining -= bytesRead;
+                    _recvBuffer.Commit(bytesRead);
+                    _recvBuffer.Discard(bytesRead);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Eat exceptions and stop draining to unblock QuicStream disposal waiting for response drain.
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    string message = ex is OperationCanceledException oce && oce.CancellationToken == cts.Token ? "Response drain timed out." : $"Response drain failed with exception: {ex}";
+                    Trace(message);
+                }
+
+                return;
+            }
+        }
+
         private async ValueTask<bool> ReadNextDataFrameAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             if (_responseDataPayloadRemaining == -1)
@@ -1365,11 +1420,9 @@ namespace System.Net.Http
                         _trailingHeaders = new List<(HeaderDescriptor name, string value)>();
                         await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
 
-                        // There may be more frames after this one, but they would all be unknown extension
-                        // frames that we are allowed to skip. Just close the stream early.
+                        // TODO: add proper comment.
+                        _responseDrainTask = DrainResponseAsync();
 
-                        // Note: if a server sends additional HEADERS or DATA frames at this point, it
-                        // would be a connection error -- not draining the stream means we won't catch this.
                         goto case null;
                     case null:
                         // End of stream.
