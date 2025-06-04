@@ -274,12 +274,6 @@ namespace Microsoft.NET.HostModel.Bundle
                 _tracer.Log($"Ovewriting existing File {bundlePath}");
             }
 
-
-            // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
-            // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
-            // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
-            var relativePathToSpec = new Dictionary<string, FileSpec>(StringComparer.Ordinal);
-
             long headerOffset = 0;
             string destinationDirectory = new FileInfo(bundlePath).Directory?.FullName ?? "";
             if (!Directory.Exists(destinationDirectory))
@@ -293,25 +287,27 @@ namespace Microsoft.NET.HostModel.Bundle
                     hostSourceStream.CopyTo(bundleStream);
                 }
                 EmbeddedSignatureBlob? signatureBlob = null;
-                using (MemoryMappedFile bundleMap = MemoryMappedFile.CreateFromFile(bundleStream, null, bundleStream.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
-                using (MemoryMappedViewAccessor viewAccessor = bundleMap.CreateViewAccessor())
+                if (_target.IsOSX)
                 {
-                    if (_target.IsOSX)
+                    long? newLength = null;
+                    using (MemoryMappedFile bundleMap = MemoryMappedFile.CreateFromFile(bundleStream, null, bundleStream.Length, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true))
+                    using (MemoryMappedViewAccessor viewAccessor = bundleMap.CreateViewAccessor())
                     {
                         MachObjectFile file = MachObjectFile.Create(viewAccessor);
                         signatureBlob = file.EmbeddedSignatureBlob;
-                        if (file.RemoveCodeSignatureIfPresent(viewAccessor, out long? newLength))
-                        {
-                            if (!newLength.HasValue)
-                            {
-                                throw new InvalidOperationException("Unreachable code");
-                            }
-                            bundleStream.SetLength(newLength.Value);
-                        }
+                        file.RemoveCodeSignatureIfPresent(viewAccessor, out newLength);
+                    }
+                    if (newLength.HasValue)
+                    {
+                        bundleStream.SetLength(newLength.Value);
                     }
                 }
                 using (BinaryWriter writer = new BinaryWriter(bundleStream, Encoding.Default, leaveOpen: true))
                 {
+                    // Note: We're comparing file paths both on the OS we're running on as well as on the target OS for the app
+                    // We can't really make assumptions about the file systems (even on Linux there can be case insensitive file systems
+                    // and vice versa for Windows). So it's safer to do case sensitive comparison everywhere.
+                    var relativePathToSpec = new Dictionary<string, FileSpec>(StringComparer.Ordinal);
                     bundleStream.Position = bundleStream.Length;
                     foreach (var fileSpec in fileSpecs)
                     {
