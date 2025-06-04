@@ -371,5 +371,5 @@ ShimRemoteDataTarget::ContinueStatusChanged(
 HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::VirtualUnwind(DWORD threadId, ULONG32 contextSize, PBYTE context)
 {
-    return m_pTransport->VirtualUnwind(threadId, contextSize, context);
+    return E_NOTIMPL;
 }

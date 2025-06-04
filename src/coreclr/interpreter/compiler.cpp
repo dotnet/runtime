@@ -2443,6 +2443,17 @@ void InterpCompiler::EmitStaticFieldAddress(CORINFO_FIELD_INFO *pFieldInfo, CORI
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             break;
         }
+        case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        {
+            void *emptyString;
+            InfoAccessType iat = m_compHnd->emptyStringLiteral(&emptyString);
+            assert(iat == IAT_VALUE);
+            AddIns(INTOP_LDPTR);
+            PushInterpType(InterpTypeO, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            m_pLastNewIns->data[0] = GetDataItemIndex(emptyString);
+            break;
+        }
         default:
             // TODO
             assert(0);
@@ -4215,20 +4226,20 @@ retry_emit:
 
                 // see jit/importer.cpp CEE_LDTOKEN
                 CorInfoHelpFunc helper;
-                if (resolvedToken.hClass)
+                if (resolvedToken.hField)
                 {
-                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
-                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
+                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
                 }
                 else if (resolvedToken.hMethod)
                 {
                     helper = CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD;
                     m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hMethod);
                 }
-                else if (resolvedToken.hField)
+                else if (resolvedToken.hClass)
                 {
-                    helper = CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD;
-                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hField);
+                    helper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE;
+                    m_pLastNewIns->data[0] = GetDataItemIndex(resolvedToken.hClass);
                 }
                 else
                 {

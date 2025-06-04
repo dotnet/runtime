@@ -28,6 +28,132 @@ namespace System.Runtime.Intrinsics.Arm
             public static new bool IsSupported { get => IsSupported; }
         }
 
+        // Absolute difference and accumulate
+
+        /// <summary>
+        /// svuint8_t svaba[_u8](svuint8_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UABA Ztied1.B, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<byte> AbsoluteDifferenceAdd(Vector<byte> addend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint16_t svaba[_s16](svint16_t op1, svint16_t op2, svint16_t op3)
+        ///   SABA Ztied1.H, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceAdd(Vector<short> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svaba[_s32](svint32_t op1, svint32_t op2, svint32_t op3)
+        ///   SABA Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceAdd(Vector<int> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svaba[_s64](svint64_t op1, svint64_t op2, svint64_t op3)
+        ///   SABA Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceAdd(Vector<long> addend, Vector<long> left, Vector<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint8_t svaba[_s8](svint8_t op1, svint8_t op2, svint8_t op3)
+        ///   SABA Ztied1.B, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<sbyte> AbsoluteDifferenceAdd(Vector<sbyte> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svaba[_u16](svuint16_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UABA Ztied1.H, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceAdd(Vector<ushort> addend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svaba[_u32](svuint32_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UABA Ztied1.S, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceAdd(Vector<uint> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svaba[_u64](svuint64_t op1, svuint64_t op2, svuint64_t op3)
+        ///   UABA Ztied1.D, Zop2.D, Zop3.D
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceAdd(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        // Absolute difference and accumulate long (bottom)
+
+        /// <summary>
+        /// svint16_t svabalb[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SABALB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceAddWideningLower(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabalb[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SABALB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceAddWideningLower(Vector<int> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabalb[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SABALB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceAddWideningLower(Vector<long> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabalb[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UABALB Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceAddWideningLower(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabalb[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UABALB Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceAddWideningLower(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabalb[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UABALB Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceAddWideningLower(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
+        // Absolute difference and accumulate long (top)
+
+        /// <summary>
+        /// svint16_t svabalt[_s16](svint16_t op1, svint8_t op2, svint8_t op3)
+        ///   SABALT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<short> AbsoluteDifferenceAddWideningUpper(Vector<short> addend, Vector<sbyte> left, Vector<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svabalt[_s32](svint32_t op1, svint16_t op2, svint16_t op3)
+        ///   SABALT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<int> AbsoluteDifferenceAddWideningUpper(Vector<int> addend, Vector<short> left, Vector<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svabalt[_s64](svint64_t op1, svint32_t op2, svint32_t op3)
+        ///   SABALT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<long> AbsoluteDifferenceAddWideningUpper(Vector<long> addend, Vector<int> left, Vector<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svabalt[_u16](svuint16_t op1, svuint8_t op2, svuint8_t op3)
+        ///   UABALT Ztied1.H, Zop2.B, Zop3.B
+        /// </summary>
+        public static Vector<ushort> AbsoluteDifferenceAddWideningUpper(Vector<ushort> addend, Vector<byte> left, Vector<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svabalt[_u32](svuint32_t op1, svuint16_t op2, svuint16_t op3)
+        ///   UABALT Ztied1.S, Zop2.H, Zop3.H
+        /// </summary>
+        public static Vector<uint> AbsoluteDifferenceAddWideningUpper(Vector<uint> addend, Vector<ushort> left, Vector<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svabalt[_u64](svuint64_t op1, svuint32_t op2, svuint32_t op3)
+        ///   UABALT Ztied1.D, Zop2.S, Zop3.S
+        /// </summary>
+        public static Vector<ulong> AbsoluteDifferenceAddWideningUpper(Vector<ulong> addend, Vector<uint> left, Vector<uint> right) { throw new PlatformNotSupportedException(); }
+
         // Bitwise clear and exclusive OR
 
         /// <summary>
