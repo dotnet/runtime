@@ -15,6 +15,7 @@
         .model  flat
 
 include asmconstants.inc
+include asmmacros.inc
 
         assume fs: nothing
         option  casemap:none
@@ -97,15 +98,6 @@ EXTERN @IL_Rethrow_x86@4:PROC
 UNREFERENCED macro arg
     local unref
     unref equ size arg
-endm
-
-FASTCALL_FUNC macro FuncName,cbArgs
-FuncNameReal EQU @&FuncName&@&cbArgs
-FuncNameReal proc public
-endm
-
-FASTCALL_ENDFUNC macro
-FuncNameReal endp
 endm
 
 ifndef FEATURE_EH_FUNCLETS

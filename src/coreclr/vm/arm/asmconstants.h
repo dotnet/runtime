@@ -62,26 +62,40 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, capture
 #define LazyMachState_captureIp     (LazyMachState_captureSp+4)
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
 
-#define MethodTable__m_BaseSize         0x04
-ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
+#define OFFSETOF__MethodTable__m_dwFlags 0x00
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__m_dwFlags         0x0
-ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
+#define OFFSETOF__MethodTable__m_usComponentSize 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_usComponentSize == offsetof(MethodTable, m_dwFlags));
+
+#define OFFSETOF__MethodTable__m_uBaseSize 0x04
+ASMCONSTANTS_C_ASSERT(OFFSETOF__MethodTable__m_uBaseSize == offsetof(MethodTable, m_BaseSize));
+
+#define OFFSETOF__Object__m_pEEType 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Object__m_pEEType == offsetof(Object, m_pMethTab));
+
+#define OFFSETOF__Array__m_Length 0x4
+ASMCONSTANTS_C_ASSERT(OFFSETOF__Array__m_Length == offsetof(ArrayBase, m_NumComponents));
+
+#define MAX_STRING_LENGTH 0x3FFFFFDF
+ASMCONSTANTS_C_ASSERT(MAX_STRING_LENGTH == CORINFO_String_MaxLength);
+
+#define STRING_COMPONENT_SIZE 2
+
+#define STRING_BASE_SIZE 0xE
+ASMCONSTANTS_C_ASSERT(STRING_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD) + sizeof(WCHAR));
+
+#define SZARRAY_BASE_SIZE 0xC
+ASMCONSTANTS_C_ASSERT(SZARRAY_BASE_SIZE == OBJECT_BASESIZE + sizeof(DWORD));
+
+#define ASM_MIN_OBJECT_SIZE 0xC
+ASMCONSTANTS_C_ASSERT(ASM_MIN_OBJECT_SIZE == MIN_OBJECT_SIZE);
 
 #define MethodTable__enum_flag_ContainsGCPointers 0x01000000
 ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers == MethodTable::enum_flag_ContainsGCPointers);
 
-#define MethodTable__m_ElementType        DBG_FRE(0x24, 0x20)
-ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
-
 #define SIZEOF__MethodTable             DBG_FRE(0x2c, 0x28)
 ASMCONSTANTS_C_ASSERT(SIZEOF__MethodTable == sizeof(MethodTable));
-
-#define ArrayBase__m_NumComponents     0x4
-ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
-
-#define PtrArray__m_Array              0x8
-ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
 
 #define TypeHandle_CanCast 0x1 // TypeHandle::CanCast
 
@@ -130,6 +144,16 @@ ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPre
 #define               Thread__m_pFrame                  0x08
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
+
+#define               OFFSETOF__RuntimeThreadLocals__ee_alloc_context 0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__RuntimeThreadLocals__ee_alloc_context == offsetof(RuntimeThreadLocals, alloc_context));
+
+#define               OFFSETOF__ee_alloc_context__alloc_ptr 0x8
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__alloc_ptr == offsetof(ee_alloc_context, m_GCAllocContext) +
+                                                               offsetof(gc_alloc_context, alloc_ptr));
+
+#define               OFFSETOF__ee_alloc_context__combined_limit 0x0
+ASMCONSTANTS_C_ASSERT(OFFSETOF__ee_alloc_context__combined_limit == offsetof(ee_alloc_context, m_CombinedLimit));
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)

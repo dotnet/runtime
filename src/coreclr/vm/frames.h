@@ -2231,7 +2231,6 @@ public:
 
 typedef DPTR(class ExternalMethodFrame) PTR_ExternalMethodFrame;
 
-#ifdef FEATURE_READYTORUN
 class DynamicHelperFrame : public FramedMethodFrame
 {
     int m_dynamicHelperFrameFlags;
@@ -2253,7 +2252,6 @@ public:
 };
 
 typedef DPTR(class DynamicHelperFrame) PTR_DynamicHelperFrame;
-#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_COMINTEROP
 

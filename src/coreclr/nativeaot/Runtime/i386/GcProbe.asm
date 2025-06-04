@@ -191,12 +191,9 @@ RhpGcPoll  proc
 RhpGcPoll  endp
 
 RhpGcPollRare  proc
-        push        ebp
-        mov         ebp, esp
         PUSH_COOP_PINVOKE_FRAME ecx
         call        RhpGcPoll2
         POP_COOP_PINVOKE_FRAME
-        pop         ebp
         ret
 RhpGcPollRare  endp
 
