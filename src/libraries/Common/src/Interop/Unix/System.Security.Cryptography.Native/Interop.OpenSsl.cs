@@ -439,9 +439,6 @@ internal static partial class Interop
                     // Client side always verifies the server's certificate.
                     Ssl.SslSetVerifyPeer(sslHandle);
 
-                    // HACK: set a bogus code to indicate that we did not perform the validation yet
-                    // Ssl.SslSetVerifyResult(sslHandle, -1);
-
                     if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) && !IPAddress.IsValid(sslAuthenticationOptions.TargetHost))
                     {
                         // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
@@ -474,8 +471,6 @@ internal static partial class Interop
                     if (sslAuthenticationOptions.RemoteCertRequired)
                     {
                         Ssl.SslSetVerifyPeer(sslHandle);
-                        // HACK: set a bogus code to indicate that we did not perform the validation yet
-                        Ssl.SslSetVerifyResult(sslHandle, -1);
                     }
 
                     if (sslAuthenticationOptions.CertificateContext != null)
@@ -552,21 +547,12 @@ internal static partial class Interop
                 }
             }
 
-#pragma warning disable CS0618
-            System.Console.WriteLine($"[{AppDomain.GetCurrentThreadId()}] SSL_do_handshake");
             int retVal = Ssl.SslDoHandshake(context, out Ssl.SslErrorCode errorCode);
             if (retVal != 1)
             {
                 if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_X509_LOOKUP)
                 {
                     return SecurityStatusPalErrorCode.CredentialsNeeded;
-                }
-
-                if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_ASYNC)
-                // if (errorCode == Ssl.SslErrorCode.SSL_ERROR_WANT_RETRY_VERIFY)
-                {
-                    System.Console.WriteLine($"[{AppDomain.GetCurrentThreadId()}] SSL_ERROR_WANT_ASYNC");
-                    return SecurityStatusPalErrorCode.PeerCertVerifyRequired;
                 }
 
                 if ((retVal != -1) || (errorCode != Ssl.SslErrorCode.SSL_ERROR_WANT_READ))

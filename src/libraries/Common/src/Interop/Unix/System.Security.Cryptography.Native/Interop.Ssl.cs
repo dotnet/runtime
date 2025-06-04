@@ -204,12 +204,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSessionSetData")]
         internal static partial void SslSessionSetData(IntPtr session, IntPtr val);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyResult")]
-        internal static partial void SslSetVerifyResult(SafeSslHandle ssl, long verifyResult);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVerifyResult")]
-        internal static partial long SslGetVerifyResult(SafeSslHandle ssl);
-
         internal static class Capabilities
         {
             // needs separate type (separate static cctor) to be sure OpenSSL is initialized.
@@ -345,9 +339,6 @@ internal static partial class Interop
             SSL_ERROR_WANT_X509_LOOKUP = 4,
             SSL_ERROR_SYSCALL = 5,
             SSL_ERROR_ZERO_RETURN = 6,
-
-            SSL_ERROR_WANT_ASYNC = 9,
-            SSL_ERROR_WANT_RETRY_VERIFY = 12,
 
             // NOTE: this SslErrorCode value doesn't exist in OpenSSL, but
             // we use it to distinguish when a renegotiation is pending.

@@ -207,16 +207,6 @@ namespace System.Net.Security
                     errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
                 }
 
-                if (errorCode == SecurityStatusPalErrorCode.PeerCertVerifyRequired)
-                {
-                    token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.PeerCertVerifyRequired);
-                    return token;
-                    // System.Console.WriteLine($"Peer certificate verification required. setting VerifyResult to an error");
-                    // Interop.Ssl.SslSetVerifyResult((SafeSslHandle)context, 0);
-                    // // continue with the handshake, the callback will be invoked later.
-                    // errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, ReadOnlySpan<byte>.Empty, ref token);
-                }
-
                 // sometimes during renegotiation processing message does not yield new output.
                 // That seems to be flaw in OpenSSL state machine and we have workaround to peek it and try it again.
                 if (token.Size == 0 && Interop.Ssl.IsSslRenegotiatePending((SafeSslHandle)context))
@@ -249,9 +239,6 @@ namespace System.Net.Security
 
         public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
-            // All the alerts that we manually propagate do with certificate validation
-            Interop.Ssl.SslSetVerifyResult((SafeSslHandle)securityContext!, 28);
-
             // There doesn't seem to be an exposed API for writing an alert,
             // the API seems to assume that all alerts are generated internally by
             // SSLHandshake.

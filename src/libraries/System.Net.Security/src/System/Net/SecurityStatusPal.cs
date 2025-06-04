@@ -34,7 +34,6 @@ namespace System.Net
         Renegotiate,
         TryAgain,
         HandshakeStarted,
-        PeerCertVerifyRequired,
 
         // Errors
         OutOfMemory,

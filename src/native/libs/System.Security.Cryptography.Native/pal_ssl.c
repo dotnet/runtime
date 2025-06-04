@@ -1357,21 +1357,10 @@ void CryptoNative_SslStapleOcsp(SSL* ssl, uint8_t* buf, int32_t len)
 static int CertVerifyCallback(X509_STORE_CTX* store, void* param)
 {
     (void)param;
-    // SslCtxCertValidationCallback callback = (SslCtxCertValidationCallback) param;
+    SslCtxCertValidationCallback callback = (SslCtxCertValidationCallback) param;
     SSL *ssl = X509_STORE_CTX_get_ex_data(store, SSL_get_ex_data_X509_STORE_CTX_idx());
 
-    printf("Pausing job\n");
-    ASYNC_pause_job();
-    printf("Resumed job\n");
-
-    int verifyResult = (int)SSL_get_verify_result(ssl);
-    printf("SSL_get_verify_result(%p) == %d\n", (void*) ssl, verifyResult);
-    if (verifyResult < 0)
-    {
-        int ret = SSL_set_retry_verify(ssl);
-        printf("SSL_set_retry_verify(%p) == %d\n", (void*) ssl, ret);
-        return ret;
-    }
+    int verifyResult = callback(ssl, store);
 
     X509_STORE_CTX_set_error(store, verifyResult);
     return verifyResult == X509_V_OK;
