@@ -222,7 +222,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets) => assets?.Select(a => new GeneralAsset()
             {
-                name = resources.fingerprinting[a.Key],
+                name = resources.fingerprinting?[a.Key] ?? a.Key,
                 url = a.Key,
                 integrity = a.Value
             }).ToList();
