@@ -33379,12 +33379,6 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
     var_types ParentSimdBaseType = JitType2PreciseVarType(parent->GetSimdBaseJitType());
 
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateTrueMaskByte, NI_Sve_CreateTrueMaskDouble,
-                                       NI_Sve_CreateTrueMaskInt16, NI_Sve_CreateTrueMaskInt32,
-                                       NI_Sve_CreateTrueMaskInt64, NI_Sve_CreateTrueMaskSByte,
-                                       NI_Sve_CreateTrueMaskSingle, NI_Sve_CreateTrueMaskUInt16,
-                                       NI_Sve_CreateTrueMaskUInt32, NI_Sve_CreateTrueMaskUInt64));
-
     if (OperIsHWIntrinsic())
     {
         NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
@@ -33395,12 +33389,13 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
 
-        bool validTrueMask = ((id == NI_Sve_CreateTrueMaskAll) ||
-                              ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+        if (id != NI_Sve_CreateTrueMaskAll)
+        {
+            return false;
+        }
 
         // Only a valid true mask if the parent has the same base type
-        return (validTrueMask && (genTypeSize(ParentSimdBaseType) ==
-                                  genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType()))));
+        return (genTypeSize(ParentSimdBaseType) == genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType())));
     }
     else if (IsCnsMsk())
     {
