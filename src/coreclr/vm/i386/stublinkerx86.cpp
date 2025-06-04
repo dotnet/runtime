@@ -857,22 +857,6 @@ VOID StubLinkerCPU::X86EmitZeroOutReg(X86Reg reg)
     Emit8(static_cast<UINT8>(0xc0 | (reg << 3) | reg));
 }
 
-//---------------------------------------------------------------
-// Emits:
-//    jmp [reg]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitJumpReg(X86Reg reg)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    Emit8(0xff);
-    Emit8(static_cast<BYTE>(0xe0) | static_cast<BYTE>(reg));
-}
-
 
 //---------------------------------------------------------------
 // Emits:
@@ -934,23 +918,6 @@ VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, int32_t ofs)
         X86EmitOp(0xff,(X86Reg)0x6, srcreg, ofs);
 
     Push(sizeof(void*));
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    pop dword ptr [<srcreg> + <ofs>]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    if(srcreg != kESP_Unsafe)
-        X86EmitOffsetModRM(0x8f, (X86Reg)0x0, srcreg, ofs);
-    else
-        X86EmitOp(0x8f,(X86Reg)0x0, srcreg, ofs);
-
-    Pop(sizeof(void*));
 }
 
 
@@ -1031,24 +998,6 @@ VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
     // There are several that could be used to mov xmm registers. MovAps is
     // what C++ compiler uses so let's use it here too.
     X86EmitR2ROp(X86_INSTR_MOVAPS_R_RM, destXmmreg, srcXmmReg, k32BitOp);
-}
-
-//---------------------------------------------------------------
-// movdqa XmmN, [baseReg + offset]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-    X64EmitMovXmmWorker(0x66, 0x6F, Xmmreg, baseReg, ofs);
-}
-
-//---------------------------------------------------------------
-// movdqa [baseReg + offset], XmmN
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-    X64EmitMovXmmWorker(0x66, 0x7F, Xmmreg, baseReg, ofs);
 }
 
 //---------------------------------------------------------------
@@ -1259,60 +1208,6 @@ VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg ind
         EmitBytes(codeBuffer, nBytes);
     }
 }
-
-//---------------------------------------------------------------
-// Emits a MOD/RM for accessing a dword at [<baseReg> + <indexReg>*<scale> + ofs32]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(scale == 1 || scale == 2 || scale == 4 || scale == 8);
-        PRECONDITION(indexReg != kESP_Unsafe);
-    }
-    CONTRACTL_END;
-
-    BYTE    codeBuffer[8];
-    BYTE*   code    = codeBuffer;
-    int     nBytes  = 0;
-
-#ifdef TARGET_AMD64
-    _ASSERTE(!"NYI");
-#endif
-    code[0] = opcode;
-    nBytes++;
-
-    BYTE scaleEnc = 0;
-    switch(scale)
-    {
-        case 1: scaleEnc = 0; break;
-        case 2: scaleEnc = 1; break;
-        case 4: scaleEnc = 2; break;
-        case 8: scaleEnc = 3; break;
-        default: _ASSERTE(!"Unexpected");
-    }
-
-    BYTE sib = static_cast<BYTE>((scaleEnc << 6) | (indexReg << 3) | baseReg);
-
-    if (FitsInI1(ofs))
-    {
-        code[1] = static_cast<BYTE>(0x44 | (opcodeOrReg << 3));
-        code[2] = sib;
-        code[3] = (BYTE)ofs;
-        nBytes += 3;
-        EmitBytes(codeBuffer, nBytes);
-    }
-    else
-    {
-        code[1] = static_cast<BYTE>(0x84 | (opcodeOrReg << 3));
-        code[2] = sib;
-        *(int32_t*)(&code[3]) = ofs;
-        nBytes += 6;
-        EmitBytes(codeBuffer, nBytes);
-    }
-}
-
 
 
 VOID StubLinkerCPU::X86EmitRegLoad(X86Reg reg, UINT_PTR imm)

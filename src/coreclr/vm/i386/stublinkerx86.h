@@ -22,22 +22,11 @@ extern PCODE GetPreStubEntryPoint();
 #define X86_INSTR_MOV_EAX_ECX_IND 0x018b    // mov eax, [ecx]
 #define X86_INSTR_CMP_IND_ECX_IMM32 0x3981  // cmp [ecx], imm32
 
-#define X86_INSTR_MOV_AL        0xB0        // mov al, imm8
-#define X86_INSTR_JMP_REL8      0xEB        // jmp short rel8
-
-#define X86_INSTR_NOP           0x90        // nop
 #define X86_INSTR_NOP3_1        0x9090      // 1st word of 3-byte nop
 #define X86_INSTR_NOP3_3        0x90        // 3rd byte of 3-byte nop
 #define X86_INSTR_INT3          0xCC        // int 3
-#define X86_INSTR_HLT           0xF4        // hlt
 
 #define X86_INSTR_MOVAPS_R_RM   0x280F      // movaps xmm1, xmm2/mem128
-#define X86_INSTR_MOVAPS_RM_R   0x290F      // movaps xmm1/mem128, xmm2
-#define X86_INSTR_MOVLPS_R_RM   0x120F      // movlps xmm1, xmm2/mem128
-#define X86_INSTR_MOVLPS_RM_R   0x130F      // movlps xmm1/mem128, xmm2
-#define X86_INSTR_MOVUPS_R_RM   0x100F      // movups xmm1, xmm2/mem128
-#define X86_INSTR_MOVUPS_RM_R   0x110F      // movups xmm1/mem128, xmm2
-#define X86_INSTR_XORPS         0x570F      // xorps xmm1, xmm2/mem128
 
 //----------------------------------------------------------------------
 // Encodes X86 registers. The numbers are chosen to match Intel's opcode
@@ -133,8 +122,6 @@ class StubLinkerCPU : public StubLinker
 
 #ifdef TARGET_AMD64
         VOID X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg);
-        VOID X64EmitMovdqaFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
-        VOID X64EmitMovdqaToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovSDFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovSDToMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
         VOID X64EmitMovSSFromMem(X86Reg Xmmreg, X86Reg baseReg, int32_t ofs = 0);
@@ -147,10 +134,8 @@ class StubLinkerCPU : public StubLinker
 #endif
 
         VOID X86EmitZeroOutReg(X86Reg reg);
-        VOID X86EmitJumpReg(X86Reg reg);
 
         VOID X86EmitOffsetModRM(BYTE opcode, X86Reg altreg, X86Reg indexreg, int32_t ofs);
-        VOID X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Reg baseReg, X86Reg indexReg, int32_t scale, int32_t ofs);
 
         VOID X86EmitNearJump(CodeLabel *pTarget);
 
@@ -158,7 +143,6 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitIndexRegStore(X86Reg dstreg, int32_t ofs, X86Reg srcreg);
 
         VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
-        VOID X86EmitIndexPop(X86Reg srcreg, int32_t ofs);
 
         VOID X86EmitAddEsp(INT32 imm32);
         VOID X86EmitEspOffset(BYTE opcode,
