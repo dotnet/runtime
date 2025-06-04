@@ -1698,14 +1698,11 @@ enum SveMaskPattern
     SveMaskPatternNone               = 14  // Invalid
 };
 
-inline bool EvaluateSimdPatternToMask(simdmask_t* result,
-                               int       simdSize,
-                               int       simdBaseTypeSize,
-                               SveMaskPattern pattern)
+template <typename TSimd, typename TBase>
+bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
 {
-    uint32_t count    = simdSize / simdBaseTypeSize;
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
     uint32_t finalOne = count + 1;
-    uint64_t mask     = 0;
 
     switch (pattern)
     {
@@ -1722,7 +1719,7 @@ inline bool EvaluateSimdPatternToMask(simdmask_t* result,
         case SveMaskPatternVectorCount6:
         case SveMaskPatternVectorCount7:
         case SveMaskPatternVectorCount8:
-            finalOne = pattern - SveMaskPatternVectorCount1 + 1;
+            finalOne = std::min(uint32_t(pattern - SveMaskPatternVectorCount1 + 1), count);
             break;
 
         case SveMaskPatternVectorCount16:
@@ -1747,16 +1744,63 @@ inline bool EvaluateSimdPatternToMask(simdmask_t* result,
     assert(finalOne <= count);
     assert(finalOne > 0);
 
-    // Write finalOne number of bits
-    for (uint32_t i = 0; i < finalOne; i++)
+    // Write finalOne number of entries
+    for (uint32_t i = 0; i < count; i++)
     {
-        mask |= static_cast<uint64_t>(1) << (i * simdBaseTypeSize);
+        TBase output;
+
+        if (i < finalOne)
+        {
+            memset(&output, 0xFF, sizeof(TBase));
+        }
+        else
+        {
+            memset(&output, 0x00, sizeof(TBase));
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
     }
 
-    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
     return true;
 }
 
+template <typename TSimd>
+bool EvaluateSimdPatternToVector(var_types baseType, TSimd* result, SveMaskPattern pattern)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint32_t>(result, pattern);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint64_t>(result, pattern);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint8_t>(result, pattern);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint16_t>(result, pattern);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 template <typename TSimd, typename TBase>
 SveMaskPattern EvaluateSimdMaskPattern(simdmask_t arg0)

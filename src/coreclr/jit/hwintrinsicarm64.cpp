@@ -2887,15 +2887,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             // Where possible, import a constant mask to allow for optimisations.
             if (op1->IsIntegralConst())
             {
-                simdmask_t maskVal = {};
-
                 int64_t pattern = op1->AsIntConCommon()->IntegralValue();
+                simd_t  simdVal;
 
-                if (EvaluateSimdPatternToMask(&maskVal, simdSize, genTypeSize(simdBaseType), (SveMaskPattern)pattern))
+                if (EvaluateSimdPatternToVector(simdBaseType, &simdVal, (SveMaskPattern)pattern))
                 {
-                    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
-                    mskCon->gtSimdMaskVal = maskVal;
-                    retNode = mskCon;
+                    retNode = gtNewVconNode(retType, &simdVal);
                     break;
                 }
             }
