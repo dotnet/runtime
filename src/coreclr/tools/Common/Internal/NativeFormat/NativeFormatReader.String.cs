@@ -64,9 +64,14 @@ namespace Internal.NativeFormat
             return endOffset;
         }
 
-#if !NETFX_45
         public unsafe Guid ParseGuid(uint offset)
         {
+#if NETFX_45
+            _ = DecodeString(offset, out string value);
+
+            return new(value);
+#else
+
             uint numBytes;
             offset = DecodeUnsigned(offset, out numBytes);
 
@@ -82,8 +87,8 @@ namespace Internal.NativeFormat
             }
 
             return Guid.Parse(bytes);
-        }
 #endif
+        }
 
         // Decode a string, but just skip it instead of returning it
         public uint SkipString(uint offset)

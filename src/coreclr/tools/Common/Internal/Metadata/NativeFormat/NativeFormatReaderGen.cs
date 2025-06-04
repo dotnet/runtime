@@ -2022,7 +2022,11 @@ namespace Internal.Metadata.NativeFormat
             if (handle.IsNil)
             {
                 // We don't really have a parameter, so just match the name of the 'Guid.ctor' parameter
+#if SYSTEM_PRIVATE_CORELIB
                 ArgumentNullException.Throw("input");
+#else
+                throw new ArgumentNullException("input");
+#endif
             }
 
             return reader._streamReader.ParseGuid((uint)handle.Offset);
