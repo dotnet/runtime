@@ -1701,7 +1701,7 @@ enum SveMaskPattern
 template <typename TSimd, typename TBase>
 bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
 {
-    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
     uint32_t finalOne = count + 1;
 
     switch (pattern)

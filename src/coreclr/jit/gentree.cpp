@@ -33400,7 +33400,7 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 
         // Only a valid true mask if the parent has the same base type
         return (validTrueMask && (genTypeSize(ParentSimdBaseType) ==
-               genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType()))));
+                                  genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType()))));
     }
     else if (IsCnsMsk())
     {
