@@ -109,7 +109,7 @@ namespace ILCompiler
 
         private Dictionary<TypeDesc, TypeMapState> _typeMapStates = new Dictionary<TypeDesc, TypeMapState>();
 
-        private enum TypeMapAttributeKind
+        public enum TypeMapAttributeKind
         {
             None,
             TypeMapAssemblyTarget,
@@ -117,12 +117,32 @@ namespace ILCompiler
             TypeMapAssociation
         }
 
-        private ModuleDesc _entryModule;
+        public static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
+        {
+            TypeDesc typeMapAssemblyTargetType = attrType.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
+            TypeDesc typeMapType = attrType.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAttribute`1");
+            TypeDesc typeMapAssociationType = attrType.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssociationAttribute`1");
+
+            if (typeMapAssemblyTargetType == attrType.GetTypeDefinition())
+            {
+                return TypeMapAttributeKind.TypeMapAssemblyTarget;
+            }
+
+            if (typeMapType == attrType.GetTypeDefinition())
+            {
+                return TypeMapAttributeKind.TypeMap;
+            }
+
+            if (typeMapAssociationType == attrType.GetTypeDefinition())
+            {
+                return TypeMapAttributeKind.TypeMapAssociation;
+            }
+
+            return TypeMapAttributeKind.None;
+        }
 
         public TypeMapManager(ModuleDesc entryModule)
         {
-            _entryModule = entryModule;
-
             if (entryModule is not { Assembly: EcmaAssembly assembly })
             {
                 // We can only process EcmaAssembly-based modules as we can only read custom attributes from them.
@@ -134,8 +154,6 @@ namespace ILCompiler
             Queue<EcmaAssembly> assembliesToScan = new Queue<EcmaAssembly>();
             assembliesToScan.Enqueue(assembly);
 
-            TypeDesc typeMapAssemblyTargetType = assembly.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
-
             while (assembliesToScan.Count > 0)
             {
                 EcmaAssembly currentAssembly = assembliesToScan.Dequeue();
@@ -144,26 +162,22 @@ namespace ILCompiler
 
                 scannedAssemblies.Add(currentAssembly);
 
-                foreach (CustomAttributeHandle attrHandle in assembly.MetadataReader.GetCustomAttributes(EntityHandle.AssemblyDefinition))
+                foreach (CustomAttributeHandle attrHandle in currentAssembly.MetadataReader.GetCustomAttributes(EntityHandle.AssemblyDefinition))
                 {
-                    CustomAttribute attr = assembly.MetadataReader.GetCustomAttribute(attrHandle);
+                    CustomAttribute attr = currentAssembly.MetadataReader.GetCustomAttribute(attrHandle);
 
-                    if (!MetadataExtensions.GetAttributeTypeAndConstructor(assembly.MetadataReader, attrHandle, out EntityHandle attributeType, out _))
+                    if (!MetadataExtensions.GetAttributeTypeAndConstructor(currentAssembly.MetadataReader, attrHandle, out EntityHandle attributeType, out _))
                     {
                         continue;
                     }
 
-                    TypeDesc type = (TypeDesc)assembly.GetObject(attributeType);
+                    TypeDesc type = (TypeDesc)currentAssembly.GetObject(attributeType);
 
-                    TypeMapAttributeKind attrKind = TypeMapAttributeKind.None;
-
-                    if (typeMapAssemblyTargetType == type.GetTypeDefinition())
-                    {
-                        attrKind = TypeMapAttributeKind.TypeMapAssemblyTarget;
-                    }
+                    TypeMapAttributeKind attrKind = LookupTypeMapType(type);
 
                     if (attrKind == TypeMapAttributeKind.None)
                     {
+                        // Not a type map attribute, skip it
                         continue;
                     }
 
@@ -188,6 +202,7 @@ namespace ILCompiler
                                 break;
 
                             default:
+                                Debug.Fail($"Unexpected TypeMapAttributeKind: {attrKind}");
                                 break;
                         }
                     }
@@ -201,12 +216,12 @@ namespace ILCompiler
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMap)
                         {
-                            value.SetExternalTypeMapStub(new ThrowingMethodStub(typeMapGroup, typeMapGroup, externalTypeMap: true, ex));
+                            value.SetExternalTypeMapStub(new ThrowingMethodStub(entryModule.GetGlobalModuleType(), typeMapGroup, externalTypeMap: true, ex));
                         }
 
                         if (attrKind is TypeMapAttributeKind.TypeMapAssemblyTarget or TypeMapAttributeKind.TypeMapAssociation)
                         {
-                            value.SetAssociatedTypeMapStub(new ThrowingMethodStub(typeMapGroup, typeMapGroup, externalTypeMap: false, ex));
+                            value.SetAssociatedTypeMapStub(new ThrowingMethodStub(entryModule.GetGlobalModuleType(), typeMapGroup, externalTypeMap: false, ex));
                         }
                     }
                 }
@@ -309,8 +324,6 @@ namespace ILCompiler
             {
                 return; // No type maps to process
             }
-
-            Debug.Assert(_entryModule is not null, "We should only find type map entries if we have an entry module.");
 
             rootProvider.AddCompilationRoot(new TypeMapsNode(_typeMapStates), "TypeMapManager");
         }

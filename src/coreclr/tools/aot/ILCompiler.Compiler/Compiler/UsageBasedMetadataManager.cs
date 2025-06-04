@@ -824,6 +824,10 @@ namespace ILCompiler
 
         public bool GeneratesAttributeMetadata(TypeDesc attributeType)
         {
+            if (TypeMapManager.LookupTypeMapType(attributeType) != TypeMapManager.TypeMapAttributeKind.None)
+            {
+                return false;
+            }
             var ecmaType = attributeType.GetTypeDefinition() as EcmaType;
             if (ecmaType != null)
             {
