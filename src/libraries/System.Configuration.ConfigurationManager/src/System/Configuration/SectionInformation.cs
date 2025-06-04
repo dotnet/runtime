@@ -3,6 +3,7 @@
 
 using System.Configuration.Internal;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -42,6 +43,7 @@ namespace System.Configuration
         private OverrideModeSetting _overrideMode; // The override mode at the current config path
         private OverrideModeSetting _overrideModeDefault; // The default mode for the section in _configurationSection
         private ProtectedConfigurationProvider _protectionProvider;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         private string _typeName;
 
         internal SectionInformation(ConfigurationSection associatedConfigurationSection)
@@ -84,6 +86,8 @@ namespace System.Configuration
         public ConfigurationAllowDefinition AllowDefinition
         {
             get { return _allowDefinition; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -105,6 +109,8 @@ namespace System.Configuration
         public ConfigurationAllowExeDefinition AllowExeDefinition
         {
             get { return _allowExeDefinition; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -126,6 +132,8 @@ namespace System.Configuration
         public OverrideMode OverrideModeDefault
         {
             get { return _overrideModeDefault.OverrideMode; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -152,6 +160,8 @@ namespace System.Configuration
         public bool AllowLocation
         {
             get { return _flags[FlagAllowLocation]; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -229,6 +239,8 @@ namespace System.Configuration
         public string ConfigSource
         {
             get { return _configSource ?? string.Empty; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -295,10 +307,15 @@ namespace System.Configuration
         public bool IsLocked => _flags[FlagLocationLocked] || !IsDefinitionAllowed ||
             _configurationSection.ElementInformation.IsLocked;
 
-        public bool IsProtected => ProtectionProvider != null;
+        public bool IsProtected
+        {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
+            get => ProtectionProvider != null;
+        }
 
         public ProtectedConfigurationProvider ProtectionProvider
         {
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             get
             {
                 if (!_flags[FlagProtectionProviderDetermined] && (_configRecord != null))
@@ -316,6 +333,8 @@ namespace System.Configuration
         public bool RestartOnExternalChanges
         {
             get { return _flags[FlagRestartOnExternalChanges]; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -337,6 +356,8 @@ namespace System.Configuration
         public bool RequirePermission
         {
             get { return _flags[FlagRequirePermission]; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 VerifyIsEditable();
@@ -356,9 +377,12 @@ namespace System.Configuration
         internal bool RequirePermissionModified => _modifiedFlags[FlagRequirePermission];
 
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         public string Type
         {
             get { return _typeName; }
+
+            [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
             set
             {
                 if (string.IsNullOrEmpty(value)) throw ExceptionUtil.PropertyNullOrEmpty(nameof(Type));
@@ -535,6 +559,7 @@ namespace System.Configuration
                 throw new InvalidOperationException(SR.Config_cannot_edit_locationattriubtes);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal void VerifyIsEditableFactory()
         {
             if ((_configRecord != null) && _configRecord.IsLocationConfig)
@@ -560,6 +585,7 @@ namespace System.Configuration
         }
 
         // Force the section declaration to be written out during Save.
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public void ForceDeclaration()
         {
             ForceDeclaration(true);
@@ -567,6 +593,7 @@ namespace System.Configuration
 
         // If force==false, it actually means don't declare it at
         // the current level.
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public void ForceDeclaration(bool force)
         {
             VerifyIsEditable();
@@ -596,6 +623,7 @@ namespace System.Configuration
         }
 
         // method to cause a section to be protected using the specified provider
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public void ProtectSection(string protectionProvider)
         {
             ProtectedConfigurationProvider protectedConfigurationProvider;
@@ -656,6 +684,7 @@ namespace System.Configuration
             return ancestor;
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public string GetRawXml()
         {
             VerifyDesigntime();
@@ -664,6 +693,7 @@ namespace System.Configuration
             return RawXml ?? _configRecord?.GetRawXml(ConfigKey);
         }
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public void SetRawXml(string rawXml)
         {
             VerifyIsEditable();

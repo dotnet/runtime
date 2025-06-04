@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Configuration
 {
@@ -47,6 +48,7 @@ namespace System.Configuration
         //
         // Note: Watch out for a situation where you request a section
         //       that will call you.
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public object GetSection(string sectionName)
         {
             return _configRecord.GetSection(sectionName);

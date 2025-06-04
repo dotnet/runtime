@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public sealed class SettingElement : ConfigurationElement
     {
         private static readonly ConfigurationProperty s_propName = new ConfigurationProperty(
@@ -61,6 +63,8 @@ namespace System.Configuration
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("name", IsRequired = true, IsKey = true, DefaultValue = "")]
         public string Name
         {
@@ -74,6 +78,8 @@ namespace System.Configuration
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("serializeAs", IsRequired = true, DefaultValue = SettingsSerializeAs.String)]
         public SettingsSerializeAs SerializeAs
         {
@@ -87,6 +93,8 @@ namespace System.Configuration
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCodeMessage",
+            Justification = "Reflection access to the ConfigurationPropertyAttribute instance is covered by RequiresUnreferencedCode on the class: https://github.com/dotnet/runtime/issues/108454")]
         [ConfigurationProperty("value", IsRequired = true, DefaultValue = null)]
         public SettingValueElement Value
         {

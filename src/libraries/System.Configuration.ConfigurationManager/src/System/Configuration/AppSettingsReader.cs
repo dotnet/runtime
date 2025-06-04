@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Configuration
@@ -16,6 +17,7 @@ namespace System.Configuration
         private static readonly Type s_stringType = typeof(string);
         private const string NullString = "None";
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         public AppSettingsReader()
         {
             _map = System.Configuration.ConfigurationManager.AppSettings;

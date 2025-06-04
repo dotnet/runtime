@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Internal;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Configuration
@@ -21,6 +22,7 @@ namespace System.Configuration
         private bool _isUserConfigInited;
         private IInternalConfigRecord _machineConfigRecord;
 
+        [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
         internal ClientConfigurationSystem()
         {
             IConfigSystem configSystem = new ConfigSystem();

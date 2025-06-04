@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration.Internal;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -14,6 +15,7 @@ using System.Xml;
 
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     internal sealed class MgmtConfigurationRecord : BaseConfigurationRecord
     {
         private const int DefaultIndent = 4;
@@ -810,7 +812,10 @@ namespace System.Configuration
         //
         // Called from ConfigurationSectionGroupCollection.Add().
         // Note this method DOES NOT update the associated ConfigurationSectionGroupCollection.
-        internal void AddConfigurationSectionGroup(string group, string name,
+        internal void AddConfigurationSectionGroup(
+            string group,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            string name,
             ConfigurationSectionGroup configSectionGroup)
         {
             // <location> tags can't have a <configSections> declaration.

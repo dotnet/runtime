@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Configuration
 {
+    [RequiresUnreferencedCode(ConfigurationManager.TrimWarning)]
     public sealed class InfiniteTimeSpanConverter : ConfigurationConverterBase
     {
         private static readonly TypeConverter s_timeSpanConverter = TypeDescriptor.GetConverter(typeof(TimeSpan));
