@@ -1406,41 +1406,6 @@ void HijackFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 #endif // TARGET_X86
 #endif // FEATURE_HIJACK
 
-void ProtectByRefsFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
-
-    ByRefInfo *pByRefInfos = m_brInfo;
-    while (pByRefInfos)
-    {
-        if (!CorIsPrimitiveType(pByRefInfos->typ))
-        {
-            TADDR pData = PTR_HOST_MEMBER_TADDR(ByRefInfo, pByRefInfos, data);
-
-            if (pByRefInfos->typeHandle.IsValueType())
-            {
-                ReportPointersFromValueType(fn, sc, pByRefInfos->typeHandle.GetMethodTable(), PTR_VOID(pData));
-            }
-            else
-            {
-                PTR_PTR_Object ppObject = PTR_PTR_Object(pData);
-
-                LOG((LF_GC, INFO3, "ProtectByRefs Frame Promoting" FMT_ADDR "to ", DBG_ADDR(*ppObject)));
-
-                (*fn)(ppObject, sc, CHECK_APP_DOMAIN);
-
-                LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(*ppObject) ));
-            }
-        }
-        pByRefInfos = pByRefInfos->pNext;
-    }
-}
-
 void ProtectValueClassFrame::GcScanRoots_Impl(promote_func *fn, ScanContext *sc)
 {
     CONTRACTL
