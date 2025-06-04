@@ -23,10 +23,6 @@
 // Have one internal, well-known, literal for the empty string.
 const BYTE SString::s_EmptyBuffer[2] = { 0 };
 
-// @todo: these need to be initialized by calling GetACP()
-
-UINT SString::s_ACP = 0;
-
 #ifndef DACCESS_COMPILE
 static BYTE s_EmptySpace[sizeof(SString)] = { 0 };
 #endif // DACCESS_COMPILE
@@ -38,18 +34,14 @@ void SString::Startup()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    if (s_ACP == 0)
-    {
-        UINT ACP = GetACP();
-
 #ifndef DACCESS_COMPILE
-        s_Empty = PTR_SString(new (s_EmptySpace) SString());
-        s_Empty->SetNormalized();
-#endif // DACCESS_COMPILE
-
-        MemoryBarrier();
-        s_ACP = ACP;
+    if (s_Empty == NULL)
+    {
+        SString* emptyString = new (s_EmptySpace) SString();
+        emptyString->SetNormalized();
+        s_Empty = PTR_SString(emptyString);
     }
+#endif // DACCESS_COMPILE
 }
 
 CHECK SString::CheckStartup()

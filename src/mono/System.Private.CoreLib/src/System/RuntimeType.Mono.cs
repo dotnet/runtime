@@ -1327,6 +1327,8 @@ namespace System
         // Returns true for generic parameters with the Enum constraint.
         public override bool IsEnum => GetBaseType() == EnumType;
 
+        public override bool IsCollectible => false;
+
         // Returns true for actual enum types only, ignoring generic parameter constraints.
         internal bool IsActualEnum
         {

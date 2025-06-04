@@ -1323,7 +1323,7 @@ namespace System.Collections.Generic
             if (Count == 0)
                 return false;
 
-            if (other is ICollection<T> c && c.Count == 0)
+            if (other is IReadOnlyCollection<T> c && c.Count == 0)
                 return false;
 
             SortedSet<T>? asSorted = other as SortedSet<T>;

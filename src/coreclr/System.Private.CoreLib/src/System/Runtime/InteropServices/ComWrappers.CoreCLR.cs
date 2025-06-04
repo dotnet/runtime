@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
             => GetIUnknownImplInternal(out fpQueryInterface, out fpAddRef, out fpRelease);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_GetIUnknownImpl")]
