@@ -96,9 +96,9 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
           buildConfig: checked
           platforms:
-          - windows_x64
+          - osx_arm64
           - windows_x86
-          helixQueueGroup: ci
+          helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
@@ -114,7 +114,7 @@ extends:
           - windows_x64
           - windows_x86
           - linux_x64
-          helixQueueGroup: ci
+          helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
