@@ -487,7 +487,7 @@ namespace System.Net.Security
                     cryptoSettingsCount++;
                 }
 
-                tlsParameters.pDisabledCrypto = &MemoryMarshal.GetReference(cryptoSettings);
+                tlsParameters.pDisabledCrypto = (Interop.SspiCli.CRYPTO_SETTINGS*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(cryptoSettings));
                 tlsParameters.cDisabledCrypto = cryptoSettingsCount;
 
                 return AcquireCredentialsHandle(direction, &credential);
