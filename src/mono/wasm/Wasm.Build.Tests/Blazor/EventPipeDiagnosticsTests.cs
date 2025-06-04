@@ -83,6 +83,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/116303")]
     public async Task BlazorEventPipeTestWithMetrics()
     {
         string extraProperties = @"
