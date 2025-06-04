@@ -342,27 +342,27 @@ public class AssetsData
 [DataContract]
 public class JsAsset
 {
-    public string url { get; set; }
+    public string name { get; set; }
 }
 
 [DataContract]
 public class SymbolsAsset
 {
-    public string url { get; set; }
+    public string name { get; set; }
 }
 
 [DataContract]
 public class WasmAsset
 {
-    public string url { get; set; }
+    public string name { get; set; }
     public string integrity { get; set; }
 }
 
 [DataContract]
 public class GeneralAsset
 {
+    public string virtualPath { get; set; }
     public string name { get; set; }
-    public string url { get; set; }
     public string integrity { get; set; }
 }
 
@@ -370,7 +370,7 @@ public class GeneralAsset
 public class VfsAsset
 {
     public string virtualPath { get; set; }
-    public string url { get; set; }
+    public string name { get; set; }
     public string integrity { get; set; }
 }
 

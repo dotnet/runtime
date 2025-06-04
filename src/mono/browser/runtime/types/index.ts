@@ -256,20 +256,20 @@ export type Asset = {
     pendingDownload?: LoadingResource
 }
 
-export type AssemblyAsset = Asset & {
+export type WasmAsset = Asset & {
     name: string;
-    url: string;
     hash?: string | null | "";
 }
 
-export type WasmAsset = Asset & {
-    url: string;
+export type AssemblyAsset = Asset & {
+    virtualPath: string;
+    name: string; // actually URL
     hash?: string | null | "";
 }
 
 export type PdbAsset = Asset & {
-    name: string;
-    url: string;
+    virtualPath: string;
+    name: string; // actually URL
     hash?: string | null | "";
 }
 
@@ -280,22 +280,22 @@ export type JsAsset = Asset & {
      */
     moduleExports?: any | Promise<any>,
 
-    url?: string;
+    name?: string; // actually URL
 }
 
 export type SymbolsAsset = Asset & {
-    url: string;
+    name: string; // actually URL
 }
 
 export type VfsAsset = Asset & {
     virtualPath: string;
-    url: string;
+    name: string; // actually URL
     hash?: string | null | "";
 }
 
 export type IcuAsset = Asset & {
-    name: string;
-    url: string;
+    virtualPath: string;
+    name: string; // actually URL
     hash?: string | null | "";
 }
 

@@ -192,12 +192,12 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             assets.wasmNative = resources.wasmNative?.Select(a => new WasmAsset()
             {
-                url = a.Key,
+                name = a.Key,
                 integrity = a.Value
             }).ToList();
             assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
             {
-                url = a.Key,
+                name = a.Key,
             }).ToList();
 
             assets.icu = MapGeneralAssets(resources.icu);
@@ -226,20 +226,20 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets) => assets?.Select(a => new GeneralAsset()
             {
-                name = resources.fingerprinting?[a.Key] ?? a.Key,
-                url = a.Key,
+                virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
+                name = a.Key,
                 integrity = a.Value
             }).ToList();
 
             List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets) => assets?.Select(a => new JsAsset()
             {
-                url = a.Key
+                name = a.Key
             }).ToList();
 
             List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a => new VfsAsset()
             {
                 virtualPath = a.Key,
-                url = a.Value.Keys.First(),
+                name = a.Value.Keys.First(),
                 integrity = a.Value.Values.First()
             }).ToList();
 
