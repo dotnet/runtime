@@ -41,7 +41,7 @@ ReturnKind VarTypeToReturnKind(var_types type)
 
 ReturnKind GCInfo::getReturnKind()
 {
-    // Note the JIT32 GCInfo representation only supports structs with 1 pointer.
+    // Note the JIT32 GCInfo representation only supports structs with 1 GC pointer.
     ReturnTypeDesc retTypeDesc = compiler->compRetTypeDesc;
     const unsigned regCount    = retTypeDesc.GetReturnRegCount();
 
