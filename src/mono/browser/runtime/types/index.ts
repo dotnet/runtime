@@ -182,10 +182,7 @@ export type MonoConfig = {
      */
     applicationCulture?: string,
 
-    /**
-     * definition of assets to load along with the runtime.
-     */
-    resources?: ResourceGroups;
+    resources?: Assets,
 
     /**
      * appsettings files to load to VFS
@@ -211,31 +208,95 @@ export type MonoConfig = {
 
 export type ResourceExtensions = { [extensionName: string]: ResourceList };
 
-export interface ResourceGroups {
+export interface Assets {
     hash?: string;
-    fingerprinting?: { [name: string]: string },
-    coreAssembly?: ResourceList; // nullable only temporarily
-    assembly?: ResourceList; // nullable only temporarily
-    lazyAssembly?: ResourceList; // nullable only temporarily
-    corePdb?: ResourceList;
-    pdb?: ResourceList;
+    coreAssembly?: AssemblyAsset[]; // nullable only temporarily
+    assembly?: AssemblyAsset[]; // nullable only temporarily
+    lazyAssembly?: AssemblyAsset[]; // nullable only temporarily
+    corePdb?: PdbAsset[];
+    pdb?: PdbAsset[];
 
-    jsModuleWorker?: ResourceList;
-    jsModuleDiagnostics?: ResourceList;
-    jsModuleNative: ResourceList;
-    jsModuleRuntime: ResourceList;
-    wasmSymbols?: ResourceList;
-    wasmNative: ResourceList;
-    icu?: ResourceList;
+    jsModuleWorker?: JsAsset[];
+    jsModuleDiagnostics?: JsAsset[];
+    jsModuleNative: JsAsset[];
+    jsModuleRuntime: JsAsset[];
 
-    satelliteResources?: { [cultureName: string]: ResourceList };
+    wasmSymbols?: SymbolsAsset[];
+    wasmNative: WasmAsset[];
+    icu?: IcuAsset[];
 
-    modulesAfterConfigLoaded?: ResourceList,
-    modulesAfterRuntimeReady?: ResourceList
+    satelliteResources?: { [cultureName: string]: AssemblyAsset[] };
+
+    modulesAfterConfigLoaded?: JsAsset[],
+    modulesAfterRuntimeReady?: JsAsset[]
 
     extensions?: ResourceExtensions
-    coreVfs?: { [virtualPath: string]: ResourceList };
-    vfs?: { [virtualPath: string]: ResourceList };
+    coreVfs?: VfsAsset[];
+    vfs?: VfsAsset[];
+}
+
+export type Asset = {
+    /**
+     * this should be absolute url to the asset
+     */
+    resolvedUrl?: string;
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean
+    /**
+     * If provided, runtime doesn't have to fetch the data.
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer | Promise<ArrayBuffer>,
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource
+}
+
+export type AssemblyAsset = Asset & {
+    name: string;
+    url: string;
+    hash?: string | null | "";
+}
+
+export type WasmAsset = Asset & {
+    url: string;
+    hash?: string | null | "";
+}
+
+export type PdbAsset = Asset & {
+    name: string;
+    url: string;
+    hash?: string | null | "";
+}
+
+export type JsAsset = Asset & {
+    /**
+     * If provided, runtime doesn't have to import it's JavaScript modules.
+     * This will not work for multi-threaded runtime.
+     */
+    moduleExports?: any | Promise<any>,
+
+    url?: string;
+}
+
+export type SymbolsAsset = Asset & {
+    url: string;
+}
+
+export type VfsAsset = Asset & {
+    virtualPath: string;
+    url: string;
+    hash?: string | null | "";
+}
+
+export type IcuAsset = Asset & {
+    name: string;
+    url: string;
+    hash?: string | null | "";
 }
 
 /**
