@@ -97,21 +97,6 @@ extends:
           buildConfig: checked
           platforms:
           - osx_arm64
-          helixQueueGroup: superpmi-diffs
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            condition: not(eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
-            diffType: asmdiffs
-            baseJitOptions: ${{ parameters.spmi_jitoptions_base }}
-            diffJitOptions: ${{ parameters.spmi_jitoptions_diff }}
-            pool:
-              vmImage: 'macos-latest'
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
-          buildConfig: checked
-          platforms:
           - windows_x86
           helixQueueGroup: superpmi-diffs
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
