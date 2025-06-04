@@ -111,7 +111,12 @@ class Diff:
         self.spmi_location = os.path.join(coreclr_args.work_directory, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
-        self.host_os = "windows" if platform.system() == "Windows" else "linux"
+        if platform.system() == "Windows":
+            self.host_os = "windows"
+        elif platform.system() == "Darwin":
+            self.host_os = "osx"
+        else:
+            self.host_os = "linux"
 
         with open(coreclr_args.partition_info, "r") as file:
             partition_info = json.load(file)
