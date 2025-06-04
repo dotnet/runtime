@@ -23,7 +23,18 @@
 #include "eventtrace.h"
 #undef ExitProcess
 
+#if __cplusplus < 202002L
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wc++20-compat"
+#endif
+
 using char8_t = unsigned char;
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+#endif
 
 #include "../native/public/FatalErrorHandling.h"
 
