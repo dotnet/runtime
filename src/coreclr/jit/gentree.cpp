@@ -24262,8 +24262,9 @@ GenTree* Compiler::gtNewSimdMaxNode(
                                                                  simdBaseJitType, simdSize);
             GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
             GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
-            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
-            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
+            const int64_t  tblValue   = 0x1;
+            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
             NamedIntrinsic fixupIntrinsic = NI_AVX512_Fixup;
             GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
                                                                      fixupIntrinsic, simdBaseJitType, simdSize);
@@ -24538,8 +24539,9 @@ GenTree* Compiler::gtNewSimdMinNode(
                                                                  simdBaseJitType, simdSize);
             GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
             GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
-            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
-            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
+            const int64_t  tblValue   = 0x1;
+            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
+            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, tblValue);
             NamedIntrinsic fixupIntrinsic = NI_AVX512_Fixup;
             GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
                                                                      fixupIntrinsic, simdBaseJitType, simdSize);
