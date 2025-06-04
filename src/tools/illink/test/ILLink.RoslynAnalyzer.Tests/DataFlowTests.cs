@@ -130,7 +130,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return RunTest (nameof (DynamicDependencyDataflow));
 		}
 
-		[Fact]
+		[Fact (Skip = "https://github.com/dotnet/runtime/issues/116218")]
 		public Task DynamicObjects ()
 		{
 			return RunTest ();

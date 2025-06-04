@@ -60,7 +60,7 @@ namespace System.Reflection.Internal
         private readonly DisposableData _data;
         private readonly int _size;
 
-        internal unsafe MemoryMappedFileBlock(IDisposable accessor, SafeBuffer safeBuffer, long offset, int size)
+        internal MemoryMappedFileBlock(IDisposable accessor, SafeBuffer safeBuffer, long offset, int size)
         {
             _data = new DisposableData(accessor, safeBuffer, offset);
             _size = size;

@@ -747,14 +747,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.AnnotationStore.HasSubstitutedInit(Mono.Cecil.FieldDefinition)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Mono.Linker.AnnotationStore.HasSubstitutedInit(Mono.Cecil.TypeDefinition)</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:Mono.Linker.AnnotationStore.IsIndirectlyCalled(Mono.Cecil.MethodDefinition)</Target>
   </Suppression>
   <Suppression>

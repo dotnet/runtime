@@ -325,6 +325,70 @@ C_FUNC(\Name\()_End):
 
 .endm
 
+// Inlined version of GetThreadEEAllocContext. Target cannot be x0 or x1.
+.macro INLINE_GET_ALLOC_CONTEXT_BASE target
+        .ifc  \target, x0
+                .error "target cannot be x0"
+        .endif
+        .ifc  \target, x1
+                .error "target cannot be x1"
+        .endif
+
+#if defined(FEATURE_EMULATED_TLS) || defined(__APPLE__)
+        PROLOG_SAVE_REG_PAIR_INDEXED      fp, lr, -0x20
+        PROLOG_SAVE_REG_PAIR              x0, x1, 0x10
+
+        bl      C_FUNC(GetThreadEEAllocContext)
+        mov     \target, x0
+
+        EPILOG_RESTORE_REG_PAIR           x0, x1, 0x10
+        EPILOG_RESTORE_REG_PAIR_INDEXED   fp, lr, 0x20
+#else
+        PROLOG_SAVE_REG_PAIR_INDEXED      x0, lr, -0x10
+
+        // This sequence of instructions is recognized and potentially patched
+        // by the linker (GD->IE/LE relaxation).
+        adrp    x0, :tlsdesc:t_runtime_thread_locals
+        ldr     \target, [x0, :tlsdesc_lo12:t_runtime_thread_locals]
+        add     x0, x0, :tlsdesc_lo12:t_runtime_thread_locals
+        blr     \target
+        // End of the sequence
+
+        mrs     \target, TPIDR_EL0
+        add     \target, \target, x0
+
+        .ifnc OFFSETOF__RuntimeThreadLocals__ee_alloc_context, 0
+                add     \target, x0, OFFSETOF__RuntimeThreadLocals__ee_alloc_context
+        .endif
+
+        EPILOG_RESTORE_REG_PAIR_INDEXED   x0, lr, 0x10
+#endif
+.endm
+
+// Pushes a TransitionBlock on the stack without saving the argument registers.
+// See the PROLOG_WITH_TRANSITION_BLOCK macro for the stack layout.
+.macro PUSH_COOP_PINVOKE_FRAME target
+        PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -176
+
+        // Spill callee saved registers
+        PROLOG_SAVE_REG_PAIR   x19, x20, 16
+        PROLOG_SAVE_REG_PAIR   x21, x22, 32
+        PROLOG_SAVE_REG_PAIR   x23, x24, 48
+        PROLOG_SAVE_REG_PAIR   x25, x26, 64
+        PROLOG_SAVE_REG_PAIR   x27, x28, 80
+
+        mov     \target, sp
+.endm 
+
+.macro POP_COOP_PINVOKE_FRAME
+        EPILOG_RESTORE_REG_PAIR   x19, x20, 16
+        EPILOG_RESTORE_REG_PAIR   x21, x22, 32
+        EPILOG_RESTORE_REG_PAIR   x23, x24, 48
+        EPILOG_RESTORE_REG_PAIR   x25, x26, 64
+        EPILOG_RESTORE_REG_PAIR   x27, x28, 80
+        EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 176
+.endm 
+
 // ------------------------------------------------------------------
 // Macro to generate Redirection Stubs
 //

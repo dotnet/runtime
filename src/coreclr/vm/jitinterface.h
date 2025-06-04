@@ -65,7 +65,9 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 }
 
 
-void InitJITHelpers1();
+void InitJITAllocationHelpers();
+
+void InitJITWriteBarrierHelpers();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                         COR_ILMETHOD_DECODER* header,
@@ -143,15 +145,31 @@ EXTERN_C FCDECL1(void*, JIT_GetDynamicGCStaticBaseNoCtor_Portable, DynamicStatic
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor, DynamicStaticsInfo* pStaticsInfo);
 EXTERN_C FCDECL1(void*, JIT_GetDynamicNonGCStaticBaseNoCtor_Portable, DynamicStaticsInfo* pStaticsInfo);
 
-extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
-extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL1(Object*, RhpNewFast, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
 
-extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
-extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
+#if defined(FEATURE_64BIT_ALIGNMENT)
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL1(Object*, RhpNewFastMisalign, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+#endif
 
-extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+#if defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_X86))
+EXTERN_C FCDECL1(Object*, RhpNewFast_UP, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhpNewObjectArrayFast_UP, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, RhNewString_UP, CORINFO_CLASS_HANDLE typeHnd_, DWORD stringLength);
+#endif
+
+EXTERN_C FCDECL1(Object*, RhpNew, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewVariableSizeObject, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL1(Object*, RhpNewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_);
+EXTERN_C FCDECL2(Object*, RhpNewArrayMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+
+EXTERN_C FCDECL1(Object*, AllocateStringFast, DWORD stringLength);
+EXTERN_C FCDECL1(Object*, AllocateStringSlow, DWORD stringLength);
 
 EXTERN_C FCDECL2(void, JITutil_MonReliableEnter, Object* obj, BYTE* pbLockTaken);
 EXTERN_C FCDECL3(void, JITutil_MonTryEnter, Object* obj, INT32 timeOut, BYTE* pbLockTaken);

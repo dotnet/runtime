@@ -476,42 +476,6 @@ class X86NearJump : public InstructionFormat
 
 
 //-----------------------------------------------------------------------
-// InstructionFormat for conditional jump. Set the variationCode
-// to members of X86CondCode.
-//-----------------------------------------------------------------------
-class X86CondJump : public InstructionFormat
-{
-    public:
-        X86CondJump(UINT allowedSizes) : InstructionFormat(allowedSizes)
-        {
-            LIMITED_METHOD_CONTRACT;
-        }
-
-        virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode)
-        {
-        LIMITED_METHOD_CONTRACT
-            return (refsize == k8 ? 2 : 6);
-        }
-
-        virtual VOID EmitInstruction(UINT refsize, int64_t fixedUpReference, BYTE *pOutBufferRX, BYTE *pOutBufferRW, UINT variationCode, BYTE *pDataBuffer)
-        {
-        LIMITED_METHOD_CONTRACT
-        if (refsize == k8)
-        {
-                pOutBufferRW[0] = static_cast<BYTE>(0x70 | variationCode);
-                *((int8_t*)(pOutBufferRW+1)) = (int8_t)fixedUpReference;
-        }
-        else
-        {
-                pOutBufferRW[0] = 0x0f;
-                pOutBufferRW[1] = static_cast<BYTE>(0x80 | variationCode);
-                *((int32_t*)(pOutBufferRW+2)) = (int32_t)fixedUpReference;
-            }
-        }
-};
-
-
-//-----------------------------------------------------------------------
 // InstructionFormat for near call.
 //-----------------------------------------------------------------------
 class X86Call : public InstructionFormat
@@ -770,7 +734,6 @@ static BYTE gX64LeaRIP[sizeof(X64LeaRIP)];
 #endif
 
 static BYTE gX86NearJump[sizeof(X86NearJump)];
-static BYTE gX86CondJump[sizeof(X86CondJump)];
 static BYTE gX86Call[sizeof(X86Call)];
 static BYTE gX86PushImm32[sizeof(X86PushImm32)];
 
@@ -784,7 +747,6 @@ static BYTE gX86PushImm32[sizeof(X86PushImm32)];
     }
     CONTRACTL_END;
     new (gX86NearJump) X86NearJump();
-    new (gX86CondJump) X86CondJump( InstructionFormat::k8|InstructionFormat::k32);
     new (gX86Call) X86Call();
     new (gX86PushImm32) X86PushImm32(InstructionFormat::k32);
 
@@ -823,22 +785,6 @@ VOID StubLinkerCPU::X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg)
     Emit8(static_cast<UINT8>(0xC0 | (srcReg << 3) | destReg));
 }
 
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitMovSPReg(X86Reg srcReg)
-{
-    STANDARD_VM_CONTRACT;
-    const X86Reg kESP = (X86Reg)4;
-    X86EmitMovRegReg(kESP, srcReg);
-}
-
-VOID StubLinkerCPU::X86EmitMovRegSP(X86Reg destReg)
-{
-    STANDARD_VM_CONTRACT;
-    const X86Reg kESP = (X86Reg)4;
-    X86EmitMovRegReg(destReg, kESP);
-}
-
 #ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
@@ -874,32 +820,6 @@ VOID StubLinkerCPU::X86EmitPushImm32(UINT32 value)
 
     Emit8(0x68);
     Emit32(value);
-    Push(sizeof(void*));
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    PUSH <imm32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitPushImm32(CodeLabel &target)
-{
-    STANDARD_VM_CONTRACT;
-
-    EmitLabelRef(&target, reinterpret_cast<X86PushImm32&>(gX86PushImm32), 0);
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    PUSH <imm8>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitPushImm8(BYTE value)
-{
-    STANDARD_VM_CONTRACT;
-
-    Emit8(0x6a);
-    Emit8(value);
     Push(sizeof(void*));
 }
 
@@ -953,106 +873,6 @@ VOID StubLinkerCPU::X86EmitJumpReg(X86Reg reg)
     Emit8(static_cast<BYTE>(0xe0) | static_cast<BYTE>(reg));
 }
 
-//---------------------------------------------------------------
-// Emits:
-//    CMP <reg32>,imm32
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitCmpRegImm32(X86Reg reg, INT32 imm32)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) reg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_AMD64
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-#endif
-
-    if (FitsInI1(imm32)) {
-        Emit8(0x83);
-        Emit8(static_cast<UINT8>(0xF8 | reg));
-        Emit8((INT8)imm32);
-    } else {
-        Emit8(0x81);
-        Emit8(static_cast<UINT8>(0xF8 | reg));
-        Emit32(imm32);
-    }
-}
-
-#ifdef TARGET_AMD64
-//---------------------------------------------------------------
-// Emits:
-//    CMP [reg+offs], imm32
-//    CMP [reg], imm32
-//---------------------------------------------------------------
-VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-{
-    STANDARD_VM_CONTRACT;
-
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-
-    X64EmitCmp32RegIndexImm32(reg, offs, imm32);
-}
-
-VOID StubLinkerCPU:: X64EmitCmp32RegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-#else // TARGET_AMD64
-VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-#endif // TARGET_AMD64
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) reg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-    //
-    // The binary representation of "cmp [mem], imm32" is :
-    // 1000-00sw  mod11-1r/m
-    //
-
-    unsigned wBit = (FitsInI1(imm32) ? 0 : 1);
-    Emit8(static_cast<UINT8>(0x80 | wBit));
-
-    unsigned modBits;
-    if (offs == 0)
-        modBits = 0;
-    else if (FitsInI1(offs))
-        modBits = 1;
-    else
-        modBits = 2;
-
-    Emit8(static_cast<UINT8>((modBits << 6) | 0x38 | reg));
-
-    if (offs)
-    {
-        if (FitsInI1(offs))
-            Emit8((INT8)offs);
-        else
-            Emit32(offs);
-    }
-
-    if (FitsInI1(imm32))
-        Emit8((INT8)imm32);
-    else
-        Emit32(imm32);
-}
 
 //---------------------------------------------------------------
 // Emits:
@@ -1064,94 +884,6 @@ VOID StubLinkerCPU::X86EmitNearJump(CodeLabel *target)
     STANDARD_VM_CONTRACT;
     EmitLabelRef(target, reinterpret_cast<X86NearJump&>(gX86NearJump), 0);
 }
-
-
-//---------------------------------------------------------------
-// Emits:
-//    Jcc <ofs8> or
-//    Jcc <ofs32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitCondJump(CodeLabel *target, X86CondCode::cc condcode)
-{
-    STANDARD_VM_CONTRACT;
-    EmitLabelRef(target, reinterpret_cast<X86CondJump&>(gX86CondJump), condcode);
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    call <ofs32>
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitCall(CodeLabel *target, int iArgBytes)
-{
-    STANDARD_VM_CONTRACT;
-
-    EmitLabelRef(target, reinterpret_cast<X86Call&>(gX86Call), 0);
-
-    INDEBUG(Emit8(0x90));   // Emit a nop after the call in debug so that
-                            // we know that this is a call that can directly call
-                            // managed code
-#ifndef TARGET_AMD64
-    Pop(iArgBytes);
-#endif // !TARGET_AMD64
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//    ret n
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-#if defined(TARGET_AMD64) || defined(UNIX_X86_ABI)
-        PRECONDITION(wArgBytes == 0);
-#endif
-
-    }
-    CONTRACTL_END;
-
-    if (wArgBytes == 0)
-        Emit8(0xc3);
-    else
-    {
-        Emit8(0xc2);
-        Emit16(wArgBytes);
-    }
-
-#ifdef TARGET_X86
-    Pop(wArgBytes);
-#endif
-}
-
-#ifdef TARGET_X86
-VOID StubLinkerCPU::X86EmitPushRegs(unsigned regSet)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (X86Reg r = kEAX; regSet > 0; r = (X86Reg)(r+1))
-        if (regSet & (1U<<r))
-        {
-            X86EmitPushReg(r);
-            regSet &= ~(1U<<r);
-        }
-}
-
-
-VOID StubLinkerCPU::X86EmitPopRegs(unsigned regSet)
-{
-    STANDARD_VM_CONTRACT;
-
-    for (X86Reg r = NumX86Regs; regSet > 0; r = (X86Reg)(r-1))
-        if (regSet & (1U<<r))
-        {
-            X86EmitPopReg(r);
-            regSet &= ~(1U<<r);
-        }
-}
-#endif // TARGET_X86
 
 
 //---------------------------------------------------------------
@@ -1204,52 +936,6 @@ VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, int32_t ofs)
     Push(sizeof(void*));
 }
 
-//---------------------------------------------------------------
-// Emits:
-//    push dword ptr [<baseReg> + <indexReg>*<scale> + <ofs>]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitBaseIndexPush(
-        X86Reg baseReg,
-        X86Reg indexReg,
-        int32_t scale,
-        int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitOffsetModRmSIB(0xff, (X86Reg)0x6, baseReg, indexReg, scale, ofs);
-    Push(sizeof(void*));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//    push dword ptr [ESP + <ofs>]
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSPIndexPush(int32_t ofs)
-{
-    STANDARD_VM_CONTRACT;
-
-    int8_t ofs8 = (int8_t) ofs;
-    if (ofs == (int32_t) ofs8)
-    {
-        // The offset can be expressed in a byte (can use the byte
-        // form of the push esp instruction)
-
-        BYTE code[] = {0xff, 0x74, 0x24, (BYTE)ofs8};
-        EmitBytes(code, sizeof(code));
-    }
-    else
-    {
-        // The offset requires 4 bytes (need to use the long form
-        // of the push esp instruction)
-
-        BYTE code[] = {0xff, 0xb4, 0x24, 0x0, 0x0, 0x0, 0x0};
-        *(int32_t *)(&code[3]) = ofs;
-        EmitBytes(code, sizeof(code));
-    }
-
-    Push(sizeof(void*));
-}
-
 
 //---------------------------------------------------------------
 // Emits:
@@ -1265,84 +951,6 @@ VOID StubLinkerCPU::X86EmitIndexPop(X86Reg srcreg, int32_t ofs)
         X86EmitOp(0x8f,(X86Reg)0x0, srcreg, ofs);
 
     Pop(sizeof(void*));
-}
-
-//---------------------------------------------------------------
-// Emits:
-//   sub esp, IMM
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSubEsp(INT32 imm32)
-{
-    STANDARD_VM_CONTRACT;
-
-    if (imm32 < 0x1000-100)
-    {
-        // As long as the esp size is less than 1 page plus a small
-        // safety fudge factor, we can just bump esp.
-        X86EmitSubEspWorker(imm32);
-    }
-    else
-    {
-        // Otherwise, must touch at least one byte for each page.
-        while (imm32 >= 0x1000)
-        {
-
-            X86EmitSubEspWorker(0x1000-4);
-            X86EmitPushReg(kEAX);
-
-            imm32 -= 0x1000;
-        }
-        if (imm32 < 500)
-        {
-            X86EmitSubEspWorker(imm32);
-        }
-        else
-        {
-            // If the remainder is large, touch the last byte - again,
-            // as a fudge factor.
-            X86EmitSubEspWorker(imm32-4);
-            X86EmitPushReg(kEAX);
-        }
-    }
-}
-
-
-//---------------------------------------------------------------
-// Emits:
-//   sub esp, IMM
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitSubEspWorker(INT32 imm32)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-    // On Win32, stacks must be faulted in one page at a time.
-        PRECONDITION(imm32 < 0x1000);
-    }
-    CONTRACTL_END;
-
-    if (!imm32)
-    {
-        // nop
-    }
-    else
-    {
-        X86_64BitOperands();
-
-        if (FitsInI1(imm32))
-        {
-            Emit16(0xec83);
-            Emit8((INT8)imm32);
-        }
-        else
-        {
-            Emit16(0xec81);
-            Emit32(imm32);
-        }
-
-        Push(imm32);
-    }
 }
 
 
@@ -1411,61 +1019,6 @@ VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
     }
 }
 
-//---------------------------------------------------------------
-// Emits: add destReg, srcReg
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitAddRegReg(X86Reg destReg, X86Reg srcReg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitR2ROp(0x01, srcReg, destReg);
-}
-
-
-
-
-VOID StubLinkerCPU::X86EmitSubReg(X86Reg reg, INT32 imm32)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION((int) reg < NumX86Regs);
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_AMD64
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-#endif
-
-    if (FitsInI1(imm32)) {
-        Emit8(0x83);
-        Emit8(static_cast<UINT8>(0xE8 | reg));
-        Emit8(static_cast<UINT8>(imm32));
-    } else {
-        Emit8(0x81);
-        Emit8(static_cast<UINT8>(0xE8 | reg));
-        Emit32(imm32);
-    }
-}
-
-//---------------------------------------------------------------
-// Emits: sub destReg, srcReg
-//---------------------------------------------------------------
-
-VOID StubLinkerCPU::X86EmitSubRegReg(X86Reg destReg, X86Reg srcReg)
-{
-    STANDARD_VM_CONTRACT;
-
-    X86EmitR2ROp(0x29, srcReg, destReg);
-}
 
 #if defined(TARGET_AMD64)
 
@@ -2143,70 +1696,6 @@ static const X86Reg c_argRegs[] = {
 #endif
 
 #ifdef TARGET_X86
-
-#ifdef TARGET_UNIX
-namespace
-{
-    gc_alloc_context* STDCALL GetAllocContextHelper()
-    {
-        return &t_runtime_thread_locals.alloc_context.m_GCAllocContext;
-    }
-}
-#endif
-
-VOID StubLinkerCPU::X86EmitCurrentThreadAllocContextFetch(X86Reg dstreg, unsigned preservedRegSet)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        // It doesn't make sense to have the destination register be preserved
-        PRECONDITION((preservedRegSet & (1 << dstreg)) == 0);
-        AMD64_ONLY(PRECONDITION(dstreg < 8)); // code below doesn't support high registers
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_UNIX
-
-    X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
-
-    // call GetThread
-    X86EmitCall(NewExternalCodeLabel((LPVOID)GetAllocContextHelper), 0);
-
-    // mov dstreg, eax
-    X86EmitMovRegReg(dstreg, kEAX);
-
-    X86EmitPopRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
-
-#ifdef _DEBUG
-    // Trash caller saved regs that we were not told to preserve, and that aren't the dstreg.
-    preservedRegSet |= 1 << dstreg;
-    if (!(preservedRegSet & (1 << kEAX)))
-        X86EmitDebugTrashReg(kEAX);
-    if (!(preservedRegSet & (1 << kEDX)))
-        X86EmitDebugTrashReg(kEDX);
-    if (!(preservedRegSet & (1 << kECX)))
-        X86EmitDebugTrashReg(kECX);
-#endif // _DEBUG
-
-#else // TARGET_UNIX
-
-    BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
-    static const int regByteIndex = 2;
-
-    code[regByteIndex] |= (dstreg << 3);
-
-    EmitBytes(code, sizeof(code));
-    Emit32(offsetof(TEB, ThreadLocalStoragePointer));
-
-    X86EmitIndexRegLoad(dstreg, dstreg, sizeof(void *) * _tls_index);
-
-    _ASSERTE(Thread::GetOffsetOfThreadStatic(&t_runtime_thread_locals.alloc_context) < INT_MAX);
-    X86EmitAddReg(dstreg, (int32_t)Thread::GetOffsetOfThreadStatic(&t_runtime_thread_locals.alloc_context));
-
-#endif // TARGET_UNIX
-}
-
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both

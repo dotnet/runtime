@@ -14,12 +14,12 @@
 #include <palsuite.h>
 
 const int ChildThreadSleepTime = 2000;
-const int InterruptTime = 1000; 
+const int InterruptTime = 1000;
 /* We need to keep in mind that BSD has a timer resolution of 10ms, so
-   we need to adjust our delta to keep that in mind. Besides we need some 
-   tolerance to account for different scheduling strategies, heavy load 
+   we need to adjust our delta to keep that in mind. Besides we need some
+   tolerance to account for different scheduling strategies, heavy load
    scenarios, etc.
-   
+
    Real-world data also tells us we can expect a big difference between
    values when run on real iron vs run in a hypervisor.
 
@@ -50,15 +50,15 @@ PALTEST(threading_SleepEx_test2_paltest_sleepex_test2, "threading/SleepEx/test2/
     }
 
     /*
-      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects 
-      (such as conditions) involves some pthread internal initialization that 
+      On some platforms (e.g. FreeBSD 4.9) the first call to some synch objects
+      (such as conditions) involves some pthread internal initialization that
       can make the first wait slighty longer, potentially going above the
       acceptable delta for this test. Let's add a dummy wait to preinitialize
       internal structures
     */
     Sleep(100);
-  
-    /* 
+
+    /*
      * Check that Queueing an APC in the middle of a sleep does interrupt
      * it, if it's in an alertable state.
      */
@@ -73,12 +73,12 @@ PALTEST(threading_SleepEx_test2_paltest_sleepex_test2, "threading/SleepEx/test2/
     if (dwAvgDelta > AcceptableDelta)
     {
         Fail("Expected thread to sleep for %d ms (and get interrupted).\n"
-             "Average delta: %u ms,  acceptable delta: %u\n", 
+             "Average delta: %u ms,  acceptable delta: %u\n",
              InterruptTime, dwAvgDelta, AcceptableDelta);
     }
 
-    /* 
-     * Check that Queueing an APC in the middle of a sleep does NOT interrupt 
+    /*
+     * Check that Queueing an APC in the middle of a sleep does NOT interrupt
      * it, if it is not in an alertable state.
      */
     dwAvgDelta = 0;
@@ -92,7 +92,7 @@ PALTEST(threading_SleepEx_test2_paltest_sleepex_test2, "threading/SleepEx/test2/
     if (dwAvgDelta > AcceptableDelta)
     {
         Fail("Expected thread to sleep for %d ms (and not be interrupted).\n"
-             "Average delta: %u ms,  acceptable delta: %u\n", 
+             "Average delta: %u ms,  acceptable delta: %u\n",
              ChildThreadSleepTime, dwAvgDelta, AcceptableDelta);
     }
 
@@ -108,7 +108,7 @@ void RunTest_SleepEx_test2(BOOL AlertThread)
 
     s_preWaitTimestampRecorded = false;
     hThread = CreateThread( NULL,
-                            0, 
+                            0,
                             (LPTHREAD_START_ROUTINE)SleeperProc_SleepEx_test2,
                             (LPVOID) AlertThread,
                             0,
@@ -141,7 +141,7 @@ void RunTest_SleepEx_test2(BOOL AlertThread)
     ret = WaitForSingleObject(hThread, INFINITE);
     if (ret == WAIT_FAILED)
     {
-        Fail("Unable to wait on child thread!\nGetLastError returned %d.", 
+        Fail("Unable to wait on child thread!\nGetLastError returned %d.",
             GetLastError());
     }
 }
@@ -166,7 +166,7 @@ DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter)
     s_preWaitTimestampRecorded = true;
 
     ret = SleepEx(ChildThreadSleepTime, Alertable);
-    
+
     NewTimeStamp = minipal_hires_ticks();
 
     if (Alertable && ret != WAIT_IO_COMPLETION)
@@ -180,7 +180,7 @@ DWORD PALAPI SleeperProc_SleepEx_test2(LPVOID lpParameter)
     }
 
 
-    ThreadSleepDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);;
+    ThreadSleepDelta = (NewTimeStamp - OldTimeStamp) / (minipal_hires_tick_frequency() / 1000);
 
     return 0;
 }

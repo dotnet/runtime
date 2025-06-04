@@ -384,16 +384,6 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     /* The purpose of the INSTALL_UNWIND_AND_CONTINUE_HANDLER is to translate an exception to a managed */ \
     /* exception before it hits managed code. */
 
-// Optimized version for helper method frame. Avoids redundant GetThread() calls.
-#define INSTALL_UNWIND_AND_CONTINUE_HANDLER_FOR_HMF(pHelperFrame)                           \
-    {                                                                                       \
-        Exception* __pUnCException  = NULL;                                                 \
-        Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCaught = false;                                             \
-        SCAN_EHMARKER();                                                                    \
-        if (true) PAL_CPP_TRY {                                                             \
-            SCAN_EHMARKER_TRY();
-
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(nativeRethrow)                      \
             SCAN_EHMARKER_END_TRY();                                                        \
         }                                                                                   \
