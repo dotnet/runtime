@@ -94,6 +94,7 @@ private:
     bool      TryLowerAddSubToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryLowerNegToMulLongOp(GenTreeOp* op, GenTree** next);
     bool      TryContainingCselOp(GenTreeHWIntrinsic* parentNode, GenTreeHWIntrinsic* childNode);
+    bool      TryContainingGetActiveElementCount(GenTreeOp* node);
 #endif
 #ifdef TARGET_RISCV64
     bool TryLowerShiftAddToShxadd(GenTreeOp* tree, GenTree** next);
