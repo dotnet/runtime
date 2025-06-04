@@ -33249,7 +33249,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                     return op2;
                 }
 
-                if (op1->IsVectorZero())
+                if (op1->IsVectorZero() || op1->IsFalseMask())
                 {
                     return gtWrapWithSideEffects(op3, op2, GTF_ALL_EFFECT);
                 }
@@ -33414,7 +33414,7 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
     return false;
 }
 
-bool GenTree::IsMaskZero() const
+bool GenTree::IsFalseMask() const
 {
 #ifdef TARGET_ARM64
     static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
@@ -33435,7 +33435,10 @@ bool GenTree::IsMaskZero() const
         return ((id == NI_Sve_CreateFalseMaskAll) ||
                 ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64)));
     }
-
+    else if (IsCnsMsk())
+    {
+        return AsMskCon()->IsZero();
+    }
 #endif
     return false;
 }
