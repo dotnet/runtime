@@ -55,6 +55,7 @@ extends:
           platforms:
           - windows_x64
           - windows_x86
+          - osx_arm64
           jobParameters:
             buildArgs: -s clr.alljits+clr.alljitscommunity+clr.spmi -c $(_BuildConfig)
             postBuildSteps:
