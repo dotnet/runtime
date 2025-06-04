@@ -307,7 +307,7 @@ namespace Internal.Runtime.TypeLoader
         // Sentinel static to allow us to initialize _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
 #pragma warning disable CA1825 // Can't use generic Array.Empty<T> within type loader
-        private static bool[] s_emptyLayout = new bool[0];
+        internal static bool[] s_emptyLayout = new bool[0];
 #pragma warning restore CA1825
 
         private bool[] _instanceGCLayout;
@@ -340,9 +340,7 @@ namespace Internal.Runtime.TypeLoader
                             TypeBuilder.GCLayout elementGcLayout = GetFieldGCLayout(arrayType.ElementType);
                             if (!elementGcLayout.IsNone)
                             {
-                                bool[] instanceGCLayout = s_emptyLayout;
-                                elementGcLayout.WriteToBitfield(ref instanceGCLayout, 0);
-                                _instanceGCLayout = instanceGCLayout;
+                                _instanceGCLayout = elementGcLayout.WriteToBitfield();
                             }
                         }
                         else
