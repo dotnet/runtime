@@ -446,49 +446,49 @@ namespace System.Net.Security
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
 
             Interop.SspiCli.TLS_PARAMETERS tlsParameters = default;
+            credential.cTlsParameters = 1;
+            credential.pTlsParameters = &tlsParameters;
+
             if (protocolFlags != 0)
             {
-                credential.cTlsParameters = 1;
-                credential.pTlsParameters = &tlsParameters;
-
-                // If we were asked to do specific protocol we need to fill TLS_PARAMETERS.
                 tlsParameters.grbitDisabledProtocols = (uint)protocolFlags ^ uint.MaxValue;
             }
 
             Span<Interop.SspiCli.CRYPTO_SETTINGS> cryptoSettings = stackalloc Interop.SspiCli.CRYPTO_SETTINGS[2];
-            Span<IntPtr> algIdPtrs = stackalloc IntPtr[2];
+
+            // init to null ptrs to prevent freeing uninitialized memory in finally block
+            Span<IntPtr> algIdPtrs = stackalloc IntPtr[2] { IntPtr.Zero, IntPtr.Zero };
             int cryptoSettingsCount = 0;
 
             try
             {
-                if (cryptoSettings.Length > 0)
+                if (!authOptions.AllowRsaPkcs1Padding)
                 {
-                    if (!authOptions.AllowRsaPkcs1Padding)
+                    algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PKCS_PAD");
+
+                    cryptoSettings[cryptoSettingsCount] = new()
                     {
-                        algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PKCS_PAD");
+                        eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig
+                    };
 
-                        cryptoSettings[cryptoSettingsCount] = default;
-                        cryptoSettings[cryptoSettingsCount].eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig;
-                        Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
-                        cryptoSettingsCount++;
-                    }
-
-                    if (!authOptions.AllowRsaPssPadding)
-                    {
-                        algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PSS_PAD");
-
-                        cryptoSettings[cryptoSettingsCount] = default;
-                        cryptoSettings[cryptoSettingsCount].eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig;
-                        Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
-                        cryptoSettingsCount++;
-                    }
-
-                    tlsParameters.pDisabledCrypto = (Interop.SspiCli.CRYPTO_SETTINGS*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(cryptoSettings));
-                    tlsParameters.cDisabledCrypto = cryptoSettingsCount;
-
-                    credential.cTlsParameters = 1;
-                    credential.pTlsParameters = &tlsParameters;
+                    Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
+                    cryptoSettingsCount++;
                 }
+
+                if (!authOptions.AllowRsaPssPadding)
+                {
+                    algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PSS_PAD");
+
+                    cryptoSettings[cryptoSettingsCount] = new()
+                    {
+                        eAlgorithmUsage = Interop.SspiCli.CRYPTO_SETTINGS.TlsAlgorithmUsage.TlsParametersCngAlgUsageCertSig
+                    };
+                    Interop.NtDll.RtlInitUnicodeString(out cryptoSettings[cryptoSettingsCount].strCngAlgId, algIdPtrs[cryptoSettingsCount]);
+                    cryptoSettingsCount++;
+                }
+
+                tlsParameters.pDisabledCrypto = &MemoryMarshal.GetReference(cryptoSettings);
+                tlsParameters.cDisabledCrypto = cryptoSettingsCount;
 
                 return AcquireCredentialsHandle(direction, &credential);
             }
@@ -496,7 +496,10 @@ namespace System.Net.Security
             {
                 foreach (IntPtr algIdPtr in algIdPtrs.Slice(0, cryptoSettingsCount))
                 {
-                    Marshal.FreeHGlobal(algIdPtr);
+                    if (algIdPtr != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(algIdPtr);
+                    }
                 }
             }
         }
