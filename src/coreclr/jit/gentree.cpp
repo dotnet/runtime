@@ -33417,12 +33417,6 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 bool GenTree::IsFalseMask() const
 {
 #ifdef TARGET_ARM64
-    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
-                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
-                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
-                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
-                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
-
     if (OperIsHWIntrinsic())
     {
         NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
@@ -33432,8 +33426,7 @@ bool GenTree::IsFalseMask() const
             assert(op1->OperIsHWIntrinsic());
             id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
         }
-        return ((id == NI_Sve_CreateFalseMaskAll) ||
-                ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64)));
+        return (id == NI_Sve_CreateFalseMaskByte);
     }
     else if (IsCnsMsk())
     {

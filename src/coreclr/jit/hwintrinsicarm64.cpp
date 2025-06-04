@@ -3404,6 +3404,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 //
 GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
 {
+    // TODO: This should import constant vector all bits set
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateTrueMaskAll, simdBaseJitType, simdSize);
 }
 
@@ -3418,6 +3419,7 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 //
 GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
 {
+    // TODO: This should import constant vector 0
     return gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_CreateFalseMaskByte, CORINFO_TYPE_UBYTE, simdSize);
 }
 
