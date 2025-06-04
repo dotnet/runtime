@@ -541,7 +541,7 @@ void Compiler::lvaInitUserArgs(unsigned* curVarNum, unsigned skipArgs, unsigned 
                 continue;
             }
 
-            if (varDsc->TypeGet() == TYP_STRUCT)
+            if (varDsc->TypeIs(TYP_STRUCT))
             {
                 // Struct parameters are lowered to separate primitives in the
                 // Swift calling convention. We cannot handle these patterns
@@ -886,7 +886,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         const ABIPassingInformation& abiInfo  = lvaGetParameterABIInfo(i);
         LclVarDsc*                   varDsc   = lvaGetDesc(i);
         bool                         preSpill = opts.compUseSoftFP && varTypeIsFloating(varDsc);
-        preSpill |= varDsc->TypeGet() == TYP_STRUCT;
+        preSpill |= varDsc->TypeIs(TYP_STRUCT);
 
         if (!preSpill)
         {
@@ -903,7 +903,7 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         }
 
         codeGen->regSet.rsMaskPreSpillRegArg |= regs;
-        if (varDsc->lvStructDoubleAlign || (varDsc->TypeGet() == TYP_DOUBLE))
+        if (varDsc->lvStructDoubleAlign || varDsc->TypeIs(TYP_DOUBLE))
         {
             doubleAlignMask |= regs;
         }
@@ -2336,7 +2336,7 @@ bool Compiler::lvaIsImplicitByRefLocal(unsigned lclNum) const
     {
         assert(varDsc->lvIsParam);
 
-        assert(varTypeIsStruct(varDsc) || (varDsc->TypeGet() == TYP_BYREF));
+        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_BYREF));
         return true;
     }
 #endif // FEATURE_IMPLICIT_BYREFS
@@ -2769,7 +2769,7 @@ unsigned Compiler::lvaLclStackHomeSize(unsigned varNum)
     // this for arguments, which must be passed according the defined ABI. We don't want to do this for
     // dependently promoted struct fields, but we don't know that here. See lvaMapSimd12ToSimd16().
     // (Note that for 64-bits, we are already rounding up to 16.)
-    if (varDsc->TypeGet() == TYP_SIMD12)
+    if (varDsc->TypeIs(TYP_SIMD12))
     {
         return 16;
     }
@@ -3249,7 +3249,7 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
         }
         else
         {
-            assert((TypeGet() == TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+            assert(TypeIs(TYP_STRUCT) && tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
             layout = GetLayout();
         }
 
@@ -3276,10 +3276,10 @@ var_types LclVarDsc::GetRegisterType(const GenTreeLclVarCommon* tree) const
 //
 var_types LclVarDsc::GetRegisterType() const
 {
-    if (TypeGet() != TYP_STRUCT)
+    if (!TypeIs(TYP_STRUCT))
     {
 #if !defined(TARGET_64BIT)
-        if (TypeGet() == TYP_LONG)
+        if (TypeIs(TYP_LONG))
         {
             return TYP_UNDEF;
         }
@@ -3551,8 +3551,8 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
         // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
         assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
-               (tree->TypeIs(TYP_BYREF) && (varDsc->TypeGet() == TYP_I_IMPL)) || // Created by inliner substitution.
-               (tree->TypeIs(TYP_INT) && (varDsc->TypeGet() == TYP_LONG)));      // Created by "optNarrowTree".
+               (tree->TypeIs(TYP_BYREF) && varDsc->TypeIs(TYP_I_IMPL)) || // Created by inliner substitution.
+               (tree->TypeIs(TYP_INT) && varDsc->TypeIs(TYP_LONG)));      // Created by "optNarrowTree".
     }
 }
 
@@ -5378,7 +5378,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             bool allocateOnFrame = varDsc->lvOnFrame;
 
             if (varDsc->lvRegister && (lvaDoneFrameLayout == REGALLOC_FRAME_LAYOUT) &&
-                ((varDsc->TypeGet() != TYP_LONG) || (varDsc->GetOtherReg() != REG_STK)))
+                (!varDsc->TypeIs(TYP_LONG) || (varDsc->GetOtherReg() != REG_STK)))
             {
                 allocateOnFrame = false;
             }
@@ -6225,7 +6225,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
     const LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
 #ifdef TARGET_ARM
-    if (varDsc->TypeGet() == TYP_DOUBLE)
+    if (varDsc->TypeIs(TYP_DOUBLE))
     {
         // The assigned registers are `lvRegNum:RegNext(lvRegNum)`
         printf("%3s:%-3s    ", getRegName(varDsc->GetRegNum()), getRegName(REG_NEXT(varDsc->GetRegNum())));

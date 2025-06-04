@@ -2395,7 +2395,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
             op2     = impPopStack().val;
 
-            if (op2->TypeGet() == TYP_STRUCT)
+            if (op2->TypeIs(TYP_STRUCT))
             {
                 info.compNeedsConsecutiveRegisters = true;
                 unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
@@ -2415,7 +2415,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Although the API specifies a pointer, if what we have is a BYREF, that's what
                     // we really want, so throw away the cast.
-                    if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                    if (op1->gtGetOp1()->TypeIs(TYP_BYREF))
                     {
                         op1 = op1->gtGetOp1();
                     }
@@ -2425,7 +2425,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                if (op2->TypeGet() == TYP_SIMD16)
+                if (op2->TypeIs(TYP_SIMD16))
                 {
                     // Update the simdSize explicitly as Vector128 variant of Store() is present in AdvSimd instead of
                     // AdvSimd.Arm64.
@@ -2563,12 +2563,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType             = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1                 = getArgForHWIntrinsic(argType, argClass);
 
-            assert(op2->TypeGet() == TYP_STRUCT);
+            assert(op2->TypeIs(TYP_STRUCT));
             if (op1->OperIs(GT_CAST))
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
                 // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                if (op1->gtGetOp1()->TypeIs(TYP_BYREF))
                 {
                     op1 = op1->gtGetOp1();
                 }
@@ -2596,7 +2596,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 3);
             assert(retType == TYP_VOID);
 
-            if (!mustExpand && !impStackTop(0).val->IsCnsIntOrI() && (impStackTop(1).val->TypeGet() == TYP_STRUCT))
+            if (!mustExpand && !impStackTop(0).val->IsCnsIntOrI() && impStackTop(1).val->TypeIs(TYP_STRUCT))
             {
                 // TODO-ARM64-CQ: Support rewriting nodes that involves
                 // GenTreeFieldList as user calls during rationalization
@@ -2616,7 +2616,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             int      immLowerBound = 0;
             int      immUpperBound = 0;
 
-            if (op2->TypeGet() == TYP_STRUCT)
+            if (op2->TypeIs(TYP_STRUCT))
             {
                 info.compNeedsConsecutiveRegisters = true;
                 intrinsic = simdSize == 8 ? NI_AdvSimd_StoreSelectedScalar : NI_AdvSimd_Arm64_StoreSelectedScalar;
@@ -2647,7 +2647,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
                 // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                if (op1->gtGetOp1()->TypeIs(TYP_BYREF))
                 {
                     op1 = op1->gtGetOp1();
                 }
@@ -2837,7 +2837,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
                 // we really want, so throw away the cast.
-                if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                if (op1->gtGetOp1()->TypeIs(TYP_BYREF))
                 {
                     op1 = op1->gtGetOp1();
                 }
@@ -2865,7 +2865,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
                 // we really want, so throw away the cast.
-                if (op2->gtGetOp1()->TypeGet() == TYP_BYREF)
+                if (op2->gtGetOp1()->TypeIs(TYP_BYREF))
                 {
                     op2 = op2->gtGetOp1();
                 }
@@ -2911,14 +2911,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 // Although the API specifies a pointer, if what we have is a BYREF, that's what
                 // we really want, so throw away the cast.
-                if (op3->gtGetOp1()->TypeGet() == TYP_BYREF)
+                if (op3->gtGetOp1()->TypeIs(TYP_BYREF))
                 {
                     op3 = op3->gtGetOp1();
                 }
             }
 
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
-            assert(op1->TypeGet() == TYP_STRUCT);
+            assert(op1->TypeIs(TYP_STRUCT));
 
             info.compNeedsConsecutiveRegisters = true;
             unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
@@ -2951,7 +2951,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
             op1     = impPopStack().val;
 
-            if (op1->TypeGet() == TYP_STRUCT)
+            if (op1->TypeIs(TYP_STRUCT))
             {
                 info.compNeedsConsecutiveRegisters = true;
                 unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
@@ -2991,7 +2991,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2     = impPopStack().val;
             op1     = impPopStack().val;
 
-            if (op2->TypeGet() == TYP_STRUCT)
+            if (op2->TypeIs(TYP_STRUCT))
             {
                 info.compNeedsConsecutiveRegisters = true;
                 unsigned fieldCount                = info.compCompHnd->getClassNumInstanceFields(argClass);
@@ -3030,7 +3030,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op3                 = impPopStack().val;
             unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
 
-            if (op3->TypeGet() == TYP_STRUCT)
+            if (op3->TypeIs(TYP_STRUCT))
             {
                 info.compNeedsConsecutiveRegisters = true;
                 switch (fieldCount)

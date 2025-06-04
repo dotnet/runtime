@@ -8,6 +8,15 @@
 #include "interpexec.h"
 #include "callstubgenerator.h"
 
+FCDECL1(uint64_t, JIT_Dbl2ULng, double);
+FCDECL1(int64_t, JIT_Dbl2Lng, double);
+FCDECL1(uint32_t, JIT_Dbl2UInt, double);
+FCDECL1(int32_t, JIT_Dbl2Int, double);
+FCDECL1(float, JIT_ULng2Flt, uint64_t val);
+FCDECL1(double, JIT_ULng2Dbl, uint64_t val);
+FCDECL1(float, JIT_Lng2Flt, int64_t val);
+FCDECL1(double, JIT_Lng2Dbl, int64_t val);
+
 void InvokeCompiledMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet)
 {
     CONTRACTL
@@ -238,11 +247,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int8_t)(int32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (int8_t)HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_I1_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int8_t)(int32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (int8_t)HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_I4:
@@ -254,11 +263,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)(uint32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_U1_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)(uint32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (uint8_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_I4:
@@ -270,11 +279,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int16_t)(int32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (int16_t)HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_I2_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int16_t)(int32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (int16_t)HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_I4:
@@ -286,27 +295,29 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)(uint32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_U2_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)(uint32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = (uint16_t)HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_I4_R4:
-                    LOCAL_VAR(ip[1], int32_t) = (int32_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int32_t) = HCCALL1(JIT_Dbl2Int, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;;
                 case INTOP_CONV_I4_R8:
-                    LOCAL_VAR(ip[1], int32_t) = (int32_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int32_t) = HCCALL1(JIT_Dbl2Int, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;;
-
                 case INTOP_CONV_U4_R4:
-                case INTOP_CONV_U4_R8:
-                    assert(0);
+                    LOCAL_VAR(ip[1], uint32_t) = HCCALL1(JIT_Dbl2UInt, (double)LOCAL_VAR(ip[2], float));
+                    ip += 3;
                     break;
-
+                case INTOP_CONV_U4_R8:
+                    LOCAL_VAR(ip[1], uint32_t) = HCCALL1(JIT_Dbl2UInt, LOCAL_VAR(ip[2], double));
+                    ip += 3;
+                    break;
                 case INTOP_CONV_I8_I4:
                     LOCAL_VAR(ip[1], int64_t) = LOCAL_VAR(ip[2], int32_t);
                     ip += 3;
@@ -316,19 +327,19 @@ MAIN_LOOP:
                     ip += 3;
                     break;;
                 case INTOP_CONV_I8_R4:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)LOCAL_VAR(ip[2], float);
+                    LOCAL_VAR(ip[1], int64_t) = HCCALL1(JIT_Dbl2Lng, (double)LOCAL_VAR(ip[2], float));
                     ip += 3;
                     break;
                 case INTOP_CONV_I8_R8:
-                    LOCAL_VAR(ip[1], int64_t) = (int64_t)LOCAL_VAR(ip[2], double);
+                    LOCAL_VAR(ip[1], int64_t) = HCCALL1(JIT_Dbl2Lng, LOCAL_VAR(ip[2], double));
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_I4:
-                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int32_t);
+                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, (int64_t)LOCAL_VAR(ip[2], int32_t));
                     ip += 3;
-                    break;;
+                    break;
                 case INTOP_CONV_R4_I8:
-                    LOCAL_VAR(ip[1], float) = (float)LOCAL_VAR(ip[2], int64_t);
+                    LOCAL_VAR(ip[1], float) = HCCALL1(JIT_Lng2Flt, LOCAL_VAR(ip[2], int64_t));
                     ip += 3;
                     break;
                 case INTOP_CONV_R4_R8:
@@ -336,11 +347,11 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I4:
-                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int32_t);
+                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, (int64_t)LOCAL_VAR(ip[2], int32_t));
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_I8:
-                    LOCAL_VAR(ip[1], double) = (double)LOCAL_VAR(ip[2], int64_t);
+                    LOCAL_VAR(ip[1], double) = HCCALL1(JIT_Lng2Dbl, LOCAL_VAR(ip[2], int64_t));
                     ip += 3;
                     break;
                 case INTOP_CONV_R8_R4:
@@ -348,9 +359,12 @@ MAIN_LOOP:
                     ip += 3;
                     break;
                 case INTOP_CONV_U8_R4:
+                    LOCAL_VAR(ip[1], uint64_t) = HCCALL1(JIT_Dbl2ULng, (double)LOCAL_VAR(ip[2], float));
+                    ip += 3;
+                    break;
                 case INTOP_CONV_U8_R8:
-                    // TODO
-                    assert(0);
+                    LOCAL_VAR(ip[1], uint64_t) = HCCALL1(JIT_Dbl2ULng, LOCAL_VAR(ip[2], double));
+                    ip += 3;
                     break;
 
                 case INTOP_SWITCH:
@@ -1377,13 +1391,13 @@ CALL_TARGET_IP:
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[2], BASEARRAYREF);                    \
     if (arrayRef == NULL)                                                      \
-        assert(0);                                                             \
+        COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[3], int32_t);                        \
     if (idx >= len)                                                            \
-        assert(0);                                                             \
+        COMPlusThrow(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \
@@ -1435,13 +1449,13 @@ do {                                                                           \
 do {                                                                           \
     BASEARRAYREF arrayRef = LOCAL_VAR(ip[1], BASEARRAYREF);                    \
     if (arrayRef == NULL)                                                      \
-        assert(0);                                                             \
+        COMPlusThrow(kNullReferenceException);                                 \
                                                                                \
     ArrayBase* arr = (ArrayBase*)OBJECTREFToObject(arrayRef);                  \
     uint32_t len = arr->GetNumComponents();                                    \
     uint32_t idx = (uint32_t)LOCAL_VAR(ip[2], int32_t);                        \
     if (idx >= len)                                                            \
-        assert(0);                                                             \
+        COMPlusThrow(kIndexOutOfRangeException);                               \
                                                                                \
     uint8_t* pData = arr->GetDataPtr();                                        \
     etype* pElem = reinterpret_cast<etype*>(pData + idx * sizeof(etype));      \

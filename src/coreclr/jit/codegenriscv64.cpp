@@ -612,7 +612,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     addrInfo.addr       = nullptr;
     addrInfo.accessType = IAT_VALUE;
 
-    if (jmpEpilog && (lastNode->gtOper == GT_JMP))
+    if (jmpEpilog && lastNode->OperIs(GT_JMP))
     {
         methHnd = (CORINFO_METHOD_HANDLE)lastNode->AsVal()->gtVal1;
         compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo);
@@ -630,19 +630,18 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         /* figure out what jump we have */
         GenTree* jmpNode = lastNode;
 #if !FEATURE_FASTTAILCALL
-        noway_assert(jmpNode->gtOper == GT_JMP);
+        noway_assert(jmpNode->OperIs(GT_JMP));
 #else  // FEATURE_FASTTAILCALL
        // armarch
        // If jmpNode is GT_JMP then gtNext must be null.
        // If jmpNode is a fast tail call, gtNext need not be null since it could have embedded stmts.
-        noway_assert((jmpNode->gtOper != GT_JMP) || (jmpNode->gtNext == nullptr));
+        noway_assert(!jmpNode->OperIs(GT_JMP) || (jmpNode->gtNext == nullptr));
 
         // Could either be a "jmp method" or "fast tail call" implemented as epilog+jmp
-        noway_assert((jmpNode->gtOper == GT_JMP) ||
-                     ((jmpNode->gtOper == GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
+        noway_assert(jmpNode->OperIs(GT_JMP) || (jmpNode->OperIs(GT_CALL) && jmpNode->AsCall()->IsFastTailCall()));
 
         // The next block is associated with this "if" stmt
-        if (jmpNode->gtOper == GT_JMP)
+        if (jmpNode->OperIs(GT_JMP))
 #endif // FEATURE_FASTTAILCALL
         {
             // Simply emit a jump to the methodHnd. This is similar to a call so we can use
@@ -1138,7 +1137,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (tree->TypeIs(TYP_SIMD12))
     {
         genStoreLclTypeSIMD12(tree);
         return;
@@ -1226,7 +1225,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
-        if (lclNode->TypeGet() == TYP_SIMD12)
+        if (lclNode->TypeIs(TYP_SIMD12))
         {
             genStoreLclTypeSIMD12(lclNode);
             return;
@@ -1302,7 +1301,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
 
 void CodeGen::genSimpleReturn(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    assert(treeNode->OperIs(GT_RETURN) || treeNode->OperIs(GT_RETFILT));
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
@@ -1315,7 +1314,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
 
     if (!movRequired)
     {
-        if (op1->OperGet() == GT_LCL_VAR)
+        if (op1->OperIs(GT_LCL_VAR))
         {
             GenTreeLclVarCommon* lcl            = op1->AsLclVarCommon();
             bool                 isRegCandidate = compiler->lvaTable[lcl->GetLclNum()].lvIsRegCandidate();
@@ -1355,7 +1354,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
  */
 void CodeGen::genLclHeap(GenTree* tree)
 {
-    assert(tree->OperGet() == GT_LCLHEAP);
+    assert(tree->OperIs(GT_LCLHEAP));
     assert(compiler->compLocallocUsed);
 
     emitter* emit = GetEmitter();
@@ -1748,7 +1747,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         // Floating point divide never raises an exception
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
-        assert(tree->gtOper == GT_DIV);
+        assert(tree->OperIs(GT_DIV));
 
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
@@ -2012,7 +2011,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     bool      sourceIsLocal = false;
 
     assert(source->isContained());
-    if (source->gtOper == GT_IND)
+    if (source->OperIs(GT_IND))
     {
         GenTree* srcAddr = source->gtGetOp1();
         assert(!srcAddr->isContained());
@@ -2700,7 +2699,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
 //
 void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 {
-    assert(tree->OperGet() == GT_RETURNTRAP);
+    assert(tree->OperIs(GT_RETURNTRAP));
 
     // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
     // based on the contents of 'data'
@@ -2760,7 +2759,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 {
 #ifdef FEATURE_SIMD
     // Storing Vector3 of size 12 bytes through indirection
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (tree->TypeIs(TYP_SIMD12))
     {
         genStoreIndTypeSIMD12(tree);
         return;
@@ -2856,7 +2855,7 @@ void CodeGen::genCodeForSwap(GenTreeOp*)
 void CodeGen::genIntToFloatCast(GenTree* treeNode)
 {
     // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -2958,7 +2957,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 void CodeGen::genFloatToIntCast(GenTree* treeNode)
 {
     // int type --> float/double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     assert(genIsValidIntReg(treeNode->GetRegNum())); // Must be a valid int reg.
@@ -3070,7 +3069,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
 //
 void CodeGen::genCkfinite(GenTree* treeNode)
 {
-    assert(treeNode->OperGet() == GT_CKFINITE);
+    assert(treeNode->OperIs(GT_CKFINITE));
 
     GenTree*  op1        = treeNode->AsOp()->gtOp1;
     var_types targetType = treeNode->TypeGet();
@@ -3123,7 +3122,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     regNumber targetReg = tree->GetRegNum();
 
     assert(targetReg != REG_NA);
-    assert(tree->TypeGet() != TYP_VOID);
+    assert(!tree->TypeIs(TYP_VOID));
     assert(!op1->isContainedIntOrIImmed());
     assert(tree->OperIs(GT_LT, GT_LE, GT_EQ, GT_NE, GT_GT, GT_GE));
 
@@ -3343,7 +3342,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 
     assert(tree->OperIs(GT_JCMP));
     assert(!varTypeIsFloating(tree));
-    assert(tree->TypeGet() == TYP_VOID);
+    assert(tree->TypeIs(TYP_VOID));
     assert(tree->GetRegNum() == REG_NA);
 
     GenTree* op1 = tree->gtGetOp1();
@@ -4063,7 +4062,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     if (treeNode->IsReuseRegVal())
     {
         // For now, this is only used for constant nodes.
-        assert((treeNode->OperGet() == GT_CNS_INT) || (treeNode->OperGet() == GT_CNS_DBL));
+        assert(treeNode->OperIs(GT_CNS_INT) || treeNode->OperIs(GT_CNS_DBL));
         JITDUMP("  TreeNode is marked ReuseReg\n");
         return;
     }
@@ -4685,7 +4684,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
         {
-            assert(source->OperGet() == GT_CNS_INT);
+            assert(source->OperIs(GT_CNS_INT));
             assert(source->AsIntConCommon()->IconValue() == 0);
             emit->emitIns_S_R(storeIns, storeAttr, REG_R0, varNumOut, argOffsetOut);
         }
@@ -4701,7 +4700,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     {
         assert(source->isContained()); // We expect that this node was marked as contained in Lower
 
-        if (source->OperGet() == GT_FIELD_LIST)
+        if (source->OperIs(GT_FIELD_LIST))
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
@@ -4872,7 +4871,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
     unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
 
-    if (source->OperGet() == GT_FIELD_LIST)
+    if (source->OperIs(GT_FIELD_LIST))
     {
         // Evaluate each of the GT_FIELD_LIST items into their register
         // and store their register into the outgoing argument area
@@ -5518,7 +5517,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
 #ifdef FEATURE_SIMD
     // Handling of Vector3 type values loaded through indirection.
-    if (tree->TypeGet() == TYP_SIMD12)
+    if (tree->TypeIs(TYP_SIMD12))
     {
         genLoadIndTypeSIMD12(tree);
         return;
@@ -5944,13 +5943,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
         else
         {
-            assert(call->gtType != TYP_STRUCT);
+            assert(!call->TypeIs(TYP_STRUCT));
 
-            if (call->gtType == TYP_REF)
+            if (call->TypeIs(TYP_REF))
             {
                 params.retSize = EA_GCREF;
             }
-            else if (call->gtType == TYP_BYREF)
+            else if (call->TypeIs(TYP_BYREF))
             {
                 params.retSize = EA_BYREF;
             }
@@ -6336,7 +6335,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 void CodeGen::genFloatToFloatCast(GenTree* treeNode)
 {
     // float <--> double conversions are always non-overflow ones
-    assert(treeNode->OperGet() == GT_CAST);
+    assert(treeNode->OperIs(GT_CAST));
     assert(!treeNode->gtOverflow());
 
     regNumber targetReg = treeNode->GetRegNum();
@@ -6631,7 +6630,7 @@ void CodeGen::genCodeForShxadd(GenTreeOp* tree)
 
 void CodeGen::genCodeForAddUw(GenTreeOp* tree)
 {
-    assert(tree->gtOper == GT_ADD_UW);
+    assert(tree->OperIs(GT_ADD_UW));
 
     genConsumeOperands(tree);
 
@@ -6645,7 +6644,7 @@ void CodeGen::genCodeForAddUw(GenTreeOp* tree)
 
 void CodeGen::genCodeForSlliUw(GenTreeOp* tree)
 {
-    assert(tree->gtOper == GT_SLLI_UW);
+    assert(tree->OperIs(GT_SLLI_UW));
 
     genConsumeOperands(tree);
 

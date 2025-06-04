@@ -3667,27 +3667,6 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
 
-/**********************************************************/
-/* This is called by the runtime when helpers with stubs are initialized */
-/**********************************************************/
-VOID ETW::MethodLog::StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG lNoOfHelpers)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                    TRACE_LEVEL_INFORMATION,
-                                    CLR_JIT_KEYWORD))
-    {
-        for(int i=0; i<lNoOfHelpers; i++)
-        {
-            if(pHelperStartAddress[i])
-            {
-                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
-            }
-        }
-    }
-}
-
 /****************************************************************************/
 /* This is called by the runtime when a dynamic method is destroyed */
 /****************************************************************************/

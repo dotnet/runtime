@@ -262,7 +262,7 @@ unsigned Compiler::optIsLoopIncrTree(GenTree* incr)
 
         // Increment should be by a const int.
         // TODO-CQ: CLONE: allow variable increments.
-        if ((incrVal->gtOper != GT_CNS_INT) || (incrVal->TypeGet() != TYP_INT))
+        if (!incrVal->OperIs(GT_CNS_INT) || !incrVal->TypeIs(TYP_INT))
         {
             return BAD_VAR_NUM;
         }
@@ -297,7 +297,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 {
     GenTree* test = testStmt->GetRootNode();
 
-    if (test->gtOper != GT_JTRUE)
+    if (!test->OperIs(GT_JTRUE))
     {
         return false;
     }
@@ -309,8 +309,7 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
     GenTree* opr2 = relop->AsOp()->gtOp2;
 
     // Make sure we have jtrue (vtmp != 0)
-    if ((relop->OperGet() == GT_NE) && (opr1->OperGet() == GT_LCL_VAR) && (opr2->OperGet() == GT_CNS_INT) &&
-        opr2->IsIntegralConst(0))
+    if (relop->OperIs(GT_NE) && opr1->OperIs(GT_LCL_VAR) && opr2->OperIs(GT_CNS_INT) && opr2->IsIntegralConst(0))
     {
         // Get the previous statement to get the def (rhs) of Vtmp to see
         // if the "test" is evaluated into Vtmp.
@@ -1669,7 +1668,7 @@ void Compiler::optRedirectPrevUnrollIteration(FlowGraphNaturalLoop* loop, BasicB
         assert(prevTestBlock->KindIs(BBJ_COND));
         Statement* testCopyStmt = prevTestBlock->lastStmt();
         GenTree*   testCopyExpr = testCopyStmt->GetRootNode();
-        assert(testCopyExpr->gtOper == GT_JTRUE);
+        assert(testCopyExpr->OperIs(GT_JTRUE));
         GenTree* sideEffList = nullptr;
         gtExtractSideEffList(testCopyExpr, &sideEffList, GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
         if (sideEffList == nullptr)
@@ -1935,7 +1934,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* const condTree = condStmt->GetRootNode();
-    noway_assert(condTree->gtOper == GT_JTRUE);
+    noway_assert(condTree->OperIs(GT_JTRUE));
     if (!condTree->AsOp()->gtOp1->OperIsCompare())
     {
         return false;
@@ -3158,7 +3157,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 // If 'dstt' is unsigned and one of the operands can be narrowed into 'dsst',
                 // the result of the GT_AND will also fit into 'dstt' and can be narrowed.
                 // The same is true if one of the operands is an int const and can be narrowed into 'dsst'.
-                if ((op2->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt))
+                if (op2->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt))
                 {
                     if (optNarrowTree(op2, srct, dstt, NoVNPair, false))
                     {
@@ -3171,7 +3170,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     }
                 }
 
-                if ((opToNarrow == nullptr) && ((op1->gtOper == GT_CNS_INT) || varTypeIsUnsigned(dstt)))
+                if ((opToNarrow == nullptr) && (op1->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt)))
                 {
                     if (optNarrowTree(op1, srct, dstt, NoVNPair, false))
                     {
@@ -3197,7 +3196,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         // We may also need to cast away the upper bits of *otherOpPtr
                         if (srcSize == 8)
                         {
-                            assert(tree->gtType == TYP_INT);
+                            assert(tree->TypeIs(TYP_INT));
                             GenTree* castOp = gtNewCastNode(TYP_INT, *otherOpPtr, false, TYP_INT);
                             castOp->SetMorphed(this);
                             *otherOpPtr = castOp;
@@ -3239,7 +3238,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    if (tree->gtOper == GT_MUL && (tree->gtFlags & GTF_MUL_64RSLT))
+                    if (tree->OperIs(GT_MUL) && (tree->gtFlags & GTF_MUL_64RSLT))
                     {
                         tree->gtFlags &= ~GTF_MUL_64RSLT;
                     }
@@ -4202,7 +4201,7 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop*    loop,
         {
             // TODO-CQ: This is a more restrictive version of a check that optIsCSEcandidate already does - it allows
             // a struct typed node if a class handle can be recovered from it.
-            if (node->TypeGet() == TYP_STRUCT)
+            if (node->TypeIs(TYP_STRUCT))
             {
                 return false;
             }
@@ -5178,7 +5177,7 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
 
                     GenTree* addr = tree->AsIndir()->Addr()->gtEffectiveVal();
 
-                    if (addr->TypeGet() == TYP_BYREF && addr->OperGet() == GT_LCL_VAR)
+                    if (addr->TypeIs(TYP_BYREF) && addr->OperIs(GT_LCL_VAR))
                     {
                         // If it's a local byref for which we recorded a value number, use that...
                         GenTreeLclVar* argLcl = addr->AsLclVar();
@@ -5514,19 +5513,19 @@ void Compiler::optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt)
 ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk))
 {
     assert(mul);
-    assert(mul->gtOper == GT_MUL || mul->gtOper == GT_LSH);
+    assert(mul->OperIs(GT_MUL) || mul->OperIs(GT_LSH));
     assert(mul->AsOp()->gtOp2->IsCnsIntOrI());
 
     ssize_t scale = mul->AsOp()->gtOp2->AsIntConCommon()->IconValue();
 
-    if (mul->gtOper == GT_LSH)
+    if (mul->OperIs(GT_LSH))
     {
         scale = ((ssize_t)1) << scale;
     }
 
     GenTree* index = mul->AsOp()->gtOp1;
 
-    if (index->gtOper == GT_MUL && index->AsOp()->gtOp2->IsCnsIntOrI())
+    if (index->OperIs(GT_MUL) && index->AsOp()->gtOp2->IsCnsIntOrI())
     {
         // case of two cascading multiplications for constant int (e.g.  * 20 morphed to * 5 * 4):
         // When index->gtOper is GT_MUL and index->AsOp()->gtOp2->gtOper is GT_CNS_INT (i.e. * 5),
@@ -5536,7 +5535,7 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
         index = index->AsOp()->gtOp1;
     }
 
-    assert(!bRngChk || index->gtOper != GT_COMMA);
+    assert(!bRngChk || !index->OperIs(GT_COMMA));
 
     if (pIndex)
     {
@@ -5852,6 +5851,14 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
             continue;
         }
 
+        if (compIsAsync() && ((varDsc->TypeGet() == TYP_BYREF) ||
+                              ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->HasGCByRef())))
+        {
+            // A dead store to a byref local may not actually be dead if it
+            // crosses a suspension point.
+            continue;
+        }
+
         for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
         {
             LclSsaVarDsc*        defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
@@ -5889,7 +5896,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // CQ heuristic: avoid removing defs of enregisterable locals where this is likely to
                     // make them "must-init", extending live ranges. Here we assume the first SSA def was
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
-                    if ((defIndex == 1) && (varDsc->TypeGet() != TYP_STRUCT))
+                    if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
                         JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
                         continue;
