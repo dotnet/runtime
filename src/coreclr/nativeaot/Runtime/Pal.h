@@ -234,8 +234,8 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
 uint32_t PalGetOsPageSize();
-void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
+void PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #endif
 
 typedef uint32_t (*BackgroundCallback)(_In_opt_ void* pCallbackContext);
