@@ -5,12 +5,13 @@ using System.Diagnostics;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
+using NTSTATUS = Interop.BCrypt.NTSTATUS;
+
 namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation : MLDsa
     {
-        private static readonly SafeBCryptAlgorithmHandle s_algHandle =
-            Interop.BCrypt.BCryptOpenAlgorithmProvider(BCryptNative.AlgorithmName.MLDsa);
+        private static readonly SafeBCryptAlgorithmHandle? s_algHandle = OpenAlgorithmHandle();
 
         private readonly bool _hasSeed;
         private readonly bool _hasSecretKey;
@@ -28,7 +29,7 @@ namespace System.Security.Cryptography
             _hasSecretKey = hasSecretKey;
         }
 
-        internal static partial bool SupportsAny() => !s_algHandle.IsInvalid;
+        internal static partial bool SupportsAny() => s_algHandle is not null;
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
             Interop.BCrypt.BCryptSignHashPure(_key, data, context, destination);
@@ -36,18 +37,10 @@ namespace System.Security.Cryptography
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
             Interop.BCrypt.BCryptVerifySignaturePure(_key, data, context, signature);
 
-        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
         {
-            return MLDsaPkcs8.TryExportPkcs8PrivateKey(
-                this,
-                _hasSeed,
-                _hasSecretKey,
-                destination,
-                out bytesWritten);
-        }
+            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
 
-        internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm) //=>
-        {
             string parameterSet = PqcBlobHelpers.GetParameterSet(algorithm);
             SafeBCryptKeyHandle keyHandle = Interop.BCrypt.BCryptGenerateKeyPair(s_algHandle);
 
@@ -67,6 +60,8 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+
             const string BlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
 
             SafeBCryptKeyHandle key =
@@ -81,6 +76,8 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+
             const string BlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB;
 
             SafeBCryptKeyHandle key =
@@ -95,6 +92,8 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
+            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+
             const string BlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB;
 
             SafeBCryptKeyHandle key =
@@ -180,10 +179,39 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten)
+        {
+            return MLDsaPkcs8.TryExportPkcs8PrivateKey(
+                this,
+                _hasSeed,
+                _hasSecretKey,
+                destination,
+                out bytesWritten);
+        }
+
         protected override void Dispose(bool disposing)
         {
             _key?.Dispose();
             _key = null!;
+        }
+
+        private static SafeBCryptAlgorithmHandle? OpenAlgorithmHandle()
+        {
+            NTSTATUS status = Interop.BCrypt.BCryptOpenAlgorithmProvider(
+                out SafeBCryptAlgorithmHandle hAlgorithm,
+                BCryptNative.AlgorithmName.MLDsa,
+                pszImplementation: null,
+                Interop.BCrypt.BCryptOpenAlgorithmProviderFlags.None);
+
+            if (status != NTSTATUS.STATUS_SUCCESS)
+            {
+                hAlgorithm.Dispose();
+                return null;
+            }
+            else
+            {
+                return hAlgorithm;
+            }
         }
     }
 }
