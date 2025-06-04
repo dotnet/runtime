@@ -24240,7 +24240,7 @@ GenTree* Compiler::gtNewSimdMaxNode(
             return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x05), minMaxIntrinsic, simdBaseJitType,
                                             simdSize);
         }
-        if (IsBaselineVector512IsaSupportedOpportunistically())
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // If AVX512 is supported, we can use vrangeps/vrangepd to correctly handle the Vector.Max(-0.0, 0.0) = 0.0
             // case. We still need to check for NaN as vrangeps/vrangepd does not handle NaN as specified in IEEE 754
@@ -24258,29 +24258,13 @@ GenTree* Compiler::gtNewSimdMaxNode(
 
             GenTree*       op1Dup     = fgMakeMultiUse(&op1);
             GenTree*       op2Dup     = fgMakeMultiUse(&op2);
-            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x5),
-                                                        simdSize == 64 ? NI_AVX512DQ_Range : NI_AVX512DQ_VL_Range,
+            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x5), NI_AVX512_Range,
                                                                  simdBaseJitType, simdSize);
             GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
             GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
-
-            if (simdBaseType == TYP_FLOAT)
-            {
-                for (unsigned i = 0; i < (simdSize / sizeof(float)); i++)
-                {
-                    tblVecCon1->gtSimdVal.i32[i] = tblVecCon2->gtSimdVal.i32[i] = 0x1;
-                }
-            }
-            else
-            {
-                assert(simdBaseType == TYP_DOUBLE);
-                for (unsigned i = 0; i < (simdSize / sizeof(double)); i++)
-                {
-                    tblVecCon1->gtSimdVal.i64[i] = tblVecCon2->gtSimdVal.i64[i] = 0x1;
-                }
-            }
-
-            NamedIntrinsic fixupIntrinsic = simdSize == 64 ? NI_AVX512F_Fixup : NI_AVX512F_VL_Fixup;
+            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
+            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
+            NamedIntrinsic fixupIntrinsic = NI_AVX512_Fixup;
             GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
                                                                      fixupIntrinsic, simdBaseJitType, simdSize);
             GenTree*       fixup2 = gtNewSimdHWIntrinsicNode(type, rangeOp, fixup1, tblVecCon2, gtNewIconNode(0),
@@ -24532,7 +24516,7 @@ GenTree* Compiler::gtNewSimdMinNode(
             return gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x04), minMaxIntrinsic, simdBaseJitType,
                                             simdSize);
         }
-        if (IsBaselineVector512IsaSupportedOpportunistically())
+        if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
         {
             // If AVX512 is supported, we can use vrangeps/vrangepd to correctly handle the Vector.Min(-0.0, 0.0) = -0.0
             // case. We still need to check for NaN as vrangeps/vrangepd does not handle NaN as specified in IEEE 754
@@ -24550,29 +24534,13 @@ GenTree* Compiler::gtNewSimdMinNode(
 
             GenTree*       op1Dup     = fgMakeMultiUse(&op1);
             GenTree*       op2Dup     = fgMakeMultiUse(&op2);
-            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x4),
-                                                        simdSize == 64 ? NI_AVX512DQ_Range : NI_AVX512DQ_VL_Range,
+            GenTree*       rangeOp    = gtNewSimdHWIntrinsicNode(type, op1, op2, gtNewIconNode(0x4), NI_AVX512_Range,
                                                                  simdBaseJitType, simdSize);
             GenTreeVecCon* tblVecCon1 = gtNewVconNode(type);
             GenTreeVecCon* tblVecCon2 = gtNewVconNode(type);
-
-            if (simdBaseType == TYP_FLOAT)
-            {
-                for (unsigned i = 0; i < (simdSize / sizeof(float)); i++)
-                {
-                    tblVecCon1->gtSimdVal.i32[i] = tblVecCon2->gtSimdVal.i32[i] = 0x1;
-                }
-            }
-            else
-            {
-                assert(simdBaseType == TYP_DOUBLE);
-                for (unsigned i = 0; i < (simdSize / sizeof(double)); i++)
-                {
-                    tblVecCon1->gtSimdVal.i64[i] = tblVecCon2->gtSimdVal.i64[i] = 0x1;
-                }
-            }
-
-            NamedIntrinsic fixupIntrinsic = simdSize == 64 ? NI_AVX512F_Fixup : NI_AVX512F_VL_Fixup;
+            tblVecCon1->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
+            tblVecCon2->EvaluateBroadcastInPlace((simdBaseType == TYP_FLOAT) ? TYP_INT : TYP_LONG, 0x1LL);
+            NamedIntrinsic fixupIntrinsic = NI_AVX512_Fixup;
             GenTree*       fixup1         = gtNewSimdHWIntrinsicNode(type, op1Dup, op2Dup, tblVecCon1, gtNewIconNode(0),
                                                                      fixupIntrinsic, simdBaseJitType, simdSize);
             GenTree*       fixup2 = gtNewSimdHWIntrinsicNode(type, rangeOp, fixup1, tblVecCon2, gtNewIconNode(0),
