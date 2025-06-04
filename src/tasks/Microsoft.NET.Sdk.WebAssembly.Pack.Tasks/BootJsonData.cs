@@ -276,7 +276,7 @@ public class AssetsData
     public List<WasmAsset> wasmNative { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary wasmSymbols { get; set; }
+    public List<SymbolsAsset> wasmSymbols { get; set; }
 
     [DataMember(EmitDefaultValue = false)]
     public List<GeneralAsset> icu { get; set; }
@@ -307,7 +307,7 @@ public class AssetsData
     /// localization (.satellite resx) resources
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public List<SatelliteAsset> satelliteResources { get; set; }
+    public Dictionary<string, List<GeneralAsset>> satelliteResources { get; set; }
 
     /// <summary>
     /// Assembly (.dll) resources that are loaded lazily during runtime
@@ -349,6 +349,12 @@ public class JsAsset
 }
 
 [DataContract]
+public class SymbolsAsset
+{
+    public string url { get; set; }
+}
+
+[DataContract]
 public class WasmAsset
 {
     public string url { get; set; }
@@ -364,15 +370,11 @@ public class GeneralAsset
 }
 
 [DataContract]
-public class SatelliteAsset : GeneralAsset
-{
-    public string culture { get; set; }
-}
-
-[DataContract]
-public class VfsAsset : GeneralAsset
+public class VfsAsset
 {
     public string virtualPath { get; set; }
+    public string url { get; set; }
+    public string integrity { get; set; }
 }
 
 public enum GlobalizationMode : int

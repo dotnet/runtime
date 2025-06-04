@@ -174,5 +174,73 @@ namespace Microsoft.NET.Sdk.WebAssembly
 
             return intValue;
         }
+
+        public void TransformResourcesToAssets(BootJsonData config)
+        {
+            var resources = config.resources;
+            var assets = new AssetsData();
+
+            assets.hash = resources.hash;
+            assets.jsModuleRuntime = MapJsAssets(resources.jsModuleRuntime);
+            assets.jsModuleNative = MapJsAssets(resources.jsModuleNative);
+            assets.jsModuleWorker = MapJsAssets(resources.jsModuleWorker);
+            assets.jsModuleDiagnostics = MapJsAssets(resources.jsModuleDiagnostics);
+
+            assets.wasmNative = resources.wasmNative?.Select(a => new WasmAsset()
+            {
+                url = a.Key,
+                integrity = a.Value
+            }).ToList();
+            assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
+            {
+                url = a.Key,
+            }).ToList();
+
+            assets.icu = MapGeneralAssets(resources.icu);
+            assets.coreAssembly = MapGeneralAssets(resources.coreAssembly);
+            assets.assembly = MapGeneralAssets(resources.assembly);
+            assets.corePdb = MapGeneralAssets(resources.corePdb);
+            assets.pdb = MapGeneralAssets(resources.pdb);
+            assets.lazyAssembly = MapGeneralAssets(resources.lazyAssembly);
+
+            if (resources.satelliteResources != null)
+            {
+                assets.satelliteResources = resources.satelliteResources.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => MapGeneralAssets(kvp.Value)
+                );
+            }
+
+            assets.libraryInitializers = MapJsAssets(resources.libraryInitializers);
+            assets.modulesAfterConfigLoaded = MapJsAssets(resources.modulesAfterConfigLoaded);
+            assets.modulesAfterRuntimeReady = MapJsAssets(resources.modulesAfterRuntimeReady);
+
+            assets.extensions = resources.extensions;
+
+            assets.coreVfs = MapVfsAssets(resources.coreVfs);
+            assets.vfs = MapVfsAssets(resources.vfs);
+
+            List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets) => assets?.Select(a => new GeneralAsset()
+            {
+                name = resources.fingerprinting[a.Key],
+                url = a.Key,
+                integrity = a.Value
+            }).ToList();
+
+            List<JsAsset>? MapJsAssets(Dictionary<string, string>? assets) => assets?.Select(a => new JsAsset()
+            {
+                url = a.Key
+            }).ToList();
+
+            List<VfsAsset>? MapVfsAssets(Dictionary<string, Dictionary<string, string>>? assets) => assets?.Select(a => new VfsAsset()
+            {
+                virtualPath = a.Key,
+                url = a.Value.Keys.First(),
+                integrity = a.Value.Values.First()
+            }).ToList();
+
+            config.assets = assets;
+            config.resources = null;
+        }
     }
 }

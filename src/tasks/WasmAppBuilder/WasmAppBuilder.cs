@@ -446,6 +446,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         using TempFileName tmpConfigPath = new();
         {
             helper.ComputeResourcesHash(bootConfig);
+            helper.TransformResourcesToAssets(bootConfig);
             helper.WriteConfigToFile(bootConfig, tmpConfigPath.Path, Path.GetExtension(ConfigFileName));
         }
 

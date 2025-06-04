@@ -451,6 +451,10 @@ public class GenerateWasmBootJson : Task
         }
 
         helper.ComputeResourcesHash(result);
+
+        if (IsTargeting100OrLater())
+            helper.TransformResourcesToAssets(result);
+
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
