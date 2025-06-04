@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 // PQC types are used throughout, but only when the caller requests them.
@@ -1040,7 +1041,7 @@ SingleResponse ::= SEQUENCE {
             {
                 List<KeyFactory> factories = [RSA, ECDsa];
 
-                if (Cryptography.MLDsa.IsSupported)
+                if (MLDsaTestHelpers.CertificatesAreSupported)
                 {
                     factories.Add(MLDsa);
                 }

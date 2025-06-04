@@ -18,7 +18,7 @@ internal static partial class Interop
 
         internal static SafeBCryptKeyHandle BCryptGenerateKeyPair(
             SafeBCryptAlgorithmHandle hAlgorithm,
-            int keyLength)
+            int keyLength = 0)
         {
             NTSTATUS status = BCryptGenerateKeyPair(
                 hAlgorithm,
