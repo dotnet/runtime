@@ -11,35 +11,38 @@ using System.Runtime.Intrinsics.X86;
 
 namespace System.Collections
 {
-    // A vector of bits.  Use this to store bits efficiently, without having to do bit
-    // shifting yourself.
+    /// <summary>
+    /// Manages a compact array of bit values, which are represented as <see cref="bool"/>, where
+    /// <see langword="true"/> indicates that the bit is on (1) and <see langword="false"/> indicates
+    /// the bit is off (0).
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class BitArray : ICollection, ICloneable
     {
-        private int[] m_array; // Do not rename (binary serialization)
+        /// <summary>Bit array. Always little endian, even on big endian platforms.</summary>
+        internal int[] m_array; // Do not rename (binary serialization)
         private int m_length; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
 
-        private const int _ShrinkThreshold = 256;
-
-        /*=========================================================================
-        ** Allocates space to hold length bit values. All of the values in the bit
-        ** array are set to false.
-        **
-        ** Exceptions: ArgumentException if length < 0.
-        =========================================================================*/
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that can hold the specified
+        /// number of bit values, which are initially set to false.
+        /// </summary>
+        /// <param name="length">The number of bit values in the new <see cref="BitArray"/>.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is less than zero.</exception>
         public BitArray(int length)
             : this(length, false)
         {
         }
 
-        /*=========================================================================
-        ** Allocates space to hold length bit values. All of the values in the bit
-        ** array are set to defaultValue.
-        **
-        ** Exceptions: ArgumentOutOfRangeException if length < 0.
-        =========================================================================*/
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that can hold the specified number of
+        /// bit values, which are initially set to the specified value.
+        /// </summary>
+        /// <param name="length">The number of bit values in the new <see cref="BitArray"/>.</param>
+        /// <param name="defaultValue">The Boolean value to assign to each bit.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is less than zero.</exception>
         public BitArray(int length, bool defaultValue)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(length);
@@ -51,32 +54,25 @@ namespace System.Collections
             {
                 Array.Fill(m_array, -1);
 
-                // clear high bit values in the last int
-                Div32Rem(length, out int extraBits);
-                if (extraBits > 0)
+                // Clear high bit values in the last int.
+                int extraBits = (int)((uint)length % BitsPerInt32);
+                if (extraBits != 0)
                 {
-                    m_array[^1] = (1 << extraBits) - 1;
+                    m_array[^1] = ReverseIfBE((1 << extraBits) - 1);
                 }
             }
-
-            _version = 0;
         }
 
-        /*=========================================================================
-        ** Allocates space to hold the bit values in bytes. bytes[0] represents
-        ** bits 0 - 7, bytes[1] represents bits 8 - 15, etc. The LSB of each byte
-        ** represents the lowest index value; bytes[0] & 1 represents bit 0,
-        ** bytes[0] & 2 represents bit 1, bytes[0] & 4 represents bit 2, etc.
-        **
-        ** Exceptions: ArgumentException if bytes == null.
-        =========================================================================*/
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values copied
+        /// from the specified array of bytes.
+        /// </summary>
+        /// <param name="bytes">An array of bytes containing the values to copy, where each byte represents eight consecutive bits.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="bytes"/> is null.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="bytes"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
         public BitArray(byte[] bytes)
         {
             ArgumentNullException.ThrowIfNull(bytes);
-
-            // this value is chosen to prevent overflow when computing m_length.
-            // m_length is of type int32 and is exposed as a property, so
-            // type of m_length can't be changed to accommodate.
             if (bytes.Length > int.MaxValue / BitsPerByte)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
@@ -85,36 +81,15 @@ namespace System.Collections
             m_array = new int[GetInt32ArrayLengthFromByteLength(bytes.Length)];
             m_length = bytes.Length * BitsPerByte;
 
-            uint totalCount = (uint)bytes.Length / 4;
-
-            ReadOnlySpan<byte> byteSpan = bytes;
-            for (int i = 0; i < totalCount; i++)
-            {
-                m_array[i] = BinaryPrimitives.ReadInt32LittleEndian(byteSpan);
-                byteSpan = byteSpan.Slice(4);
-            }
-
-            Debug.Assert(byteSpan.Length >= 0 && byteSpan.Length < 4);
-
-            int last = 0;
-            switch (byteSpan.Length)
-            {
-                case 3:
-                    last = byteSpan[2] << 16;
-                    goto case 2;
-                // fall through
-                case 2:
-                    last |= byteSpan[1] << 8;
-                    goto case 1;
-                // fall through
-                case 1:
-                    m_array[totalCount] = last | byteSpan[0];
-                    break;
-            }
-
-            _version = 0;
+            bytes.AsSpan().CopyTo(MemoryMarshal.AsBytes((Span<int>)m_array));
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified array of Booleans.
+        /// </summary>
+        /// <param name="values">An array of Booleans to copy.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
         public BitArray(bool[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
@@ -124,7 +99,7 @@ namespace System.Collections
 
             uint i = 0;
 
-            if (values.Length < Vector256<byte>.Count)
+            if (!BitConverter.IsLittleEndian || values.Length < Vector256<byte>.Count)
             {
                 goto LessThan32;
             }
@@ -178,44 +153,51 @@ namespace System.Collections
             {
                 if (values[i])
                 {
-                    int elementIndex = Div32Rem((int)i, out int extraBits);
-                    m_array[elementIndex] |= 1 << extraBits;
+                    (uint elementIndex, uint extraBits) = Math.DivRem(i, BitsPerInt32);
+                    m_array[elementIndex] |= ReverseIfBE(1 << (int)extraBits);
                 }
             }
-
-            _version = 0;
         }
 
-        /*=========================================================================
-        ** Allocates space to hold the bit values in values. values[0] represents
-        ** bits 0 - 31, values[1] represents bits 32 - 63, etc. The LSB of each
-        ** integer represents the lowest index value; values[0] & 1 represents bit
-        ** 0, values[0] & 2 represents bit 1, values[0] & 4 represents bit 2, etc.
-        **
-        ** Exceptions: ArgumentException if values == null.
-        =========================================================================*/
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified array of 32-bit integers.
+        /// </summary>
+        /// <param name="values">An array of integers containing the values to copy, where each integer represents 32 consecutive bits.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="values"/> is null.</exception>
+        /// <exception cref="ArgumentException">The length of <paramref name="values"/> in bits is greater than <see cref="int.MaxValue"/>.</exception>
+        /// <remarks>
+        /// The number in the first <paramref name="values"/> array element represents bits 0 through 31, the second number in the array represents
+        /// bits 32 through 63, and so on. The Least Significant Bit of each integer represents the lowest index value:
+        /// "<paramref name="values"/>[0] &amp; 1" represents bit 0, "<paramref name="values"/>[0] &amp; 2" represents bit 1,
+        /// "<paramref name="values"/>[0] &amp; 4" represents bit 2, and so on.
+        /// </remarks>
         public BitArray(int[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
-
-            // this value is chosen to prevent overflow when computing m_length
             if (values.Length > int.MaxValue / BitsPerInt32)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
 
             m_array = new int[values.Length];
-            Array.Copy(values, m_array, values.Length);
-            m_length = values.Length * BitsPerInt32;
+            if (BitConverter.IsLittleEndian)
+            {
+                Array.Copy(values, m_array, values.Length);
+            }
+            else
+            {
+                BinaryPrimitives.ReverseEndianness(values, m_array);
+            }
 
-            _version = 0;
+            m_length = values.Length * BitsPerInt32;
         }
 
-        /*=========================================================================
-        ** Allocates a new BitArray with the same length and bit values as bits.
-        **
-        ** Exceptions: ArgumentException if bits == null.
-        =========================================================================*/
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values copied from the specified BitArray.
+        /// </summary>
+        /// <param name="bits">The <see cref="BitArray"/> to copy.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="bits"/> is null.</exception>
         public BitArray(BitArray bits)
         {
             ArgumentNullException.ThrowIfNull(bits);
@@ -223,50 +205,62 @@ namespace System.Collections
             int arrayLength = GetInt32ArrayLengthFromBitLength(bits.m_length);
 
             m_array = new int[arrayLength];
-
             Debug.Assert(bits.m_array.Length <= arrayLength);
 
             Array.Copy(bits.m_array, m_array, arrayLength);
             m_length = bits.m_length;
-
-            _version = bits._version;
         }
 
+        /// <summary>
+        /// Gets or sets the value of the bit at a specific position in the <see cref="BitArray"/>.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value to get or set.</param>
+        /// <returns>The value of the bit at position <paramref name="index"/>.</returns>
+        /// <returns>The value of the bit at position <paramref name="index"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
         public bool this[int index]
         {
             get => Get(index);
             set => Set(index, value);
         }
 
-        /*=========================================================================
-        ** Returns the bit value at position index.
-        **
-        ** Exceptions: ArgumentOutOfRangeException if index < 0 or
-        **             index >= GetLength().
-        =========================================================================*/
+        /// <summary>
+        /// Gets the value of the bit at a specific position in the <see cref="BitArray"/>.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value to get.</param>
+        /// <returns>The value of the bit at position <paramref name="index"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Get(int index)
         {
             if ((uint)index >= (uint)m_length)
+            {
                 ThrowArgumentOutOfRangeException(index);
+            }
 
-            return (m_array[index >> 5] & (1 << index)) != 0;
+            return (ReverseIfBE(m_array[index >> BitShiftPerInt32]) & (1 << index)) != 0;
         }
 
-        /*=========================================================================
-        ** Sets the bit value at position index to value.
-        **
-        ** Exceptions: ArgumentOutOfRangeException if index < 0 or
-        **             index >= GetLength().
-        =========================================================================*/
+        /// <summary>
+        /// Sets the value of the bit at a specific position in the <see cref="BitArray"/>.
+        /// </summary>
+        /// <param name="index">The zero-based index of the value to get.</param>
+        /// <param name="value">The Boolean value to assign to the bit.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than zero.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is greater than or equal to <see cref="Count"/>.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Set(int index, bool value)
         {
             if ((uint)index >= (uint)m_length)
+            {
                 ThrowArgumentOutOfRangeException(index);
+            }
 
-            int bitMask = 1 << index;
-            ref int segment = ref m_array[index >> 5];
+            int bitMask = ReverseIfBE(1 << index);
+
+            ref int segment = ref m_array[index >> BitShiftPerInt32];
 
             if (value)
             {
@@ -280,9 +274,10 @@ namespace System.Collections
             _version++;
         }
 
-        /*=========================================================================
-        ** Sets all the bit values to value.
-        =========================================================================*/
+        /// <summary>
+        /// Sets all bits in the <see cref="BitArray"/> to the specified value.
+        /// </summary>
+        /// <param name="value">The Boolean value to assign to all bits.</param>
         public void SetAll(bool value)
         {
             int arrayLength = GetInt32ArrayLengthFromBitLength(Length);
@@ -291,11 +286,11 @@ namespace System.Collections
             {
                 span.Fill(-1);
 
-                // clear high bit values in the last int
-                Div32Rem(m_length, out int extraBits);
-                if (extraBits > 0)
+                // Clear high bit values in the last int.
+                int extraBits = (int)((uint)m_length % BitsPerInt32);
+                if (extraBits != 0)
                 {
-                    span[^1] &= (1 << extraBits) - 1;
+                    span[^1] &= ReverseIfBE((1 << extraBits) - 1);
                 }
             }
             else
@@ -306,13 +301,49 @@ namespace System.Collections
             _version++;
         }
 
-        /*=========================================================================
-        ** Returns a reference to the current instance ANDed with value.
-        **
-        ** Exceptions: ArgumentException if value == null or
-        **             value.Length != this.Length.
-        =========================================================================*/
-        public BitArray And(BitArray value)
+
+        /// <summary>
+        /// Performs the bitwise AND operation between the elements of the current <see cref="BitArray"/> object and the
+        /// corresponding elements in the specified array. The current <see cref="BitArray"/> object will be modified to
+        /// store the result of the bitwise AND operation.
+        /// </summary>
+        /// <param name="value">The array with which to perform the bitwise AND operation.</param>
+        /// <returns>An array containing the result of the bitwise AND operation, which is a reference to the current <see cref="BitArray"/> object.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> and the current <see cref="BitArray"/> do not have the same number of elements.</exception>
+        public BitArray And(BitArray value) => Invoke<AndBinaryOp>(value);
+
+        /// <summary>
+        /// Performs the bitwise OR operation between the elements of the current <see cref="BitArray"/> object and the
+        /// corresponding elements in the specified array. The current <see cref="BitArray"/> object will be modified to
+        /// store the result of the bitwise OR operation.
+        /// </summary>
+        /// <param name="value">The array with which to perform the bitwise OR operation.</param>
+        /// <returns>An array containing the result of the bitwise OR operation, which is a reference to the current <see cref="BitArray"/> object.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> and the current <see cref="BitArray"/> do not have the same number of elements.</exception>
+        public BitArray Or(BitArray value) => Invoke<OrBinaryOp>(value);
+
+        /// <summary>
+        /// Performs the bitwise XOR operation between the elements of the current <see cref="BitArray"/> object and the
+        /// corresponding elements in the specified array. The current <see cref="BitArray"/> object will be modified to
+        /// store the result of the bitwise XOR operation.
+        /// </summary>
+        /// <param name="value">The array with which to perform the bitwise XOR operation.</param>
+        /// <returns>An array containing the result of the bitwise XOR operation, which is a reference to the current <see cref="BitArray"/> object.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="value"/> and the current <see cref="BitArray"/> do not have the same number of elements.</exception>
+        public BitArray Xor(BitArray value) => Invoke<XorBinaryOp>(value);
+
+        /// <summary>
+        /// Inverts all the bit values in the current <see cref="BitArray"/>, so that elements set to true are changed to false,
+        /// and elements set to false are changed to true.
+        /// </summary>
+        /// <returns>The current instance with inverted bit values.</returns>
+        public BitArray Not() => Invoke<NotBinaryOp>(this); // argument is ignored
+
+        /// <summary>Provides the implementation for <see cref="And"/>, <see cref="Or"/>, etc.</summary>
+        private BitArray Invoke<TBinaryOp>(BitArray value) where TBinaryOp : struct, IBinaryOp
         {
             ArgumentNullException.ThrowIfNull(value);
 
@@ -324,279 +355,103 @@ namespace System.Collections
             // to be thread-safe; we only care about avoiding buffer overruns.
             int[] thisArray = m_array;
             int[] valueArray = value.m_array;
-
             int count = GetInt32ArrayLengthFromBitLength(Length);
-            if (Length != value.Length || (uint)count > (uint)thisArray.Length || (uint)count > (uint)valueArray.Length)
+
+            if (Length != value.Length ||
+                (uint)count > (uint)thisArray.Length ||
+                (uint)count > (uint)valueArray.Length)
+            {
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
+            }
 
             // Unroll loop for count less than Vector256 size.
             switch (count)
             {
-                case 7: thisArray[6] &= valueArray[6]; goto case 6;
-                case 6: thisArray[5] &= valueArray[5]; goto case 5;
-                case 5: thisArray[4] &= valueArray[4]; goto case 4;
-                case 4: thisArray[3] &= valueArray[3]; goto case 3;
-                case 3: thisArray[2] &= valueArray[2]; goto case 2;
-                case 2: thisArray[1] &= valueArray[1]; goto case 1;
-                case 1: thisArray[0] &= valueArray[0]; goto Done;
+                case 7: thisArray[6] = TBinaryOp.Invoke(thisArray[6], valueArray[6]); goto case 6;
+                case 6: thisArray[5] = TBinaryOp.Invoke(thisArray[5], valueArray[5]); goto case 5;
+                case 5: thisArray[4] = TBinaryOp.Invoke(thisArray[4], valueArray[4]); goto case 4;
+                case 4: thisArray[3] = TBinaryOp.Invoke(thisArray[3], valueArray[3]); goto case 3;
+                case 3: thisArray[2] = TBinaryOp.Invoke(thisArray[2], valueArray[2]); goto case 2;
+                case 2: thisArray[1] = TBinaryOp.Invoke(thisArray[1], valueArray[1]); goto case 1;
+                case 1: thisArray[0] = TBinaryOp.Invoke(thisArray[0], valueArray[0]); goto Done;
                 case 0: goto Done;
             }
 
             uint i = 0;
 
-            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-            if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
+            if (Vector512.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
-                {
-                    Vector512<int> result = Vector512.LoadUnsafe(ref left, i) & Vector512.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
+                Apply<Vector512<int>>(count, ref i, thisArray, valueArray);
             }
-            else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
+            else if (Vector256.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
-                {
-                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) & Vector256.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
+                Apply<Vector256<int>>(count, ref i, thisArray, valueArray);
             }
-            else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
-                {
-                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) & Vector128.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
+                Apply<Vector128<int>>(count, ref i, thisArray, valueArray);
             }
 
             for (; i < (uint)count; i++)
-                thisArray[i] &= valueArray[i];
+            {
+                thisArray[i] = TBinaryOp.Invoke(thisArray[i], valueArray[i]);
+            }
 
-        Done:
+            Done:
             _version++;
             return this;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static void Apply<TVector>(int count, ref uint i, int[] thisArray, int[] valueArray)
+                where TVector : ISimdVector<TVector, int>
+            {
+                ref int left = ref MemoryMarshal.GetArrayDataReference(thisArray);
+                ref int right = ref MemoryMarshal.GetArrayDataReference(valueArray);
+
+                for (; i < (uint)count - (TVector.ElementCount - 1u); i += (uint)TVector.ElementCount)
+                {
+                    TVector result = TBinaryOp.Invoke(TVector.LoadUnsafe(ref left, i), TVector.LoadUnsafe(ref right, i));
+                    result.StoreUnsafe(ref left, i);
+                }
+            }
         }
 
-        /*=========================================================================
-        ** Returns a reference to the current instance ORed with value.
-        **
-        ** Exceptions: ArgumentException if value == null or
-        **             value.Length != this.Length.
-        =========================================================================*/
-        public BitArray Or(BitArray value)
+        private struct AndBinaryOp : IBinaryOp
         {
-            ArgumentNullException.ThrowIfNull(value);
-
-            // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
-            // buggy code concurrently mutating these instances in a way that could cause memory corruption,
-            // we snapshot the arrays from both and then operate only on those snapshots, while also validating
-            // that the count we iterate to is within the bounds of both arrays.  We don't care about such code
-            // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
-            // to be thread-safe; we only care about avoiding buffer overruns.
-            int[] thisArray = m_array;
-            int[] valueArray = value.m_array;
-
-            int count = GetInt32ArrayLengthFromBitLength(Length);
-            if (Length != value.Length || (uint)count > (uint)thisArray.Length || (uint)count > (uint)valueArray.Length)
-                throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
-
-            // Unroll loop for count less than Vector256 size.
-            switch (count)
-            {
-                case 7: thisArray[6] |= valueArray[6]; goto case 6;
-                case 6: thisArray[5] |= valueArray[5]; goto case 5;
-                case 5: thisArray[4] |= valueArray[4]; goto case 4;
-                case 4: thisArray[3] |= valueArray[3]; goto case 3;
-                case 3: thisArray[2] |= valueArray[2]; goto case 2;
-                case 2: thisArray[1] |= valueArray[1]; goto case 1;
-                case 1: thisArray[0] |= valueArray[0]; goto Done;
-                case 0: goto Done;
-            }
-
-            uint i = 0;
-
-            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-            if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
-            {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
-                {
-                    Vector512<int> result = Vector512.LoadUnsafe(ref left, i) | Vector512.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
-            {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
-                {
-                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) | Vector256.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
-            {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
-                {
-                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) | Vector128.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-
-            for (; i < (uint)count; i++)
-                thisArray[i] |= valueArray[i];
-
-        Done:
-            _version++;
-            return this;
+            public static int Invoke(int value1, int value2) => value1 & value2;
+            public static TVector Invoke<TVector>(TVector value1, TVector value2) where TVector : ISimdVector<TVector, int> => value1 & value2;
         }
 
-        /*=========================================================================
-        ** Returns a reference to the current instance XORed with value.
-        **
-        ** Exceptions: ArgumentException if value == null or
-        **             value.Length != this.Length.
-        =========================================================================*/
-        public BitArray Xor(BitArray value)
+        private struct OrBinaryOp : IBinaryOp
         {
-            ArgumentNullException.ThrowIfNull(value);
-
-            // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
-            // buggy code concurrently mutating these instances in a way that could cause memory corruption,
-            // we snapshot the arrays from both and then operate only on those snapshots, while also validating
-            // that the count we iterate to is within the bounds of both arrays.  We don't care about such code
-            // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
-            // to be thread-safe; we only care about avoiding buffer overruns.
-            int[] thisArray = m_array;
-            int[] valueArray = value.m_array;
-
-            int count = GetInt32ArrayLengthFromBitLength(Length);
-            if (Length != value.Length || (uint)count > (uint)thisArray.Length || (uint)count > (uint)valueArray.Length)
-                throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
-
-            // Unroll loop for count less than Vector256 size.
-            switch (count)
-            {
-                case 7: thisArray[6] ^= valueArray[6]; goto case 6;
-                case 6: thisArray[5] ^= valueArray[5]; goto case 5;
-                case 5: thisArray[4] ^= valueArray[4]; goto case 4;
-                case 4: thisArray[3] ^= valueArray[3]; goto case 3;
-                case 3: thisArray[2] ^= valueArray[2]; goto case 2;
-                case 2: thisArray[1] ^= valueArray[1]; goto case 1;
-                case 1: thisArray[0] ^= valueArray[0]; goto Done;
-                case 0: goto Done;
-            }
-
-            uint i = 0;
-
-            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
-
-            if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
-            {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
-                {
-                    Vector512<int> result = Vector512.LoadUnsafe(ref left, i) ^ Vector512.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
-            {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
-                {
-                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) ^ Vector256.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
-            {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
-                {
-                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) ^ Vector128.LoadUnsafe(ref right, i);
-                    result.StoreUnsafe(ref left, i);
-                }
-            }
-
-            for (; i < (uint)count; i++)
-                thisArray[i] ^= valueArray[i];
-
-        Done:
-            _version++;
-            return this;
+            public static int Invoke(int value1, int value2) => value1 | value2;
+            public static TVector Invoke<TVector>(TVector value1, TVector value2) where TVector : ISimdVector<TVector, int> => value1 | value2;
         }
 
-        /*=========================================================================
-        ** Inverts all the bit values. On/true bit values are converted to
-        ** off/false. Off/false bit values are turned on/true. The current instance
-        ** is updated and returned.
-        =========================================================================*/
-        public BitArray Not()
+        private struct XorBinaryOp : IBinaryOp
         {
-            // This method uses unsafe code to manipulate data in the BitArray.  To avoid issues with
-            // buggy code concurrently mutating this instance in a way that could cause memory corruption,
-            // we snapshot the array then operate only on this snapshot.  We don't care about such code
-            // corrupting the BitArray data in a way that produces incorrect answers, since BitArray is not meant
-            // to be thread-safe; we only care about avoiding buffer overruns.
-            int[] thisArray = m_array;
-
-            int count = GetInt32ArrayLengthFromBitLength(Length);
-
-            // Unroll loop for count less than Vector256 size.
-            switch (count)
-            {
-                case 7: thisArray[6] = ~thisArray[6]; goto case 6;
-                case 6: thisArray[5] = ~thisArray[5]; goto case 5;
-                case 5: thisArray[4] = ~thisArray[4]; goto case 4;
-                case 4: thisArray[3] = ~thisArray[3]; goto case 3;
-                case 3: thisArray[2] = ~thisArray[2]; goto case 2;
-                case 2: thisArray[1] = ~thisArray[1]; goto case 1;
-                case 1: thisArray[0] = ~thisArray[0]; goto Done;
-                case 0: goto Done;
-            }
-
-            uint i = 0;
-
-            ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
-            if (Vector512.IsHardwareAccelerated && (uint)count >= Vector512<int>.Count)
-            {
-                for (; i < (uint)count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count)
-                {
-                    Vector512<int> result = ~Vector512.LoadUnsafe(ref value, i);
-                    result.StoreUnsafe(ref value, i);
-                }
-            }
-            else if (Vector256.IsHardwareAccelerated && (uint)count >= Vector256<int>.Count)
-            {
-                for (; i < (uint)count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count)
-                {
-                    Vector256<int> result = ~Vector256.LoadUnsafe(ref value, i);
-                    result.StoreUnsafe(ref value, i);
-                }
-            }
-            else if (Vector128.IsHardwareAccelerated && (uint)count >= Vector128<int>.Count)
-            {
-                for (; i < (uint)count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count)
-                {
-                    Vector128<int> result = ~Vector128.LoadUnsafe(ref value, i);
-                    result.StoreUnsafe(ref value, i);
-                }
-            }
-
-            for (; i < (uint)count; i++)
-                thisArray[i] = ~thisArray[i];
-
-        Done:
-            _version++;
-            return this;
+            public static int Invoke(int value1, int value2) => value1 ^ value2;
+            public static TVector Invoke<TVector>(TVector value1, TVector value2) where TVector : ISimdVector<TVector, int> => value1 ^ value2;
         }
 
-        /*=========================================================================
-        ** Shift all the bit values to right on count bits. The current instance is
-        ** updated and returned.
-        *
-        ** Exceptions: ArgumentOutOfRangeException if count < 0
-        =========================================================================*/
+        private struct NotBinaryOp : IBinaryOp // not isn't binary, so second argument is just ignored
+        {
+            public static int Invoke(int value1, int _) => ~value1;
+            public static TVector Invoke<TVector>(TVector value1, TVector value2) where TVector : ISimdVector<TVector, int> => ~value1;
+        }
+
+        private interface IBinaryOp
+        {
+            static abstract int Invoke(int value1, int value2);
+            static abstract TVector Invoke<TVector>(TVector value1, TVector value2) where TVector : ISimdVector<TVector, int>;
+        }
+
+        /// <summary>
+        /// Shifts all the bit values of the current <see cref="BitArray"/> to the right on <paramref name="count"/> bits.
+        /// </summary>
+        /// <param name="count">The number of shifts to make for each bit.</param>
+        /// <returns>The current <see cref="BitArray"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is less than zero.</exception>
         public BitArray RightShift(int count)
         {
             if (count <= 0)
@@ -611,42 +466,37 @@ namespace System.Collections
             int ints = GetInt32ArrayLengthFromBitLength(m_length);
             if (count < m_length)
             {
-                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
-                int fromIndex = Div32Rem(count, out int shiftCount);
-                Div32Rem(m_length, out int extraBits);
+                (int fromIndex, int shiftCount) = Math.DivRem(count, BitsPerInt32);
+                int extraBits = (int)((uint)m_length % BitsPerInt32);
                 if (shiftCount == 0)
                 {
-                    unchecked
-                    {
-                        // Cannot use `(1u << extraBits) - 1u` as the mask
-                        // because for extraBits == 0, we need the mask to be 111...111, not 0.
-                        // In that case, we are shifting a uint by 32, which could be considered undefined.
-                        // The result of a shift operation is undefined ... if the right operand
-                        // is greater than or equal to the width in bits of the promoted left operand,
-                        // https://learn.microsoft.com/cpp/c-language/bitwise-shift-operators?view=vs-2017
-                        // However, the compiler protects us from undefined behaviour by constraining the
-                        // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
-                        uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                        m_array[ints - 1] &= (int)mask;
-                    }
+                    // Cannot use `(1u << extraBits) - 1u` as the mask
+                    // because for extraBits == 0, we need the mask to be 111...111, not 0.
+                    // In that case, we are shifting a uint by 32, which could be considered undefined.
+                    // The result of a shift operation is undefined ... if the right operand
+                    // is greater than or equal to the width in bits of the promoted left operand,
+                    // https://learn.microsoft.com/cpp/c-language/bitwise-shift-operators?view=vs-2017
+                    // However, the compiler protects us from undefined behaviour by constraining the
+                    // right operand to between 0 and width - 1 (inclusive), i.e. right_operand = (right_operand % width).
+                    m_array[ints - 1] &= (int)ReverseIfBE(uint.MaxValue >> (BitsPerInt32 - extraBits));
+
                     Array.Copy(m_array, fromIndex, m_array, 0, ints - fromIndex);
                     toIndex = ints - fromIndex;
                 }
                 else
                 {
                     int lastIndex = ints - 1;
-                    unchecked
+
+                    while (fromIndex < lastIndex)
                     {
-                        while (fromIndex < lastIndex)
-                        {
-                            uint right = (uint)m_array[fromIndex] >> shiftCount;
-                            int left = m_array[++fromIndex] << (BitsPerInt32 - shiftCount);
-                            m_array[toIndex++] = left | (int)right;
-                        }
-                        uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
-                        mask &= (uint)m_array[fromIndex];
-                        m_array[toIndex++] = (int)(mask >> shiftCount);
+                        uint right = ReverseIfBE((uint)m_array[fromIndex]) >> shiftCount;
+                        int left = ReverseIfBE(m_array[++fromIndex]) << BitsPerInt32 - shiftCount;
+                        m_array[toIndex++] = ReverseIfBE(left | (int)right);
                     }
+
+                    uint mask = uint.MaxValue >> (BitsPerInt32 - extraBits);
+                    mask &= (uint)ReverseIfBE(m_array[fromIndex]);
+                    m_array[toIndex++] = (int)ReverseIfBE(mask >> shiftCount);
                 }
             }
 
@@ -655,12 +505,12 @@ namespace System.Collections
             return this;
         }
 
-        /*=========================================================================
-        ** Shift all the bit values to left on count bits. The current instance is
-        ** updated and returned.
-        *
-        ** Exceptions: ArgumentOutOfRangeException if count < 0
-        =========================================================================*/
+        /// <summary>
+        /// Shifts all the bit values of the current <see cref="BitArray"/> to the left on <paramref name="count"/> bits.
+        /// </summary>
+        /// <param name="count">The number of shifts to make for each bit.</param>
+        /// <returns>The current <see cref="BitArray"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="count"/> is less than zero.</exception>
         public BitArray LeftShift(int count)
         {
             if (count <= 0)
@@ -676,8 +526,7 @@ namespace System.Collections
             {
                 int lastIndex = (m_length - 1) >> BitShiftPerInt32;  // Divide by 32.
 
-                // We can not use Math.DivRem without taking a dependency on System.Runtime.Extensions
-                lengthToClear = Div32Rem(count, out int shiftCount);
+                (lengthToClear, int shiftCount) = Math.DivRem(count, BitsPerInt32);
 
                 if (shiftCount == 0)
                 {
@@ -686,17 +535,15 @@ namespace System.Collections
                 else
                 {
                     int fromindex = lastIndex - lengthToClear;
-                    unchecked
+
+                    while (fromindex > 0)
                     {
-                        while (fromindex > 0)
-                        {
-                            int left = m_array[fromindex] << shiftCount;
-                            uint right = (uint)m_array[--fromindex] >> (BitsPerInt32 - shiftCount);
-                            m_array[lastIndex] = left | (int)right;
-                            lastIndex--;
-                        }
-                        m_array[lastIndex] = m_array[fromindex] << shiftCount;
+                        int left = ReverseIfBE(m_array[fromindex]) << shiftCount;
+                        uint right = (uint)ReverseIfBE(m_array[--fromindex]) >> (BitsPerInt32 - shiftCount);
+                        m_array[lastIndex] = ReverseIfBE(left | (int)right);
+                        lastIndex--;
                     }
+                    m_array[lastIndex] = ReverseIfBE(ReverseIfBE(m_array[fromindex]) << shiftCount);
                 }
             }
             else
@@ -709,34 +556,38 @@ namespace System.Collections
             return this;
         }
 
+        /// <summary>
+        /// Gets or sets the number of elements in the <see cref="BitArray"/>.
+        /// </summary>
+        /// <value>The number of elements in the <see cref="BitArray"/>.</value>
+        /// <exception cref="ArgumentOutOfRangeException">The property is set to a value that is less than zero.</exception>
         public int Length
         {
-            get
-            {
-                return m_length;
-            }
+            get => m_length;
             set
             {
                 ArgumentOutOfRangeException.ThrowIfNegative(value);
 
+                const int ShrinkThreshold = 256;
+
                 int newints = GetInt32ArrayLengthFromBitLength(value);
-                if (newints > m_array.Length || newints + _ShrinkThreshold < m_array.Length)
+                if (newints > m_array.Length || newints + ShrinkThreshold < m_array.Length)
                 {
-                    // grow or shrink (if wasting more than _ShrinkThreshold ints)
+                    // Grow or shrink (if wasting more than ShrinkThreshold ints).
                     Array.Resize(ref m_array, newints);
                 }
 
                 if (value > m_length)
                 {
-                    // clear high bit values in the last int
+                    // Clear high bit values in the last int.
                     int last = (m_length - 1) >> BitShiftPerInt32;
-                    Div32Rem(m_length, out int bits);
+                    int bits = (int)((uint)m_length % BitsPerInt32);
                     if (bits > 0)
                     {
-                        m_array[last] &= (1 << bits) - 1;
+                        m_array[last] &= ReverseIfBE(1 << bits) - 1;
                     }
 
-                    // clear remaining int values
+                    // Clear remaining int values.
                     m_array.AsSpan(last + 1, newints - last - 1).Clear();
                 }
 
@@ -745,14 +596,16 @@ namespace System.Collections
             }
         }
 
+        /// <inheritdoc/>
         public unsafe void CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
             ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Rank != 1)
+            {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
+            }
 
             if (array is int[] intArray)
             {
@@ -761,14 +614,21 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                int quotient = Div32Rem(m_length, out int extraBits);
+                (int quotient, int extraBits) = Math.DivRem(m_length, BitsPerInt32);
 
-                Array.Copy(m_array, 0, intArray, index, quotient);
+                if (BitConverter.IsLittleEndian)
+                {
+                    Array.Copy(m_array, 0, intArray, index, quotient);
+                }
+                else
+                {
+                    BinaryPrimitives.ReverseEndianness(m_array.AsSpan(0, quotient), intArray.AsSpan(index, quotient));
+                }
 
                 if (extraBits > 0)
                 {
-                    // the last int needs to be masked
-                    intArray[index + quotient] = m_array[quotient] & unchecked((1 << extraBits) - 1);
+                    // The last int needs to be masked.
+                    intArray[index + quotient] = m_array[quotient] & ReverseIfBE((1 << extraBits) - 1);
                 }
             }
             else if (array is byte[] byteArray)
@@ -779,44 +639,11 @@ namespace System.Collections
                     throw new ArgumentException(SR.Argument_InvalidOffLen);
                 }
 
-                // equivalent to m_length % BitsPerByte, since BitsPerByte is a power of 2
-                uint extraBits = (uint)m_length & (BitsPerByte - 1);
-                if (extraBits > 0)
-                {
-                    // last byte is not aligned, we will directly copy one less byte
-                    arrayLength -= 1;
-                }
-
                 Span<byte> span = byteArray.AsSpan(index);
-
-                int quotient = Div4Rem(arrayLength, out int remainder);
-                for (int i = 0; i < quotient; i++)
+                MemoryMarshal.AsBytes(m_array).Slice(0, arrayLength).CopyTo(span);
+                if ((uint)m_length % BitsPerByte is uint toMask && toMask != 0)
                 {
-                    BinaryPrimitives.WriteInt32LittleEndian(span, m_array[i]);
-                    span = span.Slice(4);
-                }
-
-                if (extraBits > 0)
-                {
-                    Debug.Assert(span.Length > 0);
-                    Debug.Assert(m_array.Length > quotient);
-                    // mask the final byte
-                    span[remainder] = (byte)((m_array[quotient] >> (remainder * 8)) & ((1 << (int)extraBits) - 1));
-                }
-
-                switch (remainder)
-                {
-                    case 3:
-                        span[2] = (byte)(m_array[quotient] >> 16);
-                        goto case 2;
-                    // fall through
-                    case 2:
-                        span[1] = (byte)(m_array[quotient] >> 8);
-                        goto case 1;
-                    // fall through
-                    case 1:
-                        span[0] = (byte)m_array[quotient];
-                        break;
+                    span[^1] &= (byte)((1 << (int)toMask) - 1);
                 }
             }
             else if (array is bool[] boolArray)
@@ -828,8 +655,10 @@ namespace System.Collections
 
                 uint i = 0;
 
-                if (m_length < BitsPerInt32)
+                if (!BitConverter.IsLittleEndian || m_length < BitsPerInt32)
+                {
                     goto LessThan32;
+                }
 
                 // The mask used when shuffling a single int into Vector128/256/512.
                 // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
@@ -866,7 +695,6 @@ namespace System.Collections
                 {
                     Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
-                    //Internal.Console.WriteLine(bitMask);
                     Vector256<byte> ones = Vector256.Create((byte)1);
 
                     fixed (bool* destination = &boolArray[index])
@@ -890,9 +718,7 @@ namespace System.Collections
                     Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
                     Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
                     Vector128<byte> ones = Vector128.Create((byte)1);
-                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                                                 Vector128.Create(0x80402010_08040201).AsByte() :
-                                                 Vector128.Create(0x01020408_10204080).AsByte();
+                    Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
 
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -916,9 +742,7 @@ namespace System.Collections
                 else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<byte> ones = Vector128.Create((byte)1);
-                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
-                                                 Vector128.Create(0x80402010_08040201).AsByte() :
-                                                 Vector128.Create(0x01020408_10204080).AsByte();
+                    Vector128<byte> bitMask128 = Vector128.Create(0x80402010_08040201).AsByte();
 
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -929,17 +753,13 @@ namespace System.Collections
                             // (TableVectorLookup could be an alternative - dotnet/runtime#1277)
                             // Instead we use chained ZIP1/2 instructions:
                             // (A0 is the byte containing LSB, A3 is the byte containing MSB)
-                            // bits (on Big endian)                 - A3 A2 A1 A0
-                            // bits (Little endian) / Byte reversal - A0 A1 A2 A3
+                            // bits                                 - A0 A1 A2 A3
                             // v1 = Vector128.Create                - A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3 A0 A1 A2 A3
                             // v2 = ZipLow(v1, v1)                  - A0 A0 A1 A1 A2 A2 A3 A3 A0 A0 A1 A1 A2 A2 A3 A3
                             // v3 = ZipLow(v2, v2)                  - A0 A0 A0 A0 A1 A1 A1 A1 A2 A2 A2 A2 A3 A3 A3 A3
                             // shuffledLower = ZipLow(v3, v3)       - A0 A0 A0 A0 A0 A0 A0 A0 A1 A1 A1 A1 A1 A1 A1 A1
                             // shuffledHigher = ZipHigh(v3, v3)     - A2 A2 A2 A2 A2 A2 A2 A2 A3 A3 A3 A3 A3 A3 A3 A3
-                            if (!BitConverter.IsLittleEndian)
-                            {
-                                bits = BinaryPrimitives.ReverseEndianness(bits);
-                            }
+
                             Vector128<byte> vector = Vector128.Create(bits).AsByte();
                             vector = AdvSimd.Arm64.ZipLow(vector, vector);
                             vector = AdvSimd.Arm64.ZipLow(vector, vector);
@@ -960,8 +780,8 @@ namespace System.Collections
             LessThan32:
                 for (; i < (uint)m_length; i++)
                 {
-                    int elementIndex = Div32Rem((int)i, out int extraBits);
-                    boolArray[(uint)index + i] = ((m_array[elementIndex] >> extraBits) & 0x00000001) != 0;
+                    (uint elementIndex, uint extraBits) = Math.DivRem(i, BitsPerInt32);
+                    boolArray[(uint)index + i] = ((m_array[elementIndex] >> (int)extraBits) & 0x00000001) != 0;
                 }
             }
             else
@@ -976,7 +796,7 @@ namespace System.Collections
         /// <returns><c>true</c> if every bit in the <see cref="BitArray"/> is set to <c>true</c>, or if <see cref="BitArray"/> is empty; otherwise, <c>false</c>.</returns>
         public bool HasAllSet()
         {
-            Div32Rem(m_length, out int extraBits);
+            int extraBits = (int)((uint)m_length % BitsPerInt32);
             int intCount = GetInt32ArrayLengthFromBitLength(m_length);
             if (extraBits != 0)
             {
@@ -997,7 +817,7 @@ namespace System.Collections
             Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
             Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
 
-            int mask = (1 << extraBits) - 1;
+            int mask = ReverseIfBE(1 << extraBits) - 1;
             return (m_array[intCount] & mask) == mask;
         }
 
@@ -1007,7 +827,7 @@ namespace System.Collections
         /// <returns><c>true</c> if <see cref="BitArray"/> is not empty and at least one of its bit is set to <c>true</c>; otherwise, <c>false</c>.</returns>
         public bool HasAnySet()
         {
-            Div32Rem(m_length, out int extraBits);
+            int extraBits = (int)((uint)m_length % BitsPerInt32);
             int intCount = GetInt32ArrayLengthFromBitLength(m_length);
             if (extraBits != 0)
             {
@@ -1027,19 +847,26 @@ namespace System.Collections
             Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
             Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
 
-            return (m_array[intCount] & (1 << extraBits) - 1) != 0;
+            return (m_array[intCount] & ReverseIfBE(1 << extraBits) - 1) != 0;
         }
 
+        /// <summary>Gets the number of elements contained in the <see cref="BitArray"/>.</summary>
         public int Count => m_length;
 
+        /// <summary>Gets an object that can be used to synchronize access to the <see cref="BitArray"/>.</summary>
         public object SyncRoot => this;
 
+        /// <summary>Gets a value indicating whether access to the <see cref="BitArray"/> is synchronized (thread safe).</summary>
         public bool IsSynchronized => false;
 
+        /// <summary>Gets a value indicating whether the <see cref="BitArray"/> is read-only.</summary>
         public bool IsReadOnly => false;
 
+        /// <summary>Creates a shallow copy of the <see cref="BitArray"/>.</summary>
         public object Clone() => new BitArray(this);
 
+        /// <summary>Returns an enumerator that iterates through the <see cref="BitArray"/>.</summary>
+        /// <returns>An IEnumerator for the entire <see cref="BitArray"/>.</returns>
         public IEnumerator GetEnumerator() => new BitArrayEnumeratorSimple(this);
 
         // XPerY=n means that n Xs can be stored in 1 Y.
@@ -1074,44 +901,36 @@ namespace System.Collections
 
         private static int GetInt32ArrayLengthFromByteLength(int n)
         {
-            Debug.Assert(n >= 0);
             // Due to sign extension, we don't need to special case for n == 0, since ((n - 1) >> 2) + 1 = 0
             // This doesn't hold true for ((n - 1) / 4) + 1, which equals 1.
+            Debug.Assert(n >= 0);
             return (int)((uint)(n - 1 + (1 << BitShiftForBytesPerInt32)) >> BitShiftForBytesPerInt32);
         }
 
-        private static int GetByteArrayLengthFromBitLength(int n)
+        internal static int GetByteArrayLengthFromBitLength(int n)
         {
-            Debug.Assert(n >= 0);
             // Due to sign extension, we don't need to special case for n == 0, since ((n - 1) >> 3) + 1 = 0
             // This doesn't hold true for ((n - 1) / 8) + 1, which equals 1.
+            Debug.Assert(n >= 0);
             return (int)((uint)(n - 1 + (1 << BitShiftPerByte)) >> BitShiftPerByte);
         }
 
-        private static int Div32Rem(int number, out int remainder)
-        {
-            uint quotient = (uint)number / 32;
-            remainder = number & (32 - 1);    // equivalent to number % 32, since 32 is a power of 2
-            return (int)quotient;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int ReverseIfBE(int value) =>
+            BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
 
-        private static int Div4Rem(int number, out int remainder)
-        {
-            uint quotient = (uint)number / 4;
-            remainder = number & (4 - 1);   // equivalent to number % 4, since 4 is a power of 2
-            return (int)quotient;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint ReverseIfBE(uint value) =>
+            BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
 
-        private static void ThrowArgumentOutOfRangeException(int index)
-        {
+        private static void ThrowArgumentOutOfRangeException(int index) =>
             throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
-        }
 
         private sealed class BitArrayEnumeratorSimple : IEnumerator, ICloneable
         {
             private readonly BitArray _bitArray;
-            private int _index;
             private readonly int _version;
+            private int _index;
             private bool _currentElement;
 
             internal BitArrayEnumeratorSimple(BitArray bitArray)
@@ -1136,11 +955,8 @@ namespace System.Collections
                     _currentElement = _bitArray.Get(_index);
                     return true;
                 }
-                else
-                {
-                    _index = _bitArray.m_length;
-                }
 
+                _index = _bitArray.m_length;
                 return false;
             }
 
