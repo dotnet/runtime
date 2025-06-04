@@ -289,7 +289,7 @@ void Interop::FinishCrossReferenceProcessing(
         g_bridgeFinished->Set();
     }
 
-    ReleaseGCBridgeArgumentsWorker(crossReferences->ComponentsLen, crossReferences->Components, crossReferences->CrossReferences);
+    ReleaseGCBridgeArgumentsWorker(crossReferences->ComponentCount, crossReferences->Components, crossReferences->CrossReferences);
 }
 
 #endif // FEATURE_GCBRIDGE

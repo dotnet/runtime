@@ -2384,37 +2384,38 @@ namespace System.Runtime.InteropServices.ComTypes
 namespace System.Runtime.InteropServices.Java
 {
     [System.Runtime.Versioning.SupportedOSPlatform("android")]
+    [System.CLSCompliantAttribute(false)]
     public struct ComponentCrossReference
     {
-        public System.IntPtr SourceGroupIndex;
-        public System.IntPtr DestinationGroupIndex;
+        public nuint SourceGroupIndex;
+        public nuint DestinationGroupIndex;
     }
     [System.Runtime.Versioning.SupportedOSPlatform("android")]
     [System.CLSCompliantAttribute(false)]
     public static class JavaMarshal
     {
-        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferences*, void> markCrossReferences) => throw null;
-        public static GCHandle CreateReferenceTrackingHandle(object obj, System.IntPtr context) => throw null;
-        public static System.IntPtr GetContext(GCHandle obj) => throw null;
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences) => throw null;
+        public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context) => throw null;
+        public static unsafe void* GetContext(GCHandle obj) => throw null;
         public static unsafe void FinishCrossReferenceProcessing(
-            MarkCrossReferences* crossReferences,
-            System.Span<GCHandle> unreachableObjectHandles) => throw null;
+            MarkCrossReferencesArgs* crossReferences,
+            System.ReadOnlySpan<GCHandle> unreachableObjectHandles) => throw null;
     }
     [System.Runtime.Versioning.SupportedOSPlatform("android")]
     [System.CLSCompliantAttribute(false)]
     public unsafe struct StronglyConnectedComponent
     {
-        public System.IntPtr Count;
-        public System.IntPtr* Context;
+        public nuint Count;
+        public void** Contexts;
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("android")]
     [System.CLSCompliantAttribute(false)]
-    public unsafe struct MarkCrossReferences
+    public unsafe struct MarkCrossReferencesArgs
     {
-        public System.IntPtr ComponentsLen;
+        public nuint ComponentCount;
         public StronglyConnectedComponent* Components;
-        public System.IntPtr CrossReferencesLen;
+        public nuint CrossReferenceCount;
         public ComponentCrossReference* CrossReferences;
     }
 }

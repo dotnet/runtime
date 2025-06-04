@@ -16,15 +16,15 @@ struct ComponentCrossReference
     size_t DestinationGroupIndex;
 };
 
-struct MarkCrossReferences
+struct MarkCrossReferencesArgs
 {
-    size_t ComponentsLen;
+    size_t ComponentCount;
     StronglyConnectedComponent* Components;
-    size_t CrossReferencesLen;
+    size_t CrossReferenceCount;
     ComponentCrossReference* CrossReferences;
 };
 
-typedef void (*MarkCrossReferencesFtn)(MarkCrossReferences*);
+typedef void (*MarkCrossReferencesFtn)(MarkCrossReferencesArgs*);
 
 static size_t g_sccsLen;
 static StronglyConnectedComponent* g_sccs;
@@ -42,20 +42,20 @@ static void BPFinish()
 
     // A real callback would also receive the set of unreachable
     // bridge objects so the gchandles for them are freed
-    MarkCrossReferences crossRefs;
+    MarkCrossReferencesArgs crossRefs;
     crossRefs.Components = g_sccs;
-    crossRefs.ComponentsLen = g_sccsLen;
+    crossRefs.ComponentCount = g_sccsLen;
     crossRefs.CrossReferences = g_ccrs;
-    crossRefs.CrossReferencesLen = g_ccrsLen;
+    crossRefs.CrossReferenceCount = g_ccrsLen;
 
     g_bpFinishCallback(&crossRefs);
 }
 
-static void MarkCrossReferences(MarkCrossReferences* crossRefs)
+static void MarkCrossReferences(MarkCrossReferencesArgs* crossRefs)
 {
-    g_sccsLen = crossRefs->ComponentsLen;
+    g_sccsLen = crossRefs->ComponentCount;
     g_sccs = crossRefs->Components;
-    g_ccrsLen = crossRefs->CrossReferencesLen;
+    g_ccrsLen = crossRefs->CrossReferenceCount;
     g_ccrs = crossRefs->CrossReferences;
 
     std::thread thr(BPFinish);
