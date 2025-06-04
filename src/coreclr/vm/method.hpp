@@ -1688,18 +1688,15 @@ public:
     // corresponding instantiation of the target of a call.
     MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
 
-
-private:
-    ReturnKind ParseReturnKindFromSig(INDEBUG(bool supportStringConstructors = false));
-
+#if defined(TARGET_X86) || defined(FEATURE_COMINTEROP)
 public:
-    // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
-    // other platforms do not support multi-reg return case with pointers.
-    // Use this method only when you can't hit this case
-    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
-    // Also, on the other platforms for a single field struct return case
-    // the function can't distinguish RT_Object and RT_ByRef.
+    // This method is used to restore ReturnKind using the class handle,e
+    // It does not support multi-reg return case with pointers. Use this
+    // method only when you can't hit
+    // this case (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
+    // Also, for a single field struct return case the function can't distinguish RT_Object and RT_ByRef.
     ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
+#endif // TARGET_X86 || FEATURE_COMINTEROP
 
 public:
     // In general you don't want to call GetCallTarget - you want to
