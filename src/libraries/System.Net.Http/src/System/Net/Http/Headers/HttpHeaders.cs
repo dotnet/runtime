@@ -806,7 +806,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(Monitor.IsEntered(info));
             if (descriptor.Parser == null)
             {
-                if (HttpRuleParser.ContainsNewLine(rawValue))
+                if (HttpRuleParser.ContainsNewLineOrNull(rawValue))
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_no_newlines, descriptor.Name, rawValue));
                     AddInvalidValue(info, rawValue);
@@ -1024,7 +1024,7 @@ namespace System.Net.Http.Headers
             if (descriptor.Parser == null)
             {
                 // If we don't have a parser for the header, we consider the value valid if it doesn't contains
-                // newline characters. We add the values as "parsed value". Note that we allow empty values.
+                // newline or \0 characters. We add the values as "parsed value". Note that we allow empty values.
                 CheckContainsNewLine(value);
                 AddParsedValue(info, value ?? string.Empty);
                 return;
@@ -1134,7 +1134,7 @@ namespace System.Net.Http.Headers
                 return;
             }
 
-            if (HttpRuleParser.ContainsNewLine(value))
+            if (HttpRuleParser.ContainsNewLineOrNull(value))
             {
                 throw new FormatException(SR.net_http_headers_no_newlines);
             }
