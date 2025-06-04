@@ -120,7 +120,11 @@ class Diff:
         self.target_os = partition_info["target_os"]
         self.arch_name = partition_info["target_arch"]
         self.col_name = partition_info["col_name"]
-        self.host_arch_name = CoreclrArguments.provide_default_arch()
+
+        if self.arch_name == "arm" or self.arch_name == "x86":
+            self.host_arch_name = "x86"
+        else:
+            self.host_arch_name = CoreclrArguments.provide_default_arch()
 
         # Core_Root is where the superpmi tools (superpmi.exe, mcs.exe) are expected to be found.
         # We pass the full path of the JITs to use as arguments.
