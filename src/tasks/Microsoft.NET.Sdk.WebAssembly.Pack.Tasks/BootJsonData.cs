@@ -37,10 +37,7 @@ public class BootJsonData
     /// as used for subresource integrity checking.
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public ResourcesData resources { get; set; } = new ResourcesData();
-
-    [DataMember(EmitDefaultValue = false)]
-    public AssetsData assets { get; set; }
+    public object resources { get; set; } = new ResourcesData();
 
     /// <summary>
     /// Gets a value that determines whether to enable caching of the <see cref="resources"/>
