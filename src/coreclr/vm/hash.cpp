@@ -536,9 +536,6 @@ UPTR HashMap::LookupValue(UPTR key, UPTR value)
     }
     CONTRACTL_END;
 
-    SCAN_IGNORE_THROW;          // See contract above.
-    SCAN_IGNORE_TRIGGER;        // See contract above.
-
 #ifndef DACCESS_COMPILE
     _ASSERTE (m_fAsyncMode || OwnLock());
 

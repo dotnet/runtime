@@ -230,9 +230,6 @@ static BOOL s_InitializedFinalizerThreadForPlatform = FALSE;
 
 VOID FinalizerThread::FinalizerThreadWorker(void *args)
 {
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_TRIGGER;
-
     BOOL bPriorityBoosted = FALSE;
 
     while (!fQuitFinalizer)

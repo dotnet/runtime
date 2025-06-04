@@ -416,7 +416,6 @@ public:
                                       const char *szFile,
                                       int         linenum)
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_NOTHROW;
 
         m_fCond = fCond;
@@ -440,8 +439,6 @@ public:
 
     DEBUG_NOINLINE ~COMPlusCannotThrowExceptionHelper()
     {
-        SCAN_SCOPE_END;
-
         if (m_fCond)
         {
             *m_pClrDebugState = m_oldClrDebugState;

@@ -7900,8 +7900,6 @@ LONG Debugger::NotifyOfCHFFilter(EXCEPTION_POINTERS* pExceptionPointers, PVOID p
     }
     CONTRACTL_END;
 
-    SCAN_IGNORE_TRIGGER; // Scan can't handle conditional contracts.
-
     // @@@
     // Implements DebugInterface
     // Can only be called from EE

@@ -36,16 +36,12 @@ BOOL BaseContract::s_alwaysEnforceContracts = 1;
 #define SPECIALIZE_CONTRACT_VIOLATION_HOLDER(mask)                              \
 template<> void ContractViolationHolder<mask>::Enter()                          \
 {                                                                               \
-    SCAN_SCOPE_BEGIN;                                                           \
-    ANNOTATION_VIOLATION(mask);                                                 \
     EnterInternal(mask);                                                        \
 };
 
 #define SPECIALIZE_AUTO_CLEANUP_CONTRACT_VIOLATION_HOLDER(mask)                                                 \
 template<> AutoCleanupContractViolationHolder<mask>::AutoCleanupContractViolationHolder(BOOL fEnterViolation)   \
 {                                                                                                               \
-    SCAN_SCOPE_BEGIN;                                                                                           \
-    ANNOTATION_VIOLATION(mask);                                                                                 \
     EnterInternal(fEnterViolation ? mask : 0);                                                                  \
 };
 

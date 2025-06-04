@@ -157,7 +157,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
@@ -182,8 +181,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         if (IFTHREAD && g_pEEInterface->GetThread() == NULL)
         {
             return;
@@ -279,7 +276,6 @@ private:
 public:
     DEBUG_NOINLINE GCHolderEEInterface()
     {
-        SCAN_SCOPE_BEGIN;
         STATIC_CONTRACT_MODE_PREEMPTIVE;
 
         this->EnterInternal(false, true);
@@ -287,7 +283,6 @@ public:
 
     DEBUG_NOINLINE GCHolderEEInterface(bool bConditional)
     {
-        SCAN_SCOPE_BEGIN;
         if (bConditional)
         {
             STATIC_CONTRACT_MODE_PREEMPTIVE;
@@ -298,8 +293,6 @@ public:
 
     DEBUG_NOINLINE ~GCHolderEEInterface()
     {
-        SCAN_SCOPE_END;
-
         this->LeaveInternal();
     };
 };
