@@ -97,7 +97,7 @@ namespace System.Net.Security
         /// </summary>
         public X509ChainPolicy? CertificateChainPolicy { get; set; }
 
-        public bool AllowRsaPssPad { get; set; } = true;
-        public bool AllowRsaPkcsPad { get; set; } = true;
+        public bool AllowRsaPssPadding { get; set; } = true;
+        public bool AllowRsaPkcs1Padding { get; set; } = true;
     }
 }

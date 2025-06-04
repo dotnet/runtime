@@ -30,8 +30,8 @@ namespace System.Net.Security
                 LocalCertificateSelectionCallback = options.LocalCertificateSelectionCallback,
                 RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback,
                 TargetHost = options.TargetHost,
-                AllowRsaPssPad = options.AllowRsaPssPad,
-                AllowRsaPkcsPad = options.AllowRsaPkcsPad
+                AllowRsaPssPadding = options.AllowRsaPssPadding,
+                AllowRsaPkcs1Padding = options.AllowRsaPkcs1Padding
             };
 
 #if DEBUG

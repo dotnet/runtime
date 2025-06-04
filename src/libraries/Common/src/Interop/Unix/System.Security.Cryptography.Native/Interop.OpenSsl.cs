@@ -417,9 +417,9 @@ internal static partial class Interop
                     sslHandle.SslContextHandle = sslCtxHandle;
                 }
 
-                if (!sslAuthenticationOptions.AllowRsaPssPad || !sslAuthenticationOptions.AllowRsaPkcsPad)
+                if (!sslAuthenticationOptions.AllowRsaPssPadding || !sslAuthenticationOptions.AllowRsaPkcs1Padding)
                 {
-                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPad, sslAuthenticationOptions.AllowRsaPkcsPad);
+                    ConfigureSignatureAlgorithms(sslHandle, sslAuthenticationOptions.AllowRsaPssPadding, sslAuthenticationOptions.AllowRsaPkcs1Padding);
                 }
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)

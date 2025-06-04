@@ -463,7 +463,7 @@ namespace System.Net.Security
             {
                 if (cryptoSettings.Length > 0)
                 {
-                    if (!authOptions.AllowRsaPkcsPad)
+                    if (!authOptions.AllowRsaPkcs1Padding)
                     {
                         algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PKCS_PAD");
 
@@ -473,7 +473,7 @@ namespace System.Net.Security
                         cryptoSettingsCount++;
                     }
 
-                    if (!authOptions.AllowRsaPssPad)
+                    if (!authOptions.AllowRsaPssPadding)
                     {
                         algIdPtrs[cryptoSettingsCount] = Marshal.StringToHGlobalUni("SCH_RSA_PSS_PAD");
 
