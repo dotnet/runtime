@@ -14,23 +14,23 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [NativeMarshalling(typeof(ClrDataAddressMarshaller))]
 internal struct ClrDataAddress : IEquatable<ClrDataAddress>
 {
-    public ulong Address;
+    public ulong Value;
 
-    public ClrDataAddress(ulong address) => Address = address;
+    public ClrDataAddress(ulong value) => Value = value;
 
-    public static implicit operator ulong(ClrDataAddress a) => a.Address;
+    public static implicit operator ulong(ClrDataAddress a) => a.Value;
     public static implicit operator ClrDataAddress(ulong v) => new ClrDataAddress(v);
 
     public override bool Equals(object? obj) => obj is ClrDataAddress address && Equals(address);
-    public readonly bool Equals(ClrDataAddress other) => Address == other.Address;
-    public override readonly int GetHashCode() => Address.GetHashCode();
+    public readonly bool Equals(ClrDataAddress other) => Value == other.Value;
+    public override readonly int GetHashCode() => Value.GetHashCode();
 
-    public override readonly string ToString() => $"0x{Address:x}";
+    public override readonly string ToString() => $"0x{Value:x}";
 }
 
 [CustomMarshaller(typeof(ClrDataAddress), MarshalMode.Default, typeof(ClrDataAddressMarshaller))]
 internal static class ClrDataAddressMarshaller
 {
     public static ClrDataAddress ConvertToManaged(ulong address) => new ClrDataAddress(address);
-    public static ulong ConvertToUnmanaged(ClrDataAddress address) => address.Address;
+    public static ulong ConvertToUnmanaged(ClrDataAddress address) => address.Value;
 }
