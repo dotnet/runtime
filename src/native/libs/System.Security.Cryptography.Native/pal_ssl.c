@@ -1123,6 +1123,13 @@ int32_t CryptoNative_SslSetSigalgs(SSL* ssl, uint8_t* str)
     return (int32_t) SSL_ctrl(ssl, SSL_CTRL_SET_SIGALGS_LIST, 0, (void*)str);
 }
 
+int32_t CryptoNative_SslSetClientSigalgs(SSL* ssl, const char* str)
+{
+    if (ssl == NULL || str == NULL)
+        return 0;
+    return (int32_t) SSL_ctrl(ssl, SSL_CTRL_SET_CLIENT_SIGALGS_LIST, 0, (void*)str);
+}
+
 int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 {
     // No error queue impact.

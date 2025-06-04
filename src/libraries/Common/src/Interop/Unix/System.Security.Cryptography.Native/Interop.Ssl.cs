@@ -200,6 +200,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetSigalgs")]
         internal static unsafe partial int SslSetSigalgs(SafeSslHandle ssl, byte* str);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetClientSigalgs")]
+        internal static unsafe partial int SslSetClientSigalgs(SafeSslHandle ssl, byte* str);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Tls13Supported")]
         private static partial int Tls13SupportedImpl();
 

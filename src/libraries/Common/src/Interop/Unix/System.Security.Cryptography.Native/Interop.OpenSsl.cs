@@ -610,11 +610,16 @@ internal static partial class Interop
                 fixed (byte* pBuffer = buffer)
                 {
                     ret = Interop.Ssl.SslSetSigalgs(sslHandle, pBuffer);
-                }
+                    if (ret != 1)
+                    {
+                        throw new InvalidOperationException("Failed to set signature algorithms.");
+                    }
 
-                if (ret != 1)
-                {
-                    throw new InvalidOperationException("Failed to set signature algorithms.");
+                    ret = Interop.Ssl.SslSetClientSigalgs(sslHandle, pBuffer);
+                    if (ret != 1)
+                    {
+                        throw new InvalidOperationException("Failed to set client signature algorithms.");
+                    }
                 }
             }
             finally
