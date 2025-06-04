@@ -709,6 +709,20 @@ namespace System.Net.Http
             return chunkedMode;
         }
 
+#if NETFRAMEWORK
+        private static bool ContainsOnlyValidLatin1(string headerString)
+        {
+            foreach (char c in headerString)
+            {
+                if (c <= 0 || c > 255 || c == '\r' || c == '\n')
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+#endif
+
         private static void AddRequestHeaders(
             SafeWinHttpHandle requestHandle,
             HttpRequestMessage requestMessage,
@@ -739,7 +753,16 @@ namespace System.Net.Http
             }
 
             // Serialize general request headers.
-            requestHeadersBuffer.AppendLine(requestMessage.Headers.ToString());
+            string requestHeaders = requestMessage.Headers.ToString();
+#if NETFRAMEWORK
+            if (!ContainsOnlyValidLatin1(requestHeaders))
+#else
+            if (requestHeaders.ContainsAnyExceptInRange((char)1, (char)255))
+#endif
+            {
+                throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpRequestMessage)));
+            }
+            requestHeadersBuffer.AppendLine(requestHeaders);
 
             // Serialize entity-body (content) headers.
             if (requestMessage.Content != null)
@@ -754,7 +777,16 @@ namespace System.Net.Http
                     requestMessage.Content.Headers.ContentLength = contentLength;
                 }
 
-                requestHeadersBuffer.AppendLine(requestMessage.Content.Headers.ToString());
+                string contentHeaders = requestMessage.Content.Headers.ToString();
+#if NETFRAMEWORK
+            if (!ContainsOnlyValidLatin1(requestHeaders))
+#else
+            if (requestHeaders.ContainsAnyExceptInRange((char)1, (char)255))
+#endif
+                {
+                    throw new FormatException(SR.Format(SR.net_http_invalid_header_value, nameof(HttpContent)));
+                }
+                requestHeadersBuffer.AppendLine(contentHeaders);
             }
 
             // Add request headers to WinHTTP request handle.
