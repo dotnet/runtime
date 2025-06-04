@@ -79,7 +79,27 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                         continue;
                     if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
                         continue;
-                    return new Guid(guidStringArgumentHandle.ToConstantStringValueHandle(_reader).GetString(_reader));
+
+                    static Guid ReadAndParseGuid(Handle handle, MetadataReader reader)
+                    {
+                        if (handle.IsNil)
+                        {
+                            // We don't really have a parameter, so just match the name of the 'Parse' parameter
+                            ArgumentNullException.Throw("utf8Text");
+                        }
+
+                        // 68 characters is the maximum length of a guid, when formatted as 'X'
+                        Span<byte> destination = stackalloc byte[68];
+
+                        int charsWritten = ConstantStringValue.GetRawStringDataUtf8(
+                            reader: reader,
+                            handle: handle.ToConstantStringValueHandle(reader),
+                            destinationUtf8: destination);
+
+                        return Guid.Parse(destination.Slice(0, charsWritten));
+                    }
+
+                    return ReadAndParseGuid(guidStringArgumentHandle, _reader);
                 }
             }
             return null;

@@ -7,6 +7,7 @@
 // UTF8 string reading methods
 // ---------------------------------------------------------------------------
 
+using System;
 using System.Text;
 
 namespace Internal.NativeFormat
@@ -59,6 +60,28 @@ namespace Internal.NativeFormat
 #else
             value = Encoding.UTF8.GetString(_base + offset, (int)numBytes);
 #endif
+
+            return endOffset;
+        }
+
+        public unsafe uint DecodeStringUtf8(uint offset, Span<byte> destinationUtf8, out int bytesWritten)
+        {
+            uint numBytes;
+            offset = DecodeUnsigned(offset, out numBytes);
+
+            if (numBytes == 0)
+            {
+                bytesWritten = 0;
+                return offset;
+            }
+
+            uint endOffset = offset + numBytes;
+            if (endOffset < numBytes || endOffset > _size)
+                ThrowBadImageFormatException();
+
+            new ReadOnlySpan<byte>(_base + offset, (int)numBytes).CopyTo(destinationUtf8);
+
+            bytesWritten = (int)numBytes;
 
             return endOffset;
         }

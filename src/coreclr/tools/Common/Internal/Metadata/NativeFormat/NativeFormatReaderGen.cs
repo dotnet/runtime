@@ -2013,6 +2013,21 @@ namespace Internal.Metadata.NativeFormat
 
         public string Value => _value;
         private readonly string _value;
+
+        internal static int GetRawStringDataUtf8(MetadataReader reader, ConstantStringValueHandle handle, Span<byte> destinationUtf8)
+        {
+            if (handle.IsNil)
+            {
+                return 0;
+            }
+
+            uint offset = (uint)handle.Offset;
+
+            // We don't care about the final offset
+            _ = reader._streamReader.DecodeStringUtf8(offset, destinationUtf8, out int bytesWritten);
+
+            return bytesWritten;
+        }
     } // ConstantStringValue
 
 #if SYSTEM_PRIVATE_CORELIB
