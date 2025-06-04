@@ -143,7 +143,7 @@ namespace ILCompiler.DependencyAnalysis
                                     openInstantiation[instArg] = context.GetSignatureVariable(instArg, method: true);
                                 MethodDesc implementingMethodInstantiation = slotDecl.MakeInstantiatedMethod(openInstantiation).InstantiateSignature(potentialOverrideType.Instantiation, _method.Instantiation);
 
-                                // Static virtuals cannot be further overriden so this is an impl use. Otherwise it's a virtual slot use.
+                                // Static virtuals cannot be further overridden so this is an impl use. Otherwise it's a virtual slot use.
                                 if (implementingMethodInstantiation.Signature.IsStatic)
                                     dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GenericVirtualMethodImpl(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
                                 else

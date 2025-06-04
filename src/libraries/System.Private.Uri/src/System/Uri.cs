@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -584,7 +585,7 @@ namespace System
         // The assumptions:
         //  - baseUri is a valid absolute Uri
         //  - relative part is not null and not empty
-        private static unsafe void GetCombinedString(Uri baseUri, string relativeStr,
+        private static void GetCombinedString(Uri baseUri, string relativeStr,
             bool dontEscape, ref string? result)
         {
             // NB: This is not RFC2396 compliant although it is inline with w3c.org recommendations
@@ -1902,7 +1903,7 @@ namespace System
         //  This method is called first to figure out the scheme or a simple file path
         //  Is called only at the .ctor time
         //
-        private static unsafe ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
+        private static ParsingError ParseScheme(string uriString, ref Flags flags, ref UriParser? syntax)
         {
             Debug.Assert((flags & Flags.Debug_LeftConstructor) == 0);
 
@@ -2517,7 +2518,8 @@ namespace System
 
                 case Flags.IPv6HostType:
                     // The helper will return [...] string that is not suited for Dns.Resolve()
-                    host = IPv6AddressHelper.ParseCanonicalName(str, idx, ref loopback, ref scopeId);
+                    host = IPv6AddressHelper.ParseCanonicalName(str.AsSpan(idx), ref loopback, out ReadOnlySpan<char> scopeIdSpan);
+                    scopeId = scopeIdSpan.IsEmpty ? null : new string(scopeIdSpan);
                     break;
 
                 case Flags.IPv4HostType:

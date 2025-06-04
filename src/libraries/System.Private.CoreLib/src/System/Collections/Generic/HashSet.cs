@@ -100,7 +100,7 @@ namespace System.Collections.Generic
             {
                 // To avoid excess resizes, first set size based on collection's count. The collection may
                 // contain duplicates, so call TrimExcess if resulting HashSet is larger than the threshold.
-                if (collection is ICollection<T> coll)
+                if (collection is IReadOnlyCollection<T> coll)
                 {
                     int count = coll.Count;
                     if (count > 0)
@@ -829,7 +829,7 @@ namespace System.Collections.Generic
             }
 
             // If other is known to be empty, intersection is empty set; remove all elements, and we're done.
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 if (otherAsCollection.Count == 0)
                 {
@@ -933,7 +933,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If this has more elements then it can't be a subset.
                 if (Count > otherAsCollection.Count)
@@ -969,7 +969,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // No set is a proper subset of a set with less or equal number of elements.
                 if (otherAsCollection.Count <= Count)
@@ -1014,7 +1014,7 @@ namespace System.Collections.Generic
             }
 
             // Try to fall out early based on counts.
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If other is the empty set then this is a superset.
                 if (otherAsCollection.Count == 0)
@@ -1058,7 +1058,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If other is the empty set then this is a superset.
                 if (otherAsCollection.Count == 0)
@@ -1133,7 +1133,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            if (other is ICollection<T> otherAsCollection)
+            if (other is IReadOnlyCollection<T> otherAsCollection)
             {
                 // If this is empty, they are equal iff other is empty.
                 if (Count == 0)
@@ -1570,7 +1570,7 @@ namespace System.Collections.Generic
         ///
         /// This attempts to allocate on the stack, if below StackAllocThreshold.
         /// </summary>
-        private unsafe void IntersectWithEnumerable(IEnumerable<T> other)
+        private void IntersectWithEnumerable(IEnumerable<T> other)
         {
             Debug.Assert(_buckets != null, "_buckets shouldn't be null; callers should check first");
 
@@ -1580,7 +1580,7 @@ namespace System.Collections.Generic
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
             Span<int> span = stackalloc int[StackAllocThreshold];
-            BitHelper bitHelper = intArrayLength <= StackAllocThreshold ?
+            BitHelper bitHelper = (uint)intArrayLength <= StackAllocThreshold ?
                 new BitHelper(span.Slice(0, intArrayLength), clear: true) :
                 new BitHelper(new int[intArrayLength], clear: false);
 
@@ -1642,7 +1642,7 @@ namespace System.Collections.Generic
         ///
         /// </summary>
         /// <param name="other"></param>
-        private unsafe void SymmetricExceptWithEnumerable(IEnumerable<T> other)
+        private void SymmetricExceptWithEnumerable(IEnumerable<T> other)
         {
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);

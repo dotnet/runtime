@@ -168,14 +168,12 @@ namespace System.Net
             if (_regexBypassList is Regex[] regexBypassList)
             {
                 bool isDefaultPort = input.IsDefaultPort;
-                int lengthRequired = input.Scheme.Length + 3 + input.Host.Length;
-                if (!isDefaultPort)
-                {
-                    lengthRequired += 1 + 5; // 1 for ':' and 5 for max formatted length of a port (16 bit value)
-                }
+                int lengthRequired = checked(input.Scheme.Length + 3 + input.Host.Length +
+                    // 1 for ':' and 5 for max formatted length of a port (16 bit value)
+                    (isDefaultPort ? 0 : 1 + 5));
 
                 int charsWritten;
-                Span<char> url = lengthRequired <= 256 ? stackalloc char[256] : new char[lengthRequired];
+                Span<char> url = (uint)lengthRequired <= 256 ? stackalloc char[256] : new char[lengthRequired];
                 bool formatted = isDefaultPort ?
                     url.TryWrite($"{input.Scheme}://{input.Host}", out charsWritten) :
                     url.TryWrite($"{input.Scheme}://{input.Host}:{(uint)input.Port}", out charsWritten);

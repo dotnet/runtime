@@ -23,11 +23,11 @@
                                   '$(IsSourceProject)' == 'true' and
                                   '$(MSBuildProjectExtension)' == '.csproj' and
                                   (
-                                      '$(DisableImplicitFrameworkReferences)' == 'true' and
-                                      (
-                                        '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true' or
-                                        '@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))' == 'true'
-                                      )
+                                    '$(DisableImplicitFrameworkReferences)' == 'true' and
+                                    (
+                                      '@(Reference->AnyHaveMetadataValue('Identity', 'System.Runtime.InteropServices'))' == 'true' or
+                                      '@(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))' == 'true'
+                                    )
                                   )" />
 
     <!-- We enable the ComInterfaceGenerator source generator

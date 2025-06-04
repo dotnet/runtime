@@ -27,13 +27,13 @@ namespace Microsoft.Extensions.Logging
         /// Adds a debug logger that is enabled as defined by the filter function.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
-        /// <param name="filter">The function used to filter events based on the log level.  This parameter is no longer honored and will be ignored.</param>
+        /// <param name="filter">The function used to filter events based on the log level. This parameter is no longer honored and is ignored.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This method is retained only for compatibility. The recommended alternative is AddDebug(this ILoggingBuilder builder).", error: true)]
         public static ILoggerFactory AddDebug(this ILoggerFactory factory, Func<string, LogLevel, bool> filter) => AddDebug(factory);
 
         /// <summary>
-        /// Adds a debug logger that is enabled for <see cref="LogLevel"/>s of minLevel or higher.
+        /// Adds a debug logger that is enabled for log levels of minLevel or higher.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         [EditorBrowsable(EditorBrowsableState.Never)]

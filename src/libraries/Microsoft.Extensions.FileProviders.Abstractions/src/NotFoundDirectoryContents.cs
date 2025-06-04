@@ -8,17 +8,17 @@ using System.Linq;
 namespace Microsoft.Extensions.FileProviders
 {
     /// <summary>
-    /// Represents a non-existing directory
+    /// Represents a nonexistent directory.
     /// </summary>
     public class NotFoundDirectoryContents : IDirectoryContents
     {
         /// <summary>
-        /// A shared instance of <see cref="NotFoundDirectoryContents"/>
+        /// Gets a shared instance of <see cref="NotFoundDirectoryContents"/>.
         /// </summary>
         public static NotFoundDirectoryContents Singleton { get; } = new();
 
         /// <summary>
-        /// Always false.
+        /// Gets a value that's always <see langword="false"/>.
         /// </summary>
         public bool Exists => false;
 

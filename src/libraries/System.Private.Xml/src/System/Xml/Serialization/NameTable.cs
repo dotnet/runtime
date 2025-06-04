@@ -94,6 +94,7 @@ namespace System.Xml.Serialization
             get { return _table.Values; }
         }
 
+        [RequiresDynamicCode(XmlSerializer.AotSerializationWarning)]
         internal Array ToArray(Type type)
         {
             Array a = Array.CreateInstance(type, _table.Count);

@@ -50,7 +50,7 @@ public static class Program
 
             string publishDirectory = Path.GetDirectoryName(typeof(Program).Assembly.Location) ?? Environment.CurrentDirectory;
 
-            await PrepareOneFuzzDeploymentAsync(fuzzers, publishDirectory, args[1]);
+            await PrepareOneFuzzDeploymentAsync(fuzzers, publishDirectory, args[1]).ConfigureAwait(false);
             return;
         }
 
@@ -108,17 +108,35 @@ public static class Program
         await DownloadArtifactAsync(
             Path.Combine(publishDirectory, "libfuzzer-dotnet.exe"),
             "https://github.com/Metalnem/libfuzzer-dotnet/releases/download/v2023.06.26.1359/libfuzzer-dotnet-windows.exe",
-            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458");
+            "cbc1f510caaec01b17b5e89fc780f426710acee7429151634bbf4d0c57583458").ConfigureAwait(false);
 
-        foreach (IFuzzer fuzzer in fuzzers)
+        Console.WriteLine("Preparing fuzzers ...");
+
+        List<string> exceptions = new();
+
+        Parallel.ForEach(fuzzers, fuzzer =>
         {
-            Console.WriteLine();
-            Console.WriteLine($"Preparing {fuzzer.Name} ...");
+            try
+            {
+                PrepareFuzzer(fuzzer);
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add($"Failed to prepare {fuzzer.Name}: {ex.Message}");
+            }
+        });
 
+        if (exceptions.Count != 0)
+        {
+            Console.WriteLine(string.Join('\n', exceptions));
+            throw new Exception($"Failed to prepare {exceptions.Count} fuzzers.");
+        }
+
+        void PrepareFuzzer(IFuzzer fuzzer)
+        {
             string fuzzerDirectory = Path.Combine(outputDirectory, fuzzer.Name);
             Directory.CreateDirectory(fuzzerDirectory);
 
-            Console.WriteLine($"Copying artifacts to {fuzzerDirectory}");
             // NOTE: The expected fuzzer directory structure is currently flat.
             // If we ever need to support subdirectories, OneFuzzConfig.json must also be updated to use PreservePathsJobDependencies.
             foreach (string file in Directory.GetFiles(publishDirectory))
@@ -138,10 +156,7 @@ public static class Program
 
             InstrumentAssemblies(fuzzer, fuzzerDirectory);
 
-            Console.WriteLine("Generating OneFuzzConfig.json");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "OneFuzzConfig.json"), GenerateOneFuzzConfigJson(fuzzer));
-
-            Console.WriteLine("Generating local-run.bat");
             File.WriteAllText(Path.Combine(fuzzerDirectory, "local-run.bat"), GenerateLocalRunHelperScript(fuzzer));
         }
 
@@ -195,8 +210,6 @@ public static class Program
     {
         foreach (var (assembly, prefixes) in GetInstrumentationTargets(fuzzer))
         {
-            Console.WriteLine($"Instrumenting {assembly} {(prefixes is null ? "" : $"({prefixes})")}");
-
             string path = Path.Combine(fuzzerDirectory, assembly);
             if (!File.Exists(path))
             {
@@ -263,7 +276,7 @@ public static class Program
             Console.WriteLine($"Downloading {Path.GetFileName(path)}");
 
             using var client = new HttpClient();
-            byte[] bytes = await client.GetByteArrayAsync(url);
+            byte[] bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
 
             if (!Convert.ToHexString(SHA256.HashData(bytes)).Equals(hash, StringComparison.OrdinalIgnoreCase))
             {
@@ -348,9 +361,9 @@ public static class Program
     private static void WorkaroundOneFuzzTaskNotAcceptingMultipleJobs(IFuzzer[] fuzzers)
     {
         string yamlPath = Environment.CurrentDirectory;
-        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.sln")))
+        while (!File.Exists(Path.Combine(yamlPath, "DotnetFuzzing.slnx")))
         {
-            yamlPath = Path.GetDirectoryName(yamlPath) ?? throw new Exception("Couldn't find DotnetFuzzing.sln");
+            yamlPath = Path.GetDirectoryName(yamlPath) ?? throw new Exception("Couldn't find DotnetFuzzing.slnx");
         }
 
         yamlPath = Path.Combine(yamlPath, "../../../eng/pipelines/libraries/fuzzing/deploy-to-onefuzz.yml");

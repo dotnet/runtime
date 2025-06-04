@@ -715,10 +715,6 @@ public:
     BOOL GetModulePath(VMPTR_Module vmModule,
                        IStringHolder *  pStrFilename);
 
-    // Get the full path and file name to the ngen image for the module (if any).
-    BOOL GetModuleNGenPath(VMPTR_Module vmModule,
-                           IStringHolder *  pStrFilename);
-
     // Implementation of IDacDbiInterface::GetModuleSimpleName
     void GetModuleSimpleName(VMPTR_Module vmModule, IStringHolder * pStrFilename);
 
@@ -1103,23 +1099,15 @@ private:
                                       TargetBuffer * pIL);
 
 public:
-    // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
-    // from it's search path.
+    // API for picking up the info needed for a debugger to look up an image from its search path.
     bool GetMetaDataFileInfoFromPEFile(VMPTR_PEAssembly vmPEAssembly,
                                        DWORD &dwTimeStamp,
                                        DWORD &dwSize,
-                                       bool  &isNGEN,
                                        IStringHolder* pStrFilename);
-
-    bool GetILImageInfoFromNgenPEFile(VMPTR_PEAssembly vmPEAssembly,
-                                      DWORD &dwTimeStamp,
-                                      DWORD &dwSize,
-                                      IStringHolder* pStrFilename);
-
 };
 
 
-// Global allocator for DD. Access is protected under the g_dacCritSec lock.
+// Global allocator for DD. Access is protected under the g_dacMutex lock.
 extern "C" IDacDbiInterface::IAllocator * g_pAllocator;
 
 
@@ -1128,7 +1116,7 @@ class DDHolder
 public:
     DDHolder(DacDbiInterfaceImpl* pContainer, bool fAllowReentrant)
     {
-        EnterCriticalSection(&g_dacCritSec);
+        minipal_mutex_enter(&g_dacMutex);
 
         // If we're not re-entrant, then assert.
         if (!fAllowReentrant)
@@ -1151,7 +1139,7 @@ public:
         g_dacImpl    = m_pOldContainer;
         g_pAllocator = m_pOldAllocator;
 
-        LeaveCriticalSection(&g_dacCritSec);
+        minipal_mutex_leave(&g_dacMutex);
     }
 
 protected:

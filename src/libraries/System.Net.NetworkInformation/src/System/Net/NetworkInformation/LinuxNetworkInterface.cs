@@ -25,7 +25,7 @@ namespace System.Net.NetworkInformation
             internal string[]? IPv4Routes;
             internal string[]? IPv6Routes;
             internal string? DnsSuffix;
-            internal IPAddressCollection? DnsAddresses;
+            internal IPAddressCollection DnsAddresses;
 
             internal LinuxNetworkInterfaceSystemProperties()
             {
@@ -59,6 +59,7 @@ namespace System.Net.NetworkInformation
                 }
                 catch (Exception e) when (e is FileNotFoundException || e is UnauthorizedAccessException)
                 {
+                    DnsAddresses = new InternalIPAddressCollection();
                 }
             }
         }

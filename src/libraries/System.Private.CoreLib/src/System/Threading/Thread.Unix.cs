@@ -6,6 +6,7 @@ using System.Runtime;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace System.Threading
 {
@@ -16,6 +17,11 @@ namespace System.Threading
         internal static System.Threading.Tasks.Task RegisterWasiPollableHandle(int handle, bool ownsPollable, CancellationToken cancellationToken)
         {
             return WasiEventLoop.RegisterWasiPollableHandle(handle, ownsPollable, cancellationToken);
+        }
+
+        internal static void RegisterWasiPollHook(object? state, Func<object?, IList<int>> beforePollHook, Action<object?> onResolveCallback, CancellationToken cancellationToken)
+        {
+            WasiEventLoop.RegisterWasiPollHook(state, beforePollHook, onResolveCallback, cancellationToken);
         }
 
         internal static T PollWasiEventLoopUntilResolved<T>(Task<T> mainTask)

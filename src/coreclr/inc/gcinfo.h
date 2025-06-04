@@ -4,6 +4,7 @@
 // ******************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
+// There are scenarios in diagnostics that support parsing of old GC Info formats.
 // See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfo.h
 // ******************************************************************************
 
@@ -36,7 +37,18 @@ const unsigned   this_OFFSET_FLAG  = 0x2;  // the offset is "this"
 // The current GCInfo Version
 //-----------------------------------------------------------------------------
 
-#define GCINFO_VERSION 3
+#define GCINFO_VERSION 4
+
+#ifdef SOS_INCLUDE
+extern bool IsRuntimeVersionAtLeast(DWORD major);
+inline int GCInfoVersion()
+{
+    // In SOS we only care about ability to parse/dump the GC Info.
+    // Since v2 and v3 had the same file format and v1 is no longer supported,
+    // we can assume that everything before net10.0 uses GCInfo v3.
+    return IsRuntimeVersionAtLeast(10) ? 4 : 3;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // GCInfoToken: A wrapper that contains the GcInfo data and version number.
@@ -67,15 +79,11 @@ struct GCInfoToken
 
     static uint32_t ReadyToRunVersionToGcInfoVersion(uint32_t readyToRunMajorVersion, uint32_t readyToRunMinorVersion)
     {
-        // Once MINIMUM_READYTORUN_MAJOR_VERSION is bumped to 10+
-        // delete the following and just return GCINFO_VERSION
-        //
-        // R2R 9.0 and 9.1 use GCInfo v2
-        // R2R 9.2 uses GCInfo v3
-        if (readyToRunMajorVersion == 9 && readyToRunMinorVersion < 2)
-            return 2;
-
+#ifdef SOS_INCLUDE
+        return GCInfoVersion();
+#else
         return GCINFO_VERSION;
+#endif
     }
 };
 

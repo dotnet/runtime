@@ -3,7 +3,7 @@
 - [The Basics](#the-basics)
   - [Build Results](#build-results)
   - [What to do with the Build](#what-to-do-with-the-build)
-    - [The Core_Root for Testing Your Build](#the-core-root-for-testing-your-build)
+    - [The Core_Root for Testing Your Build](#the-core\_root-for-testing-your-build)
     - [The Dev Shipping Packs](#the-dev-shipping-packs)
   - [Cross Compilation](#cross-compilation)
 - [Other Features](#other-features)
@@ -54,6 +54,8 @@ Once you have both subsets built, you can generate the *Core_Root*, which as men
 ```
 
 Since this is more related to testing, you can find the full details and instructions in the CoreCLR testing doc [over here](/docs/workflow/testing/coreclr/testing.md).
+
+**WARNING:** When building CoreCLR, the `apphost` will also get constructed as part of the build. However, `apphost` belongs to the `host` subset. This means that if you only pass the `runtimeConfiguration` and/or the `librariesConfiguration` flag to your builds, then the `apphost` will get built in `Debug`. This will result in issues when trying to build the tests. Because of this, it is highly recommended to always also include the `-c` or `-hc` flags when building `clr` to ensure all of its related components are constructed in the same configuration.
 
 #### The Dev Shipping Packs
 

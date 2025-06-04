@@ -65,7 +65,7 @@ namespace System.Reflection
 
         public virtual IEnumerable<MemberInfo> DeclaredMembers
         {
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            [DynamicallyAccessedMembers(GetAllMembers)]
             get => GetMembers(DeclaredOnlyLookup);
         }
 

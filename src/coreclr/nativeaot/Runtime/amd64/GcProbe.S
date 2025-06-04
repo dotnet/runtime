@@ -76,7 +76,6 @@
 //
 // Register state on exit:
 //  R11: thread pointer
-//  RCX: return value flags
 //  RAX, RDX preserved, other volatile regs trashed
 //
 .macro FixupHijackedCallstack
@@ -95,14 +94,10 @@
         mov         rcx, [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress]
         push        rcx
 
-        // Fetch the return address flags
-        mov         rcx, [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags]
-
         // Clear hijack state
-        xor         r9, r9
-        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], r9
-        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], r9
-        mov         [r11 + OFFSETOF__Thread__m_uHijackedReturnValueFlags], r9
+        xor         ecx, ecx
+        mov         [r11 + OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation], rcx
+        mov         [r11 + OFFSETOF__Thread__m_pvHijackedReturnAddress], rcx
 .endm
 
 //
@@ -117,7 +112,7 @@ NESTED_ENTRY RhpGcProbeHijack, _TEXT, NoHandler
         ret
 
 LOCAL_LABEL(WaitForGC):
-        or          ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX
+        mov         ecx, DEFAULT_FRAME_SAVE_FLAGS  + PTFF_SAVE_RAX + PTFF_SAVE_RDX + PTFF_THREAD_HIJACK
         jmp         C_FUNC(RhpWaitForGC)
 NESTED_END RhpGcProbeHijack, _TEXT
 

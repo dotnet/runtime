@@ -15,9 +15,12 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            return count <= 0 || IsEmptyArray(source) ?
-                [] :
-                TakeIterator(source, count);
+            if (count <= 0 || IsEmptyArray(source))
+            {
+                return [];
+            }
+
+            return IsSizeOptimized ? SizeOptimizedTakeIterator(source, count) : SpeedOptimizedTakeIterator(source, count);
         }
 
         /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
@@ -60,9 +63,12 @@ namespace System.Linq
             }
             else if (!isEndIndexFromEnd)
             {
-                return startIndex >= endIndex ?
-                    [] :
-                    TakeRangeIterator(source, startIndex, endIndex);
+                if (startIndex >= endIndex)
+                {
+                    return [];
+                }
+
+                return IsSizeOptimized ? SizeOptimizedTakeRangeIterator(source, startIndex, endIndex) : SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
             }
 
             return TakeRangeFromEndIterator(source, isStartIndexFromEnd, startIndex, isEndIndexFromEnd, endIndex);
@@ -88,7 +94,10 @@ namespace System.Linq
 
                 if (startIndex < endIndex)
                 {
-                    foreach (TSource element in TakeRangeIterator(source, startIndex, endIndex))
+                    IEnumerable<TSource> rangeIterator = IsSizeOptimized
+                        ? SizeOptimizedTakeRangeIterator(source, startIndex, endIndex)
+                        : SpeedOptimizedTakeRangeIterator(source, startIndex, endIndex);
+                    foreach (TSource element in rangeIterator)
                     {
                         yield return element;
                     }

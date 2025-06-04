@@ -54,15 +54,6 @@ namespace MonoTests.System.Configuration.Util
             }
         }
 
-        public static string ThisApplicationPath
-        {
-            get
-            {
-                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                    Assembly.GetEntryAssembly().ManifestModule.Name);
-            }
-        }
-
         public static string ThisConfigFileName
         {
             get

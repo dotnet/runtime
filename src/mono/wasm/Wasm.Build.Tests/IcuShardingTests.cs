@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
-using System.Collections.Generic;
 
 #nullable enable
 
@@ -17,47 +19,33 @@ public class IcuShardingTests : IcuTestsBase
     public IcuShardingTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext) { }
 
-    public static IEnumerable<object?[]> IcuExpectedAndMissingCustomShardTestData(bool aot, RunHost host)
-        => ConfigWithAOTData(aot)
-            .Multiply(
-                new object[] { CustomIcuPath, s_customIcuTestedLocales, false },
-                new object[] { CustomIcuPath, s_customIcuTestedLocales, true })
-            .WithRunHosts(host)
-            .UnwrapItemsAsArrays();
+    public static IEnumerable<object[]> IcuExpectedAndMissingCustomShardTestData(Configuration config) =>
+        from aot in boolOptions
+            from onlyPredefinedCultures in boolOptions
+            // isOnlyPredefinedCultures = true fails with wasmbrowser: https://github.com/dotnet/runtime/issues/108272
+            where !(onlyPredefinedCultures)
+            select new object[] { config, aot, CustomIcuPath, s_customIcuTestedLocales, onlyPredefinedCultures };
 
-    public static IEnumerable<object?[]> IcuExpectedAndMissingAutomaticShardTestData(bool aot)
-        => ConfigWithAOTData(aot)
-            .Multiply(
-                new object[] { "fr-FR", GetEfigsTestedLocales(SundayNames.French)},
-                new object[] { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
-                new object[] { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) })
-            .WithRunHosts(BuildTestBase.s_hostsForOSLocaleSensitiveTests)
-            .UnwrapItemsAsArrays();
-
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { false, RunHost.NodeJS | RunHost.Chrome })]
-    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { true, RunHost.NodeJS | RunHost.Chrome })]
-    public void CustomIcuShard(BuildArgs buildArgs, string shardName, string testedLocales, bool onlyPredefinedCultures, RunHost host, string id) =>
-        TestIcuShards(buildArgs, shardName, testedLocales, host, id, onlyPredefinedCultures);
-
-    [Theory]
-    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { false })]
-    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { true })]
-    public void AutomaticShardSelectionDependingOnEnvLocale(BuildArgs buildArgs, string environmentLocale, string testedLocales, RunHost host, string id)
+    public static IEnumerable<object[]> IcuExpectedAndMissingAutomaticShardTestData(Configuration config)
     {
-        string projectName = $"automatic_shard_{environmentLocale}_{buildArgs.Config}_{buildArgs.AOT}";
-        bool dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
-
-        buildArgs = buildArgs with { ProjectName = projectName };
-        buildArgs = ExpandBuildArgs(buildArgs);
-
-        string programText = GetProgramText(testedLocales);
-        _testOutput.WriteLine($"----- Program: -----{Environment.NewLine}{programText}{Environment.NewLine}-------");
-        (_, string output) = BuildProject(buildArgs,
-                        id: id,
-                        new BuildProjectOptions(
-                            InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
-                            DotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack));
-        string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id, environmentLocale: environmentLocale);
+        var locales = new Dictionary<string, string>
+        {
+            { "fr-FR", GetEfigsTestedLocales(SundayNames.French) },
+            { "ja-JP", GetCjkTestedLocales(SundayNames.Japanese) },
+            { "sk-SK", GetNocjkTestedLocales(SundayNames.Slovak) }
+        }; 
+        return from aot in boolOptions
+            from locale in locales
+            select new object[] { config, aot, locale.Key, locale.Value };
     }
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingCustomShardTestData), parameters: new object[] { Configuration.Release })]
+    public async Task CustomIcuShard(Configuration config, bool aot, string customIcuPath, string customLocales, bool onlyPredefinedCultures) =>
+        await TestIcuShards(config, Template.WasmBrowser, aot, customIcuPath, customLocales, GlobalizationMode.Custom, onlyPredefinedCultures);
+
+    [Theory]
+    [MemberData(nameof(IcuExpectedAndMissingAutomaticShardTestData), parameters: new object[] { Configuration.Release })]
+    public async Task AutomaticShardSelectionDependingOnEnvLocale(Configuration config, bool aot, string environmentLocale, string testedLocales) =>
+        await PublishAndRunIcuTest(config, Template.WasmBrowser, aot, testedLocales, GlobalizationMode.Sharded, locale: environmentLocale);
 }

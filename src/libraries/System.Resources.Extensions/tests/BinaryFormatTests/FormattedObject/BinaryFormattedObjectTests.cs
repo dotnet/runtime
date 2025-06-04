@@ -38,9 +38,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ClassRecord systemClass = (ClassRecord)format[format.RootRecord.Id];
         VerifyHashTable(systemClass, expectedVersion: 0, expectedHashSize: 3);
 
-        SZArrayRecord<object> keys = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
+        SZArrayRecord<SerializationRecord> keys = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
         Assert.Equal(0, keys.Length);
-        SZArrayRecord<object> values = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Values")!;
+        SZArrayRecord<SerializationRecord> values = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Values")!;
         Assert.Equal(0, values.Length);
     }
 
@@ -77,12 +77,12 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
         ClassRecord systemClass = (ClassRecord)format[format.RootRecord.Id];
         VerifyHashTable(systemClass, expectedVersion: 1, expectedHashSize: 3);
 
-        SZArrayRecord<object> keys = (SZArrayRecord<object>)format[systemClass.GetArrayRecord("Keys").Id];
+        SZArrayRecord<SerializationRecord> keys = (SZArrayRecord<SerializationRecord>)format[systemClass.GetArrayRecord("Keys").Id];
         Assert.Equal(1, keys.Length);
-        Assert.Equal("This", keys.GetArray().Single());
-        SZArrayRecord<object> values = (SZArrayRecord<object>)format[systemClass.GetArrayRecord("Values").Id];
+        Assert.Equal("This", ((PrimitiveTypeRecord<string>)keys.GetArray().Single()).Value);
+        SZArrayRecord<SerializationRecord> values = (SZArrayRecord<SerializationRecord>)format[systemClass.GetArrayRecord("Values").Id];
         Assert.Equal(1, values.Length);
-        Assert.Equal("That", values.GetArray().Single());
+        Assert.Equal("That", ((PrimitiveTypeRecord<string>)values.GetArray().Single()).Value);
     }
 
     [Fact]
@@ -100,8 +100,9 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         // The collections themselves get ids first before the strings do.
         // Everything in the second keys is a string reference.
-        SZArrayRecord<object> array = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
-        Assert.Equivalent(new object[] { "TheOther", "That", "This" }, array.GetArray());
+        SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
+        SerializationRecord[] array = arrayRecord.GetArray();
+        Assert.Equivalent(new string[] { "TheOther", "That", "This" }, array.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
     }
 
     [Fact]
@@ -119,11 +120,14 @@ public class BinaryFormattedObjectTests : SerializationTest<FormattedObjectSeria
 
         // The collections themselves get ids first before the strings do.
         // Everything in the second keys is a string reference.
-        SZArrayRecord<object> keys = (SZArrayRecord<object>)systemClass.GetSerializationRecord("Keys")!;
-        Assert.Equivalent(new object[] { "Yowza", "Youza", "Meeza" }, keys.GetArray());
+        SZArrayRecord<SerializationRecord> keysRecord = (SZArrayRecord<SerializationRecord>)systemClass.GetSerializationRecord("Keys")!;
+        SerializationRecord[] keysRecords = keysRecord.GetArray();
+        Assert.Equivalent(new string[] { "Yowza", "Youza", "Meeza" }, keysRecords.OfType<PrimitiveTypeRecord<string>>().Select(sr => sr.Value).ToArray());
 
-        SZArrayRecord<object?> values = (SZArrayRecord<object?>)systemClass.GetSerializationRecord("Values")!;
-        Assert.Equal(new object?[] { null, null, null }, values.GetArray());
+        SZArrayRecord<SerializationRecord?> valuesRecord = (SZArrayRecord<SerializationRecord?>)systemClass.GetSerializationRecord("Values")!;
+        SerializationRecord[] valuesRecords = valuesRecord.GetArray();
+        Assert.Equal(3, valuesRecords.Length);
+        Assert.All(valuesRecords, Assert.Null);
     }
 
     [Fact]

@@ -547,10 +547,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static string GetXmlSerializerAssemblyName(Type type, string defaultNamespace)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             return GetTempAssemblyName(type.Assembly.GetName(), defaultNamespace);
         }

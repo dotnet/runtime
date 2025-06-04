@@ -28,10 +28,9 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http11 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http11(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Relies on finalization")]
         [Fact]
@@ -98,6 +97,25 @@ namespace System.Net.Http.Functional.Tests
                 requestCompleted.SetResult();
             }
         }
+    }
+
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http2 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3 : SocketsHttpHandler_HttpClientHandler_Asynchrony_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
+    {
+        public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public async Task ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved()
@@ -191,7 +209,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ExecutionContext_HttpConnectionLifetimeDoesntKeepContextAlive()
         {
             var clientCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 try
                 {
@@ -217,7 +235,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                    await connection.ReadRequestDataAsync();
+                    await connection.SendResponseAsync();
+
                     await clientCompleted.Task;
                 });
             });
@@ -240,7 +260,7 @@ namespace System.Net.Http.Functional.Tests
             return (tcs.Task, t);
         }
 
-        private sealed class SetOnFinalized
+        protected sealed class SetOnFinalized
         {
             public readonly TaskCompletionSource CompletedWhenFinalized = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -1279,9 +1299,35 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandler_DefaultCredentialsTest : DefaultCredentialsTest
     {
         public SocketsHttpHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData("Basic")]
+        [InlineData("Digest")]
+        public async Task SocketsHttpHandler_UseDefaultCredentials_OneRequestForBasicAndDigestAuth(string authType)
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async url =>
+                {
+                    using (var handler = new SocketsHttpHandler())
+                    using (var invoker = new HttpMessageInvoker(handler))
+                    {
+                        handler.Credentials = CredentialCache.DefaultCredentials;
+                        var request = new HttpRequestMessage(HttpMethod.Get, url);
+                        var response = await invoker.SendAsync(request, CancellationToken.None);
+                        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+                    }
+                },
+                async server =>
+                {
+                    var responseHeader = new[] { new HttpHeaderData("WWW-Authenticate", $"{authType} realm=\"Test Realm\"") };
+                    await server.HandleRequestAsync(HttpStatusCode.Unauthorized, responseHeader);
+                }
+            );
+        }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -2549,8 +2595,11 @@ namespace System.Net.Http.Functional.Tests
                 else
                 {
                     using (var c = new HttpMessageInvoker(handler, disposeHandler: false))
+                    {
                         await Assert.ThrowsAnyAsync<Exception>(() =>
-                            c.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri("/shouldquicklyfail", UriKind.Relative)), default));
+                            c.SendAsync(new HttpRequestMessage(HttpMethod.Get, new Uri("http://www.some.example/shouldquicklyfail", UriKind.Absolute)), default));
+                    }
+
                     expectedExceptionType = typeof(InvalidOperationException);
                 }
 

@@ -22,7 +22,7 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
     add_compile_options(-Wno-unknown-warning-option)
 
     # The mobile configurations in particular bring their own ICU, so skip
-    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT DEFINED CMAKE_ICU_DIR)
+    if (NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT DEFINED CMAKE_ICU_DIR AND NOT CLR_CMAKE_TARGET_BROWSER)
         if (CLR_CMAKE_TARGET_OSX)
             execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
             set(ICU_HOMEBREW_INC_PATH "${brew_prefix}/opt/icu4c/include")
@@ -127,7 +127,7 @@ if (CLR_CMAKE_TARGET_APPLE)
 endif()
 
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled
-if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS) 
+if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI AND NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
 endif()
 
@@ -140,7 +140,6 @@ include_directories("../Common")
 
 if (GEN_SHARED_LIB)
     if (CLR_CMAKE_TARGET_APPLE)
-        include(CMakeFindFrameworks)
         find_library(FOUNDATION Foundation REQUIRED)
     endif()
 
@@ -193,6 +192,9 @@ if(CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_WASI)
 endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
+if(CLR_CMAKE_HOST_ANDROID)
+    install (TARGETS System.Globalization.Native-Static DESTINATION sharedFramework COMPONENT runtime)
+endif()
 
 if(NOT CLR_CMAKE_TARGET_WIN32 AND NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_LINUX_MUSL AND NOT CLR_CMAKE_TARGET_HAIKU)
     if (GEN_SHARED_LIB)
@@ -212,16 +214,7 @@ if(CLR_CMAKE_TARGET_WIN32)
             STATIC
             ${NATIVEGLOBALIZATION_SOURCES}
         )
-        set_target_properties(System.Globalization.Native.Aot PROPERTIES CLR_CONTROL_FLOW_GUARD OFF)
         set_target_properties(System.Globalization.Native.Aot PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
-        add_library(System.Globalization.Native.Aot.GuardCF
-            STATIC
-            ${NATIVEGLOBALIZATION_SOURCES}
-        )
-        set_target_properties(System.Globalization.Native.Aot.GuardCF PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
-
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
-        install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)
     endif()
 endif()

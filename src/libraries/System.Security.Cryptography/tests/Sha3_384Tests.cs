@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public void SHA3_384_VerifyLargeStream_MultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha3-384
             VerifyRepeating(
                 "0102030405060708",
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public void SHA3_384_VerifyLargeStream_NotMultipleOf4096()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha3-384
             VerifyRepeating(
                 "0102030405060708",
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public async Task SHA3_384_VerifyLargeStream_NotMultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha3-384
             await VerifyRepeatingAsync(
                 "0102030405060708",
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Tests
         [ConditionalFact(nameof(IsSupported))]
         public async Task SHA3_384_VerifyLargeStream_MultipleOf4096_Async()
         {
-            // Verfied with:
+            // Verified with:
             // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha3-384
             await VerifyRepeatingAsync(
                 "0102030405060708",

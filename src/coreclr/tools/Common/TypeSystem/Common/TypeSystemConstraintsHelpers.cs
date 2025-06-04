@@ -162,7 +162,7 @@ namespace Internal.TypeSystem
 
         public static bool CheckValidInstantiationArguments(this Instantiation instantiation)
         {
-            foreach(var arg in instantiation)
+            foreach (var arg in instantiation)
             {
                 if (arg.IsPointer || arg.IsByRef || arg.IsGenericParameter || arg.IsVoid)
                     return false;

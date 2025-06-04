@@ -18,12 +18,22 @@
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">$(NetFrameworkToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
+
+    <!-- BaseRid is an expected known rid in the graph that TargetRid is compatible with.
+         It's used to add TargetRid in the graph if the parent can't be detected. -->
+    <AdditionalRuntimeIdentifierParent Condition="'$(AdditionalRuntimeIdentifierParent)' == ''">$(BaseRid)</AdditionalRuntimeIdentifierParent>
+    <TargetRidParent Condition="'$(TargetRidParent)' == ''">$(AdditionalRuntimeIdentifierParent)</TargetRidParent>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(CrossBuild)' != 'true'">
+    <!-- By default, assume a non-cross build's non-portable RID is compatible with the SDK's portable RID. -->
+    <TargetRidParent Condition="'$(TargetRidParent)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</TargetRidParent>
   </PropertyGroup>
 
   <ItemGroup>
     <AdditionalRuntimeIdentifiers Include="$(AdditionalRuntimeIdentifiers)" Imports="$(AdditionalRuntimeIdentifierParent)" />
     <!-- When building from source, ensure the RID we're building for is part of the RID graph. -->
-    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(AdditionalRuntimeIdentifierParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+    <AdditionalRuntimeIdentifiers Include="$(TargetRid)" Imports="$(TargetRidParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,10 +51,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <!-- Manually reference these assemblies which are provided by MSBuild / .NET SDK -->
+    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/net472" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net472'))" />
+    <PackageDownloadAndReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" Folder="ref/net8.0" Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+    <PackageDownloadAndReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" Folder="lib/netstandard2.0" />
   </ItemGroup>
-  
+
+  <Import Project="$(RepositoryEngineeringDir)PackageDownloadAndReference.targets" />
+
   <UsingTask TaskName="UpdateRuntimeIdentifierGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
   <Target Name="UpdateRuntimeIdentifierGraph"
           AfterTargets="Build"

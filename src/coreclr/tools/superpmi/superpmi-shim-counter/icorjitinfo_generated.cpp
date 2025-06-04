@@ -162,6 +162,15 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getUnboxedEntry(
     return original_ICorJitInfo->getUnboxedEntry(ftn, requiresInstMethodTableArg);
 }
 
+CORINFO_METHOD_HANDLE interceptor_ICJI::getInstantiatedEntry(
+          CORINFO_METHOD_HANDLE ftn,
+          CORINFO_METHOD_HANDLE* methodArg,
+          CORINFO_CLASS_HANDLE* classArg)
+{
+    mcs->AddCall("getInstantiatedEntry");
+    return original_ICorJitInfo->getInstantiatedEntry(ftn, methodArg, classArg);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultComparerClass(
           CORINFO_CLASS_HANDLE elemType)
 {
@@ -174,6 +183,13 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getDefaultEqualityComparerClass(
 {
     mcs->AddCall("getDefaultEqualityComparerClass");
     return original_ICorJitInfo->getDefaultEqualityComparerClass(elemType);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getSZArrayHelperEnumeratorClass(
+          CORINFO_CLASS_HANDLE elemType)
+{
+    mcs->AddCall("getSZArrayHelperEnumeratorClass");
+    return original_ICorJitInfo->getSZArrayHelperEnumeratorClass(elemType);
 }
 
 void interceptor_ICJI::expandRawHandleIntrinsic(
@@ -322,6 +338,14 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
 {
     mcs->AddCall("getTypeInstantiationArgument");
     return original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getMethodInstantiationArgument(
+          CORINFO_METHOD_HANDLE ftn,
+          unsigned index)
+{
+    mcs->AddCall("getMethodInstantiationArgument");
+    return original_ICorJitInfo->getMethodInstantiationArgument(ftn, index);
 }
 
 size_t interceptor_ICJI::printClassName(
@@ -506,13 +530,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
 {
     mcs->AddCall("getTypeForBox");
     return original_ICorJitInfo->getTypeForBox(cls);
-}
-
-CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("getTypeForBoxOnStack");
-    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
@@ -945,10 +962,11 @@ void interceptor_ICJI::getEEInfo(
     original_ICorJitInfo->getEEInfo(pEEInfoOut);
 }
 
-const char16_t* interceptor_ICJI::getJitTimeLogFilename()
+void interceptor_ICJI::getAsyncInfo(
+          CORINFO_ASYNC_INFO* pAsyncInfoOut)
 {
-    mcs->AddCall("getJitTimeLogFilename");
-    return original_ICorJitInfo->getJitTimeLogFilename();
+    mcs->AddCall("getAsyncInfo");
+    original_ICorJitInfo->getAsyncInfo(pAsyncInfoOut);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
@@ -1065,14 +1083,6 @@ CorInfoHelpFunc interceptor_ICJI::getLazyStringLiteralHelper(
     return original_ICorJitInfo->getLazyStringLiteralHelper(handle);
 }
 
-CORINFO_MODULE_HANDLE interceptor_ICJI::embedModuleHandle(
-          CORINFO_MODULE_HANDLE handle,
-          void** ppIndirection)
-{
-    mcs->AddCall("embedModuleHandle");
-    return original_ICorJitInfo->embedModuleHandle(handle, ppIndirection);
-}
-
 CORINFO_CLASS_HANDLE interceptor_ICJI::embedClassHandle(
           CORINFO_CLASS_HANDLE handle,
           void** ppIndirection)
@@ -1087,14 +1097,6 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::embedMethodHandle(
 {
     mcs->AddCall("embedMethodHandle");
     return original_ICorJitInfo->embedMethodHandle(handle, ppIndirection);
-}
-
-CORINFO_FIELD_HANDLE interceptor_ICJI::embedFieldHandle(
-          CORINFO_FIELD_HANDLE handle,
-          void** ppIndirection)
-{
-    mcs->AddCall("embedFieldHandle");
-    return original_ICorJitInfo->embedFieldHandle(handle, ppIndirection);
 }
 
 void interceptor_ICJI::embedGenericHandle(
@@ -1259,6 +1261,12 @@ bool interceptor_ICJI::getTailCallHelpers(
 {
     mcs->AddCall("getTailCallHelpers");
     return original_ICorJitInfo->getTailCallHelpers(callToken, sig, flags, pResult);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAsyncResumptionStub()
+{
+    mcs->AddCall("getAsyncResumptionStub");
+    return original_ICorJitInfo->getAsyncResumptionStub();
 }
 
 bool interceptor_ICJI::convertPInvokeCalliToCall(

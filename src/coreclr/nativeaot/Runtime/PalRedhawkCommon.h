@@ -61,6 +61,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetLr() const { return LR; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { SP = sp; }
+
 #elif defined(TARGET_ARM64)
     uintptr_t  FP;
     uintptr_t  LR;
@@ -91,6 +92,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t GetLr() const { return LR; }
     void SetIp(uintptr_t ip) { IP = ip; }
     void SetSp(uintptr_t sp) { SP = sp; }
+
 #elif defined(TARGET_LOONGARCH64)
     uintptr_t  FP;
     uintptr_t  RA;
@@ -106,7 +108,6 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R29;
     uintptr_t  R30;
     uintptr_t  R31;
-    uintptr_t  R2;
 
     uintptr_t  SP;
     uintptr_t  IP;
@@ -114,6 +115,36 @@ struct PAL_LIMITED_CONTEXT
     uint64_t      F[32 - 24]; // Only the F registers F24..F31 need to be preserved
                               // (F0-F23 are not preserved according to the ABI spec).
 
+    uintptr_t GetIp() const { return IP; }
+    uintptr_t GetSp() const { return SP; }
+    uintptr_t GetFp() const { return FP; }
+    uintptr_t GetRa() const { return RA; }
+    void SetIp(uintptr_t ip) { IP = ip; }
+    void SetSp(uintptr_t sp) { SP = sp; }
+
+#elif defined(TARGET_RISCV64)
+
+    uintptr_t  FP;
+    uintptr_t  RA;
+
+    uintptr_t  A0;
+    uintptr_t  A1;
+    uintptr_t  S1;
+    uintptr_t  S2;
+    uintptr_t  S3;
+    uintptr_t  S4;
+    uintptr_t  S5;
+    uintptr_t  S6;
+    uintptr_t  S7;
+    uintptr_t  S8;
+    uintptr_t  S9;
+    uintptr_t  S10;
+    uintptr_t  S11;
+
+    uintptr_t  SP;
+    uintptr_t  IP;
+
+    uint64_t  F[12];
 
     uintptr_t GetIp() const { return IP; }
     uintptr_t GetSp() const { return SP; }

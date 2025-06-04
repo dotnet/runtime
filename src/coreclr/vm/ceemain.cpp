@@ -151,7 +151,6 @@
 #include "../dlls/mscorrc/resource.h"
 #include "util.hpp"
 #include "shimload.h"
-#include "comthreadpool.h"
 #include "posterror.h"
 #include "virtualcallstub.h"
 #include "strongnameinternal.h"
@@ -163,6 +162,8 @@
 #include "jithost.h"
 #include "pgo.h"
 #include "pendingload.h"
+#include "cdacplatformmetadata.hpp"
+#include "minipal/time.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -184,10 +185,6 @@
 #include "proftoeeinterfaceimpl.h"
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
-
-#ifdef FEATURE_INTERPRETER
-#include "interpreter.h"
-#endif // FEATURE_INTERPRETER
 
 #ifdef FEATURE_PERFMAP
 #include "perfmap.h"
@@ -376,13 +373,6 @@ static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
     else
 #endif // DEBUGGING_SUPPORTED
     {
-        if (dwCtrlType == CTRL_CLOSE_EVENT || dwCtrlType == CTRL_SHUTDOWN_EVENT)
-        {
-            // Initiate shutdown so the ProcessExit handlers run
-            ForceEEShutdown(SCA_ReturnWhenShutdownComplete);
-        }
-
-        g_fInControlC = true;     // only for weakening assertions in checked build.
         return FALSE;             // keep looking for a real handler.
     }
 }
@@ -495,10 +485,10 @@ void InitGSCookie()
     void * pf = &__security_check_cookie;
     pf = NULL;
 
-    GSCookie val = (GSCookie)(__security_cookie ^ GetTickCount());
+    GSCookie val = (GSCookie)(__security_cookie ^ minipal_lowres_ticks());
 #else // !TARGET_UNIX
     // REVIEW: Need something better for PAL...
-    GSCookie val = (GSCookie)GetTickCount();
+    GSCookie val = (GSCookie)minipal_lowres_ticks();
 #endif // !TARGET_UNIX
 
 #ifdef _DEBUG
@@ -624,6 +614,7 @@ void EEStartupHelper()
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
         GetSystemInfo(&g_SystemInfo);
+        CDacPlatformMetadata::Init();
 
         // Set callbacks so that LoadStringRC knows which language our
         // threads are in so that it can return the proper localized string.
@@ -661,6 +652,11 @@ void EEStartupHelper()
         PendingTypeLoadTable::Init();
 
         IfFailGo(ExecutableAllocator::StaticInitialize(FatalErrorHandler));
+
+        if (g_pConfig != NULL)
+        {
+            IfFailGoLog(g_pConfig->sync());
+        }
 
         Thread::StaticInitialize();
 
@@ -732,17 +728,13 @@ void EEStartupHelper()
 
         InitGSCookie();
 
-        Frame::Init();
-
-
-
-
 #ifdef LOGGING
         InitializeLogging();
 #endif
 
 #ifdef FEATURE_PERFMAP
         PerfMap::Initialize();
+        InitThreadManagerPerfMapData();
 #endif
 
 #ifdef FEATURE_PGO
@@ -755,11 +747,6 @@ void EEStartupHelper()
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
         InitEventStore();
-
-        if (g_pConfig != NULL)
-        {
-            IfFailGoLog(g_pConfig->sync());
-        }
 
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
@@ -774,7 +761,7 @@ void EEStartupHelper()
         }
 
 #ifdef ENABLE_STARTUP_DELAY
-        PREFIX_ASSUME(NULL != g_pConfig);
+        _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
             ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
@@ -787,7 +774,7 @@ void EEStartupHelper()
             Disassembler::StaticInitialize();
             if (!Disassembler::IsAvailable())
             {
-                fprintf(stderr, "External disassembler is not available.\n");
+                minipal_log_print_error("External disassembler is not available.\n");
                 IfFailGo(E_FAIL);
             }
         }
@@ -796,10 +783,6 @@ void EEStartupHelper()
         // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
-
-#ifdef FEATURE_INTERPRETER
-        Interpreter::Initialize();
-#endif // FEATURE_INTERPRETER
 
         StubManager::InitializeStubManagers();
 
@@ -811,7 +794,6 @@ void EEStartupHelper()
 
         CoreLibBinder::Startup();
 
-        Stub::Init();
         StubLinkerCPU::Init();
         StubPrecode::StaticInitialize();
         FixupPrecode::StaticInitialize();
@@ -858,31 +840,18 @@ void EEStartupHelper()
 
 #ifdef PROFILING_SUPPORTED
         // Initialize the profiling services.
+        // This must happen before Thread::HasStarted() that fires profiler notifications is called on the finalizer thread.
         hr = ProfilingAPIUtility::InitializeProfiling();
 
         _ASSERTE(SUCCEEDED(hr));
         IfFailGo(hr);
 #endif // PROFILING_SUPPORTED
 
-        InitializeExceptionHandling();
-
-        //
-        // Install our global exception filter
-        //
-        if (!InstallUnhandledExceptionFilter())
-        {
-            IfFailGo(E_FAIL);
-        }
-
-        // throws on error
-        SetupThread();
-
-#ifdef DEBUGGING_SUPPORTED
-        // Notify debugger once the first thread is created to finish initialization.
-        if (g_pDebugInterface != NULL)
-        {
-            g_pDebugInterface->StartupPhase2(GetThread());
-        }
+#ifdef TARGET_WINDOWS
+        // Create the finalizer thread on windows earlier, as we will need to wait for
+        // the completion of its initialization part that initializes COM as that has to be done
+        // before the first Thread is attached. Thus we want to give the thread a bit more time.
+        FinalizerThread::FinalizerThreadCreate();
 #endif
 
         InitPreStubManager();
@@ -895,17 +864,15 @@ void EEStartupHelper()
 
         // Before setting up the execution manager initialize the first part
         // of the JIT helpers.
-        InitJITHelpers1();
-        InitJITHelpers2();
-
-        SyncBlockCache::Attach();
+        InitJITAllocationHelpers();
+        InitJITWriteBarrierHelpers();
 
         // Set up the sync block
         SyncBlockCache::Start();
 
         // This isn't done as part of InitializeGarbageCollector() above because it
         // requires write barriers to have been set up on x86, which happens as part
-        // of InitJITHelpers1.
+        // of InitJITWriteBarrierHelpers.
         hr = g_pGCHeap->Initialize();
         if (FAILED(hr))
         {
@@ -914,6 +881,48 @@ void EEStartupHelper()
 
         IfFailGo(hr);
 
+        InitializeExceptionHandling();
+
+        //
+        // Install our global exception filter
+        //
+        if (!InstallUnhandledExceptionFilter())
+        {
+            IfFailGo(E_FAIL);
+        }
+
+#ifdef TARGET_WINDOWS
+        // g_pGCHeap->Initialize() above could take nontrivial time, so by now the finalizer thread
+        // should have initialized FLS slot for thread cleanup notifications.
+        // And ensured that COM is initialized (must happen before allocating FLS slot).
+        // Make sure that this was done before we start creating Thread objects
+        // Ex: The call to SetupThread below will create and attach a Thread object.
+        //     Event pipe might also do that.
+        FinalizerThread::WaitForFinalizerThreadStart();
+#endif
+
+        // throws on error
+        _ASSERTE(GetThreadNULLOk() == NULL);
+        SetupThread();
+
+#ifdef DEBUGGING_SUPPORTED
+        // Notify debugger once the first thread is created to finish initialization.
+        if (g_pDebugInterface != NULL)
+        {
+            g_pDebugInterface->StartupPhase2(GetThread());
+        }
+#endif
+
+#ifndef TARGET_WINDOWS
+        // This isn't done as part of InitializeGarbageCollector() above because
+        // debugger must be initialized before creating EE thread objects
+        FinalizerThread::FinalizerThreadCreate();
+#else
+        // On windows the finalizer thread is already partially created and is waiting
+        // right before doing HasStarted(). We will release it now.
+        FinalizerThread::EnableFinalization();
+#endif
+
 #ifdef FEATURE_PERFTRACING
         // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
         // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
@@ -921,10 +930,6 @@ void EEStartupHelper()
         EventPipeAdapter::FinishInitialize();
 #endif // FEATURE_PERFTRACING
         GenAnalysis::Initialize();
-
-        // This isn't done as part of InitializeGarbageCollector() above because thread
-        // creation requires AppDomains to have been set up.
-        FinalizerThread::FinalizerThreadCreate();
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
@@ -1270,12 +1275,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 
-#ifdef FEATURE_INTERPRETER
-        // This will check a flag and do nothing if not enabled.
-        Interpreter::PrintPostMortemData();
-#endif // FEATURE_INTERPRETER
         VirtualCallStubManager::LogFinalStats();
-        WriteJitHelperCountToSTRESSLOG();
 
 #ifdef PROFILING_SUPPORTED
         // If profiling is enabled, then notify of shutdown first so that the
@@ -1702,6 +1702,137 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
 #endif // !defined(CORECLR_EMBEDDED)
 
+static void RuntimeThreadShutdown(void* thread)
+{
+    Thread* pThread = (Thread*)thread;
+    _ASSERTE(pThread == GetThreadNULLOk());
+
+    if (pThread)
+    {
+#ifdef FEATURE_COMINTEROP
+        // reset the CoInitialize state
+        // so we don't call CoUninitialize during thread detach
+        pThread->ResetCoInitialized();
+#endif // FEATURE_COMINTEROP
+        // For case where thread calls ExitThread directly, we need to reset the
+        // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+        // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+        if (pThread->m_pFrame != FRAME_TOP)
+        {
+#ifdef _DEBUG
+            pThread->m_GCOnTransitionsOK = FALSE;
+#endif
+            GCX_COOP_NO_DTOR();
+            pThread->m_pFrame = FRAME_TOP;
+            GCX_COOP_NO_DTOR_END();
+        }
+
+        pThread->DetachThread(TRUE);
+    }
+    else
+    {
+        // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
+        AssertThreadStaticDataFreed();
+    }
+
+    ThreadDetaching();
+}
+
+#ifdef TARGET_WINDOWS
+
+// Index for the fiber local storage of the attached thread pointer
+static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
+
+#define FLS_STATE_CLEAR 0
+#define FLS_STATE_ARMED 1
+#define FLS_STATE_INVOKED 2
+
+static thread_local byte t_flsState;
+
+// This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
+// it means that the thread itself is destroyed.
+// Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
+// the ThreadStore lock in the RuntimeThreadShutdown.
+static void __stdcall FiberDetachCallback(void* lpFlsData)
+{
+    _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
+    _ASSERTE(lpFlsData);
+
+    if (t_flsState == FLS_STATE_ARMED)
+    {
+        RuntimeThreadShutdown(lpFlsData);
+    }
+
+    t_flsState = FLS_STATE_INVOKED;
+}
+
+void InitFlsSlot()
+{
+    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
+    // callback is made without the OS loader lock
+    g_flsIndex = FlsAlloc(FiberDetachCallback);
+    if (g_flsIndex == FLS_OUT_OF_INDEXES)
+    {
+        COMPlusThrowWin32();
+    }
+}
+
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered with the current fiber.
+// Parameters:
+//  thread        - thread to attach
+static void OsAttachThread(void* thread)
+{
+    _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
+
+    if (t_flsState == FLS_STATE_INVOKED)
+    {
+        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+
+    t_flsState = FLS_STATE_ARMED;
+
+    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
+    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
+    // is destroyed, we consider the thread to be destroyed.
+    _ASSERTE(thread != NULL);
+    FlsSetValue(g_flsIndex, thread);
+}
+
+// Detach thread from OS notifications.
+// It fails fast if some other thread value was attached to the current fiber.
+// Parameters:
+//  thread        - thread to detach
+void OsDetachThread(void* thread)
+{
+    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
+    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
+
+    if (threadFromCurrentFiber == NULL)
+    {
+        // Thread is not attached.
+        // This could come from DestroyThread called when refcount reaches 0
+        // and the thread may have already been detached or never attached.
+        // We leave t_flsState as-is to keep track whether our callback has been called.
+        return;
+    }
+
+    if (threadFromCurrentFiber != thread)
+    {
+        _ASSERTE_ALL_BUILDS(!"Detaching a thread from the wrong fiber");
+    }
+
+    // Leave the existing FLS value, to keep the callback "armed" so that we could observe the termination callback.
+    // After that we will not allow to attach as we will no longer be able to clean up.
+    t_flsState = FLS_STATE_CLEAR;
+}
+
+void EnsureTlsDestructionMonitor()
+{
+    OsAttachThread(GetThread());
+}
+
+#else
 struct TlsDestructionMonitor
 {
     bool m_activated = false;
@@ -1715,36 +1846,7 @@ struct TlsDestructionMonitor
     {
         if (m_activated)
         {
-            Thread* thread = GetThreadNULLOk();
-            if (thread)
-            {
-#ifdef FEATURE_COMINTEROP
-                // reset the CoInitialize state
-                // so we don't call CoUninitialize during thread detach
-                thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-                // For case where thread calls ExitThread directly, we need to reset the
-                // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-                // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-                if (thread->m_pFrame != FRAME_TOP)
-                {
-#ifdef _DEBUG
-                    thread->m_GCOnTransitionsOK = FALSE;
-#endif
-                    GCX_COOP_NO_DTOR();
-                    thread->m_pFrame = FRAME_TOP;
-                    GCX_COOP_NO_DTOR_END();
-                }
-
-                thread->DetachThread(TRUE);
-            }
-            else
-            {
-                // Since we don't actually cleanup the TLS data along this path, verify that it is already cleaned up
-                AssertThreadStaticDataFreed();
-            }
-
-            ThreadDetaching();
+            RuntimeThreadShutdown(GetThreadNULLOk());
         }
     }
 };
@@ -1758,9 +1860,11 @@ void EnsureTlsDestructionMonitor()
     tls_destructionMonitor.Activate();
 }
 
+#endif
+
 #ifdef DEBUGGING_SUPPORTED
 //
-// InitializeDebugger initialized the Runtime-side COM+ Debugging Services
+// InitializeDebugger initialized the Runtime-side CLR Debugging Services
 //
 static void InitializeDebugger(void)
 {
@@ -1843,7 +1947,7 @@ static void InitializeDebugger(void)
 
 
 //
-// TerminateDebugger shuts down the Runtime-side COM+ Debugging Services
+// TerminateDebugger shuts down the Runtime-side CLR Debugging Services
 // InitializeDebugger will call this if it fails.
 // This may be called even if the debugger is partially initialized.
 // This can be called multiple times.

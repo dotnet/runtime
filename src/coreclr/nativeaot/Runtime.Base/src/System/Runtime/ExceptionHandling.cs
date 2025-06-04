@@ -133,30 +133,26 @@ namespace System.Runtime
             FallbackFailFast(reason, unhandledException);
         }
 
+#if TARGET_WINDOWS
+
 #if TARGET_AMD64
         [StructLayout(LayoutKind.Explicit, Size = 0x4d0)]
-#elif TARGET_ARM
-        [StructLayout(LayoutKind.Explicit, Size = 0x1a0)]
 #elif TARGET_X86
         [StructLayout(LayoutKind.Explicit, Size = 0x2cc)]
 #elif TARGET_ARM64
         [StructLayout(LayoutKind.Explicit, Size = 0x390)]
-#else
-        [StructLayout(LayoutKind.Explicit, Size = 0x10)] // this is small enough that it should trip an assert in RhpCopyContextFromExInfo
 #endif
         private struct OSCONTEXT
         {
         }
 
-        internal static unsafe void* PointerAlign(void* ptr, int alignmentInBytes)
+        internal static void* PointerAlign(void* ptr, int alignmentInBytes)
         {
             int alignMask = alignmentInBytes - 1;
-#if TARGET_64BIT
-            return (void*)((((long)ptr) + alignMask) & ~alignMask);
-#else
-            return (void*)((((int)ptr) + alignMask) & ~alignMask);
-#endif
+            return (void*)((((nint)ptr) + alignMask) & ~alignMask);
         }
+
+#endif // TARGET_WINDOWS
 
 #if NATIVEAOT
         private static void OnFirstChanceExceptionViaClassLib(object exception)
@@ -205,7 +201,7 @@ namespace System.Runtime
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe void UnhandledExceptionFailFastViaClasslib(
+        internal static void UnhandledExceptionFailFastViaClasslib(
             RhFailFastReason reason, object unhandledException, IntPtr classlibAddress, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -220,12 +216,16 @@ namespace System.Runtime
                     classlibAddress);
             }
 
+#if TARGET_WINDOWS
             // 16-byte align the context.  This is overkill on x86 and ARM, but simplifies things slightly.
             const int contextAlignment = 16;
             byte* pbBuffer = stackalloc byte[sizeof(OSCONTEXT) + contextAlignment];
             void* pContext = PointerAlign(pbBuffer, contextAlignment);
 
             InternalCalls.RhpCopyContextFromExInfo(pContext, sizeof(OSCONTEXT), exInfo._pExContext);
+#else
+            void* pContext = null; // Fatal crash handler does not use the context on non-Windows
+#endif
 
             try
             {
@@ -326,6 +326,11 @@ namespace System.Runtime
                 ExceptionIDs.NullReference => new NullReferenceException(),
                 ExceptionIDs.OutOfMemory => new OutOfMemoryException(),
                 ExceptionIDs.Overflow => new OverflowException(),
+#pragma warning disable CS0618 // ExecutionEngineException is obsolete
+                ExceptionIDs.IllegalInstruction => new ExecutionEngineException("Illegal instruction: Attempted to execute an instruction code not defined by the processor."),
+                ExceptionIDs.PrivilegedInstruction => new ExecutionEngineException("Privileged instruction: Attempted to execute an instruction code that cannot be executed in user mode."),
+                ExceptionIDs.InPageError => new ExecutionEngineException("In page error: Attempted to access a memory page that is not present, and the system is unable to load the page. For example, this exception might occur if a network connection is lost while running a program over a network."),
+#pragma warning restore CS0618
                 _ => null
             };
 #endif
@@ -445,8 +450,11 @@ namespace System.Runtime
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
+            STATUS_IN_PAGE_ERROR = 0xC0000006u,
+            STATUS_ILLEGAL_INSTRUCTION = 0xC000001Du,
             STATUS_INTEGER_DIVIDE_BY_ZERO = 0xC0000094u,
             STATUS_INTEGER_OVERFLOW = 0xC0000095u,
+            STATUS_PRIVILEGED_INSTRUCTION = 0xC0000096u,
         }
         [StructLayout(LayoutKind.Explicit, Size = AsmOffsets.SIZEOF__PAL_LIMITED_CONTEXT)]
         public struct PAL_LIMITED_CONTEXT
@@ -550,6 +558,7 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
 #endif
+        [StackTraceHidden]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
         {
 #if NATIVEAOT
@@ -601,6 +610,18 @@ namespace System.Runtime
                     exceptionId = ExceptionIDs.Overflow;
                     break;
 
+                case (uint)HwExceptionCode.STATUS_ILLEGAL_INSTRUCTION:
+                    exceptionId = ExceptionIDs.IllegalInstruction;
+                    break;
+
+                case (uint)HwExceptionCode.STATUS_IN_PAGE_ERROR:
+                    exceptionId = ExceptionIDs.InPageError;
+                    break;
+
+                case (uint)HwExceptionCode.STATUS_PRIVILEGED_INSTRUCTION:
+                    exceptionId = ExceptionIDs.PrivilegedInstruction;
+                    break;
+
                 default:
                     // We don't wrap SEH exceptions from foreign code like CLR does, so we believe that we
                     // know the complete set of HW faults generated by managed code and do not need to handle
@@ -624,14 +645,22 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
 #endif
+        [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
         {
 #if NATIVEAOT
+
+#if TARGET_WINDOWS
+            // Alert the debugger that we threw an exception.
+            InternalCalls.RhpFirstChanceExceptionNotification();
+#endif // TARGET_WINDOWS
+
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif
+#endif // NATIVEAOT
+
             // Transform attempted throws of null to a throw of NullReferenceException.
             if (exceptionObj == null)
             {
@@ -643,6 +672,7 @@ namespace System.Runtime
             DispatchEx(ref exInfo._frameIter, ref exInfo);
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
+
 #if !NATIVEAOT
         public static void RhUnwindAndIntercept(ref ExInfo exInfo, UIntPtr interceptStackFrameSP)
         {
@@ -705,14 +735,22 @@ namespace System.Runtime
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
 #endif
+        [StackTraceHidden]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
         {
 #if NATIVEAOT
+
+#if TARGET_WINDOWS
+            // Alert the debugger that we threw an exception.
+            InternalCalls.RhpFirstChanceExceptionNotification();
+#endif // TARGET_WINDOWS
+
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
 
             InternalCalls.RhpValidateExInfoStack();
-#endif
+#endif // NATIVEAOT
+
             // We need to copy the exception object to this stack location because collided unwinds
             // will cause the original stack location to go dead.
             object rethrownException = activeExInfo.ThrownException;
@@ -722,6 +760,7 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
+        [StackTraceHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -977,6 +1016,7 @@ namespace System.Runtime
             prevFramePtr = curFramePtr;
         }
 
+        [StackTraceHidden]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {
@@ -1134,6 +1174,7 @@ namespace System.Runtime
         {
             InvokeSecondPass(ref exInfo, idxStart, MaxTryRegionIdx);
         }
+
         private static void InvokeSecondPass(ref ExInfo exInfo, uint idxStart, uint idxLimit)
         {
             EHEnum ehEnum;

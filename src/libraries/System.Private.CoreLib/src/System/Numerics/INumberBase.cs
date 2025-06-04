@@ -216,7 +216,10 @@ namespace System.Numerics
         /// <summary>Determines if a value represents a real value.</summary>
         /// <param name="value">The value to be checked.</param>
         /// <returns><c>true</c> if <paramref name="value" /> is a real number; otherwise, <c>false</c>.</returns>
-        /// <remarks>This function returns <c>true</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</remarks>
+        /// <remarks>
+        ///     <para>This function returns <c>true</c> for a complex number <c>a + bi</c> where <c>b</c> is zero.</para>
+        ///     <para>This function checks values against the extended real number line, thus returns <c>true</c> for positive and negative infinity.</para>
+        /// </remarks>
         static abstract bool IsRealNumber(TSelf value);
 
         /// <summary>Determines if a value is subnormal.</summary>

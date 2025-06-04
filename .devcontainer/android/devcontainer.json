@@ -4,7 +4,7 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"args": {
-			"VARIANT": "8.0-jammy"
+			"VARIANT": "8.0-noble"
 		}
 	},
     // The container needs to run privileged in order to use Linux KVM to create Android emulators.

@@ -163,14 +163,14 @@ namespace System
         private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private readonly IntPtr _xptrs;             // Internal EE stuff
-        private readonly int _xcode = _COMPlusExceptionCode;             // Internal EE stuff
+        private readonly int _xcode = EXCEPTION_COMPLUS;             // Internal EE stuff
 #pragma warning restore CA1823, 414
 
         // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
         private int _HResult;       // HResult
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
-        private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
+        private const int EXCEPTION_COMPLUS = unchecked((int)0xe0434352);   // Win32 exception code for CLR exceptions
 
         private bool HasBeenThrown => _stackTrace != null;
 

@@ -154,7 +154,7 @@ namespace System.Buffers
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN2)
+            if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN2)
             {
                 return IndexOfAnyN2Avx512(span);
             }
@@ -174,7 +174,7 @@ namespace System.Buffers
         {
             // The behavior of the rest of the function remains the same if Avx2 or Avx512BW aren't supported
 #pragma warning disable IntrinsicsInSystemPrivateCoreLibAttributeNotSpecificEnough
-            if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN3)
+            if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && span.Length >= CharsPerIterationAvx512 + MatchStartOffsetN3)
             {
                 return IndexOfAnyN3Avx512(span);
             }
@@ -296,7 +296,7 @@ namespace System.Buffers
             goto ContinueLoop;
         }
 
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private int IndexOfAnyN2Avx512(ReadOnlySpan<char> span)
         {
             // See comments in 'IndexOfAnyN3Vector128' below.
@@ -476,7 +476,7 @@ namespace System.Buffers
             goto ContinueLoop;
         }
 
-        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
         private int IndexOfAnyN3Avx512(ReadOnlySpan<char> span)
         {
             // See comments in 'IndexOfAnyN3Vector128' above.

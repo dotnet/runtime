@@ -77,6 +77,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.KebabCaseUpper,
                 ReadCommentHandling = JsonCommentHandling.Skip,
+                ReferenceHandler = ReferenceHandler.Preserve,
                 RespectNullableAnnotations = true,
                 RespectRequiredConstructorParameters = true,
                 UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode,
@@ -84,6 +85,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                 WriteIndented = true,
                 IndentCharacter = '\t',
                 IndentSize = 1,
+                AllowDuplicateProperties = false,
 
                 TypeInfoResolver = ContextWithAllOptionsSet.Default,
             };
@@ -110,13 +112,15 @@ namespace System.Text.Json.SourceGeneration.Tests
             PropertyNameCaseInsensitive = true,
             PropertyNamingPolicy = JsonKnownNamingPolicy.KebabCaseUpper,
             ReadCommentHandling = JsonCommentHandling.Skip,
+            ReferenceHandler = JsonKnownReferenceHandler.Preserve,
             RespectNullableAnnotations = true,
             RespectRequiredConstructorParameters = true,
             UnknownTypeHandling = JsonUnknownTypeHandling.JsonNode,
             UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
             WriteIndented = true,
             IndentCharacter = '\t',
-            IndentSize = 1)]
+            IndentSize = 1,
+            AllowDuplicateProperties = false)]
         [JsonSerializable(typeof(PersonStruct))]
         public partial class ContextWithAllOptionsSet : JsonSerializerContext
         { }

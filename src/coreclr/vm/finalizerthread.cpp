@@ -17,10 +17,11 @@
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+#include "minipal/time.h"
 #define LINUX_HEAP_DUMP_TIME_OUT 10000
 
 extern bool s_forcedGCInProgress;
-ULONGLONG FinalizerThread::LastHeapDumpTime = 0;
+int64_t FinalizerThread::LastHeapDumpTime = 0;
 
 Volatile<BOOL> g_TriggerHeapDump = FALSE;
 #endif // __linux__
@@ -50,42 +51,6 @@ BOOL FinalizerThread::HaveExtraWorkForFinalizer()
     WRAPPER_NO_CONTRACT;
 
     return GetFinalizerThread()->HaveExtraWorkForFinalizer();
-}
-
-static void CallFinalizerOnThreadObject(OBJECTREF obj)
-{
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    THREADBASEREF   refThis = (THREADBASEREF)obj;
-    Thread*         thread  = refThis->GetInternal();
-
-    // Prevent multiple calls to Finalize
-    // Objects can be resurrected after being finalized.  However, there is no
-    // race condition here.  We always check whether an exposed thread object is
-    // still attached to the internal Thread object, before proceeding.
-    if (thread)
-    {
-        refThis->ResetStartHelper();
-
-        // During process shutdown, we finalize even reachable objects.  But if we break
-        // the link between the System.Thread and the internal Thread object, the runtime
-        // may not work correctly.  In particular, we won't be able to transition between
-        // contexts and domains to finalize other objects.  Since the runtime doesn't
-        // require that Threads finalize during shutdown, we need to disable this.  If
-        // we wait until phase 2 of shutdown finalization (when the EE is suspended and
-        // will never resume) then we can simply skip the side effects of Thread
-        // finalization.
-        if ((g_fEEShutDown & ShutDown_Finalize2) == 0)
-        {
-            if (GetThreadNULLOk() != thread)
-            {
-                refThis->ClearInternal();
-            }
-
-            thread->SetThreadState(Thread::TS_Finalized);
-            Thread::SetCleanupNeededForFinalizedThread();
-        }
-    }
 }
 
 OBJECTREF FinalizerThread::GetNextFinalizableObject()
@@ -138,20 +103,6 @@ Again:
         }
         while (pMTCur != NULL);
     }
-  
-    if (pMT == g_pThreadClass)
-    {
-        // Finalizing Thread object requires ThreadStoreLock.  It is expensive if
-        // we keep taking ThreadStoreLock.  This is very bad if we have high retiring
-        // rate of Thread objects.
-        // To avoid taking ThreadStoreLock multiple times, we mark Thread with TS_Finalized
-        // and clean up a batch of them when we take ThreadStoreLock next time.
-
-        // To avoid possible hierarchy requirement between critical finalizers, we call cleanup
-        // code directly.
-        CallFinalizerOnThreadObject(obj);
-        goto Again;
-    }
 
     return obj;
 }
@@ -175,13 +126,8 @@ void FinalizerThread::FinalizeAllObjects()
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
-    // Non-host environment
-
     // We don't want kLowMemoryNotification to starve out kFinalizer
-    // (as the latter may help correct the former), and we don't want either
-    // to starve out kProfilingAPIAttach, as we want decent responsiveness
-    // to a user trying to attach a profiler.  So check in this order:
-    //     kProfilingAPIAttach alone (0 wait)
+    // (as the latter may help correct the former). So check in this order:
     //     kFinalizer alone (2s wait)
     //     all events together (infinite wait)
 
@@ -212,7 +158,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
         //
         //     * kLowMemoryNotification (if it's non-NULL && g_fEEStarted)
         //     * kFinalizer (always)
-        //     * kProfilingAPIAttach (if it's non-NULL)
         //
         // The enum code:MHandleType values become important here, as
         // WaitForMultipleObjects needs to wait on a contiguous set of non-NULL
@@ -327,7 +272,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-        if (g_TriggerHeapDump && (CLRGetTickCount64() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
+        if (g_TriggerHeapDump && (minipal_lowres_ticks() > (LastHeapDumpTime + LINUX_HEAP_DUMP_TIME_OUT)))
         {
             s_forcedGCInProgress = true;
             GetFinalizerThread()->DisablePreemptiveGC();
@@ -335,7 +280,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->EnablePreemptiveGC();
             s_forcedGCInProgress = false;
 
-            LastHeapDumpTime = CLRGetTickCount64();
+            LastHeapDumpTime = minipal_lowres_ticks();
             g_TriggerHeapDump = FALSE;
         }
 #endif
@@ -344,10 +289,12 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
             if (gcGenAnalysisTrace)
             {
+#ifdef FEATURE_PERFTRACING
                 EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
 #ifdef GEN_ANALYSIS_STRESS
                 GenAnalysis::EnableGenerationalAwareSession();
-#endif
+#endif //GEN_ANALYSIS_STRESS
+#endif //FEATURE_PERFTRACING
             }
 
             // Writing an empty file to indicate completion
@@ -426,18 +373,22 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
     ASSERT(args == 0);
     ASSERT(hEventFinalizer->IsValid());
 
-    // TODO: The following line should be removed after contract violation is fixed.
-    // See bug 27409
-    SCAN_IGNORE_THROW;
-    SCAN_IGNORE_TRIGGER;
-
     LOG((LF_GC, LL_INFO10, "Finalizer thread starting...\n"));
 
-#if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(FEATURE_COMINTEROP)
-    // Make sure the finalizer thread is set to MTA to avoid hitting
-    // DevDiv Bugs 180773 - [Stress Failure] AV at CoreCLR!SafeQueryInterfaceHelper
-    GetFinalizerThread()->SetApartment(Thread::AS_InMTA);
-#endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT && !FEATURE_COMINTEROP
+#ifdef TARGET_WINDOWS
+#ifdef FEATURE_COMINTEROP
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    ::CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    g_fComStarted = true;
+#endif
+
+    InitFlsSlot();
+
+    // handshake with EE initialization, as now we can attach Thread objects to native threads.
+    hEventFinalizerDone->Set();
+    WaitForFinalizerEvent (hEventFinalizer);
+#endif
 
     s_FinalizerThreadOK = GetFinalizerThread()->HasStarted();
 
@@ -454,9 +405,7 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 
             while (!fQuitFinalizer)
             {
-                // This will apply any policy for swallowing exceptions during normal
-                // processing, without allowing the finalizer thread to disappear on us.
-                ManagedThreadBase::FinalizerBase(FinalizerThreadWorker);
+                ManagedThreadBase::KickOff(FinalizerThreadWorker, NULL);
 
                 // If we came out on an exception, then we probably lost the signal that
                 // there are objects in the queue ready to finalize.  The safest thing is
@@ -548,6 +497,15 @@ void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 
     g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
+}
+
+void FinalizerThread::WaitForFinalizerThreadStart()
+{
+    // this should be only called during EE startup
+    _ASSERTE(!g_fEEStarted);
+
+    hEventFinalizerDone->Wait(INFINITE,FALSE);
+    hEventFinalizerDone->Reset();
 }
 
 // Wait for the finalizer thread to complete one pass.

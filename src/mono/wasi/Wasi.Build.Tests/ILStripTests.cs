@@ -22,6 +22,7 @@ public class ILStripTests : BuildTestBase
     [InlineData("", /*expectILStripping*/ true, /*singleFileBundle*/true)] // Default case
     [InlineData("false", /*expectILStripping*/ false, /*singleFileBundle*/false)] // the opposite of the default case
     [InlineData("false", /*expectILStripping*/ false, /*singleFileBundle*/true)] // the opposite of the default case
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/108020")]
     public void WasmStripILAfterAOT_TestDefaultAndOverride(string stripILAfterAOT, bool expectILStripping, bool singleFileBundle)
     {
         string config = "Release";

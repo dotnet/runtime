@@ -2275,30 +2275,45 @@ namespace System.Tests
         public static void op_LeftShiftTest()
         {
             Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_LeftShift((short)0x0000, 1));
+            Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_LeftShift((short)0x0000, 17));
             Assert.Equal((short)0x0002, ShiftOperatorsHelper<short, int, short>.op_LeftShift((short)0x0001, 1));
+            Assert.Equal((short)0x0002, ShiftOperatorsHelper<short, int, short>.op_LeftShift((short)0x0001, 17));
             Assert.Equal(unchecked((short)0xFFFE), ShiftOperatorsHelper<short, int, short>.op_LeftShift((short)0x7FFF, 1));
+            Assert.Equal(unchecked((short)0xFFFE), ShiftOperatorsHelper<short, int, short>.op_LeftShift((short)0x7FFF, 17));
             Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_LeftShift(unchecked((short)0x8000), 1));
+            Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_LeftShift(unchecked((short)0x8000), 17));
             Assert.Equal(unchecked((short)0xFFFE), ShiftOperatorsHelper<short, int, short>.op_LeftShift(unchecked((short)0xFFFF), 1));
+            Assert.Equal(unchecked((short)0xFFFE), ShiftOperatorsHelper<short, int, short>.op_LeftShift(unchecked((short)0xFFFF), 17));
         }
 
         [Fact]
         public static void op_RightShiftTest()
         {
             Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_RightShift((short)0x0000, 1));
+            Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_RightShift((short)0x0000, 17));
             Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_RightShift((short)0x0001, 1));
+            Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_RightShift((short)0x0001, 17));
             Assert.Equal((short)0x3FFF, ShiftOperatorsHelper<short, int, short>.op_RightShift((short)0x7FFF, 1));
+            Assert.Equal((short)0x3FFF, ShiftOperatorsHelper<short, int, short>.op_RightShift((short)0x7FFF, 17));
             Assert.Equal(unchecked((short)0xC000), ShiftOperatorsHelper<short, int, short>.op_RightShift(unchecked((short)0x8000), 1));
+            Assert.Equal(unchecked((short)0xC000), ShiftOperatorsHelper<short, int, short>.op_RightShift(unchecked((short)0x8000), 17));
             Assert.Equal(unchecked((short)0xFFFF), ShiftOperatorsHelper<short, int, short>.op_RightShift(unchecked((short)0xFFFF), 1));
+            Assert.Equal(unchecked((short)0xFFFF), ShiftOperatorsHelper<short, int, short>.op_RightShift(unchecked((short)0xFFFF), 17));
         }
 
         [Fact]
         public static void op_UnsignedRightShiftTest()
         {
             Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift((short)0x0000, 1));
+            Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift((short)0x0000, 17));
             Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift((short)0x0001, 1));
+            Assert.Equal((short)0x0000, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift((short)0x0001, 17));
             Assert.Equal((short)0x3FFF, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift((short)0x7FFF, 1));
+            Assert.Equal((short)0x3FFF, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift((short)0x7FFF, 17));
             Assert.Equal((short)0x4000, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift(unchecked((short)0x8000), 1));
+            Assert.Equal((short)0x4000, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift(unchecked((short)0x8000), 17));
             Assert.Equal((short)0x7FFF, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift(unchecked((short)0xFFFF), 1));
+            Assert.Equal((short)0x7FFF, ShiftOperatorsHelper<short, int, short>.op_UnsignedRightShift(unchecked((short)0xFFFF), 17));
         }
 
         //

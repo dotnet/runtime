@@ -48,6 +48,20 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Rcpc2: return ReadyToRunInstructionSet.Rcpc2;
                             case InstructionSet.ARM64_Sve: return ReadyToRunInstructionSet.Sve;
                             case InstructionSet.ARM64_Sve_Arm64: return ReadyToRunInstructionSet.Sve;
+                            case InstructionSet.ARM64_Sve2: return ReadyToRunInstructionSet.Sve2;
+                            case InstructionSet.ARM64_Sve2_Arm64: return ReadyToRunInstructionSet.Sve2;
+
+                            default: throw new Exception("Unknown instruction set");
+                        }
+                    }
+
+                case TargetArchitecture.RiscV64:
+                    {
+                        switch (instructionSet)
+                        {
+                            case InstructionSet.RiscV64_RiscV64Base: return ReadyToRunInstructionSet.RiscV64Base;
+                            case InstructionSet.RiscV64_Zba: return ReadyToRunInstructionSet.Zba;
+                            case InstructionSet.RiscV64_Zbb: return ReadyToRunInstructionSet.Zbb;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -59,10 +73,6 @@ namespace Internal.ReadyToRunConstants
                         {
                             case InstructionSet.X64_X86Base: return ReadyToRunInstructionSet.X86Base;
                             case InstructionSet.X64_X86Base_X64: return ReadyToRunInstructionSet.X86Base;
-                            case InstructionSet.X64_SSE: return ReadyToRunInstructionSet.Sse;
-                            case InstructionSet.X64_SSE_X64: return ReadyToRunInstructionSet.Sse;
-                            case InstructionSet.X64_SSE2: return ReadyToRunInstructionSet.Sse2;
-                            case InstructionSet.X64_SSE2_X64: return ReadyToRunInstructionSet.Sse2;
                             case InstructionSet.X64_SSE3: return ReadyToRunInstructionSet.Sse3;
                             case InstructionSet.X64_SSE3_X64: return ReadyToRunInstructionSet.Sse3;
                             case InstructionSet.X64_SSSE3: return ReadyToRunInstructionSet.Ssse3;
@@ -87,6 +97,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_LZCNT_X64: return ReadyToRunInstructionSet.Lzcnt;
                             case InstructionSet.X64_PCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq;
                             case InstructionSet.X64_PCLMULQDQ_X64: return ReadyToRunInstructionSet.Pclmulqdq;
+                            case InstructionSet.X64_PCLMULQDQ_V256: return ReadyToRunInstructionSet.Pclmulqdq_V256;
+                            case InstructionSet.X64_PCLMULQDQ_V512: return ReadyToRunInstructionSet.Pclmulqdq_V512;
                             case InstructionSet.X64_POPCNT: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X64_POPCNT_X64: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X64_Vector128: return null;
@@ -95,38 +107,24 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_AVXVNNI_X64: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_MOVBE: return ReadyToRunInstructionSet.Movbe;
-                            case InstructionSet.X64_MOVBE_X64: return ReadyToRunInstructionSet.Movbe;
                             case InstructionSet.X64_X86Serialize: return ReadyToRunInstructionSet.X86Serialize;
                             case InstructionSet.X64_X86Serialize_X64: return ReadyToRunInstructionSet.X86Serialize;
-                            case InstructionSet.X64_EVEX: return ReadyToRunInstructionSet.EVEX;
-                            case InstructionSet.X64_EVEX_X64: return ReadyToRunInstructionSet.EVEX;
-                            case InstructionSet.X64_AVX512F: return ReadyToRunInstructionSet.Avx512F;
-                            case InstructionSet.X64_AVX512F_X64: return ReadyToRunInstructionSet.Avx512F;
-                            case InstructionSet.X64_AVX512F_VL: return ReadyToRunInstructionSet.Avx512F_VL;
-                            case InstructionSet.X64_AVX512F_VL_X64: return ReadyToRunInstructionSet.Avx512F_VL;
-                            case InstructionSet.X64_AVX512BW: return ReadyToRunInstructionSet.Avx512BW;
-                            case InstructionSet.X64_AVX512BW_X64: return ReadyToRunInstructionSet.Avx512BW;
-                            case InstructionSet.X64_AVX512BW_VL: return ReadyToRunInstructionSet.Avx512BW_VL;
-                            case InstructionSet.X64_AVX512BW_VL_X64: return ReadyToRunInstructionSet.Avx512BW_VL;
-                            case InstructionSet.X64_AVX512CD: return ReadyToRunInstructionSet.Avx512CD;
-                            case InstructionSet.X64_AVX512CD_X64: return ReadyToRunInstructionSet.Avx512CD;
-                            case InstructionSet.X64_AVX512CD_VL: return ReadyToRunInstructionSet.Avx512CD_VL;
-                            case InstructionSet.X64_AVX512CD_VL_X64: return ReadyToRunInstructionSet.Avx512CD_VL;
-                            case InstructionSet.X64_AVX512DQ: return ReadyToRunInstructionSet.Avx512DQ;
-                            case InstructionSet.X64_AVX512DQ_X64: return ReadyToRunInstructionSet.Avx512DQ;
-                            case InstructionSet.X64_AVX512DQ_VL: return ReadyToRunInstructionSet.Avx512DQ_VL;
-                            case InstructionSet.X64_AVX512DQ_VL_X64: return ReadyToRunInstructionSet.Avx512DQ_VL;
+                            case InstructionSet.X64_AVX512: return ReadyToRunInstructionSet.Evex;
+                            case InstructionSet.X64_AVX512_X64: return ReadyToRunInstructionSet.Evex;
                             case InstructionSet.X64_AVX512VBMI: return ReadyToRunInstructionSet.Avx512Vbmi;
                             case InstructionSet.X64_AVX512VBMI_X64: return ReadyToRunInstructionSet.Avx512Vbmi;
-                            case InstructionSet.X64_AVX512VBMI_VL: return ReadyToRunInstructionSet.Avx512Vbmi_VL;
-                            case InstructionSet.X64_AVX512VBMI_VL_X64: return ReadyToRunInstructionSet.Avx512Vbmi_VL;
                             case InstructionSet.X64_AVX10v1: return ReadyToRunInstructionSet.Avx10v1;
                             case InstructionSet.X64_AVX10v1_X64: return ReadyToRunInstructionSet.Avx10v1;
-                            case InstructionSet.X64_AVX10v1_V512: return ReadyToRunInstructionSet.Avx10v1_V512;
-                            case InstructionSet.X64_AVX10v1_V512_X64: return ReadyToRunInstructionSet.Avx10v1_V512;
                             case InstructionSet.X64_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X64_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X64_VectorT512: return ReadyToRunInstructionSet.VectorT512;
+                            case InstructionSet.X64_APX: return ReadyToRunInstructionSet.Apx;
+                            case InstructionSet.X64_AVX10v2: return ReadyToRunInstructionSet.Avx10v2;
+                            case InstructionSet.X64_AVX10v2_X64: return ReadyToRunInstructionSet.Avx10v2;
+                            case InstructionSet.X64_GFNI: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X64_GFNI_X64: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X64_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
+                            case InstructionSet.X64_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -138,10 +136,6 @@ namespace Internal.ReadyToRunConstants
                         {
                             case InstructionSet.X86_X86Base: return ReadyToRunInstructionSet.X86Base;
                             case InstructionSet.X86_X86Base_X64: return null;
-                            case InstructionSet.X86_SSE: return ReadyToRunInstructionSet.Sse;
-                            case InstructionSet.X86_SSE_X64: return null;
-                            case InstructionSet.X86_SSE2: return ReadyToRunInstructionSet.Sse2;
-                            case InstructionSet.X86_SSE2_X64: return null;
                             case InstructionSet.X86_SSE3: return ReadyToRunInstructionSet.Sse3;
                             case InstructionSet.X86_SSE3_X64: return null;
                             case InstructionSet.X86_SSSE3: return ReadyToRunInstructionSet.Ssse3;
@@ -166,6 +160,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_LZCNT_X64: return null;
                             case InstructionSet.X86_PCLMULQDQ: return ReadyToRunInstructionSet.Pclmulqdq;
                             case InstructionSet.X86_PCLMULQDQ_X64: return null;
+                            case InstructionSet.X86_PCLMULQDQ_V256: return ReadyToRunInstructionSet.Pclmulqdq_V256;
+                            case InstructionSet.X86_PCLMULQDQ_V512: return ReadyToRunInstructionSet.Pclmulqdq_V512;
                             case InstructionSet.X86_POPCNT: return ReadyToRunInstructionSet.Popcnt;
                             case InstructionSet.X86_POPCNT_X64: return null;
                             case InstructionSet.X86_Vector128: return null;
@@ -174,38 +170,24 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X86_AVXVNNI_X64: return null;
                             case InstructionSet.X86_MOVBE: return ReadyToRunInstructionSet.Movbe;
-                            case InstructionSet.X86_MOVBE_X64: return null;
                             case InstructionSet.X86_X86Serialize: return ReadyToRunInstructionSet.X86Serialize;
                             case InstructionSet.X86_X86Serialize_X64: return null;
-                            case InstructionSet.X86_EVEX: return ReadyToRunInstructionSet.EVEX;
-                            case InstructionSet.X86_EVEX_X64: return null;
-                            case InstructionSet.X86_AVX512F: return ReadyToRunInstructionSet.Avx512F;
-                            case InstructionSet.X86_AVX512F_X64: return null;
-                            case InstructionSet.X86_AVX512F_VL: return ReadyToRunInstructionSet.Avx512F_VL;
-                            case InstructionSet.X86_AVX512F_VL_X64: return null;
-                            case InstructionSet.X86_AVX512BW: return ReadyToRunInstructionSet.Avx512BW;
-                            case InstructionSet.X86_AVX512BW_X64: return null;
-                            case InstructionSet.X86_AVX512BW_VL: return ReadyToRunInstructionSet.Avx512BW_VL;
-                            case InstructionSet.X86_AVX512BW_VL_X64: return null;
-                            case InstructionSet.X86_AVX512CD: return ReadyToRunInstructionSet.Avx512CD;
-                            case InstructionSet.X86_AVX512CD_X64: return null;
-                            case InstructionSet.X86_AVX512CD_VL: return ReadyToRunInstructionSet.Avx512CD_VL;
-                            case InstructionSet.X86_AVX512CD_VL_X64: return null;
-                            case InstructionSet.X86_AVX512DQ: return ReadyToRunInstructionSet.Avx512DQ;
-                            case InstructionSet.X86_AVX512DQ_X64: return null;
-                            case InstructionSet.X86_AVX512DQ_VL: return ReadyToRunInstructionSet.Avx512DQ_VL;
-                            case InstructionSet.X86_AVX512DQ_VL_X64: return null;
+                            case InstructionSet.X86_AVX512: return ReadyToRunInstructionSet.Evex;
+                            case InstructionSet.X86_AVX512_X64: return null;
                             case InstructionSet.X86_AVX512VBMI: return ReadyToRunInstructionSet.Avx512Vbmi;
                             case InstructionSet.X86_AVX512VBMI_X64: return null;
-                            case InstructionSet.X86_AVX512VBMI_VL: return ReadyToRunInstructionSet.Avx512Vbmi_VL;
-                            case InstructionSet.X86_AVX512VBMI_VL_X64: return null;
                             case InstructionSet.X86_AVX10v1: return ReadyToRunInstructionSet.Avx10v1;
                             case InstructionSet.X86_AVX10v1_X64: return null;
-                            case InstructionSet.X86_AVX10v1_V512: return ReadyToRunInstructionSet.Avx10v1_V512;
-                            case InstructionSet.X86_AVX10v1_V512_X64: return null;
                             case InstructionSet.X86_VectorT128: return ReadyToRunInstructionSet.VectorT128;
                             case InstructionSet.X86_VectorT256: return ReadyToRunInstructionSet.VectorT256;
                             case InstructionSet.X86_VectorT512: return ReadyToRunInstructionSet.VectorT512;
+                            case InstructionSet.X86_APX: return ReadyToRunInstructionSet.Apx;
+                            case InstructionSet.X86_AVX10v2: return ReadyToRunInstructionSet.Avx10v2;
+                            case InstructionSet.X86_AVX10v2_X64: return null;
+                            case InstructionSet.X86_GFNI: return ReadyToRunInstructionSet.Gfni;
+                            case InstructionSet.X86_GFNI_X64: return null;
+                            case InstructionSet.X86_GFNI_V256: return ReadyToRunInstructionSet.Gfni_V256;
+                            case InstructionSet.X86_GFNI_V512: return ReadyToRunInstructionSet.Gfni_V512;
 
                             default: throw new Exception("Unknown instruction set");
                         }

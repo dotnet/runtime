@@ -22,7 +22,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
-            if (first is ICollection<TSource> firstCol && second is ICollection<TSource> secondCol)
+            if (first is IReadOnlyCollection<TSource> firstCol && second is IReadOnlyCollection<TSource> secondCol)
             {
                 if (first.TryGetSpan(out ReadOnlySpan<TSource> firstSpan) && second.TryGetSpan(out ReadOnlySpan<TSource> secondSpan))
                 {
@@ -34,7 +34,7 @@ namespace System.Linq
                     return false;
                 }
 
-                if (firstCol is IList<TSource> firstList && secondCol is IList<TSource> secondList)
+                if (firstCol is IReadOnlyList<TSource> firstList && secondCol is IReadOnlyList<TSource> secondList)
                 {
                     comparer ??= EqualityComparer<TSource>.Default;
 
@@ -51,21 +51,19 @@ namespace System.Linq
                 }
             }
 
-            using (IEnumerator<TSource> e1 = first.GetEnumerator())
-            using (IEnumerator<TSource> e2 = second.GetEnumerator())
+            using IEnumerator<TSource> e1 = first.GetEnumerator();
+            using IEnumerator<TSource> e2 = second.GetEnumerator();
+            comparer ??= EqualityComparer<TSource>.Default;
+
+            while (e1.MoveNext())
             {
-                comparer ??= EqualityComparer<TSource>.Default;
-
-                while (e1.MoveNext())
+                if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current)))
                 {
-                    if (!(e2.MoveNext() && comparer.Equals(e1.Current, e2.Current)))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
-
-                return !e2.MoveNext();
             }
+
+            return !e2.MoveNext();
         }
     }
 }

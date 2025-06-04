@@ -171,7 +171,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		// Small formatting difference
-		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer | Tool.NativeAot, "")]
 		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "")]
 		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance), nameof (CultureInfo))]
 		[Kept]
@@ -197,7 +197,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type)")]
 		// Small formatting difference
-		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer, "")]
+		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, Object[])", Tool.Trimmer | Tool.NativeAot, "")]
 		[ExpectedWarning ("IL2067", nameof (Activator) + "." + nameof (Activator.CreateInstance) + "(Type, params Object[])", Tool.Analyzer, "")]
 		[Kept]
 		private static void FromParameterWithNonPublicConstructors (
@@ -552,6 +552,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		class TestCreateInstanceOfTWithNoConstraintType
 		{
+			[Kept(By = Tool.NativeAot /* native AOT intrinsically expands CreateInstance<T> and would keep this method, albeit not reflection-visible */)]
 			public TestCreateInstanceOfTWithNoConstraintType ()
 			{
 			}
@@ -680,7 +681,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptBaseType (typeof (AnnotatedBase))]
-			[KeptMember (".ctor()")]
+			[KeptMember (".ctor()", By = Tool.Trimmer /* This type is never allocated so there's no reason to keep ctor due to a GetType call */)]
 			class Derived : AnnotatedBase
 			{
 				[Kept]

@@ -28,6 +28,7 @@ parser.add_argument("-base_jit_directory", help="path to the directory containin
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
 parser.add_argument("-base_jit_options", help="Semicolon separated list of base jit options (in format A=B without DOTNET_ prefix)")
 parser.add_argument("-diff_jit_options", help="Semicolon separated list of diff jit options (in format A=B without DOTNET_ prefix)")
+parser.add_argument("-work_directory", help="path to directory to use for temporary files")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
 
 
@@ -79,6 +80,11 @@ def setup_args(args):
                         "Unable to set diff_jit_options")
 
     coreclr_args.verify(args,
+                        "work_directory",
+                        lambda work_directory: os.path.isdir(work_directory),
+                        "work_directory doesn't exist")
+
+    coreclr_args.verify(args,
                         "log_directory",
                         lambda log_directory: True,
                         "log_directory doesn't exist")
@@ -102,9 +108,7 @@ class Diff:
         self.python_path = sys.executable
         self.script_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 
-        # It doesn't really matter where we put the downloaded SPMI artifacts.
-        # Here, they are put in <correlation_payload>/artifacts/spmi.
-        self.spmi_location = os.path.join(self.script_dir, "artifacts", "spmi")
+        self.spmi_location = os.path.join(coreclr_args.work_directory, "artifacts", "spmi")
 
         self.log_directory = coreclr_args.log_directory
         self.host_os = "windows" if platform.system() == "Windows" else "linux"

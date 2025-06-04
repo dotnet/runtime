@@ -28,12 +28,13 @@ internal enum AllowedRecordTypes : uint
     ArraySingleString = 1 << SerializationRecordType.ArraySingleString,
 
     Nulls = ObjectNull | ObjectNullMultiple256 | ObjectNullMultiple,
+    Arrays = ArraySingleObject | ArraySinglePrimitive | ArraySingleString | BinaryArray,
 
     /// <summary>
     /// Any .NET object (a primitive, a reference type, a reference or single null).
     /// </summary>
     AnyObject = MemberPrimitiveTyped
-        | ArraySingleObject | ArraySinglePrimitive | ArraySingleString | BinaryArray
+        | Arrays
         | ClassWithId | ClassWithMembersAndTypes | SystemClassWithMembersAndTypes
         | BinaryObjectString
         | MemberReference

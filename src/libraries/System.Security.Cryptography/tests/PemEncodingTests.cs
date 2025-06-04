@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -110,6 +111,13 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void TryWriteUtf8_BufferTooSmall()
+        {
+            byte[] buffer = new byte[30];
+            Assert.False(PemEncoding.TryWriteUtf8(default, default, buffer, out _));
+        }
+
+        [Fact]
         public static void TryWrite_DoesNotWriteOutsideBounds()
         {
             Span<char> buffer = new char[1000];
@@ -131,6 +139,30 @@ namespace System.Security.Cryptography.Tests
                 "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
                 "-----END FANCY DATA-----!!!!!!!!!!";
             Assert.Equal(expected, pem);
+        }
+
+        [Fact]
+        public static void TryWriteUtf8_DoesNotWriteOutsideBounds()
+        {
+            Span<byte> buffer = new byte[1000];
+            buffer.Fill((byte)'!');
+            ReadOnlySpan<byte> data = new byte[] {
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                0, 1, 2, 3, 4, 5, 6, 7
+            };
+
+            Span<byte> write = buffer[10..];
+            ReadOnlySpan<byte> label = "FANCY DATA"u8;
+            Assert.True(PemEncoding.TryWriteUtf8(label, data, write, out int bytesWritten));
+            ReadOnlySpan<byte> pem = buffer[..(bytesWritten + 20)];
+            ReadOnlySpan<byte> expected = Encoding.UTF8.GetBytes(
+                "!!!!!!!!!!-----BEGIN FANCY DATA-----\n" +
+                "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
+                "-----END FANCY DATA-----!!!!!!!!!!");
+            AssertExtensions.SequenceEqual(expected, pem);
         }
 
         [Fact]
@@ -191,10 +223,25 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void TryWriteUtf8_Throws_InvalidLabel()
+        {
+            byte[] buffer = new byte[50];
+            AssertExtensions.Throws<ArgumentException>("utf8Label", () =>
+                PemEncoding.TryWriteUtf8("\n"u8, default, buffer, out _));
+        }
+
+        [Fact]
         public static void Write_Throws_InvalidLabel()
         {
             AssertExtensions.Throws<ArgumentException>("label", () =>
                 PemEncoding.Write("\n", default));
+        }
+
+        [Fact]
+        public static void WriteUtf8_Throws_InvalidLabel()
+        {
+            AssertExtensions.Throws<ArgumentException>("utf8Label", () =>
+                PemEncoding.WriteUtf8("\n"u8, default));
         }
 
         [Fact]
@@ -204,8 +251,26 @@ namespace System.Security.Cryptography.Tests
                 PemEncoding.WriteString("\n", default));
         }
 
+        [Fact]
+        public static void WriteUtf8_Throws_InvalidUtf8()
+        {
+            AssertExtensions.Throws<ArgumentException>("utf8Label", () =>
+                PemEncoding.WriteUtf8([0xFF, 0xFF], default));
+        }
+
+        [Fact]
+        public static void TryWriteUtf8_Throws_InvalidUtf8()
+        {
+            byte[] buffer = new byte[50];
+
+            AssertExtensions.Throws<ArgumentException>("utf8Label", () =>
+                PemEncoding.TryWriteUtf8([0xFF, 0xFF], default, buffer, out _));
+        }
+
         private static void AssertWrites(string expected, ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
         {
+            byte[] expectedUtf8 = Encoding.UTF8.GetBytes(expected);
+
             // Array-returning
             char[] resultArray = PemEncoding.Write(label, data);
             Assert.Equal(expected, new string(resultArray));
@@ -219,6 +284,20 @@ namespace System.Security.Cryptography.Tests
             Assert.True(PemEncoding.TryWrite(label, data, resultArray, out int written), "PemEncoding.TryWrite");
             Assert.Equal(expected.Length, written);
             Assert.Equal(expected, new string(resultArray));
+
+            Span<byte> utf8Label = new byte[Encoding.UTF8.GetByteCount(label)];
+            Assert.True(Encoding.UTF8.TryGetBytes(label, utf8Label, out int utf8LabelWritten));
+            Assert.Equal(utf8Label.Length, utf8LabelWritten);
+
+            // UTF8-array-returning
+            byte[] resultBytesArray = PemEncoding.WriteUtf8(utf8Label, data);
+            Assert.Equal(expectedUtf8, resultBytesArray);
+
+            // UTF8-buffer-writing
+            resultBytesArray.AsSpan().Clear();
+            Assert.True(PemEncoding.TryWriteUtf8(utf8Label, data, resultBytesArray, out int utf8Written), "PemEncoding.TryWriteUtf8");
+            Assert.Equal(expectedUtf8.Length, utf8Written);
+            Assert.Equal(expectedUtf8, resultBytesArray);
         }
     }
 }

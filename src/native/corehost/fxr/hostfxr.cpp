@@ -230,7 +230,7 @@ typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
 //
 // Return value:
 //   0 on success, otherwise failure
-//   0x8000809b - SDK could not be resolved (SdkResolverResolveFailure)
+//   0x8000809b - SDK could not be resolved (SdkResolveFailure)
 //
 // String encoding:
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
@@ -289,7 +289,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
 
     return !resolved_sdk_dir.empty()
         ? StatusCode::Success
-        : StatusCode::SdkResolverResolveFailure;
+        : StatusCode::SdkResolveFailure;
 }
 
 
@@ -550,7 +550,7 @@ namespace
             if (!pal::get_own_executable_path(&startup_info.host_path) || !pal::fullpath(&startup_info.host_path))
             {
                 trace::error(_X("Failed to resolve full path of the current host [%s]"), startup_info.host_path.c_str());
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
             }
         }
 
@@ -558,13 +558,13 @@ namespace
         {
             pal::string_t mod_path;
             if (!pal::get_method_module_path(&mod_path, (void*)&hostfxr_set_error_writer))
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);
             if (!pal::fullpath(&startup_info.dotnet_root))
             {
                 trace::error(_X("Failed to resolve full path of dotnet root [%s]"), startup_info.dotnet_root.c_str());
-                return StatusCode::CoreHostCurHostFindFailure;
+                return StatusCode::CurrentHostFindFailure;
             }
         }
 

@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="fileProviders">The collection of <see cref="IFileProvider" /> objects.</param>
         public CompositeFileProvider(IEnumerable<IFileProvider> fileProviders)
         {
-            ThrowHelper.ThrowIfNull(fileProviders);
+            ArgumentNullException.ThrowIfNull(fileProviders);
 
             _fileProviders = fileProviders.ToArray();
         }
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <summary>
         /// Locates a file at the given path.
         /// </summary>
-        /// <param name="subpath">The path that identifies the file. </param>
+        /// <param name="subpath">The path that identifies the file.</param>
         /// <returns>The file information. The caller must check the <see cref="IFileInfo.Exists" /> property. This is the first existing <see cref="IFileInfo"/> returned by the provided <see cref="IFileProvider"/> or a not found <see cref="IFileInfo"/> if no existing files are found.</returns>
         public IFileInfo GetFileInfo(string subpath)
         {
@@ -80,19 +80,18 @@ namespace Microsoft.Extensions.FileProviders
             foreach (IFileProvider fileProvider in _fileProviders)
             {
                 IChangeToken changeToken = fileProvider.Watch(pattern);
-                if (changeToken != null)
+                if (changeToken is not (null or NullChangeToken))
                 {
                     changeTokens.Add(changeToken);
                 }
             }
 
-            // There is no change token with active change callbacks
-            if (changeTokens.Count == 0)
+            return changeTokens.Count switch
             {
-                return NullChangeToken.Singleton;
-            }
-
-            return new CompositeChangeToken(changeTokens);
+                0 => NullChangeToken.Singleton,
+                1 => changeTokens[0],
+                _ => new CompositeChangeToken(changeTokens)
+            };
         }
 
         /// <summary>

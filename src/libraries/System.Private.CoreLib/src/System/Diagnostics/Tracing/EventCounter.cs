@@ -17,9 +17,7 @@ namespace System.Diagnostics.Tracing
     /// which shows tests, which are also useful in seeing actual use.
     /// </summary>
 #if !ES_BUILD_STANDALONE
-#if !FEATURE_WASM_PERFTRACING
     [UnsupportedOSPlatform("browser")]
-#endif
 #endif
     public partial class EventCounter : DiagnosticCounter
     {

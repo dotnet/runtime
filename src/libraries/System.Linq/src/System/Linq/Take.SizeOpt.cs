@@ -8,7 +8,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
+        private static IEnumerable<TSource> SizeOptimizedTakeIterator<TSource>(IEnumerable<TSource> source, int count)
         {
             Debug.Assert(count > 0);
 
@@ -19,7 +19,7 @@ namespace System.Linq
             }
         }
 
-        private static IEnumerable<TSource> TakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
+        private static IEnumerable<TSource> SizeOptimizedTakeRangeIterator<TSource>(IEnumerable<TSource> source, int startIndex, int endIndex)
         {
             Debug.Assert(source is not null);
             Debug.Assert(startIndex >= 0 && startIndex < endIndex);

@@ -8,7 +8,7 @@ using MdToken = System.Reflection.MetadataToken;
 
 namespace System.Reflection
 {
-    internal sealed unsafe class RuntimeParameterInfo : ParameterInfo
+    internal sealed class RuntimeParameterInfo : ParameterInfo
     {
         #region Static Members
         internal static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)

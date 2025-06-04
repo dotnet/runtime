@@ -31,7 +31,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ConnectWithV4_Success()
         {
             TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out int port);
@@ -48,7 +48,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ConnectWithV6_Success()
         {
             TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out int port);
@@ -65,7 +65,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public async Task ConnectWithV4AndV6_Success()
         {
             TcpListener listener = SocketTestExtensions.CreateAndStartTcpListenerOnAnonymousPort(out int port);
@@ -110,7 +110,7 @@ namespace System.Net.Sockets.Tests
             IPEndPoint ep = (IPEndPoint)listener.LocalEndpoint;
             Assert.Equal(ep.Address, IPAddress.IPv6Any);
             Assert.Equal(0, ep.Port);
-            Assert.True(listener.Server.DualMode);
+            if (!OperatingSystem.IsWasi()) Assert.True(listener.Server.DualMode);
 
             listener.Start();
             listener.Stop();

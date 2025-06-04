@@ -172,6 +172,11 @@ namespace System.Collections.Generic
         public int Count => _size;
 
         /// <summary>
+        ///  Gets the total numbers of elements the queue's backing storage can hold without resizing.
+        /// </summary>
+        public int Capacity => _nodes.Length;
+
+        /// <summary>
         ///  Gets the priority comparer used by the <see cref="PriorityQueue{TElement, TPriority}"/>.
         /// </summary>
         public IComparer<TPriority> Comparer => _comparer ?? Comparer<TPriority>.Default;
@@ -462,7 +467,7 @@ namespace System.Collections.Generic
             ArgumentNullException.ThrowIfNull(elements);
 
             int count;
-            if (elements is ICollection<TElement> collection &&
+            if (elements is IReadOnlyCollection<TElement> collection &&
                 (count = collection.Count) > _nodes.Length - _size)
             {
                 Grow(checked(_size + count));

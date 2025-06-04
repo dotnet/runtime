@@ -21,8 +21,6 @@
 #define _T(s) L##s
 #include "RhConfig.h"
 
-#define PalRaiseFailFastException RaiseFailFastException
-
 #include "gcenv.h"
 #include "gcenv.ee.h"
 #include "gcconfig.h"
@@ -30,12 +28,15 @@
 #include "thread.h"
 #include "threadstore.h"
 
+#include "nativecontext.h"
+
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 #include <versionhelpers.h>
 #endif
 
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI __stdcall
+#ifndef XSTATE_MASK_APX
+#define XSTATE_MASK_APX (0x80000)
+#endif // XSTATE_MASK_APX
 
 // Index for the fiber local storage of the attached thread pointer
 static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
@@ -47,13 +48,47 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 void __stdcall FiberDetachCallback(void* lpFlsData)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
+    ASSERT(g_flsIndex != NULL);
     ASSERT(lpFlsData == FlsGetValue(g_flsIndex));
 
-    if (lpFlsData != NULL)
+    // The current fiber is the home fiber of a thread, so the thread is shutting down
+    RuntimeThreadShutdown(lpFlsData);
+}
+
+bool PalInitComAndFlsSlot()
+{
+    ASSERT(g_flsIndex == FLS_OUT_OF_INDEXES);
+
+    // Making finalizer thread MTA early ensures that COM is initialized before we initialize our thread
+    // termination callback.
+    HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    if (FAILED(hr))
+        return false;
+
+    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
+    // callback is made without the OS loader lock
+    g_flsIndex = FlsAlloc(FiberDetachCallback);
+    return g_flsIndex != FLS_OUT_OF_INDEXES;
+}
+
+// Register the thread with OS to be notified when thread is about to be destroyed
+// It fails fast if a different thread was already registered with the current fiber.
+// Parameters:
+//  thread        - thread to attach
+void PalAttachThread(void* thread)
+{
+    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
+
+    if (threadFromCurrentFiber != NULL)
     {
-        // The current fiber is the home fiber of a thread, so the thread is shutting down
-        RuntimeThreadShutdown(lpFlsData);
+        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
+        RhFailFast();
     }
+
+    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
+    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
+    // is destroyed, we consider the thread to be destroyed.
+    FlsSetValue(g_flsIndex, thread);
 }
 
 static HMODULE LoadKernel32dll()
@@ -151,16 +186,8 @@ void InitializeCurrentProcessCpuCount()
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
+bool PalInit()
 {
-    // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
-    // callback is made without the OS loader lock
-    g_flsIndex = FlsAlloc(FiberDetachCallback);
-    if (g_flsIndex == FLS_OUT_OF_INDEXES)
-    {
-        return false;
-    }
-
     GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
@@ -173,71 +200,13 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     return true;
 }
 
-// Register the thread with OS to be notified when thread is about to be destroyed
-// It fails fast if a different thread was already registered with the current fiber.
-// Parameters:
-//  thread        - thread to attach
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
-{
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber != NULL)
-    {
-        ASSERT_UNCONDITIONALLY("Multiple threads encountered from a single fiber");
-        RhFailFast();
-    }
-
-    // Associate the current fiber with the current thread.  This makes the current fiber the thread's "home"
-    // fiber.  This fiber is the only fiber allowed to execute managed code on this thread.  When this fiber
-    // is destroyed, we consider the thread to be destroyed.
-    FlsSetValue(g_flsIndex, thread);
-}
-
-// Detach thread from OS notifications.
-// It fails fast if some other thread value was attached to the current fiber.
-// Parameters:
-//  thread        - thread to detach
-// Return:
-//  true if the thread was detached, false if there was no attached thread
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
-{
-    ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
-    void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
-
-    if (threadFromCurrentFiber == NULL)
-    {
-        // we've seen this thread, but not this fiber.  It must be a "foreign" fiber that was
-        // borrowing this thread.
-        return false;
-    }
-
-    if (threadFromCurrentFiber != thread)
-    {
-        ASSERT_UNCONDITIONALLY("Detaching a thread from the wrong fiber");
-        RhFailFast();
-    }
-
-    FlsSetValue(g_flsIndex, NULL);
-    return true;
-}
-
-extern "C" uint64_t PalQueryPerformanceCounter()
-{
-    return GCToOSInterface::QueryPerformanceCounter();
-}
-
-extern "C" uint64_t PalQueryPerformanceFrequency()
-{
-    return GCToOSInterface::QueryPerformanceFrequency();
-}
-
-extern "C" uint64_t PalGetCurrentOSThreadId()
+uint64_t PalGetCurrentOSThreadId()
 {
     return GetCurrentThreadId();
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
+UInt32_BOOL PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
     return E_NOTIMPL;
@@ -268,7 +237,7 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
+UInt32_BOOL PalFreeThunksFromTemplate(_In_ void *pBaseAddress, size_t templateSize)
 {
 #ifdef XBOX_ONE
     return TRUE;
@@ -278,7 +247,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+UInt32_BOOL PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
@@ -290,7 +259,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     return TRUE;
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+uint32_t PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     if (!allowReentrantWait)
     {
@@ -317,27 +286,27 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     }
 }
 
-REDHAWK_PALEXPORT HANDLE PalCreateLowMemoryResourceNotification()
+HANDLE PalCreateLowMemoryResourceNotification()
 {
     return CreateMemoryResourceNotification(LowMemoryResourceNotification);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
+void PalSleep(uint32_t milliseconds)
 {
     return Sleep(milliseconds);
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread()
+UInt32_BOOL PalSwitchToThread()
 {
     return SwitchToThread();
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
+HANDLE PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
 {
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAreShadowStacksEnabled()
+UInt32_BOOL PalAreShadowStacksEnabled()
 {
 #if defined(TARGET_AMD64)
     // The SSP is null when CET shadow stacks are not enabled. On processors that don't support shadow stacks, this is a
@@ -500,7 +469,7 @@ PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS)
 #endif
 
-REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer)
+NATIVE_CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextBuffer)
 {
     CONTEXT* pOSContext = NULL;
 
@@ -541,7 +510,7 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
 #endif //TARGET_X86
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX;
     const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_MPX | xStateFeatureMask;
 #elif defined(TARGET_ARM64)
     const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
@@ -611,12 +580,14 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
     *contextBuffer = NULL;
 #endif
 
-    return pOSContext;
+    return (NATIVE_CONTEXT*)pOSContext;
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+_Success_(return) bool PalGetCompleteThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
 {
-    _ASSERTE((pCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
+    CONTEXT* pOSContext = &pCtx->ctx;
+
+    _ASSERTE((pOSContext->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
 
 #if defined(TARGET_ARM64)
     if (pfnSetXStateFeaturesMask == NULL)
@@ -632,51 +603,51 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadCont
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512))
+    if (!SetXStateFeaturesMask(pOSContext, XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX))
     {
-        _ASSERTE(!"Could not apply XSTATE_MASK_AVX | XSTATE_MASK_AVX512");
+        _ASSERTE(!"Could not apply XSTATE_MASK_AVX | XSTATE_MASK_AVX512 | XSTATE_MASK_APX");
         return FALSE;
     }
 #elif defined(TARGET_ARM64)
-    if ((pfnSetXStateFeaturesMask != NULL) && !pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE))
+    if ((pfnSetXStateFeaturesMask != NULL) && !pfnSetXStateFeaturesMask(pOSContext, XSTATE_MASK_ARM64_SVE))
     {
         _ASSERTE(!"Could not apply XSTATE_MASK_ARM64_SVE");
         return FALSE;
     }
 #endif
 
-    return GetThreadContext(hThread, pCtx);
+    return GetThreadContext(hThread, pOSContext);
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx)
+_Success_(return) bool PalSetThreadContext(HANDLE hThread, _Out_ NATIVE_CONTEXT * pCtx)
 {
-    return SetThreadContext(hThread, pCtx);
+    return SetThreadContext(hThread, &pCtx->ctx);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
+void PalRestoreContext(NATIVE_CONTEXT * pCtx)
 {
+    CONTEXT* pOSContext = &pCtx->ctx;
+
     __asan_handle_no_return();
 #ifdef TARGET_X86
     _ASSERTE(pfnRtlRestoreContext != NULL);
-    pfnRtlRestoreContext(pCtx, NULL);
+    pfnRtlRestoreContext(pOSContext, NULL);
 #else
-    RtlRestoreContext(pCtx, NULL);
+    RtlRestoreContext(pOSContext, NULL);
 #endif //TARGET_X86
 }
 
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext)
-{
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
+void PopulateControlSegmentRegisters(CONTEXT* pContext)
+{
     CONTEXT ctx;
 
     RtlCaptureContext(&ctx);
 
     pContext->SegCs = ctx.SegCs;
     pContext->SegSs = ctx.SegSs;
-#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 }
-
-static PalHijackCallback g_pHijackCallback;
+#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
 // These declarations are for a new special user-mode APC feature introduced in Windows. These are not yet available in Windows
 // SDK headers, so some names below are prefixed with "CLONE_" to avoid conflicts in the future. Once the prefixed declarations
@@ -712,18 +683,10 @@ static void* g_returnAddressHijackTarget = NULL;
 static void NTAPI ActivationHandler(ULONG_PTR parameter)
 {
     CLONE_APC_CALLBACK_DATA* data = (CLONE_APC_CALLBACK_DATA*)parameter;
-    g_pHijackCallback(data->ContextRecord, NULL);
+    Thread::HijackCallback((NATIVE_CONTEXT*)data->ContextRecord, NULL);
 
     Thread* pThread = (Thread*)data->Parameter;
     pThread->SetActivationPending(false);
-}
-
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
-{
-    ASSERT(g_pHijackCallback == NULL);
-    g_pHijackCallback = callback;
-
-    return true;
 }
 
 void InitHijackingAPIs()
@@ -770,14 +733,20 @@ void InitHijackingAPIs()
     }
 }
 
-REDHAWK_PALIMPORT HijackFunc* REDHAWK_PALAPI PalGetHijackTarget(HijackFunc* defaultHijackTarget)
+HijackFunc* PalGetHijackTarget(HijackFunc* defaultHijackTarget)
 {
     return g_returnAddressHijackTarget ? (HijackFunc*)g_returnAddressHijackTarget : defaultHijackTarget;
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
+void PalHijack(Thread* pThreadToHijack)
 {
-    _ASSERTE(hThread != INVALID_HANDLE_VALUE);
+    HANDLE hThread = pThreadToHijack->GetOSThreadHandle();
+
+    if (hThread == INVALID_HANDLE_VALUE)
+    {
+        // cannot proceed
+        return;
+    }
 
 #ifdef FEATURE_SPECIAL_USER_MODE_APC
 
@@ -791,15 +760,13 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
     if (g_pfnQueueUserAPC2Proc)
     {
-        Thread* pThread = (Thread*)pThreadToHijack;
-
         // An APC can be interrupted by another one, do not queue more if one is pending.
-        if (pThread->IsActivationPending())
+        if (pThreadToHijack->IsActivationPending())
         {
             return;
         }
 
-        pThread->SetActivationPending(true);
+        pThreadToHijack->SetActivationPending(true);
         BOOL success = g_pfnQueueUserAPC2Proc(
             &ActivationHandler,
             hThread,
@@ -812,7 +779,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
         }
 
         // queuing an APC failed
-        pThread->SetActivationPending(false);
+        pThreadToHijack->SetActivationPending(false);
 
         DWORD lastError = GetLastError();
         if (lastError != ERROR_INVALID_PARAMETER && lastError != ERROR_NOT_SUPPORTED)
@@ -851,7 +818,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
             // at the same place twice in a row, we run the risk of reading a bogus CONTEXT when we redirect
             // the second time.  This leads to access violations on x86 machines.  To fix the problem, we
             // never redirect at the same instruction pointer that we redirected at on the previous GC.
-            if (((Thread*)pThreadToHijack)->CheckPendingRedirect(win32ctx.Eip))
+            if (pThreadToHijack->CheckPendingRedirect(win32ctx.Eip))
             {
                 isSafeToRedirect = false;
             }
@@ -876,14 +843,18 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
 
         if (isSafeToRedirect)
         {
-            g_pHijackCallback(&win32ctx, pThreadToHijack);
+            Thread::HijackCallback((NATIVE_CONTEXT*)&win32ctx, pThreadToHijack);
         }
     }
 
     ResumeThread(hThread);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
+#define SET_THREAD_DESCRIPTION_UNINITIALIZED (pfnSetThreadDescription)-1
+typedef HRESULT(WINAPI *pfnSetThreadDescription)(HANDLE hThread, PCWSTR lpThreadDescription);
+static pfnSetThreadDescription g_pfnSetThreadDescription = SET_THREAD_DESCRIPTION_UNINITIALIZED;
+
+bool PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
     HANDLE hThread = CreateThread(
         NULL,
@@ -906,22 +877,56 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     return true;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalSetCurrentThreadNameW(const WCHAR* name)
+{
+    if (g_pfnSetThreadDescription == SET_THREAD_DESCRIPTION_UNINITIALIZED)
+    {
+        HMODULE hKernel32 = LoadKernel32dll();
+        g_pfnSetThreadDescription = (pfnSetThreadDescription)GetProcAddress(hKernel32, "SetThreadDescription");
+    }
+    if (!g_pfnSetThreadDescription)
+    {
+        return false;
+    }
+    HANDLE hThread = GetCurrentThread();
+    g_pfnSetThreadDescription(hThread, name);
+    return true;
+}
+
+bool PalSetCurrentThreadName(const char* name)
+{
+    size_t len = strlen(name);
+    wchar_t* threadNameWide = new (nothrow) wchar_t[len + 1];
+    if (threadNameWide == nullptr)
+    {
+        return false;
+    }
+    if (MultiByteToWideChar(CP_UTF8, 0, name, -1, threadNameWide, (int)(len + 1)) == 0)
+    {
+        delete[] threadNameWide;
+        return false;
+    }
+    bool ret = PalSetCurrentThreadNameW(threadNameWide);
+    delete[] threadNameWide;
+    return ret;
+}
+
+bool PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, TRUE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
     // the module from ever unloading.
@@ -938,7 +943,7 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return (HANDLE)module;
 }
 
-REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
@@ -946,7 +951,7 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)strlen(message), &dwBytesWritten, NULL);
 }
 
-REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
+char* PalCopyTCharAsChar(const TCHAR* toCopy)
 {
     int len = ::WideCharToMultiByte(CP_UTF8, 0, toCopy, -1, nullptr, 0, nullptr, nullptr);
     if (len == 0)
@@ -958,7 +963,7 @@ REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
     return converted;
 }
 
-REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
+HANDLE PalLoadLibrary(const char* moduleName)
 {
     assert(moduleName);
     size_t len = strlen(moduleName);
@@ -978,31 +983,101 @@ REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
     return result;
 }
 
-REDHAWK_PALEXPORT void* PalGetProcAddress(HANDLE module, const char* functionName)
+void* PalGetProcAddress(HANDLE module, const char* functionName)
 {
     assert(module);
     assert(functionName);
     return GetProcAddress((HMODULE)module, functionName);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(uintptr_t size, uint32_t protect)
+_Ret_maybenull_ _Post_writable_byte_size_(size) void* PalVirtualAlloc(uintptr_t size, uint32_t protect)
 {
     return VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT, protect);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size)
+void PalVirtualFree(_In_ void* pAddress, uintptr_t size)
 {
     VirtualFree(pAddress, 0, MEM_RELEASE);
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
+UInt32_BOOL PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
 {
     DWORD oldProtect;
     return VirtualProtect(pAddress, size, protect, &oldProtect);
 }
 
-REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 {
     FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
+#ifdef TARGET_AMD64
+uintptr_t GetSSP(CONTEXT *pContext)
+{
+    XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(pContext, XSTATE_CET_U, NULL);
+    if ((pCET != NULL) && (pCET->Ia32CetUMsr != 0))
+    {
+        return pCET->Ia32Pl3SspMsr;
+    }
+
+    return 0;
+}
+
+void SetSSP(CONTEXT *pContext, uintptr_t ssp)
+{
+    XSAVE_CET_U_FORMAT* pCET = (XSAVE_CET_U_FORMAT*)LocateXStateFeature(pContext, XSTATE_CET_U, NULL);
+    if (pCET != NULL)
+    {
+        pCET->Ia32Pl3SspMsr = ssp;
+        pCET->Ia32CetUMsr = 1;
+    }
+}
+#endif // TARGET_AMD64
+
+uint16_t PalCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void* arg3, uint32_t* arg4)
+{
+    DWORD backTraceHash;
+    WORD res = ::RtlCaptureStackBackTrace(arg1, arg2, (PVOID*)arg3, &backTraceHash);
+    *arg4 = backTraceHash;
+    return res;
+}
+
+UInt32_BOOL PalCloseHandle(HANDLE arg1)
+{
+    return ::CloseHandle(arg1);
+}
+
+void PalFlushProcessWriteBuffers()
+{
+    ::FlushProcessWriteBuffers();
+}
+
+uint32_t PalGetCurrentProcessId()
+{
+    return static_cast<uint32_t>(::GetCurrentProcessId());
+}
+
+uint32_t PalGetEnvironmentVariable(_In_opt_ LPCWSTR lpName, _Out_writes_to_opt_(nSize, return + 1) LPWSTR lpBuffer, _In_ uint32_t nSize)
+{
+    return ::GetEnvironmentVariableW(lpName, lpBuffer, nSize);
+}
+
+UInt32_BOOL PalResetEvent(HANDLE arg1)
+{
+    return ::ResetEvent(arg1);
+}
+
+UInt32_BOOL PalSetEvent(HANDLE arg1)
+{
+    return ::SetEvent(arg1);
+}
+
+uint32_t PalWaitForSingleObjectEx(HANDLE arg1, uint32_t arg2, UInt32_BOOL arg3)
+{
+    return ::WaitForSingleObjectEx(arg1, arg2, arg3);
+}
+
+void PalGetSystemTimeAsFileTime(FILETIME * arg1)
+{
+    ::GetSystemTimeAsFileTime(arg1);
+}

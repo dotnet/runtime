@@ -53,7 +53,6 @@
 
 #include "icu.h"
 
-#define HAVE_SET_MAX_VARIABLE 1
 #define UDAT_STANDALONE_SHORTER_WEEKDAYS 1
 
 #endif
@@ -63,34 +62,20 @@
 #if !defined(STATIC_ICU)
 
 #if !defined(TARGET_ANDROID)
-// (U_ICU_VERSION_MAJOR_NUM < 52)
-// The following APIs are not supported in the ICU versions less than 52. We need to define them manually.
-// We have to do runtime check before using the pointers to these APIs. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
-U_CAPI void U_EXPORT2 ucol_setMaxVariable(UCollator* coll, UColReorderCode group, UErrorCode* pErrorCode);
-U_CAPI int32_t U_EXPORT2 ucal_getTimeZoneIDForWindowsID(const UChar* winid, int32_t len, const char* region, UChar* id, int32_t idCapacity, UErrorCode* status);
-U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len, UChar* winid, int32_t winidCapacity, UErrorCode* status);
-
 // (U_ICU_VERSION_MAJOR_NUM < 71)
 // The following API is not supported in the ICU versions less than 71. We need to define it manually.
 // We have to do runtime check before using the pointers to this API. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
 U_CAPI UCollator* U_EXPORT2 ucol_clone(const UCollator* coll, UErrorCode* status);
-
-// ucol_setVariableTop is a deprecated function on the newer ICU versions and ucol_setMaxVariable should be used instead.
-// As we can run against ICU versions which do not support ucol_setMaxVariable, we will dynamically try to get the pointer
-// to ucol_setVariableTop when we could not get a pointer to ucol_setMaxVariable.
-typedef uint32_t (U_EXPORT2 *ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
 
 // ucol_safeClone is deprecated in ICU version 71. We have to handle it manually to avoid getting a build break when referencing it in the code.
 typedef UCollator* (U_EXPORT2 *ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
 
 #else // !defined(TARGET_ANDROID)
 
-typedef uint32_t (*ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
 typedef UCollator* (*ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
 
 #endif // !defined(TARGET_ANDROID)
 
-extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
 extern ucol_safeClone_func ucol_safeClone_ptr;
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
@@ -114,6 +99,8 @@ extern ucol_safeClone_func ucol_safeClone_ptr;
     PER_FUNCTION_BLOCK(ucal_getLimit, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getNow, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_getTimeZoneDisplayName, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_open, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_openTimeZoneIDEnumeration, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucal_set, libicui18n, true) \
@@ -131,6 +118,7 @@ extern ucol_safeClone_func ucol_safeClone_ptr;
     PER_FUNCTION_BLOCK(ucol_openElements, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_openRules, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_countSymbols, libicui18n, true) \
@@ -215,9 +203,6 @@ extern ucol_safeClone_func ucol_safeClone_ptr;
 // The following are the list of the ICU APIs which are optional. If these APIs exist in the ICU version we load at runtime, then we'll use it.
 // Otherwise, we'll just not provide the functionality to users which needed these APIs.
 #define FOR_ALL_OPTIONAL_ICU_FUNCTIONS \
-    PER_FUNCTION_BLOCK(ucal_getWindowsTimeZoneID, libicui18n, false) \
-    PER_FUNCTION_BLOCK(ucal_getTimeZoneIDForWindowsID, libicui18n, false) \
-    PER_FUNCTION_BLOCK(ucol_setMaxVariable, libicui18n, false) \
     PER_FUNCTION_BLOCK(ucol_clone, libicui18n, false)
 
 #define FOR_ALL_ICU_FUNCTIONS \
@@ -343,9 +328,6 @@ FOR_ALL_ICU_FUNCTIONS
 
 #else // !defined(STATIC_ICU)
 
-#define ucal_getWindowsTimeZoneID_ptr ucal_getWindowsTimeZoneID
-#define ucal_getTimeZoneIDForWindowsID_ptr ucal_getTimeZoneIDForWindowsID
-
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)
 const char* GlobalizationNative_GetICUDataPathRelativeToAppBundleRoot(const char* path);
 const char* GlobalizationNative_GetICUDataPathFallback(void);
@@ -360,7 +342,7 @@ const char* GlobalizationNative_GetICUDataPathFallback(void);
  * "Safe" macro, checks for a valid code point.
  * Converts code points outside of Basic Multilingual Plane into
  * corresponding surrogate pairs if sufficient space in the string.
- * High surrogate range: 0xD800 - 0xDBFF 
+ * High surrogate range: 0xD800 - 0xDBFF
  * Low surrogate range: 0xDC00 - 0xDFFF
  * If the code point is not valid or a trail surrogate does not fit,
  * then isError is set to true.

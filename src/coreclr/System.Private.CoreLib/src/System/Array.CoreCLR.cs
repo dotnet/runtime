@@ -35,6 +35,20 @@ namespace System
             return retArray!;
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstanceMDArray")]
+        private static unsafe partial void CreateInstanceMDArray(nint typeHandle, uint dwNumArgs, void* pArgList, ObjectHandleOnStack retArray);
+
+        // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
+        [StackTraceHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
+        internal static unsafe object CreateInstanceMDArray(nint typeHandle, uint dwNumArgs, void* pArgList)
+        {
+            Array? arr = null;
+            CreateInstanceMDArray(typeHandle, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
+            return arr!;
+        }
+
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
             if (sourceArray == null)
@@ -109,7 +123,7 @@ namespace System
         // instance & might fail when called from within a CER, or if the
         // reliable flag is true, it will either always succeed or always
         // throw an exception with no side effects.
-        private static unsafe void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
+        private static void CopySlow(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, ArrayAssignType assignType)
         {
             Debug.Assert(sourceArray.Rank == destinationArray.Rank);
 
@@ -253,7 +267,7 @@ namespace System
 
                 if (pDestMT->IsNullable)
                 {
-                    RuntimeHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
+                    CastHelpers.Unbox_Nullable(ref dest, pDestMT, obj);
                 }
                 else if (obj is null || RuntimeHelpers.GetMethodTable(obj) != pDestMT)
                 {
@@ -518,11 +532,16 @@ namespace System
                 if (pElementMethodTable->IsValueType)
                 {
                     ref byte offsetDataRef = ref Unsafe.Add(ref arrayDataRef, flattenedIndex * pMethodTable->ComponentSize);
-                    nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                     if (pElementMethodTable->ContainsGCPointers)
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
                         SpanHelpers.ClearWithReferences(ref Unsafe.As<byte, nint>(ref offsetDataRef), elementSize / (nuint)sizeof(IntPtr));
+                    }
                     else
+                    {
+                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                         SpanHelpers.ClearWithoutReferences(ref offsetDataRef, elementSize);
+                    }
                 }
                 else
                 {
@@ -546,17 +565,18 @@ namespace System
                 {
                     if (pElementMethodTable->IsNullable)
                     {
-                        RuntimeHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
+                        CastHelpers.Unbox_Nullable(ref offsetDataRef, pElementMethodTable, value);
                     }
                     else
                     {
-                        nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                         if (pElementMethodTable->ContainsGCPointers)
                         {
+                            nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytesIfContainsGCPointers();
                             Buffer.BulkMoveWithWriteBarrier(ref offsetDataRef, ref value.GetRawData(), elementSize);
                         }
                         else
                         {
+                            nuint elementSize = pElementMethodTable->GetNumInstanceFieldBytes();
                             SpanHelpers.Memmove(ref offsetDataRef, ref value.GetRawData(), elementSize);
                         }
                     }
@@ -574,7 +594,7 @@ namespace System
                     CorElementType targetType = pElementMethodTable->GetPrimitiveCorElementType();
 
                     // Get a properly widened type
-                    if (!InvokeUtils.CanPrimitiveWiden(srcType, targetType))
+                    if (!RuntimeHelpers.CanPrimitiveWiden(srcType, targetType))
                         throw new ArgumentException(SR.Arg_PrimWiden);
 
                     if (srcType == targetType)
@@ -599,7 +619,7 @@ namespace System
 
         public long LongLength => (long)NativeLength;
 
-        public unsafe int Rank
+        public int Rank
         {
             get
             {
@@ -609,7 +629,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe int GetLength(int dimension)
+        public int GetLength(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
             if (rank == 0 && dimension == 0)
@@ -622,7 +642,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe int GetUpperBound(int dimension)
+        public int GetUpperBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
             if (rank == 0 && dimension == 0)
@@ -636,7 +656,7 @@ namespace System
         }
 
         [Intrinsic]
-        public unsafe int GetLowerBound(int dimension)
+        public int GetLowerBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
             if (rank == 0 && dimension == 0)
@@ -740,6 +760,8 @@ namespace System
             Debug.Fail("Hey! How'd I get here?");
         }
 
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal IEnumerator<T> GetEnumerator<T>()
         {
             // ! Warning: "this" is an array, not an SZArrayHelper. See comments above

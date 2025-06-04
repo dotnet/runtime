@@ -60,7 +60,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [MemberData(nameof(TestData))]
         public void DefineFieldPersistedAssembly(string name, Type fieldType, FieldAttributes attributes, FieldAttributes expectedAttributes)
         {
@@ -108,7 +108,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<AmbiguousMatchException>(() => createdType.GetField("FieldName", Helpers.AllFlags));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void DefineField_NameCollisionPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
@@ -144,7 +144,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Throws<TypeLoadException>(() => type.CreateType());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void DefineField_65536FieldsPersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);
@@ -179,7 +179,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(Helpers.s_512Chars, method.Name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         public void DefineFieldMethod_LongNamePersistedAssembly()
         {
             PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilderAndTypeBuilder(out TypeBuilder type);

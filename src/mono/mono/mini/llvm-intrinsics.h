@@ -108,7 +108,7 @@ INTRINS_OVR_TAG(SIMD_CEIL, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(SIMD_TRUNC, trunc, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(SIMD_ROUND, round, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(SIMD_NEAREST, nearbyint, Generic, V64 | V128 | R4 | R8)
-INTRINS(EH_TYPEID_FOR, eh_typeid_for, Generic)
+INTRINS_OVR(EH_TYPEID_FOR, eh_typeid_for, Generic, LLVMPointerType (i1_t, 0))
 INTRINS_OVR_TAG(ROUNDEVEN, roundeven, Generic, Scalar | V64 | V128 | R4 | R8)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)

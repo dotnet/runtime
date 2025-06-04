@@ -5,12 +5,10 @@
 **
 ** Header:  Assembly.hpp
 **
-
-**
 ** Purpose: Implements assembly (loader domain) architecture
 **
-**
 ===========================================================*/
+
 #ifndef _ASSEMBLY_H
 #define _ASSEMBLY_H
 
@@ -23,13 +21,6 @@
 #include "cordbpriv.h"
 #include "assemblyspec.hpp"
 
-class AppDomain;
-class DomainAssembly;
-class SystemDomain;
-class ClassLoader;
-class AssemblyNative;
-class AssemblySpec;
-class AllocMemTracker;
 class FriendAssemblyDescriptor;
 
 // Bits in m_dwDynamicAssemblyAccess (see System.Reflection.Emit.AssemblyBuilderAccess.cs)
@@ -48,7 +39,7 @@ class Assembly
     friend class ClrDataAccess;
 
 private:
-    Assembly(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, LoaderAllocator* pLoaderAllocator);
+    Assembly(PEAssembly *pPEAssembly, LoaderAllocator* pLoaderAllocator);
     void Init(AllocMemTracker *pamTracker);
 
 // Load state tracking
@@ -163,7 +154,7 @@ public:
     void StartUnload();
     void Terminate( BOOL signalProfiler = TRUE );
 
-    static Assembly *Create(PEAssembly *pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
+    static Assembly *Create(PEAssembly *pPEAssembly, AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocator);
     static void Initialize();
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->IsSystem(); }
@@ -324,6 +315,24 @@ public:
         m_debuggerFlags = flags;
     }
 
+    DomainAssembly* GetNextAssemblyInSameALC()
+    {
+        return m_NextAssemblyInSameALC;
+    }
+
+    void SetNextAssemblyInSameALC(DomainAssembly* assembly)
+    {
+        _ASSERTE(m_NextAssemblyInSameALC == NULL);
+        m_NextAssemblyInSameALC = assembly;
+    }
+
+private:
+    DebuggerAssemblyControlFlags ComputeDebuggingConfig(void);
+
+#ifdef DEBUGGING_SUPPORTED
+    HRESULT GetDebuggingCustomAttributes(DWORD* pdwFlags);
+#endif
+public:
     // On failure:
     //      if loadFlag == Loader::Load => throw
     //      if loadFlag != Loader::Load => return NULL
@@ -371,11 +380,6 @@ public:
 #if defined(FEATURE_COLLECTIBLE_TYPES) && !defined(DACCESS_COMPILE)
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
-
-#ifdef FEATURE_READYTORUN
-    BOOL IsInstrumented();
-    BOOL IsInstrumentedHelper();
-#endif // FEATURE_READYTORUN
 
 #ifdef FEATURE_COMINTEROP
     static ITypeLib * const InvalidTypeLib;
@@ -512,7 +516,7 @@ private:
 
     PTR_LoaderAllocator   m_pLoaderAllocator;
 #ifdef FEATURE_COLLECTIBLE_TYPES
-    bool                  m_isCollectible;
+    BYTE                  m_isCollectible;
 #endif // FEATURE_COLLECTIBLE_TYPES
     bool                  m_isDynamic;
 
@@ -530,6 +534,22 @@ private:
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     LOADERHANDLE          m_hExposedObject;
+
+    DomainAssembly*             m_NextAssemblyInSameALC;
+
+    friend struct ::cdac_data<Assembly>;
+};
+
+template<>
+struct cdac_data<Assembly>
+{
+#ifdef FEATURE_COLLECTIBLE_TYPES
+    static constexpr size_t IsCollectible = offsetof(Assembly, m_isCollectible);
+#endif
+    static constexpr size_t Module = offsetof(Assembly, m_pModule);
+    static constexpr size_t Error = offsetof(Assembly, m_pError);
+    static constexpr size_t NotifyFlags = offsetof(Assembly, m_notifyFlags);
+    static constexpr size_t Level = offsetof(Assembly, m_level);
 };
 
 #ifndef DACCESS_COMPILE
