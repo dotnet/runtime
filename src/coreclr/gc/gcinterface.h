@@ -158,9 +158,9 @@ struct ComponentCrossReference
 
 struct MarkCrossReferences
 {
-    size_t ComponentsLen;
+    size_t ComponentCount;
     StronglyConnectedComponent* Components;
-    size_t CrossReferencesLen;
+    size_t CrossReferenceCount;
     ComponentCrossReference* CrossReferences;
 };
 

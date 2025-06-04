@@ -7,11 +7,12 @@ namespace System.Runtime.InteropServices.Java
 {
     [CLSCompliant(false)]
     [SupportedOSPlatform("android")]
-    public unsafe struct MarkCrossReferences
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct MarkCrossReferencesArgs
     {
-        public nint ComponentsLen;
+        public nuint ComponentCount;
         public StronglyConnectedComponent* Components;
-        public nint CrossReferencesLen;
+        public nuint CrossReferenceCount;
         public ComponentCrossReference* CrossReferences;
     }
 }

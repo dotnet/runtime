@@ -70,7 +70,7 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ void* unreachableObjectHandles)
 {
     QCALL_CONTRACT;
-    _ASSERTE(crossReferences->ComponentsLen >= 0);
+    _ASSERTE(crossReferences->ComponentCount >= 0);
 
     BEGIN_QCALL;
 
@@ -114,9 +114,9 @@ bool JavaNative::TriggerClientBridgeProcessing(
         return false;
 
     MarkCrossReferences arg;
-    arg.ComponentsLen = sccsLen;
+    arg.ComponentCount = sccsLen;
     arg.Components = sccs;
-    arg.CrossReferencesLen = ccrsLen;
+    arg.CrossReferenceCount = ccrsLen;
     arg.CrossReferences = ccrs;
 
     g_MarkCrossReferences(&arg);

@@ -5,17 +5,19 @@ using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Java
 {
+    [CLSCompliant(false)]
     [SupportedOSPlatform("android")]
+    [StructLayout(LayoutKind.Sequential)]
     public struct ComponentCrossReference
     {
         /// <summary>
         /// Index of the source group.
         /// </summary>
-        public nint SourceGroupIndex;
+        public nuint SourceGroupIndex;
 
         /// <summary>
         /// Index of the destination group.
         /// </summary>
-        public nint DestinationGroupIndex;
+        public nuint DestinationGroupIndex;
     }
 }

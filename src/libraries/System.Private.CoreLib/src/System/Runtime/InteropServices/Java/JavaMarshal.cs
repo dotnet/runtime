@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Java
     [SupportedOSPlatform("android")]
     public static partial class JavaMarshal
     {
-        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferences*, void> markCrossReferences)
+        public static unsafe void Initialize(delegate* unmanaged<MarkCrossReferencesArgs*, void> markCrossReferences)
         {
 #if NATIVEAOT
             throw new NotImplementedException();
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Java
 #endif
         }
 
-        public static GCHandle CreateReferenceTrackingHandle(object obj, IntPtr context)
+        public static unsafe GCHandle CreateReferenceTrackingHandle(object obj, void* context)
         {
 #if NATIVEAOT
             throw new NotImplementedException();
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.Java
 #endif
         }
 
-        public static IntPtr GetContext(GCHandle obj)
+        public static unsafe void* GetContext(GCHandle obj)
         {
 #if NATIVEAOT
             throw new NotImplementedException();
@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.Java
 #else
             IntPtr handle = GCHandle.ToIntPtr(obj);
             if (handle == IntPtr.Zero
-                || !GetContextInternal(handle, out IntPtr context))
+                || !GetContextInternal(handle, out void* context))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_IncorrectGCHandleType);
             }
@@ -59,8 +59,8 @@ namespace System.Runtime.InteropServices.Java
         }
 
         public static unsafe void FinishCrossReferenceProcessing(
-            MarkCrossReferences* crossReferences,
-            Span<GCHandle> unreachableObjectHandles)
+            MarkCrossReferencesArgs* crossReferences,
+            ReadOnlySpan<GCHandle> unreachableObjectHandles)
         {
 #if NATIVEAOT
             throw new NotImplementedException();
@@ -83,15 +83,15 @@ namespace System.Runtime.InteropServices.Java
         private static partial bool InitializeInternal(IntPtr callback);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_CreateReferenceTrackingHandle")]
-        private static partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, IntPtr context);
+        private static unsafe partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, void* context);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_FinishCrossReferenceProcessing")]
-        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferences* crossReferences, int length, void* unreachableObjectHandles);
+        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, int length, void* unreachableObjectHandles);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_GetContext")]
         [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool GetContextInternal(IntPtr handle, out IntPtr context);
+        private static unsafe partial bool GetContextInternal(IntPtr handle, out void* context);
 #endif
     }
 }

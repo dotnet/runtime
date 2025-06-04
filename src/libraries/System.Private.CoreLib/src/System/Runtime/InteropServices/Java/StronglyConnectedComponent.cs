@@ -7,17 +7,18 @@ namespace System.Runtime.InteropServices.Java
 {
     [CLSCompliant(false)]
     [SupportedOSPlatform("android")]
+    [StructLayout(LayoutKind.Sequential)]
     public unsafe struct StronglyConnectedComponent
     {
         /// <summary>
         /// Number of objects in each collection.
         /// </summary>
-        public nint Count;
+        public nuint Count;
 
         /// <summary>
         /// Contains pointers to context passed during
         /// creation of each GCHandle.
         /// </summary>
-        public IntPtr* Context;
+        public void** Contexts;
     }
 }

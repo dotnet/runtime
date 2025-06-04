@@ -13,7 +13,7 @@ public class Bridge
     {
         Links = new List<object>();
         IntPtr *pContext = (IntPtr*)NativeMemory.Alloc(((nuint)sizeof(void*)));
-        GCHandle handle = JavaMarshal.CreateReferenceTrackingHandle(this, (nint)pContext);
+        GCHandle handle = JavaMarshal.CreateReferenceTrackingHandle(this, pContext);
 
         *pContext = GCHandle.ToIntPtr(handle);
     }
@@ -32,19 +32,19 @@ public class NonBridge2 : NonBridge
 public unsafe class GCBridgeTests 
 {
     [DllImport("GCBridgeNative")]
-    private static extern delegate* unmanaged<MarkCrossReferences*, void> GetMarkCrossReferencesFtn();
+    private static extern delegate* unmanaged<MarkCrossReferencesArgs*, void> GetMarkCrossReferencesFtn();
 
     [DllImport("GCBridgeNative")]
-    private static extern void SetBridgeProcessingFinishCallback(delegate* unmanaged<MarkCrossReferences*, void> callback);
+    private static extern void SetBridgeProcessingFinishCallback(delegate* unmanaged<MarkCrossReferencesArgs*, void> callback);
 
     static bool releaseHandles;
-    static nint expectedSccsLen, expectedCcrsLen;
+    static nuint expectedSccsLen, expectedCcrsLen;
 
     [UnmanagedCallersOnly]
-    internal static unsafe void BridgeProcessingFinishCallback(MarkCrossReferences* mcr)
+    internal static unsafe void BridgeProcessingFinishCallback(MarkCrossReferencesArgs* mcr)
     {
-        Console.WriteLine("Bridge processing finish SCCs {0}, CCRs {1}", mcr->ComponentsLen, mcr->CrossReferencesLen);
-        if (expectedSccsLen != mcr->ComponentsLen || expectedCcrsLen != mcr->CrossReferencesLen)
+        Console.WriteLine("Bridge processing finish SCCs {0}, CCRs {1}", mcr->ComponentCount, mcr->CrossReferenceCount);
+        if (expectedSccsLen != mcr->ComponentCount || expectedCcrsLen != mcr->CrossReferenceCount)
         {
             Console.WriteLine("Expected SCCs {0}, CCRs {1}", expectedSccsLen, expectedCcrsLen);
             Environment.Exit(1);
@@ -54,11 +54,11 @@ public unsafe class GCBridgeTests
 
         if (releaseHandles)
         {
-            for (int i = 0; i < mcr->ComponentsLen; i++)
+            for (nuint i = 0; i < mcr->ComponentCount; i++)
             {
-                for (int j = 0; j < mcr->Components[i].Count; j++)
+                for (nuint j = 0; j < mcr->Components[i].Count; j++)
                 {
-                    IntPtr *pContext = (IntPtr*)mcr->Components[i].Context[j];
+                    IntPtr *pContext = (IntPtr*)mcr->Components[i].Contexts[j];
                     handlesToFree.Add(GCHandle.FromIntPtr(*pContext));
                     NativeMemory.Free(pContext);
                 }
@@ -116,14 +116,14 @@ public unsafe class GCBridgeTests
         return true;
     }
 
-    private static void SetBPFinishArguments(bool rh, nint expectedS, nint expectedC)
+    private static void SetBPFinishArguments(bool rh, nuint expectedS, nuint expectedC)
     {
         releaseHandles = rh;
         expectedSccsLen = expectedS;
         expectedCcrsLen = expectedC;
     }
 
-    static int RunGraphTest(Func<List<WeakReference>> buildGraph, nint expectedSCCs, nint expectedCCRs)
+    static int RunGraphTest(Func<List<WeakReference>> buildGraph, nuint expectedSCCs, nuint expectedCCRs)
     {
         if (!GC.TryStartNoGCRegion(10000000))
             return 10;
