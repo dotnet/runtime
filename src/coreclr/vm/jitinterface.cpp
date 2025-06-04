@@ -5759,9 +5759,9 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
     {
         result = CORINFO_HELP_NEWARR_1_PTR;
     }
-    else if (CorTypeInfo::Size(elemType) == TARGET_POINTER_SIZE)
+    else if (theElemType.GetSize() == TARGET_POINTER_SIZE)
     {
-        // It is an array of object refs
+        // It is an array of pointer sized elements
         result = CORINFO_HELP_NEWARR_1_PTR;
     }
     else
