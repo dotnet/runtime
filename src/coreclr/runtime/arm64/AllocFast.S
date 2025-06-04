@@ -210,7 +210,6 @@ LOCAL_LABEL(ArraySizeOverflow):
     LEAF_END    RhpNewArrayFast, _TEXT
 
 
-#ifndef FEATURE_NATIVEAOT
 // Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
 //  x0 == MethodTable
 //  x1 == element count
@@ -244,7 +243,6 @@ LOCAL_LABEL(ArraySizeOverflow):
 #endif
 
     LEAF_END    RhpNewObjectArrayFast, _TEXT
-#endif
 
 
 // Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.

@@ -182,7 +182,6 @@ ArraySizeOverflow:
 LEAF_END RhpNewArrayFast, _TEXT
 
 
-IFNDEF FEATURE_NATIVEAOT
 ;; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
 ;;  RCX == MethodTable
 ;;  EDX == element count
@@ -205,7 +204,6 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         NEW_ARRAY_FAST
 
 LEAF_END RhpNewObjectArrayFast, _TEXT
-ENDIF ; FEATURE_NATIVEAOT
 
 
 NESTED_ENTRY RhpNewVariableSizeObject, _TEXT

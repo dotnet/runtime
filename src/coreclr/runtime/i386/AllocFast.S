@@ -212,7 +212,6 @@ LOCAL_LABEL(RhpNewArrayFast_ArraySizeOverflow):
 LEAF_END RhpNewArrayFast, _TEXT
 
 
-#ifndef FEATURE_NATIVEAOT
 // Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
 //  ECX == MethodTable
 //  EDX == element count
@@ -231,7 +230,6 @@ LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
 LEAF_END RhpNewObjectArrayFast, _TEXT
-#endif
 
 //
 // Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)

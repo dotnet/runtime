@@ -191,7 +191,6 @@ ArraySizeOverflow
         b           RhExceptionHandling_FailedAllocation
     LEAF_END    RhpNewArrayFast
 
-#ifndef FEATURE_NATIVEAOT
 ;; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
 ;;  x0 == MethodTable
 ;;  x1 == element count
@@ -216,7 +215,6 @@ ArraySizeOverflow
         NEW_ARRAY_FAST
 
     LEAF_END    RhpNewObjectArrayFast
-#endif
 
 ;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
 ;;  x0 == MethodTable

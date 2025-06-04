@@ -204,7 +204,6 @@ ArraySizeOverflow:
         jmp         RhExceptionHandling_FailedAllocation
 FASTCALL_ENDFUNC
 
-IFNDEF FEATURE_NATIVEAOT
 ; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
 ;  ECX == MethodTable
 ;  EDX == element count
@@ -223,7 +222,6 @@ FASTCALL_FUNC   RhpNewObjectArrayFast, 8
         NEW_ARRAY_FAST_PROLOG
         NEW_ARRAY_FAST
 FASTCALL_ENDFUNC
-ENDIF
 
 ;
 ; Object* RhpNewVariableSizeObject(MethodTable *pMT, INT_PTR size)
