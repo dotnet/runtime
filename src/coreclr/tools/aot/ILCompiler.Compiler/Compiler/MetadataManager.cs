@@ -84,6 +84,8 @@ namespace ILCompiler
         private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
         private readonly SortedSet<ExternalTypeMapEntryNode> _externalTypeMapEntries = new SortedSet<ExternalTypeMapEntryNode>(CompilerComparer.Instance);
         private readonly SortedSet<InvalidExternalTypeMapNode> _invalidExternalTypeMaps = new SortedSet<InvalidExternalTypeMapNode>(CompilerComparer.Instance);
+        private readonly SortedSet<AssociatedTypeMapEntryNode> _associatedTypeMapEntries = new SortedSet<AssociatedTypeMapEntryNode>(CompilerComparer.Instance);
+        private readonly SortedSet<InvalidAssociatedTypeMapNode> _invalidAssociatedTypeMaps = new SortedSet<InvalidAssociatedTypeMapNode>(CompilerComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -358,6 +360,17 @@ namespace ILCompiler
             if (obj is InvalidExternalTypeMapNode invalidExternalTypeMapNode)
             {
                 _invalidExternalTypeMaps.Add(invalidExternalTypeMapNode);
+            }
+
+
+            if (obj is AssociatedTypeMapEntryNode associatedTypeMapEntryNode)
+            {
+                _associatedTypeMapEntries.Add(associatedTypeMapEntryNode);
+            }
+
+            if (obj is InvalidAssociatedTypeMapNode invalidAssociatedTypeMapNode)
+            {
+                _invalidAssociatedTypeMaps.Add(invalidAssociatedTypeMapNode);
             }
         }
 
@@ -1130,6 +1143,16 @@ namespace ILCompiler
         internal IEnumerable<InvalidExternalTypeMapNode> GetInvalidExternalTypeMaps()
         {
             return _invalidExternalTypeMaps;
+        }
+
+        internal IEnumerable<AssociatedTypeMapEntryNode> GetAssociatedTypeMapEntries()
+        {
+            return _associatedTypeMapEntries;
+        }
+
+        internal IEnumerable<InvalidAssociatedTypeMapNode> GetInvalidAssociatedTypeMaps()
+        {
+            return _invalidAssociatedTypeMaps;
         }
 
         public bool IsReflectionBlocked(TypeDesc type)

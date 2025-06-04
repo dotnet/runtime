@@ -60,6 +60,49 @@ namespace System.Runtime.InteropServices
             return new Dictionary<string, Type>(); // Return an empty dictionary if no valid type map is found.
         }
 
+        public static IReadOnlyDictionary<Type, Type> CreateProxyTypeMap(RuntimeType typeMapGroup)
+        {
+            RuntimeTypeHandle typeMapGroupHandle = typeMapGroup.TypeHandle;
+            foreach (TypeManagerHandle module in RuntimeAugments.GetLoadedModules())
+            {
+                if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.AssociatedTypeMap, out NativeReader externalTypeMapReader))
+                {
+                    continue;
+                }
+                NativeParser externalTypeMapParser = new NativeParser(externalTypeMapReader, 0);
+                NativeHashtable externalTypeMapTable = new NativeHashtable(externalTypeMapParser);
+
+                ExternalReferencesTable externalReferences = default;
+                externalReferences.InitializeCommonFixupsTable(module);
+
+                var lookup = externalTypeMapTable.Lookup(typeMapGroupHandle.GetHashCode());
+                NativeParser entryParser;
+                while (!(entryParser = lookup.GetNext()).IsNull)
+                {
+                    RuntimeTypeHandle foundTypeMapGroup = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    if (!foundTypeMapGroup.Equals(typeMapGroupHandle))
+                    {
+                        continue;
+                    }
+                    bool isValid = entryParser.GetUnsigned() == 1;
+                    if (!isValid)
+                    {
+                        unsafe
+                        {
+                            delegate*<void> exceptionStub = (delegate*<void>)externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
+                            exceptionStub();
+                            Debug.Fail("Expected exception stub to throw an exception.");
+                            return null; // Should never reach here, as the exception stub should throw an exception.
+                        }
+                    }
+
+                    return new AssociatedTypeMapDictionary(new NativeHashtable(entryParser), externalReferences);
+                }
+            }
+
+            return new Dictionary<Type, Type>(); // Return an empty dictionary if no valid type map is found.
+        }
+
         private static unsafe bool TryGetNativeReaderForBlob(TypeManagerHandle module, ReflectionMapBlob blob, out NativeReader reader)
         {
             byte* pBlob;
@@ -71,7 +114,7 @@ namespace System.Runtime.InteropServices
                 return true;
             }
 
-            reader = default(NativeReader);
+            reader = default;
             return false;
         }
 
@@ -96,7 +139,7 @@ namespace System.Runtime.InteropServices
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
                     string foundName = entryParser.GetString();
-                    if (foundName.Equals(key))
+                    if (foundName == key)
                     {
                         RuntimeTypeHandle typeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         value = Type.GetTypeFromHandle(typeHandle)!;
@@ -117,6 +160,58 @@ namespace System.Runtime.InteropServices
 
             public bool ContainsKey(string key) => throw new NotSupportedException();
             public IEnumerator<KeyValuePair<string, Type>> GetEnumerator() => throw new NotSupportedException();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        private class AssociatedTypeMapDictionary(NativeHashtable table, ExternalReferencesTable externalReferences) : IReadOnlyDictionary<Type, Type>
+        {
+            public Type this[Type key]
+            {
+                get
+                {
+                    if (!TryGetValue(key, out Type? value))
+                    {
+                        ThrowHelper.ThrowKeyNotFoundException(key);
+                    }
+                    return value;
+                }
+            }
+
+            public bool TryGetValue(Type key, [MaybeNullWhen(false)] out Type value)
+            {
+                RuntimeTypeHandle handle = key.TypeHandle;
+                if (handle.IsNull)
+                {
+                    value = null;
+                    return false;
+                }
+
+                var lookup = table.Lookup(handle.GetHashCode());
+                NativeParser entryParser;
+                while (!(entryParser = lookup.GetNext()).IsNull)
+                {
+                    RuntimeTypeHandle foundHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    if (foundHandle.Equals(handle))
+                    {
+                        RuntimeTypeHandle targetHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        value = Type.GetTypeFromHandle(targetHandle)!;
+                        return true;
+                    }
+                }
+                value = null;
+                return false;
+            }
+
+            // Not supported to avoid exposing TypeMap entries in a manner that
+            // would violate invariants the Trimmer is attempting to enforce.
+            public IEnumerable<Type> Keys => throw new NotSupportedException();
+
+            public IEnumerable<Type> Values => throw new NotSupportedException();
+
+            public int Count => throw new NotSupportedException();
+
+            public bool ContainsKey(Type key) => throw new NotSupportedException();
+            public IEnumerator<KeyValuePair<Type, Type>> GetEnumerator() => throw new NotSupportedException();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
     }

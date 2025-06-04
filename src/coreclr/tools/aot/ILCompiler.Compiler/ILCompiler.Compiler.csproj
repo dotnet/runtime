@@ -407,8 +407,11 @@
     <Compile Include="Compiler\DependencyAnalysis\DelegateMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\DynamicDependencyAttributesOnEntityNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExactMethodInstantiationsEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AssociatedTypeMapEntryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AssociatedTypeMapNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AssociatedTypeMapObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternalTypeMapObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ExternSymbolsImportedNodeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldRvaDataNode.cs" />
@@ -422,6 +425,7 @@
     <Compile Include="Compiler\DependencyAnalysis\InlineableStringsResourceNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchCellSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceUseNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\InvalidAssociatedTypeMapEntry.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodExceptionHandlingInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\MethodParameterMetadataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ModuleInitializerListNode.cs" />

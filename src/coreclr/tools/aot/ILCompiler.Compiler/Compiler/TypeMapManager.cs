@@ -72,6 +72,15 @@ namespace ILCompiler
                 }
                 return new ExternalTypeMapNode(group, _externalTypeMap);
             }
+
+            public object GetAssociatedTypeMapNode(TypeDesc group)
+            {
+                if (_associatedTypeMapExceptionStub is not null)
+                {
+                    return new InvalidAssociatedTypeMapNode(group, _associatedTypeMapExceptionStub);
+                }
+                return new AssociatedTypeMapNode(group, _associatedTypeMap);
+            }
         }
 
         private sealed class ThrowingMethodStub(TypeDesc owningType, TypeSystemException ex) : ILStubMethod
@@ -284,6 +293,7 @@ namespace ILCompiler
                 foreach ((TypeDesc typeMapGroup, TypeMapState typeMapState) in typeMapState)
                 {
                     entries.Add(new CombinedDependencyListEntry(typeMapState.GetExternalTypeMapNode(typeMapGroup), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
+                    entries.Add(new CombinedDependencyListEntry(typeMapState.GetAssociatedTypeMapNode(typeMapGroup), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
                 }
 
                 return entries;
@@ -313,8 +323,8 @@ namespace ILCompiler
                 return; // No type maps to emit
             }
 
-            ExternalTypeMapObjectNode externalTypeMap = new ExternalTypeMapObjectNode(commonFixupsTableNode);
-            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ExternalTypeMap), externalTypeMap);
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.ExternalTypeMap), new ExternalTypeMapObjectNode(commonFixupsTableNode));
+            header.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.AssociatedTypeMap), new AssociatedTypeMapObjectNode(commonFixupsTableNode));
         }
     }
 }

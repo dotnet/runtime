@@ -12,7 +12,9 @@ using System.Text;
 
 namespace Internal.NativeFormat
 {
+#if SYSTEM_PRIVATE_CORELIB
     [CLSCompliant(false)]
+#endif
     public static class TypeHashingAlgorithms
     {
         public struct HashCodeBuilder

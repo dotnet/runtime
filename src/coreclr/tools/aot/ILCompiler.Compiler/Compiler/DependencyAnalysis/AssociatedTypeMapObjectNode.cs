@@ -12,11 +12,11 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ExternalTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class AssociatedTypeMapObjectNode(ExternalReferencesTableNode externalReferences) : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix).Append("__external_type_map__"u8);
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__associated_type_map__"u8);
         }
 
         public int Size { get; private set; }
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        protected override string GetName(NodeFactory context) => "External Type Map";
+        protected override string GetName(NodeFactory context) => "Associated Type Map";
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             // This node does not trigger generation of other nodes.
@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             Section hashTableSection = writer.NewSection();
             hashTableSection.Place(typeMapGroupHashTable);
 
-            foreach (ExternalTypeMapEntryNode entryNode in factory.MetadataManager.GetExternalTypeMapEntries())
+            foreach (AssociatedTypeMapEntryNode entryNode in factory.MetadataManager.GetAssociatedTypeMapEntries())
             {
                 if (!typeMapHashTables.TryGetValue(entryNode.TypeMapGroup, out VertexHashtable typeMapHashTable))
                 {
@@ -56,14 +56,14 @@ namespace ILCompiler.DependencyAnalysis
                     typeMapGroupHashTable.Append((uint)typeMapGroup.GetHashCode(), writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, hashTableSection.Place(typeMapHashTable)));
                 }
 
-                Vertex nameVertex = writer.GetStringConstant(entryNode.Key);
+                Vertex nameVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(entryNode.Key)));
                 Vertex targetTypeVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MaximallyConstructableType(entryNode.TargetType)));
                 Vertex entry = writer.GetTuple(nameVertex, targetTypeVertex);
 
-                typeMapHashTable.Append((uint)TypeHashingAlgorithms.ComputeNameHashCode(entryNode.Key), hashTableSection.Place(entry));
+                typeMapHashTable.Append((uint)entryNode.Key.GetHashCode(), hashTableSection.Place(entry));
             }
 
-            foreach (InvalidExternalTypeMapNode invalidNode in factory.MetadataManager.GetInvalidExternalTypeMaps())
+            foreach (InvalidAssociatedTypeMapNode invalidNode in factory.MetadataManager.GetInvalidAssociatedTypeMaps())
             {
                 if (!typeMapHashTables.TryGetValue(invalidNode.TypeMapGroup, out _))
                 {
