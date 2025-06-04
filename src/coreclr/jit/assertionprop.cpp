@@ -4431,6 +4431,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
     // and if all of them are known to be non-null, we can bash the comparison to true/false.
     if (op2->IsIntegralConst(0) && op1->TypeIs(TYP_REF))
     {
+        JITDUMP("Checking PHI [%06u] arguments for non-nullness\n", dspTreeID(op1))
         auto visitor = [this](ValueNum reachingVN, ASSERT_TP reachingAssertions) {
             return optAssertionVNIsNonNull(reachingVN, reachingAssertions) ? AssertVisit::Continue : AssertVisit::Abort;
         };
@@ -4992,6 +4993,8 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
         return true;
     }
 
+    bool foundNonNullAssertion = false;
+
     if (!BitVecOps::MayBeUninit(assertions))
     {
         BitVecOps::Iter iter(apTraits, assertions);
@@ -5001,11 +5004,18 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
             AssertionDsc* curAssertion = optGetAssertion(GetAssertionIndex(index));
             if (curAssertion->CanPropNonNull() && curAssertion->op1.vn == vn)
             {
-                return true;
+                foundNonNullAssertion = true;
+                continue;
+            }
+
+            if (curAssertion->CanPropNull() && curAssertion->op1.vn == vn)
+            {
+                return false;
             }
         }
     }
-    return false;
+
+    return foundNonNullAssertion;
 }
 
 /*****************************************************************************

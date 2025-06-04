@@ -7873,6 +7873,11 @@ public:
             return assertionKind == OAK_NOT_EQUAL && op2.vn == ValueNumStore::VNForNull();
         }
 
+        bool CanPropNull()
+        {
+            return assertionKind == OAK_EQUAL && op2.vn == ValueNumStore::VNForNull();
+        }
+
         bool CanPropBndsCheck()
         {
             return (op1.kind == O1K_ARR_BND) || (op1.kind == O1K_VN);
