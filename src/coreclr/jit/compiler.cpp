@@ -10585,15 +10585,19 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
 //
 const char* Compiler::printfAlloc(const char* format, ...)
 {
-    char    str[512];
     va_list args;
     va_start(args, format);
-    int result = vsprintf_s(str, ArrLen(str), format, args);
+    int count = _vscprintf(format, args);
     va_end(args);
-    assert((result >= 0) && ((unsigned)result < ArrLen(str)));
 
-    char* resultStr = new (this, CMK_DebugOnly) char[result + 1];
-    memcpy(resultStr, str, (unsigned)result + 1);
+    assert(count >= 0);
+    char* resultStr = new (this, CMK_DebugOnly) char[count + 1];
+
+    va_start(args, format);
+    int result = vsprintf_s(resultStr, count + 1, format, args);
+    va_end(args);
+
+    assert((result >= 0) && (result < (count + 1)));
     return resultStr;
 }
 
