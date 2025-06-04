@@ -31,8 +31,8 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
         string extraProperties = @"
-                <WasmPerfInstrumentation>all,interval=0</WasmPerfInstrumentation>
-                <WasmPerfTracing>true</WasmPerfTracing>
+                <WasmPerformanceInstrumentation>all,interval=0</WasmPerformanceInstrumentation>
+                <EnableDiagnostics>true</EnableDiagnostics>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
@@ -87,7 +87,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public async Task BlazorEventPipeTestWithMetrics()
     {
         string extraProperties = @"
-                <WasmPerfTracing>true</WasmPerfTracing>
+                <EnableDiagnostics>true</EnableDiagnostics>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
@@ -148,7 +148,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     public async Task BlazorEventPipeTestWithHeapDump()
     {
         string extraProperties = @"
-                <WasmPerfTracing>true</WasmPerfTracing>
+                <EnableDiagnostics>true</EnableDiagnostics>
                 <WBTDevServer>true</WBTDevServer>
             ";
 
