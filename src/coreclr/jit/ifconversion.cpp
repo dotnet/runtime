@@ -57,6 +57,7 @@ private:
     bool IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOperation* foundOperation);
     void IfConvertJoinStmts(BasicBlock* fromBlock);
 
+    GenTree* TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput);
 #ifdef DEBUG
     void IfConvertDump();
 #endif
@@ -257,6 +258,12 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
 #endif
                     GenTree* op1 = tree->AsLclVar()->Data();
 
+#ifdef TARGET_RISCV64
+                    if (!m_doElseConversion || !op1->IsIntegralConst())
+                    {
+                        return false;
+                    }
+#endif
                     // Ensure it won't cause any additional side effects.
                     if ((op1->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
@@ -317,6 +324,12 @@ bool OptIfConversionDsc::IfConvertCheckStmts(BasicBlock* fromBlock, IfConvertOpe
                     }
 #endif
 
+#ifdef TARGET_RISCV64
+                    if (!retVal->IsIntegralConst())
+                    {
+                        return false;
+                    }
+#endif
                     // Ensure it won't cause any additional side effects.
                     if ((retVal->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
                     {
@@ -704,23 +717,13 @@ bool OptIfConversionDsc::optIfConvert()
         selectType       = genActualType(m_thenOperation.node);
     }
 
-    GenTree* select = nullptr;
-    if (selectTrueInput->TypeIs(TYP_INT) && selectFalseInput->TypeIs(TYP_INT))
-    {
-        if (selectTrueInput->IsIntegralConst(1) && selectFalseInput->IsIntegralConst(0))
-        {
-            // compare ? true : false  -->  compare
-            select = m_cond;
-        }
-        else if (selectTrueInput->IsIntegralConst(0) && selectFalseInput->IsIntegralConst(1))
-        {
-            // compare ? false : true  -->  reversed_compare
-            select = m_comp->gtReverseCond(m_cond);
-        }
-    }
-
+    GenTree* select = TryTransformSelectToOrdinaryOps(selectTrueInput, selectFalseInput);
     if (select == nullptr)
     {
+#ifdef TARGET_RISCV64
+        JITDUMP("Skipping if-conversion that cannot be transformed to ordinary operations\n");
+        return false;
+#endif
         // Create a select node
         select = m_comp->gtNewConditionalNode(GT_SELECT, m_cond, selectTrueInput, selectFalseInput, selectType);
     }
@@ -774,6 +777,139 @@ bool OptIfConversionDsc::optIfConvert()
     return true;
 }
 
+GenTree* OptIfConversionDsc::TryTransformSelectToOrdinaryOps(GenTree* trueInput, GenTree* falseInput)
+{
+    if (trueInput->IsIntegralConst() && falseInput->IsIntegralConst())
+    {
+        int64_t trueVal  = trueInput->AsIntConCommon()->IntegralValue();
+        int64_t falseVal = falseInput->AsIntConCommon()->IntegralValue();
+        if (trueInput->TypeIs(TYP_INT) && falseInput->TypeIs(TYP_INT))
+        {
+            if (trueVal == 1 && falseVal == 0)
+            {
+                // compare ? true : false  -->  compare
+                return m_cond;
+            }
+            else if (trueVal == 0 && falseVal == 0)
+            {
+                // compare ? false : true  -->  reversed_compare
+                return m_comp->gtReverseCond(m_cond);
+            }
+        }
+#ifdef TARGET_RISCV64
+        bool isTrueValResult  = false;
+        bool isFalseValResult = false;
+
+        bool       isPow2 = false;
+        var_types  opType = TYP_UNDEF;
+        genTreeOps oper   = GT_NONE;
+        do
+        {
+            isTrueValResult  = (trueVal == falseVal + 1);
+            isFalseValResult = (falseVal == trueVal + 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_ADD;
+                opType = TYP_LONG;
+                break;
+            }
+            isTrueValResult  = (trueVal == ((int32_t)falseVal) + 1);
+            isFalseValResult = (falseVal == ((int32_t)trueVal) + 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_ADD;
+                opType = TYP_INT;
+                break;
+            }
+
+            isTrueValResult  = (trueVal == (1l << BitOperations::Log2((uint64_t)trueVal))) && (falseVal == 0);
+            isFalseValResult = (falseVal == (1l << BitOperations::Log2((uint64_t)falseVal))) && (trueVal == 0);
+            if (isTrueValResult || isFalseValResult)
+            {
+                int log2 = BitOperations::Log2((uint64_t)(isFalseValResult ? falseVal : trueVal));
+                (isFalseValResult ? trueInput : falseInput)->AsIntConCommon()->SetIntegralValue(log2);
+                oper   = GT_LSH;
+                opType = TYP_LONG;
+                isPow2 = true;
+                break;
+            }
+            isTrueValResult  = (trueVal == (1 << BitOperations::Log2((uint32_t)trueVal))) && (falseVal == 0);
+            isFalseValResult = (falseVal == (1 << BitOperations::Log2((uint32_t)falseVal))) && (trueVal == 0);
+            if (isTrueValResult || isFalseValResult)
+            {
+                int log2 = BitOperations::Log2((uint32_t)(isFalseValResult ? falseVal : trueVal));
+                (isFalseValResult ? trueInput : falseInput)->AsIntConCommon()->SetIntegralValue(log2);
+                oper   = GT_LSH;
+                opType = TYP_INT;
+                isPow2 = true;
+                break;
+            }
+
+            isTrueValResult  = (trueVal == falseVal << 1);
+            isFalseValResult = (falseVal == trueVal << 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_LSH;
+                opType = TYP_LONG;
+                break;
+            }
+            isTrueValResult  = (trueVal == ((int32_t)falseVal) << 1);
+            isFalseValResult = (falseVal == ((int32_t)trueVal) << 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_LSH;
+                opType = TYP_INT;
+                break;
+            }
+
+            isTrueValResult  = (trueVal == falseVal >> 1);
+            isFalseValResult = (falseVal == trueVal >> 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_RSH;
+                opType = TYP_LONG;
+                break;
+            }
+            isTrueValResult  = (trueVal == ((int32_t)falseVal) >> 1);
+            isFalseValResult = (falseVal == ((int32_t)trueVal) >> 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_RSH;
+                opType = TYP_INT;
+                break;
+            }
+
+            isTrueValResult  = (trueVal == (uint64_t)falseVal >> 1);
+            isFalseValResult = (falseVal == (uint64_t)trueVal >> 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_RSZ;
+                opType = TYP_LONG;
+                break;
+            }
+            isTrueValResult  = (trueVal == ((uint32_t)falseVal) >> 1);
+            isFalseValResult = (falseVal == ((uint32_t)trueVal) >> 1);
+            if (isTrueValResult || isFalseValResult)
+            {
+                oper   = GT_RSZ;
+                opType = TYP_INT;
+                break;
+            }
+
+            return nullptr;
+        } while (false);
+
+        GenTree* left  = isFalseValResult ? trueInput : falseInput;
+        GenTree* right = isFalseValResult ? m_comp->gtReverseCond(m_cond) : m_cond;
+        if (isPow2)
+            std::swap(left, right);
+
+        return m_comp->gtNewOperNode(oper, opType, left, right);
+#endif // TARGET_RISCV64
+    }
+    return nullptr;
+}
+
 //-----------------------------------------------------------------------------
 // optIfConversion: If conversion
 //
@@ -800,7 +936,7 @@ PhaseStatus Compiler::optIfConversion()
     assert(!fgSsaValid);
     optReachableBitVecTraits = nullptr;
 
-#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH) || defined(TARGET_RISCV64)
     // Reverse iterate through the blocks.
     BasicBlock* block = fgLastBB;
     while (block != nullptr)
