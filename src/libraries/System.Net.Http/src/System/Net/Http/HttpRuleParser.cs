@@ -86,8 +86,10 @@ namespace System.Net.Http
             return input.Length - startIndex;
         }
 
-        internal static bool ContainsNewLine(string value, int startIndex = 0) =>
-            value.AsSpan(startIndex).ContainsAny('\r', '\n');
+        // See https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-5:
+        // "Field values containing CR, LF, or NUL characters are invalid and dangerous"
+        internal static bool ContainsNewLineOrNull(string value, int startIndex = 0) =>
+            value.AsSpan(startIndex).ContainsAny('\r', '\n', '\0');
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
         {
