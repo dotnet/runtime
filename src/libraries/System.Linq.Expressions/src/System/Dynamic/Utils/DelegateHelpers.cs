@@ -196,7 +196,7 @@ namespace System.Dynamic.Utils
 
                             [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name="ForceAllowDynamicCode")]
                             static extern IDisposable ForceAllowDynamicCode(AssemblyBuilder? _);
-
+                        }
                         return null;
                     }
 
