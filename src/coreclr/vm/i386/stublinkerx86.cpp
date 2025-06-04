@@ -35,25 +35,6 @@
 
 #ifndef DACCESS_COMPILE
 
-
-#ifdef TARGET_AMD64
-
-BOOL IsPreservedReg (X86Reg reg)
-{
-    UINT16 PreservedRegMask =
-          (1 << kRBX)
-        | (1 << kRBP)
-        | (1 << kRSI)
-        | (1 << kRDI)
-        | (1 << kR12)
-        | (1 << kR13)
-        | (1 << kR14)
-        | (1 << kR15);
-    return PreservedRegMask & (1 << reg);
-}
-
-#endif // TARGET_AMD64
-
 //-----------------------------------------------------------------------
 // InstructionFormat for near Jump and short Jump
 //-----------------------------------------------------------------------
