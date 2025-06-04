@@ -243,10 +243,6 @@ class StubLinkerCPU : public StubLinker
         // Emits code to adjust for a static delegate target.
         VOID EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
 
-#ifdef _DEBUG
-        VOID X86EmitDebugTrashReg(X86Reg reg);
-#endif
-
     public:
         static void Init();
 

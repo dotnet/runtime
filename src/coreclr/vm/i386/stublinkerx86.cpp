@@ -927,33 +927,6 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
 
 }
 
-#ifdef _DEBUG
-//---------------------------------------------------------------
-// Emits:
-//     mov <reg32>,0xcccccccc
-//---------------------------------------------------------------
-VOID StubLinkerCPU::X86EmitDebugTrashReg(X86Reg reg)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef TARGET_AMD64
-    BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
-
-    if (reg >= kR8)
-    {
-        rex |= REX_OPCODE_REG_EXT;
-        reg = X86RegFromAMD64Reg(reg);
-    }
-    Emit8(rex);
-    Emit8(0xb8|reg);
-    Emit64(0xcccccccccccccccc);
-#else
-    Emit8(static_cast<UINT8>(0xb8 | reg));
-    Emit32(0xcccccccc);
-#endif
-}
-#endif //_DEBUG
-
 
 // Get X86Reg indexes of argument registers based on offset into ArgumentRegister
 X86Reg GetX86ArgumentRegisterFromOffset(size_t ofs)
