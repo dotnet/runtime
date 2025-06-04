@@ -2033,7 +2033,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_CreateTrueMaskAll:
+            case NI_Sve_ConversionTrueMask:
                 // Must use the pattern variant, as the non-pattern varient is SVE2.1.
                 GetEmitter()->emitIns_R_PATTERN(ins, emitSize, targetReg, opt, SVE_PATTERN_ALL);
                 break;

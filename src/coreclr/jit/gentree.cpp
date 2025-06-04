@@ -22054,8 +22054,8 @@ GenTree* Compiler::gtNewSimdCvtVectorToMaskNode(var_types   type,
 #if defined(TARGET_XARCH)
     return gtNewSimdHWIntrinsicNode(TYP_MASK, op1, NI_EVEX_ConvertVectorToMask, simdBaseJitType, simdSize);
 #elif defined(TARGET_ARM64)
-    // We use cmpne which requires an embedded mask.
-    GenTree* trueMask = gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
+    // ConvertVectorToMask uses cmpne which requires an embedded mask.
+    GenTree* trueMask = gtNewSimdHWIntrinsicNode(TYP_MASK, NI_Sve_ConversionTrueMask, simdBaseJitType, simdSize);
     return gtNewSimdHWIntrinsicNode(TYP_MASK, trueMask, op1, NI_Sve_ConvertVectorToMask, simdBaseJitType, simdSize);
 #else
 #error Unsupported platform
@@ -32152,11 +32152,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        if (op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
-        {
-            op        = op2;
-            tryHandle = op->OperIsHWIntrinsic();
-        }
+        assert(op->OperIsHWIntrinsic(NI_Sve_ConversionTrueMask));
+        op        = op2;
+        tryHandle = op->OperIsHWIntrinsic();
 #endif // TARGET_ARM64
 
         if (tryHandle)
@@ -33368,28 +33366,10 @@ GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree,
 //
 bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
 {
+#ifdef TARGET_ARM64
     var_types ParentSimdBaseType = JitType2PreciseVarType(parent->GetSimdBaseJitType());
 
-#ifdef TARGET_ARM64
-    if (OperIsHWIntrinsic())
-    {
-        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
-        if (id == NI_Sve_ConvertMaskToVector)
-        {
-            GenTree* op1 = AsHWIntrinsic()->Op(1);
-            assert(op1->OperIsHWIntrinsic());
-            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
-        }
-
-        if (id != NI_Sve_CreateTrueMaskAll)
-        {
-            return false;
-        }
-
-        // Only a valid true mask if the parent has the same base type
-        return (genTypeSize(ParentSimdBaseType) == genTypeSize(JitType2PreciseVarType(AsHWIntrinsic()->GetSimdBaseJitType())));
-    }
-    else if (IsCnsMsk())
+    if (IsCnsMsk())
     {
         switch (parent->gtType)
         {
@@ -33409,8 +33389,8 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
                 unreached();
         }
     }
-
 #endif
+
     return false;
 }
 
@@ -33433,6 +33413,7 @@ bool GenTree::IsFalseMask() const
         return AsMskCon()->IsZero();
     }
 #endif
+
     return false;
 }
 
