@@ -266,6 +266,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(EnableDiagnostics)' == 'true'">
     <_MonoComponent Include="diagnostics_tracing" />
+    <WasmEnvironmentVariable Condition="'$(WasmPerformanceInstrumentation)' != ''" Include="DOTNET_WasmPerformanceInstrumentation" Value="eventpipe,callspec=$(WasmPerformanceInstrumentation)" />
   </ItemGroup>
   <!-- PUBLISH -->
 
