@@ -7218,21 +7218,13 @@ bool GenTree::OperMayThrow(Compiler* comp)
             return true;
         }
 
-#if defined(TARGET_XARCH)
+#ifdef TARGET_XARCH
         NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
         if (intrinsicId == NI_Vector128_op_Division || intrinsicId == NI_Vector256_op_Division ||
             intrinsicId == NI_Vector512_op_Division)
         {
             assert(varTypeIsInt(AsHWIntrinsic()->GetSimdBaseType()));
             return true;
-        }
-#elif defined(TARGET_ARM64)
-        NamedIntrinsic intrinsicId = this->AsHWIntrinsic()->GetHWIntrinsicId();
-        if (intrinsicId == NI_Sve_ConditionalSelect)
-        {
-            // If op2 is embedded, then check if that will throw.
-            GenTree* op2 = this->AsHWIntrinsic()->Op(2);
-            return (op2->IsEmbMaskOp() && op2->OperMayThrow(comp));
         }
 #endif // TARGET_XARCH
     }
