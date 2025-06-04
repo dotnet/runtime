@@ -938,7 +938,7 @@ namespace System.Net.Security.Tests
                 TargetHost = "localhost",
             };
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline:true, trust);
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, useTrust ? null : clientChain, offline: true, trust);
 
             await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
 
@@ -1136,6 +1136,71 @@ namespace System.Net.Security.Tests
             cts.Cancel();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverTask);
         }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public async Task DisableUnusedRsaPadding_Connects(bool clientDisable, bool serverDisable)
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+
+            using SslStream clientSslStream = new SslStream(client);
+            using SslStream serverSslStream = new SslStream(server);
+
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+            // the test certificates use PSS padding, so we disable PKCS1 padding
+            Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+            {
+                ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                AllowRsaPkcs1Padding = !clientDisable
+            }, CancellationToken.None);
+            Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate,
+                ClientCertificateRequired = true,
+                AllowRsaPkcs1Padding = !serverDisable
+            }, CancellationToken.None);
+
+            await t1.WaitAsync(TestConfiguration.PassingTestTimeout);
+            await t2.WaitAsync(TestConfiguration.PassingTestTimeout);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public async Task DisableUsedRsaPadding_Throws(bool clientDisable, bool serverDisable)
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+
+            using SslStream clientSslStream = new SslStream(client);
+            using SslStream serverSslStream = new SslStream(server);
+
+            using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+            // the test certificates use PSS padding
+            Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions()
+            {
+                ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
+                RemoteCertificateValidationCallback = delegate { return true; },
+                AllowRsaPssPadding = !clientDisable
+            }, CancellationToken.None);
+            Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate,
+                ClientCertificateRequired = true,
+                AllowRsaPssPadding = !serverDisable
+            }, CancellationToken.None);
+
+            await Assert.ThrowsAsync<AuthenticationException>(() => t1.WaitAsync(TestConfiguration.PassingTestTimeout));
+            await Assert.ThrowsAsync<AuthenticationException>(() => t2.WaitAsync(TestConfiguration.PassingTestTimeout));
+        }
+
 
         private static bool ValidateServerCertificate(
             object sender,
