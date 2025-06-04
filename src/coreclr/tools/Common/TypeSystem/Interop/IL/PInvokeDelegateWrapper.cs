@@ -236,12 +236,6 @@ namespace Internal.TypeSystem.Interop
             return flags;
         }
 
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
-        }
-
         private MethodDesc[] _methods;
 
         private void InitializeMethods()
@@ -274,11 +268,6 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert((int)kind < _methods.Length);
 
             return _methods[(int)kind];
-        }
-
-        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
-        {
-            return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
         }
     }
 

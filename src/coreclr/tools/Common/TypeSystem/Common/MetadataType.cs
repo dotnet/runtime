@@ -108,26 +108,21 @@ namespace Internal.TypeSystem
                 return (GetTypeFlags(TypeFlags.IsInlineArray | TypeFlags.AttributeCacheComputed) & TypeFlags.IsInlineArray) != 0;
             }
         }
-
-        public abstract int GetInlineArrayLength();
-
-        public abstract ExtendedLayoutInfo GetExtendedLayoutInfo();
     }
 
     public struct ClassLayoutMetadata
     {
+        public MetadataLayoutKind Kind;
+        public int InlineArrayLength;
         public int PackingSize;
         public int Size;
     }
 
-    public struct ExtendedLayoutInfo
+    public enum MetadataLayoutKind
     {
-        public ExtendedLayoutKind Kind;
-    }
-
-    public enum ExtendedLayoutKind
-    {
-        None = -1,
-        CStruct = 0
+        Auto,
+        Sequential,
+        Explicit,
+        CStruct
     }
 }

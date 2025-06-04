@@ -85,7 +85,6 @@ namespace Internal.TypeSystem
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => MetadataType.HasCustomAttribute(attributeNamespace, attributeName);
         public override IEnumerable<MetadataType> GetNestedTypes() => (IEnumerable<MetadataType>)EmptyTypes;
         public override MetadataType GetNestedType(string name) => null;
-        public override int GetInlineArrayLength() => MetadataType.GetInlineArrayLength();
         public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name) => MetadataType.FindMethodsImplWithMatchingDeclName(name);
         public override int GetHashCode() => MetadataType.GetHashCode();
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
@@ -123,7 +122,5 @@ namespace Internal.TypeSystem
         public override TypeSystemContext Context => MetadataType.Context;
 
         public override IEnumerable<MethodDesc> GetMethods() => MethodDesc.EmptyMethods;
-
-        public override ExtendedLayoutInfo GetExtendedLayoutInfo() => MetadataType.GetExtendedLayoutInfo();
     }
 }

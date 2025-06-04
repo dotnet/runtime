@@ -552,56 +552,67 @@ namespace Internal.TypeSystem.Ecma
                 attributeNamespace, attributeName).IsNil;
         }
 
-        public override int GetInlineArrayLength()
-        {
-            Debug.Assert(this.IsInlineArray);
-
-            var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
-                "System.Runtime.CompilerServices", "InlineArrayAttribute"));
-
-            var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
-
-            return value is int intValue ? intValue : 0;
-        }
-
         public override ClassLayoutMetadata GetClassLayout()
         {
             TypeLayout layout = _typeDefinition.GetLayout();
+            int inlineArrayLength = 0;
+
+            if (IsInlineArray)
+            {
+                var attr = MetadataReader.GetCustomAttribute(MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                    "System.Runtime.CompilerServices", "InlineArrayAttribute"));
+
+                var value = attr.DecodeValue(new CustomAttributeTypeProvider(_module)).FixedArguments[0].Value;
+
+                inlineArrayLength = value is int intValue ? intValue : 0;
+            }
+
+            MetadataLayoutKind layoutKind = MetadataLayoutKind.Auto;
+            if (IsSequentialLayout)
+            {
+                layoutKind = MetadataLayoutKind.Sequential;
+            }
+            else if (IsExplicitLayout)
+            {
+                layoutKind = MetadataLayoutKind.Explicit;
+            }
+            else if (IsExtendedLayout)
+            {
+                var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
+                    "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
+
+                if (attrHandle.IsNil)
+                {
+                    ThrowHelper.ThrowTypeLoadException(this);
+                }
+
+                var attr = MetadataReader.GetCustomAttribute(attrHandle);
+
+                var attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(_module));
+
+                if (attrValue.FixedArguments is not [{ Value: int kind }])
+                {
+                    ThrowHelper.ThrowTypeLoadException(this);
+                    return default;
+                }
+
+                switch (kind)
+                {
+                    case 0:
+                        layoutKind = MetadataLayoutKind.CStruct;
+                        break;
+                    default:
+                        ThrowHelper.ThrowTypeLoadException(this);
+                        return default; // Invalid kind value
+                }
+            }
 
             return new ClassLayoutMetadata
             {
+                Kind = layoutKind,
                 PackingSize = layout.PackingSize,
-                Size = layout.Size
-            };
-        }
-
-        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
-        {
-            Debug.Assert(this.IsExtendedLayout);
-
-            var attrHandle = MetadataReader.GetCustomAttributeHandle(_typeDefinition.GetCustomAttributes(),
-                "System.Runtime.InteropServices", "ExtendedLayoutAttribute");
-
-            if (attrHandle.IsNil)
-            {
-                ThrowHelper.ThrowTypeLoadException(this);
-            }
-
-            var attr = MetadataReader.GetCustomAttribute(attrHandle);
-
-            var attrValue = attr.DecodeValue(new CustomAttributeTypeProvider(_module));
-
-            if (attrValue.FixedArguments is not [{ Value: int kind }])
-            {
-                ThrowHelper.ThrowTypeLoadException(this);
-                return default;
-            }
-
-            ExtendedLayoutKind extendedLayoutKind = kind is int intValue ? (ExtendedLayoutKind)intValue : ExtendedLayoutKind.None;
-
-            return new ExtendedLayoutInfo
-            {
-                Kind = extendedLayoutKind
+                Size = layout.Size,
+                InlineArrayLength = inlineArrayLength,
             };
         }
 

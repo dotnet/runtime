@@ -187,11 +187,6 @@ namespace Internal.TypeSystem.Interop
             return result;
         }
 
-        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
-        {
-            return new ExtendedLayoutInfo { Kind = ExtendedLayoutKind.None };
-        }
-
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return false;
@@ -259,12 +254,6 @@ namespace Internal.TypeSystem.Interop
             flags |= TypeFlags.AttributeCacheComputed;
 
             return flags;
-        }
-
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("when this is backed by an actual inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
         }
 
         private void InitializeMethods()

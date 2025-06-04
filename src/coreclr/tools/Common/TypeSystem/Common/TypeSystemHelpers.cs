@@ -67,7 +67,7 @@ namespace Internal.TypeSystem
 
         public static bool HasLayout(this MetadataType mdType)
         {
-            return mdType.IsSequentialLayout || mdType.IsExplicitLayout || mdType.IsExtendedLayout;
+            return mdType.GetClassLayout().Kind != MetadataLayoutKind.Auto;
         }
 
         public static LayoutInt GetElementSize(this TypeDesc type)

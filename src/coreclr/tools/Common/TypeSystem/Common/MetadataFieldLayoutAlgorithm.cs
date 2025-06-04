@@ -480,7 +480,7 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
-                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, numInstanceFields, layoutMetadata, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
@@ -499,7 +499,7 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        private static ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
+        protected ComputedInstanceFieldLayout ComputeCStructFieldLayout(MetadataType type, int numInstanceFields)
         {
             if (type.ContainsGCPointers || !type.IsValueType)
             {
@@ -578,28 +578,14 @@ namespace Internal.TypeSystem
             return computedLayout;
         }
 
-        protected ComputedInstanceFieldLayout ComputeExtendedFieldLayout(MetadataType type, int numInstanceFields)
-        {
-            ExtendedLayoutInfo extendedLayoutInfo = type.GetExtendedLayoutInfo();
-
-            if (extendedLayoutInfo.Kind == ExtendedLayoutKind.CStruct)
-            {
-                return ComputeCStructFieldLayout(type, numInstanceFields);
-            }
-            else
-            {
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadBadFormat, type);
-                return default;
-            }
-        }
-
         private static void AdjustForInlineArray(
             MetadataType type,
             int instanceFieldCount,
+            ClassLayoutMetadata layoutMetadata,
             ref SizeAndAlignment instanceByteSizeAndAlignment,
             ref SizeAndAlignment instanceSizeAndAlignment)
         {
-            int repeat = type.GetInlineArrayLength();
+            int repeat = layoutMetadata.InlineArrayLength;
 
             if (repeat <= 0)
             {
@@ -939,7 +925,7 @@ namespace Internal.TypeSystem
 
             if (type.IsInlineArray)
             {
-                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+                AdjustForInlineArray(type, numInstanceFields, type.GetClassLayout(), ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
             }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout

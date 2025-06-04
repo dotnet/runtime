@@ -69,17 +69,6 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
-        }
-
-        public override ExtendedLayoutInfo GetExtendedLayoutInfo()
-        {
-            return ManagedStructType.GetExtendedLayoutInfo();
-        }
-
         public override bool IsSequentialLayout
         {
             get
