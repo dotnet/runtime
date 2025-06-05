@@ -306,9 +306,7 @@ namespace Internal.Runtime.TypeLoader
 
         // Sentinel static to allow us to initialize _instanceLayout to something
         // and then detect that InstanceGCLayout should return null
-#pragma warning disable CA1825 // Can't use generic Array.Empty<T> within type loader
-        internal static bool[] s_emptyLayout = new bool[0];
-#pragma warning restore CA1825
+        internal static readonly bool[] s_emptyLayout = [];
 
         private bool[] _instanceGCLayout;
 
