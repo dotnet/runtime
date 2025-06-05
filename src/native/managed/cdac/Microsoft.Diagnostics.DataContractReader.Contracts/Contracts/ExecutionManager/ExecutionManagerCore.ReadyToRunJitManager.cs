@@ -12,6 +12,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 {
     private sealed class ReadyToRunJitManager : JitManager
     {
+        // TODO(cdacx86): How to handle different GCINFO versions?
         private const uint GCINFO_VERSION = 4;
 
         private readonly uint _runtimeFunctionSize;
@@ -90,38 +91,25 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             Data.RuntimeFunction runtimeFunction = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, index);
 
             TargetPointer unwindInfo = runtimeFunction.UnwindData + imageBase;
-            uint unwindDataSize = sizeof(uint); // TODO(cdac): This is platform specific and maybe needs its own contract. Current value is for x86
+            uint unwindDataSize = GetUnwindDataSize();
             gcInfo = unwindInfo + unwindDataSize;
-            gcVersion = GCINFO_VERSION; // TODO(cdac): This depends on the major version of the runtime.
+            gcVersion = GCINFO_VERSION; // TODO(cdacx86): This depends on the major version of the runtime.
         }
 
-        private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
+        // TODO(cdacx86): This is platform specific and maybe needs its own contract. Current value is for x86
+        private uint GetUnwindDataSize()
         {
-            if (r2rInfo.DelayLoadMethodCallThunks == TargetPointer.Null)
-                return false;
-
-            // Check if the address is in the region containing thunks for READYTORUN_HELPER_DelayLoad_MethodCall
-            Data.ImageDataDirectory thunksData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DelayLoadMethodCallThunks);
-            ulong rva = jittedCodeAddress - rangeSection.RangeBegin;
-            return thunksData.VirtualAddress <= rva && rva < thunksData.VirtualAddress + thunksData.Size;
+            RuntimeInfoArchitecture arch = Target.Contracts.RuntimeInfo.GetTargetArchitecture();
+            return arch switch
+            {
+                RuntimeInfoArchitecture.X86 => sizeof(uint),
+                RuntimeInfoArchitecture.Arm => 4,
+                RuntimeInfoArchitecture.Arm64 => 8,
+                _ => throw new NotSupportedException($"GetUnwindDataSize not supported for architecture: {arch}")
+            };
         }
 
-        private TargetPointer GetMethodDescForRuntimeFunction(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint runtimeFunctionIndex)
-        {
-            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, runtimeFunctionIndex);
-
-            // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
-            TargetCodePointer startAddress = imageBase + function.BeginAddress;
-            TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
-
-            TargetPointer methodDesc = _hashMap.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
-            if (methodDesc == (ulong)HashMapLookup.SpecialKeys.InvalidEntry)
-                return TargetPointer.Null;
-
-            return methodDesc;
-        }
-
-        #region Helpers
+        #region RuntimeFunction Helpers
 
         private Data.ReadyToRunInfo GetReadyToRunInfo(RangeSection rangeSection)
         {
@@ -188,6 +176,32 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             Debug.Assert(methodDesc != TargetPointer.Null);
             return index;
+        }
+
+        private bool IsStubCodeBlockThunk(Data.RangeSection rangeSection, Data.ReadyToRunInfo r2rInfo, TargetCodePointer jittedCodeAddress)
+        {
+            if (r2rInfo.DelayLoadMethodCallThunks == TargetPointer.Null)
+                return false;
+
+            // Check if the address is in the region containing thunks for READYTORUN_HELPER_DelayLoad_MethodCall
+            Data.ImageDataDirectory thunksData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DelayLoadMethodCallThunks);
+            ulong rva = jittedCodeAddress - rangeSection.RangeBegin;
+            return thunksData.VirtualAddress <= rva && rva < thunksData.VirtualAddress + thunksData.Size;
+        }
+
+        private TargetPointer GetMethodDescForRuntimeFunction(Data.ReadyToRunInfo r2rInfo, TargetPointer imageBase, uint runtimeFunctionIndex)
+        {
+            Data.RuntimeFunction function = _runtimeFunctions.GetRuntimeFunction(r2rInfo.RuntimeFunctions, runtimeFunctionIndex);
+
+            // ReadyToRunInfo::GetMethodDescForEntryPointInNativeImage
+            TargetCodePointer startAddress = imageBase + function.BeginAddress;
+            TargetPointer entryPoint = CodePointerUtils.AddressFromCodePointer(startAddress, Target);
+
+            TargetPointer methodDesc = _hashMap.GetValue(r2rInfo.EntryPointToMethodDescMap, entryPoint);
+            if (methodDesc == (ulong)HashMapLookup.SpecialKeys.InvalidEntry)
+                return TargetPointer.Null;
+
+            return methodDesc;
         }
 
         #endregion
