@@ -523,15 +523,12 @@ void SetEvexEmbMaskIfNeeded(instrDesc* id, insOpts instOptions)
     {
         assert(UseEvexEncoding());
         id->idSetEvexAaaContext(instOptions);
-
-        if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
-        {
-            id->idSetEvexZContext();
-        }
     }
-    else
+
+    if ((instOptions & INS_OPTS_EVEX_z_MASK) == INS_OPTS_EVEX_em_zero)
     {
-        assert((instOptions & INS_OPTS_EVEX_z_MASK) == 0);
+        assert(UseEvexEncoding());
+        id->idSetEvexZContext();
     }
 }
 
@@ -1290,7 +1287,7 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 //
 inline bool HasEmbeddedMask(const instrDesc* id) const
 {
-    return id->idIsEvexAaaContextSet();
+    return id->idIsEvexAaaContextSet() || id->idIsEvexZContextSet();
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;

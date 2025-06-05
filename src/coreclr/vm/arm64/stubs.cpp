@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// File: stubs.cpp
-//
+
 // This file contains stub functions for unimplemented features need to
 // run on the ARM64 platform.
 
@@ -278,269 +276,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
         pRD->volatileCurrContextPointers.X[i] = NULL;
 }
 
-void LazyMachState::unwindLazyState(LazyMachState* baseState,
-                                    MachState* unwoundstate,
-                                    DWORD threadId,
-                                    int funCallDepth)
-{
-    T_CONTEXT context;
-    T_KNONVOLATILE_CONTEXT_POINTERS nonVolContextPtrs;
-
-    context.ContextFlags = 0; // Read by PAL_VirtualUnwind.
-
-    context.X19 = unwoundstate->captureX19_X29[0] = baseState->captureX19_X29[0];
-    context.X20 = unwoundstate->captureX19_X29[1] = baseState->captureX19_X29[1];
-    context.X21 = unwoundstate->captureX19_X29[2] = baseState->captureX19_X29[2];
-    context.X22 = unwoundstate->captureX19_X29[3] = baseState->captureX19_X29[3];
-    context.X23 = unwoundstate->captureX19_X29[4] = baseState->captureX19_X29[4];
-    context.X24 = unwoundstate->captureX19_X29[5] = baseState->captureX19_X29[5];
-    context.X25 = unwoundstate->captureX19_X29[6] = baseState->captureX19_X29[6];
-    context.X26 = unwoundstate->captureX19_X29[7] = baseState->captureX19_X29[7];
-    context.X27 = unwoundstate->captureX19_X29[8] = baseState->captureX19_X29[8];
-    context.X28 = unwoundstate->captureX19_X29[9] = baseState->captureX19_X29[9];
-    context.Fp  = unwoundstate->captureX19_X29[10] = baseState->captureX19_X29[10];
-    context.Lr = 0; // Filled by the unwinder
-
-    context.Sp = baseState->captureSp;
-    context.Pc = baseState->captureIp;
-
-#if !defined(DACCESS_COMPILE)
-    // For DAC, if we get here, it means that the LazyMachState is uninitialized and we have to unwind it.
-    // The API we use to unwind in DAC is StackWalk64(), which does not support the context pointers.
-    //
-    // Restore the integer registers to KNONVOLATILE_CONTEXT_POINTERS to be used for unwinding.
-    nonVolContextPtrs.X19 = &unwoundstate->captureX19_X29[0];
-    nonVolContextPtrs.X20 = &unwoundstate->captureX19_X29[1];
-    nonVolContextPtrs.X21 = &unwoundstate->captureX19_X29[2];
-    nonVolContextPtrs.X22 = &unwoundstate->captureX19_X29[3];
-    nonVolContextPtrs.X23 = &unwoundstate->captureX19_X29[4];
-    nonVolContextPtrs.X24 = &unwoundstate->captureX19_X29[5];
-    nonVolContextPtrs.X25 = &unwoundstate->captureX19_X29[6];
-    nonVolContextPtrs.X26 = &unwoundstate->captureX19_X29[7];
-    nonVolContextPtrs.X27 = &unwoundstate->captureX19_X29[8];
-    nonVolContextPtrs.X28 = &unwoundstate->captureX19_X29[9];
-    nonVolContextPtrs.Fp  = &unwoundstate->captureX19_X29[10];
-    nonVolContextPtrs.Lr = 0; // Filled by the unwinder
-
-#endif // DACCESS_COMPILE
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    LazyMachState::unwindLazyState(ip:%p,sp:%p)\n", baseState->captureIp, baseState->captureSp));
-
-    PCODE pvControlPc;
-
-    do {
-
-#ifndef TARGET_UNIX
-        pvControlPc = Thread::VirtualUnwindCallFrame(&context, &nonVolContextPtrs);
-#else // !TARGET_UNIX
-#ifdef DACCESS_COMPILE
-        HRESULT hr = DacVirtualUnwind(threadId, &context, &nonVolContextPtrs);
-        if (FAILED(hr))
-        {
-            DacError(hr);
-        }
-#else // DACCESS_COMPILE
-        BOOL success = PAL_VirtualUnwind(&context, &nonVolContextPtrs);
-        if (!success)
-        {
-            _ASSERTE(!"unwindLazyState: Unwinding failed");
-            EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
-        }
-#endif // DACCESS_COMPILE
-        pvControlPc = GetIP(&context);
-#endif // !TARGET_UNIX
-
-        if (funCallDepth > 0)
-        {
-            funCallDepth--;
-            if (funCallDepth == 0)
-                break;
-        }
-        else
-        {
-            // Determine  whether given IP resides in JITted code. (It returns nonzero in that case.)
-            // Use it now to see if we've unwound to managed code yet.
-            BOOL fIsManagedCode = ExecutionManager::IsManagedCode(pvControlPc);
-
-            if (fIsManagedCode)
-                break;
-
-        }
-    } while (true);
-
-#ifdef __APPLE__
-    unwoundstate->unwoundX19_X29[0] = context.X19;
-    unwoundstate->unwoundX19_X29[1] = context.X20;
-    unwoundstate->unwoundX19_X29[2] = context.X21;
-    unwoundstate->unwoundX19_X29[3] = context.X22;
-    unwoundstate->unwoundX19_X29[4] = context.X23;
-    unwoundstate->unwoundX19_X29[5] = context.X24;
-    unwoundstate->unwoundX19_X29[6] = context.X25;
-    unwoundstate->unwoundX19_X29[7] = context.X26;
-    unwoundstate->unwoundX19_X29[8] = context.X27;
-    unwoundstate->unwoundX19_X29[9] = context.X28;
-    unwoundstate->unwoundX19_X29[10] = context.Fp;
-#endif // __APPLE__
-
-#ifdef DACCESS_COMPILE
-    // For DAC builds, we update the registers directly since we dont have context pointers
-    unwoundstate->captureX19_X29[0] = context.X19;
-    unwoundstate->captureX19_X29[1] = context.X20;
-    unwoundstate->captureX19_X29[2] = context.X21;
-    unwoundstate->captureX19_X29[3] = context.X22;
-    unwoundstate->captureX19_X29[4] = context.X23;
-    unwoundstate->captureX19_X29[5] = context.X24;
-    unwoundstate->captureX19_X29[6] = context.X25;
-    unwoundstate->captureX19_X29[7] = context.X26;
-    unwoundstate->captureX19_X29[8] = context.X27;
-    unwoundstate->captureX19_X29[9] = context.X28;
-    unwoundstate->captureX19_X29[10] = context.Fp;
-#else // !DACCESS_COMPILE
-    // For non-DAC builds, update the register state from context pointers
-    unwoundstate->ptrX19_X29[0] = nonVolContextPtrs.X19;
-    unwoundstate->ptrX19_X29[1] = nonVolContextPtrs.X20;
-    unwoundstate->ptrX19_X29[2] = nonVolContextPtrs.X21;
-    unwoundstate->ptrX19_X29[3] = nonVolContextPtrs.X22;
-    unwoundstate->ptrX19_X29[4] = nonVolContextPtrs.X23;
-    unwoundstate->ptrX19_X29[5] = nonVolContextPtrs.X24;
-    unwoundstate->ptrX19_X29[6] = nonVolContextPtrs.X25;
-    unwoundstate->ptrX19_X29[7] = nonVolContextPtrs.X26;
-    unwoundstate->ptrX19_X29[8] = nonVolContextPtrs.X27;
-    unwoundstate->ptrX19_X29[9] = nonVolContextPtrs.X28;
-    unwoundstate->ptrX19_X29[10] = nonVolContextPtrs.Fp;
-#endif // DACCESS_COMPILE
-
-    unwoundstate->_pc = context.Pc;
-    unwoundstate->_sp = context.Sp;
-
-    unwoundstate->_isValid = TRUE;
-}
-
-void HelperMethodFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    if (updateFloats)
-    {
-        UpdateFloatingPointRegisters(pRD);
-        _ASSERTE(pRD->pCurrentContext->Pc == GetReturnAddress());
-    }
-#endif // DACCESS_COMPILE
-
-    pRD->IsCallerContextValid = FALSE;
-    pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
-
-    //
-    // Copy the saved state from the frame to the current context.
-    //
-
-    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HelperMethodFrame::UpdateRegDisplay cached ip:%p, sp:%p\n", m_MachState._pc, m_MachState._sp));
-
- #if defined(DACCESS_COMPILE)
-    // For DAC, we may get here when the HMF is still uninitialized.
-    // So we may need to unwind here.
-    if (!m_MachState.isValid())
-    {
-        // This allocation throws on OOM.
-        MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
-
-        EnsureInit(pUnwoundState);
-
-        pRD->pCurrentContext->Pc = pRD->ControlPC = pUnwoundState->_pc;
-        pRD->pCurrentContext->Sp = pRD->SP        = pUnwoundState->_sp;
-
-        pRD->pCurrentContext->X19 = (DWORD64)(pUnwoundState->captureX19_X29[0]);
-        pRD->pCurrentContext->X20 = (DWORD64)(pUnwoundState->captureX19_X29[1]);
-        pRD->pCurrentContext->X21 = (DWORD64)(pUnwoundState->captureX19_X29[2]);
-        pRD->pCurrentContext->X22 = (DWORD64)(pUnwoundState->captureX19_X29[3]);
-        pRD->pCurrentContext->X23 = (DWORD64)(pUnwoundState->captureX19_X29[4]);
-        pRD->pCurrentContext->X24 = (DWORD64)(pUnwoundState->captureX19_X29[5]);
-        pRD->pCurrentContext->X25 = (DWORD64)(pUnwoundState->captureX19_X29[6]);
-        pRD->pCurrentContext->X26 = (DWORD64)(pUnwoundState->captureX19_X29[7]);
-        pRD->pCurrentContext->X27 = (DWORD64)(pUnwoundState->captureX19_X29[8]);
-        pRD->pCurrentContext->X28 = (DWORD64)(pUnwoundState->captureX19_X29[9]);
-        pRD->pCurrentContext->Fp = (DWORD64)(pUnwoundState->captureX19_X29[10]);
-        pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
-
-        pRD->pCurrentContextPointers->X19 = &pRD->pCurrentContext->X19;
-        pRD->pCurrentContextPointers->X20 = &pRD->pCurrentContext->X20;
-        pRD->pCurrentContextPointers->X21 = &pRD->pCurrentContext->X21;
-        pRD->pCurrentContextPointers->X22 = &pRD->pCurrentContext->X22;
-        pRD->pCurrentContextPointers->X23 = &pRD->pCurrentContext->X23;
-        pRD->pCurrentContextPointers->X24 = &pRD->pCurrentContext->X24;
-        pRD->pCurrentContextPointers->X25 = &pRD->pCurrentContext->X25;
-        pRD->pCurrentContextPointers->X26 = &pRD->pCurrentContext->X26;
-        pRD->pCurrentContextPointers->X27 = &pRD->pCurrentContext->X27;
-        pRD->pCurrentContextPointers->X28 = &pRD->pCurrentContext->X28;
-        pRD->pCurrentContextPointers->Fp = &pRD->pCurrentContext->Fp;
-        pRD->pCurrentContextPointers->Lr = &pRD->pCurrentContext->Lr;
-
-        return;
-    }
-#endif // DACCESS_COMPILE
-
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-    pRD->ControlPC = GetReturnAddress(); // m_MachState._pc;
-    pRD->SP = (DWORD64)(size_t)m_MachState._sp;
-
-    pRD->pCurrentContext->Pc = pRD->ControlPC;
-    pRD->pCurrentContext->Sp = pRD->SP;
-
-#ifdef __APPLE__
-    pRD->pCurrentContext->X19 = (DWORD64)(m_MachState.unwoundX19_X29[0]);
-    pRD->pCurrentContext->X20 = (DWORD64)(m_MachState.unwoundX19_X29[1]);
-    pRD->pCurrentContext->X21 = (DWORD64)(m_MachState.unwoundX19_X29[2]);
-    pRD->pCurrentContext->X22 = (DWORD64)(m_MachState.unwoundX19_X29[3]);
-    pRD->pCurrentContext->X23 = (DWORD64)(m_MachState.unwoundX19_X29[4]);
-    pRD->pCurrentContext->X24 = (DWORD64)(m_MachState.unwoundX19_X29[5]);
-    pRD->pCurrentContext->X25 = (DWORD64)(m_MachState.unwoundX19_X29[6]);
-    pRD->pCurrentContext->X26 = (DWORD64)(m_MachState.unwoundX19_X29[7]);
-    pRD->pCurrentContext->X27 = (DWORD64)(m_MachState.unwoundX19_X29[8]);
-    pRD->pCurrentContext->X28 = (DWORD64)(m_MachState.unwoundX19_X29[9]);
-    pRD->pCurrentContext->Fp = (DWORD64)(m_MachState.unwoundX19_X29[10]);
-    pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
-#else // __APPLE__
-    pRD->pCurrentContext->X19 = *m_MachState.ptrX19_X29[0];
-    pRD->pCurrentContext->X20 = *m_MachState.ptrX19_X29[1];
-    pRD->pCurrentContext->X21 = *m_MachState.ptrX19_X29[2];
-    pRD->pCurrentContext->X22 = *m_MachState.ptrX19_X29[3];
-    pRD->pCurrentContext->X23 = *m_MachState.ptrX19_X29[4];
-    pRD->pCurrentContext->X24 = *m_MachState.ptrX19_X29[5];
-    pRD->pCurrentContext->X25 = *m_MachState.ptrX19_X29[6];
-    pRD->pCurrentContext->X26 = *m_MachState.ptrX19_X29[7];
-    pRD->pCurrentContext->X27 = *m_MachState.ptrX19_X29[8];
-    pRD->pCurrentContext->X28 = *m_MachState.ptrX19_X29[9];
-    pRD->pCurrentContext->Fp  = *m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContext->Lr = 0; // Unwind again to get Caller's PC
-#endif // __APPLE__
-
-#if !defined(DACCESS_COMPILE)
-    pRD->pCurrentContextPointers->X19 = m_MachState.ptrX19_X29[0];
-    pRD->pCurrentContextPointers->X20 = m_MachState.ptrX19_X29[1];
-    pRD->pCurrentContextPointers->X21 = m_MachState.ptrX19_X29[2];
-    pRD->pCurrentContextPointers->X22 = m_MachState.ptrX19_X29[3];
-    pRD->pCurrentContextPointers->X23 = m_MachState.ptrX19_X29[4];
-    pRD->pCurrentContextPointers->X24 = m_MachState.ptrX19_X29[5];
-    pRD->pCurrentContextPointers->X25 = m_MachState.ptrX19_X29[6];
-    pRD->pCurrentContextPointers->X26 = m_MachState.ptrX19_X29[7];
-    pRD->pCurrentContextPointers->X27 = m_MachState.ptrX19_X29[8];
-    pRD->pCurrentContextPointers->X28 = m_MachState.ptrX19_X29[9];
-    pRD->pCurrentContextPointers->Fp = m_MachState.ptrX19_X29[10];
-    pRD->pCurrentContextPointers->Lr = 0; // Unwind again to get Caller's PC
-#endif
-
-    ClearRegDisplayArgumentAndScratchRegisters(pRD);
-}
-
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pCalleeSaved)
 {
     LIMITED_METHOD_CONTRACT;
@@ -573,7 +308,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
-
 void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
 #ifndef DACCESS_COMPILE
@@ -604,8 +338,6 @@ void TransitionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFl
 
     LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    TransitionFrame::UpdateRegDisplay_Impl(pc:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
-
-
 
 void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
@@ -840,38 +572,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMe
 }
 #endif // FEATURE_COMINTEROP
 
-#if !defined(DACCESS_COMPILE)
-
-void InitJITHelpers1()
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
-
-    g_WriteBarrierManager.Initialize();
-
-    // Allocation helpers, faster but non-logging
-    if (!((TrackAllocationsEnabled()) ||
-        (LoggingOn(LF_GCALLOC, LL_INFO10))
-#ifdef _DEBUG
-        || (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP) != 0)
-#endif // _DEBUG
-        ))
-    {
-        if (GCHeapUtilities::UseThreadAllocationContexts())
-        {
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWSFAST_ALIGN8, JIT_NewS_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_VC, JIT_NewArr1VC_MP_FastPortable);
-            SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
-
-            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
-        }
-    }
-}
-
-#endif // !defined(DACCESS_COMPILE)
-
 #ifdef TARGET_WINDOWS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
@@ -924,7 +624,7 @@ AdjustContextForVirtualStub(
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
     {
-        isVirtualStubNullCheck = true; 
+        isVirtualStubNullCheck = true;
     }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH

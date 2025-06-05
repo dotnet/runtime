@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out byte value)
+        public void ToManaged(out byte value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        public unsafe void ToManaged(out byte? value)
+        public void ToManaged(out byte? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public unsafe void ToManaged(out byte[]? value)
+        public void ToManaged(out byte[]? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public unsafe void ToJS(byte[]? value)
+        public void ToJS(byte[]? value)
         {
             if (value == null)
             {
