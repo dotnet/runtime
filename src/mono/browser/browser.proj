@@ -300,7 +300,7 @@
       <_EmccLinkFlags Condition="'$(_EmccExportedLibraryFunction)' != ''" Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" />
       <_EmccLinkFlags Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
       <_EmccLinkFlags Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
-      <_EmccLinkFlags Include="--source-map-base http://example.com" />
+      <_EmccLinkFlags Include="--source-map-base http://localhost:8000" />
       <_EmccLinkFlags Include="-s WASM_BIGINT=1" />
       <_EmccLinkFlags Include="-s EXPORT_NAME=&quot;'createDotnetRuntime'&quot;" />
       <_EmccLinkFlags Include="-s MODULARIZE=1" />
@@ -392,7 +392,7 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
 
-      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sUSE_CLOSURE_COMPILER=1 -g -gsource-map -O0 -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
+      <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-sUSE_CLOSURE_COMPILER=1 -g -O0 -DDEBUG=1 -DENABLE_AOT_PROFILER=1 -DENABLE_BROWSER_PROFILER=1 -DENABLE_LOG_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(WasmEnableMemory64)' == 'true'">$(CMakeConfigurationLinkFlags) -DMEMORY64 --target=wasm64</CMakeConfigurationEmccFlags>
 
