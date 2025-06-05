@@ -36,6 +36,23 @@ namespace Internal.NativeFormat
             return value;
         }
 
+        public unsafe ReadOnlySpan<byte> ReadStringAsBytes(uint offset)
+        {
+            uint numBytes;
+            offset = DecodeUnsigned(offset, out numBytes);
+
+            if (numBytes != 0)
+            {
+                uint endOffset = offset + numBytes;
+                if (endOffset < numBytes || endOffset > _size)
+                    ThrowBadImageFormatException();
+
+                return new(_base + offset, (int)numBytes);
+            }
+
+            return ReadOnlySpan<byte>.Empty;
+        }
+
         public unsafe uint DecodeString(uint offset, out string value)
         {
             uint numBytes;
@@ -62,32 +79,6 @@ namespace Internal.NativeFormat
 #endif
 
             return endOffset;
-        }
-
-        public unsafe Guid ParseGuid(uint offset)
-        {
-#if NETFX_45
-            _ = DecodeString(offset, out string value);
-
-            return new(value);
-#else
-
-            uint numBytes;
-            offset = DecodeUnsigned(offset, out numBytes);
-
-            ReadOnlySpan<byte> bytes = [];
-
-            if (numBytes != 0)
-            {
-                uint endOffset = offset + numBytes;
-                if (endOffset < numBytes || endOffset > _size)
-                    ThrowBadImageFormatException();
-
-                bytes = new ReadOnlySpan<byte>(_base + offset, (int)numBytes);
-            }
-
-            return Guid.Parse(bytes);
-#endif
         }
 
         // Decode a string, but just skip it instead of returning it
