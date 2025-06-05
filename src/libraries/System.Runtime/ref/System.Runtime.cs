@@ -4881,8 +4881,8 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) => throw null;
-        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) => throw null;
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, object instance) { throw null; }
+        public static void ThrowIf([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(true)] bool condition, System.Type type) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class ObsoleteAttribute : System.Attribute
@@ -8256,7 +8256,7 @@ namespace System.Collections.Generic
         bool Contains(T item);
         void CopyTo(T[] array, int arrayIndex);
         bool Remove(T item);
-        int System.Collections.Generic.IReadOnlyCollection<T>.Count => Count;
+        int System.Collections.Generic.IReadOnlyCollection<T>.Count { get { throw null; } }
     }
     public partial interface IComparer<in T> where T : allows ref struct
     {
@@ -8271,11 +8271,11 @@ namespace System.Collections.Generic
         new bool ContainsKey(TKey key);
         bool Remove(TKey key);
         new bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
-        TValue System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.this[TKey key] => this[key];
-        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
-        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values => Values;
-        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) => ContainsKey(key);
-        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) => TryGetValue(key, out value);
+        TValue System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.this[TKey key] { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.Values { get { throw null; } }
+        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.ContainsKey(TKey key) { throw null; }
+        bool System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>.TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
     }
     public partial interface IEnumerable<out T> : System.Collections.IEnumerable where T : allows ref struct
     {
@@ -8296,7 +8296,7 @@ namespace System.Collections.Generic
         int IndexOf(T item);
         void Insert(int index, T item);
         void RemoveAt(int index);
-        T System.Collections.Generic.IReadOnlyList<T>.this[int index] => this[index];
+        T System.Collections.Generic.IReadOnlyList<T>.this[int index] { get { throw null; } }
     }
     public partial interface IReadOnlyCollection<out T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
@@ -8337,14 +8337,14 @@ namespace System.Collections.Generic
         new bool SetEquals(System.Collections.Generic.IEnumerable<T> other);
         void SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other);
         void UnionWith(System.Collections.Generic.IEnumerable<T> other);
-        new bool Contains(T item) => ((ICollection<T>)this).Contains(item);
-        bool System.Collections.Generic.IReadOnlySet<T>.Contains(T item) => ((ICollection<T>)this).Contains(item);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSubsetOf(other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsProperSupersetOf(other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => IsSubsetOf(other);
-        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => IsSupersetOf(other);
-        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => Overlaps(other);
-        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => SetEquals(other);
+        new bool Contains(T item) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.Contains(T item) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) { throw null; }
+        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) { throw null; }
     }
     public partial class KeyNotFoundException : System.SystemException
     {
@@ -8643,10 +8643,10 @@ namespace System.Diagnostics
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message) => throw null;
+        public static void Fail(string? message) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message, string? detailMessage) => throw null;
+        public static void Fail(string? message, string? detailMessage) { throw null; }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -14154,9 +14154,9 @@ namespace System.Runtime.ExceptionServices
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         public static System.Exception SetRemoteStackTrace(System.Exception source, string stackTrace) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() => throw null;
+        public void Throw() { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) => throw null;
+        public static void Throw(System.Exception source) { throw null; }
     }
     public static partial class ExceptionHandling
     {
