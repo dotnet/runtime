@@ -388,9 +388,29 @@ VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
 VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
 {
     STANDARD_VM_CONTRACT;
+
     // There are several that could be used to mov xmm registers. MovAps is
     // what C++ compiler uses so let's use it here too.
-    X86EmitR2ROp(X86_INSTR_MOVAPS_R_RM, destXmmreg, srcXmmReg, k32BitOp);
+
+    BYTE rex = 0;
+
+    if (srcXmmReg >= kR8)
+    {
+        rex |= REX_MODRM_RM_EXT;
+        srcXmmReg = X86RegFromAMD64Reg(srcXmmReg);
+    }
+
+    if (destXmmreg >= kR8)
+    {
+        rex |= REX_MODRM_REG_EXT;
+        destXmmreg = X86RegFromAMD64Reg(destXmmreg);
+    }
+
+    if (rex)
+        Emit8(REX_PREFIX_BASE | rex);
+
+    Emit16(X86_INSTR_MOVAPS_R_RM);
+    Emit8(static_cast<UINT8>(0300 | (destXmmreg << 3) | srcXmmReg));    
 }
 
 //---------------------------------------------------------------
@@ -797,68 +817,6 @@ VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
         case 2: Emit32( ofs ); break;
         default: _ASSERTE(!"Can't get here.");
     }
-}
-
-
-// Emits
-//
-//    opcode altreg, modrmreg
-//
-// or
-//
-//    opcode modrmreg, altreg
-//
-// (the opcode determines which one comes first)
-//
-// For single-operand opcodes, "altreg" actually selects
-// an operation rather than a register.
-
-VOID StubLinkerCPU::X86EmitR2ROp (WORD opcode,
-                                  X86Reg altreg,
-                                  X86Reg modrmreg
-                        AMD64_ARG(X86OperandSize OperandSize /*= k64BitOp*/)
-                                  )
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-
-        // All 2-byte opcodes start with 0x0f.
-        PRECONDITION(!(opcode >> 8) || (opcode & 0xff) == 0x0f);
-
-        PRECONDITION( ((UINT)altreg) < NumX86Regs );
-        PRECONDITION( ((UINT)modrmreg) < NumX86Regs );
-    }
-    CONTRACTL_END;
-
-#ifdef TARGET_AMD64
-    BYTE rex = 0;
-
-    if (modrmreg >= kR8)
-    {
-        rex |= REX_MODRM_RM_EXT;
-        modrmreg = X86RegFromAMD64Reg(modrmreg);
-    }
-
-    if (altreg >= kR8)
-    {
-        rex |= REX_MODRM_REG_EXT;
-        altreg = X86RegFromAMD64Reg(altreg);
-    }
-
-    if (k64BitOp == OperandSize)
-        rex |= REX_OPERAND_SIZE_64BIT;
-
-    if (rex)
-        Emit8(REX_PREFIX_BASE | rex);
-#endif // TARGET_AMD64
-
-    Emit8((BYTE)opcode);
-
-    if (opcode >> 8)
-        Emit8(opcode >> 8);
-
-    Emit8(static_cast<UINT8>(0300 | (altreg << 3) | modrmreg));
 }
 
 
@@ -1308,7 +1266,8 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     X86EmitAddReg(kR11, DelegateObject::GetOffsetOfMethodPtrAux());
     // Now jump to real target
     //   jmp r10
-    X86EmitR2ROp(0xff, (X86Reg)4, kR10);
+    static const BYTE bjmpr10[] = { 0x41, 0xff, 0xe2 };
+    EmitBytes(bjmpr10, sizeof(bjmpr10));
 
 #else // TARGET_AMD64
 

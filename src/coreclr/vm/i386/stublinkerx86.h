@@ -197,25 +197,6 @@ class StubLinkerCPU : public StubLinker
         }
 #endif // TARGET_AMD64
 
-        // Emits
-        //
-        //    opcode altreg, modrmreg
-        //
-        // or
-        //
-        //    opcode modrmreg, altreg
-        //
-        // (the opcode determines which one comes first)
-        //
-        // For single-operand opcodes, "altreg" actually selects
-        // an operation rather than a register.
-
-        VOID X86EmitR2ROp(WORD opcode,
-                          X86Reg altreg,
-                          X86Reg modrmreg
-                AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
-                          );
-
         VOID X86EmitRegLoad(X86Reg reg, UINT_PTR imm);
 
         VOID X86_64BitOperands ()
