@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// THREADS.H -
-//
-
 
 //
 //
@@ -135,7 +132,6 @@ class     ThreadBaseObject;
 class     AppDomainStack;
 class     DomainAssembly;
 class     DeadlockAwareLock;
-struct    HelperMethodFrameCallerList;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
@@ -391,15 +387,6 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
 // If there's a physical Win32 thread underneath this object (i.e. it isn't an
 // unstarted System.Thread), then this instance can be found in the TLS
 // of that physical thread.
-
-// FEATURE_MULTIREG_RETURN is set for platforms where a struct return value
-//                         can be returned in multiple registers
-//                         ex: Windows/Unix ARM/ARM64, Unix-AMD64.
-//
-//
-// UNIX_AMD64_ABI is a specific kind of FEATURE_MULTIREG_RETURN
-//                         specified by SystemV ABI for AMD64
-//
 
 #ifdef FEATURE_HIJACK                                                    // Hijack function returning
 EXTERN_C void STDCALL OnHijackWorker(HijackArgs * pArgs);
@@ -3514,14 +3501,6 @@ public:
     }
 #endif // _DEBUG
 
-#ifdef _DEBUG
-private:
-    friend class FCallTransitionState;
-    friend class PermitHelperMethodFrameState;
-    friend class CompletedFCallTransitionState;
-    HelperMethodFrameCallerList *m_pHelperMethodFrameCallerList;
-#endif // _DEBUG
-
 private:
     // If HasStarted fails, we cache the exception here, and rethrow on the thread which
     // calls Thread.Start.
@@ -4067,8 +4046,6 @@ public:
 
     // RemoveThread finds the thread in the ThreadStore and discards it.
     static BOOL RemoveThread(Thread *target);
-
-    static BOOL CanAcquireLock();
 
     // Transfer a thread from the unstarted to the started list.
     static void TransferStartedThread(Thread *target);

@@ -198,8 +198,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.DoesNotContain("+", version); // no git hash
 
 #if STABILIZE_PACKAGE_VERSION
-            // a stabilized version looks like 8.0.0
-            Assert.DoesNotContain("-", version);
+            // a stabilized version looks like 8.0.0 or 8.0.0-preview.5.final
+            Assert.True((version.IndexOf("-", StringComparison.OrdinalIgnoreCase) == -1) ||
+                        (version.IndexOf("final", StringComparison.OrdinalIgnoreCase) != -1), version);
             Assert.True(Version.TryParse(version, out Version _));
 #else
             // a non-stabilized version looks like 8.0.0-preview.5.23280.8 or 8.0.0-dev

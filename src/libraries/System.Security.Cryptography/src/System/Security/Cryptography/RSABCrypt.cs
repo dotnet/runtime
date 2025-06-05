@@ -355,7 +355,7 @@ namespace System.Security.Cryptography
 
         public override KeySizes[] LegalKeySizes => new KeySizes[] { s_keySizes };
 
-        public override unsafe void ImportEncryptedPkcs8PrivateKey(
+        public override void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
             ReadOnlySpan<byte> source,
             out int bytesRead)
@@ -364,7 +364,7 @@ namespace System.Security.Cryptography
             base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
         }
 
-        public override unsafe void ImportEncryptedPkcs8PrivateKey(
+        public override void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
             ReadOnlySpan<byte> source,
             out int bytesRead)
@@ -373,7 +373,7 @@ namespace System.Security.Cryptography
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
-        public override unsafe void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ThrowIfDisposed();
             base.ImportPkcs8PrivateKey(source, out bytesRead);

@@ -22,13 +22,14 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
-
+#ifdef FEATURE_INTERPRETER
+#include "callstubgenerator.h"
+#endif // FEATURE_INTERPRETER
 class Stub;
 class FCallMethodDesc;
 class FieldDesc;
 class NDirect;
 class MethodDescChunk;
-struct LayoutRawFieldInfo;
 class InstantiatedMethodDesc;
 class DictionaryLayout;
 class Dictionary;
@@ -231,6 +232,9 @@ struct MethodDescCodeData final
 {
     PTR_MethodDescVersioningState VersioningState;
     PCODE TemporaryEntryPoint;
+#ifdef FEATURE_INTERPRETER
+    CallStubHeader *CallStub;
+#endif // FEATURE_INTERPRETER
 };
 using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
@@ -1653,6 +1657,13 @@ public:
         return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, TRUE, AsyncVariantLookup::AsyncOtherVariant);
     }
 
+    // same as above, but with allowCreate = FALSE
+    // for rare cases where we cannot allow GC, but we know that the other variant is already created.
+    MethodDesc* GetAsyncOtherVariantNoCreate(BOOL allowInstParam = TRUE)
+    {
+        return FindOrCreateAssociatedMethodDesc(this, GetMethodTable(), FALSE, GetMethodInstantiation(), allowInstParam, FALSE, FALSE, AsyncVariantLookup::AsyncOtherVariant);
+    }
+
     // True if a MD is an funny BoxedEntryPointStub (not from the method table) or
     // an MD for a generic instantiation...In other words the MethodDescs and the
     // MethodTable are guaranteed to be "tightly-knit", i.e. if one is present in
@@ -1815,6 +1826,11 @@ public:
     HRESULT EnsureCodeDataExists(AllocMemTracker *pamTracker);
 
     HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#ifdef FEATURE_INTERPRETER
+    bool SetCallStub(CallStubHeader *pHeader);
+    CallStubHeader *GetCallStub();
+#endif // FEATURE_INTERPRETER
+
 #endif //!DACCESS_COMPILE
 
     PTR_MethodDescVersioningState GetMethodDescVersionState();

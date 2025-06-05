@@ -1055,6 +1055,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
             ThreadSuspend::RestartEE(FALSE, TRUE);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
+
     case WriteBarrierOp::StompEphemeral:
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
         // StompEphemeral requires a new ephemeral low and a new ephemeral high
@@ -1065,8 +1066,16 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
         g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+#if defined(HOST_ARM64)
+        // Only allow bitwise write barriers if LSE atomics are present
+        if (!g_arm64_atomics_present)
+        {
+            g_region_use_bitwise_write_barrier = false;
+        }
+#endif
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(args->is_runtime_suspended);
         break;
+
     case WriteBarrierOp::Initialize:
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
         // This operation should only be invoked once, upon initialization.
@@ -1092,16 +1101,24 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_region_to_generation_table = args->region_to_generation_table;
         g_region_shr = args->region_shr;
         g_region_use_bitwise_write_barrier = args->region_use_bitwise_write_barrier;
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
+#if defined(HOST_ARM64)
+        // Only allow bitwise write barriers if LSE atomics are present
+        if (!g_arm64_atomics_present)
+        {
+            g_region_use_bitwise_write_barrier = false;
+        }
+#endif
         stompWBCompleteActions |= ::StompWriteBarrierResize(true, false);
 
         // StompWriteBarrierResize does not necessarily bash g_ephemeral_low
-        // usages, so we must do so here. This is particularly true on x86,
+        // usages, so we must do so here. This is particularly true on x86/Arm64,
         // where StompWriteBarrierResize will not bash g_ephemeral_low when
         // called with the parameters (true, false), as it is above.
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
         stompWBCompleteActions |= ::StompWriteBarrierEphemeral(true);
         break;
+
     case WriteBarrierOp::SwitchToWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
@@ -1113,6 +1130,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         break;
+
     case WriteBarrierOp::SwitchToNonWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
@@ -1123,6 +1141,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         assert(!"should never be called without FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP");
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         break;
+
     default:
         assert(!"unknown WriteBarrierOp enum");
     }

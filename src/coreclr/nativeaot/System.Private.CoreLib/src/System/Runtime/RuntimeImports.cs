@@ -41,10 +41,6 @@ namespace System.Runtime
         internal static extern unsafe byte* RhGetRuntimeVersion(out int cbLength);
 
         [LibraryImport(RuntimeLibrary)]
-        [SuppressGCTransition]
-        internal static partial ulong RhpGetTickCount64();
-
-        [LibraryImport(RuntimeLibrary)]
         internal static partial IntPtr RhpGetCurrentThread();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -362,7 +358,7 @@ namespace System.Runtime
         internal static extern int RhpGetThunkBlockSize();
 
         [LibraryImport(RuntimeLibrary, EntryPoint = "RhAllocateThunksMapping")]
-        internal static partial IntPtr RhAllocateThunksMapping();
+        internal static unsafe partial int RhAllocateThunksMapping(IntPtr* ppMapping);
 
         //
         // calls to runtime for type equality checks
@@ -393,6 +389,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewArray")]
         internal static extern unsafe Array RhNewArray(MethodTable* pEEType, int length);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        [RuntimeImport(RuntimeLibrary, "RhNewVariableSizeObject")]
+        internal static extern unsafe Array RhNewVariableSizeObject(MethodTable* pEEType, int length);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewString")]

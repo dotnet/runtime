@@ -188,7 +188,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_TargetingNET80OrLater)' != 'true'">false</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">true</_WasmEnableWebcil>
-      <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmInlineBootConfig>$(WasmInlineBootConfig)</_WasmInlineBootConfig>
@@ -260,7 +259,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
-      WasmPerfTracing="$(WasmPerfTracing)"
+      EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
       FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
@@ -398,12 +397,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
-      StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
       ModuleAfterConfigLoaded="@(WasmModuleAfterConfigLoaded)"
@@ -611,7 +609,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(CopyOutputSymbolsToPublishDirectory)"
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       EnableThreads="$(_WasmEnableThreads)"
-      WasmPerfTracing="$(WasmPerfTracing)"
+      EnableDiagnostics="$(EnableDiagnostics)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
       FingerprintAssets="$(_WasmFingerprintAssets)"
@@ -807,11 +805,10 @@ Copyright (c) .NET Foundation. All rights reserved.
       InvariantGlobalization="$(InvariantGlobalization)"
       LoadCustomIcuData="$(_LoadCustomIcuData)"
       LoadFullICUData="$(_BlazorWebAssemblyLoadAllGlobalizationData)"
-      StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       EnvVariables="@(WasmEnvironmentVariable)"
-      Profilers="$(_WasmProfilers)"
+      Profilers="$(WasmProfilers)"
       RuntimeConfigJsonPath="$(ProjectRuntimeConfigFilePath)"
       Extensions="@(WasmBootConfigExtension)"
       TargetFrameworkVersion="$(TargetFrameworkVersion)"
