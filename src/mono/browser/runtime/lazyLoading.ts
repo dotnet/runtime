@@ -25,7 +25,7 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
     let dllAsset: (AssemblyAsset & AssetEntryInternal) | null = null;
     for (let i = 0; i < lazyAssemblies.length; i++) {
         const asset = lazyAssemblies[i];
-        if (asset.name === assemblyNameToLoadDll || asset.name === assemblyNameToLoadWasm) {
+        if (asset.virtualPath === assemblyNameToLoadDll || asset.virtualPath === assemblyNameToLoadWasm) {
             dllAsset = asset as AssemblyAsset & AssetEntryInternal;
             dllAsset.behavior = "assembly";
             break;
@@ -45,7 +45,7 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
     let pdbAsset: (PdbAsset & AssetEntryInternal) | null = null;
     if (loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
         for (let i = 0; i < lazyAssemblies.length; i++) {
-            if (lazyAssemblies[i].name === pdbNameToLoad) {
+            if (lazyAssemblies[i].virtualPath === pdbNameToLoad) {
                 shouldLoadPdb = true;
                 pdbAsset = lazyAssemblies[i] as PdbAsset & AssetEntryInternal;
                 pdbAsset.behavior = "pdb";
