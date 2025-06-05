@@ -20,11 +20,12 @@ using Mono.Linker.Tests.Cases.Reflection;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[Kept]
-	[IgnoreTestCase("Trimmer support is currently not implemented", IgnoredBy = Tool.Trimmer)]
+	[IgnoreTestCase("Trimmer support is currently not implemented", IgnoredBy = Tool.Trimmer | Tool.Analyzer)]
 	class TypeMap
 	{
 		[Kept]
-		public static void Main(string[] args)
+		[ExpectedWarning ("IL2057", "Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(String)'")]
+		public static void Main (string[] args)
 		{
 			object t = Activator.CreateInstance (Type.GetType (args[1]));
 			if (t is TargetAndTrimTarget) {
@@ -37,6 +38,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			Console.WriteLine (TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap> ());
 			Console.WriteLine (TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap> ());
+			Console.WriteLine (GetExternalTypeMap<UnusedTypeMap> ());
+		}
+
+		[Kept]
+		[ExpectedWarning ("IL2124", "Type 'T' must not contain signature variables to be used as a type map group.")]
+		private static IReadOnlyDictionary<string, Type> GetExternalTypeMap<T> ()
+		{
+			return TypeMapping.GetOrCreateExternalTypeMapping<T> ();
 		}
 	}
 
