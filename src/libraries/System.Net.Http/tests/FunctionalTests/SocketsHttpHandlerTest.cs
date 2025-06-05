@@ -1339,6 +1339,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1)] // ResponseDrainTimeout = TimeSpan.Zero
         public async Task GetAsync_TrailersWithoutServerStreamClosure_ResponseDrainDisabled_ShutsDownClientReads(int drainDisableMode)
         {
+            SemaphoreSlim allDataSent = new SemaphoreSlim(0);
             SemaphoreSlim responseConsumed = new SemaphoreSlim(0);
             SemaphoreSlim serverCompleted = new SemaphoreSlim(0);
 
@@ -1356,9 +1357,16 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 using HttpClient client = CreateHttpClient(handler);
-                using (HttpResponseMessage response = await client.GetAsync(uri))
+                using (HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead))
                 {
+                    using Stream stream = await response.Content.ReadAsStreamAsync();
+                    byte[] buffer = new byte[512];
+                    // Consume the stream
+                    while ((await stream.ReadAsync(buffer)) > 0);
                     Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
+
+                    // Defer stream disposal until server finishes sending.
+                    await allDataSent.WaitAsync();
                 }
 
                 responseConsumed.Release();
@@ -1379,6 +1387,7 @@ namespace System.Net.Http.Functional.Tests
                     // Frame types of the format 0x1f * N + 0x21 for non - negative integer values of N are reserved to exercise the requirement that unknown types be ignored.
                     await stream.SendFrameAsync(0x1f * 7 + 0x21, new byte[1024]);
 
+                    allDataSent.Release();
                     await responseConsumed.WaitAsync();
 
                     await stream.DisposeAsync();
