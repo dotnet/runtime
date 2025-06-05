@@ -399,7 +399,6 @@ retry:
 static void empty_color_buckets ()
 {
     ColorBucket* cur;
-    ColorBucket* tmp;
 
     color_data_count = 0;
 
@@ -627,7 +626,8 @@ static void add_other_colors (ColorData* color, DynPtrArray* other_colors, bool 
         }
         dyn_ptr_array_add(&color->other_colors, points_to);
         // Inform targets
-        points_to->incoming_colors = min(points_to->incoming_colors + 1, INCOMING_COLORS_MAX);
+        if (points_to->incoming_colors < INCOMING_COLORS_MAX)
+            points_to->incoming_colors++;
     }
 }
 
@@ -1287,9 +1287,6 @@ static void build_scc_callback_data (BridgeProcessorResult *bp_res)
 
 BridgeProcessorResult ProcessBridgeObjects()
 {
-    int i;
-    uint64_t curtime;
-
     BridgeProcessorResult bp_res = { 0 };
 
     if (!tarjan_scc_algorithm())

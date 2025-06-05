@@ -2,8 +2,9 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Test unsupported outside of OSX -->
-    <CLRTestTargetUnsupported Condition="'$(TargetsUnix)' != 'true'">true</CLRTestTargetUnsupported>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
+    <!-- Support for native aot not yet implemented -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
