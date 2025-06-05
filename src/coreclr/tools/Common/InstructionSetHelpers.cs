@@ -189,8 +189,6 @@ namespace System.CommandLine
                 //
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni");
@@ -208,6 +206,8 @@ namespace System.CommandLine
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("bmi2");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("fma");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("lzcnt");
+                    optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("movbe");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxifma");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("avxvnni");
                     optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("gfni_v256");

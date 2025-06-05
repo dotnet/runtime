@@ -53,7 +53,6 @@ unsafe class Program
         bool? ExpectedSse41 = null;
         bool? ExpectedSse42 = null;
         bool? ExpectedPopcnt = null;
-        bool? ExpectedLzcnt = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
@@ -67,6 +66,7 @@ unsafe class Program
         bool? ExpectedBmi2 = false;
         bool? ExpectedF16c = false;
         bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
@@ -95,7 +95,6 @@ unsafe class Program
         bool? ExpectedSse42 = true;
 
         bool? ExpectedPopcnt = null;
-        bool? ExpectedLzcnt = null;
         bool? ExpectedAes = null;
         bool? ExpectedPclmulqdq = null;
         bool? ExpectedGfni = null;
@@ -109,6 +108,7 @@ unsafe class Program
         bool? ExpectedBmi2 = false;
         bool? ExpectedF16c = false;
         bool? ExpectedFma = false;
+        bool? ExpectedLzcnt = false;
         bool? ExpectedAvx512F = false;
         bool? ExpectedAvx512BW = false;
         bool? ExpectedAvx512CD = false;
