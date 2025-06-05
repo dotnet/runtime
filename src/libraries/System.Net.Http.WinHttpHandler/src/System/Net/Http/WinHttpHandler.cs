@@ -718,9 +718,7 @@ namespace System.Net.Http
         {
             foreach (char c in headerString)
             {
-                // See https://www.rfc-editor.org/rfc/rfc9110.html#section-5.5-5:
-                // "Field values containing CR, LF, or NUL characters are invalid and dangerous"
-                if (c <= 0 || c > 255 || c == '\r' || c == '\n')
+                if (c <= 0 || c > 255)
                 {
                     return false;
                 }
@@ -1591,7 +1589,7 @@ namespace System.Net.Http
                 // If the exception was due to the cancellation token being canceled, throw cancellation exception.
                 state.Tcs.TrySetCanceled(state.CancellationToken);
             }
-            else if (ex is WinHttpException || ex is IOException || ex is InvalidOperationException)
+            else if (ex is WinHttpException || ex is IOException || ex is InvalidOperationException || ex is FormatException)
             {
                 // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during
                 // execution. All other exception types, including ArgumentExceptions and ProtocolViolationExceptions

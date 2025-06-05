@@ -38,7 +38,7 @@ namespace System.Net.Http.Headers
         public AuthenticationHeaderValue(string scheme, string? parameter)
         {
             HeaderUtilities.CheckValidToken(scheme);
-            HttpHeaders.CheckContainsNewLine(parameter);
+            HttpHeaders.ContainsNewLineOrNull(parameter);
             _scheme = scheme;
             _parameter = parameter;
         }
