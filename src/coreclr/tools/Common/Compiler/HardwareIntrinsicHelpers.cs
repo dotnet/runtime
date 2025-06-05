@@ -37,7 +37,7 @@ namespace ILCompiler
             return false;
         }
 
-        public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, long flags)
+        public static void AddRuntimeRequiredIsaFlagsToBuilder(InstructionSetSupportBuilder builder, int flags)
         {
             switch (builder.Architecture)
             {
@@ -61,93 +61,73 @@ namespace ILCompiler
         private static class XArchIntrinsicConstants
         {
             // SSE and SSE2 are baseline ISAs - they're always available
-            public const long Aes = (1L << 0);
-            public const long Pclmulqdq = (1L << 1);
-            public const long Sse3 = (1L << 2);
-            public const long Ssse3 = (1L << 3);
-            public const long Sse41 = (1L << 4);
-            public const long Sse42 = (1L << 5);
-            public const long Popcnt = (1L << 6);
-            public const long Avx = (1L << 7);
-            public const long Fma = (1L << 8);
-            public const long Avx2 = (1L << 9);
-            public const long Bmi1 = (1L << 10);
-            public const long Bmi2 = (1L << 11);
-            public const long Lzcnt = (1L << 12);
-            public const long AvxVnni = (1L << 13);
-            public const long Movbe = (1L << 14);
-            public const long Avx512 = (1L << 15);
-            public const long Avx512Vbmi = (1L << 16);
-            public const long Serialize = (1L << 17);
-            public const long Avx10v1 = (1L << 18);
-            public const long Apx = (1L << 19);
-            public const long Vpclmulqdq = (1L << 20);
-            public const long Avx10v2 = (1L << 21);
-            public const long Gfni = (1L << 22);
-            public const long Avx512Bitalg = (1L << 23);
-            public const long Avx512Bf16 = (1L << 24);
-            public const long Avx512Fp16 = (1L << 25);
-            public const long Avx512Ifma = (1L << 26);
-            public const long Avx512Vbmi2 = (1L << 27);
-            public const long Avx512Vnni = (1L << 28);
-            public const long Avx512Vp2intersect = (1L << 29);
-            public const long Avx512Vpopcntdq = (1L << 30);
-            public const long AvxIfma = (1L << 31);
-            public const long F16c = (1L << 32);
-            public const long Sha = (1L << 33);
-            public const long Vaes = (1L << 34);
-            public const long WaitPkg = (1L << 35);
+            public const int Sse42 = (1 << 0);
+            public const int Avx = (1 << 1);
+            public const int Avx2 = (1 << 2);
+            public const int Avx512 = (1 << 3);
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
+            public const int Avx512v2 = (1 << 4);
+            public const int Avx512v3 = (1 << 5);
+            public const int Avx10v1 = (1 << 6);
+            public const int Avx10v2 = (1 << 7);
+            public const int Apx = (1 << 8);
+
+            public const int Aes = (1 << 9);
+            public const int Avx512Vp2intersect = (1 << 10);
+            public const int AvxIfma = (1 << 11);
+            public const int AvxVnni = (1 << 12);
+            public const int Gfni = (1 << 13);
+            public const int Sha = (1 << 14);
+            public const int Vaes = (1 << 15);
+            public const int WaitPkg = (1 << 16);
+            public const int X86Serialize = (1 << 17);
+
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
-                if ((flags & Aes) != 0)
-                    builder.AddSupportedInstructionSet("aes");
-                if ((flags & Pclmulqdq) != 0)
-                    builder.AddSupportedInstructionSet("pclmul");
-                if ((flags & Sse3) != 0)
-                    builder.AddSupportedInstructionSet("sse3");
-                if ((flags & Ssse3) != 0)
-                    builder.AddSupportedInstructionSet("ssse3");
-                if ((flags & Sse41) != 0)
-                    builder.AddSupportedInstructionSet("sse4.1");
                 if ((flags & Sse42) != 0)
+                {
+                    builder.AddSupportedInstructionSet("sse3");
+                    builder.AddSupportedInstructionSet("ssse3");
+                    builder.AddSupportedInstructionSet("sse4.1");
                     builder.AddSupportedInstructionSet("sse4.2");
-                if ((flags & Popcnt) != 0)
                     builder.AddSupportedInstructionSet("popcnt");
+                }
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
-                if ((flags & Fma) != 0)
-                    builder.AddSupportedInstructionSet("fma");
                 if ((flags & Avx2) != 0)
+                {
                     builder.AddSupportedInstructionSet("avx2");
-                if ((flags & Bmi1) != 0)
                     builder.AddSupportedInstructionSet("bmi");
-                if ((flags & Bmi2) != 0)
                     builder.AddSupportedInstructionSet("bmi2");
-                if ((flags & Lzcnt) != 0)
-                    builder.AddSupportedInstructionSet("lzcnt");
-                if ((flags & AvxVnni) != 0)
-                    builder.AddSupportedInstructionSet("avxvnni");
-                if ((flags & Movbe) != 0)
+                    builder.AddSupportedInstructionSet("fma");
+                    builder.AddSupportedInstructionSet("lznct");
                     builder.AddSupportedInstructionSet("movbe");
+                }
                 if ((flags & Avx512) != 0)
                     builder.AddSupportedInstructionSet("avx512");
-                if ((flags & Avx512Vbmi) != 0)
-                    builder.AddSupportedInstructionSet("avx512vbmi");
-                if ((flags & Serialize) != 0)
-                    builder.AddSupportedInstructionSet("serialize");
+
+                if ((flags & Avx512v2) != 0)
+                    builder.AddSupportedInstructionSet("avx512v2");
+                if ((flags & Avx512v3) != 0)
+                    builder.AddSupportedInstructionSet("avx512v3");
                 if ((flags & Avx10v1) != 0)
                     builder.AddSupportedInstructionSet("avx10v1");
-                if ((flags & Apx) != 0)
-                    builder.AddSupportedInstructionSet("apx");
-                if ((flags & Vpclmulqdq) != 0)
-                {
-                    builder.AddSupportedInstructionSet("vpclmul");
-                    if ((flags & Avx512) != 0)
-                        builder.AddSupportedInstructionSet("vpclmul_v512");
-                }
                 if ((flags & Avx10v2) != 0)
                     builder.AddSupportedInstructionSet("avx10v2");
+                if ((flags & Apx) != 0)
+                    builder.AddSupportedInstructionSet("apx");
+
+                if ((flags & Aes) != 0)
+                {
+                    builder.AddSupportedInstructionSet("aes");
+                    builder.AddSupportedInstructionSet("pclmul");
+                }
+                if ((flags & Avx512Vp2intersect) != 0)
+                    builder.AddSupportedInstructionSet("avx512vp2intersect");
+                if ((flags & AvxIfma) != 0)
+                    builder.AddSupportedInstructionSet("avxifma");
+                if ((flags & AvxVnni) != 0)
+                    builder.AddSupportedInstructionSet("avxvnni");
                 if ((flags & Gfni) != 0)
                 {
                     builder.AddSupportedInstructionSet("gfni");
@@ -156,39 +136,25 @@ namespace ILCompiler
                     if ((flags & Avx512) != 0)
                         builder.AddSupportedInstructionSet("gfni_v512");
                 }
-                if ((flags & Avx512Bitalg) != 0)
-                    builder.AddSupportedInstructionSet("avx512bitalg");
-                if ((flags & Avx512Bf16) != 0)
-                    builder.AddSupportedInstructionSet("avx512bf16");
-                if ((flags & Avx512Fp16) != 0)
-                    builder.AddSupportedInstructionSet("avx512fp16");
-                if ((flags & Avx512Ifma) != 0)
-                    builder.AddSupportedInstructionSet("avx512ifma");
-                if ((flags & Avx512Vbmi2) != 0)
-                    builder.AddSupportedInstructionSet("avx512vbmi2");
-                if ((flags & Avx512Vnni) != 0)
-                    builder.AddSupportedInstructionSet("avx512vnni");
-                if ((flags & Avx512Vp2intersect) != 0)
-                    builder.AddSupportedInstructionSet("avx512vp2intersect");
-                if ((flags & Avx512Vpopcntdq) != 0)
-                    builder.AddSupportedInstructionSet("avx512vpopcntdq");
-                if ((flags & AvxIfma) != 0)
-                    builder.AddSupportedInstructionSet("avxifma");
-                if ((flags & F16c) != 0)
-                    builder.AddSupportedInstructionSet("f16c");
                 if ((flags & Sha) != 0)
                     builder.AddSupportedInstructionSet("sha");
                 if ((flags & Vaes) != 0)
                 {
                     builder.AddSupportedInstructionSet("vaes");
+                    builder.AddSupportedInstructionSet("vpclmul");
                     if ((flags & Avx512) != 0)
+                    {
                         builder.AddSupportedInstructionSet("vaes_v512");
+                        builder.AddSupportedInstructionSet("vpclmul_v512");
+                    }
                 }
                 if ((flags & WaitPkg) != 0)
                     builder.AddSupportedInstructionSet("waitpkg");
+                if ((flags & X86Serialize) != 0)
+                    builder.AddSupportedInstructionSet("x86serialize");
             }
 
-            public static long FromInstructionSet(InstructionSet instructionSet)
+            public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 Debug.Assert(InstructionSet.X64_AES == InstructionSet.X86_AES);
                 Debug.Assert(InstructionSet.X64_SSE41 == InstructionSet.X86_SSE41);
@@ -197,76 +163,81 @@ namespace ILCompiler
                 return instructionSet switch
                 {
                     // Optional ISAs - only available via opt-in or opportunistic light-up
-                    InstructionSet.X64_AES => Aes,
-                    InstructionSet.X64_AES_X64 => Aes,
-                    InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
-                    InstructionSet.X64_PCLMULQDQ_X64 => Pclmulqdq,
-                    InstructionSet.X64_SSE3 => Sse3,
-                    InstructionSet.X64_SSE3_X64 => Sse3,
-                    InstructionSet.X64_SSSE3 => Ssse3,
-                    InstructionSet.X64_SSSE3_X64 => Ssse3,
-                    InstructionSet.X64_SSE41 => Sse41,
-                    InstructionSet.X64_SSE41_X64 => Sse41,
+                    InstructionSet.X64_SSE3 => Sse42,
+                    InstructionSet.X64_SSE3_X64 => Sse42,
+                    InstructionSet.X64_SSSE3 => Sse42,
+                    InstructionSet.X64_SSSE3_X64 => Sse42,
+                    InstructionSet.X64_SSE41 => Sse42,
+                    InstructionSet.X64_SSE41_X64 => Sse42,
                     InstructionSet.X64_SSE42 => Sse42,
                     InstructionSet.X64_SSE42_X64 => Sse42,
-                    InstructionSet.X64_POPCNT => Popcnt,
-                    InstructionSet.X64_POPCNT_X64 => Popcnt,
+                    InstructionSet.X64_POPCNT => Sse42,
+                    InstructionSet.X64_POPCNT_X64 => Sse42,
+
                     InstructionSet.X64_AVX => Avx,
                     InstructionSet.X64_AVX_X64 => Avx,
-                    InstructionSet.X64_FMA => Fma,
-                    InstructionSet.X64_FMA_X64 => Fma,
+
                     InstructionSet.X64_AVX2 => Avx2,
                     InstructionSet.X64_AVX2_X64 => Avx2,
-                    InstructionSet.X64_BMI1 => Bmi1,
-                    InstructionSet.X64_BMI1_X64 => Bmi1,
-                    InstructionSet.X64_BMI2 => Bmi2,
-                    InstructionSet.X64_BMI2_X64 => Bmi2,
-                    InstructionSet.X64_LZCNT => Lzcnt,
-                    InstructionSet.X64_LZCNT_X64 => Lzcnt,
-                    InstructionSet.X64_AVXVNNI => AvxVnni,
-                    InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
-                    InstructionSet.X64_MOVBE => Movbe,
+                    InstructionSet.X64_BMI1 => Avx2,
+                    InstructionSet.X64_BMI1_X64 => Avx2,
+                    InstructionSet.X64_BMI2 => Avx2,
+                    InstructionSet.X64_BMI2_X64 => Avx2,
+                    InstructionSet.X64_FMA => Avx2,
+                    InstructionSet.X64_FMA_X64 => Avx2,
+                    InstructionSet.X64_LZCNT => Avx2,
+                    InstructionSet.X64_LZCNT_X64 => Avx2,
+                    InstructionSet.X64_MOVBE => Avx2,
+
                     InstructionSet.X64_AVX512 => Avx512,
                     InstructionSet.X64_AVX512_X64 => Avx512,
-                    InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
-                    InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
-                    InstructionSet.X64_X86Serialize => Serialize,
-                    InstructionSet.X64_X86Serialize_X64 => Serialize,
+
+                    InstructionSet.X64_AVX512VBMI => Avx512v2,
+                    InstructionSet.X64_AVX512VBMI_X64 => Avx512v2,
+
+                    InstructionSet.X64_AVX512v3 => Avx512v3,
+                    InstructionSet.X64_AVX512v3_X64 => Avx512v3,
+
                     InstructionSet.X64_AVX10v1 => Avx10v1,
                     InstructionSet.X64_AVX10v1_X64 => Avx10v1,
-                    InstructionSet.X64_APX => Apx,
-                    InstructionSet.X64_PCLMULQDQ_V256 => Vpclmulqdq,
-                    InstructionSet.X64_PCLMULQDQ_V512 => (Vpclmulqdq | Avx512),
+
                     InstructionSet.X64_AVX10v2 => Avx10v2,
                     InstructionSet.X64_AVX10v2_X64 => Avx10v2,
+
+                    InstructionSet.X64_APX => Apx,
+
+                    InstructionSet.X64_AES => Aes,
+                    InstructionSet.X64_AES_X64 => Aes,
+                    InstructionSet.X64_AES_V256 => (Vaes | Avx),
+                    InstructionSet.X64_AES_V512 => (Vaes | Avx512),
+
+                    InstructionSet.X64_PCLMULQDQ => Aes,
+                    InstructionSet.X64_PCLMULQDQ_X64 => Aes,
+                    InstructionSet.X64_PCLMULQDQ_V256 => (Vaes | Avx),
+                    InstructionSet.X64_PCLMULQDQ_V512 => (Vaes | Avx512),
+
+                    InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
+                    InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,
+
+                    InstructionSet.X64_AVXIFMA => AvxIfma,
+                    InstructionSet.X64_AVXIFMA_X64 => AvxIfma,
+
+                    InstructionSet.X64_AVXVNNI => AvxVnni,
+                    InstructionSet.X64_AVXVNNI_X64 => AvxVnni,
+
                     InstructionSet.X64_GFNI => Gfni,
                     InstructionSet.X64_GFNI_X64 => Gfni,
                     InstructionSet.X64_GFNI_V256 => (Gfni | Avx),
                     InstructionSet.X64_GFNI_V512 => (Gfni | Avx512),
-                    InstructionSet.X64_AES_V256 => (Vaes | Avx),
-                    InstructionSet.X64_AES_V512 => (Vaes | Avx512),
-                    InstructionSet.X64_AVXIFMA => AvxIfma,
-                    InstructionSet.X64_AVXIFMA_X64 => AvxIfma,
-                    InstructionSet.X64_F16C => F16c,
-                    InstructionSet.X64_F16C_X64 => F16c,
+
                     InstructionSet.X64_SHA => Sha,
                     InstructionSet.X64_SHA_X64 => Sha,
+
                     InstructionSet.X64_WAITPKG => WaitPkg,
                     InstructionSet.X64_WAITPKG_X64 => WaitPkg,
-                    InstructionSet.X64_AVX512BITALG => Avx512Bitalg,
-                    InstructionSet.X64_AVX512BITALG_X64 => Avx512Bitalg,
-                    InstructionSet.X64_AVX512BF16 => Avx512Bf16,
-                    InstructionSet.X64_AVX512BF16_X64 => Avx512Bf16,
-                    InstructionSet.X64_AVX512FP16 => Avx512Fp16,
-                    InstructionSet.X64_AVX512FP16_X64 => Avx512Fp16,
-                    InstructionSet.X64_AVX512IFMA => Avx512Ifma,
-                    InstructionSet.X64_AVX512VBMI2 => Avx512Vbmi2,
-                    InstructionSet.X64_AVX512VBMI2_X64 => Avx512Vbmi2,
-                    InstructionSet.X64_AVX512VNNI => Avx512Vnni,
-                    InstructionSet.X64_AVX512VP2INTERSECT => Avx512Vp2intersect,
-                    InstructionSet.X64_AVX512VP2INTERSECT_X64 => Avx512Vp2intersect,
-                    InstructionSet.X64_AVX512VPOPCNTDQ => Avx512Vpopcntdq,
-                    InstructionSet.X64_AVX512VPOPCNTDQ_X64 => Avx512Vpopcntdq,
+
+                    InstructionSet.X64_X86Serialize => X86Serialize,
+                    InstructionSet.X64_X86Serialize_X64 => X86Serialize,
 
                     // Baseline ISAs - they're always available
                     InstructionSet.X64_X86Base => 0,
@@ -285,19 +256,19 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class Arm64IntrinsicConstants
         {
-            public const long Aes = (1L << 0);
-            public const long Crc32 = (1L << 1);
-            public const long Dp = (1L << 2);
-            public const long Rdm = (1L << 3);
-            public const long Sha1 = (1L << 4);
-            public const long Sha256 = (1L << 5);
-            public const long Atomics = (1L << 6);
-            public const long Rcpc = (1L << 7);
-            public const long Rcpc2 = (1L << 8);
-            public const long Sve = (1L << 9);
-            public const long Sve2 = (1L << 10);
+            public const int Aes = (1 << 0);
+            public const int Crc32 = (1 << 1);
+            public const int Dp = (1 << 2);
+            public const int Rdm = (1 << 3);
+            public const int Sha1 = (1 << 4);
+            public const int Sha256 = (1 << 5);
+            public const int Atomics = (1 << 6);
+            public const int Rcpc = (1 << 7);
+            public const int Rcpc2 = (1 << 8);
+            public const int Sve = (1 << 9);
+            public const int Sve2 = (1 << 10);
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
                 if ((flags & Aes) != 0)
                     builder.AddSupportedInstructionSet("aes");
@@ -323,7 +294,7 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("sve2");
             }
 
-            public static long FromInstructionSet(InstructionSet instructionSet)
+            public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 return instructionSet switch
                 {
@@ -366,10 +337,10 @@ namespace ILCompiler
         // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class RiscV64IntrinsicConstants
         {
-            public const long Zba = (1L << 0);
-            public const long Zbb = (1L << 1);
+            public const int Zba = (1 << 0);
+            public const int Zbb = (1 << 1);
 
-            public static void AddToBuilder(InstructionSetSupportBuilder builder, long flags)
+            public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
                 if ((flags & Zba) != 0)
                     builder.AddSupportedInstructionSet("zba");
@@ -377,7 +348,7 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("zbb");
             }
 
-            public static long FromInstructionSet(InstructionSet instructionSet)
+            public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 return instructionSet switch
                 {

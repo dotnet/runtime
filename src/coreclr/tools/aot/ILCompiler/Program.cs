@@ -164,7 +164,7 @@ namespace ILCompiler
 
             ilProvider = new HardwareIntrinsicILProvider(
                 instructionSetSupport,
-                new ExternSymbolMappedField(typeSystemContext.GetWellKnownType(WellKnownType.Int64), "g_cpuFeatures"),
+                new ExternSymbolMappedField(typeSystemContext.GetWellKnownType(WellKnownType.Int32), "g_cpuFeatures"),
                 ilProvider);
 
             SecurityMitigationOptions securityMitigationOptions = 0;

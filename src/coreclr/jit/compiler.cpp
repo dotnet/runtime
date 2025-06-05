@@ -6089,14 +6089,13 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
         }
 
-        if (JitConfig.EnableAES() != 0)
+        if (JitConfig.EnableSSE42() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
-        }
-
-        if (JitConfig.EnableAPX() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
+            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
         }
 
         if (JitConfig.EnableAVX() != 0)
@@ -6107,6 +6106,11 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVX2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
+            instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
+            instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
+            instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
+            instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
+            instructionSetFlags.AddInstructionSet(InstructionSet_MOVBE);
         }
 
         if (JitConfig.EnableAVX512() != 0)
@@ -6114,49 +6118,14 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512);
         }
 
-        if (JitConfig.EnableAVX512BITALG() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BITALG);
-        }
-
-        if (JitConfig.EnableAVX512BF16() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BF16);
-        }
-
-        if (JitConfig.EnableAVX512FP16() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512FP16);
-        }
-
-        if (JitConfig.EnableAVX512IFMA() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512IFMA);
-        }
-
-        if (JitConfig.EnableAVX512VBMI() != 0)
+        if (JitConfig.EnableAVX512v2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
         }
 
-        if (JitConfig.EnableAVX512VBMI2() != 0)
+        if (JitConfig.EnableAVX512v3() != 0)
         {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI2);
-        }
-
-        if (JitConfig.EnableAVX512VNNI() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VNNI);
-        }
-
-        if (JitConfig.EnableAVX512VP2INTERSECT() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
-        }
-
-        if (JitConfig.EnableAVX512VPOPCNTDQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VPOPCNTDQ);
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512v3);
         }
 
         if (JitConfig.EnableAVX10v1() != 0)
@@ -6169,6 +6138,22 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVX10v2);
         }
 
+        if (JitConfig.EnableAPX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_APX);
+        }
+
+        if (JitConfig.EnableAES() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
+        }
+
+        if (JitConfig.EnableAVX512VP2INTERSECT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VP2INTERSECT);
+        }
+
         if (JitConfig.EnableAVXIFMA() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXIFMA);
@@ -6179,26 +6164,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
         }
 
-        if (JitConfig.EnableBMI1() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
-        }
-
-        if (JitConfig.EnableBMI2() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
-        }
-
-        if (JitConfig.EnableFMA() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
-        }
-
-        if (JitConfig.EnableF16C() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_F16C);
-        }
-
         if (JitConfig.EnableGFNI() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_GFNI);
@@ -6206,59 +6171,15 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_GFNI_V512);
         }
 
-        if (JitConfig.EnableLZCNT() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
-        }
-
-        if (JitConfig.EnableMOVBE() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_MOVBE);
-        }
-
-        if (JitConfig.EnablePCLMULQDQ() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
-        }
-
-        if (JitConfig.EnablePOPCNT() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
-        }
-
         if (JitConfig.EnableSHA() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_SHA);
-        }
-
-        if (JitConfig.EnableSSE3() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
-        }
-
-        if (JitConfig.EnableSSE41() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
-        }
-
-        if (JitConfig.EnableSSE42() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
-        }
-
-        if (JitConfig.EnableSSSE3() != 0)
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
         }
 
         if (JitConfig.EnableVAES() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AES_V256);
             instructionSetFlags.AddInstructionSet(InstructionSet_AES_V512);
-        }
-
-        if (JitConfig.EnableVPCLMULQDQ() != 0)
-        {
             instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V256);
             instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ_V512);
         }

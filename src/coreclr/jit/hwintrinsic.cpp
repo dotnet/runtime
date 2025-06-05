@@ -907,79 +907,68 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_SSSE3, LAST_NI_SSSE3 },                          // SSSE3
     { FIRST_NI_SSE41, LAST_NI_SSE41 },                          // SSE41
     { FIRST_NI_SSE42, LAST_NI_SSE42 },                          // SSE42
+    { FIRST_NI_POPCNT, LAST_NI_POPCNT },                        // POPCNT
     { FIRST_NI_AVX, LAST_NI_AVX },                              // AVX
     { FIRST_NI_AVX2, LAST_NI_AVX2 },                            // AVX2
-    { FIRST_NI_AES, LAST_NI_AES },                              // AES
-    { NI_Illegal, NI_Illegal },                                 //      AES_V256
-    { NI_Illegal, NI_Illegal },                                 //      AES_V512
     { FIRST_NI_BMI1, LAST_NI_BMI1 },                            // BMI1
     { FIRST_NI_BMI2, LAST_NI_BMI2 },                            // BMI2
     { FIRST_NI_FMA, LAST_NI_FMA },                              // FMA
     { FIRST_NI_LZCNT, LAST_NI_LZCNT },                          // LZCNT
-    { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },                  // PCLMULQDQ
-    { FIRST_NI_PCLMULQDQ_V256, LAST_NI_PCLMULQDQ_V256 },        // PCLMULQDQ_V256
-    { FIRST_NI_PCLMULQDQ_V512, LAST_NI_PCLMULQDQ_V512 },        // PCLMULQDQ_V512
-    { FIRST_NI_POPCNT, LAST_NI_POPCNT },                        // POPCNT
-    { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
-    { FIRST_NI_Vector256, LAST_NI_Vector256 },                  // Vector256
-    { FIRST_NI_Vector512, LAST_NI_Vector512 },                  // Vector512
-    { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
     { NI_Illegal, NI_Illegal },                                 //      MOVBE
-    { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },            // X86Serialize
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
     { FIRST_NI_AVX512VBMI, LAST_NI_AVX512VBMI },                // AVX512VBMI
+    { NI_Illegal, NI_Illegal },                                 //      AVX512v3
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1
-    { NI_Illegal, NI_Illegal },                                 //      VectorT128
-    { NI_Illegal, NI_Illegal },                                 //      VectorT256
-    { NI_Illegal, NI_Illegal },                                 //      VectorT512
-    { NI_Illegal, NI_Illegal },                                 //      APX
     { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      //      AVX10v2
+    { NI_Illegal, NI_Illegal },                                 //      APX
+    { FIRST_NI_AES, LAST_NI_AES },                              // AES
+    { FIRST_NI_PCLMULQDQ, LAST_NI_PCLMULQDQ },                  // PCLMULQDQ
+    { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
+    { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
+    { FIRST_NI_AVXVNNI, LAST_NI_AVXVNNI },                      // AVXVNNI
     { FIRST_NI_GFNI, LAST_NI_GFNI },                            // GFNI
     { FIRST_NI_GFNI_V256, LAST_NI_GFNI_V256 },                  // GFNI_V256
     { FIRST_NI_GFNI_V512, LAST_NI_GFNI_V512 },                  // GFNI_V512
-    { NI_Illegal, NI_Illegal },                                 //      AVXIFMA
-    { NI_Illegal, NI_Illegal },                                 //      F16C
     { NI_Illegal, NI_Illegal },                                 //      SHA
+    { NI_Illegal, NI_Illegal },                                 //      AES_V256
+    { NI_Illegal, NI_Illegal },                                 //      AES_V512
+    { FIRST_NI_PCLMULQDQ_V256, LAST_NI_PCLMULQDQ_V256 },        // PCLMULQDQ_V256
+    { FIRST_NI_PCLMULQDQ_V512, LAST_NI_PCLMULQDQ_V512 },        // PCLMULQDQ_V512
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG
-    { NI_Illegal, NI_Illegal },                                 //      AVX512BITALG
-    { NI_Illegal, NI_Illegal },                                 //      AVX512BF16
-    { NI_Illegal, NI_Illegal },                                 //      AVX512FP16
-    { NI_Illegal, NI_Illegal },                                 //      AVX512IFMA
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VBMI2
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VNNI
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VPOPCNTDQ
+    { FIRST_NI_X86Serialize, LAST_NI_X86Serialize },            // X86Serialize
+    { FIRST_NI_Vector128, LAST_NI_Vector128 },                  // Vector128
+    { FIRST_NI_Vector256, LAST_NI_Vector256 },                  // Vector256
+    { FIRST_NI_Vector512, LAST_NI_Vector512 },                  // Vector512
+    { NI_Illegal, NI_Illegal },                                 //      VectorT128
+    { NI_Illegal, NI_Illegal },                                 //      VectorT256
+    { NI_Illegal, NI_Illegal },                                 //      VectorT512
+
     { FIRST_NI_X86Base_X64, LAST_NI_X86Base_X64 },              // X86Base_X64
     { NI_Illegal, NI_Illegal },                                 //      SSE3_X64
     { NI_Illegal, NI_Illegal },                                 //      SSSE3_X64
     { FIRST_NI_SSE41_X64, LAST_NI_SSE41_X64 },                  // SSE41_X64
     { FIRST_NI_SSE42_X64, LAST_NI_SSE42_X64 },                  // SSE42_X64
+    { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },                // POPCNT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX2_X64
-    { NI_Illegal, NI_Illegal },                                 //      AES_X64
     { FIRST_NI_BMI1_X64, LAST_NI_BMI1_X64 },                    // BMI1_X64
     { FIRST_NI_BMI2_X64, LAST_NI_BMI2_X64 },                    // BMI2_X64
     { NI_Illegal, NI_Illegal },                                 //      FMA_X64
     { FIRST_NI_LZCNT_X64, LAST_NI_LZCNT_X64 },                  // LZCNT_X64
-    { NI_Illegal, NI_Illegal },                                 //      PCLMULQDQ_X64
-    { FIRST_NI_POPCNT_X64, LAST_NI_POPCNT_X64 },                // POPCNT_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVXVNNI_X64
-    { NI_Illegal, NI_Illegal },                                 //      X86Serialize_X64
     { FIRST_NI_AVX512_X64, LAST_NI_AVX512_X64 },                // AVX512_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX512VBMI_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVX512v3_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v1_X64
     { NI_Illegal, NI_Illegal },                                 //      AVX10v2_X64
-    { NI_Illegal, NI_Illegal },                                 //      GFNI_X64
+    { NI_Illegal, NI_Illegal },                                 //      AES_X64
+    { NI_Illegal, NI_Illegal },                                 //      PCLMULQDQ_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
     { NI_Illegal, NI_Illegal },                                 //      AVXIFMA_X64
-    { NI_Illegal, NI_Illegal },                                 //      F16C_X64
+    { NI_Illegal, NI_Illegal },                                 //      AVXVNNI_X64
+    { NI_Illegal, NI_Illegal },                                 //      GFNI_X64
     { NI_Illegal, NI_Illegal },                                 //      SHA_X64
     { NI_Illegal, NI_Illegal },                                 //      WAITPKG_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512BITALG_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512BF16_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512FP16_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VBMI2_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VP2INTERSECT_X64
-    { NI_Illegal, NI_Illegal },                                 //      AVX512VPOPCNTDQ_X64
+    { NI_Illegal, NI_Illegal },                                 //      X86Serialize_X64
 #elif defined (TARGET_ARM64)
     { FIRST_NI_ArmBase, LAST_NI_ArmBase },                      // ArmBase
     { FIRST_NI_AdvSimd, LAST_NI_AdvSimd },                      // AdvSimd

@@ -73,15 +73,6 @@ namespace Internal.IL.Stubs
             _length += sizeof(int);
         }
 
-        private void EmitUInt64(long value)
-        {
-            if (_length + sizeof(long) > _instructions.Length)
-                Grow();
-
-            BinaryPrimitives.WriteInt64LittleEndian(_instructions.AsSpan(_length, sizeof(long)), value);
-            _length += sizeof(long);
-        }
-
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void Grow()
         {
@@ -117,12 +108,6 @@ namespace Internal.IL.Stubs
                 Emit(ILOpcode.ldc_i4);
                 EmitUInt32(value);
             }
-        }
-
-        public void EmitLdc(long value)
-        {
-            Emit(ILOpcode.ldc_i8);
-            EmitUInt64(value);
         }
 
         public void EmitLdArg(int index)

@@ -334,13 +334,13 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         case INS_vpdpbusds:
         case INS_vpdpwssds:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512VNNI);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512v3);
         }
 
         case INS_vpmadd52huq:
         case INS_vpmadd52luq:
         {
-            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512IFMA);
+            return emitComp->compSupportsHWIntrinsic(InstructionSet_AVX512VBMI);
         }
 #endif // FEATURE_HW_INTRINSICS
 

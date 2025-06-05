@@ -15,7 +15,7 @@ enum class SupportedISA
 
 SupportedISA DetermineSupportedISA()
 {
-    int64_t cpuFeatures = minipal_getcpufeatures();
+    int cpuFeatures = minipal_getcpufeatures();
     if ((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0)
     {
         if ((cpuFeatures & XArchIntrinsicConstants_Avx512) != 0)
