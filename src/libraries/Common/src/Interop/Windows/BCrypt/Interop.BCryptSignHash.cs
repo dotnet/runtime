@@ -76,7 +76,7 @@ internal static partial class Interop
             }
         }
 
-        internal static unsafe void BCryptSignHashPure(
+        internal static unsafe void BCryptSignHashPqcPure(
             SafeBCryptKeyHandle key,
             ReadOnlySpan<byte> data,
             ReadOnlySpan<byte> context,
@@ -87,38 +87,21 @@ internal static partial class Interop
 
             fixed (byte* pData = &MemoryMarshal.GetReference(data))
             fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
             {
-                if (context.Length == 0)
-                {
-                    status = BCryptSignHash(
-                        key,
-                        pPaddingInfo: null,
-                        pData,
-                        data.Length,
-                        pDest,
-                        destination.Length,
-                        out bytesWritten,
-                        default(BCryptSignVerifyFlags));
-                }
-                else
-                {
-                    fixed (byte* pContext = &MemoryMarshal.GetReference(context))
-                    {
-                        BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
-                        paddingInfo.pbCtx = (IntPtr)pContext;
-                        paddingInfo.cbCtx = context.Length;
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
 
-                        status = BCryptSignHash(
-                            key,
-                            &paddingInfo,
-                            pData,
-                            data.Length,
-                            pDest,
-                            destination.Length,
-                            out bytesWritten,
-                            BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
-                    }
-                }
+                status = BCryptSignHash(
+                    key,
+                    &paddingInfo,
+                    pData,
+                    data.Length,
+                    pDest,
+                    destination.Length,
+                    out bytesWritten,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
             }
 
             Debug.Assert(bytesWritten == destination.Length);

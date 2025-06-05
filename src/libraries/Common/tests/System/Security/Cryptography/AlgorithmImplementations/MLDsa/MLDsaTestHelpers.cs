@@ -14,10 +14,10 @@ namespace System.Security.Cryptography.Tests
     {
         internal static bool MLDsaIsNotSupported => !MLDsa.IsSupported;
 
-        // Windows certificates for ML-DSA are not implemented yet. Remove this and use MLDsa.IsSupported (or remove condition) when they are.
+        // TODO: Windows certificates for ML-DSA are not implemented yet. Remove this and use MLDsa.IsSupported (or remove condition) when they are.
         internal static bool CertificatesAreSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
-        // Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
+        // TODO: Windows does not support signing empty data. Remove this and use MLDsa.IsSupported (or remove condition) when it does.
         internal static bool SigningEmptyDataIsSupported => MLDsa.IsSupported && !PlatformDetection.IsWindows;
 
         // DER encoding of ASN.1 BitString "foo"

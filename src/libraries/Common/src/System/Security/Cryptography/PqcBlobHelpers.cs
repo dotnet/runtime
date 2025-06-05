@@ -116,15 +116,25 @@ namespace System.Security.Cryptography
             EncodeBlobFunc<TResult> callback)
         {
             int blobHeaderSize = Unsafe.SizeOf<BCRYPT_PQDSA_KEY_BLOB>();
-            int parameterSetLengthWithNullTerminator = sizeof(char) * (parameterSet.Length + 1);
+            int parameterSetLengthWithNullTerminator = checked(sizeof(char) * (parameterSet.Length + 1));
 
-            int blobSize =
-                blobHeaderSize +
-                parameterSetLengthWithNullTerminator +  // Parameter set, '\0' terminated
-                data.Length;                            // Key
+            int blobSize = checked(blobHeaderSize +
+                                   parameterSetLengthWithNullTerminator +   // Parameter set, '\0' terminated
+                                   data.Length);                            // Key
 
-            byte[] rented = CryptoPool.Rent(blobSize);
-            Span<byte> blobBytes = rented.AsSpan(0, blobSize);
+            // For ML-DSA we need 12 bytes for header, 6 bytes for parameter set, and 32 bytes for seed. Round up to 64.
+            const int StackAllocThreshold = 64;
+
+            // If there are new algorithms that require more than 64 bytes, we should increase the threshold.
+            Debug.Assert(blobSize is > 256 or <= StackAllocThreshold, "Increase stackalloc threshold");
+
+            byte[]? rented = null;
+            Span<byte> blobBytes =
+                blobSize <= StackAllocThreshold
+                    ? stackalloc byte[StackAllocThreshold]
+                    : (rented = CryptoPool.Rent(blobSize));
+
+            blobBytes = blobBytes.Slice(0, blobSize);
 
             try
             {
@@ -152,7 +162,10 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptoPool.Return(rented);
+                if (rented is not null)
+                {
+                    CryptoPool.Return(rented, blobSize);
+                }
             }
         }
 

@@ -32,17 +32,17 @@ namespace System.Security.Cryptography
         internal static partial bool SupportsAny() => s_algHandle is not null;
 
         protected override void SignDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, Span<byte> destination) =>
-            Interop.BCrypt.BCryptSignHashPure(_key, data, context, destination);
+            Interop.BCrypt.BCryptSignHashPqcPure(_key, data, context, destination);
 
         protected override bool VerifyDataCore(ReadOnlySpan<byte> data, ReadOnlySpan<byte> context, ReadOnlySpan<byte> signature) =>
-            Interop.BCrypt.BCryptVerifySignaturePure(_key, data, context, signature);
+            Interop.BCrypt.BCryptVerifySignaturePqcPure(_key, data, context, signature);
 
         internal static partial MLDsaImplementation GenerateKeyImpl(MLDsaAlgorithm algorithm)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
 
             string parameterSet = PqcBlobHelpers.GetParameterSet(algorithm);
-            SafeBCryptKeyHandle keyHandle = Interop.BCrypt.BCryptGenerateKeyPair(s_algHandle);
+            SafeBCryptKeyHandle keyHandle = Interop.BCrypt.BCryptGenerateKeyPair(s_algHandle, keyLength: 0);
 
             try
             {
@@ -60,55 +60,56 @@ namespace System.Security.Cryptography
 
         internal static partial MLDsaImplementation ImportPublicKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
 
-            const string BlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
+            const string PublicBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
 
             SafeBCryptKeyHandle key =
                 PqcBlobHelpers.EncodeMLDsaBlob(
                     PqcBlobHelpers.GetParameterSet(algorithm),
                     source,
-                    BlobType,
-                    static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, BlobType, blob));
+                    PublicBlobType,
+                    static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PublicBlobType, blob));
 
             return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: false);
         }
 
         internal static partial MLDsaImplementation ImportSecretKey(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
 
-            const string BlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB;
+            const string PrivateBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB;
 
             SafeBCryptKeyHandle key =
                 PqcBlobHelpers.EncodeMLDsaBlob(
                     PqcBlobHelpers.GetParameterSet(algorithm),
                     source,
-                    BlobType,
-                    static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, BlobType, blob));
+                    PrivateBlobType,
+                    static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PrivateBlobType, blob));
 
             return new MLDsaImplementation(algorithm, key, hasSeed: false, hasSecretKey: true);
         }
 
         internal static partial MLDsaImplementation ImportSeed(MLDsaAlgorithm algorithm, ReadOnlySpan<byte> source)
         {
-            Debug.Assert(s_algHandle is not null, $"Check {SupportsAny}() before calling.");
+            Debug.Assert(s_algHandle is not null, $"Check {nameof(SupportsAny)}() before calling.");
 
-            const string BlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB;
+            const string PrivateSeedBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB;
 
             SafeBCryptKeyHandle key =
                 PqcBlobHelpers.EncodeMLDsaBlob(
                     PqcBlobHelpers.GetParameterSet(algorithm),
                     source,
-                    BlobType,
-                    static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, BlobType, blob));
+                    PrivateSeedBlobType,
+                    static blob => Interop.BCrypt.BCryptImportKeyPair(s_algHandle, PrivateSeedBlobType, blob));
 
             return new MLDsaImplementation(algorithm, key, hasSeed: true, hasSecretKey: true);
         }
 
         protected override void ExportMLDsaPublicKeyCore(Span<byte> destination)
         {
-            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB);
+            const string PublicBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB;
+            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, PublicBlobType);
 
             try
             {
@@ -117,12 +118,15 @@ namespace System.Security.Cryptography
                     out ReadOnlySpan<char> parameterSet,
                     out string blobType);
 
-                Debug.Assert(blobType == Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PUBLIC_BLOB);
-
-                // Length is known, but we'll slice just in case
                 MLDsaAlgorithm algorithm = PqcBlobHelpers.GetMLDsaAlgorithmFromParameterSet(parameterSet);
-                Debug.Assert(keyBytes.Length == algorithm.PublicKeySizeInBytes);
-                keyBytes.Slice(0, algorithm.PublicKeySizeInBytes).CopyTo(destination);
+
+                if (blobType != PublicBlobType || keyBytes.Length != algorithm.PublicKeySizeInBytes)
+                {
+                    Debug.Fail($"blobType: {blobType}, keyBytes.Length: {keyBytes.Length} / {algorithm.PublicKeySizeInBytes}");
+                    throw new CryptographicException();
+                }
+
+                keyBytes.CopyTo(destination);
             }
             finally
             {
@@ -133,7 +137,8 @@ namespace System.Security.Cryptography
 
         protected override void ExportMLDsaSecretKeyCore(Span<byte> destination)
         {
-            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB);
+            const string PrivateBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB;
+            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, PrivateBlobType);
 
             try
             {
@@ -142,22 +147,26 @@ namespace System.Security.Cryptography
                     out ReadOnlySpan<char> parameterSet,
                     out string blobType);
 
-                Debug.Assert(blobType == Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_BLOB);
-
-                // Length is known, but we'll slice just in case
                 MLDsaAlgorithm algorithm = PqcBlobHelpers.GetMLDsaAlgorithmFromParameterSet(parameterSet);
-                Debug.Assert(keyBytes.Length == algorithm.SecretKeySizeInBytes);
-                keyBytes.Slice(0, algorithm.SecretKeySizeInBytes).CopyTo(destination);
+
+                if (blobType != PrivateBlobType || keyBytes.Length != algorithm.SecretKeySizeInBytes)
+                {
+                    Debug.Fail($"blobType: {blobType}, keyBytes.Length: {keyBytes.Length} / {algorithm.SecretKeySizeInBytes}");
+                    throw new CryptographicException();
+                }
+
+                keyBytes.CopyTo(destination);
             }
             finally
             {
-                CryptoPool.Return(keyBlob, clearSize: keyBlob.Count);
+                CryptoPool.Return(keyBlob);
             }
         }
 
         protected override void ExportMLDsaPrivateSeedCore(Span<byte> destination)
         {
-            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB);
+            const string PrivateSeedBlobType = Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB;
+            ArraySegment<byte> keyBlob = Interop.BCrypt.BCryptExportKey(_key, PrivateSeedBlobType);
 
             try
             {
@@ -166,16 +175,19 @@ namespace System.Security.Cryptography
                     out ReadOnlySpan<char> parameterSet,
                     out string blobType);
 
-                Debug.Assert(blobType == Interop.BCrypt.KeyBlobType.BCRYPT_PQDSA_PRIVATE_SEED_BLOB);
-
-                // Length is known, but we'll slice just in case
                 MLDsaAlgorithm algorithm = PqcBlobHelpers.GetMLDsaAlgorithmFromParameterSet(parameterSet);
-                Debug.Assert(keyBytes.Length == algorithm.PrivateSeedSizeInBytes);
-                keyBytes.Slice(0, algorithm.PrivateSeedSizeInBytes).CopyTo(destination);
+
+                if (blobType != PrivateSeedBlobType || keyBytes.Length != algorithm.PrivateSeedSizeInBytes)
+                {
+                    Debug.Fail($"blobType: {blobType}, keyBytes.Length: {keyBytes.Length} / {algorithm.PrivateSeedSizeInBytes}");
+                    throw new CryptographicException();
+                }
+
+                keyBytes.CopyTo(destination);
             }
             finally
             {
-                CryptoPool.Return(keyBlob, clearSize: keyBlob.Count);
+                CryptoPool.Return(keyBlob);
             }
         }
 

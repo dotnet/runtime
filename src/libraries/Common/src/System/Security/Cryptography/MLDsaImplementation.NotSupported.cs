@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class MLDsaImplementation : MLDsa
     {
-        public MLDsaImplementation(MLDsaAlgorithm algorithm)
+        private MLDsaImplementation(MLDsaAlgorithm algorithm)
             : base(algorithm)
         {
             ThrowIfNotSupported();

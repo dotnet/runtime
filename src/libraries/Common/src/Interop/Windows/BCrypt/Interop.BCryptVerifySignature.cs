@@ -87,7 +87,7 @@ internal static partial class Interop
             return status == NTSTATUS.STATUS_SUCCESS;
         }
 
-        internal static unsafe bool BCryptVerifySignaturePure(
+        internal static unsafe bool BCryptVerifySignaturePqcPure(
             SafeBCryptKeyHandle key,
             ReadOnlySpan<byte> data,
             ReadOnlySpan<byte> context,
@@ -97,36 +97,20 @@ internal static partial class Interop
 
             fixed (byte* pData = &Helpers.GetNonNullPinnableReference(data))
             fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
+            fixed (byte* pContext = &MemoryMarshal.GetReference(context))
             {
-                if (context.Length == 0)
-                {
-                    status = BCryptVerifySignature(
-                        key,
-                        pPaddingInfo: null,
-                        pData,
-                        data.Length,
-                        pSignature,
-                        signature.Length,
-                        default(BCryptSignVerifyFlags));
-                }
-                else
-                {
-                    fixed (byte* pContext = &MemoryMarshal.GetReference(context))
-                    {
-                        BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
-                        paddingInfo.pbCtx = (IntPtr)pContext;
-                        paddingInfo.cbCtx = context.Length;
+                BCRYPT_PQDSA_PADDING_INFO paddingInfo = default;
+                paddingInfo.pbCtx = (IntPtr)pContext;
+                paddingInfo.cbCtx = context.Length;
 
-                        status = BCryptVerifySignature(
-                            key,
-                            &paddingInfo,
-                            pData,
-                            data.Length,
-                            pSignature,
-                            signature.Length,
-                            BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
-                    }
-                }
+                status = BCryptVerifySignature(
+                    key,
+                    &paddingInfo,
+                    pData,
+                    data.Length,
+                    pSignature,
+                    signature.Length,
+                    BCryptSignVerifyFlags.BCRYPT_PAD_PQDSA);
             }
 
             return status == NTSTATUS.STATUS_SUCCESS;
