@@ -566,6 +566,7 @@ CDAC_TYPE_END(FixupPrecodeData)
 
 CDAC_TYPE_BEGIN(ReadyToRunInfo)
 CDAC_TYPE_INDETERMINATE(ReadyToRunInfo)
+CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, ReadyToRunHeader, cdac_data<ReadyToRunInfo>::ReadyToRunHeader)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, CompositeInfo, cdac_data<ReadyToRunInfo>::CompositeInfo)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*uint32*/, NumRuntimeFunctions, cdac_data<ReadyToRunInfo>::NumRuntimeFunctions)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, RuntimeFunctions, cdac_data<ReadyToRunInfo>::RuntimeFunctions)
@@ -574,6 +575,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, HotColdMap, cdac_data<ReadyToRunInf
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*pointer*/, DelayLoadMethodCallThunks, cdac_data<ReadyToRunInfo>::DelayLoadMethodCallThunks)
 CDAC_TYPE_FIELD(ReadyToRunInfo, /*HashMap*/, EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_END(ReadyToRunInfo)
+
+CDAC_TYPE_BEGIN(ReadyToRunHeader)
+CDAC_TYPE_INDETERMINATE(READYTORUN_HEADER)
+CDAC_TYPE_FIELD(ReadyToRunHeader, /*uint16*/, MajorVersion, offsetof(READYTORUN_HEADER, MajorVersion))
+CDAC_TYPE_FIELD(ReadyToRunHeader, /*uint16*/, MinorVersion, offsetof(READYTORUN_HEADER, MinorVersion))
+CDAC_TYPE_END(ReadyToRunHeader)
 
 CDAC_TYPE_BEGIN(ImageDataDirectory)
 CDAC_TYPE_SIZE(sizeof(IMAGE_DATA_DIRECTORY))
@@ -836,6 +843,12 @@ CDAC_GLOBAL_STRING(Architecture, riscv64)
 #else
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
+
+#ifdef _DEBUG
+CDAC_GLOBAL_STRING(Configuration, debug)
+#else // _DEBUG
+CDAC_GLOBAL_STRING(Configuration, release)
+#endif // _DEBUG
 
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
