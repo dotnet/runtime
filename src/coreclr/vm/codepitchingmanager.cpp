@@ -373,7 +373,7 @@ void MethodDesc::PitchNativeCode()
     _ASSERTE(pCH->GetMethodDesc() == this);
 
     HostCodeHeap* pHeap = HostCodeHeap::GetCodeHeap((TADDR)pCode);
-    pHeap->GetJitManager()->FreeCodeMemory(pHeap, (void*)pCode);
+    pHeap->GetJitManager()->FreeHostCodeHeapMemory(pHeap, (void*)pCode);
 
     ClearFlagsOnUpdate();
 

@@ -47,46 +47,51 @@ BOOL ProfilerFunctionEnum::Init(BOOL fWithReJITIDs)
 
     } CONTRACTL_END;
 
-    EEJitManager::CodeHeapIterator heapIterator;
-    while(heapIterator.Next())
+    BOOL result = TRUE;
+    EX_TRY
     {
-        MethodDesc *pMD = heapIterator.GetMethod();
-
-        // On AMD64 JumpStub is used to call functions that is 2GB away.  JumpStubs have a CodeHeader
-        // with NULL MethodDesc, are stored in code heap and are reported by EEJitManager::EnumCode.
-        if (pMD == NULL)
-            continue;
-
-        // There are two possible reasons to skip this MD.
-        //
-        // 1) If it has no metadata (i.e., LCG / IL stubs), then skip it
-        //
-        // 2) If it has no code compiled yet for it, then skip it.
-        //
-        if (pMD->IsNoMetadata() || !pMD->HasNativeCode())
+        CodeHeapIterator heapIterator = ExecutionManager::GetEEJitManager()->GetCodeHeapIterator();
+        while(heapIterator.Next())
         {
-            continue;
-        }
+            MethodDesc *pMD = heapIterator.GetMethod();
 
-        COR_PRF_FUNCTION * element = m_elements.Append();
-        if (element == NULL)
-        {
-            return FALSE;
-        }
-        element->functionId = (FunctionID) pMD;
+            // On AMD64 JumpStub is used to call functions that is 2GB away.  JumpStubs have a CodeHeader
+            // with NULL MethodDesc, are stored in code heap and are reported by EEJitManager::EnumCode.
+            if (pMD == NULL)
+                continue;
 
-        if (fWithReJITIDs)
-        {
-            // This causes triggering and locking, while the non-rejitid case does not.
-            element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
-        }
-        else
-        {
-            element->reJitId = 0;
+            // There are two possible reasons to skip this MD.
+            //
+            // 1) If it has no metadata (i.e., LCG / IL stubs), then skip it
+            //
+            // 2) If it has no code compiled yet for it, then skip it.
+            //
+            if (pMD->IsNoMetadata() || !pMD->HasNativeCode())
+            {
+                continue;
+            }
+
+            COR_PRF_FUNCTION * element = m_elements.AppendThrowing();
+            element->functionId = (FunctionID) pMD;
+
+            if (fWithReJITIDs)
+            {
+                // This causes triggering and locking, while the non-rejitid case does not.
+                element->reJitId = ReJitManager::GetReJitId(pMD, heapIterator.GetMethodCode());
+            }
+            else
+            {
+                element->reJitId = 0;
+            }
         }
     }
+    EX_CATCH
+    {
+        result = FALSE;
+    }
+    EX_END_CATCH(SwallowAllExceptions);
 
-    return TRUE;
+    return result;
 }
 
 // ---------------------------------------------------------------------------------------

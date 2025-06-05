@@ -352,17 +352,40 @@ public:
         CrstBase * m_pCrst;
 
     public:
-        inline CrstHolder(CrstBase * pCrst)
-            : m_pCrst(pCrst)
+        CrstHolder(CrstBase* pCrst)
+            : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;
             AcquireLock(pCrst);
         }
 
-        inline ~CrstHolder()
+        ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
-            ReleaseLock(m_pCrst);
+            if (m_pCrst != nullptr)
+                ReleaseLock(m_pCrst);
+        }
+
+        CrstHolder(CrstHolder const&) = delete;
+        CrstHolder &operator=(CrstHolder const&) = delete;
+        CrstHolder(CrstHolder&& other)
+            : m_pCrst{ other.m_pCrst }
+        {
+            WRAPPER_NO_CONTRACT;
+            other.m_pCrst = nullptr;
+        }
+        CrstHolder& operator=(CrstHolder&& other)
+        {
+            WRAPPER_NO_CONTRACT;
+            if (this != &other)
+            {
+                if (m_pCrst != nullptr)
+                    ReleaseLock(m_pCrst);
+
+                m_pCrst = other.m_pCrst;
+                other.m_pCrst = nullptr;
+            }
+            return *this;
         }
     };
 

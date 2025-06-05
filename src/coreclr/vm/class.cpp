@@ -2892,17 +2892,15 @@ WORD SparseVTableMap::GetNumVTableSlots()
 #endif //FEATURE_COMINTEROP
 
 //*******************************************************************************
-void EEClass::AddChunk (MethodDescChunk* pNewChunk)
+void EEClass::AddChunk(MethodDescChunk* pNewChunk)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
-
+    _ASSERTE(pNewChunk != NULL);
     _ASSERTE(pNewChunk->GetNextChunk() == NULL);
 
-    MethodDescChunk* head = GetChunks();
-
-    if (head == NULL)
+    if (GetChunks() == NULL)
     {
         SetChunks(pNewChunk);
     }
@@ -2910,38 +2908,22 @@ void EEClass::AddChunk (MethodDescChunk* pNewChunk)
     {
         // Current chunk needs to be added to the end of the list so that
         // when reflection is iterating all methods, they would come in declared order
-        while (head->GetNextChunk() != NULL)
-            head = head->GetNextChunk();
-
-        head->SetNextChunk(pNewChunk);
+        PTR_MethodDescChunk prevCurr = m_pChunksCurrent;
+        prevCurr->SetNextChunk(pNewChunk);
+        m_pChunksCurrent = pNewChunk;
     }
 }
 
 //*******************************************************************************
-void EEClass::AddChunkIfItHasNotBeenAdded (MethodDescChunk* pNewChunk)
+void EEClass::AddChunkIfItHasNotBeenAdded(MethodDescChunk* pNewChunk)
 {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
+    STANDARD_VM_CONTRACT;
 
     // return if the chunk has been added
     if (pNewChunk->GetNextChunk() != NULL)
         return;
 
-    // even if pNewChunk->GetNextChunk() is NULL, this may still be the first chunk we added
-    // (last in the list) so find the end of the list and verify that
-    MethodDescChunk *chunk = GetChunks();
-    if (chunk != NULL)
-    {
-        while (chunk->GetNextChunk() != NULL)
-            chunk = chunk->GetNextChunk();
-
-        if (chunk == pNewChunk)
-            return;
-    }
-
-    pNewChunk->SetNextChunk(GetChunks());
-    SetChunks(pNewChunk);
+    AddChunk(pNewChunk);
 }
 
 #endif // !DACCESS_COMPILE

@@ -941,6 +941,37 @@ public:
             ALLOCATOR::Free(this, m_pTable);
     }
 
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator const&) = delete;
+    CUnorderedArrayWithAllocator(CUnorderedArrayWithAllocator&& other)
+        : m_iCount{ 0 }
+        , m_iSize{ 0 }
+        , m_pTable{ NULL}
+    {
+        LIMITED_METHOD_CONTRACT;
+        other.m_iCount = 0;
+        other.m_iSize = 0;
+        other.m_pTable = NULL;
+    }
+    CUnorderedArrayWithAllocator& operator=(CUnorderedArrayWithAllocator&& other)
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (this != &other)
+        {
+            if (m_pTable != NULL)
+                ALLOCATOR::Free(this, m_pTable);
+
+            m_iCount = other.m_iCount;
+            m_iSize = other.m_iSize;
+            m_pTable = other.m_pTable;
+
+            other.m_iCount = 0;
+            other.m_iSize = 0;
+            other.m_pTable = NULL;
+        }
+        return *this;
+    }
+
     void Clear()
     {
         WRAPPER_NO_CONTRACT;
@@ -1061,12 +1092,11 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
-    USHORT Count()
+    INT32 Count()
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        _ASSERTE(FitsIn<USHORT>(m_iCount));
-        return static_cast<USHORT>(m_iCount);
+        return m_iCount;
     }
 
 private:

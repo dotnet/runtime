@@ -160,7 +160,8 @@ public:
     MethodDesc* GetDynamicMethod() { LIMITED_METHOD_CONTRACT; return m_pDynamicMethod; }
     OBJECTREF GetManagedResolver();
     void SetManagedResolver(OBJECTHANDLE obj) { LIMITED_METHOD_CONTRACT; m_managedResolver = obj; }
-    void * GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
+    void* GetRecordCodePointer()  { LIMITED_METHOD_CONTRACT; return m_recordCodePointer; }
+    void SetRecordCodePointer(void* recordCodePointer)  { LIMITED_METHOD_CONTRACT; m_recordCodePointer = recordCodePointer; }
 
     STRINGREF GetStringLiteral(mdToken metaTok);
     STRINGREF * GetOrInternString(STRINGREF *pString);
@@ -265,7 +266,7 @@ public:
 // for reclamation of generated code
 // (Check the base class - CodeHeap in codeman.h - for comments on the functions)
 //
-class HostCodeHeap : CodeHeap
+class HostCodeHeap final : public CodeHeap
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
@@ -316,6 +317,7 @@ private:
     void AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW);
 
     TrackAllocation* AllocMemory_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs);
+    void FreeMemForCode(void* codeStart);
 
 public:
     // Space for header is reserved immediately before. It is not included in size.
@@ -334,17 +336,7 @@ public:
 
     void DestroyCodeHeap();
 
-protected:
-    friend class DynamicMethodDesc;
-    friend class LCGMethodResolver;
-
-    void FreeMemForCode(void * codeStart);
-
-#if defined(FEATURE_JIT_PITCHING)
-public:
-    PTR_EEJitManager GetJitManager() { return m_pJitManager; }
-#endif
-
+    PTR_EECodeGenManager GetJitManager() { return m_pJitManager; }
 }; // class HostCodeHeap
 
 //---------------------------------------------------------------------------------------
