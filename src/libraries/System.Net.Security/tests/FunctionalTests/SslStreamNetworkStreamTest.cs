@@ -1156,12 +1156,15 @@ namespace System.Net.Security.Tests
             {
                 ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
                 RemoteCertificateValidationCallback = delegate { return true; },
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 AllowRsaPkcs1Padding = !clientDisable
             }, CancellationToken.None);
             Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
             {
                 ServerCertificate = serverCertificate,
+                RemoteCertificateValidationCallback = delegate { return true; },
                 ClientCertificateRequired = true,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 AllowRsaPkcs1Padding = !serverDisable
             }, CancellationToken.None);
 
@@ -1188,12 +1191,15 @@ namespace System.Net.Security.Tests
             {
                 ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate }),
                 RemoteCertificateValidationCallback = delegate { return true; },
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 AllowRsaPssPadding = !clientDisable
             }, CancellationToken.None);
             Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions()
             {
                 ServerCertificate = serverCertificate,
+                RemoteCertificateValidationCallback = delegate { return true; },
                 ClientCertificateRequired = true,
+                CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
                 AllowRsaPssPadding = !serverDisable
             }, CancellationToken.None);
 
