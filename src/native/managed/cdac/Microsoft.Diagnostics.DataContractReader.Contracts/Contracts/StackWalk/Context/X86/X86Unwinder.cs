@@ -209,8 +209,6 @@ public class X86Unwinder(Target target)
         // Have we executed the pop EBP?
         if (!InstructionAlreadyExecuted(offset, gcInfo.EpilogOffset))
         {
-            // TODO(cdacx86): are these equivalent?
-            // pContext->SetEbpLocation(PTR_DWORD(TADDR(ESP)));
             context.Ebp = _target.Read<uint>(esp);
             esp += _pointerSize;
         }
@@ -335,8 +333,6 @@ public class X86Unwinder(Target target)
 
         uint offset = 0;
 
-        // TODO(cdacX86): JitHalt DEBUG only check. Can this always exist or should it really depend
-        // on the target runtimes configuration?
         // If the first two instructions are 'nop, int3', then  we will
         // assume that is from a JitHalt operation and skip past it
         if (ReadByteAt(methodStart) == X86_INSTR_NOP && ReadByteAt(methodStart + 1) == X86_INSTR_INT3)
@@ -515,8 +511,6 @@ public class X86Unwinder(Target target)
 
         uint offset = 0;
 
-        // TODO(cdacX86): JitHalt DEBUG only check. Can this always exist or should it really depend
-        // on the target runtimes configuration?
         // If the first two instructions are 'nop, int3', then  we will
         // assume that is from a JitHalt operation and skip past it
         if (ReadByteAt(methodStart) == X86_INSTR_NOP && ReadByteAt(methodStart + 1) == X86_INSTR_INT3)
