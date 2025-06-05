@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
@@ -625,7 +626,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string jsonContent = GetBootJsonContent(bootConfigPath);
         try
         {
-            BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            options.Converters.Add(new ResourcesConverter());
+            BootJsonData? config = JsonSerializer.Deserialize<BootJsonData>(jsonContent, options);
             Assert.NotNull(config);
             return config!;
         }
@@ -684,5 +687,30 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         if (string.IsNullOrEmpty(ProjectDir))
             throw new Exception($"{nameof(ProjectDir)} is not set");
+    }
+
+    internal class ResourcesConverter : JsonConverter<object>
+    {
+        public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.StartObject)
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<AssetsData>(ref reader, options)!;
+                }
+                catch
+                {
+                    return JsonSerializer.Deserialize<ResourcesData>(ref reader, options)!;
+                }
+            }
+
+            return JsonSerializer.Deserialize<object>(ref reader, options)!;
+        }
+
+        public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+        {
+            JsonSerializer.Serialize(writer, value, value.GetType(), options);
+        }
     }
 }
