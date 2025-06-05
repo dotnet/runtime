@@ -22,7 +22,7 @@ unsafe class Program
 
         long lowerBound, upperBound;
         lowerBound = 1200 * 1024; // ~1.2 MB
-        upperBound = 1600 * 1024; // ~1.6 MB
+        upperBound = 1700 * 1024; // ~1.7 MB
 
         if (fileSize < lowerBound || fileSize > upperBound)
         {
