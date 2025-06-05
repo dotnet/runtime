@@ -383,7 +383,7 @@ VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
 #if defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
-// movdqa destXmmreg, srcXmmReg
+// movaps destXmmreg, srcXmmReg
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
 {
@@ -409,7 +409,7 @@ VOID StubLinkerCPU::X64EmitMovXmmXmm(X86Reg destXmmreg, X86Reg srcXmmReg)
     if (rex)
         Emit8(REX_PREFIX_BASE | rex);
 
-    Emit16(X86_INSTR_MOVAPS_R_RM);
+    Emit16(0x280F);
     Emit8(static_cast<UINT8>(0300 | (destXmmreg << 3) | srcXmmReg));    
 }
 

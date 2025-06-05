@@ -26,8 +26,6 @@ extern PCODE GetPreStubEntryPoint();
 #define X86_INSTR_NOP3_3        0x90        // 3rd byte of 3-byte nop
 #define X86_INSTR_INT3          0xCC        // int 3
 
-#define X86_INSTR_MOVAPS_R_RM   0x280F      // movaps xmm1, xmm2/mem128
-
 //----------------------------------------------------------------------
 // Encodes X86 registers. The numbers are chosen to match Intel's opcode
 // encoding.
