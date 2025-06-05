@@ -259,14 +259,14 @@ namespace System.Net.Http.Headers
                     builder.Append(value.Slice(0, idx));
                 }
 
-                if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[1], out int hi) || !TryReadAlpnHexDigit(value[2], out int lo))
+                if ((value.Length - idx) < 3 || !TryReadAlpnHexDigit(value[idx + 1], out int hi) || !TryReadAlpnHexDigit(value[idx + 2], out int lo))
                 {
                     builder.Dispose();
                     result = null;
                     return false;
                 }
 
-                builder.Append((char)((hi << 8) | lo));
+                builder.Append((char)((hi << 4) | lo));
 
                 value = value.Slice(idx + 3);
                 idx = value.IndexOf('%');
@@ -279,7 +279,7 @@ namespace System.Net.Http.Headers
             }
 
             result = builder.ToString();
-            return true;
+            return !HttpRuleParser.ContainsNewLine(result);
         }
 
         /// <summary>
