@@ -206,10 +206,13 @@ namespace System.Security.Claims
             Initialize(reader);
         }
 
-        public ClaimsIdentity(BinaryReader reader, StringComparison stringComparison) : this(reader)
+        public ClaimsIdentity(BinaryReader reader, StringComparison stringComparison)
         {
+            ArgumentNullException.ThrowIfNull(reader);
             ValidateStringComparison(stringComparison);
             _stringComparison = stringComparison;
+
+            Initialize(reader);
         }
 
         /// <summary>
@@ -220,29 +223,14 @@ namespace System.Security.Claims
         protected ClaimsIdentity(ClaimsIdentity other)
         {
             ArgumentNullException.ThrowIfNull(other);
-
-            if (other._actor != null)
-            {
-                _actor = other._actor.Clone();
-            }
-
-            _authenticationType = other._authenticationType;
-            _bootstrapContext = other._bootstrapContext;
-            _label = other._label;
-            _nameClaimType = other._nameClaimType;
-            _roleClaimType = other._roleClaimType;
-            if (other._userSerializationData != null)
-            {
-                _userSerializationData = other._userSerializationData.Clone() as byte[];
-            }
-
-            SafeAddClaims(other._instanceClaims);
+            Initialize(other);
         }
 
-        public ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison) : this(other)
+        public ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison)
         {
             ValidateStringComparison(stringComparison);
             _stringComparison = stringComparison;
+            Initialize(other);
         }
 
         public ClaimsIdentity(
@@ -706,6 +694,26 @@ namespace System.Security.Claims
             }
 
             return false;
+        }
+
+        private void Initialize(ClaimsIdentity other)
+        {
+            if (other._actor != null)
+            {
+                _actor = other._actor.Clone();
+            }
+
+            _authenticationType = other._authenticationType;
+            _bootstrapContext = other._bootstrapContext;
+            _label = other._label;
+            _nameClaimType = other._nameClaimType;
+            _roleClaimType = other._roleClaimType;
+            if (other._userSerializationData != null)
+            {
+                _userSerializationData = other._userSerializationData.Clone() as byte[];
+            }
+
+            SafeAddClaims(other._instanceClaims);
         }
 
         /// <summary>

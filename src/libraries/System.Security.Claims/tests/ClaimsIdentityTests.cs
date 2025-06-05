@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Principal;
@@ -474,6 +475,26 @@ namespace System.Security.Claims
             Assert.Equal(ClaimsIdentity.DefaultRoleClaimType, id.RoleClaimType);
         }
 
+        [Theory]
+        [InlineData(StringComparison.CurrentCulture)]
+        [InlineData(StringComparison.CurrentCultureIgnoreCase)]
+        [InlineData((StringComparison)0xABCDE)]
+        public static void Ctor_ValidateStringComparison(StringComparison stringComparison)
+        {
+            AssertExtensions.Throws<ArgumentException>(
+                "stringComparison",
+                () => new ClaimsIdentity(stringComparison: stringComparison));
+
+            BinaryReader reader = new(Stream.Null);
+            AssertExtensions.Throws<ArgumentException>(
+                "stringComparison",
+                () => new ClaimsIdentity(reader, stringComparison));
+
+            AssertExtensions.Throws<ArgumentException>(
+                "stringComparison",
+                () => new ClaimsIdentity(new ClaimsIdentity(), stringComparison));
+        }
+
         [Fact]
         public void Find_CaseInsensivity()
         {
@@ -491,6 +512,7 @@ namespace System.Security.Claims
 
         [Theory]
         [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase)]
         [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
         public void FindFirst_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
         {
@@ -508,6 +530,7 @@ namespace System.Security.Claims
         [Theory]
         [InlineData("Type", "type", StringComparison.InvariantCulture)]
         [InlineData("Type", "type", StringComparison.Ordinal)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal)]
         public void FindFirst_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
         {
             Claim claim = new(claimType, "value");
@@ -518,6 +541,68 @@ namespace System.Security.Claims
 
             Claim found = id.FindFirst(findType);
             Assert.Null(found);
+        }
+
+        [Theory]
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
+        public void FindAll_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
+        {
+            Claim claim = new(claimType, "value");
+
+            ClaimsIdentity id = new(
+                claims: [claim],
+                stringComparison: stringComparison);
+
+            Claim found = Assert.Single(id.FindAll(findType));
+            Assert.NotNull(found);
+            Assert.Equal(claimType, found.Type);
+        }
+
+        [Theory]
+        [InlineData("Type", "type", StringComparison.InvariantCulture)]
+        [InlineData("Type", "type", StringComparison.Ordinal)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal)]
+        public void FindAll_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
+        {
+            Claim claim = new(claimType, "value");
+
+            ClaimsIdentity id = new(
+                claims: [claim],
+                stringComparison: stringComparison);
+
+            Assert.Empty(id.FindAll(findType));
+        }
+
+        [Theory]
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
+        public void HasClaim_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
+        {
+            Claim claim = new(claimType, "value");
+
+            ClaimsIdentity id = new(
+                claims: [claim],
+                stringComparison: stringComparison);
+
+            AssertExtensions.TrueExpression(id.HasClaim(findType, "value"));
+        }
+
+        [Theory]
+        [InlineData("Type", "type", StringComparison.InvariantCulture)]
+        [InlineData("Type", "type", StringComparison.Ordinal)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal)]
+        public void HasClaim_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
+        {
+            Claim claim = new(claimType, "value");
+
+            ClaimsIdentity id = new(
+                claims: [claim],
+                stringComparison: stringComparison);
+
+            AssertExtensions.FalseExpression(id.HasClaim(findType, "value"));
         }
 
         [Fact]
