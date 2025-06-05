@@ -493,7 +493,7 @@ namespace System.Security.Claims
 
             AssertExtensions.Throws<ArgumentException>(
                 "stringComparison",
-                () => new ClaimsIdentity(new ClaimsIdentity(), stringComparison));
+                () => new CustomClaimsIdentity(new ClaimsIdentity(), stringComparison));
         }
 
         [Fact]
@@ -532,7 +532,7 @@ namespace System.Security.Claims
 
             if (copy)
             {
-                id = new ClaimsIdentity(id, stringComparison);
+                id = new CustomClaimsIdentity(id, stringComparison);
             }
 
             Claim found = id.FindFirst(findType);
@@ -561,7 +561,7 @@ namespace System.Security.Claims
 
             if (copy)
             {
-                id = new ClaimsIdentity(id, stringComparison);
+                id = new CustomClaimsIdentity(id, stringComparison);
             }
 
             Claim found = id.FindFirst(findType);
@@ -589,7 +589,7 @@ namespace System.Security.Claims
 
             if (copy)
             {
-                id = new ClaimsIdentity(id, stringComparison);
+                id = new CustomClaimsIdentity(id, stringComparison);
             }
 
             Claim found = Assert.Single(id.FindAll(findType));
@@ -618,7 +618,7 @@ namespace System.Security.Claims
 
             if (copy)
             {
-                id = new ClaimsIdentity(id, stringComparison);
+                id = new CustomClaimsIdentity(id, stringComparison);
             }
 
             Assert.Empty(id.FindAll(findType));
@@ -645,7 +645,7 @@ namespace System.Security.Claims
 
             if (copy)
             {
-                id = new ClaimsIdentity(id, stringComparison);
+                id = new CustomClaimsIdentity(id, stringComparison);
             }
 
             AssertExtensions.TrueExpression(id.HasClaim(findType, "value"));
@@ -672,7 +672,7 @@ namespace System.Security.Claims
 
             if (copy)
             {
-                id = new ClaimsIdentity(id, stringComparison);
+                id = new CustomClaimsIdentity(id, stringComparison);
             }
 
             AssertExtensions.FalseExpression(id.HasClaim(findType, "value"));
@@ -827,6 +827,12 @@ namespace System.Security.Claims
 
             public CustomClaimsIdentity(SerializationInfo info, StreamingContext context) : base(info, context)
             {
+            }
+
+            public CustomClaimsIdentity(ClaimsIdentity claimsIdentity, StringComparison comparison)
+                : base(claimsIdentity, comparison)
+            {
+
             }
 
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)

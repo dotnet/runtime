@@ -246,7 +246,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentException">
         ///   <paramref name="stringComparison"/> is out of range or a not supported value.
         /// </exception>
-        public ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison)
+        protected ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison)
         {
             ValidateStringComparison(stringComparison);
             _stringComparison = stringComparison;

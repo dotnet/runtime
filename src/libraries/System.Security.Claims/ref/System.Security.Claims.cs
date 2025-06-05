@@ -49,7 +49,7 @@ namespace System.Security.Claims
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ClaimsIdentity(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other) { }
-        public ClaimsIdentity(System.Security.Claims.ClaimsIdentity other, System.StringComparison stringComparison) { }
+        protected ClaimsIdentity(System.Security.Claims.ClaimsIdentity other, System.StringComparison stringComparison) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims) { }
         public ClaimsIdentity(System.Security.Principal.IIdentity? identity, System.Collections.Generic.IEnumerable<System.Security.Claims.Claim>? claims, string? authenticationType, string? nameType, string? roleType) { }
