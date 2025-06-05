@@ -627,19 +627,13 @@ HRESULT PEWriter::setDirectoryEntry(PEWriterSection *section, ULONG entry, ULONG
     return S_OK;
 }
 
-//-----------------------------------------------------------------------------
-// These 2 write functions must be implemented here so that they're in the same
-// .obj file as whoever creates the FILE struct. We can't pass a FILE struct
-// across a dll boundary and use it.
-//-----------------------------------------------------------------------------
-
 HRESULT PEWriterSection::write(FILE* file)
 {
     return m_blobFetcher.Write(file);
 }
 
 //-----------------------------------------------------------------------------
-// Write out the section to the stream
+// Write out the section to the file
 //-----------------------------------------------------------------------------
 HRESULT CBlobFetcher::Write(FILE* file)
 {
