@@ -42,8 +42,8 @@ public class ConstantMasks
             CndSelectOptionalEmbeddedAllBits(op1, op2);
 
             CndSelectEmbeddedOneOp(op1, op2);
-            CndSelectEmbeddedOneOpFalseMask(op1);
-            CndSelectEmbeddedOneOpZero(op1);
+            CndSelectEmbeddedOneOpFalseMask(op1, op2);
+            CndSelectEmbeddedOneOpZero(op1, op2);
             CndSelectEmbeddedOneOpTrueMask(op1);
             CndSelectEmbeddedOneOpAllBits(op1);
 
@@ -67,21 +67,15 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedFalseMask(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movz {{.*}}
-        Vector<int> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.AbsoluteDifference(op1, op2), op1);
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
+        Vector<int> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.AbsoluteDifference(op1, op2), op2);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedZero(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movz {{.*}}
-        Vector<int> result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.AbsoluteDifference(op1, op2), op1);
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
+        Vector<int> result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.AbsoluteDifference(op1, op2), op2);
         Consume(result);
     }
 
@@ -118,21 +112,15 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedFalseMask(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movz {{.*}}
-        Vector<int> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.Add(op1, op2), op1);
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
+        Vector<int> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.Add(op1, op2), op2);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedZero(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movz {{.*}}
-        Vector<int> result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.Add(op1, op2), op1);
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
+        Vector<int> result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.Add(op1, op2), op2);
         Consume(result);
     }
 
@@ -164,21 +152,15 @@ public class ConstantMasks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void CndSelectEmbeddedOneOpFalseMask(Vector<int> op1) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: abs {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movz {{.*}}
+    static void CndSelectEmbeddedOneOpFalseMask(Vector<int> dummy, Vector<int> op1) {
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
         Vector<int> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.Abs(op1), op1);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void CndSelectEmbeddedOneOpZero(Vector<int> op1) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: abs {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movz {{.*}}
+    static void CndSelectEmbeddedOneOpZero(Vector<int> dummy, Vector<int> op1) {
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
         Vector<int> result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.Abs(op1), op1);
         Consume(result);
     }
@@ -217,21 +199,14 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionFalseMask(Vector<int> op1, Vector<long> opf) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt64(), Sve.AddAcross(op1), opf);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionZero(Vector<int> op1, Vector<long> opf) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE: mov v0.16b, v1.16b
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.Zero, Sve.AddAcross(op1), opf);
         Consume(result);
     }

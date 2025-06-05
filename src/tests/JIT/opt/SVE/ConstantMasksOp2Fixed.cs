@@ -82,38 +82,28 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedFalseMaskF(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM6-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM6-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
         var result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.AbsoluteDifference(op1, op2), Sve.CreateFalseMaskInt32());
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedFalseMaskZ(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM6-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM6-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
         var result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.AbsoluteDifference(op1, op2), Vector<int>.Zero);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedZeroF(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
         //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
-        //ARM6-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
-        //ARM6-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         var result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.AbsoluteDifference(op1, op2), Sve.CreateFalseMaskInt32());
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedZeroZ(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
         //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
-        //ARM6-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
-        //ARM6-FULL-LINE-NEXT: sabd {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         var result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.AbsoluteDifference(op1, op2), Vector<int>.Zero);
         Consume(result);
     }
@@ -155,10 +145,6 @@ public class ConstantMasks
         Consume(result);
     }
 
-    // SVE one op operation (with embedded mask) inside a conditional select
-
-///......
-
     // SVE operation (with optional embedded mask) inside a conditional select
 
 
@@ -178,38 +164,28 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedFalseMaskF(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM6-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM6-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
         var result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.Add(op1, op2), Sve.CreateFalseMaskInt32());
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedFalseMaskZ(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM6-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM6-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
+        //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
         var result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt32(), Sve.Add(op1, op2), Vector<int>.Zero);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedZeroF(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
         //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
-        //ARM6-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
-        //ARM6-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         var result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.Add(op1, op2), Sve.CreateFalseMaskInt32());
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectOptionalEmbeddedZeroZ(Vector<int> op1, Vector<int> op2) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
         //ARM6-FULL-LINE: movi {{v[0-9]+}}.4s, #0
-        //ARM6-FULL-LINE-NEXT: cmpne {{p[0-9]+}}.s, {{p[0-9]+}}/z, {{z[0-9]+}}.s, #0
-        //ARM6-FULL-LINE-NEXT: add {{z[0-9]+}}.s, {{p[0-9]+}}/m, {{z[0-9]+}}.s, {{z[0-9]+}}.s
         var result = Sve.ConditionalSelect(Vector<int>.Zero, Sve.Add(op1, op2), Vector<int>.Zero);
         Consume(result);
     }
@@ -269,45 +245,28 @@ public class ConstantMasks
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionFalseMaskF(Vector<int> op1) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE: movi v0.4s, #0
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt64(), Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionFalseMaskZ(Vector<int> op1) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: pfalse {{p[0-9]+}}.b
-        //ARM64-FULL-LINE-NEXT: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE: movi v0.4s, #0
         Vector<long> result = Sve.ConditionalSelect(Sve.CreateFalseMaskInt64(), Sve.AddAcross(op1), Vector<long>.Zero);
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionZeroF(Vector<int> op1) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE: movi v0.4s, #0
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.Zero, Sve.AddAcross(op1), Sve.CreateFalseMaskInt64());
         Consume(result);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CndSelectEmbeddedReductionZeroZ(Vector<int> op1) {
-        //ARMSVE-TODO: This could be optimised to remove both instructions #114433
-        //ARM64-FULL-LINE: ptrue {{p[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: saddv {{d[0-9]+}}, {{p[0-9]+}}, {{z[0-9]+}}.s
-        //ARM64-FULL-LINE-NEXT: movi {{v[0-9]+}}.4s, #0
-        //ARM64-FULL-LINE-NEXT: sel {{z[0-9]+}}.d, {{p[0-9]+}}, {{z[0-9]+}}.d, {{z[0-9]+}}.d
+        //ARM64-FULL-LINE: movi v0.4s, #0
         Vector<long> result = Sve.ConditionalSelect(Vector<long>.Zero, Sve.AddAcross(op1), Vector<long>.Zero);
         Consume(result);
     }
