@@ -117,23 +117,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
-			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager (
-				compilationGroup,
-				typeSystemContext,
-				new NoMetadataBlockingPolicy (),
-				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
-				logFile: null,
-				new NoStackTraceEmissionPolicy (),
-				new DefaultDynamicInvokeThunkGenerationPolicy (),
-				new FlowAnnotations (logger, ilProvider, compilerGeneratedState),
-				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
-				options: default,
-				logger,
-				options.FeatureSwitches,
-				Array.Empty<string> (),
-				options.AdditionalRootAssemblies.ToArray (),
-				options.TrimAssemblies.ToArray (),
-				Array.Empty<string> ());
+			UsageBasedMetadataManager metadataManager = new UsageBasedMetadataManager(
+                compilationGroup,
+                typeSystemContext,
+                new NoMetadataBlockingPolicy(),
+                new ManifestResourceBlockingPolicy(logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
+                logFile: null,
+                stackTracePolicy: new NoStackTraceEmissionPolicy(),
+                invokeThunkGenerationPolicy: new DefaultDynamicInvokeThunkGenerationPolicy(),
+                flowAnnotations: new FlowAnnotations(logger, ilProvider, compilerGeneratedState),
+                generationOptions: UsageBasedMetadataGenerationOptions.ReflectionILScanning,
+                options: default,
+                typeMapManager: new TypeMapManager(entrypointModule),
+                logger: logger,
+                featureSwitchValues: options.FeatureSwitches,
+                rootEntireAssembliesModules: Array.Empty<string>(),
+                additionalRootedAssemblies: options.AdditionalRootAssemblies.ToArray(),
+                trimmedAssemblies: options.TrimAssemblies.ToArray(),
+                satelliteAssemblyFilePaths: Array.Empty<string>());
 
 			PInvokeILEmitterConfiguration pinvokePolicy = new ILCompilerTestPInvokePolicy ();
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);

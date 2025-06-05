@@ -108,6 +108,9 @@ namespace ILCompiler
         }
 
         private Dictionary<TypeDesc, TypeMapState> _typeMapStates = new Dictionary<TypeDesc, TypeMapState>();
+        private TypeDesc _typeMapAssemblyTargetType;
+        private TypeDesc _typeMapType;
+        private TypeDesc _typeMapAssociationType;
 
         public enum TypeMapAttributeKind
         {
@@ -117,23 +120,19 @@ namespace ILCompiler
             TypeMapAssociation
         }
 
-        public static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
+        public TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
         {
-            TypeDesc typeMapAssemblyTargetType = attrType.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
-            TypeDesc typeMapType = attrType.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAttribute`1");
-            TypeDesc typeMapAssociationType = attrType.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssociationAttribute`1");
-
-            if (typeMapAssemblyTargetType == attrType.GetTypeDefinition())
+            if (_typeMapAssemblyTargetType == attrType.GetTypeDefinition())
             {
                 return TypeMapAttributeKind.TypeMapAssemblyTarget;
             }
 
-            if (typeMapType == attrType.GetTypeDefinition())
+            if (_typeMapType == attrType.GetTypeDefinition())
             {
                 return TypeMapAttributeKind.TypeMap;
             }
 
-            if (typeMapAssociationType == attrType.GetTypeDefinition())
+            if (_typeMapAssociationType == attrType.GetTypeDefinition())
             {
                 return TypeMapAttributeKind.TypeMapAssociation;
             }
@@ -143,6 +142,10 @@ namespace ILCompiler
 
         public TypeMapManager(ModuleDesc entryModule)
         {
+            _typeMapAssemblyTargetType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
+            _typeMapType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAttribute`1");
+            _typeMapAssociationType = entryModule.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssociationAttribute`1");
+
             if (entryModule is not { Assembly: EcmaAssembly assembly })
             {
                 // We can only process EcmaAssembly-based modules as we can only read custom attributes from them.

@@ -457,6 +457,7 @@ namespace ILCompiler
                     flowAnnotations,
                     metadataGenerationOptions,
                     metadataOptions,
+                    typeMapManager,
                     logger,
                     featureSwitches,
                     Get(_command.ConditionallyRootedAssemblies),

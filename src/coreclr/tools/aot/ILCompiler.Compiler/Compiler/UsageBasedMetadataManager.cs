@@ -39,7 +39,7 @@ namespace ILCompiler
         private readonly CompilationModuleGroup _compilationModuleGroup;
 
         internal readonly UsageBasedMetadataGenerationOptions _generationOptions;
-
+        private readonly TypeMapManager _typeMapManager;
         private readonly LinkAttributesHashTable _linkAttributesHashTable;
 
         private static (string AttributeName, DiagnosticId Id)[] _requiresAttributeMismatchNameAndId = new[]
@@ -81,17 +81,17 @@ namespace ILCompiler
             FlowAnnotations flowAnnotations,
             UsageBasedMetadataGenerationOptions generationOptions,
             MetadataManagerOptions options,
+            TypeMapManager typeMapManager,
             Logger logger,
             IReadOnlyDictionary<string, bool> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
-            IEnumerable<string> trimmedAssemblies,
-            IEnumerable<string> satelliteAssemblyFilePaths)
+            IEnumerable<string> trimmedAssemblies, IEnumerable<string> satelliteAssemblyFilePaths)
             : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
-
+            _typeMapManager = typeMapManager;
             Logger = logger;
 
             _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
@@ -830,7 +830,7 @@ namespace ILCompiler
 
         public bool GeneratesAttributeMetadata(TypeDesc attributeType)
         {
-            if (TypeMapManager.LookupTypeMapType(attributeType) != TypeMapManager.TypeMapAttributeKind.None)
+            if (_typeMapManager.LookupTypeMapType(attributeType) != TypeMapManager.TypeMapAttributeKind.None)
             {
                 return false;
             }
