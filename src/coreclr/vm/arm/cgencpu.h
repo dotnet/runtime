@@ -744,9 +744,30 @@ public:
 
     void ThumbEmitAddReg(ThumbReg dest, ThumbReg source)
     {
-
         _ASSERTE(dest != source);
         Emit16((WORD)(0x4400 | ((dest & 0x8)<<4) | (source<<3) | (dest & 0x7)));
+    }
+
+    void ThumbEmitAdd(ThumbReg dest, ThumbReg source, unsigned int value)
+    {
+        if(value<4096)
+        {
+            // addw dest, source, #value
+            unsigned int i = (value & 0x800) >> 11;
+            unsigned int imm3 = (value & 0x700) >> 8;
+            unsigned int imm8 = value & 0xff;
+            Emit16((WORD)(0xf200 | (i << 10) | source));
+            Emit16((WORD)((imm3 << 12) | (dest << 8) | imm8));
+        }
+        else
+        {
+            // if immediate is more than 4096 only ADD (register) will work
+            // move immediate to dest reg and call ADD(reg)
+            // this will not work if dest is same as source.
+            _ASSERTE(dest != source);
+            ThumbEmitMovConstant(dest, value);
+            ThumbEmitAddReg(dest, source);
+        }
     }
 
     void ThumbEmitIncrement(ThumbReg dest, unsigned int value)
