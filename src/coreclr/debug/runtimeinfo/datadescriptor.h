@@ -844,12 +844,6 @@ CDAC_GLOBAL_STRING(Architecture, riscv64)
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
 
-#ifdef _DEBUG
-CDAC_GLOBAL_STRING(Configuration, debug)
-#else // _DEBUG
-CDAC_GLOBAL_STRING(Configuration, release)
-#endif // _DEBUG
-
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, uint32, GCINFO_VERSION)
