@@ -8,8 +8,6 @@
 #define _MCList
 #define MAXMCLFILESIZE 0xFFFFFF
 
-#include <stdio.h>
-
 class MCList
 {
 public:
@@ -18,7 +16,7 @@ public:
     MCList()
     {
         // Initialize the static file handle
-        fpMCLFile = NULL;
+        hMCLFile = INVALID_HANDLE_VALUE;
     }
 
     // Methods to create an MCL file
@@ -30,6 +28,6 @@ private:
     static bool getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes);
 
     // File handle for MCL file
-    FILE* fpMCLFile;
+    HANDLE hMCLFile;
 };
 #endif

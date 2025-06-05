@@ -12,22 +12,21 @@
 #include "methodcontext.h"
 #include "logging.h"
 #include "runtimedetails.h"
-#include <dn-stdio.h>
-#include <fstream>
 
 #if TARGET_UNIX
 #include <sys/stat.h>
 #endif // TARGET_UNIX
 
 // Just a helper...
-FILE* MethodContextReader::OpenFile(const char* inputFile)
+HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
 {
-    FILE* fp;
-    if (fopen_s(&fp, inputFile, "rb") != 0)
+    HANDLE fileHandle =
+        CreateFileA(inputFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | flags, NULL);
+    if (fileHandle == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open file '%s'. errno=%d", inputFile, errno);
+        LogError("Failed to open file '%s'. GetLastError()=%u", inputFile, GetLastError());
     }
-    return fp;
+    return fileHandle;
 }
 
 static std::string to_lower(const std::string& input)
@@ -84,7 +83,7 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
 
 MethodContextReader::MethodContextReader(
     const char* inputFileName, const int* indexes, int indexCount, char* hash, int offset, int increment)
-    : fp(NULL)
+    : fileHandle(INVALID_HANDLE_VALUE)
     , fileSize(0)
     , curMCIndex(0)
     , Indexes(indexes)
@@ -124,10 +123,11 @@ MethodContextReader::MethodContextReader(
         this->tocFile.LoadToc(tocFileName.c_str());
 
     // we'll get here even if we don't have a valid index file
-    this->fp = OpenFile(mchFileName.c_str());
-    if (this->fp != NULL)
+    this->fileHandle = OpenFile(mchFileName.c_str(), (this->hasTOC() && this->hasIndex()) ? FILE_ATTRIBUTE_NORMAL
+                                                                                          : FILE_FLAG_SEQUENTIAL_SCAN);
+    if (this->fileHandle != INVALID_HANDLE_VALUE)
     {
-        this->fileSize = fgetsize(this->fp);
+        GetFileSizeEx(this->fileHandle, (PLARGE_INTEGER) & this->fileSize);
     }
 
     ReadExcludedMethods(mchFileName);
@@ -135,9 +135,9 @@ MethodContextReader::MethodContextReader(
 
 MethodContextReader::~MethodContextReader()
 {
-    if (fp != NULL)
+    if (fileHandle != INVALID_HANDLE_VALUE)
     {
-        fclose(fp);
+        CloseHandle(this->fileHandle);
     }
 
     CloseHandle(this->mutex);
@@ -158,26 +158,30 @@ void MethodContextReader::ReleaseLock()
 
 bool MethodContextReader::atEof()
 {
-    return feof(this->fp);
+    int64_t pos = 0;
+    SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos,
+                     FILE_CURRENT); // LARGE_INTEGER is a crime against humanity
+    return pos == this->fileSize;
 }
 
 MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
 {
+    DWORD        bytesRead;
     char         buff[512];
     unsigned int totalLen = 0;
     if (atEof())
     {
         return MethodContextBuffer();
     }
-    Assert(fread(buff, 1, 2 + sizeof(unsigned int), this->fp) > 0);
+    Assert(ReadFile(this->fileHandle, buff, 2 + sizeof(unsigned int), &bytesRead, NULL) == TRUE);
     AssertMsg((buff[0] == 'm') && (buff[1] == 'c'), "Didn't find magic number");
     memcpy(&totalLen, &buff[2], sizeof(unsigned int));
     if (justSkip)
     {
-        int32_t pos = (int32_t)totalLen + 2;
+        int64_t pos = totalLen + 2;
         // Just move the file pointer ahead the correct number of bytes
-        AssertMsg(fseek(this->fp, pos, SEEK_CUR) == 0,
-                  "fseek failed (Error %d)", errno);
+        AssertMsg(SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT) == TRUE,
+                  "SetFilePointerEx failed (Error %X)", GetLastError());
 
         // Increment curMCIndex as we advanced the file pointer by another MC
         ++curMCIndex;
@@ -187,7 +191,7 @@ MethodContextBuffer MethodContextReader::ReadMethodContextNoLock(bool justSkip)
     else
     {
         unsigned char* buff2 = new unsigned char[totalLen + 2]; // total + End Canary
-        Assert(fread(buff2, 1, totalLen + 2, this->fp) > 0);
+        Assert(ReadFile(this->fileHandle, buff2, totalLen + 2, &bytesRead, NULL) == TRUE);
 
         // Increment curMCIndex as we read another MC
         ++curMCIndex;
@@ -414,7 +418,7 @@ bool MethodContextReader::hasTOC()
 
 bool MethodContextReader::isValid()
 {
-    return this->fp != NULL && this->mutex != INVALID_HANDLE_VALUE;
+    return this->fileHandle != INVALID_HANDLE_VALUE && this->mutex != INVALID_HANDLE_VALUE;
 }
 
 // Return a measure of "progress" through the method contexts, as follows:
@@ -435,7 +439,8 @@ double MethodContextReader::Progress()
     else
     {
         this->AcquireLock();
-        int64_t pos = ftell_64(this->fp);
+        int64_t pos = 0;
+        SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_CURRENT);
         this->ReleaseLock();
         return (double)pos;
     }
@@ -508,7 +513,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
     {
         return MethodContextBuffer(-2);
     }
-    if (fsetpos_64(this->fp, pos) == 0)
+    if (SetFilePointerEx(this->fileHandle, *(PLARGE_INTEGER)&pos, (PLARGE_INTEGER)&pos, FILE_BEGIN))
     {
         // ReadMethodContext will release the lock, but we already acquired it
         MethodContextBuffer mcb = this->ReadMethodContext(false);
@@ -530,7 +535,7 @@ MethodContextBuffer MethodContextReader::GetSpecificMethodContext(unsigned int m
 // Read the file with excluded methods hashes and save them.
 void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
 {
-    excludedMethodsList.clear();
+    excludedMethodsList = nullptr;
 
     size_t suffix_offset = mchFileName.find_last_of('.');
     if (suffix_offset == std::string::npos)
@@ -545,41 +550,83 @@ void MethodContextReader::ReadExcludedMethods(std::string mchFileName)
     {
         return;
     }
-
-    std::ifstream excludeFile(excludeFileName);
-    std::string  hash;
-    int          counter = 0;
-    while (excludeFile >> hash)
+    HANDLE excludeFileHandle = OpenFile(excludeFileName.c_str());
+    if (excludeFileHandle != INVALID_HANDLE_VALUE)
     {
-        if (hash.length() == MM3_HASH_BUFFER_SIZE - 1)
-        {
-            excludedMethodsList.push_back(hash);
-        }
-        else
-        {
-            LogInfo("The exclude file contains wrong values: %s.", hash.c_str());
-        }
-    }
+        int64_t excludeFileSizeLong;
+        GetFileSizeEx(excludeFileHandle, (PLARGE_INTEGER)&excludeFileSizeLong);
+        unsigned excludeFileSize = (unsigned)excludeFileSizeLong;
 
-    LogInfo("Exclude file %s contains %d methods.", excludeFileName.c_str(), excludedMethodsList.size());
+        char* buffer = new char[excludeFileSize + 1];
+        DWORD bytesRead;
+        bool  success = (ReadFile(excludeFileHandle, buffer, excludeFileSize, &bytesRead, NULL) == TRUE);
+        CloseHandle(excludeFileHandle);
+
+        if (!success || excludeFileSize != bytesRead)
+        {
+            LogError("Failed to read the exclude file.");
+            delete[] buffer;
+            return;
+        }
+
+        buffer[excludeFileSize] = 0;
+
+        int counter = 0;
+
+        char* curr = buffer;
+        while (*curr != 0)
+        {
+            while (isspace(*curr))
+            {
+                curr++;
+            }
+
+            std::string hash;
+            while (*curr != 0 && !isspace(*curr))
+            {
+                hash += *curr;
+                curr++;
+            }
+
+            if (hash.length() == MM3_HASH_BUFFER_SIZE - 1)
+            {
+                StringList* node    = new StringList();
+                node->hash          = hash;
+                node->next          = excludedMethodsList;
+                excludedMethodsList = node;
+                counter++;
+            }
+            else
+            {
+                LogInfo("The exclude file contains wrong values: %s.", hash.c_str());
+            }
+        }
+        delete[] buffer;
+        LogInfo("Exclude file %s contains %d methods.", excludeFileName.c_str(), counter);
+    }
 }
 
 // Free memory used for excluded methods.
 void MethodContextReader::CleanExcludedMethods()
 {
-    excludedMethodsList.clear();
+    while (excludedMethodsList != nullptr)
+    {
+        StringList* next = excludedMethodsList->next;
+        delete excludedMethodsList;
+        excludedMethodsList = next;
+    }
 }
 
 // Return should this method context be excluded from the replay or not.
 bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 {
-    if (!excludedMethodsList.empty())
+    if (excludedMethodsList != nullptr)
     {
         char md5HashBuf[MM3_HASH_BUFFER_SIZE] = {0};
         mc->dumpMethodHashToBuffer(md5HashBuf, MM3_HASH_BUFFER_SIZE);
-        for (std::string& hash : excludedMethodsList)
+        for (StringList* node = excludedMethodsList; node != nullptr; node = node->next)
         {
-            if (strcmp(hash.c_str(), md5HashBuf) == 0)
+            if (strcmp(node->hash.c_str(), md5HashBuf) == 0)
             {
                 return true;
             }
@@ -590,8 +637,9 @@ bool MethodContextReader::IsMethodExcluded(MethodContext* mc)
 
 void MethodContextReader::Reset(const int* newIndexes, int newIndexCount)
 {
-    int result = fseek(this->fp, 0, SEEK_SET);
-    assert(result == 0);
+    int64_t pos    = 0;
+    BOOL    result = SetFilePointerEx(fileHandle, *(PLARGE_INTEGER)&pos, NULL, FILE_BEGIN);
+    assert(result);
     
     Indexes     = newIndexes;
     IndexCount  = newIndexCount;

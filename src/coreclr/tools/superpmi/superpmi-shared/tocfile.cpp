@@ -8,53 +8,52 @@
 #include "standardpch.h"
 #include "tocfile.h"
 #include "logging.h"
-#include <stdio.h>
 
 // Tries to load a Table of Contents
 void TOCFile::LoadToc(const char* inputFileName, bool validate)
 {
-    FILE* fpIndex = NULL;
-    if (fopen_s(&fpIndex, inputFileName, "rb") != 0)
+    HANDLE hIndex = CreateFileA(inputFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hIndex == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open file '%s'. errno=%d", inputFileName, errno);
+        LogError("Failed to open file '%s'. GetLastError()=%u", inputFileName, GetLastError());
         return;
     }
 
     // Now read the index file
-    uint32_t header[2];
-    size_t   read;
-    if (fread(header, 1, sizeof(header), fpIndex) != 0 || header[0] != *(uint32_t*)("INDX"))
+    LARGE_INTEGER val; // I'm abusing LARGE_INTEGER here...
+    DWORD         read;
+    if (!ReadFile(hIndex, &val, sizeof(val), &read, nullptr) || (val.u.LowPart != *(DWORD*)("INDX")))
     {
-        fclose(fpIndex);
+        CloseHandle(hIndex);
         LogWarning("The index file %s is invalid: it seems to be missing the starting sentinel/length", inputFileName);
         return;
     }
 
-    this->m_tocCount = header[1];
+    this->m_tocCount = val.u.HighPart;
     this->m_tocArray = new TOCElement[this->m_tocCount];
 
     // Read the whole array
-    if ((read = fread(this->m_tocArray, sizeof(TOCElement), this->m_tocCount, fpIndex) != 0) ||
-        read != (this->m_tocCount * sizeof(TOCElement)))
+    if (!ReadFile(hIndex, &this->m_tocArray[0], (DWORD)(this->m_tocCount * sizeof(TOCElement)), &read, nullptr) ||
+        (read != (DWORD)(this->m_tocCount * sizeof(TOCElement))))
     {
-        fclose(fpIndex);
+        CloseHandle(hIndex);
         this->Clear();
         LogWarning("The index file %s is invalid: it appears to be truncated.", inputFileName);
         return;
     }
 
-    uint32_t token;
-
-    // Get the last 4 byte token
-    if ((read = fread(&token, sizeof(uint32_t), 1, fpIndex) != 0) || (read != sizeof(uint32_t) || (token != header[0])))
+    // Get the last 4 byte token (more abuse of LARGE_INTEGER)
+    if (!ReadFile(hIndex, &val.u.HighPart, sizeof(DWORD), &read, nullptr) || (read != sizeof(DWORD)) ||
+        (val.u.LowPart != (DWORD)val.u.HighPart))
     {
-        fclose(fpIndex);
+        CloseHandle(hIndex);
         this->Clear();
         LogWarning("The index file %s is invalid: it appears to be missing the ending sentinel.", inputFileName);
         return;
     }
 
-    fclose(fpIndex);
+    CloseHandle(hIndex);
 
     if (validate)
     {

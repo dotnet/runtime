@@ -12,7 +12,6 @@
 #include "logging.h"
 #include "spmiutil.h"
 #include "jithost.h"
-#include <dn-stdio.h>
 
 // Assumptions:
 // -We'll never be unloaded - we leak memory and have no facility to unload libraries
@@ -225,9 +224,11 @@ extern "C" DLLEXPORT ICorJitCompiler* getJit()
 #endif
 
     // create our datafile
-    if (fopen_u16(&pJitInstance->fp, g_dataFileName, W("wb+")) != 0)
+    pJitInstance->hFile = CreateFileW(g_dataFileName, GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                      FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (pJitInstance->hFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Couldn't open file '%ws': errno %d", g_dataFileName, errno);
+        LogError("Couldn't open file '%ws': error %d", g_dataFileName, GetLastError());
     }
 
     return pJitInstance;

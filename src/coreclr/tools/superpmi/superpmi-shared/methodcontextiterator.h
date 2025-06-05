@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "simpletimer.h"
-#include <stdio.h>
 
 // Class to implement method context hive reading and iterating.
 
@@ -10,7 +9,7 @@ class MethodContextIterator
 {
 public:
     MethodContextIterator(bool progressReport = false)
-        : m_fp(NULL)
+        : m_hFile(INVALID_HANDLE_VALUE)
         , m_fileSize(0)
         , m_methodContextNumber(0)
         , m_mc(nullptr)
@@ -28,7 +27,7 @@ public:
     }
 
     MethodContextIterator(const int indexCount, const int* indexes, bool progressReport = false)
-        : m_fp(NULL)
+        : m_hFile(INVALID_HANDLE_VALUE)
         , m_fileSize(0)
         , m_methodContextNumber(0)
         , m_mc(nullptr)
@@ -74,7 +73,7 @@ public:
     // Return the file position offset of the current method context.
     int64_t CurrentPos()
     {
-        return m_pos;
+        return m_pos.QuadPart;
     }
 
     int MethodContextNumber()
@@ -83,11 +82,11 @@ public:
     }
 
 private:
-    FILE*          m_fp;
+    HANDLE         m_hFile;
     int64_t        m_fileSize;
     int            m_methodContextNumber;
     MethodContext* m_mc;
-    int64_t        m_pos;
+    LARGE_INTEGER  m_pos;
 
     // If m_indexCount==-1, use all method contexts. Otherwise, m_indexCount is the number of elements in the
     // m_indexes array, which contains a sorted set of method context indexes to return. In this case, m_index

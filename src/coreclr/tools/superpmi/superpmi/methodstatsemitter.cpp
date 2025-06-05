@@ -14,30 +14,33 @@ MethodStatsEmitter::MethodStatsEmitter(char* nameOfInput)
     char filename[MAX_PATH + 1];
     sprintf_s(filename, MAX_PATH + 1, "%s.stats", nameOfInput);
 
-    if (fopen_s(&fpStatsFile, filename, "wb") != 0)
+    hStatsFile =
+        CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hStatsFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open output file '%s'. errno=%d", filename, errno);
+        LogError("Failed to open output file '%s'. GetLastError()=%u", filename, GetLastError());
     }
 }
 
 MethodStatsEmitter::~MethodStatsEmitter()
 {
-    if (fpStatsFile != NULL)
+    if (hStatsFile != INVALID_HANDLE_VALUE)
     {
-        if (fclose(fpStatsFile) != 0)
+        if (CloseHandle(hStatsFile) == 0)
         {
-            LogError("fclose failed. errno=%d", errno);
+            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
         }
     }
 }
 
 void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG firstTime, ULONGLONG secondTime)
 {
-    if (fpStatsFile != NULL)
+    if (hStatsFile != INVALID_HANDLE_VALUE)
     {
         // Print the CSV header row
-        char rowData[2048];
-        int  charCount = 0;
+        char  rowData[2048];
+        DWORD charCount    = 0;
+        DWORD bytesWritten = 0;
 
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
         {
@@ -83,11 +86,10 @@ void MethodStatsEmitter::Emit(int methodNumber, MethodContext* mc, ULONGLONG fir
 
         // get rid of the final ',' and replace it with a '\n'
         rowData[charCount - 1] = '\n';
-        rowData[charCount] = '\0';
 
-        if (fprintf(fpStatsFile, "%s", rowData) != charCount)
+        if (!WriteFile(hStatsFile, rowData, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
         {
-            LogError("Failed to write row header '%s'. errno=%d", rowData, errno);
+            LogError("Failed to write row header '%s'. GetLastError()=%u", rowData, GetLastError());
         }
     }
 }
@@ -96,11 +98,12 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
 {
     statsTypes = types;
 
-    if (fpStatsFile != NULL)
+    if (hStatsFile != INVALID_HANDLE_VALUE)
     {
         // Print the CSV header row
-        char rowHeader[1024];
-        int  charCount = 0;
+        char  rowHeader[1024];
+        DWORD charCount    = 0;
+        DWORD bytesWritten = 0;
 
         if (strchr(statsTypes, '*') != NULL || strchr(statsTypes, 'h') != NULL || strchr(statsTypes, 'H') != NULL)
             charCount += sprintf_s(rowHeader + charCount, ARRAY_SIZE(rowHeader) - charCount, "HASH,");
@@ -115,11 +118,10 @@ void MethodStatsEmitter::SetStatsTypes(char* types)
 
         // get rid of the final ',' and replace it with a '\n'
         rowHeader[charCount - 1] = '\n';
-        rowHeader[charCount] = '\0';
 
-        if (fprintf(fpStatsFile, "%s", rowHeader) != charCount)
+        if (!WriteFile(hStatsFile, rowHeader, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
         {
-            LogError("Failed to write row header '%s'. errno=%d", rowHeader, errno);
+            LogError("Failed to write row header '%s'. GetLastError()=%u", rowHeader, GetLastError());
         }
     }
 }

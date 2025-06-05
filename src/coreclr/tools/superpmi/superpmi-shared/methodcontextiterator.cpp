@@ -4,24 +4,27 @@
 #include "standardpch.h"
 #include "methodcontext.h"
 #include "methodcontextiterator.h"
-#include <dn-stdio.h>
 
 bool MethodContextIterator::Initialize(const char* fileName)
 {
-    if (fopen_s(&m_fp, fileName, "rb") != 0)
+    m_hFile = CreateFileA(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                          FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (m_hFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open file '%s'. errno=%d", fileName, errno);
+        LogError("Failed to open file '%s'. GetLastError()=%u", fileName, GetLastError());
         return false;
     }
 
-    m_fileSize = fgetsize(m_fp);
-    if (m_fileSize <= 0)
+    LARGE_INTEGER DataTemp;
+    if (GetFileSizeEx(m_hFile, &DataTemp) == 0)
     {
-        LogError("Getting file size failed. errno=%d", errno);
-        fclose(m_fp);
-        m_fp = NULL;
+        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
+        CloseHandle(m_hFile);
+        m_hFile = INVALID_HANDLE_VALUE;
         return false;
     }
+
+    m_fileSize = DataTemp.QuadPart;
 
     if (m_progressReport)
     {
@@ -34,14 +37,14 @@ bool MethodContextIterator::Initialize(const char* fileName)
 bool MethodContextIterator::Destroy()
 {
     bool ret = true; // assume success
-    if (m_fp != NULL)
+    if (m_hFile != INVALID_HANDLE_VALUE)
     {
-        if (fclose(m_fp) != 0)
+        if (!CloseHandle(m_hFile))
         {
-            LogError("Closing file failed. errno=%d", errno);
+            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
             ret = false;
         }
-        m_fp = NULL;
+        m_hFile = INVALID_HANDLE_VALUE;
     }
     delete m_mc;
     m_mc = nullptr;
@@ -69,14 +72,15 @@ bool MethodContextIterator::MoveNext()
     while (true)
     {
         // Figure out where the pointer is currently.
-        int64_t m_pos = ftell(m_fp);
-        if (m_pos <= 0)
+        LARGE_INTEGER pos;
+        pos.QuadPart = 0;
+        if (SetFilePointerEx(m_hFile, pos, &m_pos, FILE_CURRENT) == 0)
         {
-            LogError("Getting file position failed. errno=%d", errno);
+            LogError("SetFilePointerEx failed. GetLastError()=%u", GetLastError());
             return false; // any failure causes us to bail out.
         }
 
-        if (m_pos >= m_fileSize)
+        if (m_pos.QuadPart >= m_fileSize)
         {
             return false;
         }
@@ -95,7 +99,7 @@ bool MethodContextIterator::MoveNext()
             }
         }
 
-        if (!MethodContext::Initialize(m_methodContextNumber, m_fp, &m_mc))
+        if (!MethodContext::Initialize(m_methodContextNumber, m_hFile, &m_mc))
             return false;
 
         // If we have an array of indexes, skip the loaded indexes that have not been specified.

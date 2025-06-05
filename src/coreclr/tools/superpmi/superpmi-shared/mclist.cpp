@@ -8,8 +8,6 @@
 #include "standardpch.h"
 #include "mclist.h"
 #include "logging.h"
-#include <fstream>
-#include <sstream>
 
 bool MCList::processArgAsMCL(char* input, int* count, int** list)
 {
@@ -153,52 +151,107 @@ checkMCL: // check that mcl list is increasing only
 /* static */
 bool MCList::getLineData(const char* nameOfInput, /* OUT */ int* pIndexCount, /* OUT */ int** pIndexes)
 {
-    std::ifstream    fs(nameOfInput);
-    std::vector<int> indexes;
-    std::string      line;
-
-    while (std::getline(fs, line))
+    HANDLE hFile = CreateFileA(nameOfInput, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                               FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
     {
-        int n;
-        // This will skip empty lines and lines with no digits.
-        if (std::istringstream(std::move(line)) >> n)
+        LogError("Unable to open '%s'. GetLastError()=%u", nameOfInput, GetLastError());
+        return false;
+    }
+    LARGE_INTEGER DataTemp;
+    if (!GetFileSizeEx(hFile, &DataTemp))
+    {
+        LogError("GetFileSizeEx failed. GetLastError()=%u", GetLastError());
+        return false;
+    }
+
+    if (DataTemp.QuadPart > MAXMCLFILESIZE)
+    {
+        LogError("Size %d exceeds max size of %d", DataTemp.QuadPart, MAXMCLFILESIZE);
+        return false;
+    }
+
+    int   sz   = DataTemp.u.LowPart;
+    char* buff = new char[sz];
+    DWORD bytesRead;
+    if (ReadFile(hFile, buff, sz, &bytesRead, nullptr) == 0)
+    {
+        LogError("ReadFile failed. GetLastError()=%u", GetLastError());
+        delete[] buff;
+        return false;
+    }
+    if (!CloseHandle(hFile))
+    {
+        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
+        delete[] buff;
+        return false;
+    }
+
+    // Count the lines. Note that the last line better be terminated by a newline.
+    int lineCount = 0;
+    for (int i = 0; i < sz; i++)
+    {
+        if (buff[i] == '\n')
         {
-            indexes.push_back(n);
+            lineCount++;
         }
     }
 
-    *pIndexCount = (int)indexes.size();
-    *pIndexes    = new int[indexes.size()];
-    std::copy(indexes.begin(), indexes.end(), *pIndexes);
+    int* indexes    = new int[lineCount];
+    int  indexCount = 0;
+    int  i          = 0;
+    while (i < sz)
+    {
+        // seek the first number on the line. This will skip empty lines and lines with no digits.
+        while (!isdigit((unsigned char)buff[i]))
+            i++;
+        // read in the number
+        indexes[indexCount++] = atoi(&buff[i]);
+        // seek to the start of next line
+        while ((i < sz) && (buff[i] != '\n'))
+            i++;
+        i++;
+    }
+    delete[] buff;
+
+    *pIndexCount = indexCount;
+    *pIndexes    = indexes;
     return true;
 }
 
 void MCList::InitializeMCL(char* filename)
 {
-    if (fopen_s(&fpMCLFile, filename, "w") != 0)
+    hMCLFile = CreateFileA(filename, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hMCLFile == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open output file '%s'. errno=%d", filename, errno);
+        LogError("Failed to open output file '%s'. GetLastError()=%u", filename, GetLastError());
     }
 }
 
 void MCList::AddMethodToMCL(int methodIndex)
 {
-    if (fpMCLFile != NULL)
+    if (hMCLFile != INVALID_HANDLE_VALUE)
     {
-        if (fprintf(fpMCLFile, "%d\r\n", methodIndex) <= 0)
+        char  strMethodIndex[12];
+        DWORD charCount    = 0;
+        DWORD bytesWritten = 0;
+
+        charCount = sprintf_s(strMethodIndex, sizeof(strMethodIndex), "%d\r\n", methodIndex);
+
+        if (!WriteFile(hMCLFile, strMethodIndex, charCount, &bytesWritten, nullptr) || bytesWritten != charCount)
         {
-            LogError("Failed to write method index '%d'. errno=%d", methodIndex, errno);
+            LogError("Failed to write method index '%d'. GetLastError()=%u", strMethodIndex, GetLastError());
         }
     }
 }
 
 void MCList::CloseMCL()
 {
-    if (fpMCLFile != NULL)
+    if (hMCLFile != INVALID_HANDLE_VALUE)
     {
-        if (fclose(fpMCLFile) != 0)
+        if (CloseHandle(hMCLFile) == 0)
         {
-            LogError("fclose failed. errno=%d", errno);
+            LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
         }
     }
 }

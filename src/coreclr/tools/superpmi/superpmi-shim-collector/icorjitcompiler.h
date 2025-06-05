@@ -5,7 +5,6 @@
 #define _ICorJitCompiler
 
 #include "runtimedetails.h"
-#include <stdio.h>
 
 class MethodContext;
 
@@ -17,7 +16,7 @@ class interceptor_ICJC : public ICorJitCompiler
 public:
     // Added to help us track the original icjc and be able to easily indirect to it.
     ICorJitCompiler* original_ICorJitCompiler;
-    FILE*            fp;
+    HANDLE           hFile;
     CORINFO_OS       currentOs;
 
     void finalizeAndCommitCollection(MethodContext* mc, CorJitResult result, uint8_t* nativeEntry, uint32_t nativeSizeOfCode);

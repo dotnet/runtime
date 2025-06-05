@@ -9,14 +9,13 @@
 
 #include "methodcontext.h"
 #include "jitinstance.h"
-#include <stdio.h>
 
 class MethodStatsEmitter
 {
 
 private:
-    char* statsTypes;
-    FILE* fpStatsFile;
+    char*  statsTypes;
+    HANDLE hStatsFile;
 
 public:
     MethodStatsEmitter(char* nameOfInput);

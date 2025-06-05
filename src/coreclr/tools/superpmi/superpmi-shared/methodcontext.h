@@ -14,7 +14,6 @@
 #include "errorhandling.h"
 #include "hash.h"
 #include "agnostic.h"
-#include <stdio.h>
 #include <minipal/types.h>
 
 extern bool g_debugRec;
@@ -69,16 +68,16 @@ public:
 
 private:
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
-    void MethodInitHelperFile(FILE* fp);
+    void MethodInitHelperFile(HANDLE hFile);
 
     bool Initialize(int mcIndex, unsigned char* buff, DWORD size);
-    bool Initialize(int mcIndex, FILE* fp);
+    bool Initialize(int mcIndex, HANDLE hFile);
 
     int dumpHashToBuffer(BYTE* pBuffer, int bufLen, char* buff, int len);
 
 public:
     static bool Initialize(int mcIndex, unsigned char* buff, DWORD size, /* OUT */ MethodContext** ppmc);
-    static bool Initialize(int mcIndex, FILE* fp, /* OUT */ MethodContext** ppmc);
+    static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
 
@@ -88,7 +87,7 @@ public:
     }
 
     bool Equal(MethodContext* other);
-    unsigned int saveToFile(FILE* fp);
+    unsigned int saveToFile(HANDLE hFile);
     unsigned int calculateFileSize();
     unsigned int calculateRawFileSize();
 

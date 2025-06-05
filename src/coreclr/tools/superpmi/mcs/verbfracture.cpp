@@ -24,26 +24,28 @@ int verbFracture::DoWork(
     int  fileCount = 0;
     char fileName[512];
 
-    FILE* fpOut = NULL;
+    HANDLE hFileOut = INVALID_HANDLE_VALUE;
     while (mci.MoveNext())
     {
         MethodContext* mc = mci.Current();
 
-        if ((fpOut == NULL) || (((mci.MethodContextNumber() - 1) % rangeSize) == 0))
+        if ((hFileOut == INVALID_HANDLE_VALUE) || (((mci.MethodContextNumber() - 1) % rangeSize) == 0))
         {
-            if (fpOut != NULL)
+            if (hFileOut != INVALID_HANDLE_VALUE)
             {
-                if (fclose(fpOut) != 0)
+                if (!CloseHandle(hFileOut))
                 {
-                    LogError("1st fclose failed. errno=%d", errno);
+                    LogError("1st CloseHandle failed. GetLastError()=%u", GetLastError());
                     return -1;
                 }
-                fpOut = NULL;
+                hFileOut = INVALID_HANDLE_VALUE;
             }
             sprintf_s(fileName, 512, "%s-%0*d.mch", nameOfOutput, 5, fileCount++);
-            if (fopen_s(&fpOut, fileName, "wb") != 0)
+            hFileOut = CreateFileA(fileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                   FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+            if (hFileOut == INVALID_HANDLE_VALUE)
             {
-                LogError("Failed to open output file '%s'. errno=%d", fileName, errno);
+                LogError("Failed to open output file '%s'. GetLastError()=%u", fileName, GetLastError());
                 return -1;
             }
         }
@@ -52,14 +54,14 @@ int verbFracture::DoWork(
             delete mc->cr;
             mc->cr = new CompileResult();
         }
-        mc->saveToFile(fpOut);
+        mc->saveToFile(hFileOut);
     }
 
-    if (fpOut != NULL)
+    if (hFileOut != INVALID_HANDLE_VALUE)
     {
-        if (fclose(fpOut) != 0)
+        if (!CloseHandle(hFileOut))
         {
-            LogError("2nd fclose failed. errno=%d", errno);
+            LogError("2nd CloseHandle failed. GetLastError()=%u", GetLastError());
             return -1;
         }
     }

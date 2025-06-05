@@ -9,24 +9,25 @@ int verbRemoveDup::DoWork(const char* nameOfInput, const char* nameOfOutput, boo
 {
     LogVerbose("Removing duplicates from '%s', writing to '%s'", nameOfInput, nameOfOutput);
 
-    FILE* fpOut = NULL;
-    if (fopen_s(&fpOut, nameOfOutput, "wb") != 0)
+    HANDLE hFileOut = CreateFileA(nameOfOutput, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                  FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+    if (hFileOut == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open output '%s'. errno=%d", nameOfOutput, errno);
+        LogError("Failed to open output '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
         return -1;
     }
 
     RemoveDup removeDups;
     if (!removeDups.Initialize(stripCR, legacyCompare, /* cleanup */ false)
-        || !removeDups.CopyAndRemoveDups(nameOfInput, fpOut))
+        || !removeDups.CopyAndRemoveDups(nameOfInput, hFileOut))
     {
         LogError("Failed to remove dups");
         return -1;
     }
 
-    if (fclose(fpOut) != 0)
+    if (CloseHandle(hFileOut) == 0)
     {
-        LogError("Closing file failed. errno=%d", errno);
+        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
         return -1;
     }
 

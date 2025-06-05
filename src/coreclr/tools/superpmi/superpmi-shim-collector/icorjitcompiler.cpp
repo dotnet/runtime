@@ -26,7 +26,7 @@ void interceptor_ICJC::finalizeAndCommitCollection(MethodContext* mc, CorJitResu
         mc->cr->recAllocGCInfoCapture();
     }
 
-    mc->saveToFile(fp);
+    mc->saveToFile(hFile);
 }
 
 template<typename TPrinter>

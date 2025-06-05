@@ -10,8 +10,6 @@
 
 #include "methodcontext.h"
 #include "tocfile.h"
-#include <stdio.h>
-#include <vector>
 
 struct MethodContextBuffer
 {
@@ -49,7 +47,7 @@ class MethodContextReader
 {
 private:
     // The MC/MCH file
-    FILE* fp;
+    HANDLE fileHandle;
 
     // The size of the MC/MCH file
     int64_t fileSize;
@@ -83,14 +81,19 @@ private:
     int Offset;
     int Increment;
 
-    std::vector<std::string> excludedMethodsList;
+    struct StringList
+    {
+        StringList* next;
+        std::string hash;
+    };
+    StringList* excludedMethodsList;
 
     // Binary search to get this method number from the index
     // Returns -1 for not found, or -2 for not indexed
     int64_t GetOffset(unsigned int methodNumber);
 
     // Just a helper...
-    static FILE* OpenFile(const char* inputFile);
+    static HANDLE OpenFile(const char* inputFile, DWORD flags = FILE_ATTRIBUTE_NORMAL);
 
     MethodContextBuffer ReadMethodContextNoLock(bool justSkip = false);
     MethodContextBuffer ReadMethodContext(bool acquireLock, bool justSkip = false);

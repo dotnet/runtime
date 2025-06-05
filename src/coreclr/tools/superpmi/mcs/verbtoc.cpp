@@ -51,24 +51,26 @@ int verbTOC::DoWork(const char* nameOfInput)
         savedCount++;
     }
 
-    std::string nameOfOutput = std::string(nameOfInput) + ".mct";
-
-    FILE* fpOut;
-    if (fopen_s(&fpOut, nameOfOutput.c_str(), "wb") != 0)
+    size_t maxLen       = strlen(nameOfInput) + 5;
+    char*  nameOfOutput = (char*)_alloca(maxLen);
+    strcpy_s(nameOfOutput, maxLen, nameOfInput);
+    strcat_s(nameOfOutput, maxLen, ".mct");
+    HANDLE hFileOut =
+        CreateFileA(nameOfOutput, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFileOut == INVALID_HANDLE_VALUE)
     {
-        LogError("Failed to open input 1 '%s'. errno=%d", nameOfOutput.c_str(), errno);
+        LogError("Failed to open input 1 '%s'. GetLastError()=%u", nameOfOutput, GetLastError());
         return -1;
     }
 
-    uint32_t header[2];
-
+    DWORD written;
     // Write out the signature "INDX" and then the element count
-    header[0] = *(const uint32_t*)"INDX"; // cuz Type Safety is for languages that have good IO facilities
-    header[1] = savedCount;
-    size_t written = fwrite(header, 1, sizeof(header), fpOut);
-    if (written != sizeof(header))
+    LARGE_INTEGER token;
+    token.u.LowPart  = *(const int*)"INDX"; // cuz Type Safety is for languages that have good IO facilities
+    token.u.HighPart = savedCount;
+    if (!WriteFile(hFileOut, &token, sizeof(token), &written, nullptr) || written != sizeof(token))
     {
-        LogError("Failed to write index header. errno=%d", errno);
+        LogError("Failed to write index header. GetLastError()=%u", GetLastError());
     }
 
     // Now just dump sizeof(TOCElement) byte chunks into the file.
@@ -76,26 +78,25 @@ int verbTOC::DoWork(const char* nameOfInput)
     DWORD chunkSize = sizeof(TOCElement);
     for (curElem = head; curElem != nullptr; curElem = curElem->Next)
     {
-        written = fwrite(&curElem->tocElement, 1, chunkSize, fpOut);
-        if (written != chunkSize)
+        if (!WriteFile(hFileOut, &curElem->tocElement, chunkSize, &written, nullptr) || written != chunkSize)
         {
-            LogError("Failed to write index element '%d'. errno=%d", curElem->tocElement.Number,
-                     errno);
+            LogError("Failed to write index element '%d'. GetLastError()=%u", curElem->tocElement.Number,
+                     GetLastError());
             return -1;
         }
     }
     // Now write out a final "INDX" to flag the end of the file...
-    written = fwrite(header, 1, sizeof(uint32_t), fpOut);
-    if ((written != sizeof(uint32_t)))
+    if (!WriteFile(hFileOut, &token.u.LowPart, sizeof(token.u.LowPart), &written, nullptr) ||
+        (written != sizeof(token.u.LowPart)))
     {
-        LogError("Failed to write index terminal. errno=%d", errno);
+        LogError("Failed to write index terminal. GetLastError()=%u", GetLastError());
     }
 
     LogInfo("Loaded %d, added %d to Table of Contents", mci.MethodContextNumber(), savedCount);
 
-    if (fclose(fpOut) != 0)
+    if (CloseHandle(hFileOut) == 0)
     {
-        LogError("fclose failed. errno=%d", errno);
+        LogError("CloseHandle failed. GetLastError()=%u", GetLastError());
         return -1;
     }
 
