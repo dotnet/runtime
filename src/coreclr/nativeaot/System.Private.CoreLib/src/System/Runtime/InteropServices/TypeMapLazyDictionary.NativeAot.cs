@@ -138,9 +138,9 @@ namespace System.Runtime.InteropServices
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
-                    string foundName = entryParser.GetString();
-                    if (foundName == key)
+                    if (entryParser.StringEquals(key))
                     {
+                        entryParser.SkipString();
                         RuntimeTypeHandle typeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         value = Type.GetTypeFromHandle(typeHandle)!;
                         return true;
