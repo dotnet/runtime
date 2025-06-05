@@ -693,22 +693,23 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     {
         public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            var nestedOptions = new JsonSerializerOptions(options);
+            nestedOptions.Converters.Remove(this);
+
             if (reader.TokenType == JsonTokenType.StartObject)
             {
                 try
                 {
-                    var nestedOptions = new JsonSerializerOptions(options);
-                    nestedOptions.Converters.Remove(this);
 
                     return JsonSerializer.Deserialize<AssetsData>(ref reader, nestedOptions)!;
                 }
                 catch
                 {
-                    return JsonSerializer.Deserialize<ResourcesData>(ref reader, options)!;
+                    return JsonSerializer.Deserialize<ResourcesData>(ref reader, nestedOptions)!;
                 }
             }
 
-            return JsonSerializer.Deserialize<object>(ref reader, options)!;
+            return JsonSerializer.Deserialize<object>(ref reader, nestedOptions)!;
         }
 
         public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
