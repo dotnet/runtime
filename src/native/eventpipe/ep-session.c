@@ -281,9 +281,9 @@ ep_session_user_events_tracepoints_init (
 
 		EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
 		EP_ASSERT (tracepoint_config != NULL);
-		EP_ASSERT (tracepoint_config->default_tracepoint.tracepoint_format != NULL || tracepoint_config->tracepoints != NULL);
+		EP_ASSERT (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0' || tracepoint_config->tracepoints != NULL);
 
-		if (tracepoint_config->default_tracepoint.tracepoint_format != NULL) {
+		if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0') {
 			ep_raise_error_if_nok (ep_tracepoint_reg (session->user_events_data_fd,
 													  &tracepoint_config->default_tracepoint));
 		}
@@ -702,7 +702,7 @@ ep_session_disable_user_events (EventPipeSession *session)
 	for (dn_list_it_t it = dn_list_begin (ep_session_provider_list_get_providers (providers)); !dn_list_it_end (it); it = dn_list_it_next (it)) {
 		EventPipeSessionProvider *session_provider = *dn_list_it_data_t (it, EventPipeSessionProvider *);
 		EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
-		if (tracepoint_config->default_tracepoint.tracepoint_format != NULL)
+		if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0')
 			ep_tracepoint_unreg (session->user_events_data_fd, &tracepoint_config->default_tracepoint);
 
 		if (tracepoint_config->tracepoints != NULL) {
@@ -743,7 +743,7 @@ ep_session_get_tracepoint_for_event (
 	EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (session_provider_list), ep_provider_get_provider_name (provider));
 	EventPipeProviderTracepointConfiguration *tracepoint_config = ep_session_provider_get_tracepoint_config (session_provider);
 
-	if (tracepoint_config->default_tracepoint.tracepoint_format != NULL)
+	if (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0')
 		tracepoint = &tracepoint_config->default_tracepoint;
 
 	dn_umap_t *event_id_to_tracepoint_map = tracepoint_config->event_id_to_tracepoint_map;

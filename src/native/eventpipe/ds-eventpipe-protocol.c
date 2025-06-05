@@ -280,9 +280,9 @@ eventpipe_collect_tracing_command_try_parse_event_filter (
 			event_id = ep_rt_object_alloc (uint32_t);
 			ep_raise_error_if_nok (event_id != NULL);
 			ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, event_id));
-			dn_umap_result_t result = dn_umap_insert (event_filter->event_ids, event_id, NULL);
+			dn_umap_result_t insert_result = dn_umap_insert (event_filter->event_ids, event_id, NULL);
 			event_id = NULL; // Ownership transferred to the hashset.
-			ep_raise_error_if_nok (result.result);
+			ep_raise_error_if_nok (insert_result.result);
 		}
 	} else {
 		event_filter->event_ids = NULL;
@@ -412,7 +412,7 @@ eventpipe_collect_tracing_command_try_parse_tracepoint_config (
 		}
 	}
 
-	ep_raise_error_if_nok (tracepoint_config->default_tracepoint.tracepoint_format != NULL || tracepoint_config->tracepoints != NULL);
+	ep_raise_error_if_nok (tracepoint_config->default_tracepoint.tracepoint_format[0] != '\0' || tracepoint_config->tracepoints != NULL);
 
 	result = true;
 
