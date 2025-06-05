@@ -1269,9 +1269,12 @@ namespace System.Net.Http.Functional.Tests
 
         // This is a regression test for https://github.com/dotnet/runtime/issues/60118.
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task GetAsync_TrailersWithoutServerStreamClosure_Success(bool sendBytesAfterTrailers)
+        [InlineData(false, false, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(false, true, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(false, false, HttpCompletionOption.ResponseHeadersRead)]
+        [InlineData(true, false, HttpCompletionOption.ResponseContentRead)]
+        [InlineData(true, true, HttpCompletionOption.ResponseContentRead)]
+        public async Task GetAsync_TrailersWithoutServerStreamClosure_Success(bool sendBytesAfterTrailers, bool emptyResponse, HttpCompletionOption httpCompletionOption)
         {
             SemaphoreSlim responseConsumed = new SemaphoreSlim(0);
             SemaphoreSlim serverCompleted = new SemaphoreSlim(0);
@@ -1279,8 +1282,16 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient();
-                using (HttpResponseMessage response = await client.GetAsync(uri))
+                using (HttpResponseMessage response = await client.GetAsync(uri, httpCompletionOption))
                 {
+                    if (httpCompletionOption == HttpCompletionOption.ResponseHeadersRead)
+                    {
+                        using Stream stream = await response.Content.ReadAsStreamAsync();
+                        byte[] buffer = new byte[512];
+                        // Consume the stream
+                        while ((await stream.ReadAsync(buffer)) > 0);
+                    }
+
                     Assert.Equal(TrailingHeaders.Count, response.TrailingHeaders.Count());
                 }
 
@@ -1294,8 +1305,15 @@ namespace System.Net.Http.Functional.Tests
                     await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                     await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     _ = await stream.ReadRequestDataAsync();
-                    await stream.SendResponseHeadersAsync(statusCode: HttpStatusCode.OK);
-                    await stream.SendResponseBodyAsync(new byte[4096], isFinal: false);
+
+                    HttpHeaderData[] headers = emptyResponse ? [new HttpHeaderData("Content-Length", "0")] : null;
+
+                    await stream.SendResponseHeadersAsync(statusCode: HttpStatusCode.OK, headers);
+                    if (!emptyResponse)
+                    {
+                        await stream.SendResponseBodyAsync(new byte[4096], isFinal: false);
+                    }
+                    
                     await stream.SendResponseHeadersAsync(statusCode: null, headers: TrailingHeaders);
                     if (sendBytesAfterTrailers)
                     {
