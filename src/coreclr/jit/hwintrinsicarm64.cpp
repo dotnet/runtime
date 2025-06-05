@@ -3393,7 +3393,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdAllTrueMaskNode: Create an embedded mask with all bits set to true
+// gtNewSimdAllTrueMaskNode: Create a mask with all bits set to true
 //
 // Arguments:
 //    simdBaseJitType -- the base jit type of the nodes being masked
@@ -3404,20 +3404,45 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 //
 GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigned simdSize)
 {
-    // Import as a constant vector all bits set
+    // Import as a constant mask
 
-    var_types simdType     = getSIMDTypeForSize(simdSize);
-    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    var_types      simdType     = getSIMDTypeForSize(simdSize);
+    var_types      simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    bool           found        = false;
+    GenTreeMskCon* mskCon       = gtNewMskConNode(TYP_MASK);
 
-    simd_t simdVal;
-    bool   found = EvaluateSimdPatternToVector(simdBaseType, &simdVal, SveMaskPatternAll);
+    switch (simdType)
+    {
+        case TYP_SIMD8:
+        {
+            found = EvaluateSimdPatternToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+            break;
+        }
+
+        case TYP_SIMD12:
+        {
+            found = EvaluateSimdPatternToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+            break;
+        }
+
+        case TYP_SIMD16:
+        {
+            found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
     assert(found);
 
-    return gtNewVconNode(simdType, &simdVal);
+    return mskCon;
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdFalseMaskByteNode: Create an embedded mask with all bits set to false
+// gtNewSimdFalseMaskByteNode: Create a mask with all bits set to false
 //
 // Arguments:
 //    simdSize        -- the simd size of the nodes being masked
@@ -3427,10 +3452,10 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(CorInfoType simdBaseJitType, unsigne
 //
 GenTree* Compiler::gtNewSimdFalseMaskByteNode(unsigned simdSize)
 {
-    // Import as a constant vector 0
-    GenTreeVecCon* vecCon = gtNewVconNode(getSIMDTypeForSize(simdSize));
-    vecCon->gtSimdVal     = simd_t::Zero();
-    return vecCon;
+    // Import as a constant mask 0
+    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+    mskCon->gtSimdMaskVal = simdmask_t::Zero();
+    return mskCon;
 }
 
 #endif // FEATURE_HW_INTRINSICS

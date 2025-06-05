@@ -1699,6 +1699,101 @@ enum SveMaskPattern
 };
 
 template <typename TSimd, typename TBase>
+bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
+{
+    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
+    uint32_t finalOne = count + 1;
+    uint64_t mask     = 0;
+
+    switch (pattern)
+    {
+        case SveMaskPatternLargestPowerOf2:
+        case SveMaskPatternAll:
+            finalOne = count;
+            break;
+
+        case SveMaskPatternVectorCount1:
+        case SveMaskPatternVectorCount2:
+        case SveMaskPatternVectorCount3:
+        case SveMaskPatternVectorCount4:
+        case SveMaskPatternVectorCount5:
+        case SveMaskPatternVectorCount6:
+        case SveMaskPatternVectorCount7:
+        case SveMaskPatternVectorCount8:
+            finalOne = pattern - SveMaskPatternVectorCount1 + 1;
+            break;
+
+        case SveMaskPatternVectorCount16:
+        case SveMaskPatternVectorCount32:
+        case SveMaskPatternVectorCount64:
+        case SveMaskPatternVectorCount128:
+        case SveMaskPatternVectorCount256:
+            finalOne = std::min(uint32_t(16 << (pattern - SveMaskPatternVectorCount16)), count);
+            break;
+
+        case SveMaskPatternLargestMultipleOf4:
+            finalOne = (count - (count % 4));
+            break;
+
+        case SveMaskPatternLargestMultipleOf3:
+            finalOne = (count - (count % 3));
+            break;
+
+        default:
+            return false;
+    }
+    assert(finalOne <= count);
+    assert(finalOne > 0);
+
+    // Write finalOne number of bits
+    for (uint32_t i = 0; i < finalOne; i++)
+    {
+        mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+    }
+
+    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
+    return true;
+}
+
+template <typename TSimd>
+bool EvaluateSimdPatternToMask(var_types baseType, simdmask_t* result, SveMaskPattern pattern)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint32_t>(result, pattern);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint64_t>(result, pattern);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint8_t>(result, pattern);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint16_t>(result, pattern);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
 bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
 {
     uint32_t count    = sizeof(TSimd) / sizeof(TBase);
