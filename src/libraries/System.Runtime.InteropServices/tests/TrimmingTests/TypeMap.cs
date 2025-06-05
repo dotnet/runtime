@@ -58,35 +58,41 @@ if (targetType != GetTypeWithoutTrimAnalysis("TargetType"))
     return 4;
 }
 
+if (GetTypeWithoutTrimAnalysis("TrimTarget") is not null)
+{
+    Console.WriteLine("TrimTarget should not be preserved if the only place that would preserve it is a check that is optimized away.");
+    return 5;
+}
+
 if (usedTypeMap.TryGetValue("TrimTargetIsUnreferenced", out _))
 {
     Console.WriteLine("TrimTargetIsUnreferenced should not be found in used type map.");
-    return 5;
+    return 6;
 }
 
 IReadOnlyDictionary<Type, Type> usedProxyTypeMap = TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap>();
 if (!usedProxyTypeMap.TryGetValue(typeof(SourceClass), out Type proxyType))
 {
     Console.WriteLine("SourceClass not found in used proxy type map.");
-    return 6;
+    return 7;
 }
 
 if (proxyType != GetTypeWithoutTrimAnalysis("ProxyType"))
 {
     Console.WriteLine("SourceClass proxy type does not match expected type.");
-    return 7;
+    return 8;
 }
 
 if (GetTypeWithoutTrimAnalysis("UnusedTargetType") is not null)
 {
     Console.WriteLine("UnusedTargetType should not be preserved if the external type map is not used and it is not referenced otherwise even if the entry's trim target is kept.");
-    return 8;
+    return 9;
 }
 
 if (GetTypeWithoutTrimAnalysis("UnusedProxyType") is not null)
 {
     Console.WriteLine("UnusedProxyType should not be preserved if the proxy type map is not used and it is not referenced otherwise even if the entry's source type is kept.");
-    return 9;
+    return 10;
 }
 
 return 100;

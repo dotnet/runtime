@@ -1,0 +1,120 @@
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Reflection;
+
+[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsTarget", typeof (TargetAndTrimTarget), typeof (TargetAndTrimTarget))]
+[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnrelated", typeof (TargetType), typeof (TrimTarget))]
+[assembly: TypeMap<UsedTypeMap> ("TrimTargetIsUnreferenced", typeof (UnreferencedTargetType), typeof (UnreferencedTrimTarget))]
+[assembly: TypeMapAssociation<UsedTypeMap> (typeof (SourceClass), typeof (ProxyType))]
+
+[assembly: TypeMap<UnusedTypeMap> ("UnusedName", typeof (UnusedTargetType), typeof (TrimTarget))]
+[assembly: TypeMapAssociation<UsedTypeMap> (typeof (UnusedSourceClass), typeof (UnusedProxyType))]
+
+namespace Mono.Linker.Tests.Cases.Reflection
+{
+	[Kept]
+	[IgnoreTestCase("Trimmer support is currently not implemented", IgnoredBy = Tool.Trimmer)]
+	class TypeMap
+	{
+		[Kept]
+		public static void Main(string[] args)
+		{
+			object t = Activator.CreateInstance (Type.GetType (args[1]));
+			if (t is TargetAndTrimTarget) {
+				Console.WriteLine ("Type deriving from TargetAndTrimTarget instantiated.");
+			} else if (t is TrimTarget) {
+				Console.WriteLine ("Type deriving from TrimTarget instantiated.");
+			}
+
+			Console.WriteLine ("Hash code of SourceClass instance: " + new SourceClass ().GetHashCode ());
+
+			Console.WriteLine (TypeMapping.GetOrCreateExternalTypeMapping<UsedTypeMap> ());
+			Console.WriteLine (TypeMapping.GetOrCreateProxyTypeMapping<UsedTypeMap> ());
+		}
+	}
+
+	[Kept(By = Tool.Trimmer)]
+	class UsedTypeMap;
+
+	[Kept]
+	class TargetAndTrimTarget;
+
+	[Kept]
+	class TargetType;
+
+	[Kept]
+	class TrimTarget;
+
+	class UnreferencedTargetType;
+
+	class UnreferencedTrimTarget;
+
+	[Kept]
+	[KeptMember(".ctor()")]
+	class SourceClass;
+
+	[Kept]
+	class ProxyType;
+
+	class UnusedTypeMap;
+	class UnusedTargetType;
+	class UnusedSourceClass;
+	class UnusedProxyType;
+}
+
+// Polyfill for the type map types until we use an LKG runtime that has it.
+namespace System.Runtime.InteropServices
+{
+	[Kept (By = Tool.Trimmer)]
+	[KeptBaseType (typeof (Attribute), By = Tool.Trimmer)]
+	[KeptAttributeAttribute (typeof (AttributeUsageAttribute), By = Tool.Trimmer)]
+	[AttributeUsage (AttributeTargets.Assembly, AllowMultiple = true)]
+	public sealed class TypeMapAttribute<TTypeMapGroup> : Attribute
+	{
+		[Kept (By = Tool.Trimmer)]
+		public TypeMapAttribute (string value, Type target) { }
+
+		[Kept (By = Tool.Trimmer)]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
+		[RequiresUnreferencedCode ("Interop types may be removed by trimming")]
+		public TypeMapAttribute (string value, Type target, Type trimTarget) { }
+	}
+
+	[Kept (By = Tool.Trimmer)]
+	[KeptBaseType (typeof (Attribute), By = Tool.Trimmer)]
+	[KeptAttributeAttribute (typeof (AttributeUsageAttribute), By = Tool.Trimmer)]
+	[AttributeUsage (AttributeTargets.Assembly, AllowMultiple = true)]
+	public sealed class TypeMapAssociationAttribute<TTypeMapGroup> : Attribute
+	{
+		[Kept (By = Tool.Trimmer)]
+		public TypeMapAssociationAttribute (Type source, Type proxy) { }
+	}
+
+	[Kept(By = Tool.Trimmer)]
+	public static class TypeMapping
+	{
+		[Kept(By = Tool.Trimmer)]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
+		[RequiresUnreferencedCode ("Interop types may be removed by trimming")]
+		public static IReadOnlyDictionary<string, Type> GetOrCreateExternalTypeMapping<TTypeMapGroup> ()
+		{
+			throw new NotImplementedException ();
+		}
+
+		[Kept(By = Tool.Trimmer)]
+		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute), By = Tool.Trimmer)]
+		[RequiresUnreferencedCode ("Interop types may be removed by trimming")]
+		public static IReadOnlyDictionary<Type, Type> GetOrCreateProxyTypeMapping<TTypeMapGroup> ()
+		{
+			throw new NotImplementedException ();
+		}
+	}
+}
+
