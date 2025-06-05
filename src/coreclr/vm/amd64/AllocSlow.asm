@@ -115,7 +115,7 @@ RhpNewFast_UP_RarePath:
 LEAF_END RhpNewFast_UP, _TEXT
 
 ;
-; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewObjectArrayFast_UP
+; Shared code for RhNewString_UP, RhpNewArrayFast_UP and RhpNewPtrArrayFast_UP
 ;  RAX == string/array size
 ;  RCX == MethodTable
 ;  RDX == character/element count
@@ -217,12 +217,12 @@ ArraySizeOverflow:
 LEAF_END RhpNewArrayFast_UP, _TEXT
 
 ;
-; Object* RhpNewObjectArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
+; Object* RhpNewPtrArrayFast_UP(MethodTable *pMT, INT_PTR elementCount)
 ; 
-; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements),
+; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements,
 ; uniprocessor version
 ;
-LEAF_ENTRY RhpNewObjectArrayFast_UP, _TEXT
+LEAF_ENTRY RhpNewPtrArrayFast_UP, _TEXT
 
         ; Delegate overflow handling to the generic helper conservatively
 
@@ -240,6 +240,6 @@ LEAF_ENTRY RhpNewObjectArrayFast_UP, _TEXT
 
         NEW_ARRAY_FAST_UP
 
-LEAF_END RhpNewObjectArrayFast_UP, _TEXT
+LEAF_END RhpNewPtrArrayFast_UP, _TEXT
 
     end

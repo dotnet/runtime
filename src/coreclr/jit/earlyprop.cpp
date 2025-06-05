@@ -227,7 +227,7 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
             if ((actualConstVal < 0) || (actualConstVal > INT32_MAX))
             {
                 // Don't propagate array lengths that are beyond the maximum value of a GT_ARR_LENGTH or negative.
-                // node. CORINFO_HELP_NEWARR_1_OBJ helper call allows to take a long integer as the
+                // node. CORINFO_HELP_NEWARR_1_PTR helper call allows to take a long integer as the
                 // array length argument, but the type of GT_ARR_LENGTH is always INT32.
                 return nullptr;
             }
