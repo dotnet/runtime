@@ -512,16 +512,28 @@ namespace System.Security.Claims
         }
 
         [Theory]
-        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
-        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase)]
-        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
-        public void FindFirst_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase, false)]
+        public void FindFirst_WithStringComparison_Match(
+            string claimType,
+            string findType,
+            StringComparison stringComparison,
+            bool copy)
         {
             Claim claim = new(claimType, "value");
 
             ClaimsIdentity id = new(
                 claims: [claim],
                 stringComparison: stringComparison);
+
+            if (copy)
+            {
+                id = new ClaimsIdentity(id, stringComparison);
+            }
 
             Claim found = id.FindFirst(findType);
             Assert.NotNull(found);
@@ -529,32 +541,56 @@ namespace System.Security.Claims
         }
 
         [Theory]
-        [InlineData("Type", "type", StringComparison.InvariantCulture)]
-        [InlineData("Type", "type", StringComparison.Ordinal)]
-        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal)]
-        public void FindFirst_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
+        [InlineData("Type", "type", StringComparison.InvariantCulture, false)]
+        [InlineData("Type", "type", StringComparison.InvariantCulture, true)]
+        [InlineData("Type", "type", StringComparison.Ordinal, false)]
+        [InlineData("Type", "type", StringComparison.Ordinal, true)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal, false)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal, true)]
+        public void FindFirst_WithStringComparison_NoMatch(
+            string claimType,
+            string findType,
+            StringComparison stringComparison,
+            bool copy)
         {
             Claim claim = new(claimType, "value");
 
             ClaimsIdentity id = new(
                 claims: [claim],
                 stringComparison: stringComparison);
+
+            if (copy)
+            {
+                id = new ClaimsIdentity(id, stringComparison);
+            }
 
             Claim found = id.FindFirst(findType);
             Assert.Null(found);
         }
 
         [Theory]
-        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
-        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase)]
-        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
-        public void FindAll_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase, false)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase, true)]
+        public void FindAll_WithStringComparison_Match(
+            string claimType,
+            string findType,
+            StringComparison stringComparison,
+            bool copy)
         {
             Claim claim = new(claimType, "value");
 
             ClaimsIdentity id = new(
                 claims: [claim],
                 stringComparison: stringComparison);
+
+            if (copy)
+            {
+                id = new ClaimsIdentity(id, stringComparison);
+            }
 
             Claim found = Assert.Single(id.FindAll(findType));
             Assert.NotNull(found);
@@ -562,40 +598,71 @@ namespace System.Security.Claims
         }
 
         [Theory]
-        [InlineData("Type", "type", StringComparison.InvariantCulture)]
-        [InlineData("Type", "type", StringComparison.Ordinal)]
-        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal)]
-        public void FindAll_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
+        [InlineData("Type", "type", StringComparison.InvariantCulture, false)]
+        [InlineData("Type", "type", StringComparison.InvariantCulture, true)]
+        [InlineData("Type", "type", StringComparison.Ordinal, false)]
+        [InlineData("Type", "type", StringComparison.Ordinal, true)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal, false)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal, true)]
+        public void FindAll_WithStringComparison_NoMatch(
+            string claimType,
+            string findType,
+            StringComparison stringComparison,
+            bool copy)
         {
             Claim claim = new(claimType, "value");
 
             ClaimsIdentity id = new(
                 claims: [claim],
                 stringComparison: stringComparison);
+
+            if (copy)
+            {
+                id = new ClaimsIdentity(id, stringComparison);
+            }
 
             Assert.Empty(id.FindAll(findType));
         }
 
         [Theory]
-        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase)]
-        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase)]
-        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase)]
-        public void HasClaim_WithStringComparison_Match(string claimType, string findType, StringComparison stringComparison)
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Type", "type", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase, true)]
+        [InlineData("Type", "typ\u0000e", StringComparison.InvariantCultureIgnoreCase, false)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase, true)]
+        [InlineData("Type", "type", StringComparison.OrdinalIgnoreCase, false)]
+        public void HasClaim_WithStringComparison_Match(
+            string claimType,
+            string findType,
+            StringComparison stringComparison,
+            bool copy)
         {
             Claim claim = new(claimType, "value");
 
             ClaimsIdentity id = new(
                 claims: [claim],
                 stringComparison: stringComparison);
+
+            if (copy)
+            {
+                id = new ClaimsIdentity(id, stringComparison);
+            }
 
             AssertExtensions.TrueExpression(id.HasClaim(findType, "value"));
         }
 
         [Theory]
-        [InlineData("Type", "type", StringComparison.InvariantCulture)]
-        [InlineData("Type", "type", StringComparison.Ordinal)]
-        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal)]
-        public void HasClaim_WithStringComparison_NoMatch(string claimType, string findType, StringComparison stringComparison)
+        [InlineData("Type", "type", StringComparison.InvariantCulture, true)]
+        [InlineData("Type", "type", StringComparison.InvariantCulture, false)]
+        [InlineData("Type", "type", StringComparison.Ordinal, true)]
+        [InlineData("Type", "type", StringComparison.Ordinal, false)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal, true)]
+        [InlineData("Type", "typ\u0000e", StringComparison.Ordinal, false)]
+        public void HasClaim_WithStringComparison_NoMatch(
+            string claimType,
+            string findType,
+            StringComparison stringComparison,
+            bool copy)
         {
             Claim claim = new(claimType, "value");
 
@@ -603,24 +670,12 @@ namespace System.Security.Claims
                 claims: [claim],
                 stringComparison: stringComparison);
 
-            AssertExtensions.FalseExpression(id.HasClaim(findType, "value"));
-        }
-
-        //
-        //
-        private static BinaryReader CreateReaderWithClaim(string claimType)
-        {
-            Claim claim = new(claimType, "value");
-            ClaimsIdentity id = new(claims: [claim]);
-            MemoryStream stream = new();
-
-            using (BinaryWriter writer = new(stream, Encoding.UTF8, true))
+            if (copy)
             {
-                id.WriteTo(writer);
+                id = new ClaimsIdentity(id, stringComparison);
             }
 
-            stream.Position = 0;
-            return new BinaryReader(stream, Encoding.UTF8, false);
+            AssertExtensions.FalseExpression(id.HasClaim(findType, "value"));
         }
 
         [Theory]
@@ -746,6 +801,21 @@ namespace System.Security.Claims
 
             ClaimsIdentity clone = id.Clone();
             AssertExtensions.FalseExpression(clone.HasClaim("TYPE", "value"));
+        }
+
+        private static BinaryReader CreateReaderWithClaim(string claimType)
+        {
+            Claim claim = new(claimType, "value");
+            ClaimsIdentity id = new(claims: [claim]);
+            MemoryStream stream = new();
+
+            using (BinaryWriter writer = new(stream, Encoding.UTF8, true))
+            {
+                id.WriteTo(writer);
+            }
+
+            stream.Position = 0;
+            return new BinaryReader(stream, Encoding.UTF8, false);
         }
 
         [Serializable]

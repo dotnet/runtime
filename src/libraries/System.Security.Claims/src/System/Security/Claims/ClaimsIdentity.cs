@@ -226,6 +226,15 @@ namespace System.Security.Claims
             Initialize(other);
         }
 
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="ClaimsIdentity" /> class from an existing
+        ///   <see cref="ClaimsIdentity" /> instance.
+        /// </summary>
+        /// <param name="other">The <see cref="ClaimsIdentity" /> to copy.</param>
+        /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
         public ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison)
         {
             ValidateStringComparison(stringComparison);
@@ -233,6 +242,18 @@ namespace System.Security.Claims
             Initialize(other);
         }
 
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="ClaimsIdentity" /> class.
+        /// </summary>
+        /// <param name="identity">The identity from which to base the new claims identity.</param>
+        /// <param name="claims">The claims with which to populate the claims identity.</param>
+        /// <param name="authenticationType">The type of authentication used.</param>
+        /// <param name="nameType">The claim type to use for name claims.</param>
+        /// <param name="roleType">The claim type to use for role claims.</param>
+        /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
         public ClaimsIdentity(
             IIdentity? identity = null,
             IEnumerable<Claim>? claims = null,
@@ -580,7 +601,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="IEnumerable{Claim}"/> of matched claims.</returns>
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)
         {
@@ -628,7 +648,6 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="type">The type of the claim to match.</param>
         /// <returns>A <see cref="Claim"/>, null if nothing matches.</returns>
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual Claim? FindFirst(string type)
         {
@@ -675,7 +694,6 @@ namespace System.Security.Claims
         /// <param name="type">the type of the claim to match.</param>
         /// <param name="value">the value of the claim to match.</param>
         /// <returns>true if a claim is matched, false otherwise.</returns>
-        /// <remarks>Comparison is: StringComparison.OrdinalIgnoreCase for Claim.Type, StringComparison.Ordinal for Claim.Value.</remarks>
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
         public virtual bool HasClaim(string type, string value)
