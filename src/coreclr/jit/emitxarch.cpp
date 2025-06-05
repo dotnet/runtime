@@ -2205,11 +2205,6 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             if (aaaContext != 0)
             {
                 maskReg = static_cast<regNumber>(aaaContext + KBASE);
-
-                if (id->idIsEvexZContextSet())
-                {
-                    code |= ZBIT_IN_BYTE_EVEX_PREFIX;
-                }
             }
             break;
         }
@@ -2218,6 +2213,11 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
     if (isMaskReg(maskReg))
     {
         code |= (static_cast<code_t>(maskReg - KBASE) << 32);
+
+        if (id->idIsEvexZContextSet())
+        {
+            code |= ZBIT_IN_BYTE_EVEX_PREFIX;
+        }
     }
     return code;
 }
