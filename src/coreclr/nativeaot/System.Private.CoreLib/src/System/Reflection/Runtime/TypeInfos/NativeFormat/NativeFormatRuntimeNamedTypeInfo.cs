@@ -80,8 +80,17 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
                     if (guidStringArgumentHandle.HandleType != HandleType.ConstantStringValue)
                         continue;
 
+                    ConstantStringValueHandle constantStringValueHandle = guidStringArgumentHandle.ToConstantStringValueHandle(_reader);
+
+                    if (constantStringValueHandle.IsNil)
+                    {
+                        // We don't really have a parameter, so just match the name of the 'Guid.ctor' parameter.
+                        // The reason for throwing this exception is to keep semantics with the original behavior.
+                        ArgumentNullException.Throw("input");
+                    }
+
                     // Parse a 'Guid' directly from the encoded UTF8 buffer, instead of round-tripping through a 'string'
-                    return ConstantStringValue.ParseGuid(_reader, guidStringArgumentHandle.ToConstantStringValueHandle(_reader));
+                    return Guid.Parse(_reader.ReadStringAsBytes(constantStringValueHandle));
                 }
             }
             return null;

@@ -2013,24 +2013,6 @@ namespace Internal.Metadata.NativeFormat
 
         public string Value => _value;
         private readonly string _value;
-
-        /// <summary>
-        /// Parses a <see cref="Guid"/> value, matching the behavior of decoding a <see cref="string"/> and parsing from that.
-        /// </summary>
-        internal static Guid ParseGuid(MetadataReader reader, ConstantStringValueHandle handle)
-        {
-            if (handle.IsNil)
-            {
-                // We don't really have a parameter, so just match the name of the 'Guid.ctor' parameter
-#if SYSTEM_PRIVATE_CORELIB
-                ArgumentNullException.Throw("input");
-#else
-                throw new ArgumentNullException("input");
-#endif
-            }
-
-            return reader._streamReader.ParseGuid((uint)handle.Offset);
-        }
     } // ConstantStringValue
 
 #if SYSTEM_PRIVATE_CORELIB
