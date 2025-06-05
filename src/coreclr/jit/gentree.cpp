@@ -33384,6 +33384,10 @@ bool GenTree::IsTrueMask(GenTreeHWIntrinsic* parent) const
                 return SveMaskPatternAll ==
                        EvaluateSimdMaskToPattern<simd16_t>(ParentSimdBaseType, AsMskCon()->gtSimdMaskVal);
 
+            case TYP_MASK:
+                // The mask parent does not have a vector type, so we cannot evaluate the size of the vector.
+                return false;
+
             default:
                 unreached();
         }
