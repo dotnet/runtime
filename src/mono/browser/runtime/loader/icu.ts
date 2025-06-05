@@ -64,7 +64,7 @@ export function getIcuResourceName (config: MonoConfig): string | null {
         if (icuFile) {
             for (let i = 0; i < icuFiles.length; i++) {
                 const asset = icuFiles[i];
-                if (asset.name === icuFile) {
+                if (asset.virtualPath === icuFile) {
                     return asset.name;
                 }
             }
