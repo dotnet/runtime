@@ -697,7 +697,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             {
                 try
                 {
-                    return JsonSerializer.Deserialize<AssetsData>(ref reader, options)!;
+                    var nestedOptions = new JsonSerializerOptions(options);
+                    nestedOptions.Converters.Remove(this);
+
+                    return JsonSerializer.Deserialize<AssetsData>(ref reader, nestedOptions)!;
                 }
                 catch
                 {
