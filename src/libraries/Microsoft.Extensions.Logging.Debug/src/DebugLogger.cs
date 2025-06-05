@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Logging.Debug
             string message;
             if (string.IsNullOrEmpty(formatted))
             {
-                Debug.Assert(exception != null);
+                System.Diagnostics.Debug.Assert(exception != null);
                 message = $"{logLevel}: {exception}";
             }
             else if (exception == null)
