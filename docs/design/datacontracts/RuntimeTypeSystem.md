@@ -712,6 +712,13 @@ And the following enumeration definitions
         WrapperStubWithInstantiations = 0x04,
     }
 
+    internal enum ILStubType : uint
+    {
+        StubNotSet = 0x0,
+        StubCLRToNativeInterop = 0x1,
+        StubCLRToCOMInterop = 0x2,
+    }
+
     [Flags]
     internal enum DynamicMethodDescExtendedFlags : uint
     {
@@ -984,15 +991,15 @@ And the various apis are implemented with the following algorithms
 
         uint ExtendedFlags = // Read ExtendedFlags field from StoredSigMethodDesc contract using address methodDescHandle.Address
 
-        uint ilStubType = (uint)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        ILStubType ilStubType = (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
 
         bool isStatic = ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.Static);
         bool isDelegate = ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsDelegate);
         bool isCALLI = ((DynamicMethodDescExtendedFlags)ExtendedFlags).HasFlag(DynamicMethodDescExtendedFlags.IsCALLI);
 
 
-        bool isPInvokeStub = isStatic && !isCALLI && ilStubType == 0x1;
-        bool isCLRToCOMStub = !isStatic && ilStubType == 0x2;
+        bool isPInvokeStub = isStatic && !isCALLI && ilStubType == ILStubType.StubCLRToNativeInterop;
+        bool isCLRToCOMStub = !isStatic && ilStubType == ILStubType.StubCLRToCOMInterop;
 
         return isCLRToCOMStub || (isPInvokeStub && !isDelegate);
     }

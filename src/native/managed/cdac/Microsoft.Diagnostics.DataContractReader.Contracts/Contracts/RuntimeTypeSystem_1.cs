@@ -73,6 +73,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         WrapperStubWithInstantiations = 0x04,
     }
 
+    internal enum ILStubType : uint
+    {
+        StubNotSet = 0x0,
+        StubCLRToNativeInterop = 0x1,
+        StubCLRToCOMInterop = 0x2,
+    }
+
     [Flags]
     internal enum DynamicMethodDescExtendedFlags : uint
     {
@@ -235,7 +242,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         public string MethodName { get; }
         public DynamicMethodDescExtendedFlags ExtendedFlags => (DynamicMethodDescExtendedFlags)_storedSigDesc.ExtendedFlags;
-        public uint ILStubType => (uint)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
+        public ILStubType StubType => (ILStubType)(ExtendedFlags & DynamicMethodDescExtendedFlags.ILStubTypeMask);
 
         public bool IsStatic => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.Static);
         public bool IsDynamicMethod => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsLCGMethod);
@@ -243,8 +250,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         public bool IsDelegate => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsDelegate);
         public bool IsCALLI => ExtendedFlags.HasFlag(DynamicMethodDescExtendedFlags.IsCALLI);
 
-        public bool IsPInvokeStub => IsStatic && !IsCALLI && ILStubType == 0x1;
-        public bool IsCLRToCOMStub => !IsStatic && ILStubType == 0x2;
+        public bool IsPInvokeStub => IsStatic && !IsCALLI && StubType == ILStubType.StubCLRToNativeInterop;
+        public bool IsCLRToCOMStub => !IsStatic && StubType == ILStubType.StubCLRToCOMInterop;
 
         public bool HasMDContextArg => IsCLRToCOMStub || (IsPInvokeStub && !IsDelegate);
     }
