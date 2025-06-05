@@ -271,7 +271,7 @@ namespace System.Security.Claims
         /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   <paramref name="identity"/> is a <see cref="ClaimsIdentity"/> and <see cref="Actor" />
-        ///   results in a circular reference back to this.
+        ///   results in a circular reference back to <see langword="this"/>.
         /// </exception>
         public ClaimsIdentity(
             IIdentity? identity = null,
