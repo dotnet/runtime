@@ -290,10 +290,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
 {
     STANDARD_VM_CONTRACT;
 
-    if (dstreg != kESP_Unsafe)
-        X86EmitOffsetModRM(0x89, srcreg, dstreg, ofs);
-    else
-        X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs);
+    X86EmitOffsetModRM(0x89, srcreg, dstreg, ofs);
 }
 
 #ifdef TARGET_X86
@@ -305,11 +302,7 @@ VOID StubLinkerCPU::X86EmitIndexPush(X86Reg srcreg, int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
-    if(srcreg != kESP_Unsafe)
-        X86EmitOffsetModRM(0xff, (X86Reg)0x6, srcreg, ofs);
-    else
-        X86EmitOp(0xff,(X86Reg)0x6, srcreg, ofs);
-
+    X86EmitOffsetModRM(0xff, (X86Reg)0x6, srcreg, ofs);
     Push(sizeof(void*));
 }
 

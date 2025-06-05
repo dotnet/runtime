@@ -88,12 +88,6 @@ enum X86Reg : UCHAR
 };
 
 
-// Use this only if you are absolutely sure that the instruction format
-// handles it. This is not declared as X86Reg so that users are forced
-// to add a cast and think about what exactly they are doing.
-const int kESP_Unsafe = 4;
-
-
 //----------------------------------------------------------------------
 // StubLinker with extensions for generating X86 code.
 //----------------------------------------------------------------------
