@@ -2803,6 +2803,11 @@ void ObjectAllocator::RewriteUses()
                         varTypeName(newType));
                 lclVarDsc->lvType = newType;
             }
+            else
+            {
+                JITDUMP("V%02u already properly typed\n", lclNum);
+                lclVarDsc->lvTracked = 0;
+            }
         }
     }
 
