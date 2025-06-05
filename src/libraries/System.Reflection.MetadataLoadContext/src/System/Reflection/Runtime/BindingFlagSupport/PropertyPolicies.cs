@@ -94,24 +94,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             if (setter == null)
                 return getter;
 
-            // Return the setter if it's more accessible, otherwise return the getter
-            return GetAccessibilityRank(setter) > GetAccessibilityRank(getter) ? setter : getter;
-
-            // Define accessibility ranking
-            static int GetAccessibilityRank(MethodInfo method)
-            {
-                MethodAttributes access = method.Attributes & MethodAttributes.MemberAccessMask;
-                return access switch
-                {
-                    MethodAttributes.Public => 4,
-                    MethodAttributes.Family => 3,          // protected
-                    MethodAttributes.Assembly => 3,        // internal
-                    MethodAttributes.FamORAssem => 3,      // protected internal
-                    MethodAttributes.FamANDAssem => 2,     // protected and internal
-                    MethodAttributes.Private => 1,
-                    _ => 0
-                };
-            }
+            // Return the setter if it's more accessible, otherwise return the getter.
+            // MethodAttributes acessibility values are higher for more accessible methods: private (1) --> public (6).
+            return (setter.Attributes & MethodAttributes.MemberAccessMask) > (getter.Attributes & MethodAttributes.MemberAccessMask) ? setter : getter;
         }
     }
 }
