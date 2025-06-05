@@ -1,5 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+#ifdef __APPLE__
+#if !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 199309L
+#endif
+#endif
 
 #include <assert.h>
 #include <minipal/time.h>
@@ -76,7 +81,11 @@ int64_t minipal_hires_tick_frequency(void)
 int64_t minipal_hires_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
-    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+    #ifdef __APPLE__
+        return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
+    #else
+        return (int64_t)clock_gettime_nsec_np(CLOCK_MONOTONIC) / (int64_t)(tccMilliSecondsToNanoSeconds);
+    #endif
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -94,7 +103,11 @@ int64_t minipal_hires_ticks(void)
 int64_t minipal_lowres_ticks(void)
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
-    return  (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
+    #ifdef __APPLE__
+        return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / (int64_t)(tccMilliSecondsToNanoSeconds);
+    #else
+        return (int64_t)clock_gettime_nsec_np(CLOCK_MONOTONIC) / (int64_t)(tccMilliSecondsToNanoSeconds);
+    #endif
 #elif HAVE_CLOCK_MONOTONIC
     struct timespec ts;
 
