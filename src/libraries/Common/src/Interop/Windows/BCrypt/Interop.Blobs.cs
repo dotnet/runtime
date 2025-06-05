@@ -246,12 +246,12 @@ internal static partial class Interop
         /// <summary>
         ///     Used as a header to PQC parameters including the parameters set and key/seed.
         /// </summary>
-        [StructLayout(LayoutKind.Explicit, Pack = 1)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct BCRYPT_PQDSA_KEY_BLOB
         {
-            [FieldOffset(0)] internal KeyBlobMagicNumber Magic;
-            [FieldOffset(4)] internal int cbParameterSet;           // Byte size of parameterSet[]
-            [FieldOffset(8)] internal int cbKey;                    // Byte size of key[]
+            internal KeyBlobMagicNumber Magic;
+            internal int cbParameterSet;        // Byte size of parameterSet[]
+            internal int cbKey;                 // Byte size of key[]
             // The rest of the buffer contains the data
         }
 
