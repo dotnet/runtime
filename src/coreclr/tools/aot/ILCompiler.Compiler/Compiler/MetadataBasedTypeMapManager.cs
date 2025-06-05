@@ -108,36 +108,9 @@ namespace ILCompiler
         }
 
         private Dictionary<TypeDesc, TypeMapState> _typeMapStates = new Dictionary<TypeDesc, TypeMapState>();
-        private TypeDesc _typeMapAssemblyTargetType;
-        private TypeDesc _typeMapType;
-        private TypeDesc _typeMapAssociationType;
-
-        public override TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
-        {
-            if (_typeMapAssemblyTargetType == attrType.GetTypeDefinition())
-            {
-                return TypeMapAttributeKind.TypeMapAssemblyTarget;
-            }
-
-            if (_typeMapType == attrType.GetTypeDefinition())
-            {
-                return TypeMapAttributeKind.TypeMap;
-            }
-
-            if (_typeMapAssociationType == attrType.GetTypeDefinition())
-            {
-                return TypeMapAttributeKind.TypeMapAssociation;
-            }
-
-            return TypeMapAttributeKind.None;
-        }
 
         public MetadataBasedTypeMapManager(EcmaAssembly assembly)
         {
-            _typeMapAssemblyTargetType = assembly.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssemblyTargetAttribute`1");
-            _typeMapType = assembly.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAttribute`1");
-            _typeMapAssociationType = assembly.Context.SystemModule.GetTypeByCustomAttributeTypeName("System.Runtime.InteropServices.TypeMapAssociationAttribute`1");
-
             HashSet<EcmaAssembly> scannedAssemblies = [];
 
             Queue<EcmaAssembly> assembliesToScan = new Queue<EcmaAssembly>();

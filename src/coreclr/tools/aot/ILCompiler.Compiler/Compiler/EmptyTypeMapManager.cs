@@ -13,6 +13,5 @@ namespace ILCompiler
     {
         public override void AddCompilationRoots(IRootingServiceProvider rootProvider) { }
         public override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode) { }
-        public override TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType) => TypeMapAttributeKind.None;
     }
 }

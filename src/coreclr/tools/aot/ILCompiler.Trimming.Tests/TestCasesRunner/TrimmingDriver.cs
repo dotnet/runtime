@@ -128,7 +128,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 flowAnnotations: new FlowAnnotations(logger, ilProvider, compilerGeneratedState),
                 generationOptions: UsageBasedMetadataGenerationOptions.ReflectionILScanning,
                 options: default,
-                typeMapManager: new MetadataBasedTypeMapManager((EcmaAssembly)entrypointModule!.Assembly),
                 logger: logger,
                 featureSwitchValues: options.FeatureSwitches,
                 rootEntireAssembliesModules: Array.Empty<string>(),
