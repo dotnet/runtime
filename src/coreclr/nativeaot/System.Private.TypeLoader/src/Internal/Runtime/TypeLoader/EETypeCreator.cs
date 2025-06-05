@@ -399,26 +399,19 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->ContainsGCPointers = false;
                 }
             }
-            else if (gcBitfield != null)
+            else
             {
-                if (cbGCDesc != 0)
+                Debug.Assert(gcBitfield == null);
+
+                if (pTemplateEEType != null)
                 {
-                    pEEType->ContainsGCPointers = true;
-                    CreateGCDesc(gcBitfield, baseSize, isValueType, false, ((void**)pEEType) - 1);
+                    Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
+                    pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
                 }
                 else
                 {
                     pEEType->ContainsGCPointers = false;
                 }
-            }
-            else if (pTemplateEEType != null)
-            {
-                Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
-                pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
-            }
-            else
-            {
-                pEEType->ContainsGCPointers = false;
             }
         }
 
