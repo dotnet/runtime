@@ -159,6 +159,8 @@ bool PalInit();
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
 void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) TCHAR * wszPath, int32_t cchPath);
+
 struct NATIVE_CONTEXT;
 
 #if _WIN32

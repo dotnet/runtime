@@ -25,6 +25,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "eventtrace_context.h"
+#include "eventtracebase.h"
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
 // This is initialized at the beginning and EventPipe library requires the lock handle to be maintained by the runtime
@@ -75,7 +76,8 @@ bool
 ep_rt_aot_providers_validate_all_disabled (void)
 {
     return !MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
-        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled
+        && !MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled;
 }
 
 void
@@ -192,6 +194,12 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
     }
 
     return entrypoint_assembly_name;
+}
+
+void
+ep_rt_aot_execute_rundown (dn_vector_ptr_t* execution_checkpoints)
+{
+    ETW::EnumerationLog::EndRundown();
 }
 
 const ep_char8_t *

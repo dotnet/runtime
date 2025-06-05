@@ -34,6 +34,184 @@ void PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ u
     *ppUpperBound = pbModule + cbModule - 1;
 }
 
+// Reads through the PE header of the specified module, and returns
+// the module's matching PDB's signature GUID, age, and build path by
+// fishing them out of the last IMAGE_DEBUG_DIRECTORY of type
+// IMAGE_DEBUG_TYPE_CODEVIEW.  Used when sending the ModuleLoad event
+// to help profilers find matching PDBs for loaded modules.
+//
+// Arguments:
+//
+// [in] hOsHandle - OS Handle for module from which to get PDB info
+// [out] pGuidSignature - PDB's signature GUID to be placed here
+// [out] pdwAge - PDB's age to be placed here
+// [out] wszPath - PDB's build path to be placed here
+// [in] cchPath - Number of wide characters allocated in wszPath, including NULL terminator
+//
+// This is a simplification of similar code in CLR's GetCodeViewInfo
+// in eventtrace.cpp.
+void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdwAge, _Out_writes_z_(cchPath) TCHAR * wszPath, int32_t cchPath)
+{
+    // Zero-init [out]-params
+    ZeroMemory(pGuidSignature, sizeof(*pGuidSignature));
+    *pdwAge = 0;
+    if (cchPath <= 0)
+        return;
+    wszPath[0] = L'\0';
+
+    BYTE *pbModule = (BYTE*)hOsHandle;
+
+    IMAGE_NT_HEADERS const * pNtHeaders = (IMAGE_NT_HEADERS*)(pbModule + ((IMAGE_DOS_HEADER*)hOsHandle)->e_lfanew);
+    IMAGE_DATA_DIRECTORY const * rgDataDirectory = NULL;
+    if (pNtHeaders->OptionalHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+        rgDataDirectory = ((IMAGE_OPTIONAL_HEADER32 const *)&pNtHeaders->OptionalHeader)->DataDirectory;
+    else
+        rgDataDirectory = ((IMAGE_OPTIONAL_HEADER64 const *)&pNtHeaders->OptionalHeader)->DataDirectory;
+
+    IMAGE_DATA_DIRECTORY const * pDebugDataDirectory = &rgDataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG];
+
+    // In Redhawk, modules are loaded as MAPPED, so we don't have to worry about dealing
+    // with FLAT files (with padding missing), so header addresses can be used as is
+    IMAGE_DEBUG_DIRECTORY const *rgDebugEntries = (IMAGE_DEBUG_DIRECTORY const *) (pbModule + pDebugDataDirectory->VirtualAddress);
+    DWORD cbDebugEntries = pDebugDataDirectory->Size;
+    if (cbDebugEntries < sizeof(IMAGE_DEBUG_DIRECTORY))
+        return;
+
+    // Since rgDebugEntries is an array of IMAGE_DEBUG_DIRECTORYs, cbDebugEntries
+    // should be a multiple of sizeof(IMAGE_DEBUG_DIRECTORY).
+    if (cbDebugEntries % sizeof(IMAGE_DEBUG_DIRECTORY) != 0)
+        return;
+
+    // CodeView RSDS debug information -> PDB 7.00
+    struct CV_INFO_PDB70 
+    {
+        DWORD          magic; 
+        GUID           signature;       // unique identifier 
+        DWORD          age;             // an always-incrementing value 
+        _Field_z_ char  path[MAX_PATH];  // zero terminated string with the name of the PDB file 
+    };
+
+    // Temporary storage for a CV_INFO_PDB70 and its size (which could be less than
+    // sizeof(CV_INFO_PDB70); see below).
+    struct PdbInfo
+    {
+        CV_INFO_PDB70 *     m_pPdb70;
+        ULONG               m_cbPdb70;
+    };
+
+    // Grab module bounds so we can do some rough sanity checking before we follow any
+    // RVAs
+    uint8_t * pbModuleLowerBound = NULL;
+    uint8_t * pbModuleUpperBound = NULL;
+    PalGetModuleBounds(hOsHandle, &pbModuleLowerBound, &pbModuleUpperBound);
+
+    // Iterate through all debug directory entries. The convention is that debuggers &
+    // profilers typically just use the very last IMAGE_DEBUG_TYPE_CODEVIEW entry.  Treat raw
+    // bytes we read as untrusted.
+    PdbInfo pdbInfoLast = {0};
+    int cEntries = cbDebugEntries / sizeof(IMAGE_DEBUG_DIRECTORY);
+    for (int i = 0; i < cEntries; i++)
+    {
+        if ((uint8_t*)(&rgDebugEntries[i]) + sizeof(rgDebugEntries[i]) >= pbModuleUpperBound)
+        {
+            // Bogus pointer
+            return;
+        }
+
+        if (rgDebugEntries[i].Type != IMAGE_DEBUG_TYPE_CODEVIEW)
+            continue;
+
+        // Get raw data pointed to by this IMAGE_DEBUG_DIRECTORY
+
+        // AddressOfRawData is generally set properly for Redhawk modules, so we don't
+        // have to worry about using PointerToRawData and converting it to an RVA
+        if (rgDebugEntries[i].AddressOfRawData == NULL)
+            continue;
+
+        DWORD rvaOfRawData = rgDebugEntries[i].AddressOfRawData;
+        ULONG cbDebugData = rgDebugEntries[i].SizeOfData;
+        if (cbDebugData < size_t(&((CV_INFO_PDB70*)0)->magic) + sizeof(((CV_INFO_PDB70*)0)->magic))
+        {
+            // raw data too small to contain magic number at expected spot, so its format
+            // is not recognizable. Skip
+            continue;
+        }
+
+        // Verify the magic number is as expected
+        const DWORD CV_SIGNATURE_RSDS = 0x53445352;
+        CV_INFO_PDB70 * pPdb70 = (CV_INFO_PDB70 *) (pbModule + rvaOfRawData);
+        if ((uint8_t*)(pPdb70) + cbDebugData >= pbModuleUpperBound)
+        {
+            // Bogus pointer
+            return;
+        }
+
+        if (pPdb70->magic != CV_SIGNATURE_RSDS)
+        {
+            // Unrecognized magic number.  Skip
+            continue;
+        }
+
+        // From this point forward, the format should adhere to the expected layout of
+        // CV_INFO_PDB70. If we find otherwise, then assume the IMAGE_DEBUG_DIRECTORY is
+        // outright corrupt.
+
+        // Verify sane size of raw data
+        if (cbDebugData > sizeof(CV_INFO_PDB70))
+            return;
+
+        // cbDebugData actually can be < sizeof(CV_INFO_PDB70), since the "path" field
+        // can be truncated to its actual data length (i.e., fewer than MAX_PATH chars
+        // may be present in the PE file). In some cases, though, cbDebugData will
+        // include all MAX_PATH chars even though path gets null-terminated well before
+        // the MAX_PATH limit.
+        
+        // Gotta have at least one byte of the path
+        if (cbDebugData < offsetof(CV_INFO_PDB70, path) + sizeof(char))
+            return;
+        
+        // How much space is available for the path?
+        size_t cchPathMaxIncludingNullTerminator = (cbDebugData - offsetof(CV_INFO_PDB70, path)) / sizeof(char);
+        ASSERT(cchPathMaxIncludingNullTerminator >= 1);   // Guaranteed above
+
+        // Verify path string fits inside the declared size
+        size_t cchPathActualExcludingNullTerminator = strnlen_s(pPdb70->path, cchPathMaxIncludingNullTerminator);
+        if (cchPathActualExcludingNullTerminator == cchPathMaxIncludingNullTerminator)
+        {
+            // This is how strnlen indicates failure--it couldn't find the null
+            // terminator within the buffer size specified
+            return;
+        }
+
+        // Looks valid.  Remember it.
+        pdbInfoLast.m_pPdb70 = pPdb70;
+        pdbInfoLast.m_cbPdb70 = cbDebugData;
+    }
+
+    // Take the last IMAGE_DEBUG_TYPE_CODEVIEW entry we saw, and return it to the caller
+    if (pdbInfoLast.m_pPdb70 != NULL)
+    {
+        memcpy(pGuidSignature, &pdbInfoLast.m_pPdb70->signature, sizeof(GUID));
+        *pdwAge = pdbInfoLast.m_pPdb70->age;
+
+        // Convert build path from ANSI to UNICODE
+        errno_t ret;
+        size_t cchConverted;
+        ret = mbstowcs_s(
+            &cchConverted,
+            wszPath,
+            cchPath,
+            pdbInfoLast.m_pPdb70->path,
+            _countof(pdbInfoLast.m_pPdb70->path) - 1);
+        if ((ret != 0) && (ret != STRUNCATE))
+        {
+            // PDB path isn't essential.  An empty string will do if we hit an error.
+            ASSERT(cchPath > 0);        // Guaranteed at top of function
+            wszPath[0] = L'\0';
+        }
+    }
+}
+
 uint32_t g_RhNumberOfProcessors;
 
 int32_t PalGetProcessCpuCount()

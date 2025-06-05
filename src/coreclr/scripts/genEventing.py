@@ -220,7 +220,7 @@ def getPalDataTypeMapping(runtimeFlavor):
 def includeProvider(providerName, runtimeFlavor):
     if (runtimeFlavor.coreclr or runtimeFlavor.nativeaot) and providerName == "Microsoft-DotNETRuntimeMonoProfiler":
         return False
-    elif runtimeFlavor.nativeaot and (providerName == "Microsoft-Windows-DotNETRuntimeRundown" or providerName == "Microsoft-Windows-DotNETRuntimeStress"):
+    elif runtimeFlavor.nativeaot and providerName == "Microsoft-Windows-DotNETRuntimeStress":
         return False
     else:
         return True

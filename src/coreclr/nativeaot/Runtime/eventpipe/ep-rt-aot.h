@@ -707,7 +707,9 @@ ep_rt_execute_rundown (dn_vector_ptr_t *execution_checkpoints)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // NativeAOT does not currently support rundown
+    extern void
+    ep_rt_aot_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
+    ep_rt_aot_execute_rundown (execution_checkpoints);
 }
 
 /*
