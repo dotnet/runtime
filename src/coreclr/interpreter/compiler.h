@@ -7,6 +7,16 @@
 #include "intops.h"
 #include "datastructs.h"
 
+TArray<char> PrintMethodName(COMP_HANDLE comp,
+                             CORINFO_CLASS_HANDLE  clsHnd,
+                             CORINFO_METHOD_HANDLE methHnd,
+                             CORINFO_SIG_INFO*     sig,
+                             bool                  includeClassInstantiation,
+                             bool                  includeMethodInstantiation,
+                             bool                  includeSignature,
+                             bool                  includeReturnType,
+                             bool                  includeThisSpecifier);
+
 // Types that can exist on the IL execution stack. They are used only during
 // IL import compilation stage.
 enum StackType {
@@ -294,7 +304,6 @@ struct Reloc
     }
 };
 
-typedef class ICorJitInfo* COMP_HANDLE;
 
 class InterpIAllocator;
 
@@ -320,7 +329,8 @@ private:
     COMP_HANDLE m_compHnd;
     CORINFO_METHOD_INFO* m_methodInfo;
 #ifdef DEBUG
-    const char *m_methodName;
+    CORINFO_CLASS_HANDLE m_classHnd;
+    TArray<char> m_methodName;
     bool m_verbose = false;
 #endif
 
