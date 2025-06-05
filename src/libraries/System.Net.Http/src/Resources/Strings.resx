@@ -150,8 +150,8 @@
   <data name="net_http_headers_invalid_range" xml:space="preserve">
     <value>Invalid range. At least one of the two parameters must not be null.</value>
   </data>
-  <data name="net_http_headers_no_newlines" xml:space="preserve">
-    <value>New-line characters are not allowed in header values.</value>
+  <data name="net_http_headers_no_newlines_no_nul" xml:space="preserve">
+    <value>New-line or NUL characters are not allowed in header values.</value>
   </data>
   <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
     <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>

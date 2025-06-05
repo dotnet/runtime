@@ -1025,7 +1025,7 @@ namespace System.Net.Http.Headers
             {
                 // If we don't have a parser for the header, we consider the value valid if it doesn't contains
                 // newline or \0 characters. We add the values as "parsed value". Note that we allow empty values.
-                CheckContainsNewLine(value);
+                ContainsNewLineOrNull(value);
                 AddParsedValue(info, value ?? string.Empty);
                 return;
             }
@@ -1127,7 +1127,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        internal static void CheckContainsNewLine(string? value)
+        internal static void ContainsNewLineOrNull(string? value)
         {
             if (value == null)
             {
@@ -1136,7 +1136,7 @@ namespace System.Net.Http.Headers
 
             if (HttpRuleParser.ContainsNewLineOrNull(value))
             {
-                throw new FormatException(SR.net_http_headers_no_newlines);
+                throw new FormatException(SR.net_http_headers_no_newlines_no_nul);
             }
         }
 

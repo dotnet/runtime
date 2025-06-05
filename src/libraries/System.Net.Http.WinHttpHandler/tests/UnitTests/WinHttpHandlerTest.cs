@@ -841,20 +841,23 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         [InlineData('\r', HeaderType.Request)]
         [InlineData('\n', HeaderType.Request)]
         [InlineData('\0', HeaderType.Request)]
+        [InlineData('\u0100', HeaderType.Request)]
         [InlineData('\r', HeaderType.Content)]
         [InlineData('\n', HeaderType.Content)]
         [InlineData('\0', HeaderType.Content)]
+        [InlineData('\u0100', HeaderType.Content)]
         [InlineData('\r', HeaderType.Cookie)]
         [InlineData('\n', HeaderType.Cookie)]
         [InlineData('\0', HeaderType.Cookie)]
+        [InlineData('\u0100', HeaderType.Cookie)]
         public async Task SendAsync_RequestWithDangerousControlHeaderValue_ThrowsHttpRequestException(char dangerousChar, HeaderType headerType)
         {
             var handler = new WinHttpHandler();
-            using (var client = new HttpClient(handler))
-            {
-                TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
+            TestServer.SetResponse(DecompressionMethods.None, TestServer.ExpectedResponseBody);
 
-                var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+            var request = new HttpRequestMessage(HttpMethod.Get, TestServer.FakeServerEndpoint);
+            try
+            {
                 switch (headerType)
                 {
                     case HeaderType.Request:
@@ -870,7 +873,13 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
                         handler.CookieContainer.Add(new Uri(TestServer.FakeServerEndpoint), new Cookie("CustomCookie", $"Value{dangerousChar}WithControlChar"));
                         break;
                 }
-
+            }
+            catch (FormatException fex) when (fex.Message.Contains("New-line or NUL"))
+            {
+                return;
+            }
+            using (var client = new HttpClient(handler))
+            {
                 var ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
                 var fex = Assert.IsType<FormatException>(ex.InnerException);
                 Assert.Contains("Latin-1", fex.Message);
