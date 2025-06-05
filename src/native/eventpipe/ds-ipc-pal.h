@@ -116,7 +116,7 @@ ds_ipc_stream_read (
 bool
 ds_ipc_stream_read_fd (
 	DiagnosticsIpcStream *ipc_stream,
-	uint32_t *data_fd);
+	int *data_fd);
 
 bool
 ds_ipc_stream_write (

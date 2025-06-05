@@ -18,14 +18,29 @@ if (CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS OR CLR_CMAKE_HOST_ANDROID)
   set(FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT 1)
 endif()
 
-check_include_files(
-    "linux/user_events.h;sys/ioctl.h;unistd.h"
+check_include_file(
+    linux/user_events.h
     HAVE_LINUX_USER_EVENTS_H
+)
+
+check_include_file(
+    sys/ioctl.h
+    HAVE_SYS_IOCTL_H
+)
+
+check_include_file(
+    unistd.h
+    HAVE_UNISTD_H
 )
 
 check_include_file(
     "sys/uio.h"
     HAVE_SYS_UIO_H
+)
+
+check_include_file(
+    errno.h
+    HAVE_ERRNO_H
 )
 
 if (NOT DEFINED EP_GENERATED_HEADER_PATH)

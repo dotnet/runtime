@@ -25,7 +25,7 @@ session_provider_compare_name_func (
 
 static
 bool
-ep_event_filter_allows_event_id (
+event_filter_allows_event_id (
 	const EventPipeProviderEventFilter *event_filter,
 	uint32_t event_id);
 
@@ -101,7 +101,7 @@ ep_session_provider_free (EventPipeSessionProvider * session_provider)
 
 static
 bool
-ep_event_filter_allows_event_id (
+event_filter_allows_event_id (
 	const EventPipeProviderEventFilter *event_filter,
 	uint32_t event_id)
 {
@@ -111,7 +111,7 @@ ep_event_filter_allows_event_id (
 	if (event_filter->event_ids == NULL)
 		return !event_filter->enable;
 
-	return event_filter->enable == dn_umap_contains (event_filter->event_ids, &event_id);
+	return event_filter->enable == dn_umap_contains (event_filter->event_ids, (void*)(uintptr_t)event_id);
 }
 
 bool
@@ -135,7 +135,7 @@ ep_session_provider_allows_event (
 
 	uint32_t event_id = ep_event_get_event_id (ep_event);
 	EventPipeProviderEventFilter *event_filter = ep_session_provider_get_event_filter (session_provider);
-	return ep_event_filter_allows_event_id (event_filter, event_id);
+	return event_filter_allows_event_id (event_filter, event_id);
 }
 
 /*

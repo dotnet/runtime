@@ -72,6 +72,8 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 
 #define EP_TRACEPOINT_ENABLE_BIT 31
 
+#define EP_TRACEPOINT_FORMAT_MAX_SIZE 512
+
 #define EP_TRACEPOINT_FORMAT_V1 "u8 version; u16 event_id; __rel_loc u8[] extension; __rel_loc u8[] payload; __rel_loc u8[] meta"
 
 #define EP_MAX_EXTENSION_SIZE (2 * (EP_ACTIVITY_ID_SIZE + 1))

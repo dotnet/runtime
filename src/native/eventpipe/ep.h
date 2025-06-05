@@ -127,7 +127,7 @@ typedef struct EventPipeSessionOptions {
 	EventPipeSerializationFormat format;
 	uint64_t rundown_keyword;
 	bool stackwalk_requested;
-	uint32_t user_events_data_fd;
+	int user_events_data_fd;
 } EventPipeSessionOptions;
 
 void
@@ -144,7 +144,7 @@ ep_session_options_init (
 	IpcStream *stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void *callback_additional_data,
-	uint32_t user_events_data_fd);
+	int user_events_data_fd);
 
 void
 ep_session_options_fini (EventPipeSessionOptions* options);

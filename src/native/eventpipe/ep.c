@@ -1136,7 +1136,7 @@ ep_session_options_init (
 	IpcStream* stream,
 	EventPipeSessionSynchronousCallback sync_callback,
 	void* callback_additional_data,
-	uint32_t user_events_data_fd)
+	int user_events_data_fd)
 {
 	EP_ASSERT (options != NULL);
 
@@ -1775,6 +1775,14 @@ ep_event_filter_free (EventPipeProviderEventFilter *event_filter)
 	ep_rt_object_free (event_filter);
 }
 
+static
+void
+DN_CALLBACK_CALLTYPE
+tracepoint_free_func (void *tracepoint)
+{
+	ep_rt_object_free (*(EventPipeTracepoint **)tracepoint);
+}
+
 void
 ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_config)
 {
@@ -1786,7 +1794,7 @@ ep_tracepoint_config_fini (EventPipeProviderTracepointConfiguration *tracepoint_
 	}
 
 	if (tracepoint_config->tracepoints) {
-		dn_vector_free (tracepoint_config->tracepoints);
+		dn_vector_ptr_custom_free (tracepoint_config->tracepoints, tracepoint_free_func);
 		tracepoint_config->tracepoints = NULL;
 	}
 }

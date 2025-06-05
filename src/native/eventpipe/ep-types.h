@@ -184,7 +184,7 @@ struct _EventPipeTracepoint {
 #else
 struct _EventPipeTracepoint_Internal {
 #endif
-	ep_char8_t tracepoint_format[256];
+	ep_char8_t tracepoint_format[EP_TRACEPOINT_FORMAT_MAX_SIZE];
 	uint32_t write_index;
 	uint32_t enabled;
 };
@@ -230,7 +230,7 @@ struct _EventPipeProviderTracepointConfiguration {
 struct _EventPipeProviderTracepointConfiguration_Internal {
 #endif
 	EventPipeTracepoint default_tracepoint;
-	dn_vector_t *tracepoints;
+	dn_vector_ptr_t *tracepoints;
 	dn_umap_t *event_id_to_tracepoint_map;
 };
 
