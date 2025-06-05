@@ -321,8 +321,8 @@ unsafe class Program
             throw new Exception($"Unexpected vector length - expected {byteVectorLength}, got {Vector<byte>.Count}");
         }
 
-        Check("X86Base", ExpectedX86Base, &X86BaseIsSupported, X86Base.IsSupported, () => null);
-        Check("X86Base.X64", ExpectedX86Base, &X86BaseX64IsSupported, X86Base.IsSupported, () => null);
+        Check("X86Base", ExpectedX86Base, &X86BaseIsSupported, X86Base.IsSupported, () => { X86Base.Pause(); return true; });
+        Check("X86Base.X64", ExpectedX86Base, &X86BaseX64IsSupported, X86Base.IsSupported, null);
 
         Check("Sse", ExpectedSse, &SseIsSupported, Sse.IsSupported, () => Sse.Subtract(Vector128<float>.Zero, Vector128<float>.Zero).Equals(Vector128<float>.Zero));
         Check("Sse.X64", ExpectedSse, &SseX64IsSupported, Sse.X64.IsSupported, () => Sse.X64.ConvertToInt64WithTruncation(Vector128<float>.Zero) == 0);
