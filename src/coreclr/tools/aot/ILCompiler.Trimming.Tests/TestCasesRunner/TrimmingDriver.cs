@@ -139,7 +139,15 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			InteropStateManager interopStateManager = new InteropStateManager (typeSystemContext.GeneratedAssembly);
 			InteropStubManager interopStubManager = new UsageBasedInteropStubManager (interopStateManager, pinvokePolicy, logger);
 
-			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
+            TypeMapManager typeMapManager = new EmptyTypeMapManager();
+            if (entrypointModule is { Assembly: EcmaAssembly entryAssembly })
+            {
+                typeMapManager = new MetadataBasedTypeMapManager (entryAssembly);
+            }
+
+            compilationRoots.Add(typeMapManager);
+
+            CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)
 				.UseILProvider (ilProvider)
 				.UseCompilationUnitPrefix("");
 
@@ -148,6 +156,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.UseMetadataManager (metadataManager)
 				.UseParallelism (System.Diagnostics.Debugger.IsAttached ? 1 : -1)
 				.UseInteropStubManager (interopStubManager)
+                .UseTypeMapManager (typeMapManager)
 				.ToILScanner ();
 
 			return scanner.Scan ();
