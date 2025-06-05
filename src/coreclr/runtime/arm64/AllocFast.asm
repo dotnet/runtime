@@ -95,7 +95,7 @@ NewOutOfMemory
 
     NESTED_END RhpNewObject
 
-;; Shared code for RhNewString, RhpNewArrayFast and RhpNewObjectArrayFast
+;; Shared code for RhNewString, RhpNewArrayFast and RhpNewPtrArrayFast
 ;;  x0 == MethodTable
 ;;  x1 == character/element count
 ;;  x2 == string/array size
@@ -191,11 +191,10 @@ ArraySizeOverflow
         b           RhExceptionHandling_FailedAllocation
     LEAF_END    RhpNewArrayFast
 
-#ifndef FEATURE_NATIVEAOT
-;; Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+;; Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 ;;  x0 == MethodTable
 ;;  x1 == element count
-    LEAF_ENTRY RhpNewObjectArrayFast
+    LEAF_ENTRY RhpNewPtrArrayFast
 
         ; Delegate overflow handling to the generic helper conservatively
 
@@ -215,10 +214,9 @@ ArraySizeOverflow
 
         NEW_ARRAY_FAST
 
-    LEAF_END    RhpNewObjectArrayFast
-#endif
+    LEAF_END    RhpNewPtrArrayFast
 
-;; Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
+;; Allocate variable sized object (eg. array, string) using the slow path that calls a runtime helper.
 ;;  x0 == MethodTable
 ;;  x1 == element count
     NESTED_ENTRY RhpNewVariableSizeObject

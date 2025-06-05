@@ -334,32 +334,30 @@ LOCAL_LABEL(ArraySizeOverflow):
 LEAF_END RhpNewArrayFast, _TEXT
 
 
-#ifndef FEATURE_NATIVEAOT
-// Allocate one dimensional, zero based array (SZARRAY) of objects (pointer sized elements).
+// Allocate one dimensional, zero based array (SZARRAY) of pointer sized elements.
 //  r0 == MethodTable
 //  r1 == element count
-LEAF_ENTRY RhpNewObjectArrayFast, _TEXT
+LEAF_ENTRY RhpNewPtrArrayFast, _TEXT
         NEW_ARRAY_FAST_PROLOG
 
         // Delegate overflow handling to the generic helper conservatively
 
         mov         r2, #1 << 28 // 0x40000000 / sizeof(void*)
         cmp         r1, r2
-        bhs         LOCAL_LABEL(RhpNewObjectArrayFast_RarePath)
+        bhs         LOCAL_LABEL(RhpNewPtrArrayFast_RarePath)
 
         mov         r2, #SZARRAY_BASE_SIZE
         add         r2, r2, r1, lsl #2
 
         NEW_ARRAY_FAST
 
-LOCAL_LABEL(RhpNewObjectArrayFast_RarePath):
+LOCAL_LABEL(RhpNewPtrArrayFast_RarePath):
         NEW_ARRAY_FAST_TAIL_EPILOG
         b           C_FUNC(RhpNewVariableSizeObject)
-LEAF_END RhpNewObjectArrayFast, _TEXT
-#endif
+LEAF_END RhpNewPtrArrayFast, _TEXT
 
 
-// Allocate one dimensional, zero based array (SZARRAY) using the slow path that calls a runtime helper.
+// Allocate variable sized object (eg. array, string) using the slow path that calls a runtime helper.
 //  r0 == MethodTable
 //  r1 == element count
 NESTED_ENTRY RhpNewVariableSizeObject, _TEXT, NoHandler

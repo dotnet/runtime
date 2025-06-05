@@ -5934,7 +5934,7 @@ namespace System.Threading.Tasks
             }
 
             int? count = null;
-            if (tasks is ICollection<Task> taskCollection)
+            if (tasks is IReadOnlyCollection<Task> taskCollection)
             {
                 if (tasks is Task[] taskArray)
                 {
