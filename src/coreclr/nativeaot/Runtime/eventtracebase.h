@@ -149,7 +149,7 @@ namespace ETW
     class EnumerationLog
     {
         public:
-            static VOID EndRundown();
+            static void EndRundown();
     };
 
     // Class to wrap all Loader logic for ETW

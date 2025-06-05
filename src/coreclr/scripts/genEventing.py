@@ -604,14 +604,14 @@ def generateClrallEvents(eventNodes, allTemplates, target_cpp, runtimeFlavor, is
                 fnbody.append("status &= FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
 
             if runtimeFlavor.nativeaot:
-                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate":
+                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate" or providerName == "Microsoft-Windows-DotNETRuntimeRundown":
                     fnbody.append("#ifndef TARGET_UNIX\n")
                     fnbody.append(lindent)
                     fnbody.append("status &= ")
                 else:
                     fnbody.append("return ")
                 fnbody.append("FireEtXplat" + eventName + "(" + ''.join(line) + ");\n")
-                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate":
+                if providerName == "Microsoft-Windows-DotNETRuntime" or providerName == "Microsoft-Windows-DotNETRuntimePrivate" or providerName == "Microsoft-Windows-DotNETRuntimeRundown":
                     fnbody.append("#endif\n")
 
             fnbody.append(lindent)
