@@ -41,24 +41,4 @@ internal static class ConversionExtensions
             return new TargetPointer((ulong)address);
         }
     }
-
-    /// <summary>
-    /// Converts a ClrDataAddress to a TargetCodePointer, ensuring the address is within the valid range for the target platform.
-    /// </summary>
-    public static TargetCodePointer ToTargetCodePointer(this ClrDataAddress address, Target target)
-    {
-        if (target.PointerSize == sizeof(ulong))
-        {
-            return new TargetCodePointer(address);
-        }
-        else
-        {
-            long signedAddr = (long)address.Value;
-            if (signedAddr > int.MaxValue || signedAddr < int.MinValue)
-            {
-                throw new ArgumentException(nameof(address), "ClrDataAddress out of range for the target platform.");
-            }
-            return new TargetCodePointer((ulong)address);
-        }
-    }
 }
