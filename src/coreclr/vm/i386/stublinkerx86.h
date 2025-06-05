@@ -141,11 +141,11 @@ class StubLinkerCPU : public StubLinker
         VOID X86EmitIndexPush(X86Reg srcreg, int32_t ofs);
 
         VOID X86EmitAddEsp(INT32 imm32);
+#ifdef TARGET_X86
         VOID X86EmitEspOffset(BYTE opcode,
                               X86Reg altreg,
-                              int32_t ofs
-                    AMD64_ARG(X86OperandSize OperandSize = k64BitOp)
-                              );
+                              int32_t ofs);
+#endif
 
         // Emits the most efficient form of the operation:
         //

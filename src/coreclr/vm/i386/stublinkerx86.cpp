@@ -813,45 +813,19 @@ VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
 }
 
 
+#ifdef TARGET_X86
 //---------------------------------------------------------------
 // Emits:
 //   op altreg, [esp+ofs]
 //---------------------------------------------------------------
 VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
                                      X86Reg altreg,
-                                     int32_t ofs
-                           AMD64_ARG(X86OperandSize OperandSize /*= k64BitOp*/)
-                                     )
+                                     int32_t ofs)
 {
     STANDARD_VM_CONTRACT;
 
-    BYTE    codeBuffer[8];
+    BYTE    codeBuffer[7];
     BYTE   *code = codeBuffer;
-    int     nBytes;
-
-#ifdef TARGET_AMD64
-    BYTE rex = 0;
-
-    if (k64BitOp == OperandSize)
-        rex |= REX_OPERAND_SIZE_64BIT;
-
-    if (altreg >= kR8)
-    {
-        rex |= REX_MODRM_REG_EXT;
-        altreg = X86RegFromAMD64Reg(altreg);
-    }
-
-    if (rex)
-    {
-        *code = (REX_PREFIX_BASE | rex);
-        code++;
-        nBytes = 1;
-    }
-    else
-#endif // TARGET_AMD64
-    {
-        nBytes = 0;
-    }
 
     code[0] = opcode;
     BYTE modrm = static_cast<BYTE>((altreg << 3) | 004);
@@ -859,24 +833,24 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
     {
         code[1] = modrm;
         code[2] = 0044;
-        EmitBytes(codeBuffer, 3 + nBytes);
+        EmitBytes(codeBuffer, 3);
     }
     else if (FitsInI1(ofs))
     {
         code[1] = 0x40|modrm;
         code[2] = 0044;
         code[3] = (BYTE)ofs;
-        EmitBytes(codeBuffer, 4 + nBytes);
+        EmitBytes(codeBuffer, 4);
     }
     else
     {
         code[1] = 0x80|modrm;
         code[2] = 0044;
         *((int32_t*)(3+code)) = ofs;
-        EmitBytes(codeBuffer, 7 + nBytes);
+        EmitBytes(codeBuffer, 7);
     }
-
 }
+#endif
 
 
 // Get X86Reg indexes of argument registers based on offset into ArgumentRegister
