@@ -11,6 +11,26 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X8
 
 public class X86Unwinder(Target target)
 {
+    private const byte X86_INSTR_INT3 = 0xCC; // int3
+    private const byte X86_INSTR_POP_ECX = 0x59; // pop ecx
+    private const byte X86_INSTR_RET = 0xC2; // ret imm16
+    private const byte X86_INSTR_JMP_NEAR_REL32 = 0xE9; // near jmp rel32
+    private const byte X86_INSTR_PUSH_EAX = 0x50; // push eax
+    private const byte X86_INSTR_XOR = 0x33; // xor
+    private const byte X86_INSTR_NOP = 0x90; // nop
+    private const byte X86_INSTR_RETN = 0xC3; // ret
+    private const byte X86_INSTR_PUSH_EBP = 0x55; // push ebp
+    private const ushort X86_INSTR_W_MOV_EBP_ESP = 0xEC8B; // mov ebp, esp
+    private const byte X86_INSTR_CALL_REL32 = 0xE8; // call rel32
+    private const ushort X86_INSTR_W_CALL_IND_IMM = 0x15FF; // call [addr32]
+    private const ushort X86_INSTR_w_JMP_FAR_IND_IMM = 0x25FF; // far jmp [addr32]
+    private const ushort X86_INSTR_w_TEST_ESP_EAX = 0x0485; // test [esp], eax
+    private const ushort X86_INSTR_w_LEA_ESP_EBP_BYTE_OFFSET = 0x658d; // lea esp, [ebp-bOffset]
+    private const ushort X86_INSTR_w_LEA_ESP_EBP_DWORD_OFFSET = 0xa58d; // lea esp, [ebp-dwOffset]
+    private const ushort X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX = 0x8485; // test [esp-dwOffset], eax
+    private const ushort X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET = 0x448d; // lea eax, [esp-bOffset]
+    private const ushort X86_INSTR_w_LEA_EAX_ESP_DWORD_OFFSET = 0x848d; // lea eax, [esp-dwOffset]
+
     private readonly Target _target = target;
     private readonly uint _pointerSize = (uint)target.PointerSize;
     private readonly bool _updateAllRegs = true;
@@ -374,14 +394,6 @@ public class X86Unwinder(Target target)
             }
         }
 
-        //
-        // Stack probe checks here
-        //
-
-        // Poison the value, we don't set it properly at the end of the prolog
-#if DEBUG
-        offset = 0xCCCCCCCC;
-#endif
 
         // Always restore EBP
         if (regsMask.HasFlag(RegMask.EBP))
@@ -405,11 +417,7 @@ public class X86Unwinder(Target target)
             if (regsMask.HasFlag(RegMask.EDI))
             {
                 context.Edi = _target.Read<uint>(savedRegPtr);
-                savedRegPtr += _pointerSize;
             }
-
-            // TODO(cdacX86): Should cDAC trash caller saved registers?
-            // TRASH_CALLEE_UNSAVED_REGS(pContext);
         }
 
         context.Esp = esp;
@@ -579,9 +587,6 @@ public class X86Unwinder(Target target)
 
                 offset = SKIP_PUSH_REG(methodStart, offset);
             }
-
-            // TODO(cdacX86): Should cDAC trash caller saved registers?
-            // TRASH_CALLEE_UNSAVED_REGS(pContext);
         }
 
         /* The caller's saved EBP is pointed to by our EBP */
@@ -890,27 +895,6 @@ public class X86Unwinder(Target target)
     #endregion
 
     #region Verification Helpers
-
-    private const byte X86_INSTR_INT3 = 0xCC; // int3
-    private const byte X86_INSTR_POP_ECX = 0x59; // pop ecx
-    private const byte X86_INSTR_RET = 0xC2; // ret imm16
-    private const byte X86_INSTR_JMP_NEAR_REL32 = 0xE9; // near jmp rel32
-    private const byte X86_INSTR_PUSH_EAX = 0x50; // push eax
-    private const byte X86_INSTR_XOR = 0x33; // xor
-    private const byte X86_INSTR_NOP = 0x90; // nop
-    private const byte X86_INSTR_RETN = 0xC3; // ret
-    private const byte X86_INSTR_PUSH_EBP = 0x55; // push ebp
-    private const ushort X86_INSTR_W_MOV_EBP_ESP = 0xEC8B; // mov ebp, esp
-    private const byte X86_INSTR_CALL_REL32 = 0xE8; // call rel32
-    private const ushort X86_INSTR_W_CALL_IND_IMM = 0x15FF; // call [addr32]
-    private const ushort X86_INSTR_w_JMP_FAR_IND_IMM = 0x25FF; // far jmp [addr32]
-    private const ushort X86_INSTR_w_TEST_ESP_EAX = 0x0485; // test [esp], eax
-    private const ushort X86_INSTR_w_LEA_ESP_EBP_BYTE_OFFSET = 0x658d; // lea esp, [ebp-bOffset]
-    private const ushort X86_INSTR_w_LEA_ESP_EBP_DWORD_OFFSET = 0xa58d; // lea esp, [ebp-dwOffset]
-    private const ushort X86_INSTR_w_TEST_ESP_DWORD_OFFSET_EAX = 0x8485; // test [esp-dwOffset], eax
-    private const ushort X86_INSTR_w_LEA_EAX_ESP_BYTE_OFFSET = 0x448d; // lea eax, [esp-bOffset]
-    private const ushort X86_INSTR_w_LEA_EAX_ESP_DWORD_OFFSET = 0x848d; // lea eax, [esp-dwOffset]
-
 
     /* Check if the given instruction opcode is the one we expect.
     This is a "necessary" but not "sufficient" check as it ignores the check
