@@ -6094,6 +6094,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> BitwiseSelectRightInverted(System.Numerics.Vector<ushort> select, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> BitwiseSelectRightInverted(System.Numerics.Vector<uint> select, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> BitwiseSelectRightInverted(System.Numerics.Vector<ulong> select, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRounded(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRounded(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRounded(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRounded(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticRoundedSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
+        public static System.Numerics.Vector<short> ShiftArithmeticSaturate(System.Numerics.Vector<short> value, System.Numerics.Vector<short> count) { throw null; }
+        public static System.Numerics.Vector<int> ShiftArithmeticSaturate(System.Numerics.Vector<int> value, System.Numerics.Vector<int> count) { throw null; }
+        public static System.Numerics.Vector<long> ShiftArithmeticSaturate(System.Numerics.Vector<long> value, System.Numerics.Vector<long> count) { throw null; }
+        public static System.Numerics.Vector<sbyte> ShiftArithmeticSaturate(System.Numerics.Vector<sbyte> value, System.Numerics.Vector<sbyte> count) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftAndInsert(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<short> ShiftLeftAndInsert(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right, [ConstantExpected] byte shift) { throw null; }
         public static System.Numerics.Vector<int> ShiftLeftAndInsert(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right, [ConstantExpected] byte shift) { throw null; }

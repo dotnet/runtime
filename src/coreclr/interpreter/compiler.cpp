@@ -1195,8 +1195,17 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
     m_methodInfo = methodInfo;
 
 #ifdef DEBUG
-    m_methodName = compHnd->getMethodNameFromMetadata(methodInfo->ftn, nullptr, nullptr, nullptr, 0);
-    if (m_methodName && InterpConfig.InterpDump() && !strcmp(m_methodName, InterpConfig.InterpDump()))
+
+    m_classHnd   = compHnd->getMethodClass(m_methodHnd);
+
+    m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
+                            /* includeClassInstantiation */ true,
+                            /* includeMethodInstantiation */ true,
+                            /* includeSignature */ true,
+                            /* includeReturnType */ false,
+                            /* includeThis */ false);
+
+    if (InterpConfig.InterpDump().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         m_verbose = true;
 #endif
 }
@@ -1204,11 +1213,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 InterpMethod* InterpCompiler::CompileMethod()
 {
 #ifdef DEBUG
-    if (m_verbose)
+    if (m_verbose || InterpConfig.InterpList())
     {
-        printf("Interpreter compile method ");
-        PrintMethodName(m_methodHnd);
-        printf("\n");
+        printf("Interpreter compile method %s\n", m_methodName.GetUnderlyingArray());
     }
 #endif
 
@@ -2549,7 +2556,7 @@ int InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
     m_currentILOffset = -1;
 
 #if DEBUG
-    if (m_methodName && InterpConfig.InterpHalt() && !strcmp(m_methodName, InterpConfig.InterpHalt()))
+    if (InterpConfig.InterpHalt().contains(m_compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         AddIns(INTOP_BREAKPOINT);
 #endif
 
@@ -4365,13 +4372,20 @@ void InterpCompiler::PrintClassName(CORINFO_CLASS_HANDLE cls)
 
 void InterpCompiler::PrintMethodName(CORINFO_METHOD_HANDLE method)
 {
-    char methodName[100];
-
     CORINFO_CLASS_HANDLE cls = m_compHnd->getMethodClass(method);
-    PrintClassName(cls);
 
-    m_compHnd->printMethodName(method, methodName, 100);
-    printf(".%s", methodName);
+    CORINFO_SIG_INFO sig;
+    m_compHnd->getMethodSig(method, &sig, cls);
+
+    TArray<char> methodName = ::PrintMethodName(m_compHnd, cls, method, &sig,
+                            /* includeClassInstantiation */ true,
+                            /* includeMethodInstantiation */ true,
+                            /* includeSignature */ true,
+                            /* includeReturnType */ false,
+                            /* includeThis */ false);
+
+
+    printf(".%s", methodName.GetUnderlyingArray());
 }
 
 void InterpCompiler::PrintCode()
