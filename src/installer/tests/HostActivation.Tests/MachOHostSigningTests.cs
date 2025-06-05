@@ -65,7 +65,6 @@ namespace HostActivation.Tests
             HostWriter.CreateAppHost(testAppHostPath, signedHostPath, testAppHostPath + ".dll", enableMacOSCodeSign: true);
             var bundlePath = new Bundler(Path.GetFileName(signedHostPath), testAppHostPath + ".bundle").GenerateBundle([new(signedHostPath, Path.GetFileName(signedHostPath))]);
 
-
             SigningTests.HasEntitlementsBlob(testAppHostPath).Should().BeTrue();
             SigningTests.HasEntitlementsBlob(bundlePath).Should().BeTrue();
             SigningTests.HasDerEntitlementsBlob(testAppHostPath).Should().BeTrue();

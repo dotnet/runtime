@@ -121,10 +121,10 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     bool isMachOImage;
                     // MacOS requires a new inode to be created when updating a signed file, so we'll delete the file and create a new one.
-                    if (File.Exists(appHostDestinationFilePath))
+                    if (enableMacOSCodeSign && File.Exists(appHostDestinationFilePath))
                         File.Delete(appHostDestinationFilePath);
 
-                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.CreateNew, FileAccess.ReadWrite))
+                    using (FileStream appHostDestinationStream = new FileStream(appHostDestinationFilePath, FileMode.Create, FileAccess.ReadWrite))
                     {
                         using (FileStream appHostSourceStream = new(appHostSourceFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
                         {
