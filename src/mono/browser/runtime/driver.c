@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 #include <emscripten.h>
 #include <emscripten/stack.h>
+#include <emscripten/console.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -98,6 +99,30 @@ typedef uint32_t target_mword;
 typedef int32_t d_handle;
 #endif
 
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+EMSCRIPTEN_KEEPALIVE void log_message(const char *filename, const char *message) {
+    FILE *file = fopen(filename, "a");  // Open for append, create if doesn't exist
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    fprintf(file, "%s\n", message);  // Write message followed by newline
+    fclose(file);  // Close the file
+}
+
+EMSCRIPTEN_KEEPALIVE void debug_log(const char* msg) {
+    EM_ASM({
+        console.log(UTF8ToString($0));
+    }, msg);
+}
+
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
 MONO_API int mono_gc_register_root (char *start, size_t size, MonoGCDescriptor descr, MonoGCRootSource source, void *key, const char *msg);
@@ -140,6 +165,8 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 	}
 	char *assembly_name = strdup (name);
 	assert (assembly_name);
+    printf("Calling mono_bundled_resources_add_assembly_resource for %s, size %u\n", name, size);        
+    fflush(stdout);
 	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, bundled_resources_free_func, assembly_name);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
