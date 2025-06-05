@@ -25,7 +25,7 @@ public class ConditionalSimpleOpTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void shift_right_arithmetic(byte op1, int expected)
     {
-        int result = op1 < 42 ? -13 : -25;
+        int result = op1 > 42 ? -25 : -13;
         Assert.Equal(expected, result);
     }
 
@@ -55,7 +55,7 @@ public class ConditionalSimpleOpTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void shift_right_logic_long_32(byte op1, long expected)
     {
-        long result = op1 < 42 ? 0x7FFF_FFF3 : 0xFFFF_FFE7;
+        long result = op1 > 42 ? 0xFFFF_FFE7 : 0x7FFF_FFF3;
         Assert.Equal(expected, result);
     }
     
@@ -75,7 +75,7 @@ public class ConditionalSimpleOpTest
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void pow2_or_zero_long(byte op1, long expected)
     {
-        long result = op1 < 42 ? long.MinValue : 0;
+        long result = op1 >= 42 ? 0 : long.MinValue;
         Assert.Equal(expected, result);
     }
     
