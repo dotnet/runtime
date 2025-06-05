@@ -15,7 +15,7 @@ parameters:
 # 'ci' -- continuous integration ("merge")
 # 'libraries' -- libraries tests
 # 'cet' -- machines supporting CET technology
-# 'superpmi' -- for TeamProject 'internal', a smaller set of queues (one per architecture, not several) for SuperPMI collection
+# 'superpmi-diffs' -- as high capacity queues as possible since no OS testing is necessary for this
 # Many of these values are unused below, as we use the same queues for many of the scenarios.
 # However, having these options allows us to easily tune the queues we use for each scenario as needed based on new hardware support.
 
@@ -104,8 +104,11 @@ jobs:
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
         - OSX.13.Arm64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'superpmi-diffs')) }}:
+        # superpmi is not about testing platform differences, so go with highest capacity queue
+        - OSX.14.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.1200.Arm64
 
@@ -122,9 +125,7 @@ jobs:
         - Windows.10.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
         - Windows.11.Amd64.Cet.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - Windows.10.Amd64.X86.Rt
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64
 
     # windows x86
