@@ -206,6 +206,17 @@ namespace System.Security.Claims
             Initialize(reader);
         }
 
+        /// <summary>
+        ///   Initializes an instance of <see cref="ClaimsIdentity" /> with the specified <see cref="BinaryReader" />.
+        /// </summary>
+        /// <param name="reader">A <see cref="BinaryReader" /> pointing to a <see cref="ClaimsIdentity" />.</param>
+        /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="reader"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
         public ClaimsIdentity(BinaryReader reader, StringComparison stringComparison)
         {
             ArgumentNullException.ThrowIfNull(reader);
