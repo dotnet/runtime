@@ -32240,17 +32240,17 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
             resultNode = gtNewVconNode(retType, &simdVal);
         }
+#if defined(TARGET_XARCH)
+        else if (tree->OperIsConvertVectorToMask())
+        {
+            resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
+        }
+#endif // TARGET_XARCH
 #endif // FEATURE_MASKED_HW_INTRINSICS
         else
         {
             switch (ni)
             {
-#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-                case NI_EVEX_ConvertVectorToMask:
-                    resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
-                    break;
-#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
-
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
 #else
