@@ -32247,7 +32247,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 case NI_EVEX_ConvertVectorToMask:
-                    resultNode = gtFoldExprConvertVecCnsToMask(tree, vecCon);
+                    resultNode = gtFoldExprConvertVecCnsToMask(tree, cnsNode->AsVecCon());
                     break;
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
