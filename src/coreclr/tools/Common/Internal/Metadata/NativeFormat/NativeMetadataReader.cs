@@ -223,6 +223,11 @@ namespace Internal.Metadata.NativeFormat
 
         internal ReadOnlySpan<byte> ReadStringAsBytes(ConstantStringValueHandle handle)
         {
+            if (handle.IsNil)
+            {
+                return ReadOnlySpan<byte>.Empty;
+            }
+
             return _streamReader.ReadStringAsBytes((uint)handle.Offset);
         }
     }
