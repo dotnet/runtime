@@ -2587,9 +2587,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(varTypeIsIntegralOrI(intrin.baseType));
 
                     emitSize = emitTypeSize(node);
-
-                    assert((targetReg == op2Reg) || (targetReg != op1Reg));
-                    assert((targetReg == op2Reg) || (targetReg != op2Reg));
                     GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt,
                                                    INS_SCALABLE_OPTS_NONE);
                     break;
