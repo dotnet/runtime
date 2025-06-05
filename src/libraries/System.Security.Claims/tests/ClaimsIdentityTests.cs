@@ -497,6 +497,30 @@ namespace System.Security.Claims
         }
 
         [Fact]
+        public static void Ctor_NullClaimsIdentity()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "other",
+                static () => new CustomClaimsIdentity(null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "other",
+                static () => new CustomClaimsIdentity(null, StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public static void Ctor_NullBinaryReader()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(
+                "reader",
+                static () => new ClaimsIdentity((BinaryReader)null));
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "reader",
+                static () => new ClaimsIdentity((BinaryReader)null, StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void Find_CaseInsensivity()
         {
             var claim_type = new Claim("TYpe", "value");
@@ -832,7 +856,10 @@ namespace System.Security.Claims
             public CustomClaimsIdentity(ClaimsIdentity claimsIdentity, StringComparison comparison)
                 : base(claimsIdentity, comparison)
             {
+            }
 
+            public CustomClaimsIdentity(ClaimsIdentity claimsIdentity): base(claimsIdentity)
+            {
             }
 
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)

@@ -246,8 +246,12 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentException">
         ///   <paramref name="stringComparison"/> is out of range or a not supported value.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="other"/> is <see langword="null"/> .
+        /// </exception>
         protected ClaimsIdentity(ClaimsIdentity other, StringComparison stringComparison)
         {
+            ArgumentNullException.ThrowIfNull(other);
             ValidateStringComparison(stringComparison);
             _stringComparison = stringComparison;
             Initialize(other);
@@ -264,6 +268,10 @@ namespace System.Security.Claims
         /// <param name="stringComparison">The string comparison to use when comparing claim types.</param>
         /// <exception cref="ArgumentException">
         ///   <paramref name="stringComparison"/> is out of range or a not supported value.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   <paramref name="identity"/> is a <see cref="ClaimsIdentity"/> and <see cref="Actor" />
+        ///   results in a circular reference back to this.
         /// </exception>
         public ClaimsIdentity(
             IIdentity? identity = null,
