@@ -13,10 +13,18 @@
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
 #include <eventpipe/ep-string.h>
-#include "fstream.h"
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#else
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #include <minipal/guid.h>
 #include <minipal/strings.h>
 #include <minipal/time.h>

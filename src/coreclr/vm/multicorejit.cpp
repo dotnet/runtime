@@ -18,7 +18,6 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "fstream.h"
 #include "hash.h"
 #include "minipal/time.h"
 

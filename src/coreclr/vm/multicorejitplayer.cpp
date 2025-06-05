@@ -18,7 +18,6 @@
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
-#include "fstream.h"
 #include "hash.h"
 #include "clrex.h"
 #include "minipal/time.h"
@@ -1068,7 +1067,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         if (SUCCEEDED(hr))
         {
-            m_nFileSize = (uint64_t)fgetsize(fp);
+            m_nFileSize = (unsigned int)fgetsize(fp);
 
             if (m_nFileSize > sizeof(header))
             {
@@ -1125,7 +1124,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     const BYTE * pBuffer = m_pFileBuffer;
 
-    size_t nSize = (size_t)m_nFileSize;
+    unsigned nSize = m_nFileSize;
 
     MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
         nSize,
@@ -1135,7 +1134,7 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
     {
         unsigned data1 = * (const unsigned *) pBuffer;
         unsigned rcdTyp = data1 >> RECORD_TYPE_OFFSET;
-        size_t rcdLen = 0;
+        unsigned rcdLen = 0;
 
         if (rcdTyp == MULTICOREJIT_MODULE_RECORD_ID)
         {
@@ -1157,8 +1156,8 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
                 break;
             }
 
-            size_t signatureLength = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
-            size_t dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
+            unsigned signatureLength = * (const unsigned short *) (((const unsigned *) pBuffer) + 1);
+            DWORD dataSize = signatureLength + sizeof(DWORD) + sizeof(unsigned short);
             dataSize = AlignUp(dataSize, sizeof(DWORD));
             rcdLen = dataSize;
         }
@@ -1203,19 +1202,19 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
             bool isMethod = true;
             bool isGenericMethod = rcdTyp == MULTICOREJIT_GENERICMETHOD_RECORD_ID;
             const BYTE * pCurBuf = pBuffer;
-            size_t curSize = nSize;
+            unsigned curSize = nSize;
 
-            size_t sizes[MAX_WALKBACK] = {0};
+            unsigned sizes[MAX_WALKBACK] = {0};
             int count = 0;
 
             do
             {
-                size_t currcdLen = 0;
+                unsigned currcdLen = 0;
 
                 if (isGenericMethod)
                 {
-                    size_t cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
-                    size_t dataSize = cursignatureLength + sizeof(DWORD) + sizeof(unsigned short);
+                    unsigned cursignatureLength = * (const unsigned short *) (((const unsigned *) pCurBuf) + 1);
+                    DWORD dataSize = cursignatureLength + sizeof(DWORD) + sizeof(unsigned short);
                     dataSize = AlignUp(dataSize, sizeof(DWORD));
                     currcdLen = dataSize;
                 }
