@@ -1207,6 +1207,7 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 
     if (InterpConfig.InterpDump().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args))
         m_verbose = true;
+    // m_verbose = true;
 #endif
 }
 
@@ -1221,7 +1222,14 @@ InterpMethod* InterpCompiler::CompileMethod()
 
     CreateILVars();
 
-    GenerateCode(m_methodInfo);
+    int res = GenerateCode(m_methodInfo);
+    if (res != CORJIT_OK)
+    {
+        printf("Interpreter method compilation failed for ");
+        PrintMethodName(m_methodHnd);
+        printf("\n");
+        return nullptr;
+    }
 
 #ifdef DEBUG
     if (m_verbose)

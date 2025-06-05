@@ -90,6 +90,8 @@ struct StubPrecodeData
                 // match the Type field.  This is a defense-in-depth measure (and only matters for access from the debugger)
 };
 
+void AssertThisIsNotInterpreterCode(PCODE code);
+
 typedef DPTR(StubPrecodeData) PTR_StubPrecodeData;
 
 #if !(defined(TARGET_ARM64) && defined(TARGET_UNIX))
@@ -208,6 +210,7 @@ struct StubPrecode
         CONTRACTL_END;
 
         StubPrecodeData *pData = GetData();
+        AssertThisIsNotInterpreterCode(target);
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
     }
 
@@ -222,6 +225,7 @@ struct StubPrecode
         CONTRACTL_END;
 
         StubPrecodeData *pData = GetData();
+        AssertThisIsNotInterpreterCode(target);
         pData->Target = (PCODE)target;
     }
 
@@ -314,6 +318,7 @@ struct ThisPtrRetBufPrecode : StubPrecode
         CONTRACTL_END;
 
         ThisPtrRetBufPrecodeData *pData = GetData();
+        AssertThisIsNotInterpreterCode(target);
         return InterlockedCompareExchangeT<PCODE>(&pData->Target, (PCODE)target, (PCODE)expected) == expected;
     }
 
@@ -493,6 +498,7 @@ struct FixupPrecode
         }
 
         _ASSERTE(IS_ALIGNED(&GetData()->Target, sizeof(SIZE_T)));
+        AssertThisIsNotInterpreterCode(target);
         return InterlockedCompareExchangeT<PCODE>(&GetData()->Target, (PCODE)target, (PCODE)oldTarget) == (PCODE)oldTarget;
     }
 #endif
