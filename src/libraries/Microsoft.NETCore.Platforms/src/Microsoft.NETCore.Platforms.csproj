@@ -19,21 +19,21 @@
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">$(NetFrameworkToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>
 
-    <!-- BaseRid is an expected known rid in the graph that OutputRID is compatible with.
-         It's used to add OutputRID in the graph if the parent can't be detected. -->
+    <!-- BaseRid is an expected known rid in the graph that TargetRid is compatible with.
+         It's used to add TargetRid in the graph if the parent can't be detected. -->
     <AdditionalRuntimeIdentifierParent Condition="'$(AdditionalRuntimeIdentifierParent)' == ''">$(BaseRid)</AdditionalRuntimeIdentifierParent>
-    <OutputRIDParent Condition="'$(OutputRIDParent)' == ''">$(AdditionalRuntimeIdentifierParent)</OutputRIDParent>
+    <TargetRidParent Condition="'$(TargetRidParent)' == ''">$(AdditionalRuntimeIdentifierParent)</TargetRidParent>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(DotNetBuildSourceOnly)' == 'true' and '$(CrossBuild)' != 'true'">
     <!-- By default, assume a non-cross build's non-portable RID is compatible with the SDK's portable RID. -->
-    <OutputRIDParent Condition="'$(OutputRIDParent)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</OutputRIDParent>
+    <TargetRidParent Condition="'$(TargetRidParent)' == ''">$(NETCoreSdkPortableRuntimeIdentifier)</TargetRidParent>
   </PropertyGroup>
 
   <ItemGroup>
     <AdditionalRuntimeIdentifiers Include="$(AdditionalRuntimeIdentifiers)" Imports="$(AdditionalRuntimeIdentifierParent)" />
     <!-- When building from source, ensure the RID we're building for is part of the RID graph. -->
-    <AdditionalRuntimeIdentifiers Include="$(OutputRID)" Imports="$(OutputRIDParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+    <AdditionalRuntimeIdentifiers Include="$(TargetRid)" Imports="$(TargetRidParent)" Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>

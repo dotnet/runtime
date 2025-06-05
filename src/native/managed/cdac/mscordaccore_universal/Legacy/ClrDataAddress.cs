@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// <summary>
 /// Represents the native CLRDATA_ADDRESS 64-bit type which uses sign extending
 /// when converting from 32-bit values to 64-bit values.
-/// For more information see TO_CDADDR in dacimpl.h
+/// When marshalled to native code, this type is represented as a 64-bit unsigned integer.
 /// </summary>
 [NativeMarshalling(typeof(ClrDataAddressMarshaller))]
 internal struct ClrDataAddress : IEquatable<ClrDataAddress>

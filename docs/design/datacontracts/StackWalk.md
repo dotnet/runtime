@@ -293,10 +293,6 @@ HijackFrames carry a IP (ReturnAddress) and a pointer to `HijackArgs`. All platf
 
 TailCallFrames are only used on Windows x86 which is not yet supported in the cDAC and therefore not implemented.
 
-#### HelperMethodFrame
-
-HelperMethodFrames are on the way to being removed. They are not currently supported in the cDAC.
-
 ### APIs
 
 The majority of the contract's complexity is the stack walking algorithm (detailed above) implemented as part of `CreateStackWalk`.
