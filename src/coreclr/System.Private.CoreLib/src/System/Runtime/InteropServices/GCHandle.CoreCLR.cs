@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices
         internal static extern bool InternalTryGetBridgeWait(IntPtr handle, ref object? result);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCHandle_InternalGetBridgeWait")]
-        internal static partial void InternalGetBridgeWait(IntPtr handle, ObjectHandleOnStack result);
+        private static partial void InternalGetBridgeWait(IntPtr handle, ObjectHandleOnStack result);
 
         internal static void InternalGetBridgeWait(IntPtr handle, ref object? result)
         {

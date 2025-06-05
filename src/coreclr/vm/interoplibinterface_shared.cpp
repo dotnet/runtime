@@ -159,7 +159,7 @@ void Interop::OnAfterGCScanRoots(_In_ bool isConcurrent)
 
 namespace
 {
-    Volatile<BOOL> g_GCBridgeActive = FALSE;
+    Volatile<bool> g_GCBridgeActive = false;
     CLREvent* g_bridgeFinished = nullptr;
 
     void ReleaseGCBridgeArgumentsWorker(
@@ -189,11 +189,7 @@ namespace
 
 bool Interop::IsGCBridgeActive()
 {
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
+    LIMITED_METHOD_CONTRACT;
 
     return g_GCBridgeActive;
 }
@@ -237,7 +233,7 @@ void Interop::TriggerClientBridgeProcessing(
         return;
     }
 
-    bool gcBridgeTriggered;
+    bool gcBridgeTriggered = false;
 
 #ifdef FEATURE_JAVAMARSHAL
     gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(sccsLen, sccs, ccrsLen, ccrs);

@@ -46,7 +46,7 @@
 
 #ifdef FEATURE_GCBRIDGE
 #include "interoplibinterface.h"
-#endif
+#endif // FEATURE_GCBRIDGE
 
 // Prelink
 // Does advance loading of an N/Direct library
@@ -440,7 +440,7 @@ extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QC
 
     END_QCALL;
 }
-#endif
+#endif // FEATURE_GCBRIDGE
 
 // Update the object referenced by a GC handle.
 FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)

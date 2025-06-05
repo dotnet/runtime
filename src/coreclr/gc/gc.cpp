@@ -30479,7 +30479,7 @@ void gc_heap::mark_phase (int condemned_gen_number)
         size_t start_index = thread * count_per_heap;
         size_t end_index = (thread == n_heaps - 1) ? num_global_bridge_objs : (thread + 1) * count_per_heap;
 
-        for (int obj_idx = start_index; obj_idx < end_index; obj_idx++)
+        for (size_t obj_idx = start_index; obj_idx < end_index; obj_idx++)
         {
             mark_object_simple (&global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
         }
@@ -39247,7 +39247,7 @@ void gc_heap::background_mark_phase ()
         size_t start_index = thread * count_per_heap;
         size_t end_index = (thread == n_heaps - 1) ? num_global_bridge_objs : (thread + 1) * count_per_heap;
 
-        for (int obj_idx = start_index; obj_idx < end_index; obj_idx++)
+        for (size_t obj_idx = start_index; obj_idx < end_index; obj_idx++)
         {
             mark_object_simple (&global_bridge_list[obj_idx] THREAD_NUMBER_ARG);
         }

@@ -1617,7 +1617,7 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
                         // or have a local var for bridgeObjectsToPromote/size (instead of NULL) that's passed in as lp2
-                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), NULL, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), 0, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
                 }
             }
         walk = walk->pNext;
