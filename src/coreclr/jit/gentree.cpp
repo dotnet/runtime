@@ -32245,11 +32245,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             switch (ni)
             {
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
                 case NI_EVEX_ConvertVectorToMask:
                     resultNode = gtFoldExprConvertVecCnsToMask(tree, vecCon);
                     break;
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
 #ifdef TARGET_ARM64
                 case NI_ArmBase_LeadingZeroCount:
@@ -33299,7 +33299,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     return resultNode;
 }
-#endif // FEATURE_HW_INTRINSICS
 
 GenTreeMskCon* Compiler::gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon)
 {
@@ -33416,6 +33415,8 @@ bool GenTree::IsFalseMask() const
 
     return false;
 }
+
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // gtCanSkipCovariantStoreCheck: see if storing a ref type value to an array

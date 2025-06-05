@@ -1818,8 +1818,11 @@ public:
     inline bool IsVectorCreate() const;
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
+
+#ifdef FEATURE_HW_INTRINSICS
     bool        IsTrueMask(GenTreeHWIntrinsic* parent) const;
     bool        IsFalseMask() const;
+#endif
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
