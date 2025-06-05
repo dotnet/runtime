@@ -68,6 +68,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(options.WriteIndented);
             Assert.False(options.RespectNullableAnnotations);
             Assert.False(options.RespectRequiredConstructorParameters);
+            Assert.True(options.AllowDuplicateProperties);
 
             TestIListNonThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListNonThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -89,6 +90,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.TypeInfoResolver = options.TypeInfoResolver);
             Assert.Throws<InvalidOperationException>(() => options.RespectNullableAnnotations = options.RespectNullableAnnotations);
             Assert.Throws<InvalidOperationException>(() => options.RespectRequiredConstructorParameters = options.RespectRequiredConstructorParameters);
+            Assert.Throws<InvalidOperationException>(() => options.AllowDuplicateProperties = options.AllowDuplicateProperties);
 
             TestIListThrowingOperationsWhenImmutable(options.Converters, tc);
             TestIListThrowingOperationsWhenImmutable(options.TypeInfoResolverChain, options.TypeInfoResolver);
@@ -1888,6 +1890,19 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs(new Dictionary<string, int> { ["key"] = 42 }, """{"key":42}""");
 
             static object[] WrapArgs<T>(T value, string json) => new object[] { value, json };
+        }
+
+        [Fact]
+        public static void AllowDuplicateProperties_RespectsSetting()
+        {
+            var options = new JsonSerializerOptions { AllowDuplicateProperties = false };
+            string json = "{\"a\":1,\"a\":2}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(json, options));
+
+            options = new JsonSerializerOptions { AllowDuplicateProperties = true };
+            var result = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
+            Assert.Single(result);
+            Assert.Equal(2, result["a"]);
         }
     }
 }
