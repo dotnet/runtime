@@ -1,8 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-
-//
 
 #include "common.h"
 
@@ -1506,7 +1503,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         {
             if (ex->GetExceptionRecord()->ExceptionInformation[1] < NULL_AREA_SIZE)
             {
-                exceptionCode = 0; //STATUS_REDHAWK_NULL_REFERENCE;
+                exceptionCode = 0; //STATUS_NATIVEAOT_NULL_REFERENCE;
             }
         }
 

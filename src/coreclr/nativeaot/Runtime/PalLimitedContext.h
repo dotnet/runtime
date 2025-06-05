@@ -1,17 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Provide common definitions between the Redhawk and the Redhawk PAL implementation. This header file is used
-// (rather than PalRedhawk.h) since the PAL implementation is built in a different environment than Redhawk
-// code. For instance both environments may provide a definition of various common macros such as NULL.
-//
-// This header contains only environment neutral definitions (i.e. using only base C++ types and compositions
-// of those types) and can thus be included from either environment without issue.
-//
 
-#ifndef __PAL_REDHAWK_COMMON_INCLUDED
-#define __PAL_REDHAWK_COMMON_INCLUDED
+#ifndef PAL_LIMITED_CONTEXT_INCLUDED
+#define PAL_LIMITED_CONTEXT_INCLUDED
 
 #include "rhassert.h"
 
@@ -217,14 +209,4 @@ struct PAL_LIMITED_CONTEXT
 #endif // TARGET_ARM
 };
 
-void RuntimeThreadShutdown(void* thread);
-
-typedef void (*ThreadExitCallback)();
-
-extern ThreadExitCallback g_threadExitCallback;
-
-#ifdef TARGET_UNIX
-typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
-#endif
-
-#endif // __PAL_REDHAWK_COMMON_INCLUDED
+#endif // PAL_LIMITED_CONTEXT_INCLUDED
